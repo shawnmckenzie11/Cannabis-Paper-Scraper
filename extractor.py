@@ -276,21 +276,79 @@ def keyword_match(text: str, keywords: List[str]) -> bool:
     return False
 
 def get_methods_text(title: str, abstract: str) -> str:
-    """Extracts the Methods section from the abstract if present.
+    """Extracts Title, Objectives, Methods, or Results sections of the abstract,
+    discarding Conclusions, Discussion, Significance, or other concluding sections.
     
-    Falls back to combining the title and the abstract if no clear Methods section is found.
+    If a clear Methods section is present, we isolate it along with the Title to
+    minimize false positives from other sections (such as literature background).
+    Otherwise, we extract all other non-concluding sections.
     """
     if not abstract:
         return title
-    # Regex to find Methods section: case insensitive, handles METHODS, METHODOLOGY, METHOD, PATIENTS AND METHODS, MATERIALS AND METHODS
-    # Usually followed by a colon or a newline, up to the next section like Results, Discussion, etc.
-    pattern = r'\b(?:methods|methodology|method|patients and methods|materials and methods)\s*:\s*(.*?)(?=\b(?:results|conclusions|discussion|background|aims|objectives)\b\s*:|$)'
-    match = re.search(pattern, abstract, re.IGNORECASE | re.DOTALL)
-    if match:
-        methods_content = match.group(1).strip()
-        # Include title in the context as it contains key study design/population clues
-        return title + "\n\n" + methods_content
-    return title + "\n\n" + abstract
+        
+    header_pattern = re.compile(
+        r'\b(background|introduction|objective|objectives|aim|aims|'
+        r'method|methods|methodology|materials and methods|patients and methods|'
+        r'result|results|findings|'
+        r'conclusion|conclusions|discussion|significance|implications|interpretation|summary|key\s+words?|highlights)\b\s*[:\.]',
+        re.IGNORECASE
+    )
+    
+    matches = list(header_pattern.finditer(abstract))
+    if not matches:
+        # Unstructured abstract: strip conclusion sentence if clearly marked
+        conclusion_pattern = re.compile(
+            r'\b(in conclusion|we conclude|to conclude|in summary|concluding remarks)\b',
+            re.IGNORECASE
+        )
+        c_match = conclusion_pattern.search(abstract)
+        if c_match:
+            clean_abstract = abstract[:c_match.start()].strip()
+            return title + "\n\n" + clean_abstract
+        return title + "\n\n" + abstract.strip()
+        
+    # Check if a Methods section is present
+    methods_headers = {'method', 'methods', 'methodology', 'materials and methods', 'patients and methods'}
+    methods_match_idx = -1
+    for idx, match in enumerate(matches):
+        if match.group(1).lower() in methods_headers:
+            methods_match_idx = idx
+            break
+            
+    if methods_match_idx != -1:
+        # If a Methods section is found, we extract ONLY the Methods section content (+ Title)
+        # to ensure robust methods isolation (preventing background/conclusions false positives)
+        match = matches[methods_match_idx]
+        start_idx = match.end()
+        end_idx = matches[methods_match_idx + 1].start() if methods_match_idx + 1 < len(matches) else len(abstract)
+        methods_content = abstract[start_idx:end_idx].strip()
+        return title + "\n\n" + match.group(0) + " " + methods_content
+
+    # If no Methods section is found, extract Title and other allowed sections (Objectives, Results, Introduction, etc.)
+    allowed_headers = {
+        'background', 'introduction', 'objective', 'objectives', 'aim', 'aims',
+        'result', 'results', 'findings'
+    }
+    
+    allowed_parts = []
+    
+    # If there is text before the first header, it's typically intro/background context, so keep it
+    first_start = matches[0].start()
+    pre_text = abstract[:first_start].strip()
+    if pre_text:
+        allowed_parts.append(pre_text)
+        
+    for i, match in enumerate(matches):
+        header_name = match.group(1).lower()
+        start_idx = match.end()
+        end_idx = matches[i+1].start() if i + 1 < len(matches) else len(abstract)
+        
+        content = abstract[start_idx:end_idx].strip()
+        if header_name in allowed_headers:
+            allowed_parts.append(match.group(0) + " " + content)
+            
+    combined_abstract = "\n\n".join(allowed_parts)
+    return title + "\n\n" + combined_abstract
 
 def infer_study_type(title: str, abstract: str) -> List[str]:
     """Infers study type from text keywords, focusing on Methods section if available."""

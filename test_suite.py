@@ -132,6 +132,30 @@ class TestHeuristicExtractor(unittest.TestCase):
         self.assertEqual(study_type, ["RCT"])
         self.assertEqual(population, ["human"])
 
+    def test_get_methods_text_restrictions(self):
+        title = "My Cannabis Study"
+        
+        # Case 1: Structured abstract with METHODS header -> should isolate METHODS
+        abstract_structured = "BACKGROUND: Intro text. METHODS: We vaped dry flower. RESULTS: Significant changes in cells. CONCLUSIONS: Vaping is bad."
+        methods_text = extractor.get_methods_text(title, abstract_structured)
+        self.assertNotIn("BACKGROUND: Intro text", methods_text)
+        self.assertIn("METHODS: We vaped dry flower", methods_text)
+        self.assertNotIn("RESULTS: Significant changes in cells", methods_text)
+        self.assertNotIn("CONCLUSIONS: Vaping is bad", methods_text)
+        
+        # Case 2: Structured abstract without METHODS header -> should fall back to BACKGROUND and RESULTS
+        abstract_no_methods = "BACKGROUND: Intro text. RESULTS: Significant changes in cells. CONCLUSIONS: Vaping is bad."
+        methods_text_no_methods = extractor.get_methods_text(title, abstract_no_methods)
+        self.assertIn("BACKGROUND: Intro text", methods_text_no_methods)
+        self.assertIn("RESULTS: Significant changes in cells", methods_text_no_methods)
+        self.assertNotIn("CONCLUSIONS: Vaping is bad", methods_text_no_methods)
+        
+        # Case 3: Unstructured abstract with conclusion -> should strip conclusion
+        abstract_unstructured = "We studied the effects of vaporized cannabinoids in cell cultures. In conclusion, vaping causes damage."
+        methods_text_unstructured = extractor.get_methods_text(title, abstract_unstructured)
+        self.assertIn("We studied the effects of vaporized cannabinoids in cell cultures", methods_text_unstructured)
+        self.assertNotIn("In conclusion, vaping causes damage", methods_text_unstructured)
+
     def test_heuristic_summary(self):
         data_with_strain = {
             "study_type": "RCT",
