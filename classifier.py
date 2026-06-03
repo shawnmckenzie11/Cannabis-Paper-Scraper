@@ -84,8 +84,15 @@ def calculate_quality_score(paper: Dict[str, Any]) -> int:
     if paper.get("dose_mg") is not None and "quantified_dose" in additions_rubric:
         score += additions_rubric["quantified_dose"]
         
-    # rct_design: study_type is RCT
-    if paper.get("study_type") == "RCT" and "rct_design" in additions_rubric:
+    # rct_design: study_type is RCT or contains RCT
+    study_type = paper.get("study_type")
+    is_rct = False
+    if isinstance(study_type, str):
+        is_rct = study_type == "RCT"
+    elif isinstance(study_type, list):
+        is_rct = "RCT" in study_type
+        
+    if is_rct and "rct_design" in additions_rubric:
         score += additions_rubric["rct_design"]
         
     # peer_reviewed_journal: check if not in a preprint server
@@ -133,20 +140,21 @@ def classify_with_llm(title: str, abstract: str) -> Optional[Dict[str, Any]]:
             "You MUST return a raw JSON object and nothing else. Do not wrap it in markdown block tags like ```json. "
             "Ensure the JSON exactly conforms to the following schema structure:\n"
             "{\n"
-            "  \"study_type\": \"RCT\" | \"observational\" | \"animal\" | \"in vitro\" | \"review\" | \"meta-analysis\" | \"case study\" | \"editorial\",\n"
-            "  \"exposure_method\": \"smoked\" | \"vaporized\" | \"oral/edible\" | \"tincture\" | \"injection\" | \"forced inhalation\" | \"in vitro\" | \"unknown\",\n"
+            "  \"study_type\": [\"RCT\" | \"observational\" | \"animal\" | \"in vitro\" | \"review\" | \"meta-analysis\" | \"case study\" | \"editorial\"] (multi-label array of matching study designs),\n"
+            "  \"exposure_method\": [\"smoked\" | \"vaporized\" | \"oral/edible\" | \"tincture\" | \"injection\" | \"forced inhalation\" | \"in vitro\" | \"unknown\"] (multi-label array of matching exposure methods),\n"
             "  \"thc_pct\": float or null (numeric percent, e.g. 12.5. Do not include '%' sign),\n"
             "  \"cbd_pct\": float or null (numeric percent, e.g. 0.5. Do not include '%' sign),\n"
             "  \"dose_mg\": float or null (absolute dose in milligrams, e.g., 20.0. Convert from other absolute metric if possible, null if not reported or mg/kg/ml only),\n"
             "  \"strain_reported\": string or null (exact raw strain name as written, e.g., \"Bedrocan\", \"Charlotte's Web\", \"OG Kush\"),\n"
             "  \"strain_normalized\": \"Chemotype I\" | \"Chemotype II\" | \"Chemotype III\" | null (Chemotype I = High THC, Chemotype II = Balanced, Chemotype III = High CBD),\n"
             "  \"duration_days\": float or null (treatment duration converted to days),\n"
-            "  \"population\": \"human\" | \"mouse\" | \"rat\" | \"cell_line\" | \"other\",\n"
+            "  \"population\": [\"human\" | \"mouse\" | \"rat\" | \"cell_line\" | \"other\"] (multi-label array of matching populations),\n"
             "  \"sample_size\": integer or null (N value),\n"
             "  \"outcome_domain\": [\"pain\", \"anxiety\", \"cognition\", \"inflammation\", \"addiction\", \"oncology\", \"neuroprotection\", \"sleep\", \"other\"] (multi-label array of matching outcomes),\n"
             "  \"methodological_quality_flags\": [\"no_strain_specified\", \"self_report_only\", \"THC_not_quantified\", \"no_control_group\", \"animal_model_only\", \"label_not_verified\"] (array of matching flags),\n"
             "  \"multiple_doses\": boolean (true if multiple doses, varying dose levels, or dose-response parameters are evaluated in study, false otherwise),\n"
             "  \"multiple_time_intervals\": boolean (true if multiple time intervals, longitudinal timepoints, serial measurements, or repeated administration measures are evaluated, false otherwise),\n"
+            "  \"cannabis_type\": [\"dried flower\" | \"concentrates\" | \"vape pen\" | \"pure cannabinoid\" | \"edibles\" | \"hashish/kief\" | \"unknown\"] (multi-label array of matching cannabis product types),\n"
             "  \"summary\": string (a concise 1-2 sentence scientific summary of the study's key objective and findings, explicitly mentioning the strain of cannabis used if reported, or specifying that no strain was reported if none)\n"
             "}"
         )

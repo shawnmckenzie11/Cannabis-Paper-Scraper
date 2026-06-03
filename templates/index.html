@@ -682,6 +682,58 @@
             font-weight: 500;
         }
 
+        .cannabis-tag {
+            background: rgba(139, 195, 74, 0.05);
+            border: 1px solid rgba(139, 195, 74, 0.15);
+            color: #aed581;
+            padding: 3px 8px;
+            border-radius: 6px;
+            font-size: 11px;
+            font-weight: 500;
+        }
+
+        .filter-header-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 15px;
+            margin-bottom: 8px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            padding-bottom: 5px;
+        }
+
+        .filter-header-row .filter-header {
+            margin: 0;
+            border: none;
+            padding: 0;
+        }
+
+        .logic-toggle {
+            display: inline-flex;
+            background: rgba(0, 0, 0, 0.25);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 4px;
+            padding: 2px;
+            gap: 2px;
+        }
+
+        .logic-btn {
+            font-size: 10px;
+            font-weight: 700;
+            color: var(--text-secondary);
+            padding: 2px 8px;
+            border-radius: 3px;
+            cursor: pointer;
+            transition: all 0.15s ease;
+            user-select: none;
+        }
+
+        .logic-btn.active {
+            background: var(--accent-blue);
+            color: #05070a;
+            box-shadow: 0 0 10px rgba(0, 240, 255, 0.3);
+        }
+
         /* --- Tabs --- */
         .tabs-container {
             display: flex;
@@ -796,8 +848,8 @@
             <form id="filters-form" onsubmit="event.preventDefault(); triggerSearch();">
 
                 <div class="form-group" style="margin-bottom: 12px;">
-                    <label for="filter-query">Search Abstracts</label>
-                    <input type="text" id="filter-query" placeholder="e.g. pain anxiety FTS5..."
+                    <label for="filter-query">Search Database</label>
+                    <input type="text" id="filter-query" placeholder="e.g. pain, anxiety, author name..."
                         oninput="debounceSearch()">
                 </div>
 
@@ -824,7 +876,14 @@
                     </select>
                 </div>
 
-                <div class="filter-header">Exposure Pathway</div>
+                <div class="filter-header-row">
+                    <div class="filter-header">Exposure Pathway</div>
+                    <div class="logic-toggle" id="toggle-method">
+                        <span class="logic-btn active" onclick="setLogic('method', 'or')">OR</span>
+                        <span class="logic-btn" onclick="setLogic('method', 'and')">AND</span>
+                        <input type="hidden" name="method_logic" id="logic-method" value="or">
+                    </div>
+                </div>
                 <div class="checkbox-group"
                     style="margin-bottom: 12px; display: flex; flex-direction: column; gap: 4px;">
                     <!-- Clinical Exposure Section -->
@@ -877,7 +936,14 @@
                             onchange="triggerSearch()"> Unknown</label>
                 </div>
 
-                <div class="filter-header">Cannabis Type</div>
+                <div class="filter-header-row">
+                    <div class="filter-header">Cannabis Type</div>
+                    <div class="logic-toggle" id="toggle-cannabis_type">
+                        <span class="logic-btn active" onclick="setLogic('cannabis_type', 'or')">OR</span>
+                        <span class="logic-btn" onclick="setLogic('cannabis_type', 'and')">AND</span>
+                        <input type="hidden" name="cannabis_logic" id="logic-cannabis_type" value="or">
+                    </div>
+                </div>
                 <div class="checkbox-group" style="margin-bottom: 12px;">
                     <label class="checkbox-item"><input type="checkbox" name="cannabis_type" value="dried flower"
                             onchange="triggerSearch()"> Dried Flower</label>
@@ -893,7 +959,14 @@
                             onchange="triggerSearch()"> Hashish/Kief</label>
                 </div>
 
-                <div class="filter-header">Population</div>
+                <div class="filter-header-row">
+                    <div class="filter-header">Population</div>
+                    <div class="logic-toggle" id="toggle-population">
+                        <span class="logic-btn active" onclick="setLogic('population', 'or')">OR</span>
+                        <span class="logic-btn" onclick="setLogic('population', 'and')">AND</span>
+                        <input type="hidden" name="population_logic" id="logic-population" value="or">
+                    </div>
+                </div>
                 <div class="checkbox-group" style="margin-bottom: 12px;">
                     <label class="checkbox-item"><input type="checkbox" name="population" value="human"
                             onchange="triggerSearch()"> Human</label>
@@ -934,7 +1007,14 @@
                 </div>
 
                 <!-- Outcomes Checkboxes -->
-                <div class="filter-header">Outcome Domains</div>
+                <div class="filter-header-row">
+                    <div class="filter-header">Outcome Domains</div>
+                    <div class="logic-toggle" id="toggle-outcome">
+                        <span class="logic-btn active" onclick="setLogic('outcome', 'or')">OR</span>
+                        <span class="logic-btn" onclick="setLogic('outcome', 'and')">AND</span>
+                        <input type="hidden" name="outcome_logic" id="logic-outcome" value="or">
+                    </div>
+                </div>
                 <div class="checkbox-group" style="margin-bottom: 15px;">
                     <label class="checkbox-item"><input type="checkbox" name="outcome" value="pain"
                             onchange="triggerSearch()"> Pain</label>
@@ -1343,6 +1423,18 @@
                     <!-- outcomes tags -->
                 </div>
             </div>
+            <div class="meta-item" style="grid-column: span 2;">
+                <span class="meta-label">Cannabis Type</span>
+                <div class="tag-container" id="drawer-cannabis-types-container" style="margin-top: 4px;">
+                    <!-- cannabis type tags -->
+                </div>
+            </div>
+            <div class="meta-item" style="grid-column: span 2;">
+                <span class="meta-label">Methodological Quality Flags</span>
+                <div class="tag-container" id="drawer-flags-container" style="margin-top: 4px;">
+                    <!-- flags tags -->
+                </div>
+            </div>
         </div>
 
 
@@ -1363,6 +1455,22 @@
 
     <!-- Dynamic JavaScript -->
     <script>
+        function setLogic(key, val) {
+            document.getElementById(`logic-${key}`).value = val;
+            const container = document.getElementById(`toggle-${key}`);
+            if (container) {
+                const buttons = container.querySelectorAll('.logic-btn');
+                buttons.forEach(btn => {
+                    if (btn.innerText.toLowerCase() === val) {
+                        btn.classList.add('active');
+                    } else {
+                        btn.classList.remove('active');
+                    }
+                });
+            }
+            triggerSearch();
+        }
+
         function formatStudyDuration(days) {
             if (days === null || days === undefined || days === "") return "N/A";
             const d = parseFloat(days);
@@ -1448,7 +1556,7 @@
             updateSliderValues();
             triggerSearch(true);
             updateSchedulerStatus();
-            setInterval(updateSchedulerStatus, 10000);
+            setInterval(updateSchedulerStatus, 60000);
         });
 
         // Trigger dynamic AJAX search
@@ -1473,6 +1581,11 @@
             const yearMax = document.getElementById("filter-year-max").value;
             const sortBy = document.getElementById("filter-sort").value;
 
+            const methodLogic = document.getElementById("logic-method").value;
+            const cannabisLogic = document.getElementById("logic-cannabis_type").value;
+            const populationLogic = document.getElementById("logic-population").value;
+            const outcomeLogic = document.getElementById("logic-outcome").value;
+
             // Extract method checkboxes
             const methodCheckboxes = document.querySelectorAll('input[name="method"]:checked');
             const method = Array.from(methodCheckboxes).map(cb => cb.value).join(",");
@@ -1494,16 +1607,28 @@
             const params = [];
             if (query) params.push(`query=${encodeURIComponent(query)}`);
             if (studyType) params.push(`study_type=${studyType}`);
-            if (method) params.push(`method=${method}`);
-            if (population) params.push(`population=${population}`);
+            if (method) {
+                params.push(`method=${method}`);
+                params.push(`method_logic=${methodLogic}`);
+            }
+            if (population) {
+                params.push(`population=${population}`);
+                params.push(`population_logic=${populationLogic}`);
+            }
             if (thcMin && thcMin !== "0") params.push(`thc_min=${thcMin}`);
             if (thcMax && thcMax !== "100") params.push(`thc_max=${thcMax}`);
             if (yearMin && yearMin !== "1950") params.push(`year_min=${yearMin}`);
             if (yearMax && yearMax !== "2026") params.push(`year_max=${yearMax}`);
             if (sortBy) params.push(`sort_by=${sortBy}`);
-            if (outcomes) params.push(`outcome=${outcomes}`);
+            if (outcomes) {
+                params.push(`outcome=${outcomes}`);
+                params.push(`outcome_logic=${outcomeLogic}`);
+            }
             if (currentTab) params.push(`tab=${currentTab}`);
-            if (cannabisType) params.push(`cannabis_type=${cannabisType}`);
+            if (cannabisType) {
+                params.push(`cannabis_type=${cannabisType}`);
+                params.push(`cannabis_logic=${cannabisLogic}`);
+            }
 
             // Append page and limit
             params.push(`page=${currentPage}`);
@@ -1602,8 +1727,8 @@
                     <td style="color: var(--text-secondary);">${formatStudyDuration(p.duration_days)}</td>
                     <td class="paper-title-col" title="${p.title}">${p.title}${newBadge}</td>
                     <td>${p.year || "N/A"}</td>
-                    <td><span class="badge badge-type">${p.study_type || "unknown"}</span></td>
-                    <td style="color: #b0bec5;">${p.exposure_method || "unknown"}</td>
+                    <td><span class="badge badge-type">${Array.isArray(p.study_type) ? p.study_type.join(', ') : (p.study_type || "unknown")}</span></td>
+                    <td style="color: #b0bec5;">${Array.isArray(p.exposure_method) ? p.exposure_method.join(', ') : (p.exposure_method || "unknown")}</td>
                     <td style="text-align: center;" onclick="event.stopPropagation();">
                         <div class="link-icon-group">${linksHtml}</div>
                     </td>
@@ -1622,6 +1747,23 @@
             // Sync slider descriptors back to default reset values
             updateSliderValues();
 
+            // Reset logic hidden inputs and toggles
+            ['method', 'cannabis_type', 'population', 'outcome'].forEach(key => {
+                const hiddenInput = document.getElementById(`logic-${key}`);
+                if (hiddenInput) hiddenInput.value = 'or';
+                const container = document.getElementById(`toggle-${key}`);
+                if (container) {
+                    const buttons = container.querySelectorAll('.logic-btn');
+                    buttons.forEach(btn => {
+                        if (btn.innerText.toLowerCase() === 'or') {
+                            btn.classList.add('active');
+                        } else {
+                            btn.classList.remove('active');
+                        }
+                    });
+                }
+            });
+
             // Reset active tab state
             currentTab = 'original';
             document.querySelectorAll(".tab-btn").forEach(btn => {
@@ -1635,12 +1777,12 @@
         // Open details Drawer slide-in
         function openDrawer(paper) {
             document.getElementById("drawer-title").innerText = paper.title;
-            document.getElementById("drawer-study-type").innerText = paper.study_type || "unknown";
+            document.getElementById("drawer-study-type").innerText = Array.isArray(paper.study_type) ? paper.study_type.join(', ') : (paper.study_type || "unknown");
             document.getElementById("drawer-authors").innerText = (paper.authors || []).join(", ") || "Not Reported";
             document.getElementById("drawer-journal-year").innerHTML = `*${paper.journal || "Unknown Source"}* (${paper.year || "N/A"})`;
             document.getElementById("drawer-citations").innerText = paper.citation_count || 0;
-            document.getElementById("drawer-exposure").innerText = paper.exposure_method || "unknown";
-            document.getElementById("drawer-population").innerText = paper.population || "unknown";
+            document.getElementById("drawer-exposure").innerText = Array.isArray(paper.exposure_method) ? paper.exposure_method.join(', ') : (paper.exposure_method || "unknown");
+            document.getElementById("drawer-population").innerText = Array.isArray(paper.population) ? paper.population.join(', ') : (paper.population || "unknown");
             document.getElementById("drawer-thc").innerText = paper.thc_pct !== null ? `${paper.thc_pct}%` : "Not Quantified";
             document.getElementById("drawer-cbd").innerText = paper.cbd_pct !== null ? `${paper.cbd_pct}%` : "Not Quantified";
             document.getElementById("drawer-dose").innerText = paper.dose_mg !== null ? `${paper.dose_mg} mg` : "Not Reported";
@@ -1671,6 +1813,24 @@
                 outcomesContainer.innerHTML += `<span class="outcome-tag">${o}</span>`;
             });
             if (outcomes.length === 0) outcomesContainer.innerHTML = `<span style="color: var(--text-secondary)">None</span>`;
+
+            // Cannabis Type tags
+            const cannabisTypesContainer = document.getElementById("drawer-cannabis-types-container");
+            cannabisTypesContainer.innerHTML = "";
+            const cannabisTypes = Array.isArray(paper.cannabis_type) ? paper.cannabis_type : (paper.cannabis_type ? [paper.cannabis_type] : []);
+            cannabisTypes.forEach(ct => {
+                cannabisTypesContainer.innerHTML += `<span class="cannabis-tag">${ct}</span>`;
+            });
+            if (cannabisTypes.length === 0) cannabisTypesContainer.innerHTML = `<span style="color: var(--text-secondary)">None</span>`;
+
+            // Methodological Quality Flags tags
+            const flagsContainer = document.getElementById("drawer-flags-container");
+            flagsContainer.innerHTML = "";
+            const flags = paper.methodological_quality_flags || [];
+            flags.forEach(f => {
+                flagsContainer.innerHTML += `<span class="flag-tag">${f.replace(/_/g, ' ')}</span>`;
+            });
+            if (flags.length === 0) flagsContainer.innerHTML = `<span style="color: var(--text-secondary)">None</span>`;
 
 
 
@@ -1961,6 +2121,12 @@
             const yearMax = document.getElementById("filter-year-max").value;
             const sortBy = document.getElementById("filter-sort").value;
 
+            // Extract logic values
+            const methodLogic = document.getElementById("logic-method").value;
+            const cannabisLogic = document.getElementById("logic-cannabis_type").value;
+            const populationLogic = document.getElementById("logic-population").value;
+            const outcomeLogic = document.getElementById("logic-outcome").value;
+
             // Extract method checkboxes
             const methodCheckboxes = document.querySelectorAll('input[name="method"]:checked');
             const method = Array.from(methodCheckboxes).map(cb => cb.value).join(",");
@@ -1982,15 +2148,27 @@
             const params = [];
             if (query) params.push(`query=${encodeURIComponent(query)}`);
             if (studyType) params.push(`study_type=${studyType}`);
-            if (method) params.push(`method=${method}`);
-            if (population) params.push(`population=${population}`);
+            if (method) {
+                params.push(`method=${method}`);
+                params.push(`method_logic=${methodLogic}`);
+            }
+            if (population) {
+                params.push(`population=${population}`);
+                params.push(`population_logic=${populationLogic}`);
+            }
             if (thcMin && thcMin !== "0") params.push(`thc_min=${thcMin}`);
             if (thcMax && thcMax !== "100") params.push(`thc_max=${thcMax}`);
             if (yearMin && yearMin !== "1950") params.push(`year_min=${yearMin}`);
             if (yearMax && yearMax !== "2026") params.push(`year_max=${yearMax}`);
             if (sortBy) params.push(`sort_by=${sortBy}`);
-            if (outcomes) params.push(`outcome=${outcomes}`);
-            if (cannabisType) params.push(`cannabis_type=${cannabisType}`);
+            if (outcomes) {
+                params.push(`outcome=${outcomes}`);
+                params.push(`outcome_logic=${outcomeLogic}`);
+            }
+            if (cannabisType) {
+                params.push(`cannabis_type=${cannabisType}`);
+                params.push(`cannabis_logic=${cannabisLogic}`);
+            }
 
             params.push(`tab=original`);
             params.push(`page=1`);
@@ -2079,8 +2257,10 @@
 
             papers.forEach(p => {
                 // Design
-                const design = p.study_type || 'unknown';
-                studyDesignCounts[design] = (studyDesignCounts[design] || 0) + 1;
+                const designs = Array.isArray(p.study_type) ? p.study_type : [p.study_type || 'unknown'];
+                designs.forEach(design => {
+                    studyDesignCounts[design] = (studyDesignCounts[design] || 0) + 1;
+                });
 
                 // Quality Histogram
                 const score = Math.round(p.methodological_quality_score);
@@ -2183,14 +2363,16 @@
                 };
 
                 papers.forEach(p => {
-                    const exp = p.exposure_method || 'unknown';
-                    if (exp in clinicalCounts) {
-                        clinicalCounts[exp]++;
-                    } else if (exp in vitroCounts) {
-                        vitroCounts[exp]++;
-                    } else if (exp in vivoCounts) {
-                        vivoCounts[exp]++;
-                    }
+                    const exps = Array.isArray(p.exposure_method) ? p.exposure_method : [p.exposure_method || 'unknown'];
+                    exps.forEach(exp => {
+                        if (exp in clinicalCounts) {
+                            clinicalCounts[exp]++;
+                        } else if (exp in vitroCounts) {
+                            vitroCounts[exp]++;
+                        } else if (exp in vivoCounts) {
+                            vivoCounts[exp]++;
+                        }
+                    });
                 });
 
                 renderClinicalExposureChart(clinicalCounts);
@@ -2201,8 +2383,10 @@
             if (!isCannabisTypeFiltered) {
                 const cannabisTypeCounts = {};
                 papers.forEach(p => {
-                    const cType = p.cannabis_type || 'unknown';
-                    cannabisTypeCounts[cType] = (cannabisTypeCounts[cType] || 0) + 1;
+                    const cTypes = Array.isArray(p.cannabis_type) ? p.cannabis_type : [p.cannabis_type || 'unknown'];
+                    cTypes.forEach(cType => {
+                        cannabisTypeCounts[cType] = (cannabisTypeCounts[cType] || 0) + 1;
+                    });
                 });
                 renderCannabisTypeDoughnutChart(cannabisTypeCounts);
             }
@@ -2216,12 +2400,14 @@
                     'other': 0
                 };
                 papers.forEach(p => {
-                    const pop = p.population || 'unknown';
-                    if (pop in populationCounts) {
-                        populationCounts[pop]++;
-                    } else if (pop !== 'unknown') {
-                        populationCounts['other']++;
-                    }
+                    const pops = Array.isArray(p.population) ? p.population : [p.population || 'unknown'];
+                    pops.forEach(pop => {
+                        if (pop in populationCounts) {
+                            populationCounts[pop]++;
+                        } else if (pop !== 'unknown') {
+                            populationCounts['other']++;
+                        }
+                    });
                 });
                 renderPopulationBarChart(populationCounts);
             }

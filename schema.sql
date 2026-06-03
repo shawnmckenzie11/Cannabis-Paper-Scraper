@@ -36,6 +36,7 @@ CREATE TABLE IF NOT EXISTS papers (
 CREATE VIRTUAL TABLE IF NOT EXISTS papers_fts USING fts5(
     title,
     abstract,
+    authors,
     content='papers',
     content_rowid='id'
 );
@@ -43,16 +44,16 @@ CREATE VIRTUAL TABLE IF NOT EXISTS papers_fts USING fts5(
 -- Sync Triggers to keep FTS table updated automatically with the primary papers table
 
 CREATE TRIGGER IF NOT EXISTS papers_ai AFTER INSERT ON papers BEGIN
-    INSERT INTO papers_fts(rowid, title, abstract) VALUES (new.id, new.title, new.abstract);
+    INSERT INTO papers_fts(rowid, title, abstract, authors) VALUES (new.id, new.title, new.abstract, new.authors);
 END;
 
 CREATE TRIGGER IF NOT EXISTS papers_ad AFTER DELETE ON papers BEGIN
-    INSERT INTO papers_fts(papers_fts, rowid, title, abstract) VALUES ('delete', old.id, old.title, old.abstract);
+    INSERT INTO papers_fts(papers_fts, rowid, title, abstract, authors) VALUES ('delete', old.id, old.title, old.abstract, old.authors);
 END;
 
 CREATE TRIGGER IF NOT EXISTS papers_au AFTER UPDATE ON papers BEGIN
-    INSERT INTO papers_fts(papers_fts, rowid, title, abstract) VALUES ('delete', old.id, old.title, old.abstract);
-    INSERT INTO papers_fts(rowid, title, abstract) VALUES (new.id, new.title, new.abstract);
+    INSERT INTO papers_fts(papers_fts, rowid, title, abstract, authors) VALUES ('delete', old.id, old.title, old.abstract, old.authors);
+    INSERT INTO papers_fts(rowid, title, abstract, authors) VALUES (new.id, new.title, new.abstract, new.authors);
 END;
 
 -- System-level key-value metadata table

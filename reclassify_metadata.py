@@ -12,6 +12,19 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
+def parse_old_list(val):
+    if not val:
+        return []
+    if isinstance(val, str):
+        val = val.strip()
+        if val.startswith("[") and val.endswith("]"):
+            try:
+                return json.loads(val)
+            except Exception:
+                pass
+        return [val]
+    return val
+
 def reclassify_all_papers():
     """Iterates through all papers in the SQLite database and re-classifies study design,
 
@@ -19,6 +32,7 @@ def reclassify_all_papers():
     """
     db = DatabaseManager()
     conn = db.get_connection()
+    conn.row_factory = sqlite3.Row
     cursor = conn.cursor()
     
     try:
@@ -89,11 +103,11 @@ def reclassify_all_papers():
             new_score = classifier.calculate_quality_score(paper_payload)
             
             # 5. Check for changes
-            old_study_type = p.get("study_type")
-            old_exposure = p.get("exposure_method")
-            old_population = p.get("population")
+            old_study_type = parse_old_list(p.get("study_type"))
+            old_exposure = parse_old_list(p.get("exposure_method"))
+            old_population = parse_old_list(p.get("population"))
             old_score = p.get("methodological_quality_score")
-            old_cannabis_type = p.get("cannabis_type")
+            old_cannabis_type = parse_old_list(p.get("cannabis_type"))
             
             # Parse old flags safely for comparison
             old_flags_raw = p.get("methodological_quality_flags") or []
@@ -108,24 +122,24 @@ def reclassify_all_papers():
             flags_changed = sorted(new_flags) != sorted(old_flags)
             
             has_changes = (
-                new_study_type != old_study_type or
-                new_exposure_method != old_exposure or
-                new_population != old_population or
+                sorted(new_study_type) != sorted(old_study_type) or
+                sorted(new_exposure_method) != sorted(old_exposure) or
+                sorted(new_population) != sorted(old_population) or
                 new_score != old_score or
-                new_cannabis_type != old_cannabis_type or
+                sorted(new_cannabis_type) != sorted(old_cannabis_type) or
                 flags_changed
             )
             
             if has_changes:
-                if new_study_type != old_study_type:
+                if sorted(new_study_type) != sorted(old_study_type):
                     study_type_changes += 1
-                if new_exposure_method != old_exposure:
+                if sorted(new_exposure_method) != sorted(old_exposure):
                     exposure_changes += 1
-                if new_population != old_population:
+                if sorted(new_population) != sorted(old_population):
                     population_changes += 1
                 if new_score != old_score:
                     score_changes += 1
-                if new_cannabis_type != old_cannabis_type:
+                if sorted(new_cannabis_type) != sorted(old_cannabis_type):
                     cannabis_type_changes += 1
                 
                 # Update database
@@ -141,12 +155,12 @@ def reclassify_all_papers():
                     WHERE id = ?
                     """,
                     (
-                        new_study_type,
-                        new_exposure_method,
-                        new_population,
+                        json.dumps(new_study_type),
+                        json.dumps(new_exposure_method),
+                        json.dumps(new_population),
                         json.dumps(new_flags),
                         new_score,
-                        new_cannabis_type,
+                        json.dumps(new_cannabis_type),
                         p["id"]
                     )
                 )

@@ -292,142 +292,199 @@ def get_methods_text(title: str, abstract: str) -> str:
         return title + "\n\n" + methods_content
     return title + "\n\n" + abstract
 
-def infer_study_type(title: str, abstract: str) -> str:
+def infer_study_type(title: str, abstract: str) -> List[str]:
     """Infers study type from text keywords, focusing on Methods section if available."""
     methods_text = get_methods_text(title, abstract)
     combined = methods_text.lower()
     
+    types = []
     if keyword_match(combined, ["meta-analysis", "pooled analysis", "systematic overview"]):
-        return "meta-analysis"
-    if keyword_match(combined, ["systematic review", "literature review", "overview of reviews"]) or ("review" in title.lower() and "review" in combined):
-        return "review"
-    if keyword_match(combined, ["case study", "case studies", "case report", "case reports", "case series", "clinical case", "case-report", "case-series"]):
-        return "case study"
-    if keyword_match(combined, ["editorial", "commentary", "opinion", "perspective", "editorials", "commentaries", "perspectives", "viewpoint", "letter to the editor", "letters to the editor"]):
-        return "editorial"
-    if keyword_match(combined, ["double-blind", "randomized controlled", "placebo-controlled", "rct", "randomised controlled"]):
-        return "RCT"
-    if keyword_match(combined, ["observational", "cohort", "case-control", "cross-sectional", "longitudinal", "survey", "registry"]):
-        return "observational"
-    if keyword_match(combined, ["mouse", "mice", "rat", "rats", "rodent", "in vivo", "animal model", "murine"]):
-        return "animal"
-    if keyword_match(combined, ["in vitro", "cell line", "cultured cells", "culture assay", "microglia", "neurons", "epithelial cells", "epithelial cell", "airway epithelial", "cell culture", "cell cultures", "co-culture", "primary cells", "primary cell", "organoid", "organoids", "spheroids"]):
-        return "in vitro"
+        types.append("meta-analysis")
         
-    return "observational"
+    # Smart review classification
+    review_keywords = [
+        "systematic review", "literature review", "overview of reviews", "scoping review",
+        "narrative review", "critical review", "mini-review", "minireview", "review article",
+        "review paper", "this review", "the present review", "in this review", "we review",
+        "current review", "comprehensive review", "review of the literature", "this mini-review",
+        "this minireview", "article reviews", "reviews the current", "reviews the literature"
+    ]
+    is_review = False
+    if keyword_match(combined, review_keywords):
+        is_review = True
+    elif "review" in title.lower():
+        if re.search(r'\breviews?\b', title, re.IGNORECASE):
+            is_review = True
+    elif re.search(r'\b(this|present|current|our)\s+review\b', combined, re.IGNORECASE):
+        is_review = True
+    elif re.search(r'\breview\s+(highlights|summarizes|discusses|focuses|provides|aims to|examines|synthesizes|outlines)\b', combined, re.IGNORECASE):
+        is_review = True
+        
+    if is_review:
+        types.append("review")
+    if keyword_match(combined, ["case study", "case studies", "case report", "case reports", "case series", "clinical case", "case-report", "case-series"]):
+        types.append("case study")
+    if keyword_match(combined, ["editorial", "commentary", "opinion", "perspective", "editorials", "commentaries", "perspectives", "viewpoint", "letter to the editor", "letters to the editor"]):
+        types.append("editorial")
+    if keyword_match(combined, ["double-blind", "randomized controlled", "placebo-controlled", "rct", "randomised controlled"]):
+        types.append("RCT")
+    if keyword_match(combined, ["observational", "cohort", "case-control", "cross-sectional", "longitudinal", "survey", "registry"]):
+        types.append("observational")
+    if keyword_match(combined, ["mouse", "mice", "rat", "rats", "rodent", "in vivo", "animal model", "murine"]):
+        types.append("animal")
+    if keyword_match(combined, ["in vitro", "cell line", "hela", "hepg2", "cultured cells", "culture assay", "microglia", "neurons", "epithelial cells", "epithelial cell", "airway epithelial", "cell culture", "cell cultures", "co-culture", "primary cells", "primary cell", "organoid", "organoids", "spheroids"]):
+        types.append("in vitro")
+        
+    if not types:
+        types.append("observational")
+    return list(set(types))
     
-def infer_exposure_method(title: str, abstract: str, study_type: str, population: Optional[str] = None) -> str:
+def infer_exposure_method(title: str, abstract: str, study_type: Any, population: Optional[Any] = None) -> List[str]:
     """Extracts exposure method from text keywords, focusing on Methods section if available."""
     methods_text = get_methods_text(title, abstract)
     combined = methods_text.lower()
     
-    if not population:
-        population = infer_population(title, abstract, study_type)
-        
-    # Group A: Clinical exposure (human/clinical setting)
-    if population == "human" or study_type in ("RCT", "observational"):
-        if keyword_match(combined, ["smoke", "smoked", "smoking", "joint", "combustion", "cigarette", "cigarettes", "vaporized", "vaporised", "vape", "vaping", "vaporizer", "vaporisation", "inhaled", "inhalation"]):
-            return "inhaled"
-        if keyword_match(combined, ["oral", "edible", "ingested", "capsule", "gummy", "cookies", "oil ingestion", "brownie", "gavage"]):
-            return "oral"
-        if keyword_match(combined, ["sublingual", "under the tongue", "drops", "tincture", "tinctures"]):
-            return "sublingual"
-        if keyword_match(combined, ["injection", "intravenous", "iv", "intraperitoneal", "ip", "subcutaneous", "intramuscular", "injected"]):
-            return "injected"
-            
-        # Fallbacks for clinical
-        return "inhaled" # Default for human clinical studies is usually inhaled administration
-
-    # Group B: In vitro exposure (cells/tissue setting)
-    elif population == "cell_line" or study_type == "in vitro":
-        if keyword_match(combined, ["conditioned media", "smoke extract", "cse", "vapor extract", "gaseous extract", "smoke-conditioned"]):
-            return "smoke/vapor conditioned media"
-        if keyword_match(combined, ["cell exposure to smoke", "cells exposed to vapor", "chamber exposure of cells", "smoke stream", "direct vapor exposure", "exposure of cells to smoke", "exposure of cells to vapor", "air-liquid interface", "air liquid interface", "ali exposure", "ali", "aerosol exposure", "exposed directly to vapor", "exposed directly to smoke"]):
-            return "exposure of cells to smoke/vapor"
-            
-        # Default for in vitro since most cell assays dissolve cannabinoids in media
-        return "cannabinoids dissolved in media"
-
-    # Group C: In vivo exposure (animal models)
+    # Normalize inputs to sets/lists
+    if isinstance(study_type, str):
+        study_types = {study_type}
     else:
+        study_types = set(study_type or [])
+        
+    if population is None:
+        populations = set(infer_population(title, abstract, study_type))
+    elif isinstance(population, str):
+        populations = {population}
+    else:
+        populations = set(population or [])
+        
+    methods = []
+    
+    # Group A: Clinical exposure (human/clinical setting)
+    if "human" in populations or study_types.intersection({"RCT", "observational"}):
+        if keyword_match(combined, ["smoke", "smoked", "smoking", "joint", "combustion", "cigarette", "cigarettes", "vaporized", "vaporised", "vape", "vaping", "vaporizer", "vaporisation", "inhaled", "inhalation"]):
+            methods.append("inhaled")
+        if keyword_match(combined, ["oral", "edible", "ingested", "capsule", "gummy", "cookies", "oil ingestion", "brownie", "gavage"]):
+            methods.append("oral")
+        if keyword_match(combined, ["sublingual", "under the tongue", "drops", "tincture", "tinctures"]):
+            methods.append("sublingual")
+        if keyword_match(combined, ["injection", "intravenous", "iv", "intraperitoneal", "ip", "subcutaneous", "intramuscular", "injected"]):
+            methods.append("injected")
+ 
+    # Group B: In vitro exposure (cells/tissue setting)
+    if "cell_line" in populations or "in vitro" in study_types:
+        if keyword_match(combined, ["conditioned media", "smoke extract", "cse", "vapor extract", "gaseous extract", "smoke-conditioned"]):
+            methods.append("smoke/vapor conditioned media")
+        if keyword_match(combined, ["cell exposure to smoke", "cells exposed to vapor", "chamber exposure of cells", "smoke stream", "direct vapor exposure", "exposure of cells to smoke", "exposure of cells to vapor", "air-liquid interface", "air liquid interface", "ali exposure", "ali", "aerosol exposure", "exposed directly to vapor", "exposed directly to smoke"]):
+            methods.append("exposure of cells to smoke/vapor")
+ 
+    # Group C: In vivo exposure (animal models)
+    if populations.intersection({"mouse", "rat", "other"}) or "animal" in study_types:
         if keyword_match(combined, ["nose-only", "nose only", "snout exposure", "head-out"]):
-            return "nose only smoke/vapor"
+            methods.append("nose only smoke/vapor")
         if keyword_match(combined, ["whole body", "whole-body", "chamber exposure", "whole body smoke", "whole body vapor"]):
-            return "whole body. smoke/vapor"
+            methods.append("whole body. smoke/vapor")
         if keyword_match(combined, ["injection", "injected", "intravenous", "intraperitoneal", "ip", "iv", "subcutaneous", "sc", "intramuscular", "im"]):
-            return "injection cannabinoids"
+            methods.append("injection cannabinoids")
         if keyword_match(combined, ["gavage", "oral administration", "fed", "diet", "oral gavage", "ingested", "oral"]):
-            return "oral administration"
+            methods.append("oral administration")
         if keyword_match(combined, ["sublingual", "sub-lingual", "under tongue"]):
-            return "sub-lingual"
+            methods.append("sub-lingual")
         if keyword_match(combined, ["intranasal", "intra-nasal", "nasal instillation", "nasal drops"]):
-            return "intranasal"
+            methods.append("intranasal")
         if keyword_match(combined, ["intratracheal", "intratracheal instillation", "intra-tracheal", "lung instillation"]):
-            return "intratracheal"
+            methods.append("intratracheal")
             
-        # Fallback mappings for in vivo animal studies
-        return "injection cannabinoids" # Standard default for animal models
-
-    return "unknown"
-
-def infer_cannabis_type(title: str, abstract: str, study_type: str, exposure_method: str) -> str:
+    if not methods:
+        if "cell_line" in populations or "in vitro" in study_types:
+            methods.append("cannabinoids dissolved in media")
+        elif "human" in populations or study_types.intersection({"RCT", "observational"}):
+            methods.append("inhaled")
+        else:
+            methods.append("injection cannabinoids")
+            
+    return list(set(methods))
+    
+def infer_cannabis_type(title: str, abstract: str, study_type: Any, exposure_method: Any) -> List[str]:
     """Infers the type of cannabis product being administered or studied, focusing on Methods section if available."""
     methods_text = get_methods_text(title, abstract)
     combined = methods_text.lower()
     
+    # Normalize inputs
+    if isinstance(exposure_method, str):
+        exposure_methods = {exposure_method}
+    else:
+        exposure_methods = set(exposure_method or [])
+        
+    types = []
+    
     # 1. Edibles check
     if keyword_match(combined, ["edible", "edibles", "gummy", "gummies", "chocolate", "chocolates", "drink", "drinks", "beverage", "beverages", "brownie", "brownies", "cookies", "cookie", "capsule", "capsules"]):
-        return "edibles"
+        types.append("edibles")
     # 2. Vape pen check
-    if keyword_match(combined, ["vape pen", "cartridge", "cartridges", "e-cigarette", "vape cartridge", "distillate vape"]):
-        return "vape pen"
+    if keyword_match(combined, ["vape pen", "cartridge", "cartridges", "e-cigarette", "vape cartridge", "distillate vape", "vape", "vapes", "vaping", "vaporizer", "vaporizers", "vaporised", "vaporized", "vapor", "vapors", "vapour", "vapours", "aerosol", "aerosols"]):
+        types.append("vape pen")
     # 3. Hashish / Kief check
     if keyword_match(combined, ["hashish", "hash", "kief", "charas", "bubble hash"]):
-        return "hashish/kief"
+        types.append("hashish/kief")
     # 4. Pure Cannabinoid check
     if keyword_match(combined, ["pure thc", "pure cbd", "synthetic cannabinoid", "synthetic cannabinoids", "dronabinol", "nabilone", "marinol", "isolate", "isolates", "pure cannabinoid", "pure cannabinoids", "cannabidiol isolate"]):
-        return "pure cannabinoid"
+        types.append("pure cannabinoid")
     # 5. Concentrates check
     if keyword_match(combined, ["shatter", "tincture", "tinctures", "resin", "concentrate", "concentrates", "extract", "extracts", "hash oil", "honey oil", "bho", "rosin", "wax"]):
-        return "concentrates"
+        types.append("concentrates")
     # 6. Dried flower check
     if keyword_match(combined, ["flower", "bud", "buds", "dried cannabis", "joint", "joints", "combusted flower", "cannabis herb", "herbal cannabis", "marijuana cigarette", "marijuana cigarettes", "cigarette", "cigarettes"]):
-        return "dried flower"
+        types.append("dried flower")
         
-    # Fallback mappings based on exposure method
-    if exposure_method in ("smoked", "inhaled", "whole body. smoke/vapor", "nose only smoke/vapor"):
-        return "dried flower"
-    elif exposure_method in ("vaporized", "vape pen"):
-        return "vape pen"
-    elif exposure_method in ("oral/edible", "oral", "oral administration"):
-        return "edibles"
-    elif exposure_method in ("tincture", "sublingual", "sub-lingual"):
-        return "concentrates"
+    # Fallback mappings based on exposure methods if no explicit types matched
+    if not types:
+        for exp in exposure_methods:
+            if exp in ("smoked", "inhaled", "whole body. smoke/vapor", "nose only smoke/vapor"):
+                types.append("dried flower")
+            elif exp in ("vaporized", "vape pen"):
+                types.append("vape pen")
+            elif exp in ("oral/edible", "oral", "oral administration"):
+                types.append("edibles")
+            elif exp in ("tincture", "sublingual", "sub-lingual"):
+                types.append("concentrates")
+                
+    if not types:
+        types.append("unknown")
         
-    return "unknown"
-
-def infer_population(title: str, abstract: str, study_type: str) -> str:
+    return list(set(types))
+ 
+def infer_population(title: str, abstract: str, study_type: Any) -> List[str]:
     """Extracts population (human, mouse, rat, cell_line, other) from text, focusing on Methods section if available."""
     methods_text = get_methods_text(title, abstract)
     combined = methods_text.lower()
     
-    if study_type == "in vitro" or keyword_match(combined, ["cell line", "hela", "hepg2", "cells", "culture"]):
-        return "cell_line"
+    if isinstance(study_type, str):
+        study_types = {study_type}
+    else:
+        study_types = set(study_type or [])
+        
+    pops = []
+    
+    if "in vitro" in study_types or keyword_match(combined, ["cell line", "hela", "hepg2", "cells", "culture", "epithelial cells", "bronchial epithelial"]):
+        pops.append("cell_line")
     if keyword_match(combined, ["mouse", "mice", "murine", "c57bl"]):
-        return "mouse"
+        pops.append("mouse")
     if keyword_match(combined, ["rat", "rats", "wistar", "sprague"]):
-        return "rat"
+        pops.append("rat")
     if keyword_match(combined, ["patient", "subject", "participant", "volunteer", "man", "woman", "human", "clinical", "adult", "individuals"]):
-        return "human"
+        pops.append("human")
     if keyword_match(combined, ["dog", "pig", "monkey", "rabbit", "feline", "canine"]):
-        return "other"
+        pops.append("other")
         
-    if study_type in ("RCT", "observational"):
-        return "human"
-    if study_type == "animal":
-        return "mouse"
-        
-    return "other"
+    if not pops:
+        if study_types.intersection({"RCT", "observational"}):
+            pops.append("human")
+        elif "animal" in study_types:
+            pops.append("mouse")
+        else:
+            pops.append("other")
+            
+    return list(set(pops))
 
 def extract_outcomes(title: str, abstract: str) -> List[str]:
     """Identifies multi-label outcome domains from the text."""
@@ -542,29 +599,33 @@ def detect_multiple_time_intervals(title: str, abstract: str) -> bool:
 
 def generate_heuristic_summary(data: Dict[str, Any]) -> str:
     """Generates a fallback description/summary based on extracted heuristics."""
-    study_type = data.get("study_type") or "unspecified"
-    cannabis_type = data.get("cannabis_type") or "unspecified"
-    exposure_method = data.get("exposure_method") or "unspecified"
-    population = data.get("population") or "unspecified"
+    study_type = data.get("study_type") or []
+    cannabis_type = data.get("cannabis_type") or []
+    exposure_method = data.get("exposure_method") or []
+    population = data.get("population") or []
     strain_reported = data.get("strain_reported")
     
-    # Map population nicely
-    pop_str = population
-    if population == "human":
-        pop_str = "human"
-    elif population == "cell_line":
-        pop_str = "cell line"
-    elif population in ("mouse", "rat"):
-        pop_str = population
+    # Helper to convert list/str to string description
+    def to_desc(val):
+        if isinstance(val, str):
+            return val
+        if not val:
+            return "unspecified"
+        return ", ".join(val)
         
+    study_desc = to_desc(study_type)
+    cannabis_desc = to_desc(cannabis_type)
+    exposure_desc = to_desc(exposure_method)
+    pop_desc = to_desc(population)
+    
     # Vowel prefix check
-    study_word = study_type.lower()
-    if study_word.startswith(('a', 'e', 'i', 'o', 'u')) or study_type in ("RCT", "observational"):
+    study_word = study_desc.lower()
+    if study_word.startswith(('a', 'e', 'i', 'o', 'u')) or "rct" in study_word or "observational" in study_word:
         prefix = "an"
     else:
         prefix = "a"
         
-    summary = f"This is {prefix} {study_type} study investigating {cannabis_type} cannabis administration via {exposure_method} in {pop_str} models."
+    summary = f"This is {prefix} {study_desc} study investigating {cannabis_desc} cannabis administration via {exposure_desc} in {pop_desc} models."
     
     if strain_reported:
         summary += f" Reported strain: {strain_reported}."

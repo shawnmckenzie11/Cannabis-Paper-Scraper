@@ -178,6 +178,10 @@ def api_search():
     recent = request.args.get("recent")
     tab = request.args.get("tab")
     cannabis_type = request.args.get("cannabis_type")
+    cannabis_logic = request.args.get("cannabis_logic", "or")
+    method_logic = request.args.get("method_logic", "or")
+    population_logic = request.args.get("population_logic", "or")
+    outcome_logic = request.args.get("outcome_logic", "or")
     
     page = request.args.get("page", 1)
     limit = request.args.get("limit", 50)
@@ -226,6 +230,11 @@ def api_search():
         clean_filters["tab"] = "recent"
     if cannabis_type and cannabis_type != "ALL":
         clean_filters["cannabis_type"] = cannabis_type
+        
+    clean_filters["cannabis_logic"] = cannabis_logic
+    clean_filters["exposure_logic"] = method_logic
+    clean_filters["population_logic"] = population_logic
+    clean_filters["outcome_logic"] = outcome_logic
         
     try:
         total_count = db.count_papers(clean_filters)

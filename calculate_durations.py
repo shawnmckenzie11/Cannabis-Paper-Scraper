@@ -25,7 +25,13 @@ def migrate_study_durations():
             """
             SELECT id, title, abstract, study_type, duration_days
             FROM papers
-            WHERE study_type NOT IN ('review', 'meta-analysis')
+            WHERE NOT (
+              (json_valid(study_type) AND json_type(study_type) = 'array' AND EXISTS (
+                  SELECT 1 FROM json_each(study_type) WHERE json_each.value IN ('review', 'meta-analysis')
+              ))
+              OR
+              (study_type IN ('review', 'meta-analysis'))
+            )
             """
         )
         papers = [dict(row) for row in cursor.fetchall()]

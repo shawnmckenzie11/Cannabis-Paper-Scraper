@@ -22,12 +22,20 @@ class TestHeuristicExtractor(unittest.TestCase):
         title_manifold = "Open-source, three-dimensionally printed manifolds for exposure studies using human airway epithelial cells"
         abstract_manifold = "We designed 3D printed manifolds to conduct exposure studies with airway epithelial cells."
 
-        self.assertEqual(extractor.infer_study_type(title, abstract_rct), "RCT")
-        self.assertEqual(extractor.infer_study_type(title, abstract_animal), "animal")
-        self.assertEqual(extractor.infer_study_type(title, abstract_invitro), "in vitro")
-        self.assertEqual(extractor.infer_study_type(title, abstract_casestudy), "case study")
-        self.assertEqual(extractor.infer_study_type(title, abstract_editorial), "editorial")
-        self.assertEqual(extractor.infer_study_type(title_manifold, abstract_manifold), "in vitro")
+        # Review papers
+        title_review1 = "Aging circadian rhythms and cannabinoids"
+        abstract_review1 = "This review highlights 3 fields-biological aging, circadian rhythms, and endocannabinoid signaling."
+        title_review2 = "Cannabinoid therapy for sleep: A review"
+        abstract_review2 = "We summarize the current literature on cannabinoid receptor agonists."
+
+        self.assertEqual(extractor.infer_study_type(title, abstract_rct), ["RCT"])
+        self.assertEqual(extractor.infer_study_type(title, abstract_animal), ["animal"])
+        self.assertEqual(extractor.infer_study_type(title, abstract_invitro), ["in vitro"])
+        self.assertEqual(extractor.infer_study_type(title, abstract_casestudy), ["case study"])
+        self.assertEqual(extractor.infer_study_type(title, abstract_editorial), ["editorial"])
+        self.assertEqual(extractor.infer_study_type(title_manifold, abstract_manifold), ["in vitro"])
+        self.assertEqual(extractor.infer_study_type(title_review1, abstract_review1), ["review"])
+        self.assertEqual(extractor.infer_study_type(title_review2, abstract_review2), ["review"])
 
     def test_exposure_method(self):
         title = "Inhaled cannabis study"
@@ -35,14 +43,14 @@ class TestHeuristicExtractor(unittest.TestCase):
         abstract_smoke = "We investigated smoked joint combustion outcomes."
         abstract_oral = "Rats were fed with oral edible gummies."
         
-        self.assertEqual(extractor.infer_exposure_method(title, abstract_vape, "RCT", "human"), "inhaled")
-        self.assertEqual(extractor.infer_exposure_method(title, abstract_smoke, "observational", "human"), "inhaled")
-        self.assertEqual(extractor.infer_exposure_method(title, abstract_oral, "animal", "mouse"), "oral administration")
+        self.assertEqual(extractor.infer_exposure_method(title, abstract_vape, "RCT", "human"), ["inhaled"])
+        self.assertEqual(extractor.infer_exposure_method(title, abstract_smoke, "observational", "human"), ["inhaled"])
+        self.assertEqual(extractor.infer_exposure_method(title, abstract_oral, "animal", "mouse"), ["oral administration"])
 
         # In vitro ALI lung epithelial cells paper (dissolved -> exposure to smoke/vapor)
         title_ali = "In vitro Cannabis Exposures of Lung Epithelial Cells at the Air-Liquid Interface"
         abstract_ali = "Lung epithelial cells were exposed to cannabis vapor directly at the air-liquid interface."
-        self.assertEqual(extractor.infer_exposure_method(title_ali, abstract_ali, "in vitro", "cell_line"), "exposure of cells to smoke/vapor")
+        self.assertEqual(extractor.infer_exposure_method(title_ali, abstract_ali, "in vitro", "cell_line"), ["exposure of cells to smoke/vapor"])
 
     def test_thc_cbd_extraction(self):
         abstract = "The material contained 12.5% THC and CBD (2.5%)."
@@ -121,8 +129,8 @@ class TestHeuristicExtractor(unittest.TestCase):
         study_type = extractor.infer_study_type(title, abstract)
         population = extractor.infer_population(title, abstract, study_type)
         
-        self.assertEqual(study_type, "RCT")
-        self.assertEqual(population, "human")
+        self.assertEqual(study_type, ["RCT"])
+        self.assertEqual(population, ["human"])
 
     def test_heuristic_summary(self):
         data_with_strain = {
@@ -229,6 +237,11 @@ class TestDatabaseManager(unittest.TestCase):
         self.assertEqual(len(results_fts), 1)
         self.assertEqual(results_fts[0]["id"], row_id)
         
+        # FTS5 search by author
+        results_author = self.db.search_papers({"query": "Alice"})
+        self.assertEqual(len(results_author), 1)
+        self.assertEqual(results_author[0]["id"], row_id)
+        
         # 5. Dynamic filter: Study design and population
         results_filter = self.db.search_papers({
             "study_type": "RCT",
@@ -300,6 +313,113 @@ class TestDatabaseManager(unittest.TestCase):
         deleted = self.db.delete_paper(row_id)
         self.assertTrue(deleted)
         self.assertIsNone(self.db.get_paper(row_id))
+
+    def test_multiple_classifications_search(self):
+        """Test that multiple classifications on a single paper can be searched successfully via OR logic."""
+        mock_multi_paper = {
+            "pmid": "987654",
+            "doi": "10.1001/cannabis.multi",
+            "title": "Cannabis vaping elicits transcriptomic and metabolomic changes",
+            "authors": ["Scientist Charlie"],
+            "journal": "Nature Scientific Reports",
+            "year": 2026,
+            "abstract": "This study uses both cannabis smoke and cannabis vapor conditioned media.",
+            "study_type": ["in vitro"],
+            "exposure_method": ["exposure of cells to smoke/vapor", "smoke/vapor conditioned media"],
+            "cannabis_type": ["dried flower", "vape pen"],
+            "population": ["cell_line"],
+            "date_harvested": "2026-06-03"
+        }
+        row_id = self.db.insert_paper(mock_multi_paper)
+        self.assertIsNotNone(row_id)
+        
+        try:
+            # 1. Search by cannabis_type = dried flower
+            res1 = self.db.search_papers({"cannabis_type": "dried flower"})
+            self.assertEqual(len(res1), 1)
+            self.assertEqual(res1[0]["id"], row_id)
+            
+            # 2. Search by cannabis_type = vape pen
+            res2 = self.db.search_papers({"cannabis_type": "vape pen"})
+            self.assertEqual(len(res2), 1)
+            self.assertEqual(res2[0]["id"], row_id)
+            
+            # 3. Search by exposure_method = smoke/vapor conditioned media
+            res3 = self.db.search_papers({"exposure_method": "smoke/vapor conditioned media"})
+            self.assertEqual(len(res3), 1)
+            self.assertEqual(res3[0]["id"], row_id)
+            
+            # 4. Search by study_type = in vitro
+            res4 = self.db.search_papers({"study_type": "in vitro"})
+            self.assertEqual(len(res4), 1)
+            self.assertEqual(res4[0]["id"], row_id)
+        finally:
+            self.db.delete_paper(row_id)
+
+    def test_and_or_toggles_search(self):
+        """Test that AND/OR search logic options work correctly on list filters."""
+        # Insert two papers
+        paper_a = {
+            "pmid": "900001",
+            "title": "Study A",
+            "authors": ["Author A"],
+            "journal": "Journal A",
+            "year": 2026,
+            "study_type": ["in vitro"],
+            "cannabis_type": ["dried flower", "vape pen"],
+            "population": ["human", "cell_line"],
+            "outcome_domain": ["pain", "anxiety"]
+        }
+        paper_b = {
+            "pmid": "900002",
+            "title": "Study B",
+            "authors": ["Author B"],
+            "journal": "Journal B",
+            "year": 2026,
+            "study_type": ["in vitro"],
+            "cannabis_type": ["dried flower"],
+            "population": ["human"],
+            "outcome_domain": ["pain"]
+        }
+        id_a = self.db.insert_paper(paper_a)
+        id_b = self.db.insert_paper(paper_b)
+        
+        try:
+            # OR logic searches (default or logic=or)
+            res_or_cannabis = self.db.search_papers({
+                "cannabis_type": "dried flower,vape pen",
+                "cannabis_logic": "or"
+            })
+            # Both papers have 'dried flower', so both should match OR search
+            self.assertEqual(len(res_or_cannabis), 2)
+            
+            # AND logic searches
+            res_and_cannabis = self.db.search_papers({
+                "cannabis_type": "dried flower,vape pen",
+                "cannabis_logic": "and"
+            })
+            # Only paper_a has both, so only paper_a should match AND search
+            self.assertEqual(len(res_and_cannabis), 1)
+            self.assertEqual(res_and_cannabis[0]["id"], id_a)
+            
+            # Outcome OR logic
+            res_or_outcome = self.db.search_papers({
+                "outcome": "pain,anxiety",
+                "outcome_logic": "or"
+            })
+            self.assertEqual(len(res_or_outcome), 2)
+            
+            # Outcome AND logic
+            res_and_outcome = self.db.search_papers({
+                "outcome": "pain,anxiety",
+                "outcome_logic": "and"
+            })
+            self.assertEqual(len(res_and_outcome), 1)
+            self.assertEqual(res_and_outcome[0]["id"], id_a)
+            
+        finally:
+            self.db.delete_paper(id_a)
+            self.db.delete_paper(id_b)
 
     def test_default_sorting_by_quality(self):
         # Insert papers with different quality scores
@@ -394,6 +514,8 @@ class TestFlaskSchedulerAPI(unittest.TestCase):
         self.client = app.test_client()
 
     def test_scheduler_status_endpoint(self):
+        with self.client.session_transaction() as sess:
+            sess["logged_in"] = True
         response = self.client.get("/api/scheduler/status")
         self.assertEqual(response.status_code, 200)
         data = json.loads(response.data)

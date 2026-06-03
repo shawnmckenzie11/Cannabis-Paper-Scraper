@@ -39,9 +39,40 @@ class DatabaseManager:
         with open(SCHEMA_FILE, "r") as f:
             schema_script = f.read()
 
+        # Check if papers_fts needs migration (i.e. does not have 'authors' column)
+        fts_needs_migration = False
+        if os.path.exists(self.db_path):
+            try:
+                conn_check = sqlite3.connect(self.db_path)
+                conn_check.row_factory = sqlite3.Row
+                cursor = conn_check.cursor()
+                cursor.execute("PRAGMA table_info(papers_fts);")
+                columns = [row["name"] for row in cursor.fetchall()]
+                if columns and "authors" not in columns:
+                    fts_needs_migration = True
+            except sqlite3.Error:
+                pass
+            finally:
+                if 'conn_check' in locals():
+                    conn_check.close()
+
         conn = self.get_connection()
         try:
+            if fts_needs_migration:
+                # Drop existing triggers and FTS virtual table so they get recreated
+                conn.execute("DROP TRIGGER IF EXISTS papers_ai;")
+                conn.execute("DROP TRIGGER IF EXISTS papers_ad;")
+                conn.execute("DROP TRIGGER IF EXISTS papers_au;")
+                conn.execute("DROP TABLE IF EXISTS papers_fts;")
+                conn.commit()
+
             conn.executescript(schema_script)
+
+            if fts_needs_migration:
+                # Populate recreated FTS virtual table
+                conn.execute("INSERT INTO papers_fts(rowid, title, abstract, authors) SELECT id, title, abstract, authors FROM papers;")
+                conn.commit()
+
             # Ensure publication_date column exists in existing tables
             try:
                 conn.execute("ALTER TABLE papers ADD COLUMN publication_date TEXT;")
@@ -124,12 +155,9 @@ class DatabaseManager:
         
         # Ensure array fields are stored as JSON strings
         paper_copy = paper.copy()
-        if "authors" in paper_copy and not isinstance(paper_copy["authors"], str):
-            paper_copy["authors"] = json.dumps(paper_copy["authors"])
-        if "outcome_domain" in paper_copy and not isinstance(paper_copy["outcome_domain"], str):
-            paper_copy["outcome_domain"] = json.dumps(paper_copy["outcome_domain"])
-        if "methodological_quality_flags" in paper_copy and not isinstance(paper_copy["methodological_quality_flags"], str):
-            paper_copy["methodological_quality_flags"] = json.dumps(paper_copy["methodological_quality_flags"])
+        for list_field in ["authors", "outcome_domain", "methodological_quality_flags", "study_type", "exposure_method", "cannabis_type", "population"]:
+            if list_field in paper_copy and not isinstance(paper_copy[list_field], str):
+                paper_copy[list_field] = json.dumps(paper_copy[list_field])
             
         # Ensure open_access is integer 0 or 1
         if "open_access" in paper_copy:
@@ -207,10 +235,12 @@ class DatabaseManager:
             if row:
                 res = dict(row)
                 # Parse JSON fields
-                for json_field in ["authors", "outcome_domain", "methodological_quality_flags"]:
+                for json_field in ["authors", "outcome_domain", "methodological_quality_flags", "study_type", "exposure_method", "cannabis_type", "population"]:
                     if res.get(json_field):
                         try:
-                            res[json_field] = json.loads(res[json_field])
+                            val = res[json_field].strip()
+                            if val.startswith("[") and val.endswith("]"):
+                                res[json_field] = json.loads(res[json_field])
                         except Exception:
                             pass
                 return res
@@ -232,6 +262,37 @@ class DatabaseManager:
         finally:
             conn.close()
 
+    @staticmethod
+    def clean_fts_query(query: str) -> str:
+        """Cleans and sanitizes a query string for SQLite FTS5 to prevent syntax and 'no such column' errors."""
+        if not query:
+            return ""
+        # Split by whitespace into individual tokens/terms
+        terms = query.split()
+        cleaned_terms = []
+        for term in terms:
+            # If term is already quoted, leave it as is
+            if (term.startswith('"') and term.endswith('"')) or (term.startswith("'") and term.endswith("'")):
+                cleaned_terms.append(term)
+                continue
+            
+            # Check if the term has FTS5 special characters that need escaping/quoting
+            # We allow * at the end for prefix searches, but quote if there are other specials like - or :
+            has_wildcard = term.endswith('*')
+            clean_term = term[:-1] if has_wildcard else term
+            
+            # If the term contains special characters like - or : or /
+            if any(c in clean_term for c in ('-', ':', '/', '\\', '+', '~')):
+                escaped_term = clean_term.replace('"', '""')
+                if has_wildcard:
+                    cleaned_terms.append(f'"{escaped_term}"*')
+                else:
+                    cleaned_terms.append(f'"{escaped_term}"')
+            else:
+                cleaned_terms.append(term)
+                
+        return " ".join(cleaned_terms)
+
     def _build_filter_clauses(self, filters: Dict[str, Any]) -> Tuple[List[str], List[Any]]:
         """Common helper to build SQL where clauses and extract bind parameters."""
         where_clauses = []
@@ -240,7 +301,7 @@ class DatabaseManager:
         query_val = filters.get("query")
         if query_val:
             where_clauses.append("papers_fts MATCH ?")
-            params.append(query_val)
+            params.append(self.clean_fts_query(query_val))
             
         # 2. Dynamic Filters
         if filters.get("year_min") is not None:
@@ -252,38 +313,71 @@ class DatabaseManager:
             params.append(int(filters["year_max"]))
             
         if filters.get("study_type"):
-            where_clauses.append("papers.study_type = ?")
+            where_clauses.append(
+                "((json_valid(papers.study_type) AND json_type(papers.study_type) = 'array' AND EXISTS ("
+                "SELECT 1 FROM json_each(papers.study_type) WHERE json_each.value = ?"
+                ")) OR (papers.study_type = ?))"
+            )
+            params.append(filters["study_type"])
             params.append(filters["study_type"])
             
         # Filter on minimum methodological quality score
         if filters.get("quality_min") is not None:
             where_clauses.append("papers.methodological_quality_score >= ?")
             params.append(int(filters["quality_min"]))
-
+ 
         # Filter on minimum citation count
         if filters.get("citations_min") is not None:
             where_clauses.append("papers.citation_count >= ?")
             params.append(int(filters["citations_min"]))
-
+ 
         # Filter on cannabis types (supports comma-separated list or single value)
         cannabis_types = filters.get("cannabis_type")
         if cannabis_types:
             if isinstance(cannabis_types, str):
                 cannabis_types = [c.strip() for c in cannabis_types.split(",") if c.strip()]
             if cannabis_types:
-                placeholders = ",".join(["?"] * len(cannabis_types))
-                where_clauses.append(f"papers.cannabis_type IN ({placeholders})")
-                params.extend(cannabis_types)
-
+                if filters.get("cannabis_logic", "or").lower() == "and":
+                    for c_type in cannabis_types:
+                        where_clauses.append(
+                            "((json_valid(papers.cannabis_type) AND json_type(papers.cannabis_type) = 'array' AND EXISTS ("
+                            "SELECT 1 FROM json_each(papers.cannabis_type) WHERE json_each.value = ?"
+                            ")) OR (papers.cannabis_type = ?))"
+                        )
+                        params.extend([c_type, c_type])
+                else:
+                    placeholders = ",".join(["?"] * len(cannabis_types))
+                    where_clauses.append(
+                        f"((json_valid(papers.cannabis_type) AND json_type(papers.cannabis_type) = 'array' AND EXISTS ("
+                        f"SELECT 1 FROM json_each(papers.cannabis_type) WHERE json_each.value IN ({placeholders})"
+                        f")) OR (papers.cannabis_type IN ({placeholders})))"
+                    )
+                    params.extend(cannabis_types)
+                    params.extend(cannabis_types)
+ 
         # Filter on exposure methods (supports comma-separated list or single value)
         exposure_methods = filters.get("exposure_method")
         if exposure_methods:
             if isinstance(exposure_methods, str):
                 exposure_methods = [m.strip() for m in exposure_methods.split(",") if m.strip()]
             if exposure_methods:
-                placeholders = ",".join(["?"] * len(exposure_methods))
-                where_clauses.append(f"papers.exposure_method IN ({placeholders})")
-                params.extend(exposure_methods)
+                if filters.get("exposure_logic", "or").lower() == "and":
+                    for exp_method in exposure_methods:
+                        where_clauses.append(
+                            "((json_valid(papers.exposure_method) AND json_type(papers.exposure_method) = 'array' AND EXISTS ("
+                            "SELECT 1 FROM json_each(papers.exposure_method) WHERE json_each.value = ?"
+                            ")) OR (papers.exposure_method = ?))"
+                        )
+                        params.extend([exp_method, exp_method])
+                else:
+                    placeholders = ",".join(["?"] * len(exposure_methods))
+                    where_clauses.append(
+                        f"((json_valid(papers.exposure_method) AND json_type(papers.exposure_method) = 'array' AND EXISTS ("
+                        f"SELECT 1 FROM json_each(papers.exposure_method) WHERE json_each.value IN ({placeholders})"
+                        f")) OR (papers.exposure_method IN ({placeholders})))"
+                    )
+                    params.extend(exposure_methods)
+                    params.extend(exposure_methods)
             
         if filters.get("thc_min") is not None:
             where_clauses.append("papers.thc_pct >= ?")
@@ -299,9 +393,23 @@ class DatabaseManager:
             if isinstance(populations, str):
                 populations = [p.strip() for p in populations.split(",") if p.strip()]
             if populations:
-                placeholders = ",".join(["?"] * len(populations))
-                where_clauses.append(f"papers.population IN ({placeholders})")
-                params.extend(populations)
+                if filters.get("population_logic", "or").lower() == "and":
+                    for pop in populations:
+                        where_clauses.append(
+                            "((json_valid(papers.population) AND json_type(papers.population) = 'array' AND EXISTS ("
+                            "SELECT 1 FROM json_each(papers.population) WHERE json_each.value = ?"
+                            ")) OR (papers.population = ?))"
+                        )
+                        params.extend([pop, pop])
+                else:
+                    placeholders = ",".join(["?"] * len(populations))
+                    where_clauses.append(
+                        f"((json_valid(papers.population) AND json_type(papers.population) = 'array' AND EXISTS ("
+                        f"SELECT 1 FROM json_each(papers.population) WHERE json_each.value IN ({placeholders})"
+                        f")) OR (papers.population IN ({placeholders})))"
+                    )
+                    params.extend(populations)
+                    params.extend(populations)
             
         if filters.get("open_access") is not None:
             val = filters["open_access"]
@@ -315,9 +423,25 @@ class DatabaseManager:
         # Tab-based filtering
         tab = filters.get("tab")
         if tab == "original":
-            where_clauses.append("papers.study_type NOT IN ('review', 'meta-analysis', 'case study', 'editorial')")
+            where_clauses.append(
+                "("
+                "  (json_valid(papers.study_type) AND json_type(papers.study_type) = 'array' AND NOT EXISTS ("
+                "      SELECT 1 FROM json_each(papers.study_type) WHERE json_each.value IN ('review', 'meta-analysis', 'case study', 'editorial')"
+                "  ))"
+                "  OR"
+                "  ((NOT json_valid(papers.study_type) OR json_type(papers.study_type) != 'array') AND (papers.study_type IS NULL OR papers.study_type NOT IN ('review', 'meta-analysis', 'case study', 'editorial')))"
+                ")"
+            )
         elif tab == "review":
-            where_clauses.append("papers.study_type IN ('review', 'meta-analysis', 'case study', 'editorial')")
+            where_clauses.append(
+                "("
+                "  (json_valid(papers.study_type) AND json_type(papers.study_type) = 'array' AND EXISTS ("
+                "      SELECT 1 FROM json_each(papers.study_type) WHERE json_each.value IN ('review', 'meta-analysis', 'case study', 'editorial')"
+                "  ))"
+                "  OR"
+                "  (papers.study_type IN ('review', 'meta-analysis', 'case study', 'editorial'))"
+                ")"
+            )
         elif tab == "recent" or filters.get("recent"):
             from datetime import datetime as dt, timedelta as td
             recent_date = (dt.now() - td(days=180)).strftime("%Y-%m-%d")
@@ -330,10 +454,15 @@ class DatabaseManager:
         if outcomes:
             if isinstance(outcomes, str):
                 outcomes = [o.strip() for o in outcomes.split(",") if o.strip()]
-            for outcome in outcomes:
-                # Force each outcome to match using json_each
-                where_clauses.append("EXISTS (SELECT 1 FROM json_each(papers.outcome_domain) WHERE value = ?)")
-                params.append(outcome)
+            if outcomes:
+                if filters.get("outcome_logic", "or").lower() == "and":
+                    for outcome in outcomes:
+                        where_clauses.append("EXISTS (SELECT 1 FROM json_each(papers.outcome_domain) WHERE value = ?)")
+                        params.append(outcome)
+                else:
+                    placeholders = ",".join(["?"] * len(outcomes))
+                    where_clauses.append(f"EXISTS (SELECT 1 FROM json_each(papers.outcome_domain) WHERE value IN ({placeholders}))")
+                    params.extend(outcomes)
                 
         # Flags filter: supports +flag_name (must have) and -flag_name (must not have)
         flags = filters.get("flags")
@@ -432,6 +561,15 @@ class DatabaseManager:
                             res[json_field] = []
                     else:
                         res[json_field] = []
+
+                for json_field in ["study_type", "exposure_method", "cannabis_type", "population"]:
+                    if res.get(json_field):
+                        try:
+                            val = res[json_field].strip()
+                            if val.startswith("[") and val.endswith("]"):
+                                res[json_field] = json.loads(res[json_field])
+                        except Exception:
+                            pass
                 results.append(res)
                 
             return results
