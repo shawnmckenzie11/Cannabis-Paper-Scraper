@@ -121,10 +121,15 @@ def bg_harvest_worker(query: str, max_results: int, update: bool, classify: bool
 
 @app.before_request
 def require_login():
-    # Allow access to login route and static files without login session
-    if request.endpoint in ('login', 'static') or session.get("logged_in"):
+    # Allow access to login route and static assets without session
+    if request.path == '/login' or request.path.startswith('/static/'):
         return
-    # If not logged in, redirect to login page
+    if session.get("logged_in"):
+        return
+    # If not logged in and requesting API, return JSON 401
+    if request.path.startswith('/api/'):
+        return jsonify({"error": "Unauthorized. Please log in."}), 401
+    # If not logged in and requesting page, redirect to login
     return redirect(url_for('login'))
 
 @app.route("/login", methods=["GET", "POST"])
