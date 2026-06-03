@@ -5,7 +5,7 @@ import json
 from datetime import datetime
 from typing import List, Dict, Any, Optional, Tuple
 
-DATABASE_FILE = "cannabis_papers.db"
+DATABASE_FILE = os.getenv("DATABASE_PATH", "cannabis_papers.db")
 SCHEMA_FILE = "schema.sql"
 
 class DatabaseManager:
@@ -13,6 +13,12 @@ class DatabaseManager:
     
     def __init__(self, db_path: str = DATABASE_FILE):
         self.db_path = db_path
+        
+        # Ensure the parent directory for the database exists
+        dir_name = os.path.dirname(self.db_path)
+        if dir_name:
+            os.makedirs(dir_name, exist_ok=True)
+                    
         self.init_db()
 
     def get_connection(self) -> sqlite3.Connection:

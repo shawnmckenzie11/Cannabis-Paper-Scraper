@@ -1,0 +1,15 @@
+# Exclude virtual environments and local secrets
+venv/
+.env
+.git/
+.DS_Store
+
+# Exclude python cache files
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Exclude local SSL certs
+cert.pem
+com.cloudflare.cloudflared.plist

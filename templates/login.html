@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sign In | McKenzian Research Catalog</title>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&family=Plus+Jakarta+Sans:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-color: #0b0f19;
+            --card-bg: rgba(255, 255, 255, 0.03);
+            --card-border: rgba(255, 255, 255, 0.08);
+            --primary: #6366f1; /* Indigo */
+            --primary-glow: rgba(99, 102, 241, 0.15);
+            --accent: #06b6d4; /* Cyan */
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --font-display: 'Outfit', sans-serif;
+            --font-sans: 'Plus Jakarta Sans', sans-serif;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            font-family: var(--font-sans);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow-x: hidden;
+            position: relative;
+        }
+
+        /* Background glow */
+        body::before {
+            content: '';
+            position: absolute;
+            width: 400px;
+            height: 400px;
+            background: radial-gradient(circle, var(--primary-glow) 0%, transparent 70%);
+            z-index: -1;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            pointer-events: none;
+        }
+
+        .login-container {
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 24px;
+            padding: 3rem;
+            width: 100%;
+            max-width: 420px;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
+            text-align: center;
+        }
+
+        .logo {
+            font-family: var(--font-display);
+            font-weight: 800;
+            font-size: 1.8rem;
+            letter-spacing: -0.5px;
+            background: linear-gradient(135deg, var(--text-main) 30%, var(--accent) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 0.5rem;
+            display: inline-block;
+        }
+
+        .title {
+            font-family: var(--font-display);
+            font-size: 1.2rem;
+            color: var(--text-muted);
+            margin-bottom: 2.5rem;
+            font-weight: 400;
+        }
+
+        .form-group {
+            margin-bottom: 1.5rem;
+            text-align: left;
+        }
+
+        label {
+            display: block;
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            margin-bottom: 0.5rem;
+            font-weight: 500;
+        }
+
+        input[type="password"] {
+            width: 100%;
+            padding: 0.85rem 1rem;
+            border-radius: 12px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--card-border);
+            color: var(--text-main);
+            font-size: 1rem;
+            outline: none;
+            transition: all 0.3s ease;
+        }
+
+        input[type="password"]:focus {
+            border-color: var(--primary);
+            background: rgba(255, 255, 255, 0.08);
+            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15);
+        }
+
+        .btn-submit {
+            width: 100%;
+            padding: 0.85rem;
+            border-radius: 12px;
+            background: var(--primary);
+            color: #ffffff;
+            font-weight: 600;
+            font-size: 1rem;
+            border: none;
+            cursor: pointer;
+            box-shadow: 0 4px 15px rgba(99, 102, 241, 0.3);
+            transition: all 0.3s ease;
+            margin-top: 1rem;
+        }
+
+        .btn-submit:hover {
+            background: #4f46e5;
+            box-shadow: 0 6px 20px rgba(99, 102, 241, 0.45);
+            transform: translateY(-1px);
+        }
+
+        .error-message {
+            background: rgba(239, 68, 68, 0.1);
+            border: 1px solid rgba(239, 68, 68, 0.2);
+            color: #ef4444;
+            padding: 0.75rem;
+            border-radius: 10px;
+            font-size: 0.85rem;
+            margin-bottom: 1.5rem;
+            text-align: center;
+        }
+
+        .footer-text {
+            margin-top: 2rem;
+            font-size: 0.8rem;
+            color: var(--text-muted);
+        }
+    </style>
+</head>
+<body>
+
+    <div class="login-container">
+        <span class="logo">McKenzian Solutions</span>
+        <div class="title">Research Catalog Access Portal</div>
+
+        {% if error %}
+        <div class="error-message">
+            {{ error }}
+        </div>
+        {% endif %}
+
+        <form method="POST" action="/login">
+            <div class="form-group">
+                <label for="password">Enter Access Password</label>
+                <input type="password" id="password" name="password" placeholder="••••••••" required autofocus>
+            </div>
+            <button type="submit" class="btn-submit">Sign In</button>
+        </form>
+
+        <div class="footer-text">
+            Protected by McKenzian Zero-Trust Network.
+        </div>
+    </div>
+
+</body>
+</html>

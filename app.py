@@ -4,7 +4,7 @@ import json
 import threading
 import logging
 from datetime import datetime, date
-from flask import Flask, render_template, request, jsonify
+from flask import Flask, render_template, request, jsonify, session, redirect, url_for
 
 from db_manager import DatabaseManager
 import classifier
@@ -12,6 +12,8 @@ import harvest
 from extractor import is_cannabis_related
 
 app = Flask(__name__)
+app.secret_key = os.getenv("FLASK_SECRET_KEY", "mckenzian-secret-key-12345")
+ACCESS_PASSWORD = os.getenv("ACCESS_PASSWORD", "admin123")
 
 # Core global state to track active background harvesting progress
 harvest_lock = threading.Lock()
@@ -116,6 +118,32 @@ def bg_harvest_worker(query: str, max_results: int, update: bool, classify: bool
             harvest_state["status"] = "error"
             harvest_state["progress"] = "Scraper execution failed."
             harvest_state["error"] = str(e)
+
+@app.before_request
+def require_login():
+    # Allow access to login route and static files without login session
+    if request.endpoint in ('login', 'static') or session.get("logged_in"):
+        return
+    # If not logged in, redirect to login page
+    return redirect(url_for('login'))
+
+@app.route("/login", methods=["GET", "POST"])
+def login():
+    error = None
+    if request.method == "POST":
+        password = request.form.get("password")
+        if password == ACCESS_PASSWORD:
+            session["logged_in"] = True
+            session.permanent = True
+            return redirect(url_for("index"))
+        else:
+            error = "Invalid credentials. Please try again."
+    return render_template("login.html", error=error)
+
+@app.route("/logout")
+def logout():
+    session.clear()
+    return redirect(url_for("login"))
 
 @app.route("/")
 def index():
@@ -308,11 +336,12 @@ def api_scheduler_status():
         "query": "cannabis OR cannabinoid OR marijuana"
     })
 
-if __name__ == "__main__":
-    # Start the background daily scheduler thread, protected against debug reloader double-runs
-    if not app.debug or os.environ.get("WERKZEUG_RUN_MAIN") == "true":
-        logging.getLogger("scheduler").info("Launching daily automatic harvest scheduler thread...")
-        threading.Thread(target=daily_harvest_scheduler, daemon=True).start()
+# Start the background daily scheduler thread, protected against debug reloader double-runs
+if not app.debug or os.environ.get("WERKZEUG_RUN_MAIN") == "true":
+    logging.getLogger("scheduler").info("Launching daily automatic harvest scheduler thread...")
+    threading.Thread(target=daily_harvest_scheduler, daemon=True).start()
 
+if __name__ == "__main__":
     # Start server on local network port 5001 to bypass macOS default AirPlay port conflict (5000)
     app.run(debug=True, port=5001)
+
