@@ -1,0 +1,21 @@
+{
+  "base_score": 5,
+  "deductions": {
+    "no_strain_specified": 1,
+    "self_report_only": 2,
+    "THC_not_quantified": 2,
+    "no_control_group": 2,
+    "animal_model_only": 1,
+    "label_not_verified": 1
+  },
+  "additions": {
+    "quantified_dose": 2,
+    "rct_design": 2,
+    "peer_reviewed_journal": 1,
+    "large_sample_size": 1,
+    "multiple_doses": 5,
+    "multiple_time_intervals": 5
+  },
+  "min_score": 0,
+  "max_score": 20
+}
