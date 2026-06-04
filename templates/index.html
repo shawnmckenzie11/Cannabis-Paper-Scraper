@@ -998,10 +998,51 @@
                 <option value="month">New This Month</option>
             </select>
         </div>
-        <button type="button" class="btn" id="btn-analyze-subset" onclick="analyzeFilteredSubset()"
-            style="padding: 6px 14px; font-size: 0.85rem; border-radius: 8px; font-family: var(--font-display); background: linear-gradient(135deg, rgba(0, 240, 255, 0.2) 0%, rgba(0, 240, 255, 0.05) 100%); border: 1px solid rgba(0, 240, 255, 0.3); color: var(--accent-blue); cursor: pointer; box-shadow: 0 0 10px rgba(0, 240, 255, 0.1); display: inline-flex; align-items: center; gap: 6px;">
-            📊 Analyze Filtered Articles
-        </button>
+        <div style="display: flex; gap: 10px; align-items: center;">
+            <button type="button" class="btn" id="btn-analyze-subset" onclick="analyzeFilteredSubset()"
+                style="padding: 6px 14px; font-size: 0.85rem; border-radius: 8px; font-family: var(--font-display); background: linear-gradient(135deg, rgba(0, 240, 255, 0.2) 0%, rgba(0, 240, 255, 0.05) 100%); border: 1px solid rgba(0, 240, 255, 0.3); color: var(--accent-blue); cursor: pointer; box-shadow: 0 0 10px rgba(0, 240, 255, 0.1); display: inline-flex; align-items: center; gap: 6px;">
+                📊 Analyze Filtered Articles
+            </button>
+
+            <div style="position: relative; display: inline-block;">
+                <button type="button" class="btn" id="edit-columns-btn" onclick="toggleColumnEditor(event)"
+                    style="padding: 6px 14px; font-size: 0.85rem; border-radius: 8px; font-family: var(--font-display); background: linear-gradient(135deg, rgba(0, 240, 255, 0.2) 0%, rgba(0, 240, 255, 0.05) 100%); border: 1px solid rgba(0, 240, 255, 0.3); color: var(--accent-blue); cursor: pointer; box-shadow: 0 0 10px rgba(0, 240, 255, 0.1); display: inline-flex; align-items: center; gap: 6px;">
+                    ⚙️ Edit Columns
+                </button>
+
+                <!-- Popover dynamic column editor -->
+                <div id="column-editor-popover" class="glass-panel" 
+                    style="display: none; position: absolute; right: 0; top: 100%; margin-top: 8px; z-index: 100; width: 220px; padding: 15px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); border-color: rgba(255,255,255,0.1); background: rgba(15, 20, 32, 0.95); flex-direction: column; gap: 10px; border-radius: 12px;">
+                    <div style="font-weight: 700; font-size: 0.9rem; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 8px; margin-bottom: 4px; display: flex; justify-content: space-between; align-items: center;">
+                        <span>Display Columns</span>
+                        <span style="font-size: 0.75rem; color: var(--text-secondary);">(Title is fixed)</span>
+                    </div>
+                    <div style="display: flex; flex-direction: column; gap: 8px;">
+                        <label style="display: flex; align-items: center; gap: 8px; font-size: 0.85rem; cursor: pointer; color: var(--text-primary);">
+                            <input type="checkbox" id="col-cb-duration" checked onchange="toggleColumn('duration')"> Duration
+                        </label>
+                        <label style="display: flex; align-items: center; gap: 8px; font-size: 0.85rem; cursor: pointer; color: var(--text-primary);">
+                            <input type="checkbox" id="col-cb-year" checked onchange="toggleColumn('year')"> Year
+                        </label>
+                        <label style="display: flex; align-items: center; gap: 8px; font-size: 0.85rem; cursor: pointer; color: var(--text-primary);">
+                            <input type="checkbox" id="col-cb-study_type" checked onchange="toggleColumn('study_type')"> Study Design
+                        </label>
+                        <label style="display: flex; align-items: center; gap: 8px; font-size: 0.85rem; cursor: pointer; color: var(--text-primary);">
+                            <input type="checkbox" id="col-cb-exposure_method" checked onchange="toggleColumn('exposure_method')"> Exposure
+                        </label>
+                        <label id="col-label-pub-type" style="display: none; align-items: center; gap: 8px; font-size: 0.85rem; cursor: pointer; color: var(--text-primary);">
+                            <input type="checkbox" id="col-cb-publication_type" checked onchange="toggleColumn('publication_type')"> Pub Type
+                        </label>
+                        <label style="display: flex; align-items: center; gap: 8px; font-size: 0.85rem; cursor: pointer; color: var(--text-primary);">
+                            <input type="checkbox" id="col-cb-citations" checked onchange="toggleColumn('citations')"> Citations
+                        </label>
+                        <label style="display: flex; align-items: center; gap: 8px; font-size: 0.85rem; cursor: pointer; color: var(--text-primary);">
+                            <input type="checkbox" id="col-cb-links" checked onchange="toggleColumn('links')"> Links
+                        </label>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 
     <div class="app-container">
@@ -1244,43 +1285,6 @@
                 <button id="delete-selected-btn" class="btn btn-secondary"
                     style="background: rgba(255, 61, 0, 0.08); border-color: rgba(255, 61, 0, 0.2); color: #ff8a65; display: none; padding: 8px 16px; font-size: 0.85rem;"
                     onclick="deleteSelectedPapers()">Delete Selected (<span id="delete-count">0</span>)</button>
-                
-                <button id="edit-columns-btn" class="btn btn-secondary" onclick="toggleColumnEditor(event)"
-                    style="margin-left: auto; padding: 8px 16px; font-size: 0.85rem; display: inline-flex; align-items: center; gap: 6px;">
-                    ⚙️ Edit Columns
-                </button>
-
-                <!-- Popover dynamic column editor -->
-                <div id="column-editor-popover" class="glass-panel" 
-                    style="display: none; position: absolute; right: 30px; top: 100%; margin-top: 8px; z-index: 100; width: 220px; padding: 15px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); border-color: rgba(255,255,255,0.1); background: rgba(15, 20, 32, 0.95); flex-direction: column; gap: 10px; border-radius: 12px;">
-                    <div style="font-weight: 700; font-size: 0.9rem; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 8px; margin-bottom: 4px; display: flex; justify-content: space-between; align-items: center;">
-                        <span>Display Columns</span>
-                        <span style="font-size: 0.75rem; color: var(--text-secondary);">(Title is fixed)</span>
-                    </div>
-                    <div style="display: flex; flex-direction: column; gap: 8px;">
-                        <label style="display: flex; align-items: center; gap: 8px; font-size: 0.85rem; cursor: pointer; color: var(--text-primary);">
-                            <input type="checkbox" id="col-cb-duration" checked onchange="toggleColumn('duration')"> Duration
-                        </label>
-                        <label style="display: flex; align-items: center; gap: 8px; font-size: 0.85rem; cursor: pointer; color: var(--text-primary);">
-                            <input type="checkbox" id="col-cb-year" checked onchange="toggleColumn('year')"> Year
-                        </label>
-                        <label style="display: flex; align-items: center; gap: 8px; font-size: 0.85rem; cursor: pointer; color: var(--text-primary);">
-                            <input type="checkbox" id="col-cb-study_type" checked onchange="toggleColumn('study_type')"> Study Design
-                        </label>
-                        <label style="display: flex; align-items: center; gap: 8px; font-size: 0.85rem; cursor: pointer; color: var(--text-primary);">
-                            <input type="checkbox" id="col-cb-exposure_method" checked onchange="toggleColumn('exposure_method')"> Exposure
-                        </label>
-                        <label id="col-label-pub-type" style="display: none; align-items: center; gap: 8px; font-size: 0.85rem; cursor: pointer; color: var(--text-primary);">
-                            <input type="checkbox" id="col-cb-publication_type" checked onchange="toggleColumn('publication_type')"> Pub Type
-                        </label>
-                        <label style="display: flex; align-items: center; gap: 8px; font-size: 0.85rem; cursor: pointer; color: var(--text-primary);">
-                            <input type="checkbox" id="col-cb-citations" checked onchange="toggleColumn('citations')"> Citations
-                        </label>
-                        <label style="display: flex; align-items: center; gap: 8px; font-size: 0.85rem; cursor: pointer; color: var(--text-primary);">
-                            <input type="checkbox" id="col-cb-links" checked onchange="toggleColumn('links')"> Links
-                        </label>
-                    </div>
-                </div>
             </header>
 
 
