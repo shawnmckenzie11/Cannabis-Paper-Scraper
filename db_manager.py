@@ -178,6 +178,13 @@ class DatabaseManager:
             else:
                 paper_copy["publication_date"] = paper_copy["date_harvested"][:10]
 
+        if "publication_type" not in paper_copy or not paper_copy["publication_type"]:
+            import extractor
+            paper_copy["publication_type"] = extractor.infer_publication_type(
+                paper_copy.get("title") or "",
+                paper_copy.get("abstract") or ""
+            )
+
         # Check if the paper already exists in DB to prevent unique constraint failures and instead update
         existing_id = None
         
@@ -569,6 +576,8 @@ class DatabaseManager:
             sql += f" ORDER BY papers.study_type {sort_dir}, papers.year DESC"
         elif sort_by == "exposure_method":
             sql += f" ORDER BY papers.exposure_method {sort_dir}, papers.year DESC"
+        elif sort_by == "publication_type":
+            sql += f" ORDER BY papers.publication_type {sort_dir}, papers.year DESC"
         else:
             # Default sorting: Quality first
             if query_val:

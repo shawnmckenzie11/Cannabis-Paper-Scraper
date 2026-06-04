@@ -211,8 +211,15 @@ def process_paper_metadata(title: str, abstract: str, run_llm: bool = False) -> 
     
     if run_llm:
         metadata = classify_with_llm(title, abstract)
-        if metadata and not metadata.get("summary"):
-            metadata["summary"] = extractor.generate_heuristic_summary(metadata)
+        if metadata:
+            if not metadata.get("summary"):
+                metadata["summary"] = extractor.generate_heuristic_summary(metadata)
+            allowed_pub_types = {
+                "review", "original research", "case study", "systematic review",
+                "meta-analysis", "editorial", "comment", "letter to the editor", "perspectives paper"
+            }
+            if not metadata.get("publication_type") or metadata.get("publication_type") not in allowed_pub_types:
+                metadata["publication_type"] = extractor.infer_publication_type(title, abstract)
         
     if not metadata:
         # Graceful fallback to heuristics

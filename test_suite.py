@@ -340,12 +340,14 @@ class TestDatabaseManager(unittest.TestCase):
         case_study_paper["pmid"] = "222222"
         case_study_paper["doi"] = "10.1001/case"
         case_study_paper["study_type"] = "case study"
+        case_study_paper["publication_type"] = "case study"
         case_row_id = self.db.insert_paper(case_study_paper)
 
         editorial_paper = mock_paper.copy()
         editorial_paper["pmid"] = "333333"
         editorial_paper["doi"] = "10.1001/ed"
         editorial_paper["study_type"] = "editorial"
+        editorial_paper["publication_type"] = "editorial"
         ed_row_id = self.db.insert_paper(editorial_paper)
 
         # tab = "original" should exclude review, meta-analysis, case study, and editorial
@@ -782,6 +784,16 @@ class TestDatabaseManager(unittest.TestCase):
             review_pmids = {p["pmid"] for p in review_tab}
             self.assertIn("900002", review_pmids)
             self.assertNotIn("900001", review_pmids)
+
+            # Query and sort by publication_type ASC
+            res = self.db.search_papers({"sort_by": "publication_type", "sort_dir": "ASC"})
+            self.assertEqual(res[0]["pmid"], "900001")
+            self.assertEqual(res[1]["pmid"], "900002")
+
+            # Query and sort by publication_type DESC
+            res = self.db.search_papers({"sort_by": "publication_type", "sort_dir": "DESC"})
+            self.assertEqual(res[0]["pmid"], "900002")
+            self.assertEqual(res[1]["pmid"], "900001")
         finally:
             self.db.delete_paper(orig_id)
             self.db.delete_paper(rev_id)

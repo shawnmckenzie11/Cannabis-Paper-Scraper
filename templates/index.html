@@ -1185,6 +1185,7 @@
                                 <th id="header-year" class="sortable" style="width: 75px;" onclick="handleHeaderClick('year')">Year <span id="sort-icon-year" class="sort-icon">↕</span></th>
                                 <th id="header-study_type" class="sortable" style="width: 125px;" onclick="handleHeaderClick('study_type')">Study Design <span id="sort-icon-study_type" class="sort-icon">↕</span></th>
                                 <th id="header-exposure_method" class="sortable" style="width: 110px;" onclick="handleHeaderClick('exposure_method')">Exposure <span id="sort-icon-exposure_method" class="sort-icon">↕</span></th>
+                                <th id="header-pub-type" class="sortable" style="width: 140px; display: none;" onclick="handleHeaderClick('publication_type')">Pub Type <span id="sort-icon-publication_type" class="sort-icon">↕</span></th>
                                 <th id="header-quality_score" class="sortable" style="width: 90px; text-align: center;" onclick="handleHeaderClick('quality_score')">Quality <span id="sort-icon-quality_score" class="sort-icon">↕</span></th>
                                 <th id="header-citations" class="sortable" style="width: 95px; text-align: center;" onclick="handleHeaderClick('citations')">Citations <span id="sort-icon-citations" class="sort-icon">↕</span></th>
                                 <th style="width: 80px; text-align: center;">Links</th>
@@ -1586,18 +1587,22 @@
             });
             const analyzeBtn = document.getElementById("btn-analyze-subset");
             const recentsSelect = document.getElementById("recents-timeframe");
+            const pubTypeHeader = document.getElementById("header-pub-type");
             if (tab === 'original') {
                 document.getElementById("tab-original").classList.add("active");
                 if (analyzeBtn) analyzeBtn.style.display = "inline-flex";
                 if (recentsSelect) recentsSelect.style.display = "none";
+                if (pubTypeHeader) pubTypeHeader.style.display = "none";
             } else if (tab === 'review') {
                 document.getElementById("tab-review").classList.add("active");
                 if (analyzeBtn) analyzeBtn.style.display = "none";
                 if (recentsSelect) recentsSelect.style.display = "none";
+                if (pubTypeHeader) pubTypeHeader.style.display = "";
             } else if (tab === 'recent') {
                 document.getElementById("tab-recent").classList.add("active");
                 if (analyzeBtn) analyzeBtn.style.display = "none";
                 if (recentsSelect) recentsSelect.style.display = "inline-block";
+                if (pubTypeHeader) pubTypeHeader.style.display = "none";
             }
             triggerSearch(true);
         }
@@ -1761,9 +1766,9 @@
         }
 
         function updateSortIndicators() {
-            const columns = ['duration', 'title', 'year', 'study_type', 'exposure_method', 'quality_score', 'citations'];
+            const columns = ['duration', 'title', 'year', 'study_type', 'exposure_method', 'publication_type', 'quality_score', 'citations'];
             columns.forEach(col => {
-                const header = document.getElementById(`header-${col}`);
+                const header = document.getElementById(col === 'publication_type' ? 'header-pub-type' : `header-${col}`);
                 const icon = document.getElementById(`sort-icon-${col}`);
                 if (!header || !icon) return;
 
@@ -1837,6 +1842,13 @@
                 // Format citation count
                 const citationsVal = p.citation_count !== null && p.citation_count !== undefined ? p.citation_count : 0;
 
+                // Format publication type
+                let pubTypeCell = "";
+                if (currentTab === 'review') {
+                    const pt = p.publication_type || "unknown";
+                    pubTypeCell = `<td style="color: var(--text-secondary); font-weight: 500;">${pt}</td>`;
+                }
+
                 tr.innerHTML = `
                     <td style="text-align: center;" onclick="event.stopPropagation();">
                         <input type="checkbox" class="paper-select-checkbox" value="${p.id}" onchange="togglePaperSelection(${p.id}, this)">
@@ -1846,6 +1858,7 @@
                     <td>${p.year || "N/A"}</td>
                     <td><span class="badge badge-type">${Array.isArray(p.study_type) ? p.study_type.join(', ') : (p.study_type || "unknown")}</span></td>
                     <td style="color: #b0bec5;">${Array.isArray(p.exposure_method) ? p.exposure_method.join(', ') : (p.exposure_method || "unknown")}</td>
+                    ${pubTypeCell}
                     <td style="text-align: center;">${qualityBadge}</td>
                     <td style="text-align: center; color: var(--text-secondary); font-weight: 500;">${citationsVal}</td>
                     <td style="text-align: center;" onclick="event.stopPropagation();">
