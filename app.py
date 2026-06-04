@@ -176,6 +176,7 @@ def api_search():
     quality_min = request.args.get("quality_min")
     citations_min = request.args.get("citations_min")
     recent = request.args.get("recent")
+    recent_range = request.args.get("recent_range")
     tab = request.args.get("tab")
     cannabis_type = request.args.get("cannabis_type")
     cannabis_logic = request.args.get("cannabis_logic", "or")
@@ -228,6 +229,8 @@ def api_search():
         clean_filters["tab"] = tab
     elif recent and recent.lower() == "true":
         clean_filters["tab"] = "recent"
+    if recent_range:
+        clean_filters["recent_range"] = recent_range
     if cannabis_type and cannabis_type != "ALL":
         clean_filters["cannabis_type"] = cannabis_type
         

@@ -464,6 +464,91 @@ class TestDatabaseManager(unittest.TestCase):
             self.db.delete_paper(id_a)
             self.db.delete_paper(id_b)
 
+    def test_recents_timeframe_search(self):
+        """Test that the recent_range filters (today, week, month) work correctly on date_harvested."""
+        from datetime import datetime as dt, timedelta as td
+        
+        now = dt.now()
+        
+        # Paper harvested today
+        paper_today = {
+            "pmid": "950001",
+            "title": "Today Study",
+            "authors": ["Author A"],
+            "journal": "Journal A",
+            "year": 2026,
+            "date_harvested": now.strftime("%Y-%m-%d") + "T10:00:00"
+        }
+        # Paper harvested 5 days ago
+        paper_week = {
+            "pmid": "950002",
+            "title": "Week Study",
+            "authors": ["Author B"],
+            "journal": "Journal B",
+            "year": 2026,
+            "date_harvested": (now - td(days=5)).strftime("%Y-%m-%d") + "T10:00:00"
+        }
+        # Paper harvested 15 days ago
+        paper_month = {
+            "pmid": "950003",
+            "title": "Month Study",
+            "authors": ["Author C"],
+            "journal": "Journal C",
+            "year": 2026,
+            "date_harvested": (now - td(days=15)).strftime("%Y-%m-%d") + "T10:00:00"
+        }
+        # Paper harvested 45 days ago
+        paper_old = {
+            "pmid": "950004",
+            "title": "Old Study",
+            "authors": ["Author D"],
+            "journal": "Journal D",
+            "year": 2026,
+            "date_harvested": (now - td(days=45)).strftime("%Y-%m-%d") + "T10:00:00"
+        }
+        
+        id_today = self.db.insert_paper(paper_today)
+        id_week = self.db.insert_paper(paper_week)
+        id_month = self.db.insert_paper(paper_month)
+        id_old = self.db.insert_paper(paper_old)
+        
+        try:
+            # 1. Search recent_range = today
+            res_today = self.db.search_papers({
+                "tab": "recent",
+                "recent_range": "today"
+            })
+            pmids_today = {p["pmid"] for p in res_today}
+            self.assertIn("950001", pmids_today)
+            self.assertNotIn("950002", pmids_today)
+            
+            # 2. Search recent_range = week
+            res_week = self.db.search_papers({
+                "tab": "recent",
+                "recent_range": "week"
+            })
+            pmids_week = {p["pmid"] for p in res_week}
+            self.assertIn("950001", pmids_week)
+            self.assertIn("950002", pmids_week)
+            self.assertNotIn("950003", pmids_week)
+            
+            # 3. Search recent_range = month
+            res_month = self.db.search_papers({
+                "tab": "recent",
+                "recent_range": "month"
+            })
+            pmids_month = {p["pmid"] for p in res_month}
+            self.assertIn("950001", pmids_month)
+            self.assertIn("950002", pmids_month)
+            self.assertIn("950003", pmids_month)
+            self.assertNotIn("950004", pmids_month)
+            
+        finally:
+            self.db.delete_paper(id_today)
+            self.db.delete_paper(id_week)
+            self.db.delete_paper(id_month)
+            self.db.delete_paper(id_old)
+
     def test_default_sorting_by_quality(self):
         # Insert papers with different quality scores
         paper_low = {

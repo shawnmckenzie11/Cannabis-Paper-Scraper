@@ -443,11 +443,26 @@ class DatabaseManager:
                 ")"
             )
         elif tab == "recent" or filters.get("recent"):
+            recent_range = filters.get("recent_range")
             from datetime import datetime as dt, timedelta as td
-            recent_date = (dt.now() - td(days=180)).strftime("%Y-%m-%d")
-            current_year = dt.now().year
-            where_clauses.append("(papers.publication_date >= ? OR papers.year >= ?)")
-            params.extend([recent_date, current_year])
+            now = dt.now()
+            if recent_range == "today":
+                start_date = now.strftime("%Y-%m-%d") + "T00:00:00"
+                where_clauses.append("papers.date_harvested >= ?")
+                params.append(start_date)
+            elif recent_range == "week":
+                start_date = (now - td(days=7)).strftime("%Y-%m-%d") + "T00:00:00"
+                where_clauses.append("papers.date_harvested >= ?")
+                params.append(start_date)
+            elif recent_range == "month":
+                start_date = (now - td(days=30)).strftime("%Y-%m-%d") + "T00:00:00"
+                where_clauses.append("papers.date_harvested >= ?")
+                params.append(start_date)
+            else:
+                recent_date = (now - td(days=180)).strftime("%Y-%m-%d")
+                current_year = now.year
+                where_clauses.append("(papers.publication_date >= ? OR papers.year >= ?)")
+                params.extend([recent_date, current_year])
             
         # Outcome domain filters (JSON list)
         outcomes = filters.get("outcome")
