@@ -50,7 +50,7 @@ def classify_with_llm(title: str, abstract: str) -> Optional[Dict[str, Any]]:
             "  \"outcome_domain\": [\"pain\", \"anxiety\", \"cognition\", \"inflammation\", \"addiction\", \"oncology\", \"neuroprotection\", \"sleep\", \"other\"] (multi-label array of matching outcomes),\n"
             "  \"multiple_doses\": boolean (true if multiple doses, varying dose levels, or dose-response parameters are evaluated in study, false otherwise),\n"
             "  \"multiple_time_intervals\": boolean (true if multiple time intervals, longitudinal timepoints, serial measurements, or repeated administration measures are evaluated, false otherwise),\n"
-            "  \"cannabis_type\": [\"dried flower\" | \"concentrates\" | \"vape pen\" | \"pure cannabinoid\" | \"edibles\" | \"hashish/kief\" | \"unknown\"] (multi-label array of matching cannabis product types),\n"
+            "  \"cannabis_type\": [\"dried flower\" | \"concentrates\" | \"vape pen\" | \"pure cannabinoid\" | \"edibles\" | \"hashish/kief\" | \"CB receptor agonist\" | \"CB receptor antagonist\" | \"unknown\"] (multi-label array of matching cannabis product types),\n"
             "  \"summary\": string (a concise 1-2 sentence scientific summary of the study's key objective and findings, explicitly mentioning the strain of cannabis used if reported, or specifying that no strain was reported if none)\n"
             "}"
         )

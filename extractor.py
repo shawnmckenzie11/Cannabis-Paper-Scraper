@@ -611,6 +611,14 @@ def infer_cannabis_type(title: str, abstract: str, study_type: Any, exposure_met
     if keyword_match(combined, ["flower", "bud", "buds", "dried cannabis", "joint", "joints", "combusted flower", "cannabis herb", "herbal cannabis", "marijuana cigarette", "marijuana cigarettes", "cigarette", "cigarettes"]):
         types.append("dried flower")
         
+    # 7. CB receptor agonist check
+    if keyword_match(combined, ["cb receptor agonist", "cb receptor agonists", "cb1 agonist", "cb1 agonists", "cb2 agonist", "cb2 agonists", "cannabinoid receptor agonist", "cannabinoid receptor agonists", "win 55,212-2", "win 55212-2", "win-55212-2", "win-55,212-2", "cp 55,940", "cp 55940", "cp-55940", "hu-210", "hu210", "jwh-018", "jwh018"]):
+        types.append("CB receptor agonist")
+        
+    # 8. CB receptor antagonist check
+    if keyword_match(combined, ["cb receptor antagonist", "cb receptor antagonists", "cb1 antagonist", "cb1 antagonists", "cb2 antagonist", "cb2 antagonists", "cannabinoid receptor antagonist", "cannabinoid receptor antagonists", "inverse agonist", "inverse agonists", "rimonabant", "sr141716", "sr 141716", "am251", "am-251", "am630", "am-630", "sr144528"]):
+        types.append("CB receptor antagonist")
+        
     # Fallback mappings based on exposure methods if no explicit types matched
     if not types:
         for exp in exposure_methods:
