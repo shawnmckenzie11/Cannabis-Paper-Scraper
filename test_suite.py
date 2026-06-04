@@ -262,8 +262,6 @@ class TestDatabaseManager(unittest.TestCase):
             "population": "human",
             "sample_size": 120,
             "outcome_domain": ["anxiety", "pain"],
-            "methodological_quality_flags": ["self_report_only"],
-            "methodological_quality_score": 8,
             "open_access": 1,
             "citation_count": 5,
             "publication_date": "2026-05-20",
@@ -307,16 +305,9 @@ class TestDatabaseManager(unittest.TestCase):
             "study_type": "RCT",
             "population": "human",
             "thc_min": 10.0,
-            "outcome": "anxiety",
-            "flags": "+self_report_only"
+            "outcome": "anxiety"
         })
         self.assertEqual(len(results_filter), 1)
-        
-        # Filter against flag
-        results_filter_against = self.db.search_papers({
-            "flags": "-self_report_only"
-        })
-        self.assertEqual(len(results_filter_against), 0)
 
         # Test citation_min filter
         results_cites_match = self.db.search_papers({
@@ -583,75 +574,7 @@ class TestDatabaseManager(unittest.TestCase):
             self.db.delete_paper(id_month)
             self.db.delete_paper(id_old)
 
-    def test_default_sorting_by_quality(self):
-        # Insert papers with different quality scores
-        paper_low = {
-            "pmid": "1001",
-            "doi": "10.1001/1",
-            "title": "Low Quality Paper",
-            "authors": ["Author A"],
-            "journal": "bioRxiv preprint server",
-            "year": 2025,
-            "abstract": "Anxiety CBD test.",
-            "study_type": "observational",
-            "exposure_method": "oral/edible",
-            "thc_pct": 0.0,
-            "cbd_pct": 5.0,
-            "dose_mg": None,
-            "strain_reported": None,
-            "strain_normalized": None,
-            "duration_days": 10.0,
-            "population": "animal",
-            "sample_size": 10,
-            "outcome_domain": ["anxiety"],
-            "methodological_quality_flags": ["no_strain_specified", "THC_not_quantified", "no_control_group"],
-            "methodological_quality_score": 2,
-            "open_access": 0,
-            "citation_count": 0,
-            "publication_date": "2025-01-01"
-        }
-        paper_high = {
-            "pmid": "1002",
-            "doi": "10.1001/2",
-            "title": "High Quality Paper",
-            "authors": ["Author B"],
-            "journal": "Nature",
-            "year": 2026,
-            "abstract": "Anxiety CBD test.",
-            "study_type": "RCT",
-            "exposure_method": "vaporized",
-            "thc_pct": 10.0,
-            "cbd_pct": 10.0,
-            "dose_mg": 20.0,
-            "strain_reported": "Bediol",
-            "strain_normalized": "Chemotype II",
-            "duration_days": 30.0,
-            "population": "human",
-            "sample_size": 200,
-            "outcome_domain": ["anxiety"],
-            "methodological_quality_flags": [],
-            "methodological_quality_score": 18,
-            "open_access": 1,
-            "citation_count": 50,
-            "publication_date": "2026-03-15"
-        }
-        
-        self.db.insert_paper(paper_low)
-        self.db.insert_paper(paper_high)
-        
-        # Test 1: Sorting without a search query
-        results = self.db.search_papers({})
-        self.assertEqual(len(results), 2)
-        # Should be ordered by methodological_quality_score DESC first
-        self.assertEqual(results[0]["pmid"], "1002") # High quality paper
-        self.assertEqual(results[1]["pmid"], "1001") # Low quality paper
 
-        # Test 2: Sorting with a search query
-        results_query = self.db.search_papers({"query": "Anxiety"})
-        self.assertEqual(len(results_query), 2)
-        # Should still be ordered by methodological_quality_score DESC first
-        self.assertEqual(results_query[0]["pmid"], "1002")
-        self.assertEqual(results_query[1]["pmid"], "1001")
 
     def test_dynamic_column_sorting(self):
         # Insert papers with different attributes
@@ -674,8 +597,6 @@ class TestDatabaseManager(unittest.TestCase):
             "population": "animal",
             "sample_size": 10,
             "outcome_domain": ["anxiety"],
-            "methodological_quality_flags": [],
-            "methodological_quality_score": 10,
             "open_access": 0,
             "citation_count": 5,
             "publication_date": "2020-01-01"
@@ -699,8 +620,6 @@ class TestDatabaseManager(unittest.TestCase):
             "population": "human",
             "sample_size": 200,
             "outcome_domain": ["anxiety"],
-            "methodological_quality_flags": [],
-            "methodological_quality_score": 15,
             "open_access": 1,
             "citation_count": 40,
             "publication_date": "2025-03-15"
@@ -765,7 +684,6 @@ class TestDatabaseManager(unittest.TestCase):
             "exposure_method": "oral/edible",
             "population": "human",
             "outcome_domain": ["anxiety"],
-            "methodological_quality_score": 10,
             "open_access": 1,
             "citation_count": 0,
             "publication_date": "2026-01-01"
@@ -783,7 +701,6 @@ class TestDatabaseManager(unittest.TestCase):
             "exposure_method": "oral/edible",
             "population": "human",
             "outcome_domain": ["anxiety"],
-            "methodological_quality_score": 5,
             "open_access": 1,
             "citation_count": 0,
             "publication_date": "2026-01-01"
@@ -852,77 +769,6 @@ class TestFlaskSchedulerAPI(unittest.TestCase):
         self.assertIn("last_run_timestamp", data)
         self.assertIn("last_run_status", data)
         self.assertEqual(data["query"], "cannabis OR cannabinoid OR marijuana")
-
-
-class TestQualityScorer(unittest.TestCase):
-    """Test cases for the transparent quality scoring logic."""
-
-    def test_score_calculation(self):
-        # 1. Base Score = 5
-        # Additions: quantified_dose (+2), RCT (+2), large sample (+1), Peer-reviewed journal (+1)
-        # Deductions: self_report_only (-2)
-        # Total expected: 5 + 2 + 2 + 1 + 1 - 2 = 9
-        paper1 = {
-            "study_type": "RCT",
-            "dose_mg": 25.0,
-            "strain_normalized": "Chemotype I",
-            "sample_size": 150,
-            "journal": "British Journal of Pharmacology",
-            "methodological_quality_flags": ["self_report_only"]
-        }
-        score1 = classifier.calculate_quality_score(paper1)
-        self.assertEqual(score1, 9)
-        
-        # 2. Minimal features
-        # Base Score = 5
-        # Deductions: no_strain_specified (-1), THC_not_quantified (-2), no_control_group (-2)
-        # Total expected: 5 - 1 - 2 - 2 = 0
-        paper2 = {
-            "study_type": "observational",
-            "dose_mg": None,
-            "strain_normalized": None,
-            "sample_size": 20,
-            "journal": "bioRxiv preprint server",
-            "methodological_quality_flags": ["no_strain_specified", "THC_not_quantified", "no_control_group"]
-        }
-        score2 = classifier.calculate_quality_score(paper2)
-        self.assertEqual(score2, 0)
-
-        # 3. New additions: multiple_doses (+5) and multiple_time_intervals (+5)
-        # Base Score = 5
-        # Additions: quantified_dose (+2), RCT (+2), large sample (+1), Peer-reviewed journal (+1), multiple_doses (+5), multiple_time_intervals (+5)
-        # Deductions: self_report_only (-2)
-        # Total expected: 5 + 2 + 2 + 1 + 1 + 5 + 5 - 2 = 19
-        paper3 = {
-            "study_type": "RCT",
-            "dose_mg": 25.0,
-            "strain_normalized": "Chemotype I",
-            "sample_size": 150,
-            "journal": "British Journal of Pharmacology",
-            "methodological_quality_flags": ["self_report_only"],
-            "multiple_doses": True,
-            "multiple_time_intervals": True
-        }
-        score3 = classifier.calculate_quality_score(paper3)
-        self.assertEqual(score3, 19)
-
-        # 4. Score clamping at 20 max
-        # Base Score = 5
-        # Additions: quantified_dose (+2), RCT (+2), large sample (+1), Peer-reviewed journal (+1), multiple_doses (+5), multiple_time_intervals (+5)
-        # Deductions: None
-        # Total expected: 5 + 2 + 2 + 1 + 1 + 5 + 5 = 21 -> Clamped to 20
-        paper4 = {
-            "study_type": "RCT",
-            "dose_mg": 25.0,
-            "strain_normalized": "Chemotype I",
-            "sample_size": 150,
-            "journal": "British Journal of Pharmacology",
-            "methodological_quality_flags": [],
-            "multiple_doses": True,
-            "multiple_time_intervals": True
-        }
-        score4 = classifier.calculate_quality_score(paper4)
-        self.assertEqual(score4, 20)
 
 
 class TestIntelligentHarvest(unittest.TestCase):

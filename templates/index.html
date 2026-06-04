@@ -847,7 +847,7 @@
             border-color: var(--accent-blue) !important;
             box-shadow: 0 0 8px rgba(0, 240, 255, 0.25);
         }
-        
+
         .timeframe-select option {
             background: #0f141c;
             color: var(--text-primary);
@@ -973,10 +973,12 @@
         <div class="banner-left">
             <h1><span>Cannabis</span> Scraper</h1>
             <div class="banner-actions">
-                <button class="btn btn-secondary" onclick="openHarvestModal()" id="btn-harvest-trigger" style="padding: 8px 16px; font-size: 0.85rem; background: rgba(0, 240, 255, 0.1); border-color: rgba(0, 240, 255, 0.3); color: var(--accent-blue); display: inline-flex; align-items: center; gap: 6px;">
+                <button class="btn btn-secondary" onclick="openHarvestModal()" id="btn-harvest-trigger"
+                    style="padding: 8px 16px; font-size: 0.85rem; background: rgba(0, 240, 255, 0.1); border-color: rgba(0, 240, 255, 0.3); color: var(--accent-blue); display: inline-flex; align-items: center; gap: 6px;">
                     <span>📥</span> Harvest Papers
                 </button>
-                <button class="btn btn-secondary" disabled style="padding: 8px 16px; font-size: 0.85rem; opacity: 0.4; cursor: not-allowed; display: inline-flex; align-items: center; gap: 6px;">
+                <button class="btn btn-secondary" disabled
+                    style="padding: 8px 16px; font-size: 0.85rem; opacity: 0.4; cursor: not-allowed; display: inline-flex; align-items: center; gap: 6px;">
                     <span>📊</span> My Analyses
                 </button>
             </div>
@@ -989,7 +991,8 @@
             <button class="tab-btn active" id="tab-original" onclick="switchTab('original')">Original Articles</button>
             <button class="tab-btn" id="tab-review" onclick="switchTab('review')">Reviews &amp; Meta-Analyses</button>
             <button class="tab-btn" id="tab-recent" onclick="switchTab('recent')">Recents</button>
-            <select id="recents-timeframe" onchange="triggerSearch(true)" class="timeframe-select" style="display: none;">
+            <select id="recents-timeframe" onchange="triggerSearch(true)" class="timeframe-select"
+                style="display: none;">
                 <option value="today">New Today</option>
                 <option value="week" selected>New This Week</option>
                 <option value="month">New This Month</option>
@@ -1010,7 +1013,7 @@
             <form id="filters-form" onsubmit="event.preventDefault(); triggerSearch();">
 
                 <div class="form-group" style="margin-bottom: 12px;">
-                    <label for="filter-query">Search Database</label>
+                    <label for="filter-query">Search Original Articles</label>
                     <input type="text" id="filter-query" placeholder="e.g. pain, anxiety, author name..."
                         oninput="debounceSearch()">
                 </div>
@@ -1023,27 +1026,47 @@
                         <input type="hidden" name="study_logic" id="logic-study_type" value="or">
                     </div>
                 </div>
-                <div class="checkbox-group" style="margin-bottom: 12px; display: flex; flex-direction: column; gap: 4px;">
+                <div class="checkbox-group"
+                    style="margin-bottom: 12px; display: flex; flex-direction: column; gap: 4px;">
                     <!-- Clinical Section -->
-                    <div style="font-size: 0.75rem; font-weight: 600; color: #00e676; margin-top: 4px; margin-bottom: 2px; text-transform: uppercase; letter-spacing: 0.5px;">Clinical</div>
-                    <label class="checkbox-item"><input type="checkbox" name="study_type" value="Clinical (RCT)" onchange="triggerSearch()"> RCT</label>
-                    <label class="checkbox-item"><input type="checkbox" name="study_type" value="Clinical (prospective)" onchange="triggerSearch()"> Prospective</label>
-                    <label class="checkbox-item"><input type="checkbox" name="study_type" value="Clinical (observational)" onchange="triggerSearch()"> Observational</label>
-                    <label class="checkbox-item"><input type="checkbox" name="study_type" value="Clinical (retrospective)" onchange="triggerSearch()"> Retrospective</label>
+                    <div
+                        style="font-size: 0.75rem; font-weight: 600; color: #00e676; margin-top: 4px; margin-bottom: 2px; text-transform: uppercase; letter-spacing: 0.5px;">
+                        Clinical</div>
+                    <label class="checkbox-item"><input type="checkbox" name="study_type" value="Clinical (RCT)"
+                            onchange="triggerSearch()"> RCT</label>
+                    <label class="checkbox-item"><input type="checkbox" name="study_type" value="Clinical (prospective)"
+                            onchange="triggerSearch()"> Prospective</label>
+                    <label class="checkbox-item"><input type="checkbox" name="study_type"
+                            value="Clinical (observational)" onchange="triggerSearch()"> Observational</label>
+                    <label class="checkbox-item"><input type="checkbox" name="study_type"
+                            value="Clinical (retrospective)" onchange="triggerSearch()"> Retrospective</label>
 
                     <!-- Animal Models Section -->
-                    <div style="font-size: 0.75rem; font-weight: 600; color: #00e676; margin-top: 6px; margin-bottom: 2px; text-transform: uppercase; letter-spacing: 0.5px;">Animal Models</div>
-                    <label class="checkbox-item"><input type="checkbox" name="study_type" value="Animal Models (mouse)" onchange="triggerSearch()"> Mouse</label>
-                    <label class="checkbox-item"><input type="checkbox" name="study_type" value="Animal Models (rat)" onchange="triggerSearch()"> Rat</label>
-                    <label class="checkbox-item"><input type="checkbox" name="study_type" value="Animal Models (non-human primate)" onchange="triggerSearch()"> Non-Human Primate</label>
-                    <label class="checkbox-item"><input type="checkbox" name="study_type" value="Animal Models (other)" onchange="triggerSearch()"> Other</label>
+                    <div
+                        style="font-size: 0.75rem; font-weight: 600; color: #00e676; margin-top: 6px; margin-bottom: 2px; text-transform: uppercase; letter-spacing: 0.5px;">
+                        Animal Models</div>
+                    <label class="checkbox-item"><input type="checkbox" name="study_type" value="Animal Models (mouse)"
+                            onchange="triggerSearch()"> Mouse</label>
+                    <label class="checkbox-item"><input type="checkbox" name="study_type" value="Animal Models (rat)"
+                            onchange="triggerSearch()"> Rat</label>
+                    <label class="checkbox-item"><input type="checkbox" name="study_type"
+                            value="Animal Models (non-human primate)" onchange="triggerSearch()"> Non-Human
+                        Primate</label>
+                    <label class="checkbox-item"><input type="checkbox" name="study_type" value="Animal Models (other)"
+                            onchange="triggerSearch()"> Other</label>
 
                     <!-- Cell Culture Section -->
-                    <div style="font-size: 0.75rem; font-weight: 600; color: #00e676; margin-top: 6px; margin-bottom: 2px; text-transform: uppercase; letter-spacing: 0.5px;">Cell Culture</div>
-                    <label class="checkbox-item"><input type="checkbox" name="study_type" value="Cell Culture (primary cells)" onchange="triggerSearch()"> Primary Cells</label>
-                    <label class="checkbox-item"><input type="checkbox" name="study_type" value="Cell Culture (cell lines)" onchange="triggerSearch()"> Cell Lines</label>
-                    <label class="checkbox-item"><input type="checkbox" name="study_type" value="Cell Culture (organoids)" onchange="triggerSearch()"> Organoids</label>
-                    <label class="checkbox-item"><input type="checkbox" name="study_type" value="Cell Culture (co-culture)" onchange="triggerSearch()"> Co-Culture</label>
+                    <div
+                        style="font-size: 0.75rem; font-weight: 600; color: #00e676; margin-top: 6px; margin-bottom: 2px; text-transform: uppercase; letter-spacing: 0.5px;">
+                        Cell Culture</div>
+                    <label class="checkbox-item"><input type="checkbox" name="study_type"
+                            value="Cell Culture (primary cells)" onchange="triggerSearch()"> Primary Cells</label>
+                    <label class="checkbox-item"><input type="checkbox" name="study_type"
+                            value="Cell Culture (cell lines)" onchange="triggerSearch()"> Cell Lines</label>
+                    <label class="checkbox-item"><input type="checkbox" name="study_type"
+                            value="Cell Culture (organoids)" onchange="triggerSearch()"> Organoids</label>
+                    <label class="checkbox-item"><input type="checkbox" name="study_type"
+                            value="Cell Culture (co-culture)" onchange="triggerSearch()"> Co-Culture</label>
                 </div>
 
                 <div class="filter-header-row">
@@ -1229,14 +1252,27 @@
                             <tr>
                                 <th style="width: 40px; text-align: center;"><input type="checkbox"
                                         id="select-all-checkbox" onchange="toggleSelectAll(this)"></th>
-                                <th id="header-duration" class="sortable" style="width: 95px;" onclick="handleHeaderClick('duration')">Duration <span id="sort-icon-duration" class="sort-icon">↕</span></th>
-                                <th id="header-title" class="sortable" onclick="handleHeaderClick('title')">Title <span id="sort-icon-title" class="sort-icon">↕</span></th>
-                                <th id="header-year" class="sortable" style="width: 75px;" onclick="handleHeaderClick('year')">Year <span id="sort-icon-year" class="sort-icon">↕</span></th>
-                                <th id="header-study_type" class="sortable" style="width: 125px;" onclick="handleHeaderClick('study_type')">Study Design <span id="sort-icon-study_type" class="sort-icon">↕</span></th>
-                                <th id="header-exposure_method" class="sortable" style="width: 110px;" onclick="handleHeaderClick('exposure_method')">Exposure <span id="sort-icon-exposure_method" class="sort-icon">↕</span></th>
-                                <th id="header-pub-type" class="sortable" style="width: 140px; display: none;" onclick="handleHeaderClick('publication_type')">Pub Type <span id="sort-icon-publication_type" class="sort-icon">↕</span></th>
-                                <th id="header-quality_score" class="sortable" style="width: 90px; text-align: center;" onclick="handleHeaderClick('quality_score')">Quality <span id="sort-icon-quality_score" class="sort-icon">↕</span></th>
-                                <th id="header-citations" class="sortable" style="width: 95px; text-align: center;" onclick="handleHeaderClick('citations')">Citations <span id="sort-icon-citations" class="sort-icon">↕</span></th>
+                                <th id="header-duration" class="sortable" style="width: 95px;"
+                                    onclick="handleHeaderClick('duration')">Duration <span id="sort-icon-duration"
+                                        class="sort-icon">↕</span></th>
+                                <th id="header-title" class="sortable" onclick="handleHeaderClick('title')">Title <span
+                                        id="sort-icon-title" class="sort-icon">↕</span></th>
+                                <th id="header-year" class="sortable" style="width: 75px;"
+                                    onclick="handleHeaderClick('year')">Year <span id="sort-icon-year"
+                                        class="sort-icon">↕</span></th>
+                                <th id="header-study_type" class="sortable" style="width: 125px;"
+                                    onclick="handleHeaderClick('study_type')">Study Design <span
+                                        id="sort-icon-study_type" class="sort-icon">↕</span></th>
+                                <th id="header-exposure_method" class="sortable" style="width: 110px;"
+                                    onclick="handleHeaderClick('exposure_method')">Exposure <span
+                                        id="sort-icon-exposure_method" class="sort-icon">↕</span></th>
+                                <th id="header-pub-type" class="sortable" style="width: 140px; display: none;"
+                                    onclick="handleHeaderClick('publication_type')">Pub Type <span
+                                        id="sort-icon-publication_type" class="sort-icon">↕</span></th>
+
+                                <th id="header-citations" class="sortable" style="width: 95px; text-align: center;"
+                                    onclick="handleHeaderClick('citations')">Citations <span id="sort-icon-citations"
+                                        class="sort-icon">↕</span></th>
                                 <th style="width: 80px; text-align: center;">Links</th>
                             </tr>
                         </thead>
@@ -1285,14 +1321,7 @@
 
                 <!-- Aggregated Numerical Metrics -->
                 <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 15px;">
-                    <div
-                        style="background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.04); border-radius: 10px; padding: 12px; display: flex; flex-direction: column; gap: 4px; align-items: center; text-align: center;">
-                        <span
-                            style="font-size: 0.75rem; text-transform: uppercase; color: var(--text-secondary); letter-spacing: 0.5px; font-weight: 600;">Avg
-                            Quality Score</span>
-                        <span id="agg-avg-quality"
-                            style="font-family: var(--font-display); font-size: 1.6rem; font-weight: 800; color: var(--accent-green); text-shadow: 0 0 8px var(--accent-green-glow);">N/A</span>
-                    </div>
+
                     <div
                         style="background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.04); border-radius: 10px; padding: 12px; display: flex; flex-direction: column; gap: 4px; align-items: center; text-align: center;">
                         <span
@@ -1333,16 +1362,7 @@
                         </div>
                     </div>
 
-                    <!-- Chart 2: Methodological Quality score Histogram -->
-                    <div
-                        style="background: rgba(0, 0, 0, 0.2); border: 1px solid rgba(255, 255, 255, 0.05); border-radius: 12px; padding: 15px; display: flex; flex-direction: column; gap: 10px;">
-                        <h4
-                            style="font-family: var(--font-display); font-size: 0.95rem; font-weight: 600; color: var(--text-primary); margin: 0;">
-                            Methodological Quality Histogram</h4>
-                        <div style="position: relative; height: 220px; width: 100%;">
-                            <canvas id="chart-quality-histogram"></canvas>
-                        </div>
-                    </div>
+
 
                     <!-- Chart 3: THC Content Distribution (Histogram) -->
                     <div id="container-chart-thc-distribution"
@@ -1481,10 +1501,6 @@
 
         <div class="details-meta-grid">
             <div class="meta-item">
-                <span class="meta-label">Methodological Score</span>
-                <span class="meta-value"><span class="badge" id="drawer-quality-score">8/20</span></span>
-            </div>
-            <div class="meta-item">
                 <span class="meta-label">Citations</span>
                 <span class="meta-value" id="drawer-citations">12</span>
             </div>
@@ -1532,12 +1548,6 @@
                     <!-- cannabis type tags -->
                 </div>
             </div>
-            <div class="meta-item" style="grid-column: span 2;">
-                <span class="meta-label">Methodological Quality Flags</span>
-                <div class="tag-container" id="drawer-flags-container" style="margin-top: 4px;">
-                    <!-- flags tags -->
-                </div>
-            </div>
         </div>
 
 
@@ -1563,7 +1573,8 @@
     <div class="harvest-modal" id="harvest-modal">
         <div class="drawer-header" style="border-bottom: 1px solid rgba(255, 255, 255, 0.06); padding-bottom: 15px;">
             <div class="drawer-title-group">
-                <h3 style="font-family: var(--font-display); font-size: 18px; font-weight: 700; color: var(--text-primary); display: flex; align-items: center; gap: 8px;">
+                <h3
+                    style="font-family: var(--font-display); font-size: 18px; font-weight: 700; color: var(--text-primary); display: flex; align-items: center; gap: 8px;">
                     <span>📥</span> Harvest New Papers
                 </h3>
             </div>
@@ -1571,13 +1582,15 @@
         </div>
 
         <div class="form-group" style="margin-top: 10px;">
-            <label for="harvest-query" style="font-size: 0.85rem; font-weight: 600; color: var(--text-primary);">NCBI PubMed Search Query</label>
+            <label for="harvest-query" style="font-size: 0.85rem; font-weight: 600; color: var(--text-primary);">NCBI
+                PubMed Search Query</label>
             <input type="text" id="harvest-query"
                 placeholder="e.g. 'cannabis RCT vaporized anxiety' or 'CBD neuropathic pain'">
         </div>
 
         <div style="display: flex; align-items: center; justify-content: space-between; margin-top: 10px;">
-            <label class="checkbox-item" title="Run Claude 3.5 Sonnet classification pass" style="display: inline-flex; align-items: center; gap: 6px; cursor: pointer;">
+            <label class="checkbox-item" title="Run Claude 3.5 Sonnet classification pass"
+                style="display: inline-flex; align-items: center; gap: 6px; cursor: pointer;">
                 <input type="checkbox" id="harvest-classify"> Claude LLM Classification
             </label>
             <button class="btn btn-primary" onclick="triggerHarvest()">Start Harvest</button>
@@ -1585,9 +1598,11 @@
 
         <!-- Harvest Loading Progress Bar -->
         <div class="harvest-status-bar" id="harvest-status-bar" style="display: none; margin-top: 15px;">
-            <div class="progress-text" style="display: flex; justify-content: space-between; font-size: 0.85rem; margin-bottom: 6px;">
+            <div class="progress-text"
+                style="display: flex; justify-content: space-between; font-size: 0.85rem; margin-bottom: 6px;">
                 <span id="harvest-progress-msg">Connecting to crawler...</span>
-                <span><span class="spinner" id="harvest-spinner"></span> <span id="harvest-progress-percent"></span></span>
+                <span><span class="spinner" id="harvest-spinner"></span> <span
+                        id="harvest-progress-percent"></span></span>
             </div>
             <div class="progress-meter">
                 <div class="progress-fill" id="harvest-progress-fill"></div>
@@ -1598,7 +1613,9 @@
         <div class="scheduler-status-row" id="scheduler-status-row"
             style="margin-top: 15px; display: flex; align-items: center; justify-content: space-between; font-size: 0.8rem; padding: 12px 15px; background: rgba(255, 255, 255, 0.02); border: 1px solid rgba(255, 255, 255, 0.05); border-radius: 8px; color: var(--text-secondary);">
             <div style="display: flex; align-items: center; gap: 8px;">
-                <span style="display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: #90a4ae; box-shadow: 0 0 8px #90a4ae;" id="scheduler-pulse"></span>
+                <span
+                    style="display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: #90a4ae; box-shadow: 0 0 8px #90a4ae;"
+                    id="scheduler-pulse"></span>
                 <span>Daily Background Auto-Scan
                     <span class="help-tooltip-container">ⓘ
                         <span class="help-tooltip-text">
@@ -1615,7 +1632,8 @@
                 </span>
             </div>
             <div id="scheduler-run-details" style="font-size: 0.75rem; text-align: right; max-width: 60%;">
-                Status: <span id="scheduler-last-run" style="font-family: var(--font-mono); color: var(--text-primary);">Checking...</span>
+                Status: <span id="scheduler-last-run"
+                    style="font-family: var(--font-mono); color: var(--text-primary);">Checking...</span>
             </div>
         </div>
     </div>
@@ -1651,7 +1669,7 @@
                 }
                 return `${yrs.toFixed(1).replace(/\.0$/, '')} year${yrs !== 1 ? 's' : ''}`;
             }
-            
+
             // Express in months if >= 30 days
             if (d >= 30) {
                 const mos = d / 30;
@@ -1670,7 +1688,7 @@
         let currentPage = 1;
         const pageSize = 50;
         let currentTab = 'original';
-        let currentSortCol = "quality_score";
+        let currentSortCol = "year";
         let currentSortDir = "desc";
 
         // Subset Selection Tracking & Dynamic Visualizations Variables
@@ -1688,7 +1706,6 @@
         let chartCannabisTypeDoughnut = null;
         let chartPopulationBar = null;
         let chartOutcomeBar = null;
-        let chartQualityHistogram = null;
         let chartTimeline = null;
         let chartThcDistribution = null;
 
@@ -1884,7 +1901,7 @@
         }
 
         function updateSortIndicators() {
-            const columns = ['duration', 'title', 'year', 'study_type', 'exposure_method', 'publication_type', 'quality_score', 'citations'];
+            const columns = ['duration', 'title', 'year', 'study_type', 'exposure_method', 'publication_type', 'citations'];
             columns.forEach(col => {
                 const header = document.getElementById(col === 'publication_type' ? 'header-pub-type' : `header-${col}`);
                 const icon = document.getElementById(`sort-icon-${col}`);
@@ -1945,17 +1962,7 @@
                     newBadge = `<span class="badge" style="background: rgba(0, 240, 255, 0.12); color: var(--accent-blue); border: 1px solid rgba(0, 240, 255, 0.35); margin-left: 8px; font-size: 0.65rem; font-weight: 700; letter-spacing: 0.5px; padding: 2px 6px; text-transform: uppercase; border-radius: 4px; display: inline-block; vertical-align: middle;">Auto Ingested</span>`;
                 }
 
-                // Format quality score badge
-                let qualityBadge = "";
-                const score = p.methodological_quality_score;
-                if (score !== null && score !== undefined) {
-                    let badgeClass = "badge-score-low";
-                    if (score >= 14) badgeClass = "badge-score-high";
-                    else if (score >= 8) badgeClass = "badge-score-med";
-                    qualityBadge = `<span class="badge ${badgeClass}">${score}/20</span>`;
-                } else {
-                    qualityBadge = `<span style="color: var(--text-secondary)">N/A</span>`;
-                }
+
 
                 // Format citation count
                 const citationsVal = p.citation_count !== null && p.citation_count !== undefined ? p.citation_count : 0;
@@ -1977,7 +1984,6 @@
                     <td><span class="badge badge-type">${Array.isArray(p.study_type) ? p.study_type.join(', ') : (p.study_type || "unknown")}</span></td>
                     <td style="color: #b0bec5;">${Array.isArray(p.exposure_method) ? p.exposure_method.join(', ') : (p.exposure_method || "unknown")}</td>
                     ${pubTypeCell}
-                    <td style="text-align: center;">${qualityBadge}</td>
                     <td style="text-align: center; color: var(--text-secondary); font-weight: 500;">${citationsVal}</td>
                     <td style="text-align: center;" onclick="event.stopPropagation();">
                         <div class="link-icon-group">${linksHtml}</div>
@@ -2022,7 +2028,7 @@
             document.getElementById("tab-original").classList.add("active");
 
             // Reset sorting state
-            currentSortCol = "quality_score";
+            currentSortCol = "year";
             currentSortDir = "desc";
 
             triggerSearch();
@@ -2045,19 +2051,7 @@
             document.getElementById("drawer-strain-normalized").innerText = paper.strain_normalized || "Unverified chemotype";
             document.getElementById("drawer-abstract").innerText = paper.abstract || "No abstract content cataloged.";
 
-            // Format quality score badge inside drawer
-            const score = paper.methodological_quality_score;
-            const scoreEl = document.getElementById("drawer-quality-score");
-            scoreEl.className = "badge";
-            if (score !== null) {
-                scoreEl.innerText = `${score}/20`;
-                let badgeClass = "badge-score-low";
-                if (score >= 14) badgeClass = "badge-score-high";
-                else if (score >= 8) badgeClass = "badge-score-med";
-                scoreEl.classList.add(badgeClass);
-            } else {
-                scoreEl.innerText = "N/A";
-            }
+
 
             // Outcomes tags
             const outcomesContainer = document.getElementById("drawer-outcomes-container");
@@ -2077,14 +2071,7 @@
             });
             if (cannabisTypes.length === 0) cannabisTypesContainer.innerHTML = `<span style="color: var(--text-secondary)">None</span>`;
 
-            // Methodological Quality Flags tags
-            const flagsContainer = document.getElementById("drawer-flags-container");
-            flagsContainer.innerHTML = "";
-            const flags = paper.methodological_quality_flags || [];
-            flags.forEach(f => {
-                flagsContainer.innerHTML += `<span class="flag-tag">${f.replace(/_/g, ' ')}</span>`;
-            });
-            if (flags.length === 0) flagsContainer.innerHTML = `<span style="color: var(--text-secondary)">None</span>`;
+
 
 
 
@@ -2489,8 +2476,6 @@
             panel.style.display = "flex";
 
             // 1. Calculate Numerical Aggregates
-            let totalQuality = 0;
-            let qualityCount = 0;
             let totalThc = 0;
             let thcCount = 0;
             let totalCbd = 0;
@@ -2499,10 +2484,6 @@
             let sampleSizeCount = 0;
 
             papers.forEach(p => {
-                if (p.methodological_quality_score !== null && p.methodological_quality_score !== undefined) {
-                    totalQuality += p.methodological_quality_score;
-                    qualityCount++;
-                }
                 if (p.thc_pct !== null && p.thc_pct !== undefined) {
                     totalThc += p.thc_pct;
                     thcCount++;
@@ -2519,14 +2500,12 @@
                 }
             });
 
-            document.getElementById("agg-avg-quality").innerText = qualityCount > 0 ? (totalQuality / qualityCount).toFixed(1) + "/20" : "N/A";
             document.getElementById("agg-avg-thc").innerText = thcCount > 0 ? (totalThc / thcCount).toFixed(1) + "%" : "N/A";
             document.getElementById("agg-avg-cbd").innerText = cbdCount > 0 ? (totalCbd / cbdCount).toFixed(1) + "%" : "N/A";
             document.getElementById("agg-large-sample-pct").innerText = sampleSizeCount > 0 ? Math.round((largeSampleCount / sampleSizeCount) * 100) + "%" : "N/A";
 
             // 2. Aggregate counts for generic/always-displayed charts
             const studyDesignCounts = {};
-            const qualityBins = Array(21).fill(0);
             const timelineCounts = {};
 
             papers.forEach(p => {
@@ -2535,12 +2514,6 @@
                 designs.forEach(design => {
                     studyDesignCounts[design] = (studyDesignCounts[design] || 0) + 1;
                 });
-
-                // Quality Histogram
-                const score = Math.round(p.methodological_quality_score);
-                if (score >= 0 && score <= 20) {
-                    qualityBins[score]++;
-                }
 
                 // Publication Timeline (Yearly / Monthly)
                 if (timelineTimescale === 'yearly') {
@@ -2609,7 +2582,6 @@
 
             // 4. Render always-on charts
             renderStudyDesignChart(studyDesignCounts);
-            renderQualityHistogram(qualityBins);
             renderThcDistributionChart(thcBins);
             renderTimelineChart(timelineCounts);
 
@@ -3222,56 +3194,7 @@
             });
         }
 
-        // Render Methodological Quality Score Histogram
-        function renderQualityHistogram(bins) {
-            const ctx = document.getElementById('chart-quality-histogram').getContext('2d');
-            const labels = Array.from({ length: 21 }, (_, i) => i);
 
-            if (chartQualityHistogram) {
-                chartQualityHistogram.destroy();
-            }
-
-            chartQualityHistogram = new Chart(ctx, {
-                type: 'bar',
-                data: {
-                    labels: labels,
-                    datasets: [{
-                        label: 'Paper Count',
-                        data: bins,
-                        backgroundColor: 'rgba(0, 230, 118, 0.4)',
-                        borderColor: '#00e676',
-                        borderWidth: 1.5,
-                        barPercentage: 1.0,
-                        categoryPercentage: 1.0
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        legend: { display: false },
-                        tooltip: {
-                            backgroundColor: 'rgba(12, 16, 27, 0.95)',
-                            borderColor: 'rgba(255,255,255,0.08)',
-                            borderWidth: 1,
-                            titleFont: { family: 'Outfit', weight: '600' },
-                            bodyFont: { family: 'Inter' }
-                        }
-                    },
-                    scales: {
-                        y: {
-                            beginAtZero: true,
-                            grid: { color: 'rgba(255, 255, 255, 0.05)' },
-                            ticks: { color: '#90a4ae', font: { family: 'Inter', size: 10 }, stepSize: 1 }
-                        },
-                        x: {
-                            grid: { display: false },
-                            ticks: { color: '#90a4ae', font: { family: 'Inter', size: 10 } }
-                        }
-                    }
-                }
-            });
-        }
 
         // Render Publication timeline with Yearly / Monthly support
         function renderTimelineChart(counts) {

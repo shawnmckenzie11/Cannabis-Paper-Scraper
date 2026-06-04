@@ -707,69 +707,7 @@ def extract_outcomes(title: str, abstract: str) -> List[str]:
         
     return outcomes
 
-def determine_quality_flags(
-    title: str,
-    abstract: str,
-    study_type: str,
-    exposure_method: str,
-    population: str,
-    thc_pct: Optional[float],
-    dose_mg: Optional[float],
-    strain_reported: Optional[str],
-    strain_normalized: Optional[str]
-) -> List[str]:
-    """Generates quality flags based on the extracted metadata and paper text."""
-    combined = (title + " " + abstract).lower()
-    flags = []
-    
-    # 1. No strain specified
-    if not strain_reported:
-        flags.append("no_strain_specified")
-        
-    # 2. Self-report only
-    if any(k in combined for k in ["self-report", "questionnaire", "survey", "diary", "subjective rating"]):
-        flags.append("self_report_only")
-        
-    # 3. THC not quantified
-    # Triggered if it's a cannabis/THC study but neither thc_pct nor dose_mg is known
-    # (We can assume it's cannabis/THC study since we are scraping cannabis, so if no THC% and no dose_mg, flag it)
-    if thc_pct is None and dose_mg is None:
-        flags.append("THC_not_quantified")
-        
-    # Normalize study_type input (could be a string, set, list, or JSON array)
-    if isinstance(study_type, str):
-        try:
-            study_types = set(json.loads(study_type))
-        except Exception:
-            study_types = {study_type}
-    else:
-        study_types = set(study_type or [])
 
-    # 4. No control group
-    is_applicable_type = False
-    for st in study_types:
-        if st in ("RCT", "observational", "animal") or st.startswith("Clinical (") or st.startswith("Animal Models ("):
-            is_applicable_type = True
-            break
-    if is_applicable_type:
-        if any(k in combined for k in ["no control", "uncontrolled", "without a control", "before-after study", "observational case series"]):
-            flags.append("no_control_group")
-        elif not any(k in combined for k in ["control group", "placebo", "sham", "controlled by", "vs placebo", "vs control"]):
-            # If none of the classic control group keywords are present, flag it
-            flags.append("no_control_group")
-            
-    # 5. Animal model only
-    if population in ("mouse", "rat", "other"):
-        flags.append("animal_model_only")
-        
-    # 6. Label not verified
-    # Triggered if a strain is reported but we couldn't normalize it, OR text mentions unverified labels
-    if strain_reported and not strain_normalized:
-        flags.append("label_not_verified")
-    elif "unverified" in combined or "label accuracy" in combined:
-        flags.append("label_not_verified")
-        
-    return flags
 
 def detect_multiple_doses(title: str, abstract: str) -> bool:
     """Heuristic to detect if there is discernable information about multiple doses."""

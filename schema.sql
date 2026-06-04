@@ -24,8 +24,6 @@ CREATE TABLE IF NOT EXISTS papers (
     population TEXT,                -- human, mouse, rat, cell_line, other
     sample_size INTEGER,            -- numeric sample size (or null)
     outcome_domain TEXT,            -- JSON array of strings: pain, anxiety, cognition, inflammation, addiction, oncology, neuroprotection, sleep, other
-    methodological_quality_flags TEXT, -- JSON array of strings: e.g. ["no_strain_specified", "self_report_only", ...]
-    methodological_quality_score INTEGER, -- computed 0-10 score
     open_access INTEGER DEFAULT 0,  -- boolean 0 (False) or 1 (True)
     citation_count INTEGER DEFAULT 0,
     date_harvested TEXT NOT NULL,

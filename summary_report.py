@@ -133,23 +133,11 @@ def generate_landscape_report(papers: List[Dict[str, Any]], output_filepath: str
         for o in outcomes:
             outcome_counts[o] = outcome_counts.get(o, 0) + 1
             
-    # 4. Methodological Flags Prevalence
-    flag_counts = {}
-    for p in papers:
-        flags = p.get("methodological_quality_flags") or []
-        if isinstance(flags, str):
-            try:
-                flags = json.loads(flags)
-            except Exception:
-                flags = []
-        for f in flags:
-            flag_counts[f] = flag_counts.get(f, 0) + 1
-            
-    # 5. Top 5 Highest-Quality Papers
-    # Sort by quality score descending, then by citation count descending
-    top_papers = sorted(
+    # 4. Top 5 Most-Cited Papers
+    # Sort by citation count descending, then by year descending
+    top_cited_papers = sorted(
         papers,
-        key=lambda x: (x.get("methodological_quality_score") or 0, x.get("citation_count") or 0),
+        key=lambda x: (x.get("citation_count") or 0, x.get("year") or 0),
         reverse=True
     )[:5]
     
@@ -217,49 +205,36 @@ def generate_landscape_report(papers: List[Dict[str, Any]], output_filepath: str
             
         f.write("\n")
         
-        # Methodological Quality Flags Chart/Table
-        f.write("## 4. Methodological Quality Flag Prevalence\n\n")
-        f.write("Percentage of matched papers triggering specific methodological quality risk indicators. Higher prevalence flags represent areas with consistent research reporting gaps:\n\n")
-        f.write("| Quality Risk Indicator / Flag | Study Count | Prevalence (%) | Risk Level |\n")
-        f.write("|---|---|---|---|\n")
+        # Top-Tier Papers by Citations
+        f.write("## 4. Top 5 Most-Cited Papers\n\n")
+        f.write("Selected papers in the matched corpus that have the highest citation counts:\n\n")
         
-        sorted_flags = sorted(flag_counts.items(), key=lambda x: x[1], reverse=True)
-        for flag, count in sorted_flags:
-            pct = (count / n_papers * 100) if n_papers > 0 else 0
-            # Label risk levels dynamically based on prevalence
-            risk_level = "High" if pct >= 60 else ("Medium" if pct >= 25 else "Low")
-            f.write(f"| `{flag}` | {count} | {pct:.1f}% | {risk_level} |\n")
-        if not sorted_flags:
-            f.write("| No quality risk flags triggered | 0 | 0.0% | None |\n")
-            
-        f.write("\n")
-        
-        # Top-Tier Papers
-        f.write("## 5. Top 5 Highest-Quality Papers\n\n")
-        f.write("Selected papers in the matched corpus that score highest according to the rigorous methodological quality rubric:\n\n")
-        
-        for idx, p in enumerate(top_papers):
+        for idx, p in enumerate(top_cited_papers):
             title = p.get("title")
             journal = p.get("journal") or "Unknown Journal"
             year = p.get("year") or "N/A"
-            score = p.get("methodological_quality_score", 0)
             cites = p.get("citation_count", 0)
-            st_type = p.get("study_type") or "unknown"
-            pop = p.get("population") or "unknown"
+            
+            # Format study_type safely
+            st_type = p.get("study_type") or []
+            if isinstance(st_type, str):
+                try: st_type = json.loads(st_type)
+                except Exception: st_type = [st_type]
+            st_type_str = ", ".join(st_type) if isinstance(st_type, list) else str(st_type)
+            
+            # Format population safely
+            pop = p.get("population") or []
+            if isinstance(pop, str):
+                try: pop = json.loads(pop)
+                except Exception: pop = [pop]
+            pop_str = ", ".join(pop) if isinstance(pop, list) else str(pop)
+            
             link = p.get("full_text_link") or "#"
             
             f.write(f"### {idx+1}. [{title}]({link})\n")
             f.write(f"- **Journal:** *{journal}* ({year})\n")
-            f.write(f"- **Study Type:** {st_type.capitalize()} | **Population:** {pop.capitalize()}\n")
-            f.write(f"- **Methodological Quality Score:** **{score}/20** | **Citation Count:** {cites}\n")
-            
-            # Format and list flags beautifully
-            p_flags = p.get("methodological_quality_flags") or []
-            if isinstance(p_flags, str):
-                try: p_flags = json.loads(p_flags)
-                except Exception: p_flags = []
-            flag_str = ", ".join([f"`{fl}`" for fl in p_flags]) if p_flags else "None"
-            f.write(f"- **Quality Flags Triggered:** {flag_str}\n")
+            f.write(f"- **Study Type:** {st_type_str} | **Population:** {pop_str}\n")
+            f.write(f"- **Citation Count:** {cites}\n")
             
             abstract_text = p.get("abstract") or "No abstract available."
             if len(abstract_text) > 350:
@@ -284,10 +259,8 @@ def main():
     parser.add_argument("--population", type=str, choices=["human", "mouse", "rat", "cell_line", "other"],
                         help="Filter by population")
     parser.add_argument("--outcome", type=str, help="Outcome domains filter (comma-separated)")
-    parser.add_argument("--flags", type=str, help="Quality flags filter (e.g. '+large_sample_size')")
     parser.add_argument("--open-access", type=str, choices=["true", "false", "yes", "no", "1", "0"], help="Filter by open access")
     parser.add_argument("--citations-min", type=int, help="Minimum citation count")
-    parser.add_argument("--quality-min", type=int, help="Minimum methodological quality score")
     
     # Report parameters
     parser.add_argument("--output", type=str, default="landscape_report.md", help="Filename of the generated landscape report (markdown)")
@@ -310,10 +283,8 @@ def main():
         "thc_max": args.thc_max,
         "population": args.population,
         "outcome": args.outcome,
-        "flags": args.flags,
         "open_access": oa_filter,
-        "citations_min": args.citations_min,
-        "quality_min": args.quality_min
+        "citations_min": args.citations_min
     }
     
     # Build a clean user-facing filter summary string

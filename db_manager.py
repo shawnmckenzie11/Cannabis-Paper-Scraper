@@ -155,13 +155,13 @@ class DatabaseManager:
             "pmid", "doi", "semantic_scholar_id", "title", "authors", "journal", "year",
             "abstract", "full_text_link", "study_type", "exposure_method", "thc_pct",
             "cbd_pct", "dose_mg", "strain_reported", "strain_normalized", "duration_days",
-            "population", "sample_size", "outcome_domain", "methodological_quality_flags",
-            "methodological_quality_score", "open_access", "citation_count", "date_harvested", "publication_date", "cannabis_type", "summary", "publication_type"
+            "population", "sample_size", "outcome_domain",
+            "open_access", "citation_count", "date_harvested", "publication_date", "cannabis_type", "summary", "publication_type"
         ]
         
         # Ensure array fields are stored as JSON strings
         paper_copy = paper.copy()
-        for list_field in ["authors", "outcome_domain", "methodological_quality_flags", "study_type", "exposure_method", "cannabis_type", "population"]:
+        for list_field in ["authors", "outcome_domain", "study_type", "exposure_method", "cannabis_type", "population"]:
             if list_field in paper_copy and not isinstance(paper_copy[list_field], str):
                 paper_copy[list_field] = json.dumps(paper_copy[list_field])
             
@@ -248,7 +248,7 @@ class DatabaseManager:
             if row:
                 res = dict(row)
                 # Parse JSON fields
-                for json_field in ["authors", "outcome_domain", "methodological_quality_flags", "study_type", "exposure_method", "cannabis_type", "population"]:
+                for json_field in ["authors", "outcome_domain", "study_type", "exposure_method", "cannabis_type", "population"]:
                     if res.get(json_field):
                         try:
                             val = res[json_field].strip()
@@ -362,10 +362,7 @@ class DatabaseManager:
                     params.extend(expanded_study_types)
                     params.extend(expanded_study_types)
             
-        # Filter on minimum methodological quality score
-        if filters.get("quality_min") is not None:
-            where_clauses.append("papers.methodological_quality_score >= ?")
-            params.append(int(filters["quality_min"]))
+
  
         # Filter on minimum citation count
         if filters.get("citations_min") is not None:
@@ -528,20 +525,7 @@ class DatabaseManager:
                     where_clauses.append(f"EXISTS (SELECT 1 FROM json_each(papers.outcome_domain) WHERE value IN ({placeholders}))")
                     params.extend(outcomes)
                 
-        # Flags filter: supports +flag_name (must have) and -flag_name (must not have)
-        flags = filters.get("flags")
-        if flags:
-            if isinstance(flags, str):
-                flags = [f.strip() for f in flags.split(",") if f.strip()]
-            for flag in flags:
-                if flag.startswith("-"):
-                    flag_clean = flag[1:]
-                    where_clauses.append("NOT EXISTS (SELECT 1 FROM json_each(papers.methodological_quality_flags) WHERE value = ?)")
-                    params.append(flag_clean)
-                else:
-                    flag_clean = flag[1:] if flag.startswith("+") else flag
-                    where_clauses.append("EXISTS (SELECT 1 FROM json_each(papers.methodological_quality_flags) WHERE value = ?)")
-                    params.append(flag_clean)
+
                     
         return where_clauses, params
 
@@ -594,8 +578,6 @@ class DatabaseManager:
             sql += f" ORDER BY papers.year {sort_dir}, papers.id DESC"
         elif sort_by == "citations":
             sql += f" ORDER BY papers.citation_count {sort_dir}, papers.year DESC"
-        elif sort_by == "quality_score":
-            sql += f" ORDER BY papers.methodological_quality_score {sort_dir}, papers.year DESC"
         elif sort_by == "title":
             sql += f" ORDER BY papers.title {sort_dir}, papers.year DESC"
         elif sort_by == "duration":
@@ -607,11 +589,11 @@ class DatabaseManager:
         elif sort_by == "publication_type":
             sql += f" ORDER BY papers.publication_type {sort_dir}, papers.year DESC"
         else:
-            # Default sorting: Quality first
+            # Default sorting: Rank (relevance) or Year DESC
             if query_val:
-                sql += " ORDER BY papers.methodological_quality_score DESC, rank ASC"
+                sql += " ORDER BY rank ASC"
             else:
-                sql += " ORDER BY papers.methodological_quality_score DESC, papers.year DESC, papers.id DESC"
+                sql += " ORDER BY papers.year DESC, papers.id DESC"
 
         # 5. Limit & Offset (Pagination)
         limit = filters.get("limit")
@@ -631,7 +613,7 @@ class DatabaseManager:
             for row in rows:
                 res = dict(row)
                 # Parse JSON fields
-                for json_field in ["authors", "outcome_domain", "methodological_quality_flags"]:
+                for json_field in ["authors", "outcome_domain"]:
                     if res.get(json_field):
                         try:
                             res[json_field] = json.loads(res[json_field])

@@ -626,7 +626,7 @@ def run_harvest_pipeline(
             # Write to Database
             row_id = db.insert_paper(paper)
             success_count += 1
-            logger.info(f"  -> Saved paper successfully (DB ID: {row_id}, Score: {paper['methodological_quality_score']}/20)")
+            logger.info(f"  -> Saved paper successfully (DB ID: {row_id})")
             
         except Exception as e:
             logger.error(f"  -> Failed to process paper '{title[:40]}...': {e}")

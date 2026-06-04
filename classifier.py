@@ -16,110 +16,6 @@ logger = logging.getLogger(__name__)
 # Load environment variables
 load_dotenv()
 
-RUBRIC_FILE = "quality_rubric.json"
-
-def load_quality_rubric() -> Dict[str, Any]:
-    """Loads the quality scoring rubric from the JSON file."""
-    if os.path.exists(RUBRIC_FILE):
-        try:
-            with open(RUBRIC_FILE, "r") as f:
-                return json.load(f)
-        except Exception as e:
-            logger.warning(f"Error reading {RUBRIC_FILE}, using fallback defaults. Error: {e}")
-            
-    # Inline default fallback rubric if file is missing/broken
-    return {
-        "base_score": 5,
-        "deductions": {
-            "no_strain_specified": 1,
-            "self_report_only": 2,
-            "THC_not_quantified": 2,
-            "no_control_group": 2,
-            "animal_model_only": 1,
-            "label_not_verified": 1
-        },
-        "additions": {
-            "quantified_dose": 2,
-            "rct_design": 2,
-            "peer_reviewed_journal": 1,
-            "large_sample_size": 1,
-            "multiple_doses": 5,
-            "multiple_time_intervals": 5
-        },
-        "min_score": 0,
-        "max_score": 20
-    }
-
-def calculate_quality_score(paper: Dict[str, Any]) -> int:
-    """Computes the methodological quality score (0-10) using the rubric.
-    
-    Args:
-        paper: Dict containing: study_type, dose_mg, strain_reported, strain_normalized,
-               sample_size, journal, methodological_quality_flags
-               
-    Returns:
-        int: Methodological quality score clamped between 0 and 10.
-    """
-    rubric = load_quality_rubric()
-    
-    score = rubric.get("base_score", 5)
-    
-    # 1. Apply Deductions
-    flags = paper.get("methodological_quality_flags") or []
-    if isinstance(flags, str):
-        try:
-            flags = json.loads(flags)
-        except Exception:
-            flags = []
-            
-    deductions_rubric = rubric.get("deductions", {})
-    for flag in flags:
-        if flag in deductions_rubric:
-            score -= deductions_rubric[flag]
-            
-    # 2. Apply Additions
-    additions_rubric = rubric.get("additions", {})
-    
-    # quantified_dose: dose_mg is present
-    if paper.get("dose_mg") is not None and "quantified_dose" in additions_rubric:
-        score += additions_rubric["quantified_dose"]
-        
-    # rct_design: study_type is RCT or contains RCT
-    study_type = paper.get("study_type")
-    is_rct = False
-    if isinstance(study_type, str):
-        is_rct = study_type == "RCT"
-    elif isinstance(study_type, list):
-        is_rct = "RCT" in study_type
-        
-    if is_rct and "rct_design" in additions_rubric:
-        score += additions_rubric["rct_design"]
-        
-    # peer_reviewed_journal: check if not in a preprint server
-    journal = (paper.get("journal") or "").lower()
-    is_preprint = any(k in journal for k in ["biorxiv", "medrxiv", "arxiv", "preprint", "research square"])
-    if journal and not is_preprint and "peer_reviewed_journal" in additions_rubric:
-        score += additions_rubric["peer_reviewed_journal"]
-        
-    # large_sample_size: N > 50
-    sample_size = paper.get("sample_size")
-    if sample_size is not None and int(sample_size) > 50 and "large_sample_size" in additions_rubric:
-        score += additions_rubric["large_sample_size"]
-
-    # multiple_doses: true if multiple doses or dose-response parameters present
-    if paper.get("multiple_doses") and "multiple_doses" in additions_rubric:
-        score += additions_rubric["multiple_doses"]
-
-    # multiple_time_intervals: true if multiple timepoints or repeated measures present
-    if paper.get("multiple_time_intervals") and "multiple_time_intervals" in additions_rubric:
-        score += additions_rubric["multiple_time_intervals"]
-        
-    # 3. Clamp score between min and max
-    min_val = rubric.get("min_score", 0)
-    max_val = rubric.get("max_score", 20)
-    
-    return max(min_val, min(max_val, int(score)))
-
 def classify_with_llm(title: str, abstract: str) -> Optional[Dict[str, Any]]:
     """Uses Claude 3.5 Sonnet to perform deep extraction of scientific parameters.
     
@@ -152,7 +48,6 @@ def classify_with_llm(title: str, abstract: str) -> Optional[Dict[str, Any]]:
             "  \"population\": [\"human\" | \"mouse\" | \"rat\" | \"cell_line\" | \"other\"] (multi-label array of matching populations),\n"
             "  \"sample_size\": integer or null (N value),\n"
             "  \"outcome_domain\": [\"pain\", \"anxiety\", \"cognition\", \"inflammation\", \"addiction\", \"oncology\", \"neuroprotection\", \"sleep\", \"other\"] (multi-label array of matching outcomes),\n"
-            "  \"methodological_quality_flags\": [\"no_strain_specified\", \"self_report_only\", \"THC_not_quantified\", \"no_control_group\", \"animal_model_only\", \"label_not_verified\"] (array of matching flags),\n"
             "  \"multiple_doses\": boolean (true if multiple doses, varying dose levels, or dose-response parameters are evaluated in study, false otherwise),\n"
             "  \"multiple_time_intervals\": boolean (true if multiple time intervals, longitudinal timepoints, serial measurements, or repeated administration measures are evaluated, false otherwise),\n"
             "  \"cannabis_type\": [\"dried flower\" | \"concentrates\" | \"vape pen\" | \"pure cannabinoid\" | \"edibles\" | \"hashish/kief\" | \"unknown\"] (multi-label array of matching cannabis product types),\n"
@@ -205,7 +100,7 @@ def process_paper_metadata(title: str, abstract: str, run_llm: bool = False) -> 
         run_llm: Whether to attempt LLM classification
         
     Returns:
-        Dict containing all extracted metadata + calculated quality score.
+        Dict containing all extracted metadata.
     """
     metadata = None
     
@@ -226,7 +121,4 @@ def process_paper_metadata(title: str, abstract: str, run_llm: bool = False) -> 
         logger.info("Running standard regex and keyword heuristics extractor.")
         metadata = extractor.extract_all_heuristics(title, abstract)
         
-    # Calculate quality score using the rubric
-    metadata["methodological_quality_score"] = calculate_quality_score(metadata)
-    
     return metadata

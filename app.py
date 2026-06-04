@@ -170,10 +170,8 @@ def api_search():
     thc_max = request.args.get("thc_max")
     population = request.args.get("population")
     outcome = request.args.get("outcome")
-    flags = request.args.get("flags")
     open_access = request.args.get("open_access")
     sort_by = request.args.get("sort_by")
-    quality_min = request.args.get("quality_min")
     citations_min = request.args.get("citations_min")
     recent = request.args.get("recent")
     recent_range = request.args.get("recent_range")
@@ -216,8 +214,6 @@ def api_search():
         clean_filters["population"] = population
     if outcome:
         clean_filters["outcome"] = outcome
-    if flags:
-        clean_filters["flags"] = flags
     if open_access and open_access != "ALL":
         clean_filters["open_access"] = open_access == "true"
     if sort_by and sort_by != "DEFAULT":
@@ -225,8 +221,6 @@ def api_search():
     sort_dir = request.args.get("sort_dir")
     if sort_dir:
         clean_filters["sort_dir"] = sort_dir
-    if quality_min is not None and quality_min != "":
-        clean_filters["quality_min"] = int(quality_min)
     if citations_min is not None and citations_min != "":
         clean_filters["citations_min"] = int(citations_min)
     if tab:
