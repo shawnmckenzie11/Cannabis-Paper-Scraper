@@ -38,16 +38,64 @@ def generate_landscape_report(papers: List[Dict[str, Any]], output_filepath: str
     matrix = {st: {em: 0 for em in exposure_methods} for st in study_types}
     
     for p in papers:
-        st = p.get("study_type")
-        em = p.get("exposure_method")
-        
-        # Guard against unmapped values
-        if st not in matrix:
-            st = "observational"  # fallback
-        if em not in matrix[st]:
-            em = "unknown"  # fallback
-            
-        matrix[st][em] += 1
+        st_val = p.get("study_type")
+        if not st_val:
+            st_list = []
+        elif isinstance(st_val, str):
+            st_val = st_val.strip()
+            if st_val.startswith("[") and st_val.endswith("]"):
+                try:
+                    st_list = json.loads(st_val)
+                except Exception:
+                    st_list = [st_val]
+            else:
+                st_list = [st_val]
+        elif isinstance(st_val, list):
+            st_list = st_val
+        else:
+            st_list = [st_val]
+
+        em_val = p.get("exposure_method")
+        if not em_val:
+            em_list = ["unknown"]
+        elif isinstance(em_val, str):
+            em_val = em_val.strip()
+            if em_val.startswith("[") and em_val.endswith("]"):
+                try:
+                    em_list = json.loads(em_val)
+                except Exception:
+                    em_list = [em_val]
+            else:
+                em_list = [em_val]
+        elif isinstance(em_val, list):
+            em_list = em_val
+        else:
+            em_list = [em_val]
+
+        for single_st in st_list:
+            if not single_st:
+                continue
+            mapped_st = None
+            if "RCT" in single_st:
+                mapped_st = "RCT"
+            elif "Clinical" in single_st:
+                mapped_st = "observational"
+            elif "Animal Models" in single_st:
+                mapped_st = "animal"
+            elif "Cell Culture" in single_st:
+                mapped_st = "in vitro"
+            elif single_st in ("review", "meta-analysis", "case study", "editorial"):
+                mapped_st = single_st
+            else:
+                mapped_st = "observational"
+
+            if mapped_st not in matrix:
+                mapped_st = "observational"
+
+            for single_em in em_list:
+                if single_em not in matrix[mapped_st]:
+                    single_em = "unknown"
+                matrix[mapped_st][single_em] += 1
         
     # 2. THC and CBD Stats
     thc_vals = [p["thc_pct"] for p in papers if p.get("thc_pct") is not None]

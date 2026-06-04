@@ -413,59 +413,75 @@ def infer_publication_type(title: str, abstract: str) -> str:
     return "original research"
 
 def infer_study_type(title: str, abstract: str) -> List[str]:
-    """Infers study type from text keywords, focusing on Methods section if available."""
+    """Infers Stage 2 study type from text keywords, focusing on Methods section if available."""
     methods_text = get_methods_text(title, abstract)
     combined = methods_text.lower()
     
+    # First check publication type for compatibility fallback
+    pub_type = infer_publication_type(title, abstract)
+    if pub_type != "original research":
+        if pub_type in ("review", "systematic review"):
+            return ["review"]
+        elif pub_type == "meta-analysis":
+            return ["meta-analysis"]
+        elif pub_type == "case study":
+            return ["case study"]
+        elif pub_type in ("editorial", "comment", "letter to the editor", "perspectives paper"):
+            return ["editorial"]
+            
     types = []
     
-    # Check full abstract for explicit publication type metadata first
-    abstract_lower = (abstract or "").lower()
-    is_review = False
-    if "publication type: review" in abstract_lower:
-        is_review = True
-    if "publication type: meta-analysis" in abstract_lower:
-        types.append("meta-analysis")
-        is_review = True
+    # 1. Clinical
+    # RCT
+    if keyword_match(combined, ["double-blind", "randomized controlled", "placebo-controlled", "rct", "randomised controlled", "clinical trial"]):
+        types.append("Clinical (RCT)")
+    # prospective
+    if keyword_match(combined, ["prospective", "prospectively", "prospective cohort"]):
+        types.append("Clinical (prospective)")
+    # retrospective
+    if keyword_match(combined, ["retrospective", "retrospectively", "chart review", "historical cohort"]):
+        types.append("Clinical (retrospective)")
+    # observational
+    if keyword_match(combined, ["observational", "cross-sectional", "survey", "registry", "longitudinal", "case-control", "epidemiological", "cohort"]):
+        types.append("Clinical (observational)")
         
-    if keyword_match(combined, ["meta-analysis", "pooled analysis", "systematic overview"]):
-        types.append("meta-analysis")
-        
-    # Smart review classification
-    review_keywords = [
-        "systematic review", "literature review", "overview of reviews", "scoping review",
-        "narrative review", "critical review", "mini-review", "minireview", "review article",
-        "review paper", "this review", "the present review", "in this review", "we review",
-        "current review", "comprehensive review", "review of the literature", "this mini-review",
-        "this minireview", "article reviews", "reviews the current", "reviews the literature"
-    ]
-    if keyword_match(combined, review_keywords):
-        is_review = True
-    elif "review" in title.lower():
-        if re.search(r'\breviews?\b', title, re.IGNORECASE):
-            is_review = True
-    elif re.search(r'\b(this|present|current|our)\s+review\b', combined, re.IGNORECASE):
-        is_review = True
-    elif re.search(r'\breview\s+(highlights|summarizes|discusses|focuses|provides|aims to|examines|synthesizes|outlines)\b', combined, re.IGNORECASE):
-        is_review = True
-        
-    if is_review:
-        types.append("review")
-    if keyword_match(combined, ["case study", "case studies", "case report", "case reports", "case series", "clinical case", "case-report", "case-series"]):
-        types.append("case study")
-    if keyword_match(combined, ["editorial", "commentary", "opinion", "perspective", "editorials", "commentaries", "perspectives", "viewpoint", "letter to the editor", "letters to the editor"]):
-        types.append("editorial")
-    if keyword_match(combined, ["double-blind", "randomized controlled", "placebo-controlled", "rct", "randomised controlled"]):
-        types.append("RCT")
-    if keyword_match(combined, ["observational", "cohort", "case-control", "cross-sectional", "longitudinal", "survey", "registry"]):
-        types.append("observational")
-    if keyword_match(combined, ["mouse", "mice", "rat", "rats", "rodent", "in vivo", "animal model", "murine"]):
-        types.append("animal")
-    if keyword_match(combined, ["in vitro", "cell line", "hela", "hepg2", "cultured cells", "culture assay", "microglia", "neurons", "epithelial cells", "epithelial cell", "airway epithelial", "cell culture", "cell cultures", "co-culture", "primary cells", "primary cell", "organoid", "organoids", "spheroids"]):
-        types.append("in vitro")
-        
+    # 2. Animal Models
+    # mouse
+    if keyword_match(combined, ["mouse", "mice", "murine", "c57bl/6"]):
+        types.append("Animal Models (mouse)")
+    # rat
+    if keyword_match(combined, ["rat", "rats", "wistar", "sprague-dawley"]):
+        types.append("Animal Models (rat)")
+    # non-human primate
+    if keyword_match(combined, ["macaque", "rhesus", "monkey", "monkeys", "primate", "primates", "baboon", "chimpanzee"]):
+        types.append("Animal Models (non-human primate)")
+    # other animal
+    if keyword_match(combined, ["dog", "dogs", "cat", "cats", "pig", "pigs", "rabbit", "rabbits", "zebrafish", "drosophila"]):
+        types.append("Animal Models (other)")
+    elif keyword_match(combined, ["animal", "in vivo", "animal model", "rodent", "rodents"]):
+        if not any(t.startswith("Animal Models (") for t in types):
+            types.append("Animal Models (other)")
+            
+    # 3. Cell Culture
+    # primary cells
+    if keyword_match(combined, ["primary cell", "primary cells", "primary culture", "primary neuronal", "primary microglia", "splenocytes", "primary hepatocytes"]):
+        types.append("Cell Culture (primary cells)")
+    # cell lines
+    if keyword_match(combined, ["cell line", "cell lines", "hela", "hepg2", "pc12", "raw 264.7", "sh-sy5y", "jurkat", "cho cells"]):
+        types.append("Cell Culture (cell lines)")
+    # organoids
+    if keyword_match(combined, ["organoid", "organoids", "spheroid", "spheroids", "3d culture", "3d cultures"]):
+        types.append("Cell Culture (organoids)")
+    # co-culture
+    if keyword_match(combined, ["co-culture", "co-cultures", "coculture", "cocultures"]):
+        types.append("Cell Culture (co-culture)")
+    elif keyword_match(combined, ["in vitro", "cultured cells", "culture assay", "cell culture", "cell cultures", "microglia", "neurons", "epithelial cells", "epithelial cell", "airway epithelial"]):
+        if not any(t.startswith("Cell Culture (") for t in types):
+            types.append("Cell Culture (cell lines)")
+            
     if not types:
-        types.append("observational")
+        types.append("Clinical (observational)")
+        
     return list(set(types))
     
 def infer_exposure_method(title: str, abstract: str, study_type: Any, population: Optional[Any] = None) -> List[str]:
@@ -489,7 +505,7 @@ def infer_exposure_method(title: str, abstract: str, study_type: Any, population
     methods = []
     
     # Group A: Clinical exposure (human/clinical setting)
-    if "human" in populations or study_types.intersection({"RCT", "observational"}):
+    if "human" in populations or study_types.intersection({"RCT", "observational"}) or any(s.startswith("Clinical (") for s in study_types):
         if keyword_match(combined, ["smoke", "smoked", "smoking", "joint", "combustion", "cigarette", "cigarettes", "vaporized", "vaporised", "vape", "vaping", "vaporizer", "vaporisation", "inhaled", "inhalation"]):
             methods.append("inhaled")
         if keyword_match(combined, ["oral", "edible", "ingested", "capsule", "gummy", "cookies", "oil ingestion", "brownie", "gavage"]):
@@ -500,14 +516,14 @@ def infer_exposure_method(title: str, abstract: str, study_type: Any, population
             methods.append("injected")
  
     # Group B: In vitro exposure (cells/tissue setting)
-    if "cell_line" in populations or "in vitro" in study_types:
+    if "cell_line" in populations or "in vitro" in study_types or any(s.startswith("Cell Culture (") for s in study_types):
         if keyword_match(combined, ["conditioned media", "smoke extract", "cse", "vapor extract", "gaseous extract", "smoke-conditioned"]):
             methods.append("smoke/vapor conditioned media")
         if keyword_match(combined, ["cell exposure to smoke", "cells exposed to vapor", "chamber exposure of cells", "smoke stream", "direct vapor exposure", "exposure of cells to smoke", "exposure of cells to vapor", "air-liquid interface", "air liquid interface", "ali exposure", "ali", "aerosol exposure", "exposed directly to vapor", "exposed directly to smoke"]):
             methods.append("exposure of cells to smoke/vapor")
  
     # Group C: In vivo exposure (animal models)
-    if populations.intersection({"mouse", "rat", "other"}) or "animal" in study_types:
+    if populations.intersection({"mouse", "rat", "other"}) or "animal" in study_types or any(s.startswith("Animal Models (") for s in study_types):
         if keyword_match(combined, ["nose-only", "nose only", "snout exposure", "head-out"]):
             methods.append("nose only smoke/vapor")
         if keyword_match(combined, ["whole body", "whole-body", "chamber exposure", "whole body smoke", "whole body vapor"]):
@@ -524,9 +540,9 @@ def infer_exposure_method(title: str, abstract: str, study_type: Any, population
             methods.append("intratracheal")
             
     if not methods:
-        if "cell_line" in populations or "in vitro" in study_types:
+        if "cell_line" in populations or "in vitro" in study_types or any(s.startswith("Cell Culture (") for s in study_types):
             methods.append("cannabinoids dissolved in media")
-        elif "human" in populations or study_types.intersection({"RCT", "observational"}):
+        elif "human" in populations or study_types.intersection({"RCT", "observational"}) or any(s.startswith("Clinical (") for s in study_types):
             methods.append("inhaled")
         else:
             methods.append("injection cannabinoids")
@@ -594,7 +610,7 @@ def infer_population(title: str, abstract: str, study_type: Any) -> List[str]:
         
     pops = []
     
-    if "in vitro" in study_types or keyword_match(combined, ["cell line", "hela", "hepg2", "cells", "culture", "epithelial cells", "bronchial epithelial"]):
+    if "in vitro" in study_types or any(s.startswith("Cell Culture (") for s in study_types) or keyword_match(combined, ["cell line", "hela", "hepg2", "cells", "culture", "epithelial cells", "bronchial epithelial"]):
         pops.append("cell_line")
     if keyword_match(combined, ["mouse", "mice", "murine", "c57bl"]):
         pops.append("mouse")
@@ -627,9 +643,9 @@ def infer_population(title: str, abstract: str, study_type: Any) -> List[str]:
         pops.append("other")
         
     if not pops:
-        if study_types.intersection({"RCT", "observational"}):
+        if study_types.intersection({"RCT", "observational"}) or any(s.startswith("Clinical (") for s in study_types):
             pops.append("human")
-        elif "animal" in study_types:
+        elif "animal" in study_types or any(s.startswith("Animal Models (") for s in study_types):
             pops.append("mouse")
         else:
             pops.append("other")
@@ -690,8 +706,22 @@ def determine_quality_flags(
     if thc_pct is None and dose_mg is None:
         flags.append("THC_not_quantified")
         
+    # Normalize study_type input (could be a string, set, list, or JSON array)
+    if isinstance(study_type, str):
+        try:
+            study_types = set(json.loads(study_type))
+        except Exception:
+            study_types = {study_type}
+    else:
+        study_types = set(study_type or [])
+
     # 4. No control group
-    if study_type in ("RCT", "observational", "animal"):
+    is_applicable_type = False
+    for st in study_types:
+        if st in ("RCT", "observational", "animal") or st.startswith("Clinical (") or st.startswith("Animal Models ("):
+            is_applicable_type = True
+            break
+    if is_applicable_type:
         if any(k in combined for k in ["no control", "uncontrolled", "without a control", "before-after study", "observational case series"]):
             flags.append("no_control_group")
         elif not any(k in combined for k in ["control group", "placebo", "sham", "controlled by", "vs placebo", "vs control"]):

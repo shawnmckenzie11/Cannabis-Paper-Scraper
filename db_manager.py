@@ -325,14 +325,42 @@ class DatabaseManager:
             where_clauses.append("papers.year <= ?")
             params.append(int(filters["year_max"]))
             
-        if filters.get("study_type"):
-            where_clauses.append(
-                "((json_valid(papers.study_type) AND json_type(papers.study_type) = 'array' AND EXISTS ("
-                "SELECT 1 FROM json_each(papers.study_type) WHERE json_each.value = ?"
-                ")) OR (papers.study_type = ?))"
-            )
-            params.append(filters["study_type"])
-            params.append(filters["study_type"])
+        study_types = filters.get("study_type")
+        if study_types:
+            if isinstance(study_types, str):
+                study_types = [s.strip() for s in study_types.split(",") if s.strip()]
+            if study_types:
+                # Expand any legacy category terms into their constituent Stage 2 types
+                expanded_study_types = []
+                for s in study_types:
+                    if s == "RCT":
+                        expanded_study_types.extend(["Clinical (RCT)", "RCT"])
+                    elif s == "observational":
+                        expanded_study_types.extend(["Clinical (prospective)", "Clinical (observational)", "Clinical (retrospective)", "observational"])
+                    elif s == "animal":
+                        expanded_study_types.extend(["Animal Models (mouse)", "Animal Models (rat)", "Animal Models (non-human primate)", "Animal Models (other)", "animal"])
+                    elif s == "in vitro":
+                        expanded_study_types.extend(["Cell Culture (primary cells)", "Cell Culture (cell lines)", "Cell Culture (organoids)", "Cell Culture (co-culture)", "in vitro"])
+                    else:
+                        expanded_study_types.append(s)
+                
+                if filters.get("study_logic", "or").lower() == "and":
+                    for s_type in expanded_study_types:
+                        where_clauses.append(
+                            "((json_valid(papers.study_type) AND json_type(papers.study_type) = 'array' AND EXISTS ("
+                            "SELECT 1 FROM json_each(papers.study_type) WHERE json_each.value = ?"
+                            ")) OR (papers.study_type = ?))"
+                        )
+                        params.extend([s_type, s_type])
+                else:
+                    placeholders = ",".join(["?"] * len(expanded_study_types))
+                    where_clauses.append(
+                        f"((json_valid(papers.study_type) AND json_type(papers.study_type) = 'array' AND EXISTS ("
+                        f"SELECT 1 FROM json_each(papers.study_type) WHERE json_each.value IN ({placeholders})"
+                        f")) OR (papers.study_type IN ({placeholders})))"
+                    )
+                    params.extend(expanded_study_types)
+                    params.extend(expanded_study_types)
             
         # Filter on minimum methodological quality score
         if filters.get("quality_min") is not None:

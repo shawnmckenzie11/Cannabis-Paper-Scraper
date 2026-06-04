@@ -183,6 +183,7 @@ def api_search():
     method_logic = request.args.get("method_logic", "or")
     population_logic = request.args.get("population_logic", "or")
     outcome_logic = request.args.get("outcome_logic", "or")
+    study_logic = request.args.get("study_logic", "or")
     
     page = request.args.get("page", 1)
     limit = request.args.get("limit", 50)
@@ -241,6 +242,7 @@ def api_search():
     clean_filters["exposure_logic"] = method_logic
     clean_filters["population_logic"] = population_logic
     clean_filters["outcome_logic"] = outcome_logic
+    clean_filters["study_logic"] = study_logic
         
     try:
         total_count = db.count_papers(clean_filters)

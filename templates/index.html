@@ -1015,17 +1015,35 @@
                         oninput="debounceSearch()">
                 </div>
 
-                <div class="form-group" style="margin-bottom: 12px;">
-                    <label for="filter-study-type">Study Design</label>
-                    <select id="filter-study-type" onchange="triggerSearch()">
-                        <option value="ALL">All Designs</option>
-                        <option value="RCT">RCT (Clinical Trial)</option>
-                        <option value="observational">Observational</option>
-                        <option value="animal">Animal Model</option>
-                        <option value="in vitro">In Vitro / Cell study</option>
-                        <option value="review">Review Paper</option>
-                        <option value="meta-analysis">Meta-Analysis</option>
-                    </select>
+                <div class="filter-header-row">
+                    <div class="filter-header">Study Design</div>
+                    <div class="logic-toggle" id="toggle-study_type">
+                        <span class="logic-btn active" onclick="setLogic('study_type', 'or')">OR</span>
+                        <span class="logic-btn" onclick="setLogic('study_type', 'and')">AND</span>
+                        <input type="hidden" name="study_logic" id="logic-study_type" value="or">
+                    </div>
+                </div>
+                <div class="checkbox-group" style="margin-bottom: 12px; display: flex; flex-direction: column; gap: 4px;">
+                    <!-- Clinical Section -->
+                    <div style="font-size: 0.75rem; font-weight: 600; color: #00e676; margin-top: 4px; margin-bottom: 2px; text-transform: uppercase; letter-spacing: 0.5px;">Clinical</div>
+                    <label class="checkbox-item"><input type="checkbox" name="study_type" value="Clinical (RCT)" onchange="triggerSearch()"> RCT</label>
+                    <label class="checkbox-item"><input type="checkbox" name="study_type" value="Clinical (prospective)" onchange="triggerSearch()"> Prospective</label>
+                    <label class="checkbox-item"><input type="checkbox" name="study_type" value="Clinical (observational)" onchange="triggerSearch()"> Observational</label>
+                    <label class="checkbox-item"><input type="checkbox" name="study_type" value="Clinical (retrospective)" onchange="triggerSearch()"> Retrospective</label>
+
+                    <!-- Animal Models Section -->
+                    <div style="font-size: 0.75rem; font-weight: 600; color: #00e676; margin-top: 6px; margin-bottom: 2px; text-transform: uppercase; letter-spacing: 0.5px;">Animal Models</div>
+                    <label class="checkbox-item"><input type="checkbox" name="study_type" value="Animal Models (mouse)" onchange="triggerSearch()"> Mouse</label>
+                    <label class="checkbox-item"><input type="checkbox" name="study_type" value="Animal Models (rat)" onchange="triggerSearch()"> Rat</label>
+                    <label class="checkbox-item"><input type="checkbox" name="study_type" value="Animal Models (non-human primate)" onchange="triggerSearch()"> Non-Human Primate</label>
+                    <label class="checkbox-item"><input type="checkbox" name="study_type" value="Animal Models (other)" onchange="triggerSearch()"> Other</label>
+
+                    <!-- Cell Culture Section -->
+                    <div style="font-size: 0.75rem; font-weight: 600; color: #00e676; margin-top: 6px; margin-bottom: 2px; text-transform: uppercase; letter-spacing: 0.5px;">Cell Culture</div>
+                    <label class="checkbox-item"><input type="checkbox" name="study_type" value="Cell Culture (primary cells)" onchange="triggerSearch()"> Primary Cells</label>
+                    <label class="checkbox-item"><input type="checkbox" name="study_type" value="Cell Culture (cell lines)" onchange="triggerSearch()"> Cell Lines</label>
+                    <label class="checkbox-item"><input type="checkbox" name="study_type" value="Cell Culture (organoids)" onchange="triggerSearch()"> Organoids</label>
+                    <label class="checkbox-item"><input type="checkbox" name="study_type" value="Cell Culture (co-culture)" onchange="triggerSearch()"> Co-Culture</label>
                 </div>
 
                 <div class="filter-header-row">
@@ -1735,7 +1753,8 @@
 
             // Build parameters from sidebar elements
             const query = document.getElementById("filter-query").value;
-            const studyType = document.getElementById("filter-study-type").value;
+            const studyTypeCheckboxes = document.querySelectorAll('input[name="study_type"]:checked');
+            const studyType = Array.from(studyTypeCheckboxes).map(cb => cb.value).join(",");
             const thcMin = document.getElementById("filter-thc-min").value;
             const thcMax = document.getElementById("filter-thc-max").value;
             const yearMin = document.getElementById("filter-year-min").value;
@@ -1743,6 +1762,7 @@
             const sortBy = currentSortCol;
             const sortDir = currentSortDir;
 
+            const studyLogic = document.getElementById("logic-study_type").value;
             const methodLogic = document.getElementById("logic-method").value;
             const cannabisLogic = document.getElementById("logic-cannabis_type").value;
             const populationLogic = document.getElementById("logic-population").value;
@@ -1768,7 +1788,10 @@
             let url = `/api/search?`;
             const params = [];
             if (query) params.push(`query=${encodeURIComponent(query)}`);
-            if (studyType) params.push(`study_type=${studyType}`);
+            if (studyType) {
+                params.push(`study_type=${encodeURIComponent(studyType)}`);
+                params.push(`study_logic=${studyLogic}`);
+            }
             if (method) {
                 params.push(`method=${method}`);
                 params.push(`method_logic=${methodLogic}`);
@@ -1975,7 +1998,7 @@
             updateSliderValues();
 
             // Reset logic hidden inputs and toggles
-            ['method', 'cannabis_type', 'population', 'outcome'].forEach(key => {
+            ['method', 'cannabis_type', 'population', 'outcome', 'study_type'].forEach(key => {
                 const hiddenInput = document.getElementById(`logic-${key}`);
                 if (hiddenInput) hiddenInput.value = 'or';
                 const container = document.getElementById(`toggle-${key}`);
@@ -2357,7 +2380,8 @@
 
             // Build parameters from sidebar elements
             const query = document.getElementById("filter-query").value;
-            const studyType = document.getElementById("filter-study-type").value;
+            const studyTypeCheckboxes = document.querySelectorAll('input[name="study_type"]:checked');
+            const studyType = Array.from(studyTypeCheckboxes).map(cb => cb.value).join(",");
             const thcMin = document.getElementById("filter-thc-min").value;
             const thcMax = document.getElementById("filter-thc-max").value;
             const yearMin = document.getElementById("filter-year-min").value;
@@ -2365,7 +2389,7 @@
             const sortBy = currentSortCol;
             const sortDir = currentSortDir;
 
-            // Extract logic values
+            const studyLogic = document.getElementById("logic-study_type").value;
             const methodLogic = document.getElementById("logic-method").value;
             const cannabisLogic = document.getElementById("logic-cannabis_type").value;
             const populationLogic = document.getElementById("logic-population").value;
@@ -2391,7 +2415,10 @@
             let url = `/api/search?`;
             const params = [];
             if (query) params.push(`query=${encodeURIComponent(query)}`);
-            if (studyType) params.push(`study_type=${studyType}`);
+            if (studyType) {
+                params.push(`study_type=${encodeURIComponent(studyType)}`);
+                params.push(`study_logic=${studyLogic}`);
+            }
             if (method) {
                 params.push(`method=${method}`);
                 params.push(`method_logic=${methodLogic}`);

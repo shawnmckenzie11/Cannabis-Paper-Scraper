@@ -34,17 +34,17 @@ class TestHeuristicExtractor(unittest.TestCase):
         title_pub_meta = "Another Study"
         abstract_pub_meta = "Publication Type: Meta-Analysis. This is a study."
 
-        self.assertEqual(extractor.infer_study_type(title, abstract_rct), ["RCT"])
-        self.assertEqual(extractor.infer_study_type(title, abstract_animal), ["animal"])
-        self.assertEqual(extractor.infer_study_type(title, abstract_invitro), ["in vitro"])
+        self.assertEqual(extractor.infer_study_type(title, abstract_rct), ["Clinical (RCT)"])
+        self.assertEqual(extractor.infer_study_type(title, abstract_animal), ["Animal Models (rat)"])
+        self.assertEqual(extractor.infer_study_type(title, abstract_invitro), ["Cell Culture (cell lines)"])
         self.assertEqual(extractor.infer_study_type(title, abstract_casestudy), ["case study"])
         self.assertEqual(extractor.infer_study_type(title, abstract_editorial), ["editorial"])
-        self.assertEqual(extractor.infer_study_type(title_manifold, abstract_manifold), ["in vitro"])
+        self.assertEqual(extractor.infer_study_type(title_manifold, abstract_manifold), ["Cell Culture (cell lines)"])
         self.assertEqual(extractor.infer_study_type(title_review1, abstract_review1), ["review"])
         self.assertEqual(extractor.infer_study_type(title_review2, abstract_review2), ["review"])
         self.assertEqual(extractor.infer_study_type(title_pub_review, abstract_pub_review), ["review"])
-        self.assertIn("meta-analysis", extractor.infer_study_type(title_pub_meta, abstract_pub_meta))
-        self.assertIn("review", extractor.infer_study_type(title_pub_meta, abstract_pub_meta))
+        self.assertEqual(extractor.infer_study_type(title_pub_meta, abstract_pub_meta), ["meta-analysis"])
+
 
     def test_publication_type_inference(self):
         title = "Study on Cannabis"
@@ -150,7 +150,7 @@ class TestHeuristicExtractor(unittest.TestCase):
         study_type = extractor.infer_study_type(title, abstract)
         population = extractor.infer_population(title, abstract, study_type)
         
-        self.assertEqual(study_type, ["RCT"])
+        self.assertEqual(study_type, ["Clinical (RCT)"])
         self.assertEqual(population, ["human"])
 
     def test_animal_population_with_adult_keywords(self):
@@ -160,8 +160,8 @@ class TestHeuristicExtractor(unittest.TestCase):
         study_type = extractor.infer_study_type(title, abstract)
         population = extractor.infer_population(title, abstract, study_type)
         
-        self.assertEqual(study_type, ["animal"])
-        self.assertEqual(population, ["rat"]) # Should NOT include "human"
+        self.assertEqual(study_type, ["Animal Models (rat)"])
+        self.assertEqual(population, ["rat"]) # Should NOT include "human")
 
     def test_get_methods_text_restrictions(self):
         title = "My Cannabis Study"
@@ -422,7 +422,7 @@ class TestDatabaseManager(unittest.TestCase):
             "authors": ["Author A"],
             "journal": "Journal A",
             "year": 2026,
-            "study_type": ["in vitro"],
+            "study_type": ["Clinical (observational)", "Cell Culture (cell lines)"],
             "cannabis_type": ["dried flower", "vape pen"],
             "population": ["human", "cell_line"],
             "outcome_domain": ["pain", "anxiety"]
@@ -433,7 +433,7 @@ class TestDatabaseManager(unittest.TestCase):
             "authors": ["Author B"],
             "journal": "Journal B",
             "year": 2026,
-            "study_type": ["in vitro"],
+            "study_type": ["Clinical (observational)"],
             "cannabis_type": ["dried flower"],
             "population": ["human"],
             "outcome_domain": ["pain"]
@@ -473,6 +473,21 @@ class TestDatabaseManager(unittest.TestCase):
             })
             self.assertEqual(len(res_and_outcome), 1)
             self.assertEqual(res_and_outcome[0]["id"], id_a)
+
+            # Study type OR logic
+            res_or_study = self.db.search_papers({
+                "study_type": "Clinical (observational),Cell Culture (cell lines)",
+                "study_logic": "or"
+            })
+            self.assertEqual(len(res_or_study), 2)
+            
+            # Study type AND logic
+            res_and_study = self.db.search_papers({
+                "study_type": "Clinical (observational),Cell Culture (cell lines)",
+                "study_logic": "and"
+            })
+            self.assertEqual(len(res_and_study), 1)
+            self.assertEqual(res_and_study[0]["id"], id_a)
             
         finally:
             self.db.delete_paper(id_a)
