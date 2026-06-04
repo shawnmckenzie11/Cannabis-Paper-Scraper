@@ -437,6 +437,35 @@
             font-size: 13px;
         }
 
+        table.papers-table th.sortable {
+            cursor: pointer;
+            user-select: none;
+            position: relative;
+            transition: background 0.2s ease, color 0.2s ease;
+        }
+
+        table.papers-table th.sortable:hover {
+            background: rgba(255, 255, 255, 0.05);
+            color: var(--text-primary);
+        }
+
+        table.papers-table th.sortable .sort-icon {
+            display: inline-block;
+            margin-left: 6px;
+            font-size: 10px;
+            vertical-align: middle;
+            color: rgba(255, 255, 255, 0.3);
+            transition: transform 0.2s ease, color 0.2s ease;
+        }
+
+        table.papers-table th.sortable.active {
+            color: var(--accent-blue);
+        }
+
+        table.papers-table th.sortable.active .sort-icon {
+            color: var(--accent-blue);
+        }
+
         .paper-title-col {
             font-weight: 500;
             color: var(--text-primary);
@@ -880,16 +909,6 @@
                         oninput="debounceSearch()">
                 </div>
 
-                <div class="form-group" style="margin-bottom: 15px;">
-                    <label for="filter-sort">Sort Order</label>
-                    <select id="filter-sort" onchange="triggerSearch()">
-                        <option value="DEFAULT">Default (Quality)</option>
-                        <option value="year">Publication Year</option>
-                        <option value="citations">Citation Count</option>
-                        <option value="quality_score">Methodological Quality</option>
-                    </select>
-                </div>
-
                 <div class="form-group" style="margin-bottom: 12px;">
                     <label for="filter-study-type">Study Design</label>
                     <select id="filter-study-type" onchange="triggerSearch()">
@@ -1161,11 +1180,13 @@
                             <tr>
                                 <th style="width: 40px; text-align: center;"><input type="checkbox"
                                         id="select-all-checkbox" onchange="toggleSelectAll(this)"></th>
-                                <th style="width: 90px;">Duration</th>
-                                <th>Title</th>
-                                <th style="width: 70px;">Year</th>
-                                <th style="width: 120px;">Study Design</th>
-                                <th style="width: 110px;">Exposure</th>
+                                <th id="header-duration" class="sortable" style="width: 95px;" onclick="handleHeaderClick('duration')">Duration <span id="sort-icon-duration" class="sort-icon">↕</span></th>
+                                <th id="header-title" class="sortable" onclick="handleHeaderClick('title')">Title <span id="sort-icon-title" class="sort-icon">↕</span></th>
+                                <th id="header-year" class="sortable" style="width: 75px;" onclick="handleHeaderClick('year')">Year <span id="sort-icon-year" class="sort-icon">↕</span></th>
+                                <th id="header-study_type" class="sortable" style="width: 125px;" onclick="handleHeaderClick('study_type')">Study Design <span id="sort-icon-study_type" class="sort-icon">↕</span></th>
+                                <th id="header-exposure_method" class="sortable" style="width: 110px;" onclick="handleHeaderClick('exposure_method')">Exposure <span id="sort-icon-exposure_method" class="sort-icon">↕</span></th>
+                                <th id="header-quality_score" class="sortable" style="width: 90px; text-align: center;" onclick="handleHeaderClick('quality_score')">Quality <span id="sort-icon-quality_score" class="sort-icon">↕</span></th>
+                                <th id="header-citations" class="sortable" style="width: 95px; text-align: center;" onclick="handleHeaderClick('citations')">Citations <span id="sort-icon-citations" class="sort-icon">↕</span></th>
                                 <th style="width: 80px; text-align: center;">Links</th>
                             </tr>
                         </thead>
@@ -1535,6 +1556,8 @@
         let currentPage = 1;
         const pageSize = 50;
         let currentTab = 'original';
+        let currentSortCol = "quality_score";
+        let currentSortDir = "desc";
 
         // Subset Selection Tracking & Dynamic Visualizations Variables
         let currentPapersInView = [];
@@ -1601,6 +1624,8 @@
                 currentPage = 1;
             }
 
+            updateSortIndicators();
+
             // Hide the analysis panel when filters/tabs update
             currentAnalyzedPapers = null;
             const panel = document.getElementById("selection-analytics-panel");
@@ -1615,7 +1640,8 @@
             const thcMax = document.getElementById("filter-thc-max").value;
             const yearMin = document.getElementById("filter-year-min").value;
             const yearMax = document.getElementById("filter-year-max").value;
-            const sortBy = document.getElementById("filter-sort").value;
+            const sortBy = currentSortCol;
+            const sortDir = currentSortDir;
 
             const methodLogic = document.getElementById("logic-method").value;
             const cannabisLogic = document.getElementById("logic-cannabis_type").value;
@@ -1655,7 +1681,10 @@
             if (thcMax && thcMax !== "100") params.push(`thc_max=${thcMax}`);
             if (yearMin && yearMin !== "1950") params.push(`year_min=${yearMin}`);
             if (yearMax && yearMax !== "2026") params.push(`year_max=${yearMax}`);
-            if (sortBy) params.push(`sort_by=${sortBy}`);
+            if (sortBy) {
+                params.push(`sort_by=${sortBy}`);
+                params.push(`sort_dir=${sortDir}`);
+            }
             if (outcomes) {
                 params.push(`outcome=${outcomes}`);
                 params.push(`outcome_logic=${outcomeLogic}`);
@@ -1717,6 +1746,39 @@
             }, 300);
         }
 
+        function handleHeaderClick(col) {
+            if (currentSortCol === col) {
+                currentSortDir = currentSortDir === "asc" ? "desc" : "asc";
+            } else {
+                currentSortCol = col;
+                if (col === "title" || col === "study_type" || col === "exposure_method") {
+                    currentSortDir = "asc";
+                } else {
+                    currentSortDir = "desc";
+                }
+            }
+            triggerSearch(true);
+        }
+
+        function updateSortIndicators() {
+            const columns = ['duration', 'title', 'year', 'study_type', 'exposure_method', 'quality_score', 'citations'];
+            columns.forEach(col => {
+                const header = document.getElementById(`header-${col}`);
+                const icon = document.getElementById(`sort-icon-${col}`);
+                if (!header || !icon) return;
+
+                if (col === currentSortCol) {
+                    header.classList.add('active');
+                    icon.innerHTML = currentSortDir === 'asc' ? '▲' : '▼';
+                    icon.style.opacity = '1';
+                } else {
+                    header.classList.remove('active');
+                    icon.innerHTML = '↕';
+                    icon.style.opacity = '0.3';
+                }
+            });
+        }
+
         // Populate table results
         function populateTable(papers) {
             const tbody = document.getElementById("papers-table-body");
@@ -1760,6 +1822,21 @@
                     newBadge = `<span class="badge" style="background: rgba(0, 240, 255, 0.12); color: var(--accent-blue); border: 1px solid rgba(0, 240, 255, 0.35); margin-left: 8px; font-size: 0.65rem; font-weight: 700; letter-spacing: 0.5px; padding: 2px 6px; text-transform: uppercase; border-radius: 4px; display: inline-block; vertical-align: middle;">Auto Ingested</span>`;
                 }
 
+                // Format quality score badge
+                let qualityBadge = "";
+                const score = p.methodological_quality_score;
+                if (score !== null && score !== undefined) {
+                    let badgeClass = "badge-score-low";
+                    if (score >= 14) badgeClass = "badge-score-high";
+                    else if (score >= 8) badgeClass = "badge-score-med";
+                    qualityBadge = `<span class="badge ${badgeClass}">${score}/20</span>`;
+                } else {
+                    qualityBadge = `<span style="color: var(--text-secondary)">N/A</span>`;
+                }
+
+                // Format citation count
+                const citationsVal = p.citation_count !== null && p.citation_count !== undefined ? p.citation_count : 0;
+
                 tr.innerHTML = `
                     <td style="text-align: center;" onclick="event.stopPropagation();">
                         <input type="checkbox" class="paper-select-checkbox" value="${p.id}" onchange="togglePaperSelection(${p.id}, this)">
@@ -1769,6 +1846,8 @@
                     <td>${p.year || "N/A"}</td>
                     <td><span class="badge badge-type">${Array.isArray(p.study_type) ? p.study_type.join(', ') : (p.study_type || "unknown")}</span></td>
                     <td style="color: #b0bec5;">${Array.isArray(p.exposure_method) ? p.exposure_method.join(', ') : (p.exposure_method || "unknown")}</td>
+                    <td style="text-align: center;">${qualityBadge}</td>
+                    <td style="text-align: center; color: var(--text-secondary); font-weight: 500;">${citationsVal}</td>
                     <td style="text-align: center;" onclick="event.stopPropagation();">
                         <div class="link-icon-group">${linksHtml}</div>
                     </td>
@@ -1810,6 +1889,10 @@
                 btn.classList.remove("active");
             });
             document.getElementById("tab-original").classList.add("active");
+
+            // Reset sorting state
+            currentSortCol = "quality_score";
+            currentSortDir = "desc";
 
             triggerSearch();
         }
@@ -2159,7 +2242,8 @@
             const thcMax = document.getElementById("filter-thc-max").value;
             const yearMin = document.getElementById("filter-year-min").value;
             const yearMax = document.getElementById("filter-year-max").value;
-            const sortBy = document.getElementById("filter-sort").value;
+            const sortBy = currentSortCol;
+            const sortDir = currentSortDir;
 
             // Extract logic values
             const methodLogic = document.getElementById("logic-method").value;
@@ -2200,7 +2284,10 @@
             if (thcMax && thcMax !== "100") params.push(`thc_max=${thcMax}`);
             if (yearMin && yearMin !== "1950") params.push(`year_min=${yearMin}`);
             if (yearMax && yearMax !== "2026") params.push(`year_max=${yearMax}`);
-            if (sortBy) params.push(`sort_by=${sortBy}`);
+            if (sortBy) {
+                params.push(`sort_by=${sortBy}`);
+                params.push(`sort_dir=${sortDir}`);
+            }
             if (outcomes) {
                 params.push(`outcome=${outcomes}`);
                 params.push(`outcome_logic=${outcomeLogic}`);

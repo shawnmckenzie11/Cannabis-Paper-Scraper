@@ -221,6 +221,9 @@ def api_search():
         clean_filters["open_access"] = open_access == "true"
     if sort_by and sort_by != "DEFAULT":
         clean_filters["sort_by"] = sort_by
+    sort_dir = request.args.get("sort_dir")
+    if sort_dir:
+        clean_filters["sort_dir"] = sort_dir
     if quality_min is not None and quality_min != "":
         clean_filters["quality_min"] = int(quality_min)
     if citations_min is not None and citations_min != "":

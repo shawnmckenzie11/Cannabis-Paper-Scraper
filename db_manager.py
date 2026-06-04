@@ -537,12 +537,24 @@ class DatabaseManager:
             
         # 4. Sorting & Ordering
         sort_by = filters.get("sort_by")
+        sort_dir = filters.get("sort_dir", "DESC").upper()
+        if sort_dir not in ("ASC", "DESC"):
+            sort_dir = "DESC"
+
         if sort_by == "year":
-            sql += " ORDER BY papers.year DESC, papers.id DESC"
+            sql += f" ORDER BY papers.year {sort_dir}, papers.id DESC"
         elif sort_by == "citations":
-            sql += " ORDER BY papers.citation_count DESC, papers.year DESC"
+            sql += f" ORDER BY papers.citation_count {sort_dir}, papers.year DESC"
         elif sort_by == "quality_score":
-            sql += " ORDER BY papers.methodological_quality_score DESC, papers.year DESC"
+            sql += f" ORDER BY papers.methodological_quality_score {sort_dir}, papers.year DESC"
+        elif sort_by == "title":
+            sql += f" ORDER BY papers.title {sort_dir}, papers.year DESC"
+        elif sort_by == "duration":
+            sql += f" ORDER BY papers.duration_days {sort_dir}, papers.year DESC"
+        elif sort_by == "study_type":
+            sql += f" ORDER BY papers.study_type {sort_dir}, papers.year DESC"
+        elif sort_by == "exposure_method":
+            sql += f" ORDER BY papers.exposure_method {sort_dir}, papers.year DESC"
         else:
             # Default sorting: Quality first
             if query_val:

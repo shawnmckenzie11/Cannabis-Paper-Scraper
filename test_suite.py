@@ -619,6 +619,103 @@ class TestDatabaseManager(unittest.TestCase):
         self.assertEqual(results_query[0]["pmid"], "1002")
         self.assertEqual(results_query[1]["pmid"], "1001")
 
+    def test_dynamic_column_sorting(self):
+        # Insert papers with different attributes
+        paper_1 = {
+            "pmid": "2001",
+            "doi": "10.1001/p1",
+            "title": "Alpha Paper",
+            "authors": ["Author A"],
+            "journal": "Nature",
+            "year": 2020,
+            "abstract": "Anxiety CBD test.",
+            "study_type": "observational",
+            "exposure_method": "oral/edible",
+            "thc_pct": 0.0,
+            "cbd_pct": 5.0,
+            "dose_mg": None,
+            "strain_reported": None,
+            "strain_normalized": None,
+            "duration_days": 5.0,
+            "population": "animal",
+            "sample_size": 10,
+            "outcome_domain": ["anxiety"],
+            "methodological_quality_flags": [],
+            "methodological_quality_score": 10,
+            "open_access": 0,
+            "citation_count": 5,
+            "publication_date": "2020-01-01"
+        }
+        paper_2 = {
+            "pmid": "2002",
+            "doi": "10.1001/p2",
+            "title": "Beta Paper",
+            "authors": ["Author B"],
+            "journal": "Science",
+            "year": 2025,
+            "abstract": "Anxiety CBD test.",
+            "study_type": "RCT",
+            "exposure_method": "vaporized",
+            "thc_pct": 10.0,
+            "cbd_pct": 10.0,
+            "dose_mg": 20.0,
+            "strain_reported": "Bediol",
+            "strain_normalized": "Chemotype II",
+            "duration_days": 25.0,
+            "population": "human",
+            "sample_size": 200,
+            "outcome_domain": ["anxiety"],
+            "methodological_quality_flags": [],
+            "methodological_quality_score": 15,
+            "open_access": 1,
+            "citation_count": 40,
+            "publication_date": "2025-03-15"
+        }
+        
+        self.db.insert_paper(paper_1)
+        self.db.insert_paper(paper_2)
+        
+        # Test 1: Sort by year ASC
+        res = self.db.search_papers({"sort_by": "year", "sort_dir": "ASC"})
+        self.assertEqual(res[0]["pmid"], "2001") # 2020
+        self.assertEqual(res[1]["pmid"], "2002") # 2025
+        
+        # Test 2: Sort by year DESC
+        res = self.db.search_papers({"sort_by": "year", "sort_dir": "DESC"})
+        self.assertEqual(res[0]["pmid"], "2002") # 2025
+        self.assertEqual(res[1]["pmid"], "2001") # 2020
+
+        # Test 3: Sort by citations ASC
+        res = self.db.search_papers({"sort_by": "citations", "sort_dir": "ASC"})
+        self.assertEqual(res[0]["pmid"], "2001") # 5 citations
+        self.assertEqual(res[1]["pmid"], "2002") # 40 citations
+
+        # Test 4: Sort by citations DESC
+        res = self.db.search_papers({"sort_by": "citations", "sort_dir": "DESC"})
+        self.assertEqual(res[0]["pmid"], "2002") # 40 citations
+        self.assertEqual(res[1]["pmid"], "2001") # 5 citations
+
+        # Test 5: Sort by title ASC
+        res = self.db.search_papers({"sort_by": "title", "sort_dir": "ASC"})
+        self.assertEqual(res[0]["title"], "Alpha Paper")
+        self.assertEqual(res[1]["title"], "Beta Paper")
+
+        # Test 6: Sort by title DESC
+        res = self.db.search_papers({"sort_by": "title", "sort_dir": "DESC"})
+        self.assertEqual(res[0]["title"], "Beta Paper")
+        self.assertEqual(res[1]["title"], "Alpha Paper")
+
+        # Test 7: Sort by duration ASC
+        res = self.db.search_papers({"sort_by": "duration", "sort_dir": "ASC"})
+        self.assertEqual(res[0]["pmid"], "2001") # 5 days
+        self.assertEqual(res[1]["pmid"], "2002") # 25 days
+
+        # Test 8: Sort by study_type DESC
+        res = self.db.search_papers({"sort_by": "study_type", "sort_dir": "DESC"})
+        # "observational" (paper_1) vs "RCT" (paper_2). "observational" comes first in DESC
+        self.assertEqual(res[0]["pmid"], "2001")
+        self.assertEqual(res[1]["pmid"], "2002")
+
     def test_system_metadata(self):
         """Test system_metadata read/write operations."""
         self.db.set_metadata("test_key", "test_value")
