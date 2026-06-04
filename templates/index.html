@@ -828,24 +828,25 @@
 
         .timeframe-select {
             width: auto !important;
-            padding: 4px 10px !important;
-            font-size: 13px !important;
-            border-radius: 6px !important;
-            background: rgba(0, 0, 0, 0.4) !important;
-            border: 1px solid rgba(255, 255, 255, 0.15) !important;
+            padding: 6px 24px 6px 14px !important;
+            font-size: 0.85rem !important;
+            border-radius: 8px !important;
+            background: linear-gradient(135deg, rgba(0, 240, 255, 0.2) 0%, rgba(0, 240, 255, 0.05) 100%) !important;
+            border: 1px solid rgba(0, 240, 255, 0.3) !important;
             color: var(--accent-blue) !important;
             font-weight: 600 !important;
             cursor: pointer;
             outline: none;
-            margin-left: 10px;
+            margin-left: 0;
             font-family: var(--font-display);
             transition: all 0.2s ease;
+            box-shadow: 0 0 10px rgba(0, 240, 255, 0.1);
         }
 
         .timeframe-select:hover {
-            background: rgba(255, 255, 255, 0.08) !important;
+            background: linear-gradient(135deg, rgba(0, 240, 255, 0.3) 0%, rgba(0, 240, 255, 0.1) 100%) !important;
             border-color: var(--accent-blue) !important;
-            box-shadow: 0 0 8px rgba(0, 240, 255, 0.25);
+            box-shadow: 0 0 12px rgba(0, 240, 255, 0.3);
         }
 
         .timeframe-select option {
@@ -991,14 +992,15 @@
             <button class="tab-btn active" id="tab-original" onclick="switchTab('original')">Original Articles</button>
             <button class="tab-btn" id="tab-review" onclick="switchTab('review')">Reviews &amp; Meta-Analyses</button>
             <button class="tab-btn" id="tab-recent" onclick="switchTab('recent')">Recents</button>
+        </div>
+        <div style="display: flex; gap: 10px; align-items: center;">
             <select id="recents-timeframe" onchange="triggerSearch(true)" class="timeframe-select"
                 style="display: none;">
                 <option value="today">New Today</option>
                 <option value="week" selected>New This Week</option>
                 <option value="month">New This Month</option>
             </select>
-        </div>
-        <div style="display: flex; gap: 10px; align-items: center;">
+
             <button type="button" class="btn" id="btn-analyze-subset" onclick="analyzeFilteredSubset()"
                 style="padding: 6px 14px; font-size: 0.85rem; border-radius: 8px; font-family: var(--font-display); background: linear-gradient(135deg, rgba(0, 240, 255, 0.2) 0%, rgba(0, 240, 255, 0.05) 100%); border: 1px solid rgba(0, 240, 255, 0.3); color: var(--accent-blue); cursor: pointer; box-shadow: 0 0 10px rgba(0, 240, 255, 0.1); display: inline-flex; align-items: center; gap: 6px;">
                 📊 Analyze Filtered Articles
