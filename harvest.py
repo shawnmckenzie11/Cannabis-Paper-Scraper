@@ -178,6 +178,25 @@ def parse_pubmed_xml(xml_data: str) -> List[Dict[str, Any]]:
                 abstract_paragraphs.append(text)
         paper["abstract"] = "\n\n".join(abstract_paragraphs)
         
+        # Prepend publication type to the abstract if it is a Review or Meta-Analysis
+        pub_types = []
+        for pub_type in article.findall(".//PublicationTypeList/PublicationType"):
+            if pub_type.text:
+                pub_types.append(pub_type.text.strip().lower())
+                
+        is_review = any("review" in pt for pt in pub_types)
+        is_meta = any("meta-analysis" in pt for pt in pub_types)
+        
+        prefix = ""
+        if is_meta:
+            prefix += "Publication Type: Meta-Analysis. "
+        if is_review:
+            if "Meta-Analysis" not in prefix:
+                prefix += "Publication Type: Review. "
+                
+        if prefix:
+            paper["abstract"] = prefix + paper["abstract"]
+        
         # 4. Journal
         journal_node = article.find(".//Journal/Title")
         if journal_node is not None:

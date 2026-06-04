@@ -28,6 +28,12 @@ class TestHeuristicExtractor(unittest.TestCase):
         title_review2 = "Cannabinoid therapy for sleep: A review"
         abstract_review2 = "We summarize the current literature on cannabinoid receptor agonists."
 
+        # Publication Type prefixes
+        title_pub_review = "Some Cannabis Study"
+        abstract_pub_review = "Publication Type: Review. Objectives: We review things. Methods: Check the literature."
+        title_pub_meta = "Another Study"
+        abstract_pub_meta = "Publication Type: Meta-Analysis. This is a study."
+
         self.assertEqual(extractor.infer_study_type(title, abstract_rct), ["RCT"])
         self.assertEqual(extractor.infer_study_type(title, abstract_animal), ["animal"])
         self.assertEqual(extractor.infer_study_type(title, abstract_invitro), ["in vitro"])
@@ -36,6 +42,9 @@ class TestHeuristicExtractor(unittest.TestCase):
         self.assertEqual(extractor.infer_study_type(title_manifold, abstract_manifold), ["in vitro"])
         self.assertEqual(extractor.infer_study_type(title_review1, abstract_review1), ["review"])
         self.assertEqual(extractor.infer_study_type(title_review2, abstract_review2), ["review"])
+        self.assertEqual(extractor.infer_study_type(title_pub_review, abstract_pub_review), ["review"])
+        self.assertIn("meta-analysis", extractor.infer_study_type(title_pub_meta, abstract_pub_meta))
+        self.assertIn("review", extractor.infer_study_type(title_pub_meta, abstract_pub_meta))
 
     def test_exposure_method(self):
         title = "Inhaled cannabis study"

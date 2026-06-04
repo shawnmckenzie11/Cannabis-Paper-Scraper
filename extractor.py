@@ -356,6 +356,16 @@ def infer_study_type(title: str, abstract: str) -> List[str]:
     combined = methods_text.lower()
     
     types = []
+    
+    # Check full abstract for explicit publication type metadata first
+    abstract_lower = (abstract or "").lower()
+    is_review = False
+    if "publication type: review" in abstract_lower:
+        is_review = True
+    if "publication type: meta-analysis" in abstract_lower:
+        types.append("meta-analysis")
+        is_review = True
+        
     if keyword_match(combined, ["meta-analysis", "pooled analysis", "systematic overview"]):
         types.append("meta-analysis")
         
@@ -367,7 +377,6 @@ def infer_study_type(title: str, abstract: str) -> List[str]:
         "current review", "comprehensive review", "review of the literature", "this mini-review",
         "this minireview", "article reviews", "reviews the current", "reviews the literature"
     ]
-    is_review = False
     if keyword_match(combined, review_keywords):
         is_review = True
     elif "review" in title.lower():
