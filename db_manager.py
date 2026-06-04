@@ -91,6 +91,12 @@ class DatabaseManager:
             except sqlite3.OperationalError:
                 # Column already exists, ignore
                 pass
+            # Ensure publication_type column exists in existing tables
+            try:
+                conn.execute("ALTER TABLE papers ADD COLUMN publication_type TEXT;")
+            except sqlite3.OperationalError:
+                # Column already exists, ignore
+                pass
             # Ensure system_metadata table exists
             conn.execute("""
                 CREATE TABLE IF NOT EXISTS system_metadata (
@@ -150,7 +156,7 @@ class DatabaseManager:
             "abstract", "full_text_link", "study_type", "exposure_method", "thc_pct",
             "cbd_pct", "dose_mg", "strain_reported", "strain_normalized", "duration_days",
             "population", "sample_size", "outcome_domain", "methodological_quality_flags",
-            "methodological_quality_score", "open_access", "citation_count", "date_harvested", "publication_date", "cannabis_type", "summary"
+            "methodological_quality_score", "open_access", "citation_count", "date_harvested", "publication_date", "cannabis_type", "summary", "publication_type"
         ]
         
         # Ensure array fields are stored as JSON strings
@@ -425,21 +431,29 @@ class DatabaseManager:
         if tab == "original":
             where_clauses.append(
                 "("
-                "  (json_valid(papers.study_type) AND json_type(papers.study_type) = 'array' AND NOT EXISTS ("
-                "      SELECT 1 FROM json_each(papers.study_type) WHERE json_each.value IN ('review', 'meta-analysis', 'case study', 'editorial')"
-                "  ))"
+                "  papers.publication_type = 'original research'"
                 "  OR"
-                "  ((NOT json_valid(papers.study_type) OR json_type(papers.study_type) != 'array') AND (papers.study_type IS NULL OR papers.study_type NOT IN ('review', 'meta-analysis', 'case study', 'editorial')))"
+                "  (papers.publication_type IS NULL AND ("
+                "    (json_valid(papers.study_type) AND json_type(papers.study_type) = 'array' AND NOT EXISTS ("
+                "        SELECT 1 FROM json_each(papers.study_type) WHERE json_each.value IN ('review', 'meta-analysis', 'case study', 'editorial')"
+                "    ))"
+                "    OR"
+                "    ((NOT json_valid(papers.study_type) OR json_type(papers.study_type) != 'array') AND (papers.study_type IS NULL OR papers.study_type NOT IN ('review', 'meta-analysis', 'case study', 'editorial')))"
+                "  ))"
                 ")"
             )
         elif tab == "review":
             where_clauses.append(
                 "("
-                "  (json_valid(papers.study_type) AND json_type(papers.study_type) = 'array' AND EXISTS ("
-                "      SELECT 1 FROM json_each(papers.study_type) WHERE json_each.value IN ('review', 'meta-analysis', 'case study', 'editorial')"
-                "  ))"
+                "  (papers.publication_type IS NOT NULL AND papers.publication_type != 'original research')"
                 "  OR"
-                "  (papers.study_type IN ('review', 'meta-analysis', 'case study', 'editorial'))"
+                "  (papers.publication_type IS NULL AND ("
+                "    (json_valid(papers.study_type) AND json_type(papers.study_type) = 'array' AND EXISTS ("
+                "        SELECT 1 FROM json_each(papers.study_type) WHERE json_each.value IN ('review', 'meta-analysis', 'case study', 'editorial')"
+                "    ))"
+                "    OR"
+                "    (papers.study_type IN ('review', 'meta-analysis', 'case study', 'editorial'))"
+                "  ))"
                 ")"
             )
         elif tab == "recent" or filters.get("recent"):

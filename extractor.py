@@ -350,6 +350,68 @@ def get_methods_text(title: str, abstract: str) -> str:
     combined_abstract = "\n\n".join(allowed_parts)
     return title + "\n\n" + combined_abstract
 
+def infer_publication_type(title: str, abstract: str) -> str:
+    """Infers Stage 1 publication type from text keywords."""
+    methods_text = get_methods_text(title, abstract)
+    combined = methods_text.lower()
+    
+    # Check full abstract for explicit publication type metadata first
+    abstract_lower = (abstract or "").lower()
+    
+    # 1. Meta-analysis
+    if "publication type: meta-analysis" in abstract_lower:
+        return "meta-analysis"
+    if keyword_match(combined, ["meta-analysis", "meta-analyses", "pooled analysis", "systematic overview"]):
+        return "meta-analysis"
+        
+    # 2. Systematic review
+    if keyword_match(combined, ["systematic review", "systematic reviews", "scoping review", "scoping reviews"]):
+        return "systematic review"
+        
+    # 3. Review (general)
+    if "publication type: review" in abstract_lower:
+        return "review"
+    
+    review_keywords = [
+        "literature review", "overview of reviews",
+        "narrative review", "critical review", "mini-review", "minireview", "review article",
+        "review paper", "this review", "the present review", "in this review", "we review",
+        "current review", "comprehensive review", "review of the literature", "this mini-review",
+        "this minireview", "article reviews", "reviews the current", "reviews the literature"
+    ]
+    if keyword_match(combined, review_keywords):
+        return "review"
+    if "review" in title.lower():
+        if re.search(r'\breviews?\b', title, re.IGNORECASE):
+            return "review"
+    if re.search(r'\b(this|present|current|our)\s+review\b', combined, re.IGNORECASE):
+        return "review"
+    if re.search(r'\breview\s+(highlights|summarizes|discusses|focuses|provides|aims to|examines|synthesizes|outlines)\b', combined, re.IGNORECASE):
+        return "review"
+        
+    # 4. Case study
+    if keyword_match(combined, ["case study", "case studies", "case report", "case reports", "case series", "clinical case", "case-report", "case-series"]):
+        return "case study"
+        
+    # 5. Editorial
+    if keyword_match(combined, ["editorial", "editorials"]):
+        return "editorial"
+        
+    # 6. Comment
+    if keyword_match(combined, ["commentary", "commentaries", "comment", "opinion", "viewpoint"]):
+        return "comment"
+        
+    # 7. Letter to the editor
+    if keyword_match(combined, ["letter to the editor", "letters to the editor"]):
+        return "letter to the editor"
+        
+    # 8. Perspectives paper
+    if keyword_match(combined, ["perspective", "perspectives"]):
+        return "perspectives paper"
+        
+    # Default to original research
+    return "original research"
+
 def infer_study_type(title: str, abstract: str) -> List[str]:
     """Infers study type from text keywords, focusing on Methods section if available."""
     methods_text = get_methods_text(title, abstract)
@@ -732,6 +794,7 @@ def extract_all_heuristics(title: str, abstract: str) -> Dict[str, Any]:
     Returns:
         Dict: Extracted fields
     """
+    publication_type = infer_publication_type(title, abstract)
     study_type = infer_study_type(title, abstract)
     population = infer_population(title, abstract, study_type)
     exposure_method = infer_exposure_method(title, abstract, study_type, population)
@@ -786,7 +849,8 @@ def extract_all_heuristics(title: str, abstract: str) -> Dict[str, Any]:
         "methodological_quality_flags": flags,
         "multiple_doses": multiple_doses,
         "multiple_time_intervals": multiple_time_intervals,
-        "cannabis_type": cannabis_type
+        "cannabis_type": cannabis_type,
+        "publication_type": publication_type
     }
     result["summary"] = generate_heuristic_summary(result)
     return result

@@ -46,6 +46,18 @@ class TestHeuristicExtractor(unittest.TestCase):
         self.assertIn("meta-analysis", extractor.infer_study_type(title_pub_meta, abstract_pub_meta))
         self.assertIn("review", extractor.infer_study_type(title_pub_meta, abstract_pub_meta))
 
+    def test_publication_type_inference(self):
+        title = "Study on Cannabis"
+        self.assertEqual(extractor.infer_publication_type(title, "This was a double-blind, randomized controlled trial."), "original research")
+        self.assertEqual(extractor.infer_publication_type(title, "We conduct a systematic review of the literature."), "systematic review")
+        self.assertEqual(extractor.infer_publication_type(title, "This is a case report of an unusual patient."), "case study")
+        self.assertEqual(extractor.infer_publication_type("Cannabis for anxiety: a scoping review", "Objectives: To summarize scoping reviews on CBD."), "systematic review")
+        self.assertEqual(extractor.infer_publication_type(title, "Publication Type: Meta-Analysis. Results: We pooled clinical trials."), "meta-analysis")
+        self.assertEqual(extractor.infer_publication_type(title, "Publication Type: Review. Narrative review of the literature."), "review")
+        self.assertEqual(extractor.infer_publication_type(title, "This editorial comment highlights the guidelines."), "editorial")
+        self.assertEqual(extractor.infer_publication_type(title, "We present a letter to the editor regarding the recent guidelines."), "letter to the editor")
+        self.assertEqual(extractor.infer_publication_type(title, "This perspective viewpoint outlines future directions."), "comment")
+
     def test_exposure_method(self):
         title = "Inhaled cannabis study"
         abstract_vape = "Subjects vaporized Bedrocan using a Volcano vaporizer."
@@ -715,6 +727,64 @@ class TestDatabaseManager(unittest.TestCase):
         # "observational" (paper_1) vs "RCT" (paper_2). "observational" comes first in DESC
         self.assertEqual(res[0]["pmid"], "2001")
         self.assertEqual(res[1]["pmid"], "2002")
+
+    def test_publication_type_tab_routing(self):
+        # Insert one original research and one review/case study with publication_type
+        paper_original = {
+            "pmid": "900001",
+            "doi": "10.1001/901",
+            "title": "Clinical Trial on CBD",
+            "authors": ["Author X"],
+            "journal": "JAMA",
+            "year": 2026,
+            "abstract": "Anxiety CBD test.",
+            "publication_type": "original research",
+            "study_type": "RCT",
+            "exposure_method": "oral/edible",
+            "population": "human",
+            "outcome_domain": ["anxiety"],
+            "methodological_quality_score": 10,
+            "open_access": 1,
+            "citation_count": 0,
+            "publication_date": "2026-01-01"
+        }
+        paper_review = {
+            "pmid": "900002",
+            "doi": "10.1001/902",
+            "title": "Cannabinoids: A Systematic Review",
+            "authors": ["Author Y"],
+            "journal": "Lancet",
+            "year": 2026,
+            "abstract": "This systematic review analyzes anxiety CBD studies.",
+            "publication_type": "systematic review",
+            "study_type": "review",
+            "exposure_method": "oral/edible",
+            "population": "human",
+            "outcome_domain": ["anxiety"],
+            "methodological_quality_score": 5,
+            "open_access": 1,
+            "citation_count": 0,
+            "publication_date": "2026-01-01"
+        }
+        
+        orig_id = self.db.insert_paper(paper_original)
+        rev_id = self.db.insert_paper(paper_review)
+        
+        try:
+            # Query original articles tab
+            original_tab = self.db.search_papers({"tab": "original"})
+            original_pmids = {p["pmid"] for p in original_tab}
+            self.assertIn("900001", original_pmids)
+            self.assertNotIn("900002", original_pmids)
+            
+            # Query review articles tab
+            review_tab = self.db.search_papers({"tab": "review"})
+            review_pmids = {p["pmid"] for p in review_tab}
+            self.assertIn("900002", review_pmids)
+            self.assertNotIn("900001", review_pmids)
+        finally:
+            self.db.delete_paper(orig_id)
+            self.db.delete_paper(rev_id)
 
     def test_system_metadata(self):
         """Test system_metadata read/write operations."""

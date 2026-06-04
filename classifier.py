@@ -141,6 +141,7 @@ def classify_with_llm(title: str, abstract: str) -> Optional[Dict[str, Any]]:
             "Ensure the JSON exactly conforms to the following schema structure:\n"
             "{\n"
             "  \"study_type\": [\"RCT\" | \"observational\" | \"animal\" | \"in vitro\" | \"review\" | \"meta-analysis\" | \"case study\" | \"editorial\"] (multi-label array of matching study designs),\n"
+            "  \"publication_type\": \"review\" | \"original research\" | \"case study\" | \"systematic review\" | \"meta-analysis\" | \"editorial\" | \"comment\" | \"letter to the editor\" | \"perspectives paper\" (choose exactly one publication type that best describes the paper),\n"
             "  \"exposure_method\": [\"smoked\" | \"vaporized\" | \"oral/edible\" | \"tincture\" | \"injection\" | \"forced inhalation\" | \"in vitro\" | \"unknown\"] (multi-label array of matching exposure methods),\n"
             "  \"thc_pct\": float or null (numeric percent, e.g. 12.5. Do not include '%' sign),\n"
             "  \"cbd_pct\": float or null (numeric percent, e.g. 0.5. Do not include '%' sign),\n"

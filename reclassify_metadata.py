@@ -42,7 +42,7 @@ def reclassify_all_papers():
             SELECT id, title, abstract, study_type, exposure_method, population,
                    thc_pct, cbd_pct, dose_mg, strain_reported, strain_normalized,
                    duration_days, sample_size, journal, methodological_quality_flags,
-                   methodological_quality_score, cannabis_type
+                   methodological_quality_score, cannabis_type, publication_type
             FROM papers
             """
         )
@@ -66,6 +66,7 @@ def reclassify_all_papers():
             abstract = p.get("abstract") or ""
             
             # 1. Infer study design and exposure focusing on the Methods section if present
+            new_publication_type = extractor.infer_publication_type(title, abstract)
             new_study_type = extractor.infer_study_type(title, abstract)
             new_population = extractor.infer_population(title, abstract, new_study_type)
             new_exposure_method = extractor.infer_exposure_method(title, abstract, new_study_type, new_population)
@@ -103,6 +104,7 @@ def reclassify_all_papers():
             new_score = classifier.calculate_quality_score(paper_payload)
             
             # 5. Check for changes
+            old_pub_type = p.get("publication_type")
             old_study_type = parse_old_list(p.get("study_type"))
             old_exposure = parse_old_list(p.get("exposure_method"))
             old_population = parse_old_list(p.get("population"))
@@ -122,6 +124,7 @@ def reclassify_all_papers():
             flags_changed = sorted(new_flags) != sorted(old_flags)
             
             has_changes = (
+                new_publication_type != old_pub_type or
                 sorted(new_study_type) != sorted(old_study_type) or
                 sorted(new_exposure_method) != sorted(old_exposure) or
                 sorted(new_population) != sorted(old_population) or
@@ -151,7 +154,8 @@ def reclassify_all_papers():
                         population = ?,
                         methodological_quality_flags = ?,
                         methodological_quality_score = ?,
-                        cannabis_type = ?
+                        cannabis_type = ?,
+                        publication_type = ?
                     WHERE id = ?
                     """,
                     (
@@ -161,6 +165,7 @@ def reclassify_all_papers():
                         json.dumps(new_flags),
                         new_score,
                         json.dumps(new_cannabis_type),
+                        new_publication_type,
                         p["id"]
                     )
                 )
@@ -168,6 +173,7 @@ def reclassify_all_papers():
                 
                 if p["id"] == 6895 or "Mitochondrial DNA" in title:
                     logger.info(f"Updated specific paper ID {p['id']}: {title[:60]}...")
+                    logger.info(f"  - Publication Type: {old_pub_type} -> {new_publication_type}")
                     logger.info(f"  - Study Type: {old_study_type} -> {new_study_type}")
                     logger.info(f"  - Exposure: {old_exposure} -> {new_exposure_method}")
                     logger.info(f"  - Population: {old_population} -> {new_population}")

@@ -13,6 +13,7 @@ CREATE TABLE IF NOT EXISTS papers (
     abstract TEXT,
     full_text_link TEXT,
     study_type TEXT,                -- RCT, observational, animal, in vitro, review, meta-analysis
+    publication_type TEXT,          -- review, original research, case study, systematic review, meta-analysis, editorial, comment, letter to the editor, perspectives paper
     exposure_method TEXT,           -- smoked, vaporized, oral/edible, tincture, injection, forced inhalation, in vitro, unknown
     thc_pct REAL,                   -- numeric percentage (or null)
     cbd_pct REAL,                   -- numeric percentage (or null)
