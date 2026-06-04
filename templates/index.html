@@ -102,33 +102,33 @@
         /* --- Layout --- */
         .app-container {
             display: flex;
-            min-height: 100vh;
+            min-height: calc(100vh - 130px);
+            position: relative;
         }
 
-        /* --- Sidebar Search panel --- */
-        aside.sidebar {
-            width: var(--sidebar-width);
-            background: rgba(10, 12, 19, 0.85);
-            border-right: 1px solid var(--card-border);
-            padding: 24px;
-            display: flex;
-            flex-direction: column;
-            gap: 20px;
-            backdrop-filter: blur(20px);
-            position: fixed;
+        /* --- Top Banner --- */
+        .top-banner {
+            position: sticky;
             top: 0;
-            bottom: 0;
-            left: 0;
-            overflow-y: auto;
-            z-index: 10;
+            z-index: 100;
+            height: 70px;
+            background: rgba(8, 9, 12, 0.95);
+            border-bottom: 1px solid var(--card-border);
+            backdrop-filter: blur(20px);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 30px;
         }
 
-        .logo-container {
-            padding-bottom: 15px;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+        .banner-left {
+            display: flex;
+            align-items: center;
+            gap: 30px;
+            width: 100%;
         }
 
-        .logo-container h1 {
+        .top-banner h1 {
             font-family: var(--font-display);
             font-size: 22px;
             font-weight: 800;
@@ -137,22 +137,46 @@
             display: flex;
             align-items: center;
             gap: 8px;
+            margin: 0;
         }
 
-        .logo-container h1 span {
+        .top-banner h1 span {
             color: var(--accent-blue);
             text-shadow: 0 0 10px var(--accent-blue-glow);
+        }
+
+        .banner-actions {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+        }
+
+        /* --- Sidebar Search panel --- */
+        aside.sidebar {
+            width: var(--sidebar-width);
+            flex-shrink: 0;
+            background: rgba(10, 12, 19, 0.85);
+            border-right: 1px solid var(--card-border);
+            padding: 24px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            backdrop-filter: blur(20px);
+            position: sticky;
+            top: 130px;
+            height: calc(100vh - 130px);
+            overflow-y: auto;
+            z-index: 10;
         }
 
         /* --- Main Content --- */
         main.main-content {
             flex: 1;
-            margin-left: var(--sidebar-width);
             padding: 30px;
-            max-width: calc(100% - var(--sidebar-width));
             display: flex;
             flex-direction: column;
             gap: 25px;
+            min-width: 0;
         }
 
         /* --- Header Actions --- */
@@ -765,12 +789,18 @@
 
         /* --- Tabs --- */
         .tabs-container {
+            position: sticky;
+            top: 70px;
+            z-index: 90;
+            height: 60px;
+            background: rgba(12, 16, 27, 0.95);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+            backdrop-filter: blur(20px);
             display: flex;
             justify-content: space-between;
             align-items: center;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-            padding-bottom: 10px;
-            margin-bottom: 15px;
+            padding: 0 30px;
+            margin-bottom: 0;
         }
 
         .tab-btn {
@@ -885,6 +915,53 @@
             border-style: solid;
             border-color: var(--card-border-hover) transparent transparent transparent;
         }
+
+        /* --- Harvest Modal popup --- */
+        .harvest-modal {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) scale(0.9);
+            width: 90%;
+            max-width: 600px;
+            height: auto;
+            max-height: 85vh;
+            background: var(--drawer-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 16px;
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.6);
+            z-index: 110;
+            padding: 25px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.25s ease, transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), visibility 0.25s;
+        }
+
+        .harvest-modal.open {
+            opacity: 1;
+            visibility: visible;
+            transform: translate(-50%, -50%) scale(1);
+        }
+
+        .harvest-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.7);
+            backdrop-filter: blur(5px);
+            z-index: 105;
+            display: none;
+        }
+
+        .harvest-overlay.open {
+            display: block;
+        }
     </style>
     <!-- Chart.js for premium dynamic subset visualizations -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -892,13 +969,42 @@
 
 <body>
 
+    <header class="top-banner">
+        <div class="banner-left">
+            <h1><span>Cannabis</span> Scraper</h1>
+            <div class="banner-actions">
+                <button class="btn btn-secondary" onclick="openHarvestModal()" id="btn-harvest-trigger" style="padding: 8px 16px; font-size: 0.85rem; background: rgba(0, 240, 255, 0.1); border-color: rgba(0, 240, 255, 0.3); color: var(--accent-blue); display: inline-flex; align-items: center; gap: 6px;">
+                    <span>📥</span> Harvest Papers
+                </button>
+                <button class="btn btn-secondary" disabled style="padding: 8px 16px; font-size: 0.85rem; opacity: 0.4; cursor: not-allowed; display: inline-flex; align-items: center; gap: 6px;">
+                    <span>📊</span> My Analyses
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- FULL PAGE WIDTH TABS -->
+    <div class="tabs-container" id="global-tabs-container">
+        <div style="display: flex; gap: 15px; align-items: center;">
+            <button class="tab-btn active" id="tab-original" onclick="switchTab('original')">Original Articles</button>
+            <button class="tab-btn" id="tab-review" onclick="switchTab('review')">Reviews &amp; Meta-Analyses</button>
+            <button class="tab-btn" id="tab-recent" onclick="switchTab('recent')">Recents</button>
+            <select id="recents-timeframe" onchange="triggerSearch(true)" class="timeframe-select" style="display: none;">
+                <option value="today">New Today</option>
+                <option value="week" selected>New This Week</option>
+                <option value="month">New This Month</option>
+            </select>
+        </div>
+        <button type="button" class="btn" id="btn-analyze-subset" onclick="analyzeFilteredSubset()"
+            style="padding: 6px 14px; font-size: 0.85rem; border-radius: 8px; font-family: var(--font-display); background: linear-gradient(135deg, rgba(0, 240, 255, 0.2) 0%, rgba(0, 240, 255, 0.05) 100%); border: 1px solid rgba(0, 240, 255, 0.3); color: var(--accent-blue); cursor: pointer; box-shadow: 0 0 10px rgba(0, 240, 255, 0.1); display: inline-flex; align-items: center; gap: 6px;">
+            📊 Analyze Filtered Articles
+        </button>
+    </div>
+
     <div class="app-container">
 
         <!-- SIDEBAR QUERY CONTROLS -->
         <aside class="sidebar">
-            <div class="logo-container">
-                <h1><span>Cannabis</span> Scraper</h1>
-            </div>
 
             <!-- Filters Form -->
             <form id="filters-form" onsubmit="event.preventDefault(); triggerSearch();">
@@ -1096,84 +1202,9 @@
                     onclick="deleteSelectedPapers()">Delete Selected (<span id="delete-count">0</span>)</button>
             </header>
 
-            <!-- HARVEST CONTROLS CARD -->
-            <section class="glass-panel harvest-card">
-                <div class="harvest-flex">
-                    <div class="form-group" style="flex: 2; min-width: 250px;">
-                        <label for="harvest-query">Harvest New Papers (NCBI PubMed Search)</label>
-                        <input type="text" id="harvest-query"
-                            placeholder="e.g. 'cannabis vaporized RCT anxiety' or 'CBD neuropathic pain'">
-                    </div>
-                    <div class="form-group"
-                        style="display: flex; align-items: center; justify-content: center; padding-bottom: 5px;">
-                        <label class="checkbox-item" title="Run Claude 3.5 Sonnet classification pass"><input
-                                type="checkbox" id="harvest-classify"> Claude LLM</label>
-                    </div>
-                    <button class="btn btn-primary" onclick="triggerHarvest()">Harvest</button>
-                </div>
-
-                <!-- Harvest Loading Progress Bar -->
-                <div class="harvest-status-bar" id="harvest-status-bar">
-                    <div class="progress-text">
-                        <span id="harvest-progress-msg">Connecting to crawler...</span>
-                        <span><span class="spinner" id="harvest-spinner"></span> <span
-                                id="harvest-progress-percent"></span></span>
-                    </div>
-                    <div class="progress-meter">
-                        <div class="progress-fill" id="harvest-progress-fill"></div>
-                    </div>
-                </div>
-
-                <!-- Daily Background Auto-Scan Scheduler Status -->
-                <div class="scheduler-status-row" id="scheduler-status-row"
-                    style="margin-top: 15px; display: flex; align-items: center; justify-content: space-between; font-size: 0.8rem; padding: 8px 15px; background: rgba(255, 255, 255, 0.02); border: 1px solid rgba(255, 255, 255, 0.05); border-radius: 8px; color: var(--text-secondary);">
-                    <div style="display: flex; align-items: center; gap: 8px;">
-                        <span
-                            style="display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: #90a4ae; box-shadow: 0 0 8px #90a4ae;"
-                            id="scheduler-pulse"></span>
-                        <span>Daily Background Auto-Scan
-                            <span class="help-tooltip-container">ⓘ
-                                <span class="help-tooltip-text">
-                                    <strong>Daily Automated Harvest & Cleanse</strong><br>
-                                    Searches PubMed and Semantic Scholar every 24 hours using query:
-                                    <code>cannabis OR cannabinoid OR marijuana</code>.<br><br>
-                                    Runs a post-scan filter to automatically purge unrelated acronym collisions like
-                                    <em>Common Bile Duct (CBD)</em>, <em>Corticobasal Degeneration (CBD)</em>, or
-                                    <em>Central Business District (CBD)</em> unless they have explicit overrides (e.g.
-                                    <code>cannabi*</code>, <code>hemp*</code>, <code>thc</code>).
-                                </span>
-                            </span>:
-                            <strong id="scheduler-status-text" style="color: var(--text-primary);">Checking...</strong>
-                        </span>
-                    </div>
-                    <div id="scheduler-run-details" style="font-size: 0.75rem; text-align: right; max-width: 70%;">
-                        Status: <span id="scheduler-last-run"
-                            style="font-family: var(--font-mono); color: var(--text-primary);">Checking...</span>
-                    </div>
-                </div>
-            </section>
 
             <!-- TABLE OF MATCHED PAPERS -->
             <section class="glass-panel" style="flex: 1; display: flex; flex-direction: column;">
-                <!-- Tab Navigation -->
-                <div class="tabs-container">
-                    <div style="display: flex; gap: 15px;">
-                        <button class="tab-btn active" id="tab-original" onclick="switchTab('original')">Original
-                            Articles</button>
-                        <button class="tab-btn" id="tab-review" onclick="switchTab('review')">Reviews &
-                            Meta-Analyses</button>
-                        <button class="tab-btn" id="tab-recent" onclick="switchTab('recent')">Recents</button>
-                        <select id="recents-timeframe" onchange="triggerSearch(true)" class="timeframe-select" style="display: none;">
-                            <option value="today">New Today</option>
-                            <option value="week" selected>New This Week</option>
-                            <option value="month">New This Month</option>
-                        </select>
-                    </div>
-                    <button type="button" class="btn" id="btn-analyze-subset" onclick="analyzeFilteredSubset()"
-                        style="padding: 6px 14px; font-size: 0.85rem; border-radius: 8px; font-family: var(--font-display); background: linear-gradient(135deg, rgba(0, 240, 255, 0.2) 0%, rgba(0, 240, 255, 0.05) 100%); border: 1px solid rgba(0, 240, 255, 0.3); color: var(--accent-blue); cursor: pointer; box-shadow: 0 0 10px rgba(0, 240, 255, 0.1); display: inline-flex; align-items: center; gap: 6px;">
-                        📊 Analyze Filtered Articles
-                    </button>
-                </div>
                 <div class="table-wrapper" style="flex: 1;">
                     <table class="papers-table">
                         <thead>
@@ -1506,6 +1537,70 @@
             </div>
         </div>
     </aside>
+
+    <!-- HARVEST MODAL OVERLAY -->
+    <div class="harvest-overlay" id="harvest-overlay" onclick="closeHarvestModal()"></div>
+
+    <!-- HARVEST CONTROLS MODAL -->
+    <div class="harvest-modal" id="harvest-modal">
+        <div class="drawer-header" style="border-bottom: 1px solid rgba(255, 255, 255, 0.06); padding-bottom: 15px;">
+            <div class="drawer-title-group">
+                <h3 style="font-family: var(--font-display); font-size: 18px; font-weight: 700; color: var(--text-primary); display: flex; align-items: center; gap: 8px;">
+                    <span>📥</span> Harvest New Papers
+                </h3>
+            </div>
+            <button class="btn-close" onclick="closeHarvestModal()">&times;</button>
+        </div>
+
+        <div class="form-group" style="margin-top: 10px;">
+            <label for="harvest-query" style="font-size: 0.85rem; font-weight: 600; color: var(--text-primary);">NCBI PubMed Search Query</label>
+            <input type="text" id="harvest-query"
+                placeholder="e.g. 'cannabis RCT vaporized anxiety' or 'CBD neuropathic pain'">
+        </div>
+
+        <div style="display: flex; align-items: center; justify-content: space-between; margin-top: 10px;">
+            <label class="checkbox-item" title="Run Claude 3.5 Sonnet classification pass" style="display: inline-flex; align-items: center; gap: 6px; cursor: pointer;">
+                <input type="checkbox" id="harvest-classify"> Claude LLM Classification
+            </label>
+            <button class="btn btn-primary" onclick="triggerHarvest()">Start Harvest</button>
+        </div>
+
+        <!-- Harvest Loading Progress Bar -->
+        <div class="harvest-status-bar" id="harvest-status-bar" style="display: none; margin-top: 15px;">
+            <div class="progress-text" style="display: flex; justify-content: space-between; font-size: 0.85rem; margin-bottom: 6px;">
+                <span id="harvest-progress-msg">Connecting to crawler...</span>
+                <span><span class="spinner" id="harvest-spinner"></span> <span id="harvest-progress-percent"></span></span>
+            </div>
+            <div class="progress-meter">
+                <div class="progress-fill" id="harvest-progress-fill"></div>
+            </div>
+        </div>
+
+        <!-- Daily Background Auto-Scan Scheduler Status -->
+        <div class="scheduler-status-row" id="scheduler-status-row"
+            style="margin-top: 15px; display: flex; align-items: center; justify-content: space-between; font-size: 0.8rem; padding: 12px 15px; background: rgba(255, 255, 255, 0.02); border: 1px solid rgba(255, 255, 255, 0.05); border-radius: 8px; color: var(--text-secondary);">
+            <div style="display: flex; align-items: center; gap: 8px;">
+                <span style="display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: #90a4ae; box-shadow: 0 0 8px #90a4ae;" id="scheduler-pulse"></span>
+                <span>Daily Background Auto-Scan
+                    <span class="help-tooltip-container">ⓘ
+                        <span class="help-tooltip-text">
+                            <strong>Daily Automated Harvest & Cleanse</strong><br>
+                            Searches PubMed and Semantic Scholar every 24 hours using query:
+                            <code>cannabis OR cannabinoid OR marijuana</code>.<br><br>
+                            Runs a post-scan filter to automatically purge unrelated acronym collisions like
+                            <em>Common Bile Duct (CBD)</em>, <em>Corticobasal Degeneration (CBD)</em>, or
+                            <em>Central Business District (CBD)</em> unless they have explicit overrides (e.g.
+                            <code>cannabi*</code>, <code>hemp*</code>, <code>thc</code>).
+                        </span>
+                    </span>:
+                    <strong id="scheduler-status-text" style="color: var(--text-primary);">Checking...</strong>
+                </span>
+            </div>
+            <div id="scheduler-run-details" style="font-size: 0.75rem; text-align: right; max-width: 60%;">
+                Status: <span id="scheduler-last-run" style="font-family: var(--font-mono); color: var(--text-primary);">Checking...</span>
+            </div>
+        </div>
+    </div>
 
     <!-- Dynamic JavaScript -->
     <script>
@@ -1994,6 +2089,18 @@
         function closeDrawer() {
             document.getElementById("details-drawer").classList.remove("open");
             document.getElementById("drawer-overlay").classList.remove("open");
+        }
+
+        // Open Harvest Modal
+        function openHarvestModal() {
+            document.getElementById("harvest-modal").classList.add("open");
+            document.getElementById("harvest-overlay").classList.add("open");
+        }
+
+        // Close Harvest Modal
+        function closeHarvestModal() {
+            document.getElementById("harvest-modal").classList.remove("open");
+            document.getElementById("harvest-overlay").classList.remove("open");
         }
 
         // Trigger crawler harvesting pass
