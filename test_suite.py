@@ -45,6 +45,11 @@ class TestHeuristicExtractor(unittest.TestCase):
         self.assertEqual(extractor.infer_study_type(title_pub_review, abstract_pub_review), ["review"])
         self.assertEqual(extractor.infer_study_type(title_pub_meta, abstract_pub_meta), ["meta-analysis"])
 
+        # RCT with pre-clinical background in abstract (should filter out Animal Models)
+        title_rct_bg = "Signaling-specific inhibition of the CB1 receptor for cannabis use disorder: phase 1 and phase 2a randomized trials"
+        abstract_rct_bg = "In mice and non-human primates, AEF0117 decreased cannabinoid self-administration. In a randomized controlled clinical trial, healthy volunteers were randomized..."
+        self.assertEqual(extractor.infer_study_type(title_rct_bg, abstract_rct_bg), ["Clinical (RCT)"])
+
 
     def test_publication_type_inference(self):
         title = "Study on Cannabis"

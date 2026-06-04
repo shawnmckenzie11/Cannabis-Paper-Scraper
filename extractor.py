@@ -482,6 +482,36 @@ def infer_study_type(title: str, abstract: str) -> List[str]:
     if not types:
         types.append("Clinical (observational)")
         
+    if "Clinical (RCT)" in types:
+        # Remove Clinical (observational) as RCTs are interventional, not observational
+        if "Clinical (observational)" in types:
+            types.remove("Clinical (observational)")
+            
+        # Check if animal/cell keywords are in the title to keep them, otherwise remove
+        title_lower = title.lower()
+        animal_keywords = [
+            "mouse", "mice", "murine", "rat", "rats", "rodent", "rodents", "animal", "animals", 
+            "dog", "dogs", "cat", "cats", "pig", "pigs", "rabbit", "rabbits", "zebrafish", 
+            "drosophila", "macaque", "rhesus", "monkey", "monkeys", "primate", "primates", 
+            "baboon", "chimpanzee", "canine", "feline", "in vivo"
+        ]
+        cell_keywords = [
+            "in vitro", "cell line", "cell lines", "hela", "hepg2", "pc12", "raw 264.7", 
+            "sh-sy5y", "jurkat", "cho cells", "primary cell", "primary cells", "primary culture", 
+            "organoid", "organoids", "spheroid", "spheroids", "co-culture", "co-cultures", 
+            "coculture", "cocultures", "microglia", "neurons", "epithelial cells", 
+            "epithelial cell", "airway epithelial", "cultured cells", "culture assay", 
+            "cell culture", "cell cultures"
+        ]
+        
+        has_animal_title = any(k in title_lower for k in animal_keywords)
+        has_cell_title = any(k in title_lower for k in cell_keywords)
+        
+        if not has_animal_title:
+            types = [t for t in types if not t.startswith("Animal Models (")]
+        if not has_cell_title:
+            types = [t for t in types if not t.startswith("Cell Culture (")]
+            
     return list(set(types))
     
 def infer_exposure_method(title: str, abstract: str, study_type: Any, population: Optional[Any] = None) -> List[str]:
