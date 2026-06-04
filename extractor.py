@@ -529,7 +529,28 @@ def infer_population(title: str, abstract: str, study_type: Any) -> List[str]:
         pops.append("mouse")
     if keyword_match(combined, ["rat", "rats", "wistar", "sprague"]):
         pops.append("rat")
-    if keyword_match(combined, ["patient", "subject", "participant", "volunteer", "man", "woman", "human", "clinical", "adult", "individuals"]):
+    # Human population keywords check: separate unambiguous and ambiguous terms
+    human_unambiguous = [
+        "patient", "patients", "participant", "participants", "volunteer", "volunteers",
+        "man", "men", "woman", "women", "human", "humans", "clinical", "individual", "individuals",
+        "boy", "boys", "girl", "girls", "child", "children", "pediatric", "pediatrics",
+        "adolescent", "adolescents"
+    ]
+    human_ambiguous = ["adult", "adults", "subject", "subjects"]
+    
+    # If animal-related terms are present in the text, ambiguous words like "adult" or "subject"
+    # are likely to refer to the animals, so we exclude them from the human keywords list.
+    has_animals = keyword_match(combined, [
+        "mouse", "mice", "murine", "c57bl", "rat", "rats", "wistar", "sprague",
+        "rodent", "rodents", "animal", "animals", "dog", "dogs", "monkey", "monkeys",
+        "pig", "pigs", "rabbit", "rabbits", "feline", "canine"
+    ])
+    
+    human_keywords = human_unambiguous
+    if not has_animals:
+        human_keywords = human_unambiguous + human_ambiguous
+        
+    if keyword_match(combined, human_keywords):
         pops.append("human")
     if keyword_match(combined, ["dog", "pig", "monkey", "rabbit", "feline", "canine"]):
         pops.append("other")

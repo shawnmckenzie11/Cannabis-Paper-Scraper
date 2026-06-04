@@ -132,6 +132,16 @@ class TestHeuristicExtractor(unittest.TestCase):
         self.assertEqual(study_type, ["RCT"])
         self.assertEqual(population, ["human"])
 
+    def test_animal_population_with_adult_keywords(self):
+        title = "Effects of cannabis smoke and oral Δ9THC on cognition in young adult and aged rats"
+        abstract = "OBJECTIVES: The current study was designed to determine how cannabis influences multiple forms of cognition in young adult and aged rats of both sexes... METHODS: Rats were exposed acutely to cannabis smoke..."
+        
+        study_type = extractor.infer_study_type(title, abstract)
+        population = extractor.infer_population(title, abstract, study_type)
+        
+        self.assertEqual(study_type, ["animal"])
+        self.assertEqual(population, ["rat"]) # Should NOT include "human"
+
     def test_get_methods_text_restrictions(self):
         title = "My Cannabis Study"
         
