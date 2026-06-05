@@ -66,6 +66,7 @@ def reclassify_all_papers():
             new_publication_type = extractor.infer_publication_type(title, abstract)
             new_study_type = extractor.infer_study_type(title, abstract)
             new_population = extractor.infer_population(title, abstract, new_study_type)
+            new_study_type = extractor.postprocess_study_type(new_study_type, new_population)
             new_exposure_method = extractor.infer_exposure_method(title, abstract, new_study_type, new_population)
             new_cannabis_type = extractor.infer_cannabis_type(title, abstract, new_study_type, new_exposure_method)
             
@@ -75,13 +76,33 @@ def reclassify_all_papers():
             old_exposure = parse_old_list(p.get("exposure_method"))
             old_population = parse_old_list(p.get("population"))
             old_cannabis_type = parse_old_list(p.get("cannabis_type"))
+            old_summary = p.get("summary") or ""
+            
+            # Check if summary is heuristic-generated
+            is_heuristic_summary = (
+                not old_summary or 
+                old_summary.startswith("This is a ") or 
+                old_summary.startswith("This is an ")
+            )
+            
+            if is_heuristic_summary:
+                new_summary = extractor.generate_heuristic_summary({
+                    "study_type": new_study_type,
+                    "cannabis_type": new_cannabis_type,
+                    "exposure_method": new_exposure_method,
+                    "population": new_population,
+                    "strain_reported": p.get("strain_reported")
+                })
+            else:
+                new_summary = old_summary
             
             has_changes = (
                 new_publication_type != old_pub_type or
                 sorted(new_study_type) != sorted(old_study_type) or
                 sorted(new_exposure_method) != sorted(old_exposure) or
                 sorted(new_population) != sorted(old_population) or
-                sorted(new_cannabis_type) != sorted(old_cannabis_type)
+                sorted(new_cannabis_type) != sorted(old_cannabis_type) or
+                new_summary != old_summary
             )
             
             if has_changes:
@@ -102,7 +123,8 @@ def reclassify_all_papers():
                         exposure_method = ?,
                         population = ?,
                         cannabis_type = ?,
-                        publication_type = ?
+                        publication_type = ?,
+                        summary = ?
                     WHERE id = ?
                     """,
                     (
@@ -111,6 +133,7 @@ def reclassify_all_papers():
                         json.dumps(new_population),
                         json.dumps(new_cannabis_type),
                         new_publication_type,
+                        new_summary,
                         p["id"]
                     )
                 )

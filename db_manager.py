@@ -23,7 +23,7 @@ class DatabaseManager:
 
     def get_connection(self) -> sqlite3.Connection:
         """Returns a sqlite3 connection with dict-like row factory and JSON support verification."""
-        conn = sqlite3.connect(self.db_path)
+        conn = sqlite3.connect(self.db_path, timeout=30.0)
         conn.row_factory = sqlite3.Row
         # Enable foreign keys just in case
         conn.execute("PRAGMA foreign_keys = ON;")
@@ -43,7 +43,7 @@ class DatabaseManager:
         fts_needs_migration = False
         if os.path.exists(self.db_path):
             try:
-                conn_check = sqlite3.connect(self.db_path)
+                conn_check = sqlite3.connect(self.db_path, timeout=30.0)
                 conn_check.row_factory = sqlite3.Row
                 cursor = conn_check.cursor()
                 cursor.execute("PRAGMA table_info(papers_fts);")

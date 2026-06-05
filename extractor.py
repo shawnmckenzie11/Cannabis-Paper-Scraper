@@ -442,7 +442,7 @@ def infer_study_type(title: str, abstract: str) -> List[str]:
     if keyword_match(combined, ["retrospective", "retrospectively", "chart review", "historical cohort"]):
         types.append("Clinical (retrospective)")
     # observational
-    if keyword_match(combined, ["observational", "cross-sectional", "survey", "registry", "longitudinal", "case-control", "epidemiological", "cohort"]):
+    if keyword_match(combined, ["observational", "cross-sectional", "survey", "surveys", "registry", "registries", "longitudinal", "case-control", "epidemiological", "cohort", "cohorts", "gwas", "genome-wide", "genomewide"]):
         types.append("Clinical (observational)")
         
     # 2. Animal Models
@@ -475,7 +475,7 @@ def infer_study_type(title: str, abstract: str) -> List[str]:
     # co-culture
     if keyword_match(combined, ["co-culture", "co-cultures", "coculture", "cocultures"]):
         types.append("Cell Culture (co-culture)")
-    elif keyword_match(combined, ["in vitro", "cultured cells", "culture assay", "cell culture", "cell cultures", "microglia", "neurons", "epithelial cells", "epithelial cell", "airway epithelial"]):
+    elif keyword_match(combined, ["in vitro", "cultured cells", "culture assay", "cell culture", "cell cultures", "epithelial cells", "epithelial cell", "airway epithelial"]):
         if not any(t.startswith("Cell Culture (") for t in types):
             types.append("Cell Culture (cell lines)")
             
@@ -511,6 +511,39 @@ def infer_study_type(title: str, abstract: str) -> List[str]:
             types = [t for t in types if not t.startswith("Animal Models (")]
         if not has_cell_title:
             types = [t for t in types if not t.startswith("Cell Culture (")]
+            
+    return list(set(types))
+
+def postprocess_study_type(study_type: List[str], population: List[str]) -> List[str]:
+    """Aligns study_type with population to prevent cross-contamination false positives."""
+    has_human = "human" in population
+    has_animal = any(p in population for p in ["mouse", "rat", "other"])
+    has_cell = "cell_line" in population
+    
+    types = list(study_type)
+    
+    if has_human and not has_animal and not has_cell:
+        # Pure human study
+        types = [t for t in types if not t.startswith("Animal Models (") and not t.startswith("Cell Culture (")]
+        if not types:
+            types = ["Clinical (observational)"]
+            
+    elif has_animal and not has_human:
+        # Pure animal study
+        types = [t for t in types if not t.startswith("Clinical (") and t != "RCT" and t != "observational"]
+        if not types:
+            if "mouse" in population:
+                types = ["Animal Models (mouse)"]
+            elif "rat" in population:
+                types = ["Animal Models (rat)"]
+            else:
+                types = ["Animal Models (other)"]
+                
+    elif has_cell and not has_human and not has_animal:
+        # Pure cell culture study
+        types = [t for t in types if not t.startswith("Clinical (") and not t.startswith("Animal Models (") and t != "RCT" and t != "observational"]
+        if not types:
+            types = ["Cell Culture (cell lines)"]
             
     return list(set(types))
     
@@ -556,7 +589,9 @@ def infer_exposure_method(title: str, abstract: str, study_type: Any, population
     if populations.intersection({"mouse", "rat", "other"}) or "animal" in study_types or any(s.startswith("Animal Models (") for s in study_types):
         if keyword_match(combined, ["nose-only", "nose only", "snout exposure", "head-out"]):
             methods.append("nose only smoke/vapor")
-        if keyword_match(combined, ["whole body", "whole-body", "chamber exposure", "whole body smoke", "whole body vapor"]):
+        if keyword_match(combined, ["whole body", "whole-body", "chamber exposure", "whole body smoke", "whole body vapor"]) or (
+            keyword_match(combined, ["smoke", "vapor", "vaporized", "vaporised", "vape", "vaping", "inhalation", "inhalational"]) and "nose only smoke/vapor" not in methods
+        ):
             methods.append("whole body. smoke/vapor")
         if keyword_match(combined, ["injection", "injected", "intravenous", "intraperitoneal", "ip", "iv", "subcutaneous", "sc", "intramuscular", "im"]):
             methods.append("injection cannabinoids")
@@ -648,7 +683,7 @@ def infer_population(title: str, abstract: str, study_type: Any) -> List[str]:
         
     pops = []
     
-    if "in vitro" in study_types or any(s.startswith("Cell Culture (") for s in study_types) or keyword_match(combined, ["cell line", "hela", "hepg2", "cells", "culture", "epithelial cells", "bronchial epithelial"]):
+    if "in vitro" in study_types or any(s.startswith("Cell Culture (") for s in study_types) or keyword_match(combined, ["cell line", "cell lines", "cell culture", "cell cultures", "cultured cells", "hela", "hepg2", "epithelial cells", "bronchial epithelial"]):
         pops.append("cell_line")
     if keyword_match(combined, ["mouse", "mice", "murine", "c57bl"]):
         pops.append("mouse")
@@ -676,7 +711,25 @@ def infer_population(title: str, abstract: str, study_type: Any) -> List[str]:
         human_keywords = human_unambiguous + human_ambiguous
         
     if keyword_match(combined, human_keywords):
-        pops.append("human")
+        # Prevent false-positive "human" population in pure animal/cell culture studies
+        # where terms like "human" are used contextually (e.g., "to model human disease")
+        is_pure_non_clinical = (
+            any(s.startswith("Animal Models (") or s.startswith("Cell Culture (") for s in study_types) or 
+            "animal" in study_types or "in vitro" in study_types
+        ) and not (
+            any(s.startswith("Clinical (") or s == "RCT" or s == "observational" for s in study_types)
+        )
+        
+        if is_pure_non_clinical:
+            # Require actual human subjects/cohort terms to confirm human population
+            human_subject_keywords = [
+                "patient", "patients", "participant", "participants", "volunteer", "volunteers",
+                "clinical trial", "clinical study", "men", "women", "cohort", "human subjects", "human participants"
+            ]
+            if keyword_match(combined, human_subject_keywords):
+                pops.append("human")
+        else:
+            pops.append("human")
     if keyword_match(combined, ["dog", "pig", "monkey", "rabbit", "feline", "canine"]):
         pops.append("other")
         
@@ -803,6 +856,7 @@ def extract_all_heuristics(title: str, abstract: str) -> Dict[str, Any]:
     publication_type = infer_publication_type(title, abstract)
     study_type = infer_study_type(title, abstract)
     population = infer_population(title, abstract, study_type)
+    study_type = postprocess_study_type(study_type, population)
     exposure_method = infer_exposure_method(title, abstract, study_type, population)
     thc_pct = extract_thc_pct(abstract)
     # If title mentions THC, we can check there too
@@ -825,18 +879,6 @@ def extract_all_heuristics(title: str, abstract: str) -> Dict[str, Any]:
     outcome_domain = extract_outcomes(title, abstract)
     cannabis_type = infer_cannabis_type(title, abstract, study_type, exposure_method)
     
-    flags = determine_quality_flags(
-        title=title,
-        abstract=abstract,
-        study_type=study_type,
-        exposure_method=exposure_method,
-        population=population,
-        thc_pct=thc_pct,
-        dose_mg=dose_mg,
-        strain_reported=strain_reported,
-        strain_normalized=strain_normalized
-    )
-    
     multiple_doses = detect_multiple_doses(title, abstract)
     multiple_time_intervals = detect_multiple_time_intervals(title, abstract)
     
@@ -852,7 +894,7 @@ def extract_all_heuristics(title: str, abstract: str) -> Dict[str, Any]:
         "population": population,
         "sample_size": sample_size,
         "outcome_domain": outcome_domain,
-        "methodological_quality_flags": flags,
+        "methodological_quality_flags": [],
         "multiple_doses": multiple_doses,
         "multiple_time_intervals": multiple_time_intervals,
         "cannabis_type": cannabis_type,
