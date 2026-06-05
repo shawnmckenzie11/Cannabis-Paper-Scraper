@@ -367,6 +367,44 @@ class TestDatabaseManager(unittest.TestCase):
         self.assertTrue(deleted)
         self.assertIsNone(self.db.get_paper(row_id))
 
+    def test_db_dynamic_cannabinoid_fields(self):
+        mock_paper = {
+            "pmid": "654321",
+            "doi": "10.1001/cannabis.2026.dynamic",
+            "title": "Dynamic Cannabinoid Testing Paper",
+            "authors": ["Researcher Alice"],
+            "journal": "Journal of Dynamic Science",
+            "year": 2026,
+            "abstract": "This concentrates study evaluates cannabinoid content.",
+            "study_type": ["Clinical (RCT)"],
+            "exposure_method": ["vaporized"],
+            "cannabis_type": ["concentrates", "edibles"],
+            "thc_pct": 15.0,
+            "cbd_pct": 5.0,
+            "puff_count": 8,
+            "thc_mg_ml": 25.0,
+            "thc_mg_g": 2.0,
+            "thc_mg_kg": 5.0,
+            "cbd_mg_ml": 10.0,
+            "cbd_mg_g": 0.5,
+            "cbd_mg_kg": 1.5,
+            "summary": "Concentrates and edibles study."
+        }
+        row_id = self.db.insert_paper(mock_paper)
+        self.assertIsNotNone(row_id)
+        
+        saved = self.db.get_paper(row_id)
+        self.assertIsNotNone(saved)
+        self.assertEqual(saved["puff_count"], 8)
+        self.assertEqual(saved["thc_mg_ml"], 25.0)
+        self.assertEqual(saved["thc_mg_g"], 2.0)
+        self.assertEqual(saved["thc_mg_kg"], 5.0)
+        self.assertEqual(saved["cbd_mg_ml"], 10.0)
+        self.assertEqual(saved["cbd_mg_g"], 0.5)
+        self.assertEqual(saved["cbd_mg_kg"], 1.5)
+        
+        self.db.delete_paper(row_id)
+
     def test_multiple_classifications_search(self):
         """Test that multiple classifications on a single paper can be searched successfully via OR logic."""
         mock_multi_paper = {

@@ -412,6 +412,11 @@
             display: inline-block;
         }
 
+        .animate-spin {
+            animation: spin 1s linear infinite;
+            display: inline-block;
+        }
+
         @keyframes spin {
             0% {
                 transform: rotate(0deg);
@@ -1164,9 +1169,8 @@
                     style="display: none; position: absolute; right: 0; top: 100%; margin-top: 8px; z-index: 100; width: 220px; padding: 15px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); border-color: rgba(255,255,255,0.1); background: rgba(15, 20, 32, 0.95); flex-direction: column; gap: 10px; border-radius: 12px;">
                     <div style="font-weight: 700; font-size: 0.9rem; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 8px; margin-bottom: 4px; display: flex; justify-content: space-between; align-items: center;">
                         <span>Display Columns</span>
-                        <span style="font-size: 0.75rem; color: var(--text-secondary);">(Title is fixed)</span>
                     </div>
-                    <div style="display: flex; flex-direction: column; gap: 8px;">
+                    <div style="display: flex; flex-direction: column; gap: 8px; max-height: 250px; overflow-y: auto; padding-right: 4px;">
                         <label style="display: flex; align-items: center; gap: 8px; font-size: 0.85rem; cursor: pointer; color: var(--text-primary);">
                             <input type="checkbox" id="col-cb-duration" checked onchange="toggleColumn('duration')"> Duration
                         </label>
@@ -1178,6 +1182,15 @@
                         </label>
                         <label style="display: flex; align-items: center; gap: 8px; font-size: 0.85rem; cursor: pointer; color: var(--text-primary);">
                             <input type="checkbox" id="col-cb-exposure_method" checked onchange="toggleColumn('exposure_method')"> Exposure
+                        </label>
+                        <label style="display: flex; align-items: center; gap: 8px; font-size: 0.85rem; cursor: pointer; color: var(--text-primary);">
+                            <input type="checkbox" id="col-cb-cannabis_type" onchange="toggleColumn('cannabis_type')"> Cannabis Type
+                        </label>
+                        <label style="display: flex; align-items: center; gap: 8px; font-size: 0.85rem; cursor: pointer; color: var(--text-primary);">
+                            <input type="checkbox" id="col-cb-population" onchange="toggleColumn('population')"> Population
+                        </label>
+                        <label style="display: flex; align-items: center; gap: 8px; font-size: 0.85rem; cursor: pointer; color: var(--text-primary);">
+                            <input type="checkbox" id="col-cb-outcome_domain" onchange="toggleColumn('outcome_domain')"> Outcome Domain
                         </label>
                         <label id="col-label-pub-type" style="display: none; align-items: center; gap: 8px; font-size: 0.85rem; cursor: pointer; color: var(--text-primary);">
                             <input type="checkbox" id="col-cb-publication_type" checked onchange="toggleColumn('publication_type')"> Pub Type
@@ -1441,7 +1454,6 @@
                     <table class="papers-table">
                         <thead>
                             <tr>
-
                                 <th id="header-title" class="sortable" onclick="handleHeaderClick('title')">Title <span
                                         id="sort-icon-title" class="sort-icon">↕</span></th>
                                 <th id="header-duration" class="sortable" style="width: 95px;"
@@ -1456,10 +1468,19 @@
                                 <th id="header-exposure_method" class="sortable" style="width: 110px;"
                                     onclick="handleHeaderClick('exposure_method')">Exposure <span
                                         id="sort-icon-exposure_method" class="sort-icon">↕</span></th>
+                                <th id="header-cannabis_type" class="sortable" style="width: 130px; display: none;"
+                                    onclick="handleHeaderClick('cannabis_type')">Cannabis Type <span
+                                        id="sort-icon-cannabis_type" class="sort-icon">↕</span></th>
+                                <th id="header-population" class="sortable" style="width: 110px; display: none;"
+                                    onclick="handleHeaderClick('population')">Population <span
+                                        id="sort-icon-population" class="sort-icon">↕</span></th>
+                                <th id="header-outcome_domain" class="sortable" style="width: 140px; display: none;"
+                                    onclick="handleHeaderClick('outcome_domain')">Outcome Domain <span
+                                        id="sort-icon-outcome_domain" class="sort-icon">↕</span></th>
                                 <th id="header-pub-type" class="sortable" style="width: 140px; display: none;"
                                     onclick="handleHeaderClick('publication_type')">Pub Type <span
                                         id="sort-icon-publication_type" class="sort-icon">↕</span></th>
-
+ 
                                 <th id="header-citations" class="sortable" style="width: 95px; text-align: left;"
                                     onclick="handleHeaderClick('citations')">Citations <span id="sort-icon-citations"
                                         class="sort-icon">↕</span></th>
@@ -1693,7 +1714,12 @@
                     </div>
 
                     <div class="drawer-section abstract-section">
-                        <h4>Abstract</h4>
+                        <div class="abstract-header-row" style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
+                            <h4 style="margin: 0;">Abstract</h4>
+                            <button type="button" id="btn-sync-metadata" class="btn btn-secondary" onclick="syncAbstractMetadata()" style="padding: 4px 8px; font-size: 11px; gap: 4px; display: inline-flex; align-items: center; height: auto;">
+                                <span class="sync-icon">🔄</span> Sync Metadata
+                            </button>
+                        </div>
                         <p class="abstract-text" id="drawer-abstract">Full paragraph abstract text...</p>
                     </div>
                 </div>
@@ -1732,29 +1758,25 @@
                             </div>
                         </div>
 
-                        <!-- Group 2: Cannabinoid & Dosage Profile -->
+                        <!-- Group 2: Dynamic Cannabinoid Profile & Dose -->
                         <div class="properties-group">
-                            <div class="properties-group-title">Cannabinoid & Dosage</div>
+                            <div class="properties-group-title">Cannabinoid Profile & Dose</div>
+                            <div class="properties-row-grid" id="drawer-cannabinoid-container">
+                                <!-- Dynamically injected depending on cannabis type -->
+                            </div>
+                        </div>
+
+                        <!-- Group 2b: Administration & Strain -->
+                        <div class="properties-group">
+                            <div class="properties-group-title">Administration & Strain</div>
                             <div class="properties-row-grid">
                                 <div class="meta-item">
-                                    <span class="meta-label" id="label-thc">THC Content</span>
-                                    <span class="meta-value" id="drawer-thc">12.5%</span>
-                                </div>
-                                <div class="meta-item">
-                                    <span class="meta-label" id="label-cbd">CBD Content</span>
-                                    <span class="meta-value" id="drawer-cbd">2.5%</span>
-                                </div>
-                                <div class="meta-item">
-                                    <span class="meta-label" id="label-dose">Dose</span>
-                                    <span class="meta-value" id="drawer-dose">20.0 mg</span>
+                                    <span class="meta-label" id="label-exposure">Exposure Pathway</span>
+                                    <span class="meta-value" id="drawer-exposure">vaporized</span>
                                 </div>
                                 <div class="meta-item">
                                     <span class="meta-label" id="label-duration">Duration</span>
                                     <span class="meta-value" id="drawer-duration">14 days</span>
-                                </div>
-                                <div class="meta-item">
-                                    <span class="meta-label" id="label-exposure">Exposure Pathway</span>
-                                    <span class="meta-value" id="drawer-exposure">vaporized</span>
                                 </div>
                                 <div class="meta-item">
                                     <span class="meta-label" id="label-strain-normalized">Chemotype</span>
@@ -1903,26 +1925,72 @@
                     </div>
                 </div>
                 
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 12px;">
-                    <div class="form-group">
-                        <label style="font-size: 0.85rem; font-weight: 600; display: block; margin-bottom: 4px; color: var(--text-primary);">THC Percentage (%)</label>
-                        <input type="number" id="edit-thc" step="0.01" style="width: 100%; padding: 8px; background: #121621; border: 1px solid rgba(255,255,255,0.1); color: var(--text-primary); border-radius: 4px;">
+                <!-- Cannabinoid & Dosage Form Groups (Dynamic visibility) -->
+                <div id="edit-dynamic-cannabinoid-section">
+                    <!-- THC / CBD percentages -->
+                    <div class="edit-cannabinoid-row" id="edit-row-pct" style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 12px;">
+                        <div class="form-group">
+                            <label style="font-size: 0.85rem; font-weight: 600; display: block; margin-bottom: 4px; color: var(--text-primary);">THC Percentage (%)</label>
+                            <input type="number" id="edit-thc" step="0.01" style="width: 100%; padding: 8px; background: #121621; border: 1px solid rgba(255,255,255,0.1); color: var(--text-primary); border-radius: 4px;">
+                        </div>
+                        <div class="form-group">
+                            <label style="font-size: 0.85rem; font-weight: 600; display: block; margin-bottom: 4px; color: var(--text-primary);">CBD Percentage (%)</label>
+                            <input type="number" id="edit-cbd" step="0.01" style="width: 100%; padding: 8px; background: #121621; border: 1px solid rgba(255,255,255,0.1); color: var(--text-primary); border-radius: 4px;">
+                        </div>
                     </div>
-                    <div class="form-group">
-                        <label style="font-size: 0.85rem; font-weight: 600; display: block; margin-bottom: 4px; color: var(--text-primary);">CBD Percentage (%)</label>
-                        <input type="number" id="edit-cbd" step="0.01" style="width: 100%; padding: 8px; background: #121621; border: 1px solid rgba(255,255,255,0.1); color: var(--text-primary); border-radius: 4px;">
+
+                    <!-- Dose / Puff Count -->
+                    <div class="edit-cannabinoid-row" id="edit-row-dose-puff" style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 12px;">
+                        <div class="form-group" id="edit-group-dose">
+                            <label style="font-size: 0.85rem; font-weight: 600; display: block; margin-bottom: 4px; color: var(--text-primary);">Dose (mg)</label>
+                            <input type="number" id="edit-dose" step="0.1" style="width: 100%; padding: 8px; background: #121621; border: 1px solid rgba(255,255,255,0.1); color: var(--text-primary); border-radius: 4px;">
+                        </div>
+                        <div class="form-group" id="edit-group-puff-count">
+                            <label style="font-size: 0.85rem; font-weight: 600; display: block; margin-bottom: 4px; color: var(--text-primary);">Puff Count</label>
+                            <input type="number" id="edit-puff-count" step="1" style="width: 100%; padding: 8px; background: #121621; border: 1px solid rgba(255,255,255,0.1); color: var(--text-primary); border-radius: 4px;">
+                        </div>
+                    </div>
+
+                    <!-- mg/mL (Product Volume) -->
+                    <div class="edit-cannabinoid-row" id="edit-row-mg-ml" style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 12px;">
+                        <div class="form-group">
+                            <label style="font-size: 0.85rem; font-weight: 600; display: block; margin-bottom: 4px; color: var(--text-primary);">THC mg/mL <span style="font-weight: normal; opacity: 0.7; font-size: 0.75rem;">(product volume)</span></label>
+                            <input type="number" id="edit-thc-mg-ml" step="0.01" style="width: 100%; padding: 8px; background: #121621; border: 1px solid rgba(255,255,255,0.1); color: var(--text-primary); border-radius: 4px;">
+                        </div>
+                        <div class="form-group">
+                            <label style="font-size: 0.85rem; font-weight: 600; display: block; margin-bottom: 4px; color: var(--text-primary);">CBD mg/mL <span style="font-weight: normal; opacity: 0.7; font-size: 0.75rem;">(product volume)</span></label>
+                            <input type="number" id="edit-cbd-mg-ml" step="0.01" style="width: 100%; padding: 8px; background: #121621; border: 1px solid rgba(255,255,255,0.1); color: var(--text-primary); border-radius: 4px;">
+                        </div>
+                    </div>
+
+                    <!-- mg/g (Subject weight) -->
+                    <div class="edit-cannabinoid-row" id="edit-row-mg-g" style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 12px;">
+                        <div class="form-group">
+                            <label style="font-size: 0.85rem; font-weight: 600; display: block; margin-bottom: 4px; color: var(--text-primary);">THC mg/g <span style="font-weight: normal; opacity: 0.7; font-size: 0.75rem;">(subject weight)</span></label>
+                            <input type="number" id="edit-thc-mg-g" step="0.01" style="width: 100%; padding: 8px; background: #121621; border: 1px solid rgba(255,255,255,0.1); color: var(--text-primary); border-radius: 4px;">
+                        </div>
+                        <div class="form-group">
+                            <label style="font-size: 0.85rem; font-weight: 600; display: block; margin-bottom: 4px; color: var(--text-primary);">CBD mg/g <span style="font-weight: normal; opacity: 0.7; font-size: 0.75rem;">(subject weight)</span></label>
+                            <input type="number" id="edit-cbd-mg-g" step="0.01" style="width: 100%; padding: 8px; background: #121621; border: 1px solid rgba(255,255,255,0.1); color: var(--text-primary); border-radius: 4px;">
+                        </div>
+                    </div>
+
+                    <!-- mg/kg (Subject weight) -->
+                    <div class="edit-cannabinoid-row" id="edit-row-mg-kg" style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 12px;">
+                        <div class="form-group">
+                            <label style="font-size: 0.85rem; font-weight: 600; display: block; margin-bottom: 4px; color: var(--text-primary);">THC mg/kg <span style="font-weight: normal; opacity: 0.7; font-size: 0.75rem;">(subject weight)</span></label>
+                            <input type="number" id="edit-thc-mg-kg" step="0.01" style="width: 100%; padding: 8px; background: #121621; border: 1px solid rgba(255,255,255,0.1); color: var(--text-primary); border-radius: 4px;">
+                        </div>
+                        <div class="form-group">
+                            <label style="font-size: 0.85rem; font-weight: 600; display: block; margin-bottom: 4px; color: var(--text-primary);">CBD mg/kg <span style="font-weight: normal; opacity: 0.7; font-size: 0.75rem;">(subject weight)</span></label>
+                            <input type="number" id="edit-cbd-mg-kg" step="0.01" style="width: 100%; padding: 8px; background: #121621; border: 1px solid rgba(255,255,255,0.1); color: var(--text-primary); border-radius: 4px;">
+                        </div>
                     </div>
                 </div>
-                
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 12px;">
-                    <div class="form-group">
-                        <label style="font-size: 0.85rem; font-weight: 600; display: block; margin-bottom: 4px; color: var(--text-primary);">Dose (mg)</label>
-                        <input type="number" id="edit-dose" step="0.1" style="width: 100%; padding: 8px; background: #121621; border: 1px solid rgba(255,255,255,0.1); color: var(--text-primary); border-radius: 4px;">
-                    </div>
-                    <div class="form-group">
-                        <label style="font-size: 0.85rem; font-weight: 600; display: block; margin-bottom: 4px; color: var(--text-primary);">Duration (days)</label>
-                        <input type="number" id="edit-duration" step="0.1" style="width: 100%; padding: 8px; background: #121621; border: 1px solid rgba(255,255,255,0.1); color: var(--text-primary); border-radius: 4px;">
-                    </div>
+
+                <div class="form-group" style="margin-bottom: 12px;">
+                    <label style="font-size: 0.85rem; font-weight: 600; display: block; margin-bottom: 4px; color: var(--text-primary);">Duration (days)</label>
+                    <input type="number" id="edit-duration" step="0.1" style="width: 100%; padding: 8px; background: #121621; border: 1px solid rgba(255,255,255,0.1); color: var(--text-primary); border-radius: 4px;">
                 </div>
 
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 12px;">
@@ -1944,6 +2012,11 @@
                 <div class="form-group" style="margin-bottom: 12px;">
                     <label style="font-size: 0.85rem; font-weight: 600; display: block; margin-bottom: 4px; color: var(--text-primary);">Sample Size (N)</label>
                     <input type="number" id="edit-sample-size" style="width: 100%; padding: 8px; background: #121621; border: 1px solid rgba(255,255,255,0.1); color: var(--text-primary); border-radius: 4px;">
+                </div>
+
+                <div class="form-group" style="margin-bottom: 12px;">
+                    <label style="font-size: 0.85rem; font-weight: 600; display: block; margin-bottom: 4px; color: var(--text-primary);">Abstract</label>
+                    <textarea id="edit-abstract" rows="4" style="width: 100%; padding: 8px; background: #121621; border: 1px solid rgba(255,255,255,0.1); color: var(--text-primary); border-radius: 4px; font-family: var(--font-body); font-size: 0.9rem;"></textarea>
                 </div>
 
                 <div class="form-group" style="margin-bottom: 12px;">
@@ -2091,7 +2164,10 @@
             exposure_method: true,
             publication_type: true,
             citations: true,
-            links: true
+            links: true,
+            cannabis_type: false,
+            population: false,
+            outcome_domain: false
         };
 
         // Subset Selection Tracking & Dynamic Visualizations Variables
@@ -2151,6 +2227,11 @@
             triggerSearch(true);
             updateSchedulerStatus();
             setInterval(updateSchedulerStatus, 60000);
+            
+            // Register change event listeners for dynamic cannabis type edit form
+            document.querySelectorAll('input[name="edit_cannabis_type"]').forEach(cb => {
+                cb.addEventListener('change', updateEditFormCannabinoidFields);
+            });
         });
 
         // Trigger dynamic AJAX search
@@ -2301,7 +2382,7 @@
         }
 
         function updateSortIndicators() {
-            const columns = ['duration', 'title', 'year', 'study_type', 'exposure_method', 'publication_type', 'citations'];
+            const columns = ['duration', 'title', 'year', 'study_type', 'exposure_method', 'publication_type', 'citations', 'cannabis_type', 'population', 'outcome_domain'];
             columns.forEach(col => {
                 const header = document.getElementById(col === 'publication_type' ? 'header-pub-type' : `header-${col}`);
                 const icon = document.getElementById(`sort-icon-${col}`);
@@ -2383,6 +2464,15 @@
                 if (visibleColumns.exposure_method) {
                     cells.push(`<td style="color: #b0bec5;">${Array.isArray(p.exposure_method) ? p.exposure_method.join(', ') : (p.exposure_method || "unknown")}</td>`);
                 }
+                if (visibleColumns.cannabis_type) {
+                    cells.push(`<td style="color: var(--text-secondary);">${Array.isArray(p.cannabis_type) ? p.cannabis_type.join(', ') : (p.cannabis_type || "unknown")}</td>`);
+                }
+                if (visibleColumns.population) {
+                    cells.push(`<td style="color: var(--text-secondary);">${Array.isArray(p.population) ? p.population.join(', ') : (p.population || "unknown")}</td>`);
+                }
+                if (visibleColumns.outcome_domain) {
+                    cells.push(`<td style="color: var(--text-secondary);">${Array.isArray(p.outcome_domain) ? p.outcome_domain.join(', ') : (p.outcome_domain || "unknown")}</td>`);
+                }
                 if (currentTab === 'review' && visibleColumns.publication_type) {
                     const pt = p.publication_type || "unknown";
                     cells.push(`<td style="color: var(--text-secondary); font-weight: 500;">${pt}</td>`);
@@ -2449,7 +2539,10 @@
                 exposure_method: true,
                 publication_type: true,
                 citations: true,
-                links: true
+                links: true,
+                cannabis_type: false,
+                population: false,
+                outcome_domain: false
             };
             updateColumnVisibility();
 
@@ -2464,6 +2557,153 @@
             if (labelEl) {
                 labelEl.innerHTML = labelText + (isLocked ? ' <span title="Locked by Expert Override" style="color: var(--accent-amber); cursor: help; font-size: 0.85rem;">🔒</span>' : '');
             }
+        }
+
+        function renderCannabinoidProfile(paper) {
+            const cannabinoidFieldDefs = {
+                "thc_pct": { label: "THC Content", fallback: "Not Quantified", format: val => `${val}%` },
+                "cbd_pct": { label: "CBD Content", fallback: "Not Quantified", format: val => `${val}%` },
+                "dose_mg": { label: "Dose", fallback: "Not Reported", format: val => `${val} mg` },
+                "puff_count": { label: "Puff Count", fallback: "Not Reported", format: val => `${val} puffs` },
+                "thc_mg_ml": { label: "THC (mg/mL)", fallback: "Not Reported", format: val => `${val} mg/mL <small style="opacity: 0.7; font-size: 0.75rem;">(product)</small>` },
+                "thc_mg_g": { label: "THC (mg/g)", fallback: "Not Reported", format: val => `${val} mg/g <small style="opacity: 0.7; font-size: 0.75rem;">(subject wt)</small>` },
+                "thc_mg_kg": { label: "THC (mg/kg)", fallback: "Not Reported", format: val => `${val} mg/kg <small style="opacity: 0.7; font-size: 0.75rem;">(subject wt)</small>` },
+                "cbd_mg_ml": { label: "CBD (mg/mL)", fallback: "Not Reported", format: val => `${val} mg/mL <small style="opacity: 0.7; font-size: 0.75rem;">(product)</small>` },
+                "cbd_mg_g": { label: "CBD (mg/g)", fallback: "Not Reported", format: val => `${val} mg/g <small style="opacity: 0.7; font-size: 0.75rem;">(subject wt)</small>` },
+                "cbd_mg_kg": { label: "CBD (mg/kg)", fallback: "Not Reported", format: val => `${val} mg/kg <small style="opacity: 0.7; font-size: 0.75rem;">(subject wt)</small>` }
+            };
+
+            const paperTypes = Array.isArray(paper.cannabis_type) ? paper.cannabis_type : (paper.cannabis_type ? [paper.cannabis_type] : []);
+            const fieldsToDisplay = new Set();
+            
+            const typeToFields = {
+                "dried flower": ["thc_pct", "cbd_pct", "puff_count"],
+                "concentrates": ["thc_pct", "thc_mg_ml", "thc_mg_kg", "cbd_pct", "cbd_mg_ml", "cbd_mg_kg"],
+                "vape pen": ["thc_pct", "cbd_pct", "puff_count"],
+                "pure cannabinoid": ["thc_mg_ml", "thc_mg_kg", "cbd_mg_ml", "cbd_mg_kg"],
+                "edibles": ["thc_mg_ml", "thc_mg_g", "thc_mg_kg", "cbd_mg_ml", "cbd_mg_g", "cbd_mg_kg"],
+                "hashish/kief": ["thc_pct", "cbd_pct"]
+            };
+            
+            let matchedAny = false;
+            paperTypes.forEach(t => {
+                const lowerT = t.toLowerCase().trim();
+                let mappedType = lowerT;
+                if (lowerT === "hash/kief" || lowerT === "hashish/kief") {
+                    mappedType = "hashish/kief";
+                }
+                if (typeToFields[mappedType]) {
+                    matchedAny = true;
+                    typeToFields[mappedType].forEach(f => fieldsToDisplay.add(f));
+                }
+            });
+            
+            Object.keys(cannabinoidFieldDefs).forEach(f => {
+                if (paper[f] !== null && paper[f] !== undefined && paper[f] !== "") {
+                    fieldsToDisplay.add(f);
+                }
+            });
+            
+            if (fieldsToDisplay.size === 0) {
+                fieldsToDisplay.add("thc_pct");
+                fieldsToDisplay.add("cbd_pct");
+                fieldsToDisplay.add("dose_mg");
+            }
+
+            const container = document.getElementById("drawer-cannabinoid-container");
+            if (container) {
+                container.innerHTML = "";
+                const locked = paper.expert_locked_fields || [];
+                
+                const orderedKeys = [
+                    "thc_pct", "cbd_pct", "dose_mg", "puff_count",
+                    "thc_mg_ml", "cbd_mg_ml",
+                    "thc_mg_g", "cbd_mg_g",
+                    "thc_mg_kg", "cbd_mg_kg"
+                ];
+                
+                orderedKeys.forEach(f => {
+                    if (fieldsToDisplay.has(f)) {
+                        const def = cannabinoidFieldDefs[f];
+                        const val = paper[f];
+                        const formatted = (val !== null && val !== undefined && val !== "") ? def.format(val) : def.fallback;
+                        
+                        const itemHtml = `
+                            <div class="meta-item">
+                                <span class="meta-label" id="label-${f}">${def.label}</span>
+                                <span class="meta-value" id="drawer-${f}">${formatted}</span>
+                            </div>
+                        `;
+                        container.innerHTML += itemHtml;
+                        
+                        updateMetaLabel(`label-${f}`, def.label, locked.includes(f));
+                    }
+                });
+            }
+        }
+
+        function updateEditFormCannabinoidFields() {
+            const checkboxes = document.querySelectorAll('input[name="edit_cannabis_type"]:checked');
+            const selectedTypes = Array.from(checkboxes).map(cb => cb.value.toLowerCase().trim());
+            
+            const fieldsToShow = new Set();
+            
+            const typeToFields = {
+                "dried flower": ["thc_pct", "cbd_pct", "puff_count"],
+                "concentrates": ["thc_pct", "thc_mg_ml", "thc_mg_kg", "cbd_pct", "cbd_mg_ml", "cbd_mg_kg"],
+                "vape pen": ["thc_pct", "cbd_pct", "puff_count"],
+                "pure cannabinoid": ["thc_mg_ml", "thc_mg_kg", "cbd_mg_ml", "cbd_mg_kg"],
+                "edibles": ["thc_mg_ml", "thc_mg_g", "thc_mg_kg", "cbd_mg_ml", "cbd_mg_g", "cbd_mg_kg"],
+                "hashish/kief": ["thc_pct", "cbd_pct"]
+            };
+            
+            let matchedAny = false;
+            selectedTypes.forEach(t => {
+                let mappedType = t;
+                if (t === "hash/kief" || t === "hashish/kief") {
+                    mappedType = "hashish/kief";
+                }
+                if (typeToFields[mappedType]) {
+                    matchedAny = true;
+                    typeToFields[mappedType].forEach(f => fieldsToShow.add(f));
+                }
+            });
+            
+            if (!matchedAny) {
+                fieldsToShow.add("thc_pct");
+                fieldsToShow.add("cbd_pct");
+                fieldsToShow.add("dose_mg");
+            }
+            
+            const showThc = fieldsToShow.has("thc_pct");
+            const showCbd = fieldsToShow.has("cbd_pct");
+            document.getElementById("edit-thc").closest('.form-group').style.display = showThc ? "block" : "none";
+            document.getElementById("edit-cbd").closest('.form-group').style.display = showCbd ? "block" : "none";
+            document.getElementById("edit-row-pct").style.display = (showThc || showCbd) ? "grid" : "none";
+            
+            const showDose = fieldsToShow.has("dose_mg");
+            const showPuff = fieldsToShow.has("puff_count");
+            document.getElementById("edit-group-dose").style.display = showDose ? "block" : "none";
+            document.getElementById("edit-group-puff-count").style.display = showPuff ? "block" : "none";
+            document.getElementById("edit-row-dose-puff").style.display = (showDose || showPuff) ? "grid" : "none";
+            
+            const showThcMgMl = fieldsToShow.has("thc_mg_ml");
+            const showCbdMgMl = fieldsToShow.has("cbd_mg_ml");
+            document.getElementById("edit-thc-mg-ml").closest('.form-group').style.display = showThcMgMl ? "block" : "none";
+            document.getElementById("edit-cbd-mg-ml").closest('.form-group').style.display = showCbdMgMl ? "block" : "none";
+            document.getElementById("edit-row-mg-ml").style.display = (showThcMgMl || showCbdMgMl) ? "grid" : "none";
+            
+            const showThcMgG = fieldsToShow.has("thc_mg_g");
+            const showCbdMgG = fieldsToShow.has("cbd_mg_g");
+            document.getElementById("edit-thc-mg-g").closest('.form-group').style.display = showThcMgG ? "block" : "none";
+            document.getElementById("edit-cbd-mg-g").closest('.form-group').style.display = showCbdMgG ? "block" : "none";
+            document.getElementById("edit-row-mg-g").style.display = (showThcMgG || showCbdMgG) ? "grid" : "none";
+            
+            const showThcMgKg = fieldsToShow.has("thc_mg_kg");
+            const showCbdMgKg = fieldsToShow.has("cbd_mg_kg");
+            document.getElementById("edit-thc-mg-kg").closest('.form-group').style.display = showThcMgKg ? "block" : "none";
+            document.getElementById("edit-cbd-mg-kg").closest('.form-group').style.display = showCbdMgKg ? "block" : "none";
+            document.getElementById("edit-row-mg-kg").style.display = (showThcMgKg || showCbdMgKg) ? "grid" : "none";
         }
 
         // Open details Drawer slide-in
@@ -2484,13 +2724,20 @@
             document.getElementById("drawer-citations").innerText = paper.citation_count || 0;
             document.getElementById("drawer-exposure").innerText = Array.isArray(paper.exposure_method) ? paper.exposure_method.join(', ') : (paper.exposure_method || "unknown");
             document.getElementById("drawer-population").innerText = Array.isArray(paper.population) ? paper.population.join(', ') : (paper.population || "unknown");
-            document.getElementById("drawer-thc").innerText = paper.thc_pct !== null ? `${paper.thc_pct}%` : "Not Quantified";
-            document.getElementById("drawer-cbd").innerText = paper.cbd_pct !== null ? `${paper.cbd_pct}%` : "Not Quantified";
-            document.getElementById("drawer-dose").innerText = paper.dose_mg !== null ? `${paper.dose_mg} mg` : "Not Reported";
             document.getElementById("drawer-duration").innerText = paper.duration_days !== null ? formatStudyDuration(paper.duration_days) : "Not Reported";
             document.getElementById("drawer-strain-reported").innerText = paper.strain_reported || "Not Specified";
             document.getElementById("drawer-strain-normalized").innerText = paper.strain_normalized || "Unverified chemotype";
             document.getElementById("drawer-abstract").innerText = paper.abstract || "No abstract content cataloged.";
+
+            // Toggle visibility of sync metadata button based on DOI or PMID availability
+            const syncBtn = document.getElementById("btn-sync-metadata");
+            if (syncBtn) {
+                if (paper.doi || paper.pmid) {
+                    syncBtn.style.display = "inline-flex";
+                } else {
+                    syncBtn.style.display = "none";
+                }
+            }
 
             // Populate newly reformatted property fields
             document.getElementById("drawer-pub-type").innerText = paper.publication_type || "original research";
@@ -2518,9 +2765,6 @@
             const locked = paper.expert_locked_fields || [];
             updateMetaLabel("label-exposure", "Exposure Pathway", locked.includes("exposure_method"));
             updateMetaLabel("label-population", "Subject Population", locked.includes("population"));
-            updateMetaLabel("label-thc", "THC Percentage", locked.includes("thc_pct"));
-            updateMetaLabel("label-cbd", "CBD Percentage", locked.includes("cbd_pct"));
-            updateMetaLabel("label-dose", "Dose (mg)", locked.includes("dose_mg"));
             updateMetaLabel("label-duration", "Duration", locked.includes("duration_days"));
             updateMetaLabel("label-strain-reported", "Reported Strain", locked.includes("strain_reported"));
             updateMetaLabel("label-strain-normalized", "Normalized Strain", locked.includes("strain_normalized"));
@@ -2531,6 +2775,9 @@
             updateMetaLabel("label-pub-type", "Publication Type", locked.includes("publication_type"));
             updateMetaLabel("label-study-design", "Study Design", locked.includes("study_type"));
             updateMetaLabel("label-sample-size", "Sample Size (N)", locked.includes("sample_size"));
+
+            // Dynamically render cannabinoid profile and its locks
+            renderCannabinoidProfile(paper);
 
             // Outcomes tags
             const outcomesContainer = document.getElementById("drawer-outcomes-container");
@@ -2605,6 +2852,16 @@
             document.getElementById("edit-strain-normalized").value = paper.strain_normalized || "";
             document.getElementById("edit-sample-size").value = paper.sample_size !== null ? paper.sample_size : "";
             document.getElementById("edit-summary").value = paper.summary || "";
+            document.getElementById("edit-abstract").value = paper.abstract || "";
+
+            // New dynamic fields
+            document.getElementById("edit-thc-mg-ml").value = paper.thc_mg_ml !== null ? paper.thc_mg_ml : "";
+            document.getElementById("edit-cbd-mg-ml").value = paper.cbd_mg_ml !== null ? paper.cbd_mg_ml : "";
+            document.getElementById("edit-thc-mg-g").value = paper.thc_mg_g !== null ? paper.thc_mg_g : "";
+            document.getElementById("edit-cbd-mg-g").value = paper.cbd_mg_g !== null ? paper.cbd_mg_g : "";
+            document.getElementById("edit-thc-mg-kg").value = paper.thc_mg_kg !== null ? paper.thc_mg_kg : "";
+            document.getElementById("edit-cbd-mg-kg").value = paper.cbd_mg_kg !== null ? paper.cbd_mg_kg : "";
+            document.getElementById("edit-puff-count").value = paper.puff_count !== null ? paper.puff_count : "";
             
             function setCheckboxes(name, values) {
                 const checkboxes = document.querySelectorAll(`input[name="${name}"]`);
@@ -2619,6 +2876,9 @@
             setCheckboxes("edit_population", paper.population);
             setCheckboxes("edit_cannabis_type", paper.cannabis_type);
             setCheckboxes("edit_outcome", paper.outcome_domain);
+
+            // Update dynamic cannabinoid input visibility
+            updateEditFormCannabinoidFields();
         }
 
         function saveClassificationEdit(event) {
@@ -2640,11 +2900,21 @@
                 strain_normalized: document.getElementById("edit-strain-normalized").value || null,
                 sample_size: document.getElementById("edit-sample-size").value !== "" ? parseInt(document.getElementById("edit-sample-size").value, 10) : null,
                 summary: document.getElementById("edit-summary").value.trim() || null,
+                abstract: document.getElementById("edit-abstract").value.trim() || null,
                 study_type: getCheckedValues("edit_study_type"),
                 exposure_method: getCheckedValues("edit_exposure"),
                 population: getCheckedValues("edit_population"),
                 cannabis_type: getCheckedValues("edit_cannabis_type"),
-                outcome_domain: getCheckedValues("edit_outcome")
+                outcome_domain: getCheckedValues("edit_outcome"),
+                
+                // New dynamic fields
+                puff_count: document.getElementById("edit-puff-count").value !== "" ? parseInt(document.getElementById("edit-puff-count").value, 10) : null,
+                thc_mg_ml: document.getElementById("edit-thc-mg-ml").value !== "" ? parseFloat(document.getElementById("edit-thc-mg-ml").value) : null,
+                cbd_mg_ml: document.getElementById("edit-cbd-mg-ml").value !== "" ? parseFloat(document.getElementById("edit-cbd-mg-ml").value) : null,
+                thc_mg_g: document.getElementById("edit-thc-mg-g").value !== "" ? parseFloat(document.getElementById("edit-thc-mg-g").value) : null,
+                cbd_mg_g: document.getElementById("edit-cbd-mg-g").value !== "" ? parseFloat(document.getElementById("edit-cbd-mg-g").value) : null,
+                thc_mg_kg: document.getElementById("edit-thc-mg-kg").value !== "" ? parseFloat(document.getElementById("edit-thc-mg-kg").value) : null,
+                cbd_mg_kg: document.getElementById("edit-cbd-mg-kg").value !== "" ? parseFloat(document.getElementById("edit-cbd-mg-kg").value) : null
             };
             
             fetch(`/api/papers/${activeEditingPaper.id}/edit-classification`, {
@@ -2670,6 +2940,46 @@
             .catch(err => {
                 console.error("Error saving classification: ", err);
                 alert("An error occurred while saving changes.");
+            });
+        }
+
+        function syncAbstractMetadata() {
+            if (!activeEditingPaper) return;
+            const paperId = activeEditingPaper.id;
+            const btn = document.getElementById("btn-sync-metadata");
+            const originalHtml = btn.innerHTML;
+            
+            // Set loading state
+            btn.disabled = true;
+            btn.innerHTML = `<span class="sync-icon animate-spin" style="display: inline-block;">🔄</span> Syncing...`;
+            
+            fetch(`/api/papers/${paperId}/sync-metadata`, {
+                method: "POST"
+            })
+            .then(res => {
+                if (!res.ok) {
+                    return res.json().then(err => { throw new Error(err.error || "Sync failed"); });
+                }
+                return res.json();
+            })
+            .then(data => {
+                alert(data.message || "Metadata synced and classification updated.");
+                // Update activeEditingPaper with the newly retrieved database values
+                if (data.paper) {
+                    activeEditingPaper = data.paper;
+                }
+                // Re-open details drawer with the updated paper values (to refresh fields)
+                openDrawer(activeEditingPaper);
+                // Refresh main grid search
+                triggerSearch(false);
+            })
+            .catch(err => {
+                console.error("Error syncing metadata: ", err);
+                alert("Failed to sync metadata: " + err.message);
+            })
+            .finally(() => {
+                btn.disabled = false;
+                btn.innerHTML = originalHtml;
             });
         }
 
@@ -3826,6 +4136,9 @@
                 document.getElementById("col-cb-publication_type").checked = visibleColumns.publication_type;
                 document.getElementById("col-cb-citations").checked = visibleColumns.citations;
                 document.getElementById("col-cb-links").checked = visibleColumns.links;
+                document.getElementById("col-cb-cannabis_type").checked = visibleColumns.cannabis_type;
+                document.getElementById("col-cb-population").checked = visibleColumns.population;
+                document.getElementById("col-cb-outcome_domain").checked = visibleColumns.outcome_domain;
 
                 // Show/hide publication type column checkbox in popover depending on current tab
                 document.getElementById("col-label-pub-type").style.display = currentTab === 'review' ? 'flex' : 'none';
@@ -3849,7 +4162,10 @@
                 'study_type': 'header-study_type',
                 'exposure_method': 'header-exposure_method',
                 'citations': 'header-citations',
-                'links': 'header-links'
+                'links': 'header-links',
+                'cannabis_type': 'header-cannabis_type',
+                'population': 'header-population',
+                'outcome_domain': 'header-outcome_domain'
             };
 
             for (const [col, id] of Object.entries(optionalColumns)) {

@@ -295,8 +295,9 @@ def api_edit_classification(paper_id):
     
     editable_fields = [
         "study_type", "publication_type", "exposure_method", "thc_pct", "cbd_pct",
-        "dose_mg", "strain_reported", "strain_normalized", "duration_days",
-        "population", "sample_size", "outcome_domain", "cannabis_type", "summary"
+        "dose_mg", "puff_count", "thc_mg_ml", "thc_mg_g", "thc_mg_kg",
+        "cbd_mg_ml", "cbd_mg_g", "cbd_mg_kg", "strain_reported", "strain_normalized", "duration_days",
+        "population", "sample_size", "outcome_domain", "cannabis_type", "summary", "abstract"
     ]
     
     conn = db.get_connection()
@@ -427,6 +428,132 @@ def api_edit_classification(paper_id):
         
     except Exception as e:
         conn.rollback()
+        return jsonify({"error": str(e)}), 500
+    finally:
+        conn.close()
+
+@app.route("/api/papers/<int:paper_id>/sync-metadata", methods=["POST"])
+def api_sync_metadata(paper_id):
+    """Queries external APIs (Semantic Scholar / PubMed) using DOI or PMID to fetch the abstract,
+    updates it in the database, and runs the classification pipeline to update the paper's metadata.
+    """
+    import requests
+    from Bio import Entrez
+    from harvest import parse_pubmed_xml
+    
+    db = DatabaseManager()
+    paper = db.get_paper(paper_id)
+    if not paper:
+        return jsonify({"error": "Paper not found."}), 404
+
+    doi = paper.get("doi")
+    pmid = paper.get("pmid")
+    if not doi and not pmid:
+        return jsonify({"error": "Paper must have a DOI or PMID to sync metadata."}), 400
+
+    # Query Semantic Scholar
+    s2_data = {}
+    s2_id = None
+    if doi:
+        s2_id = f"DOI:{doi}"
+    elif pmid:
+        s2_id = f"PMID:{pmid}"
+
+    if s2_id:
+        try:
+            url = f"https://api.semanticscholar.org/graph/v1/paper/{s2_id}"
+            params = {"fields": "abstract,citationCount,isOpenAccess,openAccessPdf"}
+            response = requests.get(url, params=params, timeout=10)
+            if response.status_code == 200:
+                s2_data = response.json()
+        except Exception as e:
+            app.logger.error(f"Semantic Scholar lookup failed in sync: {e}")
+
+    # Fallback to PubMed if PMID is available and S2 didn't have abstract
+    pubmed_abstract = None
+    if pmid and (not s2_data.get("abstract")):
+        try:
+            # Set default Entrez email if not set
+            Entrez.email = os.getenv("ENTREZ_EMAIL", "miladn1@mcmaster.ca")
+            handle = Entrez.efetch(db="pubmed", id=pmid, retmode="xml")
+            xml_data = handle.read()
+            handle.close()
+            if isinstance(xml_data, bytes):
+                xml_data = xml_data.decode("utf-8")
+            fetched_papers = parse_pubmed_xml(xml_data)
+            if fetched_papers:
+                pubmed_abstract = fetched_papers[0].get("abstract")
+        except Exception as e:
+            app.logger.error(f"PubMed efetch failed in sync: {e}")
+
+    abstract = s2_data.get("abstract") or pubmed_abstract
+    if not abstract:
+        return jsonify({"error": "Could not retrieve abstract from public APIs."}), 404
+
+    # Update database record
+    conn = db.get_connection()
+    try:
+        # Update abstract
+        conn.execute("UPDATE papers SET abstract = ? WHERE id = ?", (abstract, paper_id))
+        conn.commit()
+        
+        # Reload paper with new abstract
+        paper = db.get_paper(paper_id)
+        
+        # Run classification pipeline to update metadata based on new abstract
+        api_key = os.getenv("ANTHROPIC_API_KEY")
+        run_llm = True if api_key else False
+        
+        extracted = classifier.process_paper_metadata(
+            title=paper["title"],
+            abstract=paper["abstract"],
+            run_llm=run_llm
+        )
+        
+        # Do not overwrite expert locked fields
+        locked = paper.get("expert_locked_fields") or []
+        if isinstance(locked, str):
+            try:
+                locked = json.loads(locked)
+            except Exception:
+                locked = []
+                
+        valid_columns = {
+            "study_type", "exposure_method", "thc_pct", "cbd_pct", "dose_mg", "puff_count",
+            "thc_mg_ml", "thc_mg_g", "thc_mg_kg", "cbd_mg_ml", "cbd_mg_g", "cbd_mg_kg",
+            "strain_reported", "strain_normalized", "duration_days", "population",
+            "sample_size", "outcome_domain", "cannabis_type", "summary", "publication_type",
+            "classification_confidence", "classification_timestamp", "classifier_version"
+        }
+        
+        update_data = {}
+        for k, v in extracted.items():
+            if k in valid_columns and k not in locked:
+                update_data[k] = v
+                
+        # Build UPDATE query for metadata fields
+        if update_data:
+            set_clauses = []
+            update_params = []
+            for k, v in update_data.items():
+                set_clauses.append(f"{k} = ?")
+                # Handle lists/JSON fields
+                if isinstance(v, list):
+                    update_params.append(json.dumps(v))
+                else:
+                    update_params.append(v)
+            update_params.append(paper_id)
+            
+            conn.execute(f"UPDATE papers SET {', '.join(set_clauses)} WHERE id = ?", update_params)
+            conn.commit()
+            
+        # Return updated paper
+        updated_paper = db.get_paper(paper_id)
+        return jsonify({
+            "message": "Metadata synced and classification updated successfully.",
+            "paper": updated_paper
+        })
+    except Exception as e:
         return jsonify({"error": str(e)}), 500
     finally:
         conn.close()

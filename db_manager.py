@@ -117,6 +117,35 @@ class DatabaseManager:
                 conn.execute("ALTER TABLE papers ADD COLUMN classifier_version TEXT;")
             except sqlite3.OperationalError:
                 pass
+            # Ensure type-dependent cannabinoid fields exist
+            try:
+                conn.execute("ALTER TABLE papers ADD COLUMN puff_count INTEGER;")
+            except sqlite3.OperationalError:
+                pass
+            try:
+                conn.execute("ALTER TABLE papers ADD COLUMN thc_mg_ml REAL;")
+            except sqlite3.OperationalError:
+                pass
+            try:
+                conn.execute("ALTER TABLE papers ADD COLUMN thc_mg_g REAL;")
+            except sqlite3.OperationalError:
+                pass
+            try:
+                conn.execute("ALTER TABLE papers ADD COLUMN thc_mg_kg REAL;")
+            except sqlite3.OperationalError:
+                pass
+            try:
+                conn.execute("ALTER TABLE papers ADD COLUMN cbd_mg_ml REAL;")
+            except sqlite3.OperationalError:
+                pass
+            try:
+                conn.execute("ALTER TABLE papers ADD COLUMN cbd_mg_g REAL;")
+            except sqlite3.OperationalError:
+                pass
+            try:
+                conn.execute("ALTER TABLE papers ADD COLUMN cbd_mg_kg REAL;")
+            except sqlite3.OperationalError:
+                pass
             # Ensure system_metadata table exists
             conn.execute("""
                 CREATE TABLE IF NOT EXISTS system_metadata (
@@ -174,7 +203,8 @@ class DatabaseManager:
         fields = [
             "pmid", "doi", "semantic_scholar_id", "title", "authors", "journal", "year",
             "abstract", "full_text_link", "study_type", "exposure_method", "thc_pct",
-            "cbd_pct", "dose_mg", "strain_reported", "strain_normalized", "duration_days",
+            "cbd_pct", "dose_mg", "puff_count", "thc_mg_ml", "thc_mg_g", "thc_mg_kg",
+            "cbd_mg_ml", "cbd_mg_g", "cbd_mg_kg", "strain_reported", "strain_normalized", "duration_days",
             "population", "sample_size", "outcome_domain",
             "open_access", "citation_count", "date_harvested", "publication_date", "cannabis_type", 
             "summary", "publication_type", "expert_locked_fields", "classification_confidence", 
@@ -610,6 +640,12 @@ class DatabaseManager:
             sql += f" ORDER BY papers.exposure_method {sort_dir}, papers.year DESC"
         elif sort_by == "publication_type":
             sql += f" ORDER BY papers.publication_type {sort_dir}, papers.year DESC"
+        elif sort_by == "cannabis_type":
+            sql += f" ORDER BY papers.cannabis_type {sort_dir}, papers.year DESC"
+        elif sort_by == "population":
+            sql += f" ORDER BY papers.population {sort_dir}, papers.year DESC"
+        elif sort_by == "outcome_domain":
+            sql += f" ORDER BY papers.outcome_domain {sort_dir}, papers.year DESC"
         else:
             # Default sorting: Rank (relevance) or Year DESC
             if query_val:

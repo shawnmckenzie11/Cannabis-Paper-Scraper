@@ -18,6 +18,13 @@ CREATE TABLE IF NOT EXISTS papers (
     thc_pct REAL,                   -- numeric percentage (or null)
     cbd_pct REAL,                   -- numeric percentage (or null)
     dose_mg REAL,                   -- numeric dose in mg (or null)
+    puff_count INTEGER,
+    thc_mg_ml REAL,
+    thc_mg_g REAL,
+    thc_mg_kg REAL,
+    cbd_mg_ml REAL,
+    cbd_mg_g REAL,
+    cbd_mg_kg REAL,
     strain_reported TEXT,           -- raw string exactly as written in paper
     strain_normalized TEXT,         -- mapped to Chemotype I/II/III
     duration_days REAL,             -- numeric duration in days (or null)

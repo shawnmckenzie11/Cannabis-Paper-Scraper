@@ -387,7 +387,7 @@ def enrich_papers_batch_semantic_scholar(papers: List[Dict[str, Any]]) -> List[D
     if not papers:
         return papers
         
-    url = "https://api.semanticscholar.org/graph/v1/paper/batch?fields=paperId,citationCount,isOpenAccess,openAccessPdf"
+    url = "https://api.semanticscholar.org/graph/v1/paper/batch?fields=paperId,citationCount,isOpenAccess,openAccessPdf,abstract"
     
     # Prepare identifiers
     ids = []
@@ -432,6 +432,11 @@ def enrich_papers_batch_semantic_scholar(papers: List[Dict[str, Any]]) -> List[D
                         p = papers[paper_idx]
                         p["semantic_scholar_id"] = result.get("paperId")
                         p["citation_count"] = result.get("citationCount", 0)
+                        
+                        # Update abstract if missing or placeholder in records
+                        s2_abstract = result.get("abstract")
+                        if s2_abstract and (not p.get("abstract") or p.get("abstract").strip() == "" or "no abstract" in p.get("abstract").lower()):
+                            p["abstract"] = s2_abstract
                         
                         # Update open access status and link
                         if result.get("isOpenAccess"):
