@@ -1291,11 +1291,7 @@
         <!-- MAIN DASHBOARD CONTENT -->
         <main class="main-content">
 
-            <header class="dashboard-header" style="position: relative; display: flex; align-items: center; justify-content: space-between; padding: 15px 30px; background: rgba(10, 12, 19, 0.3); border-bottom: 1px solid rgba(255, 255, 255, 0.05); margin: 0;">
-                <button id="delete-selected-btn" class="btn btn-secondary"
-                    style="background: rgba(255, 61, 0, 0.08); border-color: rgba(255, 61, 0, 0.2); color: #ff8a65; display: none; padding: 8px 16px; font-size: 0.85rem;"
-                    onclick="deleteSelectedPapers()">Delete Selected (<span id="delete-count">0</span>)</button>
-            </header>
+
 
 
             <!-- TABLE OF MATCHED PAPERS -->
@@ -1304,8 +1300,7 @@
                     <table class="papers-table">
                         <thead>
                             <tr>
-                                <th style="width: 40px; text-align: center;"><input type="checkbox"
-                                        id="select-all-checkbox" onchange="toggleSelectAll(this)"></th>
+
                                 <th id="header-title" class="sortable" onclick="handleHeaderClick('title')">Title <span
                                         id="sort-icon-title" class="sort-icon">↕</span></th>
                                 <th id="header-duration" class="sortable" style="width: 95px;"
@@ -1541,6 +1536,7 @@
                 <h3 id="drawer-title">Paper Title</h3>
             </div>
             <div style="display: flex; align-items: center; gap: 10px;">
+                <button class="btn btn-secondary btn-sm" id="btn-delete-paper" onclick="deleteCurrentPaper()" style="padding: 4px 10px; font-size: 0.8rem; background: rgba(255,61,0,0.08); border-color: rgba(255,61,0,0.2); color: #ff8a65; cursor: pointer; border-radius: 4px; font-weight: 600;">🗑️ Delete</button>
                 <button class="btn btn-secondary btn-sm" id="btn-edit-classification" onclick="toggleEditMode()" style="padding: 4px 10px; font-size: 0.8rem; background: rgba(0,240,255,0.06); border-color: rgba(0,240,255,0.2); color: var(--accent-blue); cursor: pointer; border-radius: 4px; font-weight: 600;">✏️ Edit</button>
                 <button class="btn-close" onclick="closeDrawer()">&times;</button>
             </div>
@@ -2174,12 +2170,6 @@
                 const citationsVal = p.citation_count !== null && p.citation_count !== undefined ? p.citation_count : 0;
 
                 let cells = [];
-                // Checkbox
-                cells.push(`
-                    <td style="text-align: center;" onclick="event.stopPropagation();">
-                        <input type="checkbox" class="paper-select-checkbox" value="${p.id}" onchange="togglePaperSelection(${p.id}, this)">
-                    </td>
-                `);
 
                 // Title (fixed, always first data column)
                 cells.push(`<td class="paper-title-col" title="${p.title}">${p.title}${newBadge}</td>`);
@@ -2668,55 +2658,13 @@
         }
 
         // Toggle Select All checkboxes in the table
-        function toggleSelectAll(selectAllCheckbox) {
-            const checkboxes = document.querySelectorAll(".paper-select-checkbox");
-            checkboxes.forEach(cb => {
-                cb.checked = selectAllCheckbox.checked;
-                const pid = parseInt(cb.value);
-                if (selectAllCheckbox.checked) {
-                    selectedPaperIds.add(pid);
-                } else {
-                    selectedPaperIds.delete(pid);
-                }
-            });
-            updateSelectionSummary();
-        }
+        function toggleSelectAll(selectAllCheckbox) {}
 
         // Toggle individual paper row selection
-        function togglePaperSelection(paperId, checkbox) {
-            if (checkbox.checked) {
-                selectedPaperIds.add(paperId);
-            } else {
-                selectedPaperIds.delete(paperId);
-            }
-            updateSelectionSummary();
-        }
+        function togglePaperSelection(paperId, checkbox) {}
 
         // Sync row checkboxes and deletion count
-        function updateSelectionSummary() {
-            const selectedCount = selectedPaperIds.size;
-
-            const deleteBtn = document.getElementById("delete-selected-btn");
-            const countEl = document.getElementById("delete-count");
-
-            // Sync Delete Selected Button
-            if (selectedCount > 0) {
-                deleteBtn.style.display = "inline-flex";
-                countEl.innerText = selectedCount;
-            } else {
-                deleteBtn.style.display = "none";
-            }
-
-            // Sync Select All master checkbox
-            const selectAllCheckbox = document.getElementById("select-all-checkbox");
-            const checkboxes = document.querySelectorAll(".paper-select-checkbox");
-            const checkedCheckboxes = document.querySelectorAll(".paper-select-checkbox:checked");
-            if (checkboxes.length > 0 && checkedCheckboxes.length === checkboxes.length) {
-                selectAllCheckbox.checked = true;
-            } else {
-                selectAllCheckbox.checked = false;
-            }
-        }
+        function updateSelectionSummary() {}
 
         // Pull all papers under the current active filter for the Original Articles tab and analyze
         function analyzeFilteredSubset() {
@@ -3699,13 +3647,10 @@
             }
         });
 
-        function deleteSelectedPapers() {
-            const checkboxes = document.querySelectorAll(".paper-select-checkbox:checked");
-            const ids = Array.from(checkboxes).map(cb => parseInt(cb.value));
+        function deleteCurrentPaper() {
+            if (!activeEditingPaper) return;
 
-            if (ids.length === 0) return;
-
-            if (!confirm(`Are you absolutely sure you want to permanently delete the ${ids.length} selected paper(s) from your local catalog?`)) {
+            if (!confirm(`Are you absolutely sure you want to permanently delete the paper "${activeEditingPaper.title}" from your local catalog?`)) {
                 return;
             }
 
@@ -3714,7 +3659,7 @@
                 headers: {
                     "Content-Type": "application/json"
                 },
-                body: JSON.stringify({ ids: ids })
+                body: JSON.stringify({ ids: [activeEditingPaper.id] })
             })
                 .then(res => res.json())
                 .then(data => {
@@ -3722,11 +3667,8 @@
                         alert("Deletion failed: " + data.error);
                         return;
                     }
-
-                    // Refresh catalog list
-                    triggerSearch();
-                    document.getElementById("select-all-checkbox").checked = false;
-                    document.getElementById("delete-selected-btn").style.display = "none";
+                    closeDrawer();
+                    triggerSearch(false);
                 })
                 .catch(err => {
                     console.error("AJAX Deletion failed: ", err);
