@@ -812,6 +812,172 @@ class TestIntelligentHarvest(unittest.TestCase):
         self.assertEqual(reason, "Valid cannabis context.")
 
 
+class TestExpertEditAndActiveLearning(unittest.TestCase):
+    """Test cases for the expert edit endpoint, dynamic few-shot retrieval, locked fields, and confidence estimation."""
+
+    def setUp(self):
+        self.test_db_path = "test_rl_papers.db"
+        if os.path.exists(self.test_db_path):
+            try:
+                os.remove(self.test_db_path)
+            except Exception:
+                pass
+        self.db = DatabaseManager(self.test_db_path)
+        
+        # Monkey patch DatabaseManager.__init__ to enforce test_db_path on all instantiations
+        from db_manager import DatabaseManager as DBManagerClass
+        self.original_init = DBManagerClass.__init__
+        test_db_path = self.test_db_path
+        
+        def patched_init(self, db_path=None):
+            self.db_path = db_path if db_path is not None else test_db_path
+            # Ensure the parent directory for the database exists
+            dir_name = os.path.dirname(self.db_path)
+            if dir_name:
+                os.makedirs(dir_name, exist_ok=True)
+            self.init_db()
+            
+        DBManagerClass.__init__ = patched_init
+        
+        from app import app
+        app.config["TESTING"] = True
+        self.client = app.test_client()
+
+    def tearDown(self):
+        from db_manager import DatabaseManager as DBManagerClass
+        DBManagerClass.__init__ = self.original_init
+        if os.path.exists(self.test_db_path):
+            try:
+                os.remove(self.test_db_path)
+            except Exception:
+                pass
+
+    def test_audit_logging_and_field_locking(self):
+        # Insert a paper
+        paper_id = self.db.insert_paper({
+            "pmid": "999888",
+            "title": "Trial of CBD for Sleep",
+            "abstract": "This was a clinical trial evaluating CBD for sleep quality.",
+            "study_type": ["review"],
+            "exposure_method": ["oral/edible"],
+            "classification_confidence": 0.9,
+            "classifier_version": "1.0.0"
+        })
+        
+        # Edit the paper classification via API
+        with self.client.session_transaction() as sess:
+            sess["logged_in"] = True
+            
+        payload = {
+            "study_type": ["Clinical (RCT)"],
+            "exposure_method": ["tincture"]
+        }
+        
+        response = self.client.post(
+            f"/api/papers/{paper_id}/edit-classification",
+            json=payload
+        )
+        self.assertEqual(response.status_code, 200)
+        data = json.loads(response.data)
+        
+        # Assert lock fields list
+        self.assertIn("study_type", data["locked_fields"])
+        self.assertIn("exposure_method", data["locked_fields"])
+        
+        # Assert paper updated in DB
+        updated_paper = self.db.get_paper(paper_id)
+        self.assertEqual(updated_paper["study_type"], ["Clinical (RCT)"])
+        self.assertEqual(updated_paper["exposure_method"], ["tincture"])
+        self.assertEqual(sorted(updated_paper["expert_locked_fields"]), sorted(["study_type", "exposure_method"]))
+        
+        # Assert feedback_audit record created
+        conn = self.db.get_connection()
+        cursor = conn.cursor()
+        cursor.execute("SELECT * FROM feedback_audit WHERE paper_id = ? ORDER BY id ASC", (paper_id,))
+        rows = [dict(row) for row in cursor.fetchall()]
+        conn.close()
+        
+        self.assertEqual(len(rows), 2)
+        # Check first audit log entry
+        self.assertEqual(rows[0]["field_name"], "study_type")
+        self.assertEqual(json.loads(rows[0]["old_value"]), ["review"])
+        self.assertEqual(json.loads(rows[0]["new_value"]), ["Clinical (RCT)"])
+        
+        # Check second audit log entry
+        self.assertEqual(rows[1]["field_name"], "exposure_method")
+        self.assertEqual(json.loads(rows[1]["old_value"]), ["oral/edible"])
+        self.assertEqual(json.loads(rows[1]["new_value"]), ["tincture"])
+
+    def test_reclassify_respects_locked_fields(self):
+        # Insert a paper
+        paper_id = self.db.insert_paper({
+            "pmid": "777666",
+            "title": "Randomized controlled trial of vaporized cannabis in humans",
+            "abstract": "We conducted a double-blind, randomized controlled trial of smoked vs vaporized cannabis.",
+            "study_type": ["review"],
+            "expert_locked_fields": json.dumps(["study_type"])
+        })
+        
+        # Run reclassifier
+        import reclassify_metadata
+        reclassify_metadata.reclassify_all_papers()
+        
+        # Retrieve updated paper
+        updated = self.db.get_paper(paper_id)
+        
+        # Assert that study_type was NOT updated (remained review) because it is locked
+        self.assertEqual(updated["study_type"], ["review"])
+        
+        # Assert that exposure_method was updated because it was NOT locked (should be populated)
+        self.assertTrue(len(updated["exposure_method"]) > 0)
+
+    def test_dynamic_few_shot_retrieval(self):
+        # Insert valid paper first to satisfy the FK constraint
+        paper_id = self.db.insert_paper({
+            "pmid": "123123",
+            "title": "In vitro microglial viability after cannabinoid treatment",
+            "abstract": "This study used cell lines to evaluate microglial survival.",
+            "study_type": ["review"]
+        })
+        
+        # Setup an audit correction manually
+        conn = self.db.get_connection()
+        conn.execute(
+            """
+            INSERT INTO feedback_audit (
+                paper_id, field_name, old_value, new_value, title, abstract, timestamp
+            ) VALUES (?, ?, ?, ?, ?, ?, ?)
+            """,
+            (
+                paper_id, "study_type", '["review"]', '["Cell Culture (cell lines)"]',
+                "In vitro microglial viability after cannabinoid treatment",
+                "This study used cell lines to evaluate microglial survival.",
+                "2026-06-05T00:00:00"
+            )
+        )
+        conn.commit()
+        conn.close()
+        
+        # Run dynamic retrieval
+        few_shot_text, sim = classifier.get_few_shot_examples(
+            "Evaluation of cell line microglial cell viability",
+            "We treated microglial cell lines with THC in vitro."
+        )
+        
+        self.assertTrue(sim > 0.0)
+        self.assertIn("Expert Guidance & Corrections", few_shot_text)
+        self.assertIn("Incorrect study_type Classification", few_shot_text)
+        self.assertIn('["Cell Culture (cell lines)"]', few_shot_text)
+
+    def test_jaccard_similarity_and_confidence(self):
+        # Test jaccard similarity
+        self.assertEqual(classifier.jaccard_similarity(["a", "b"], ["b", "a"]), 1.0)
+        self.assertEqual(classifier.jaccard_similarity(["a"], ["a", "b"]), 0.5)
+        self.assertEqual(classifier.jaccard_similarity("review", "review"), 1.0)
+        self.assertEqual(classifier.jaccard_similarity("review", "editorial"), 0.0)
+        self.assertEqual(classifier.jaccard_similarity(None, None), 1.0)
+
+
 if __name__ == "__main__":
     unittest.main()
 

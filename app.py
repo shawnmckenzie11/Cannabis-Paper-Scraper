@@ -283,6 +283,154 @@ def api_delete_papers():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
+@app.route("/api/papers/<int:paper_id>/edit-classification", methods=["POST"])
+def api_edit_classification(paper_id):
+    """Updates the classification fields of a paper, marks them as expert locked, and logs changes to feedback_audit."""
+    db = DatabaseManager()
+    paper = db.get_paper(paper_id)
+    if not paper:
+        return jsonify({"error": "Paper not found"}), 404
+        
+    data = request.get_json() or {}
+    
+    editable_fields = [
+        "study_type", "publication_type", "exposure_method", "thc_pct", "cbd_pct",
+        "dose_mg", "strain_reported", "strain_normalized", "duration_days",
+        "population", "sample_size", "outcome_domain", "cannabis_type", "summary"
+    ]
+    
+    conn = db.get_connection()
+    cursor = conn.cursor()
+    
+    try:
+        current_locked = paper.get("expert_locked_fields") or []
+        if isinstance(current_locked, str):
+            try:
+                current_locked = json.loads(current_locked)
+            except Exception:
+                current_locked = []
+        if not isinstance(current_locked, list):
+            current_locked = []
+            
+        updated_fields = {}
+        changes_logged = 0
+        now_str = datetime.now().isoformat()
+        
+        # Load rules config version for metadata logging
+        rules_version = "1.0.0"
+        if os.path.exists("rules_config.json"):
+            try:
+                with open("rules_config.json", "r") as f:
+                    rules_version = json.load(f).get("version", "1.0.0")
+            except Exception:
+                pass
+
+        for field in editable_fields:
+            if field not in data:
+                continue
+                
+            new_val = data[field]
+            old_val = paper.get(field)
+            
+            # Helper to normalize values for comparison
+            def normalize(val):
+                if val is None or val == "":
+                    return None
+                if isinstance(val, (list, dict)):
+                    return sorted(val) if isinstance(val, list) else val
+                if isinstance(val, str):
+                    val = val.strip()
+                    # Check if it represents JSON array
+                    if val.startswith("[") and val.endswith("]"):
+                        try:
+                            parsed = json.loads(val)
+                            return sorted(parsed) if isinstance(parsed, list) else parsed
+                        except Exception:
+                            pass
+                    # Check if numeric
+                    try:
+                        if "." in val:
+                            return float(val)
+                        return int(val)
+                    except ValueError:
+                        pass
+                    return val
+                if isinstance(val, (int, float)):
+                    return val
+                return val
+
+            norm_old = normalize(old_val)
+            norm_new = normalize(new_val)
+            
+            if norm_old != norm_new:
+                # Value has changed, log correction
+                old_str = json.dumps(old_val) if isinstance(old_val, (list, dict)) else str(old_val) if old_val is not None else None
+                new_str = json.dumps(new_val) if isinstance(new_val, (list, dict)) else str(new_val) if new_val is not None else None
+                
+                # Insert into feedback_audit
+                cursor.execute(
+                    """
+                    INSERT INTO feedback_audit (
+                        paper_id, field_name, old_value, new_value, title, abstract,
+                        timestamp, confidence_before_review, classifier_version
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    """,
+                    (
+                        paper_id,
+                        field,
+                        old_str,
+                        new_str,
+                        paper.get("title"),
+                        paper.get("abstract"),
+                        now_str,
+                        paper.get("classification_confidence"),
+                        paper.get("classifier_version") or rules_version
+                    )
+                )
+                
+                # Add to locked fields
+                if field not in current_locked:
+                    current_locked.append(field)
+                    
+                updated_fields[field] = new_val
+                changes_logged += 1
+                
+        if changes_logged > 0:
+            # Prepare updates dictionary
+            update_sql_parts = []
+            update_params = []
+            
+            # Add updated fields
+            for field, val in updated_fields.items():
+                update_sql_parts.append(f"{field} = ?")
+                if isinstance(val, list):
+                    update_params.append(json.dumps(val))
+                elif val == "":
+                    update_params.append(None)
+                else:
+                    update_params.append(val)
+                    
+            # Add expert_locked_fields update
+            update_sql_parts.append("expert_locked_fields = ?")
+            update_params.append(json.dumps(current_locked))
+            
+            update_params.append(paper_id)
+            
+            sql = f"UPDATE papers SET {', '.join(update_sql_parts)} WHERE id = ?"
+            cursor.execute(sql, update_params)
+            conn.commit()
+            
+        return jsonify({
+            "message": f"Successfully updated paper and logged {changes_logged} corrections.",
+            "locked_fields": current_locked
+        })
+        
+    except Exception as e:
+        conn.rollback()
+        return jsonify({"error": str(e)}), 500
+    finally:
+        conn.close()
+
 @app.route("/api/harvest", methods=["POST"])
 def api_harvest():
     """Triggers an asynchronous background search & ingest run."""

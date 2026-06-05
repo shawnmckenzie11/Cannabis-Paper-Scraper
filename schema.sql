@@ -28,7 +28,11 @@ CREATE TABLE IF NOT EXISTS papers (
     citation_count INTEGER DEFAULT 0,
     date_harvested TEXT NOT NULL,
     publication_date TEXT,
-    summary TEXT
+    summary TEXT,
+    expert_locked_fields TEXT DEFAULT '[]',
+    classification_confidence REAL,
+    classification_timestamp TEXT,
+    classifier_version TEXT
 );
 
 -- Full-Text Search FTS5 Virtual Table
@@ -59,5 +63,20 @@ END;
 CREATE TABLE IF NOT EXISTS system_metadata (
     key TEXT PRIMARY KEY,
     value TEXT
+);
+
+-- Expert feedback audit table for tracking corrections and dynamic few-shot learning
+CREATE TABLE IF NOT EXISTS feedback_audit (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    paper_id INTEGER,
+    field_name TEXT,
+    old_value TEXT,
+    new_value TEXT,
+    title TEXT,
+    abstract TEXT,
+    timestamp TEXT,
+    confidence_before_review REAL,
+    classifier_version TEXT,
+    FOREIGN KEY(paper_id) REFERENCES papers(id) ON DELETE CASCADE
 );
 

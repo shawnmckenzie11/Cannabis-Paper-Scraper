@@ -1534,89 +1534,236 @@
     <div class="drawer-overlay" id="drawer-overlay" onclick="closeDrawer()"></div>
 
     <!-- EXPANDABLE Abstract sliding drawer -->
-    <aside class="details-drawer" id="details-drawer">
+    <aside class="details-drawer" id="details-drawer" style="overflow-y: auto;">
         <div class="drawer-header">
             <div class="drawer-title-group">
                 <span class="badge badge-type" id="drawer-study-type" style="margin-bottom: 8px;">RCT</span>
                 <h3 id="drawer-title">Paper Title</h3>
             </div>
-            <button class="btn-close" onclick="closeDrawer()">&times;</button>
+            <div style="display: flex; align-items: center; gap: 10px;">
+                <button class="btn btn-secondary btn-sm" id="btn-edit-classification" onclick="toggleEditMode()" style="padding: 4px 10px; font-size: 0.8rem; background: rgba(0,240,255,0.06); border-color: rgba(0,240,255,0.2); color: var(--accent-blue); cursor: pointer; border-radius: 4px; font-weight: 600;">✏️ Edit</button>
+                <button class="btn-close" onclick="closeDrawer()">&times;</button>
+            </div>
         </div>
 
-        <div class="drawer-section">
-            <h4>Authors</h4>
-            <p id="drawer-authors" style="font-weight: 500;">Author List</p>
-        </div>
+        <div id="drawer-view-container">
+            <div class="drawer-section">
+                <h4>Authors</h4>
+                <p id="drawer-authors" style="font-weight: 500;">Author List</p>
+            </div>
 
-        <div class="drawer-section">
-            <h4>Journal & Year</h4>
-            <p id="drawer-journal-year">Clinical Journal (2026)</p>
-        </div>
+            <div class="drawer-section">
+                <h4>Journal & Year</h4>
+                <p id="drawer-journal-year">Clinical Journal (2026)</p>
+            </div>
 
-        <div class="details-meta-grid">
-            <div class="meta-item">
-                <span class="meta-label">Citations</span>
-                <span class="meta-value" id="drawer-citations">12</span>
-            </div>
-            <div class="meta-item">
-                <span class="meta-label">Exposure Pathway</span>
-                <span class="meta-value" id="drawer-exposure">vaporized</span>
-            </div>
-            <div class="meta-item">
-                <span class="meta-label">Subject Population</span>
-                <span class="meta-value" id="drawer-population">human</span>
-            </div>
-            <div class="meta-item">
-                <span class="meta-label">THC Percentage</span>
-                <span class="meta-value" id="drawer-thc">12.5%</span>
-            </div>
-            <div class="meta-item">
-                <span class="meta-label">CBD Percentage</span>
-                <span class="meta-value" id="drawer-cbd">2.5%</span>
-            </div>
-            <div class="meta-item">
-                <span class="meta-label">Dose (mg)</span>
-                <span class="meta-value" id="drawer-dose">20.0 mg</span>
-            </div>
-            <div class="meta-item">
-                <span class="meta-label">Duration</span>
-                <span class="meta-value" id="drawer-duration">14 days</span>
-            </div>
-            <div class="meta-item">
-                <span class="meta-label">Reported Strain</span>
-                <span class="meta-value" id="drawer-strain-reported">Bedrocan</span>
-            </div>
-            <div class="meta-item">
-                <span class="meta-label">Normalized Strain</span>
-                <span class="meta-value" id="drawer-strain-normalized">Chemotype I</span>
-            </div>
-            <div class="meta-item" style="grid-column: span 2;">
-                <span class="meta-label">Outcome Domains</span>
-                <div class="tag-container" id="drawer-outcomes-container" style="margin-top: 4px;">
-                    <!-- outcomes tags -->
+            <div class="details-meta-grid">
+                <div class="meta-item">
+                    <span class="meta-label" id="label-citations">Citations</span>
+                    <span class="meta-value" id="drawer-citations">12</span>
+                </div>
+                <div class="meta-item">
+                    <span class="meta-label" id="label-exposure">Exposure Pathway</span>
+                    <span class="meta-value" id="drawer-exposure">vaporized</span>
+                </div>
+                <div class="meta-item">
+                    <span class="meta-label" id="label-population">Subject Population</span>
+                    <span class="meta-value" id="drawer-population">human</span>
+                </div>
+                <div class="meta-item">
+                    <span class="meta-label" id="label-thc">THC Percentage</span>
+                    <span class="meta-value" id="drawer-thc">12.5%</span>
+                </div>
+                <div class="meta-item">
+                    <span class="meta-label" id="label-cbd">CBD Percentage</span>
+                    <span class="meta-value" id="drawer-cbd">2.5%</span>
+                </div>
+                <div class="meta-item">
+                    <span class="meta-label" id="label-dose">Dose (mg)</span>
+                    <span class="meta-value" id="drawer-dose">20.0 mg</span>
+                </div>
+                <div class="meta-item">
+                    <span class="meta-label" id="label-duration">Duration</span>
+                    <span class="meta-value" id="drawer-duration">14 days</span>
+                </div>
+                <div class="meta-item">
+                    <span class="meta-label" id="label-strain-reported">Reported Strain</span>
+                    <span class="meta-value" id="drawer-strain-reported">Bedrocan</span>
+                </div>
+                <div class="meta-item">
+                    <span class="meta-label" id="label-strain-normalized">Normalized Strain</span>
+                    <span class="meta-value" id="drawer-strain-normalized">Chemotype I</span>
+                </div>
+                <div class="meta-item" style="grid-column: span 2;">
+                    <span class="meta-label" id="label-outcomes">Outcome Domains</span>
+                    <div class="tag-container" id="drawer-outcomes-container" style="margin-top: 4px;">
+                        <!-- outcomes tags -->
+                    </div>
+                </div>
+                <div class="meta-item" style="grid-column: span 2;">
+                    <span class="meta-label" id="label-cannabis-types">Cannabis Type</span>
+                    <div class="tag-container" id="drawer-cannabis-types-container" style="margin-top: 4px;">
+                        <!-- cannabis type tags -->
+                    </div>
                 </div>
             </div>
-            <div class="meta-item" style="grid-column: span 2;">
-                <span class="meta-label">Cannabis Type</span>
-                <div class="tag-container" id="drawer-cannabis-types-container" style="margin-top: 4px;">
-                    <!-- cannabis type tags -->
+
+            <div class="drawer-section">
+                <h4>Abstract</h4>
+                <p class="abstract-text" id="drawer-abstract">Full paragraph abstract text...</p>
+            </div>
+
+            <div class="drawer-section" style="margin-top: 10px; border-top: 1px solid rgba(255,255,255,0.06); padding-top: 15px;">
+                <h4>Resource Links</h4>
+                <div class="link-icon-group" id="drawer-links-container" style="margin-top: 6px;">
+                    <!-- link buttons -->
                 </div>
             </div>
         </div>
 
+        <!-- Edit Mode Container (Hidden by default) -->
+        <div id="drawer-edit-container" style="display: none; padding: 15px 0;">
+            <form id="edit-classification-form" onsubmit="saveClassificationEdit(event)">
+                <div class="form-group" style="margin-bottom: 12px;">
+                    <label style="font-size: 0.85rem; font-weight: 600; display: block; margin-bottom: 4px; color: var(--text-primary);">Publication Type</label>
+                    <select id="edit-pub-type" style="width: 100%; padding: 8px; background: #121621; border: 1px solid rgba(255,255,255,0.1); color: var(--text-primary); border-radius: 4px;">
+                        <option value="original research">Original Research</option>
+                        <option value="review">Review</option>
+                        <option value="case study">Case Study</option>
+                        <option value="systematic review">Systematic Review</option>
+                        <option value="meta-analysis">Meta-Analysis</option>
+                        <option value="editorial">Editorial</option>
+                        <option value="comment">Comment</option>
+                        <option value="letter to the editor">Letter to the Editor</option>
+                        <option value="perspectives paper">Perspectives Paper</option>
+                    </select>
+                </div>
+                <div class="form-group" style="margin-bottom: 12px;">
+                    <label style="font-size: 0.85rem; font-weight: 600; display: block; margin-bottom: 4px; color: var(--text-primary);">Study Design</label>
+                    <div id="edit-study-type-checkboxes" style="display: grid; grid-template-columns: 1fr; gap: 4px; background: rgba(0,0,0,0.2); padding: 8px; border-radius: 4px; border: 1px solid rgba(255,255,255,0.05); max-height: 150px; overflow-y: auto;">
+                        <label class="checkbox-item"><input type="checkbox" name="edit_study_type" value="Clinical (RCT)"> Clinical (RCT)</label>
+                        <label class="checkbox-item"><input type="checkbox" name="edit_study_type" value="Clinical (prospective)"> Clinical (prospective)</label>
+                        <label class="checkbox-item"><input type="checkbox" name="edit_study_type" value="Clinical (observational)"> Clinical (observational)</label>
+                        <label class="checkbox-item"><input type="checkbox" name="edit_study_type" value="Clinical (retrospective)"> Clinical (retrospective)</label>
+                        <label class="checkbox-item"><input type="checkbox" name="edit_study_type" value="Animal Models (mouse)"> Animal Models (mouse)</label>
+                        <label class="checkbox-item"><input type="checkbox" name="edit_study_type" value="Animal Models (rat)"> Animal Models (rat)</label>
+                        <label class="checkbox-item"><input type="checkbox" name="edit_study_type" value="Animal Models (non-human primate)"> Animal (primate)</label>
+                        <label class="checkbox-item"><input type="checkbox" name="edit_study_type" value="Animal Models (other)"> Animal Models (other)</label>
+                        <label class="checkbox-item"><input type="checkbox" name="edit_study_type" value="Cell Culture (primary cells)"> Cell (primary)</label>
+                        <label class="checkbox-item"><input type="checkbox" name="edit_study_type" value="Cell Culture (cell lines)"> Cell (lines)</label>
+                        <label class="checkbox-item"><input type="checkbox" name="edit_study_type" value="Cell Culture (organoids)"> Cell (organoids)</label>
+                        <label class="checkbox-item"><input type="checkbox" name="edit_study_type" value="Cell Culture (co-culture)"> Cell (co-culture)</label>
+                        <label class="checkbox-item"><input type="checkbox" name="edit_study_type" value="review"> Review</label>
+                        <label class="checkbox-item"><input type="checkbox" name="edit_study_type" value="meta-analysis"> Meta-Analysis</label>
+                        <label class="checkbox-item"><input type="checkbox" name="edit_study_type" value="case study"> Case Study</label>
+                        <label class="checkbox-item"><input type="checkbox" name="edit_study_type" value="editorial"> Editorial</label>
+                    </div>
+                </div>
+                <div class="form-group" style="margin-bottom: 12px;">
+                    <label style="font-size: 0.85rem; font-weight: 600; display: block; margin-bottom: 4px; color: var(--text-primary);">Exposure Method</label>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 4px; background: rgba(0,0,0,0.2); padding: 8px; border-radius: 4px; border: 1px solid rgba(255,255,255,0.05); max-height: 120px; overflow-y: auto;">
+                        <label class="checkbox-item"><input type="checkbox" name="edit_exposure" value="smoked"> Smoked</label>
+                        <label class="checkbox-item"><input type="checkbox" name="edit_exposure" value="vaporized"> Vaporized</label>
+                        <label class="checkbox-item"><input type="checkbox" name="edit_exposure" value="oral/edible"> Oral/Edible</label>
+                        <label class="checkbox-item"><input type="checkbox" name="edit_exposure" value="tincture"> Tincture</label>
+                        <label class="checkbox-item"><input type="checkbox" name="edit_exposure" value="injection"> Injection</label>
+                        <label class="checkbox-item"><input type="checkbox" name="edit_exposure" value="forced inhalation"> Forced Inh</label>
+                        <label class="checkbox-item"><input type="checkbox" name="edit_exposure" value="in vitro"> In Vitro</label>
+                        <label class="checkbox-item"><input type="checkbox" name="edit_exposure" value="unknown"> Unknown</label>
+                    </div>
+                </div>
+                <div class="form-group" style="margin-bottom: 12px;">
+                    <label style="font-size: 0.85rem; font-weight: 600; display: block; margin-bottom: 4px; color: var(--text-primary);">Population</label>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 4px; background: rgba(0,0,0,0.2); padding: 8px; border-radius: 4px; border: 1px solid rgba(255,255,255,0.05);">
+                        <label class="checkbox-item"><input type="checkbox" name="edit_population" value="human"> Human</label>
+                        <label class="checkbox-item"><input type="checkbox" name="edit_population" value="mouse"> Mouse</label>
+                        <label class="checkbox-item"><input type="checkbox" name="edit_population" value="rat"> Rat</label>
+                        <label class="checkbox-item"><input type="checkbox" name="edit_population" value="cell_line"> Cell Line</label>
+                        <label class="checkbox-item"><input type="checkbox" name="edit_population" value="other"> Other</label>
+                    </div>
+                </div>
+                <div class="form-group" style="margin-bottom: 12px;">
+                    <label style="font-size: 0.85rem; font-weight: 600; display: block; margin-bottom: 4px; color: var(--text-primary);">Cannabis Type</label>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 4px; background: rgba(0,0,0,0.2); padding: 8px; border-radius: 4px; border: 1px solid rgba(255,255,255,0.05); max-height: 120px; overflow-y: auto;">
+                        <label class="checkbox-item"><input type="checkbox" name="edit_cannabis_type" value="dried flower"> Dried Flower</label>
+                        <label class="checkbox-item"><input type="checkbox" name="edit_cannabis_type" value="concentrates"> Concentrates</label>
+                        <label class="checkbox-item"><input type="checkbox" name="edit_cannabis_type" value="vape pen"> Vape Pen</label>
+                        <label class="checkbox-item"><input type="checkbox" name="edit_cannabis_type" value="pure cannabinoid"> Pure Cannabinoid</label>
+                        <label class="checkbox-item"><input type="checkbox" name="edit_cannabis_type" value="edibles"> Edibles</label>
+                        <label class="checkbox-item"><input type="checkbox" name="edit_cannabis_type" value="hashish/kief"> Hash/Kief</label>
+                        <label class="checkbox-item"><input type="checkbox" name="edit_cannabis_type" value="CB receptor agonist"> CB Agonist</label>
+                        <label class="checkbox-item"><input type="checkbox" name="edit_cannabis_type" value="CB receptor antagonist"> CB Antagonist</label>
+                        <label class="checkbox-item"><input type="checkbox" name="edit_cannabis_type" value="unknown"> Unknown</label>
+                    </div>
+                </div>
+                <div class="form-group" style="margin-bottom: 12px;">
+                    <label style="font-size: 0.85rem; font-weight: 600; display: block; margin-bottom: 4px; color: var(--text-primary);">Outcome Domains</label>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 4px; background: rgba(0,0,0,0.2); padding: 8px; border-radius: 4px; border: 1px solid rgba(255,255,255,0.05); max-height: 120px; overflow-y: auto;">
+                        <label class="checkbox-item"><input type="checkbox" name="edit_outcome" value="pain"> Pain</label>
+                        <label class="checkbox-item"><input type="checkbox" name="edit_outcome" value="anxiety"> Anxiety</label>
+                        <label class="checkbox-item"><input type="checkbox" name="edit_outcome" value="cognition"> Cognition</label>
+                        <label class="checkbox-item"><input type="checkbox" name="edit_outcome" value="inflammation"> Inflammation</label>
+                        <label class="checkbox-item"><input type="checkbox" name="edit_outcome" value="addiction"> Addiction</label>
+                        <label class="checkbox-item"><input type="checkbox" name="edit_outcome" value="oncology"> Oncology</label>
+                        <label class="checkbox-item"><input type="checkbox" name="edit_outcome" value="neuroprotection"> Neuroprotect</label>
+                        <label class="checkbox-item"><input type="checkbox" name="edit_outcome" value="sleep"> Sleep</label>
+                        <label class="checkbox-item"><input type="checkbox" name="edit_outcome" value="other"> Other</label>
+                    </div>
+                </div>
+                
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 12px;">
+                    <div class="form-group">
+                        <label style="font-size: 0.85rem; font-weight: 600; display: block; margin-bottom: 4px; color: var(--text-primary);">THC Percentage (%)</label>
+                        <input type="number" id="edit-thc" step="0.01" style="width: 100%; padding: 8px; background: #121621; border: 1px solid rgba(255,255,255,0.1); color: var(--text-primary); border-radius: 4px;">
+                    </div>
+                    <div class="form-group">
+                        <label style="font-size: 0.85rem; font-weight: 600; display: block; margin-bottom: 4px; color: var(--text-primary);">CBD Percentage (%)</label>
+                        <input type="number" id="edit-cbd" step="0.01" style="width: 100%; padding: 8px; background: #121621; border: 1px solid rgba(255,255,255,0.1); color: var(--text-primary); border-radius: 4px;">
+                    </div>
+                </div>
+                
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 12px;">
+                    <div class="form-group">
+                        <label style="font-size: 0.85rem; font-weight: 600; display: block; margin-bottom: 4px; color: var(--text-primary);">Dose (mg)</label>
+                        <input type="number" id="edit-dose" step="0.1" style="width: 100%; padding: 8px; background: #121621; border: 1px solid rgba(255,255,255,0.1); color: var(--text-primary); border-radius: 4px;">
+                    </div>
+                    <div class="form-group">
+                        <label style="font-size: 0.85rem; font-weight: 600; display: block; margin-bottom: 4px; color: var(--text-primary);">Duration (days)</label>
+                        <input type="number" id="edit-duration" step="0.1" style="width: 100%; padding: 8px; background: #121621; border: 1px solid rgba(255,255,255,0.1); color: var(--text-primary); border-radius: 4px;">
+                    </div>
+                </div>
 
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 12px;">
+                    <div class="form-group">
+                        <label style="font-size: 0.85rem; font-weight: 600; display: block; margin-bottom: 4px; color: var(--text-primary);">Reported Strain</label>
+                        <input type="text" id="edit-strain-reported" style="width: 100%; padding: 8px; background: #121621; border: 1px solid rgba(255,255,255,0.1); color: var(--text-primary); border-radius: 4px;">
+                    </div>
+                    <div class="form-group">
+                        <label style="font-size: 0.85rem; font-weight: 600; display: block; margin-bottom: 4px; color: var(--text-primary);">Normalized Strain</label>
+                        <select id="edit-strain-normalized" style="width: 100%; padding: 8px; background: #121621; border: 1px solid rgba(255,255,255,0.1); color: var(--text-primary); border-radius: 4px;">
+                            <option value="">None / Unspecified</option>
+                            <option value="Chemotype I">Chemotype I (High THC)</option>
+                            <option value="Chemotype II">Chemotype II (Balanced)</option>
+                            <option value="Chemotype III">Chemotype III (High CBD)</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <div class="form-group" style="margin-bottom: 12px;">
+                    <label style="font-size: 0.85rem; font-weight: 600; display: block; margin-bottom: 4px; color: var(--text-primary);">Sample Size (N)</label>
+                    <input type="number" id="edit-sample-size" style="width: 100%; padding: 8px; background: #121621; border: 1px solid rgba(255,255,255,0.1); color: var(--text-primary); border-radius: 4px;">
+                </div>
 
-        <div class="drawer-section">
-            <h4>Abstract</h4>
-            <p class="abstract-text" id="drawer-abstract">Full paragraph abstract text...</p>
-        </div>
-
-        <div class="drawer-section"
-            style="margin-top: 10px; border-top: 1px solid rgba(255,255,255,0.06); padding-top: 15px;">
-            <h4>Resource Links</h4>
-            <div class="link-icon-group" id="drawer-links-container" style="margin-top: 6px;">
-                <!-- link buttons -->
-            </div>
+                <div class="form-group" style="margin-bottom: 12px;">
+                    <label style="font-size: 0.85rem; font-weight: 600; display: block; margin-bottom: 4px; color: var(--text-primary);">Summary</label>
+                    <textarea id="edit-summary" rows="3" style="width: 100%; padding: 8px; background: #121621; border: 1px solid rgba(255,255,255,0.1); color: var(--text-primary); border-radius: 4px; font-family: var(--font-body); font-size: 0.9rem;"></textarea>
+                </div>
+                
+                <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 15px;">
+                    <button type="button" class="btn btn-secondary" onclick="toggleEditMode()" style="padding: 6px 12px;">Cancel</button>
+                    <button type="submit" class="btn btn-primary" style="padding: 6px 12px;">Save Changes</button>
+                </div>
+            </form>
         </div>
     </aside>
 
@@ -2123,8 +2270,25 @@
             triggerSearch();
         }
 
+        let editMode = false;
+        let activeEditingPaper = null;
+
+        function updateMetaLabel(elementId, labelText, isLocked) {
+            const labelEl = document.getElementById(elementId);
+            if (labelEl) {
+                labelEl.innerHTML = labelText + (isLocked ? ' <span title="Locked by Expert Override" style="color: var(--accent-amber); cursor: help; font-size: 0.85rem;">🔒</span>' : '');
+            }
+        }
+
         // Open details Drawer slide-in
         function openDrawer(paper) {
+            activeEditingPaper = paper;
+            editMode = false;
+            document.getElementById("drawer-view-container").style.display = "block";
+            document.getElementById("drawer-edit-container").style.display = "none";
+            document.getElementById("btn-edit-classification").innerText = "✏️ Edit";
+            document.getElementById("btn-edit-classification").classList.remove("btn-secondary");
+
             document.getElementById("drawer-title").innerText = paper.title;
             document.getElementById("drawer-study-type").innerText = Array.isArray(paper.study_type) ? paper.study_type.join(', ') : (paper.study_type || "unknown");
             document.getElementById("drawer-authors").innerText = (paper.authors || []).join(", ") || "Not Reported";
@@ -2140,7 +2304,18 @@
             document.getElementById("drawer-strain-normalized").innerText = paper.strain_normalized || "Unverified chemotype";
             document.getElementById("drawer-abstract").innerText = paper.abstract || "No abstract content cataloged.";
 
-
+            // Render Lock Icons for expert locked fields
+            const locked = paper.expert_locked_fields || [];
+            updateMetaLabel("label-exposure", "Exposure Pathway", locked.includes("exposure_method"));
+            updateMetaLabel("label-population", "Subject Population", locked.includes("population"));
+            updateMetaLabel("label-thc", "THC Percentage", locked.includes("thc_pct"));
+            updateMetaLabel("label-cbd", "CBD Percentage", locked.includes("cbd_pct"));
+            updateMetaLabel("label-dose", "Dose (mg)", locked.includes("dose_mg"));
+            updateMetaLabel("label-duration", "Duration", locked.includes("duration_days"));
+            updateMetaLabel("label-strain-reported", "Reported Strain", locked.includes("strain_reported"));
+            updateMetaLabel("label-strain-normalized", "Normalized Strain", locked.includes("strain_normalized"));
+            updateMetaLabel("label-outcomes", "Outcome Domains", locked.includes("outcome_domain"));
+            updateMetaLabel("label-cannabis-types", "Cannabis Type", locked.includes("cannabis_type"));
 
             // Outcomes tags
             const outcomesContainer = document.getElementById("drawer-outcomes-container");
@@ -2160,10 +2335,6 @@
             });
             if (cannabisTypes.length === 0) cannabisTypesContainer.innerHTML = `<span style="color: var(--text-secondary)">None</span>`;
 
-
-
-
-
             // Links container inside drawer
             const linksContainer = document.getElementById("drawer-links-container");
             linksContainer.innerHTML = "";
@@ -2182,6 +2353,107 @@
             // Slide drawer out
             document.getElementById("details-drawer").classList.add("open");
             document.getElementById("drawer-overlay").classList.add("open");
+        }
+
+        function toggleEditMode() {
+            editMode = !editMode;
+            const viewContainer = document.getElementById("drawer-view-container");
+            const editContainer = document.getElementById("drawer-edit-container");
+            const editBtn = document.getElementById("btn-edit-classification");
+            
+            if (editMode) {
+                viewContainer.style.display = "none";
+                editContainer.style.display = "block";
+                editBtn.innerText = "Cancel Edit";
+                editBtn.classList.add("btn-secondary");
+                editBtn.classList.remove("btn-primary");
+                
+                // Populate form fields with current paper data
+                populateEditForm(activeEditingPaper);
+            } else {
+                viewContainer.style.display = "block";
+                editContainer.style.display = "none";
+                editBtn.innerText = "✏️ Edit";
+                editBtn.classList.remove("btn-secondary");
+            }
+        }
+
+        function populateEditForm(paper) {
+            document.getElementById("edit-pub-type").value = paper.publication_type || "original research";
+            document.getElementById("edit-thc").value = paper.thc_pct !== null ? paper.thc_pct : "";
+            document.getElementById("edit-cbd").value = paper.cbd_pct !== null ? paper.cbd_pct : "";
+            document.getElementById("edit-dose").value = paper.dose_mg !== null ? paper.dose_mg : "";
+            document.getElementById("edit-duration").value = paper.duration_days !== null ? paper.duration_days : "";
+            document.getElementById("edit-strain-reported").value = paper.strain_reported || "";
+            document.getElementById("edit-strain-normalized").value = paper.strain_normalized || "";
+            document.getElementById("edit-sample-size").value = paper.sample_size !== null ? paper.sample_size : "";
+            document.getElementById("edit-summary").value = paper.summary || "";
+            
+            function setCheckboxes(name, values) {
+                const checkboxes = document.querySelectorAll(`input[name="${name}"]`);
+                const valArray = Array.isArray(values) ? values : (values ? [values] : []);
+                checkboxes.forEach(cb => {
+                    cb.checked = valArray.includes(cb.value);
+                });
+            }
+            
+            setCheckboxes("edit_study_type", paper.study_type);
+            setCheckboxes("edit_exposure", paper.exposure_method);
+            setCheckboxes("edit_population", paper.population);
+            setCheckboxes("edit_cannabis_type", paper.cannabis_type);
+            setCheckboxes("edit_outcome", paper.outcome_domain);
+        }
+
+        function saveClassificationEdit(event) {
+            event.preventDefault();
+            if (!activeEditingPaper) return;
+            
+            function getCheckedValues(name) {
+                const checkboxes = document.querySelectorAll(`input[name="${name}"]:checked`);
+                return Array.from(checkboxes).map(cb => cb.value);
+            }
+            
+            const payload = {
+                publication_type: document.getElementById("edit-pub-type").value,
+                thc_pct: document.getElementById("edit-thc").value !== "" ? parseFloat(document.getElementById("edit-thc").value) : null,
+                cbd_pct: document.getElementById("edit-cbd").value !== "" ? parseFloat(document.getElementById("edit-cbd").value) : null,
+                dose_mg: document.getElementById("edit-dose").value !== "" ? parseFloat(document.getElementById("edit-dose").value) : null,
+                duration_days: document.getElementById("edit-duration").value !== "" ? parseFloat(document.getElementById("edit-duration").value) : null,
+                strain_reported: document.getElementById("edit-strain-reported").value.trim() || null,
+                strain_normalized: document.getElementById("edit-strain-normalized").value || null,
+                sample_size: document.getElementById("edit-sample-size").value !== "" ? parseInt(document.getElementById("edit-sample-size").value, 10) : null,
+                summary: document.getElementById("edit-summary").value.trim() || null,
+                study_type: getCheckedValues("edit_study_type"),
+                exposure_method: getCheckedValues("edit_exposure"),
+                population: getCheckedValues("edit_population"),
+                cannabis_type: getCheckedValues("edit_cannabis_type"),
+                outcome_domain: getCheckedValues("edit_outcome")
+            };
+            
+            fetch(`/api/papers/${activeEditingPaper.id}/edit-classification`, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify(payload)
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.error) {
+                    alert("Failed to save changes: " + data.error);
+                } else {
+                    Object.assign(activeEditingPaper, payload);
+                    activeEditingPaper.expert_locked_fields = data.locked_fields;
+                    
+                    toggleEditMode();
+                    openDrawer(activeEditingPaper);
+                    triggerSearch(false);
+                }
+            })
+            .catch(err => {
+                console.error("Error saving classification: ", err);
+                alert("An error occurred while saving changes.");
+            });
         }
 
         // Close Drawer sliding panel

@@ -97,6 +97,26 @@ class DatabaseManager:
             except sqlite3.OperationalError:
                 # Column already exists, ignore
                 pass
+            # Ensure expert_locked_fields column exists
+            try:
+                conn.execute("ALTER TABLE papers ADD COLUMN expert_locked_fields TEXT DEFAULT '[]';")
+            except sqlite3.OperationalError:
+                pass
+            # Ensure classification_confidence column exists
+            try:
+                conn.execute("ALTER TABLE papers ADD COLUMN classification_confidence REAL;")
+            except sqlite3.OperationalError:
+                pass
+            # Ensure classification_timestamp column exists
+            try:
+                conn.execute("ALTER TABLE papers ADD COLUMN classification_timestamp TEXT;")
+            except sqlite3.OperationalError:
+                pass
+            # Ensure classifier_version column exists
+            try:
+                conn.execute("ALTER TABLE papers ADD COLUMN classifier_version TEXT;")
+            except sqlite3.OperationalError:
+                pass
             # Ensure system_metadata table exists
             conn.execute("""
                 CREATE TABLE IF NOT EXISTS system_metadata (
@@ -156,12 +176,14 @@ class DatabaseManager:
             "abstract", "full_text_link", "study_type", "exposure_method", "thc_pct",
             "cbd_pct", "dose_mg", "strain_reported", "strain_normalized", "duration_days",
             "population", "sample_size", "outcome_domain",
-            "open_access", "citation_count", "date_harvested", "publication_date", "cannabis_type", "summary", "publication_type"
+            "open_access", "citation_count", "date_harvested", "publication_date", "cannabis_type", 
+            "summary", "publication_type", "expert_locked_fields", "classification_confidence", 
+            "classification_timestamp", "classifier_version"
         ]
         
         # Ensure array fields are stored as JSON strings
         paper_copy = paper.copy()
-        for list_field in ["authors", "outcome_domain", "study_type", "exposure_method", "cannabis_type", "population"]:
+        for list_field in ["authors", "outcome_domain", "study_type", "exposure_method", "cannabis_type", "population", "expert_locked_fields"]:
             if list_field in paper_copy and not isinstance(paper_copy[list_field], str):
                 paper_copy[list_field] = json.dumps(paper_copy[list_field])
             
@@ -248,7 +270,7 @@ class DatabaseManager:
             if row:
                 res = dict(row)
                 # Parse JSON fields
-                for json_field in ["authors", "outcome_domain", "study_type", "exposure_method", "cannabis_type", "population"]:
+                for json_field in ["authors", "outcome_domain", "study_type", "exposure_method", "cannabis_type", "population", "expert_locked_fields"]:
                     if res.get(json_field):
                         try:
                             val = res[json_field].strip()
@@ -622,7 +644,7 @@ class DatabaseManager:
                     else:
                         res[json_field] = []
 
-                for json_field in ["study_type", "exposure_method", "cannabis_type", "population"]:
+                for json_field in ["study_type", "exposure_method", "cannabis_type", "population", "expert_locked_fields"]:
                     if res.get(json_field):
                         try:
                             val = res[json_field].strip()

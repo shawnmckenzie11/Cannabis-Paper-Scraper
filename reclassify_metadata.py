@@ -3,6 +3,7 @@ import sqlite3
 import json
 import logging
 import os
+from datetime import datetime
 from db_manager import DatabaseManager
 import extractor
 
@@ -35,12 +36,22 @@ def reclassify_all_papers():
     cursor = conn.cursor()
     
     try:
+        # Load rules config version
+        rules_version = "1.0.0"
+        if os.path.exists("rules_config.json"):
+            try:
+                with open("rules_config.json", "r") as f:
+                    rules_version = json.load(f).get("version", "1.0.0")
+            except Exception:
+                pass
+
         # Fetch all papers
         cursor.execute(
             """
             SELECT id, title, abstract, study_type, exposure_method, population,
                    thc_pct, cbd_pct, dose_mg, strain_reported, strain_normalized,
-                   duration_days, sample_size, journal, cannabis_type, publication_type
+                   duration_days, sample_size, journal, cannabis_type, publication_type,
+                   expert_locked_fields
             FROM papers
             """
         )
@@ -78,6 +89,23 @@ def reclassify_all_papers():
             old_cannabis_type = parse_old_list(p.get("cannabis_type"))
             old_summary = p.get("summary") or ""
             
+            # Respect locked fields
+            locked_fields = p.get("expert_locked_fields") or []
+            if isinstance(locked_fields, str):
+                try:
+                    locked_fields = json.loads(locked_fields)
+                except Exception:
+                    locked_fields = []
+            if not isinstance(locked_fields, list):
+                locked_fields = []
+
+            # Assign values based on locking
+            final_publication_type = old_pub_type if "publication_type" in locked_fields else new_publication_type
+            final_study_type = old_study_type if "study_type" in locked_fields else new_study_type
+            final_population = old_population if "population" in locked_fields else new_population
+            final_exposure_method = old_exposure if "exposure_method" in locked_fields else new_exposure_method
+            final_cannabis_type = old_cannabis_type if "cannabis_type" in locked_fields else new_cannabis_type
+            
             # Check if summary is heuristic-generated
             is_heuristic_summary = (
                 not old_summary or 
@@ -85,34 +113,34 @@ def reclassify_all_papers():
                 old_summary.startswith("This is an ")
             )
             
-            if is_heuristic_summary:
+            if is_heuristic_summary and "summary" not in locked_fields:
                 new_summary = extractor.generate_heuristic_summary({
-                    "study_type": new_study_type,
-                    "cannabis_type": new_cannabis_type,
-                    "exposure_method": new_exposure_method,
-                    "population": new_population,
+                    "study_type": final_study_type,
+                    "cannabis_type": final_cannabis_type,
+                    "exposure_method": final_exposure_method,
+                    "population": final_population,
                     "strain_reported": p.get("strain_reported")
                 })
             else:
                 new_summary = old_summary
             
             has_changes = (
-                new_publication_type != old_pub_type or
-                sorted(new_study_type) != sorted(old_study_type) or
-                sorted(new_exposure_method) != sorted(old_exposure) or
-                sorted(new_population) != sorted(old_population) or
-                sorted(new_cannabis_type) != sorted(old_cannabis_type) or
+                final_publication_type != old_pub_type or
+                sorted(final_study_type) != sorted(old_study_type) or
+                sorted(final_exposure_method) != sorted(old_exposure) or
+                sorted(final_population) != sorted(old_population) or
+                sorted(final_cannabis_type) != sorted(old_cannabis_type) or
                 new_summary != old_summary
             )
             
             if has_changes:
-                if sorted(new_study_type) != sorted(old_study_type):
+                if sorted(final_study_type) != sorted(old_study_type):
                     study_type_changes += 1
-                if sorted(new_exposure_method) != sorted(old_exposure):
+                if sorted(final_exposure_method) != sorted(old_exposure):
                     exposure_changes += 1
-                if sorted(new_population) != sorted(old_population):
+                if sorted(final_population) != sorted(old_population):
                     population_changes += 1
-                if sorted(new_cannabis_type) != sorted(old_cannabis_type):
+                if sorted(final_cannabis_type) != sorted(old_cannabis_type):
                     cannabis_type_changes += 1
                 
                 # Update database
@@ -124,16 +152,20 @@ def reclassify_all_papers():
                         population = ?,
                         cannabis_type = ?,
                         publication_type = ?,
-                        summary = ?
+                        summary = ?,
+                        classifier_version = ?,
+                        classification_timestamp = ?
                     WHERE id = ?
                     """,
                     (
-                        json.dumps(new_study_type),
-                        json.dumps(new_exposure_method),
-                        json.dumps(new_population),
-                        json.dumps(new_cannabis_type),
-                        new_publication_type,
+                        json.dumps(final_study_type),
+                        json.dumps(final_exposure_method),
+                        json.dumps(final_population),
+                        json.dumps(final_cannabis_type),
+                        final_publication_type,
                         new_summary,
+                        f"heuristic-reclassify-{rules_version}",
+                        datetime.now().isoformat(),
                         p["id"]
                     )
                 )
@@ -141,11 +173,11 @@ def reclassify_all_papers():
                 
                 if p["id"] == 6895 or "Mitochondrial DNA" in title:
                     logger.info(f"Updated specific paper ID {p['id']}: {title[:60]}...")
-                    logger.info(f"  - Publication Type: {old_pub_type} -> {new_publication_type}")
-                    logger.info(f"  - Study Type: {old_study_type} -> {new_study_type}")
-                    logger.info(f"  - Exposure: {old_exposure} -> {new_exposure_method}")
-                    logger.info(f"  - Population: {old_population} -> {new_population}")
-                    logger.info(f"  - Cannabis Type: {old_cannabis_type} -> {new_cannabis_type}")
+                    logger.info(f"  - Publication Type: {old_pub_type} -> {final_publication_type}")
+                    logger.info(f"  - Study Type: {old_study_type} -> {final_study_type}")
+                    logger.info(f"  - Exposure: {old_exposure} -> {final_exposure_method}")
+                    logger.info(f"  - Population: {old_population} -> {final_population}")
+                    logger.info(f"  - Cannabis Type: {old_cannabis_type} -> {final_cannabis_type}")
         
         conn.commit()
         logger.info(f"Finished reclassification.")
@@ -160,6 +192,7 @@ def reclassify_all_papers():
         logger.error(f"Error during reclassification: {e}")
     finally:
         conn.close()
-
+ 
 if __name__ == "__main__":
+    from datetime import datetime
     reclassify_all_papers()
