@@ -293,10 +293,14 @@ def verify_email():
 @app.route("/auth/google")
 def auth_google():
     client_id = os.getenv("GOOGLE_CLIENT_ID")
-    redirect_uri = os.getenv("GOOGLE_REDIRECT_URI")
     
-    if not client_id or not redirect_uri:
-        print("[GOOGLE AUTH WARNING] GOOGLE_CLIENT_ID or GOOGLE_REDIRECT_URI environment variables not configured. Falling back to mock Google login.")
+    redirect_uri = os.getenv("GOOGLE_REDIRECT_URI")
+    if not redirect_uri:
+        scheme = request.headers.get("X-Forwarded-Proto", request.scheme)
+        redirect_uri = f"{scheme}://{request.host}/auth/google/callback"
+        
+    if not client_id:
+        print("[GOOGLE AUTH WARNING] GOOGLE_CLIENT_ID environment variable not configured. Falling back to mock Google login.")
         return render_template("google_auth.html")
         
     import urllib.parse
@@ -318,9 +322,13 @@ def auth_google():
 def auth_google_callback():
     client_id = os.getenv("GOOGLE_CLIENT_ID")
     client_secret = os.getenv("GOOGLE_CLIENT_SECRET")
-    redirect_uri = os.getenv("GOOGLE_REDIRECT_URI")
     
-    if not client_id or not client_secret or not redirect_uri:
+    redirect_uri = os.getenv("GOOGLE_REDIRECT_URI")
+    if not redirect_uri:
+        scheme = request.headers.get("X-Forwarded-Proto", request.scheme)
+        redirect_uri = f"{scheme}://{request.host}/auth/google/callback"
+        
+    if not client_id or not client_secret:
         email = request.args.get("email")
         name = request.args.get("name") or email.split("@")[0]
         if not email:
