@@ -126,7 +126,7 @@
             display: flex;
             align-items: center;
             gap: 30px;
-            width: 100%;
+            flex: 1;
         }
 
         .top-banner h1 {
@@ -1115,6 +1115,134 @@
             overflow-y: auto;
             padding-right: 8px;
         }
+
+        /* --- User Widget & Authentication Dropdown/Modal --- */
+        .user-widget {
+            position: relative;
+            display: inline-block;
+        }
+
+        .user-avatar {
+            width: 38px;
+            height: 38px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--primary) 0%, var(--accent-blue) 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 0.9rem;
+            color: #ffffff;
+            border: 2px solid rgba(255, 255, 255, 0.15);
+            box-shadow: 0 0 10px rgba(99, 102, 241, 0.25);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            cursor: pointer;
+            user-select: none;
+        }
+
+        .user-avatar:hover {
+            transform: scale(1.05);
+            border-color: var(--accent-blue);
+            box-shadow: 0 0 15px rgba(0, 240, 255, 0.4);
+        }
+
+        .user-dropdown {
+            position: absolute;
+            top: 125%;
+            right: 0;
+            background: rgba(15, 20, 32, 0.95);
+            border: 1px solid var(--card-border);
+            border-radius: 12px;
+            padding: 15px;
+            min-width: 200px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(20px);
+            display: none;
+            flex-direction: column;
+            gap: 12px;
+            z-index: 1000;
+            animation: fadeInDropdown 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        @keyframes fadeInDropdown {
+            from { opacity: 0; transform: translateY(-8px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .user-dropdown.show {
+            display: flex;
+        }
+
+        .user-info {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+            padding-bottom: 10px;
+            text-align: left;
+        }
+
+        .user-info .username {
+            font-weight: 700;
+            color: var(--text-primary);
+            font-size: 0.9rem;
+            margin-bottom: 2px;
+        }
+
+        .btn-signout {
+            background: rgba(239, 68, 68, 0.1);
+            border: 1px solid rgba(239, 68, 68, 0.2);
+            color: #ef4444;
+            padding: 8px 12px;
+            border-radius: 8px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            cursor: pointer;
+            text-align: center;
+            transition: all 0.2s ease;
+            display: block;
+            width: 100%;
+        }
+
+        .btn-signout:hover {
+            background: rgba(239, 68, 68, 0.2);
+            border-color: rgba(239, 68, 68, 0.4);
+        }
+
+        .btn-signin-header {
+            padding: 8px 16px;
+            font-size: 0.85rem;
+            border-radius: 8px;
+            font-family: var(--font-display);
+            background: linear-gradient(135deg, var(--primary) 0%, #4f46e5 100%);
+            border: none;
+            color: #ffffff;
+            cursor: pointer;
+            box-shadow: 0 4px 15px rgba(99, 102, 241, 0.3);
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            transition: all 0.3s ease;
+            font-weight: 600;
+        }
+
+        .btn-signin-header:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 6px 20px rgba(99, 102, 241, 0.45);
+        }
+
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(8, 11, 20, 0.85);
+            backdrop-filter: blur(8px);
+            z-index: 2000;
+            align-items: center;
+            justify-content: center;
+            display: none;
+        }
     </style>
     <!-- Chart.js for premium dynamic subset visualizations -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -1135,6 +1263,9 @@
                     <span>📊</span> My Analyses
                 </button>
             </div>
+        </div>
+        <div class="banner-right">
+            <div id="user-header-widget" class="user-widget"></div>
         </div>
     </header>
 
@@ -1774,9 +1905,21 @@
                                     <span class="meta-label" id="label-exposure">Exposure Pathway</span>
                                     <span class="meta-value" id="drawer-exposure">vaporized</span>
                                 </div>
-                                <div class="meta-item">
-                                    <span class="meta-label" id="label-duration">Duration</span>
+                                <div class="meta-item" id="item-study-duration" style="display: none;">
+                                    <span class="meta-label" id="label-duration">Study Duration</span>
                                     <span class="meta-value" id="drawer-duration">14 days</span>
+                                </div>
+                                <div class="meta-item" id="item-admin-frequency" style="display: none;">
+                                    <span class="meta-label" id="label-admin-frequency">Admin Frequency</span>
+                                    <span class="meta-value" id="drawer-admin-frequency">Not Reported</span>
+                                </div>
+                                <div class="meta-item" id="item-inhaled-duration" style="display: none;">
+                                    <span class="meta-label" id="label-inhaled-duration">Inhaled Exp Duration</span>
+                                    <span class="meta-value" id="drawer-inhaled-exposure-duration">Not Reported</span>
+                                </div>
+                                <div class="meta-item" id="item-treatment-duration" style="display: none;">
+                                    <span class="meta-label" id="label-treatment-duration">Treatment Duration</span>
+                                    <span class="meta-value" id="drawer-treatment-duration">Not Reported</span>
                                 </div>
                                 <div class="meta-item">
                                     <span class="meta-label" id="label-strain-normalized">Chemotype</span>
@@ -1988,9 +2131,27 @@
                     </div>
                 </div>
 
-                <div class="form-group" style="margin-bottom: 12px;">
-                    <label style="font-size: 0.85rem; font-weight: 600; display: block; margin-bottom: 4px; color: var(--text-primary);">Duration (days)</label>
-                    <input type="number" id="edit-duration" step="0.1" style="width: 100%; padding: 8px; background: #121621; border: 1px solid rgba(255,255,255,0.1); color: var(--text-primary); border-radius: 4px;">
+                <!-- Duration and Frequency Fields (Dynamically adjusted based on study type / exposure method) -->
+                <div id="edit-group-clinical-duration" style="margin-bottom: 12px; display: none;">
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 8px;">
+                        <div class="form-group">
+                            <label style="font-size: 0.85rem; font-weight: 600; display: block; margin-bottom: 4px; color: var(--text-primary);">Study Duration (days)</label>
+                            <input type="number" id="edit-duration" step="0.1" style="width: 100%; padding: 8px; background: #121621; border: 1px solid rgba(255,255,255,0.1); color: var(--text-primary); border-radius: 4px;">
+                        </div>
+                        <div class="form-group" id="edit-group-inhaled-duration" style="display: none;">
+                            <label style="font-size: 0.85rem; font-weight: 600; display: block; margin-bottom: 4px; color: var(--text-primary);">Inhaled Exposure Duration</label>
+                            <input type="text" id="edit-inhaled-exposure-duration" placeholder="e.g. 10 minutes" style="width: 100%; padding: 8px; background: #121621; border: 1px solid rgba(255,255,255,0.1); color: var(--text-primary); border-radius: 4px;">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label style="font-size: 0.85rem; font-weight: 600; display: block; margin-bottom: 4px; color: var(--text-primary);">Administration Frequency</label>
+                        <input type="text" id="edit-admin-frequency" placeholder="e.g. once daily, twice weekly" style="width: 100%; padding: 8px; background: #121621; border: 1px solid rgba(255,255,255,0.1); color: var(--text-primary); border-radius: 4px;">
+                    </div>
+                </div>
+
+                <div id="edit-group-invitro-duration" class="form-group" style="margin-bottom: 12px; display: none;">
+                    <label style="font-size: 0.85rem; font-weight: 600; display: block; margin-bottom: 4px; color: var(--text-primary);">Treatment Duration</label>
+                    <input type="text" id="edit-treatment-duration" placeholder="e.g. 30 minutes, 24 hours, 3 days" style="width: 100%; padding: 8px; background: #121621; border: 1px solid rgba(255,255,255,0.1); color: var(--text-primary); border-radius: 4px;">
                 </div>
 
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 12px;">
@@ -2106,6 +2267,13 @@
 
     <!-- Dynamic JavaScript -->
     <script>
+        const IS_LOGGED_IN = {% if session.get('logged_in') %}true{% else %}false{% endif %};
+        const CURRENT_USER = {
+            username: "{{ session.get('username') or '' }}",
+            email: "{{ session.get('email') or '' }}",
+            is_google: {% if session.get('is_google') %}true{% else %}false{% endif %}
+        };
+
         function setLogic(key, val) {
             document.getElementById(`logic-${key}`).value = val;
             const container = document.getElementById(`toggle-${key}`);
@@ -2228,9 +2396,15 @@
             updateSchedulerStatus();
             setInterval(updateSchedulerStatus, 60000);
             
+            initializeUserWidget();
+            setupAuthInterceptors();
+            
             // Register change event listeners for dynamic cannabis type edit form
             document.querySelectorAll('input[name="edit_cannabis_type"]').forEach(cb => {
                 cb.addEventListener('change', updateEditFormCannabinoidFields);
+            });
+            document.querySelectorAll('input[name="edit_study_type"], input[name="edit_exposure"]').forEach(cb => {
+                cb.addEventListener('change', updateEditFormDurationFields);
             });
         });
 
@@ -2706,6 +2880,37 @@
             document.getElementById("edit-row-mg-kg").style.display = (showThcMgKg || showCbdMgKg) ? "grid" : "none";
         }
 
+        function updateEditFormDurationFields() {
+            const studyTypeCbs = document.querySelectorAll('input[name="edit_study_type"]:checked');
+            const studyTypes = Array.from(studyTypeCbs).map(cb => cb.value.toLowerCase().trim());
+            const exposureCbs = document.querySelectorAll('input[name="edit_exposure"]:checked');
+            const exposureMethods = Array.from(exposureCbs).map(cb => cb.value.toLowerCase().trim());
+            
+            const isInvitroStudy = studyTypes.some(t => t.includes("cell culture") || t.includes("in vitro"));
+            const isInvitroExposure = exposureMethods.some(e => e.includes("in vitro"));
+            const isInvitro = isInvitroStudy || isInvitroExposure;
+            
+            const isClinicalInVivo = studyTypes.some(t => t.includes("clinical") || t.includes("animal")) || !isInvitro;
+            
+            const isInhaled = exposureMethods.some(e => {
+                return e.includes("smoked") || e.includes("vaporized") || e.includes("inhaled") || e.includes("inhalation");
+            });
+            
+            const clinicalGroup = document.getElementById("edit-group-clinical-duration");
+            const inhaledGroup = document.getElementById("edit-group-inhaled-duration");
+            const invitroGroup = document.getElementById("edit-group-invitro-duration");
+            
+            if (clinicalGroup) {
+                clinicalGroup.style.display = isClinicalInVivo ? "block" : "none";
+            }
+            if (inhaledGroup) {
+                inhaledGroup.style.display = (isClinicalInVivo && isInhaled) ? "block" : "none";
+            }
+            if (invitroGroup) {
+                invitroGroup.style.display = isInvitro ? "block" : "none";
+            }
+        }
+
         // Open details Drawer slide-in
         function openDrawer(paper) {
             activeEditingPaper = paper;
@@ -2724,7 +2929,60 @@
             document.getElementById("drawer-citations").innerText = paper.citation_count || 0;
             document.getElementById("drawer-exposure").innerText = Array.isArray(paper.exposure_method) ? paper.exposure_method.join(', ') : (paper.exposure_method || "unknown");
             document.getElementById("drawer-population").innerText = Array.isArray(paper.population) ? paper.population.join(', ') : (paper.population || "unknown");
-            document.getElementById("drawer-duration").innerText = paper.duration_days !== null ? formatStudyDuration(paper.duration_days) : "Not Reported";
+            // Determine exposure type context for dynamic duration and frequency fields
+            const studyTypes = Array.isArray(paper.study_type) ? paper.study_type : (paper.study_type ? [paper.study_type] : []);
+            const isInvitroStudy = studyTypes.some(t => t.toLowerCase().includes("cell culture") || t.toLowerCase().includes("in vitro"));
+            const exposureMethods = Array.isArray(paper.exposure_method) ? paper.exposure_method : (paper.exposure_method ? [paper.exposure_method] : []);
+            const isInvitroExposure = exposureMethods.some(e => e.toLowerCase().includes("in vitro"));
+            const isInvitro = isInvitroStudy || isInvitroExposure;
+            
+            const isClinicalInVivo = studyTypes.some(t => t.toLowerCase().includes("clinical") || t.toLowerCase().includes("animal")) || !isInvitro;
+            
+            const isInhaled = exposureMethods.some(e => {
+                const low = e.toLowerCase();
+                return low.includes("smoked") || low.includes("vaporized") || low.includes("inhaled") || low.includes("inhalation");
+            });
+
+            // Treatment Duration (In vitro)
+            if (isInvitro) {
+                const itemTreatment = document.getElementById("item-treatment-duration");
+                if (itemTreatment) itemTreatment.style.display = "block";
+                const valEl = document.getElementById("drawer-treatment-duration");
+                if (valEl) valEl.innerText = paper.treatment_duration || "Not Reported";
+            } else {
+                const itemTreatment = document.getElementById("item-treatment-duration");
+                if (itemTreatment) itemTreatment.style.display = "none";
+            }
+
+            // Clinical/In vivo fields
+            if (isClinicalInVivo) {
+                const itemStudy = document.getElementById("item-study-duration");
+                if (itemStudy) itemStudy.style.display = "block";
+                const valEl = document.getElementById("drawer-duration");
+                if (valEl) valEl.innerText = paper.duration_days !== null ? formatStudyDuration(paper.duration_days) : "Not Reported";
+                
+                const itemFreq = document.getElementById("item-admin-frequency");
+                if (itemFreq) itemFreq.style.display = "block";
+                const valFreqEl = document.getElementById("drawer-admin-frequency");
+                if (valFreqEl) valFreqEl.innerText = paper.administration_frequency || "Not Reported";
+                
+                if (isInhaled) {
+                    const itemInhaled = document.getElementById("item-inhaled-duration");
+                    if (itemInhaled) itemInhaled.style.display = "block";
+                    const valInhaledEl = document.getElementById("drawer-inhaled-exposure-duration");
+                    if (valInhaledEl) valInhaledEl.innerText = paper.inhaled_exposure_duration || "Not Reported";
+                } else {
+                    const itemInhaled = document.getElementById("item-inhaled-duration");
+                    if (itemInhaled) itemInhaled.style.display = "none";
+                }
+            } else {
+                const itemStudy = document.getElementById("item-study-duration");
+                if (itemStudy) itemStudy.style.display = "none";
+                const itemFreq = document.getElementById("item-admin-frequency");
+                if (itemFreq) itemFreq.style.display = "none";
+                const itemInhaled = document.getElementById("item-inhaled-duration");
+                if (itemInhaled) itemInhaled.style.display = "none";
+            }
             document.getElementById("drawer-strain-reported").innerText = paper.strain_reported || "Not Specified";
             document.getElementById("drawer-strain-normalized").innerText = paper.strain_normalized || "Unverified chemotype";
             document.getElementById("drawer-abstract").innerText = paper.abstract || "No abstract content cataloged.";
@@ -2765,7 +3023,10 @@
             const locked = paper.expert_locked_fields || [];
             updateMetaLabel("label-exposure", "Exposure Pathway", locked.includes("exposure_method"));
             updateMetaLabel("label-population", "Subject Population", locked.includes("population"));
-            updateMetaLabel("label-duration", "Duration", locked.includes("duration_days"));
+            updateMetaLabel("label-duration", "Study Duration", locked.includes("duration_days"));
+            updateMetaLabel("label-admin-frequency", "Admin Frequency", locked.includes("administration_frequency"));
+            updateMetaLabel("label-inhaled-duration", "Inhaled Exp Duration", locked.includes("inhaled_exposure_duration"));
+            updateMetaLabel("label-treatment-duration", "Treatment Duration", locked.includes("treatment_duration"));
             updateMetaLabel("label-strain-reported", "Reported Strain", locked.includes("strain_reported"));
             updateMetaLabel("label-strain-normalized", "Normalized Strain", locked.includes("strain_normalized"));
             updateMetaLabel("label-outcomes", "Outcome Domains", locked.includes("outcome_domain"));
@@ -2862,6 +3123,9 @@
             document.getElementById("edit-thc-mg-kg").value = paper.thc_mg_kg !== null ? paper.thc_mg_kg : "";
             document.getElementById("edit-cbd-mg-kg").value = paper.cbd_mg_kg !== null ? paper.cbd_mg_kg : "";
             document.getElementById("edit-puff-count").value = paper.puff_count !== null ? paper.puff_count : "";
+            document.getElementById("edit-inhaled-exposure-duration").value = paper.inhaled_exposure_duration || "";
+            document.getElementById("edit-admin-frequency").value = paper.administration_frequency || "";
+            document.getElementById("edit-treatment-duration").value = paper.treatment_duration || "";
             
             function setCheckboxes(name, values) {
                 const checkboxes = document.querySelectorAll(`input[name="${name}"]`);
@@ -2879,6 +3143,8 @@
 
             // Update dynamic cannabinoid input visibility
             updateEditFormCannabinoidFields();
+            // Update dynamic duration input visibility
+            updateEditFormDurationFields();
         }
 
         function saveClassificationEdit(event) {
@@ -2914,7 +3180,10 @@
                 thc_mg_g: document.getElementById("edit-thc-mg-g").value !== "" ? parseFloat(document.getElementById("edit-thc-mg-g").value) : null,
                 cbd_mg_g: document.getElementById("edit-cbd-mg-g").value !== "" ? parseFloat(document.getElementById("edit-cbd-mg-g").value) : null,
                 thc_mg_kg: document.getElementById("edit-thc-mg-kg").value !== "" ? parseFloat(document.getElementById("edit-thc-mg-kg").value) : null,
-                cbd_mg_kg: document.getElementById("edit-cbd-mg-kg").value !== "" ? parseFloat(document.getElementById("edit-cbd-mg-kg").value) : null
+                cbd_mg_kg: document.getElementById("edit-cbd-mg-kg").value !== "" ? parseFloat(document.getElementById("edit-cbd-mg-kg").value) : null,
+                inhaled_exposure_duration: document.getElementById("edit-inhaled-exposure-duration").value.trim() || null,
+                administration_frequency: document.getElementById("edit-admin-frequency").value.trim() || null,
+                treatment_duration: document.getElementById("edit-treatment-duration").value.trim() || null
             };
             
             fetch(`/api/papers/${activeEditingPaper.id}/edit-classification`, {
@@ -4217,7 +4486,155 @@
                     console.error("AJAX Deletion failed: ", err);
                 });
         }
+
+        function initializeUserWidget() {
+            const container = document.getElementById("user-header-widget");
+            if (!container) return;
+            
+            if (IS_LOGGED_IN) {
+                const name = CURRENT_USER.username || CURRENT_USER.email || "User";
+                const initials = name.substring(0, 2).toUpperCase();
+                
+                container.innerHTML = `
+                    <div class="user-avatar" id="user-avatar-btn" onclick="toggleUserDropdown(event)">
+                        ${initials}
+                    </div>
+                    <div class="user-dropdown" id="user-dropdown-menu">
+                        <div class="user-info">
+                            <div class="username">${name}</div>
+                            <div style="font-size: 0.75rem; color: var(--text-secondary); word-break: break-all;">${CURRENT_USER.email}</div>
+                            ${CURRENT_USER.is_google ? '<div style="font-size: 0.7rem; color: var(--accent-blue); margin-top: 4px;">Google Account</div>' : ''}
+                        </div>
+                        <a href="/logout" class="btn-signout" style="text-decoration: none;">Sign Out</a>
+                    </div>
+                `;
+            } else {
+                container.innerHTML = `
+                    <button class="btn-signin-header" onclick="window.location.href='/login'">
+                        🔑 Sign In
+                    </button>
+                `;
+            }
+        }
+
+        function toggleUserDropdown(event) {
+            event.stopPropagation();
+            const dropdown = document.getElementById("user-dropdown-menu");
+            if (dropdown) {
+                dropdown.classList.toggle("show");
+            }
+        }
+        
+        document.addEventListener("click", function(event) {
+            const dropdown = document.getElementById("user-dropdown-menu");
+            if (dropdown && dropdown.classList.contains("show")) {
+                dropdown.classList.remove("show");
+            }
+        });
+
+        function showAuthModal() {
+            const modal = document.getElementById("auth-required-modal");
+            if (modal) {
+                modal.style.display = "flex";
+            }
+        }
+
+        function closeAuthModal() {
+            const modal = document.getElementById("auth-required-modal");
+            if (modal) {
+                modal.style.display = "none";
+            }
+        }
+
+        function setupAuthInterceptors() {
+            if (!IS_LOGGED_IN) {
+                // Intercept Harvest Papers trigger
+                const btnHarvest = document.getElementById("btn-harvest-trigger");
+                if (btnHarvest) {
+                    btnHarvest.removeAttribute("onclick");
+                    btnHarvest.addEventListener("click", (e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        showAuthModal();
+                    });
+                    btnHarvest.innerHTML = `<span>📥</span> Harvest Papers <span style="font-size:0.7rem; opacity:0.6; margin-left: 2px;">🔒</span>`;
+                }
+                
+                // Intercept Analyze Filtered Articles trigger
+                const btnAnalyze = document.getElementById("btn-analyze-subset");
+                if (btnAnalyze) {
+                    btnAnalyze.removeAttribute("onclick");
+                    btnAnalyze.addEventListener("click", (e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        showAuthModal();
+                    });
+                    btnAnalyze.innerHTML = `📊 Analyze Filtered Articles <span style="font-size:0.7rem; opacity:0.6; margin-left: 2px;">🔒</span>`;
+                }
+                
+                // Intercept Edit Columns trigger
+                const btnColumns = document.getElementById("edit-columns-btn");
+                if (btnColumns) {
+                    btnColumns.removeAttribute("onclick");
+                    btnColumns.addEventListener("click", (e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        showAuthModal();
+                    });
+                    btnColumns.innerHTML = `⚙️ Edit Columns <span style="font-size:0.7rem; opacity:0.6; margin-left: 2px;">🔒</span>`;
+                }
+                
+                // Intercept Delete in drawer
+                const btnDelete = document.getElementById("btn-delete-paper");
+                if (btnDelete) {
+                    btnDelete.removeAttribute("onclick");
+                    btnDelete.addEventListener("click", (e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        showAuthModal();
+                    });
+                    btnDelete.innerHTML = `🗑️ Delete <span style="font-size:0.7rem; opacity:0.6; margin-left: 2px;">🔒</span>`;
+                }
+                
+                // Intercept Edit in drawer
+                const btnEdit = document.getElementById("btn-edit-classification");
+                if (btnEdit) {
+                    btnEdit.removeAttribute("onclick");
+                    btnEdit.addEventListener("click", (e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        showAuthModal();
+                    });
+                    btnEdit.innerHTML = `✏️ Edit <span style="font-size:0.7rem; opacity:0.6; margin-left: 2px;">🔒</span>`;
+                }
+                
+                // Intercept Sync Metadata in drawer
+                const btnSync = document.getElementById("btn-sync-metadata");
+                if (btnSync) {
+                    btnSync.removeAttribute("onclick");
+                    btnSync.addEventListener("click", (e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        showAuthModal();
+                    });
+                    btnSync.innerHTML = `🔄 Sync Metadata <span style="font-size:0.7rem; opacity:0.6; margin-left: 2px;">🔒</span>`;
+                }
+            }
+        }
     </script>
+    
+    <!-- Auth Required Modal -->
+    <div id="auth-required-modal" class="modal-overlay">
+        <div class="glass-panel" style="max-width: 400px; width: 90%; padding: 30px; text-align: center; border-radius: 20px; border: 1px solid rgba(255,255,255,0.08); background: rgba(15, 20, 32, 0.95); box-shadow: 0 20px 50px rgba(0,0,0,0.6);">
+            <div style="font-size: 3rem; margin-bottom: 15px;">🔒</div>
+            <h3 style="font-family: var(--font-display); font-size: 1.4rem; font-weight: 700; margin-bottom: 10px; color: var(--text-primary);">Authentication Required</h3>
+            <p style="font-size: 0.9rem; color: var(--text-muted); margin-bottom: 25px; line-height: 1.5;">You must be signed in to perform this action. Sign in to harvest papers, analyze datasets, edit display columns, or modify catalog records.</p>
+            <div style="display: flex; gap: 10px; justify-content: center;">
+                <button type="button" class="btn btn-secondary" onclick="closeAuthModal()" style="padding: 10px 20px; border-radius: 10px; font-weight: 600; font-family: var(--font-sans);">Cancel</button>
+                <a href="/login" class="btn btn-primary" style="padding: 10px 20px; border-radius: 10px; text-decoration: none; display: inline-block; font-weight: 600; font-family: var(--font-sans); background: var(--primary); box-shadow: 0 4px 15px rgba(99, 102, 241, 0.3); color: #fff;">Sign In</a>
+            </div>
+        </div>
+    </div>
 </body>
 
 </html>

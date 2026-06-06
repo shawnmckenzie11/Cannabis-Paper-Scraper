@@ -1016,6 +1016,94 @@ class TestExpertEditAndActiveLearning(unittest.TestCase):
         self.assertEqual(classifier.jaccard_similarity(None, None), 1.0)
 
 
+class TestUserAuthentication(unittest.TestCase):
+    """Test cases for user registration, verification, password hashing, and Google OAuth methods."""
+
+    def setUp(self):
+        self.db = DatabaseManager()
+        self.db.db_path = "test_catalog.db"
+        self.db.init_db()
+        
+        conn = self.db.get_connection()
+        try:
+            conn.execute("DELETE FROM users;")
+            conn.commit()
+        finally:
+            conn.close()
+
+    def tearDown(self):
+        if os.path.exists("test_catalog.db"):
+            try:
+                os.remove("test_catalog.db")
+            except Exception:
+                pass
+
+    def test_password_hashing(self):
+        pwd = "secure_password_123"
+        hashed = self.db.hash_password(pwd)
+        self.assertNotEqual(pwd, hashed)
+        self.assertTrue(self.db.check_password(pwd, hashed))
+        self.assertFalse(self.db.check_password("wrong_password", hashed))
+
+    def test_user_creation_and_lookup(self):
+        username = "testuser"
+        email = "testuser@mckenzian.org"
+        pwd = "testpassword"
+        hashed = self.db.hash_password(pwd)
+        
+        success = self.db.create_user(
+            username=username,
+            email=email,
+            password_hash=hashed,
+            google_id=None,
+            is_verified=0,
+            verification_code="123456"
+        )
+        self.assertTrue(success)
+        
+        duplicate = self.db.create_user(
+            username=username,
+            email="other@email.com",
+            password_hash=hashed
+        )
+        self.assertFalse(duplicate)
+        
+        user_by_name = self.db.get_user_by_username_or_email(username)
+        self.assertIsNotNone(user_by_name)
+        self.assertEqual(user_by_name["email"], email)
+        self.assertEqual(user_by_name["is_verified"], 0)
+        
+        user_by_email = self.db.get_user_by_username_or_email(email)
+        self.assertIsNotNone(user_by_email)
+        self.assertEqual(user_by_email["username"], username)
+        
+        verify_success = self.db.verify_user(username)
+        self.assertTrue(verify_success)
+        
+        updated_user = self.db.get_user_by_username_or_email(username)
+        self.assertEqual(updated_user["is_verified"], 1)
+        self.assertIsNone(updated_user["verification_code"])
+
+    def test_google_user_creation_and_lookup(self):
+        username = "Google User"
+        email = "google@gmail.com"
+        google_id = "google_sub_id_123"
+        
+        success = self.db.create_user(
+            username=username,
+            email=email,
+            google_id=google_id,
+            is_verified=1
+        )
+        self.assertTrue(success)
+        
+        google_user = self.db.get_user_by_google_id(google_id)
+        self.assertIsNotNone(google_user)
+        self.assertEqual(google_user["username"], username)
+        self.assertEqual(google_user["email"], email)
+        self.assertEqual(google_user["is_verified"], 1)
+
+
 if __name__ == "__main__":
     unittest.main()
 

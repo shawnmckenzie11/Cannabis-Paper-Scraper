@@ -28,6 +28,9 @@ CREATE TABLE IF NOT EXISTS papers (
     strain_reported TEXT,           -- raw string exactly as written in paper
     strain_normalized TEXT,         -- mapped to Chemotype I/II/III
     duration_days REAL,             -- numeric duration in days (or null)
+    inhaled_exposure_duration TEXT, -- inhaled exposure duration (e.g., 10 min)
+    administration_frequency TEXT,  -- administration frequency (e.g., once daily)
+    treatment_duration TEXT,        -- in vitro treatment duration (e.g., 24 hours)
     population TEXT,                -- human, mouse, rat, cell_line, other
     sample_size INTEGER,            -- numeric sample size (or null)
     outcome_domain TEXT,            -- JSON array of strings: pain, anxiety, cognition, inflammation, addiction, oncology, neuroprotection, sleep, other

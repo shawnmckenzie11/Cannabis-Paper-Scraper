@@ -5,6 +5,11 @@ import threading
 import logging
 from datetime import datetime, date
 from flask import Flask, render_template, request, jsonify, session, redirect, url_for
+import random
+import smtplib
+import requests
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
 
 from db_manager import DatabaseManager
 import classifier
@@ -119,31 +124,297 @@ def bg_harvest_worker(query: str, max_results: int, update: bool, classify: bool
             harvest_state["progress"] = "Scraper execution failed."
             harvest_state["error"] = str(e)
 
+def send_verification_email(recipient_email, username, code):
+    smtp_server = os.getenv("SMTP_SERVER")
+    smtp_port = os.getenv("SMTP_PORT", "587")
+    smtp_username = os.getenv("SMTP_USERNAME")
+    smtp_password = os.getenv("SMTP_PASSWORD")
+    smtp_sender = os.getenv("SMTP_SENDER", smtp_username)
+
+    if not smtp_server or not smtp_username or not smtp_password:
+        print(f"[SMTP WARNING] SMTP environment variables are not fully configured. Cannot send real email to {recipient_email}.")
+        print(f"[SMTP VERIFICATION CODE] Code for {username}: {code}")
+        return False
+
+    try:
+        msg = MIMEMultipart("alternative")
+        msg["Subject"] = "Email Verification | Cannabis Research Catalog"
+        msg["From"] = smtp_sender
+        msg["To"] = recipient_email
+
+        text = f"Hello {username},\n\nYour email verification code is: {code}\n\nPlease enter this code in the Cannabis Research Catalog portal to complete your registration."
+        html = f"""
+        <html>
+          <body style="font-family: Arial, sans-serif; background-color: #0b0f19; color: #f8fafc; padding: 20px;">
+            <div style="max-width: 500px; margin: 0 auto; background-color: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 12px; padding: 30px;">
+              <h2 style="color: #6366f1; font-family: 'Outfit', sans-serif;">Verify Your Email Address</h2>
+              <p style="color: #94a3b8;">Hello <strong>{username}</strong>,</p>
+              <p style="color: #94a3b8;">Thank you for registering. Please use the following code to verify your email address and activate your account:</p>
+              <div style="background-color: rgba(99, 102, 241, 0.1); border: 1px dashed #6366f1; padding: 15px; border-radius: 8px; font-size: 24px; font-weight: bold; letter-spacing: 4px; text-align: center; color: #f8fafc; margin: 25px 0;">
+                {code}
+              </div>
+              <p style="color: #94a3b8; font-size: 12px;">If you did not request this code, you can safely ignore this email.</p>
+            </div>
+          </body>
+        </html>
+        """
+        part1 = MIMEText(text, "plain")
+        part2 = MIMEText(html, "html")
+        msg.attach(part1)
+        msg.attach(part2)
+
+        server = smtplib.SMTP(smtp_server, int(smtp_port))
+        server.starttls()
+        server.login(smtp_username, smtp_password)
+        server.sendmail(smtp_sender, recipient_email, msg.as_string())
+        server.quit()
+        print(f"[SMTP INFO] Sent real verification email to {recipient_email}")
+        return True
+    except Exception as e:
+        print(f"[SMTP ERROR] Failed to send email to {recipient_email}: {e}")
+        return False
+
 @app.before_request
 def require_login():
-    # Allow access to login route and static assets without session
-    if request.path == '/login' or request.path.startswith('/static/'):
+    allowed_paths = [
+        '/',
+        '/login',
+        '/signup',
+        '/verify-email',
+        '/auth/google',
+        '/auth/google/callback',
+        '/logout'
+    ]
+    if request.path in allowed_paths or request.path.startswith('/static/'):
         return
-    if session.get("logged_in"):
-        return
-    # If not logged in and requesting API, return JSON 401
-    if request.path.startswith('/api/'):
-        return jsonify({"error": "Unauthorized. Please log in."}), 401
-    # If not logged in and requesting page, redirect to login
-    return redirect(url_for('login'))
+        
+    if not session.get("logged_in"):
+        if request.path.startswith('/api/'):
+            allowed_apis = ['/api/search', '/api/scheduler/status', '/api/harvest/status']
+            if request.path in allowed_apis:
+                return
+            return jsonify({"error": "Unauthorized. Please sign in to edit or modify data."}), 401
+        return redirect(url_for('login'))
 
 @app.route("/login", methods=["GET", "POST"])
 def login():
+    if session.get("logged_in"):
+        return redirect(url_for("index"))
+        
     error = None
     if request.method == "POST":
-        password = request.form.get("password")
-        if password == ACCESS_PASSWORD:
+        identifier = request.form.get("username_or_email", "").strip()
+        password = request.form.get("password", "")
+        
+        db = DatabaseManager()
+        user = db.get_user_by_username_or_email(identifier)
+        
+        if user and user["password_hash"] and db.check_password(password, user["password_hash"]):
+            if user["is_verified"] == 0:
+                return redirect(url_for("verify_email", username=user["username"]))
+            else:
+                session["logged_in"] = True
+                session["username"] = user["username"]
+                session["email"] = user["email"]
+                session["is_google"] = False
+                session.permanent = True
+                return redirect(url_for("index"))
+        else:
+            error = "Invalid username/email or password."
+            
+    return render_template("login.html", error=error)
+
+@app.route("/signup", methods=["POST"])
+def signup():
+    username = request.form.get("username", "").strip()
+    email = request.form.get("email", "").strip()
+    password = request.form.get("password", "")
+    
+    if not username or not email or not password:
+        return render_template("login.html", signup_error="All fields are required.", active_tab="signup")
+        
+    db = DatabaseManager()
+    
+    existing = db.get_user_by_username_or_email(username)
+    if existing:
+        return render_template("login.html", signup_error="Username already exists.", active_tab="signup")
+    existing_email = db.get_user_by_username_or_email(email)
+    if existing_email:
+        return render_template("login.html", signup_error="Email already registered.", active_tab="signup")
+        
+    code = f"{random.randint(100000, 999999)}"
+    password_hash = db.hash_password(password)
+    
+    success = db.create_user(
+        username=username,
+        email=email,
+        password_hash=password_hash,
+        google_id=None,
+        is_verified=0,
+        verification_code=code
+    )
+    
+    if success:
+        send_verification_email(email, username, code)
+        return redirect(url_for("verify_email", username=username))
+    else:
+        return render_template("login.html", signup_error="Registration failed. Please try again.", active_tab="signup")
+
+@app.route("/verify-email", methods=["GET", "POST"])
+def verify_email():
+    username = request.args.get("username") or request.form.get("username")
+    if not username:
+        return redirect(url_for("login"))
+        
+    db = DatabaseManager()
+    user = db.get_user_by_username_or_email(username)
+    if not user:
+        return redirect(url_for("login"))
+        
+    error = None
+    if request.method == "POST":
+        entered_code = request.form.get("code", "").strip()
+        if entered_code == user["verification_code"]:
+            db.verify_user(username)
             session["logged_in"] = True
+            session["username"] = user["username"]
+            session["email"] = user["email"]
+            session["is_google"] = False
             session.permanent = True
             return redirect(url_for("index"))
         else:
-            error = "Invalid credentials. Please try again."
-    return render_template("login.html", error=error)
+            error = "Invalid verification code. Please try again."
+            
+    smtp_configured = bool(os.getenv("SMTP_SERVER") and os.getenv("SMTP_USERNAME") and os.getenv("SMTP_PASSWORD"))
+    dev_code = user["verification_code"] if not smtp_configured else None
+    
+    return render_template("verify.html", username=username, email=user["email"], error=error, dev_code=dev_code)
+
+@app.route("/auth/google")
+def auth_google():
+    client_id = os.getenv("GOOGLE_CLIENT_ID")
+    redirect_uri = os.getenv("GOOGLE_REDIRECT_URI")
+    
+    if not client_id or not redirect_uri:
+        print("[GOOGLE AUTH WARNING] GOOGLE_CLIENT_ID or GOOGLE_REDIRECT_URI environment variables not configured. Falling back to mock Google login.")
+        return render_template("google_auth.html")
+        
+    import urllib.parse
+    state = f"{random.randint(100000, 999999)}"
+    session["google_oauth_state"] = state
+    
+    params = {
+        "client_id": client_id,
+        "redirect_uri": redirect_uri,
+        "response_type": "code",
+        "scope": "openid email profile",
+        "state": state
+    }
+    
+    google_auth_url = "https://accounts.google.com/o/oauth2/v2/auth?" + urllib.parse.urlencode(params)
+    return redirect(google_auth_url)
+
+@app.route("/auth/google/callback")
+def auth_google_callback():
+    client_id = os.getenv("GOOGLE_CLIENT_ID")
+    client_secret = os.getenv("GOOGLE_CLIENT_SECRET")
+    redirect_uri = os.getenv("GOOGLE_REDIRECT_URI")
+    
+    if not client_id or not client_secret or not redirect_uri:
+        email = request.args.get("email")
+        name = request.args.get("name") or email.split("@")[0]
+        if not email:
+            return redirect(url_for("login"))
+            
+        db = DatabaseManager()
+        google_id = f"mock_google_{email}"
+        user = db.get_user_by_google_id(google_id)
+        if not user:
+            user_by_email = db.get_user_by_username_or_email(email)
+            if user_by_email:
+                user = user_by_email
+                conn = db.get_connection()
+                try:
+                    conn.execute("UPDATE users SET google_id = ?, is_verified = 1 WHERE id = ?;", (google_id, user["id"]))
+                    conn.commit()
+                finally:
+                    conn.close()
+                user = db.get_user_by_google_id(google_id)
+            else:
+                db.create_user(username=name, email=email, google_id=google_id, is_verified=1)
+                user = db.get_user_by_google_id(google_id)
+                
+        session["logged_in"] = True
+        session["username"] = user["username"]
+        session["email"] = user["email"]
+        session["is_google"] = True
+        session.permanent = True
+        return redirect(url_for("index"))
+        
+    code = request.args.get("code")
+    state = request.args.get("state")
+    
+    stored_state = session.pop("google_oauth_state", None)
+    if not code or (stored_state and state != stored_state):
+        return render_template("login.html", error="Google authentication failed: state mismatch.")
+        
+    try:
+        token_url = "https://oauth2.googleapis.com/token"
+        data = {
+            "code": code,
+            "client_id": client_id,
+            "client_secret": client_secret,
+            "redirect_uri": redirect_uri,
+            "grant_type": "authorization_code"
+        }
+        token_resp = requests.post(token_url, data=data, timeout=10)
+        token_resp.raise_for_status()
+        token_data = token_resp.json()
+        access_token = token_data.get("access_token")
+        
+        if not access_token:
+            return render_template("login.html", error="Failed to fetch access token from Google.")
+            
+        userinfo_url = "https://www.googleapis.com/oauth2/v3/userinfo"
+        headers = {"Authorization": f"Bearer {access_token}"}
+        userinfo_resp = requests.get(userinfo_url, headers=headers, timeout=10)
+        userinfo_resp.raise_for_status()
+        userinfo_data = userinfo_resp.json()
+        
+        email = userinfo_data.get("email")
+        google_id = userinfo_data.get("sub")
+        name = userinfo_data.get("name") or userinfo_data.get("given_name") or email.split("@")[0]
+        
+        if not email or not google_id:
+            return render_template("login.html", error="Google profile info missing required fields.")
+            
+        db = DatabaseManager()
+        user = db.get_user_by_google_id(google_id)
+        if not user:
+            user_by_email = db.get_user_by_username_or_email(email)
+            if user_by_email:
+                user = user_by_email
+                conn = db.get_connection()
+                try:
+                    conn.execute("UPDATE users SET google_id = ?, is_verified = 1 WHERE id = ?;", (google_id, user["id"]))
+                    conn.commit()
+                finally:
+                    conn.close()
+                user = db.get_user_by_google_id(google_id)
+            else:
+                db.create_user(username=name, email=email, google_id=google_id, is_verified=1)
+                user = db.get_user_by_google_id(google_id)
+                
+        session["logged_in"] = True
+        session["username"] = user["username"]
+        session["email"] = user["email"]
+        session["is_google"] = True
+        session.permanent = True
+        return redirect(url_for("index"))
+        
+    except Exception as e:
+        print(f"[GOOGLE AUTH ERROR] Failed to exchange token/fetch info: {e}")
+        return render_template("login.html", error=f"Google authentication error: {e}")
 
 @app.route("/logout")
 def logout():
@@ -297,6 +568,7 @@ def api_edit_classification(paper_id):
         "study_type", "publication_type", "exposure_method", "thc_pct", "cbd_pct",
         "dose_mg", "puff_count", "thc_mg_ml", "thc_mg_g", "thc_mg_kg",
         "cbd_mg_ml", "cbd_mg_g", "cbd_mg_kg", "strain_reported", "strain_normalized", "duration_days",
+        "inhaled_exposure_duration", "administration_frequency", "treatment_duration",
         "population", "sample_size", "outcome_domain", "cannabis_type", "summary", "abstract"
     ]
     
@@ -521,8 +793,9 @@ def api_sync_metadata(paper_id):
         valid_columns = {
             "study_type", "exposure_method", "thc_pct", "cbd_pct", "dose_mg", "puff_count",
             "thc_mg_ml", "thc_mg_g", "thc_mg_kg", "cbd_mg_ml", "cbd_mg_g", "cbd_mg_kg",
-            "strain_reported", "strain_normalized", "duration_days", "population",
-            "sample_size", "outcome_domain", "cannabis_type", "summary", "publication_type",
+            "strain_reported", "strain_normalized", "duration_days",
+            "inhaled_exposure_duration", "administration_frequency", "treatment_duration",
+            "population", "sample_size", "outcome_domain", "cannabis_type", "summary", "publication_type",
             "classification_confidence", "classification_timestamp", "classifier_version"
         }
         

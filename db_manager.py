@@ -146,11 +146,36 @@ class DatabaseManager:
                 conn.execute("ALTER TABLE papers ADD COLUMN cbd_mg_kg REAL;")
             except sqlite3.OperationalError:
                 pass
+            try:
+                conn.execute("ALTER TABLE papers ADD COLUMN inhaled_exposure_duration TEXT;")
+            except sqlite3.OperationalError:
+                pass
+            try:
+                conn.execute("ALTER TABLE papers ADD COLUMN administration_frequency TEXT;")
+            except sqlite3.OperationalError:
+                pass
+            try:
+                conn.execute("ALTER TABLE papers ADD COLUMN treatment_duration TEXT;")
+            except sqlite3.OperationalError:
+                pass
             # Ensure system_metadata table exists
             conn.execute("""
                 CREATE TABLE IF NOT EXISTS system_metadata (
                     key TEXT PRIMARY KEY,
                     value TEXT
+                );
+            """)
+            # Ensure users table exists
+            conn.execute("""
+                CREATE TABLE IF NOT EXISTS users (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    username TEXT UNIQUE NOT NULL,
+                    email TEXT UNIQUE NOT NULL,
+                    password_hash TEXT,
+                    google_id TEXT,
+                    is_verified INTEGER DEFAULT 0,
+                    verification_code TEXT,
+                    created_at TEXT DEFAULT CURRENT_TIMESTAMP
                 );
             """)
             # Populate publication_date for existing rows using year
@@ -205,6 +230,7 @@ class DatabaseManager:
             "abstract", "full_text_link", "study_type", "exposure_method", "thc_pct",
             "cbd_pct", "dose_mg", "puff_count", "thc_mg_ml", "thc_mg_g", "thc_mg_kg",
             "cbd_mg_ml", "cbd_mg_g", "cbd_mg_kg", "strain_reported", "strain_normalized", "duration_days",
+            "inhaled_exposure_duration", "administration_frequency", "treatment_duration",
             "population", "sample_size", "outcome_domain",
             "open_access", "citation_count", "date_harvested", "publication_date", "cannabis_type", 
             "summary", "publication_type", "expert_locked_fields", "classification_confidence", 
@@ -727,5 +753,71 @@ class DatabaseManager:
         try:
             cursor.execute("SELECT pmid FROM papers WHERE pmid IS NOT NULL")
             return {row["pmid"] for row in cursor.fetchall()}
+        finally:
+            conn.close()
+
+    def hash_password(self, password: str) -> str:
+        import hashlib
+        import os
+        salt = os.urandom(16).hex()
+        pwd_hash = hashlib.sha256((password + salt).encode('utf-8')).hexdigest()
+        return f"{salt}:{pwd_hash}"
+
+    def check_password(self, password: str, stored_hash: str) -> bool:
+        import hashlib
+        if not stored_hash or ":" not in stored_hash:
+            return False
+        salt, pwd_hash = stored_hash.split(":", 1)
+        test_hash = hashlib.sha256((password + salt).encode('utf-8')).hexdigest()
+        return test_hash == pwd_hash
+
+    def get_user_by_username_or_email(self, identifier: str) -> Optional[Dict[str, Any]]:
+        """Fetches a user by username or email."""
+        conn = self.get_connection()
+        conn.row_factory = sqlite3.Row
+        try:
+            cursor = conn.cursor()
+            cursor.execute("SELECT * FROM users WHERE username = ? OR email = ?;", (identifier, identifier))
+            row = cursor.fetchone()
+            return dict(row) if row else None
+        finally:
+            conn.close()
+
+    def get_user_by_google_id(self, google_id: str) -> Optional[Dict[str, Any]]:
+        """Fetches a user by google_id."""
+        conn = self.get_connection()
+        conn.row_factory = sqlite3.Row
+        try:
+            cursor = conn.cursor()
+            cursor.execute("SELECT * FROM users WHERE google_id = ?;", (google_id,))
+            row = cursor.fetchone()
+            return dict(row) if row else None
+        finally:
+            conn.close()
+
+    def create_user(self, username: str, email: str, password_hash: Optional[str] = None, google_id: Optional[str] = None, is_verified: int = 0, verification_code: Optional[str] = None) -> bool:
+        """Creates a new user in the database."""
+        conn = self.get_connection()
+        try:
+            conn.execute(
+                "INSERT INTO users (username, email, password_hash, google_id, is_verified, verification_code) VALUES (?, ?, ?, ?, ?, ?);",
+                (username, email, password_hash, google_id, is_verified, verification_code)
+            )
+            conn.commit()
+            return True
+        except sqlite3.IntegrityError:
+            return False
+        finally:
+            conn.close()
+
+    def verify_user(self, username: str) -> bool:
+        """Marks a user as verified."""
+        conn = self.get_connection()
+        try:
+            conn.execute("UPDATE users SET is_verified = 1, verification_code = NULL WHERE username = ?;", (username,))
+            conn.commit()
+            return True
+        except sqlite3.Error:
+            return False
         finally:
             conn.close()
