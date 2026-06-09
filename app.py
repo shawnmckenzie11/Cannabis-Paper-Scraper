@@ -188,13 +188,7 @@ def require_login():
     if request.path in allowed_paths or request.path.startswith('/static/'):
         return
         
-    if not session.get("logged_in"):
-        if request.path.startswith('/api/'):
-            allowed_apis = ['/api/search', '/api/scheduler/status', '/api/harvest/status']
-            if request.path in allowed_apis:
-                return
-            return jsonify({"error": "Unauthorized. Please sign in to edit or modify data."}), 401
-        return redirect(url_for('login'))
+    # REMOVED: auth requirement — all buttons unlocked
 
 @app.route("/login", methods=["GET", "POST"])
 def login():

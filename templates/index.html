@@ -1961,40 +1961,96 @@
                     </select>
                 </div>
                 <div class="form-group" style="margin-bottom: 12px;">
-                    <label style="font-size: 0.85rem; font-weight: 600; display: block; margin-bottom: 4px; color: var(--text-primary);">Study Design</label>
-                    <div id="edit-study-type-checkboxes" style="display: grid; grid-template-columns: 1fr; gap: 4px; background: rgba(0,0,0,0.2); padding: 8px; border-radius: 4px; border: 1px solid rgba(255,255,255,0.05); max-height: 150px; overflow-y: auto;">
-                        <label class="checkbox-item"><input type="checkbox" name="edit_study_type" value="Clinical (RCT)"> Clinical (RCT)</label>
-                        <label class="checkbox-item"><input type="checkbox" name="edit_study_type" value="Clinical (prospective)"> Clinical (prospective)</label>
-                        <label class="checkbox-item"><input type="checkbox" name="edit_study_type" value="Clinical (observational)"> Clinical (observational)</label>
-                        <label class="checkbox-item"><input type="checkbox" name="edit_study_type" value="Clinical (retrospective)"> Clinical (retrospective)</label>
-                        <label class="checkbox-item"><input type="checkbox" name="edit_study_type" value="Animal Models (Mouse)"> Animal Models (Mouse)</label>
-                        <label class="checkbox-item"><input type="checkbox" name="edit_study_type" value="Animal Models (Rat)"> Animal Models (Rat)</label>
-                        <label class="checkbox-item"><input type="checkbox" name="edit_study_type" value="Animal Models (Other Rodents)"> Animal Models (Other Rodents)</label>
-                        <label class="checkbox-item"><input type="checkbox" name="edit_study_type" value="Animal Models (Non-Human Primates)"> Animal Models (Non-Human Primates)</label>
-                        <label class="checkbox-item"><input type="checkbox" name="edit_study_type" value="Animal Models (Other)"> Animal Models (Other)</label>
-                        <label class="checkbox-item"><input type="checkbox" name="edit_study_type" value="Cell Culture (Primary Cells)"> Cell Culture (Primary Cells)</label>
-                        <label class="checkbox-item"><input type="checkbox" name="edit_study_type" value="Cell Culture (Cell Lines)"> Cell Culture (Cell Lines)</label>
-                        <label class="checkbox-item"><input type="checkbox" name="edit_study_type" value="Cell Culture (Organoids)"> Cell Culture (Organoids)</label>
-                        <label class="checkbox-item"><input type="checkbox" name="edit_study_type" value="Cell Culture (Co-Culture)"> Cell Culture (Co-Culture)</label>
-                        <label class="checkbox-item"><input type="checkbox" name="edit_study_type" value="Cell Culture (PCLS)"> Cell Culture (PCLS)</label>
-                        <label class="checkbox-item"><input type="checkbox" name="edit_study_type" value="Cell Culture (Other In Vitro)"> Cell Culture (Other In Vitro)</label>
-                        <label class="checkbox-item"><input type="checkbox" name="edit_study_type" value="review"> Review</label>
-                        <label class="checkbox-item"><input type="checkbox" name="edit_study_type" value="meta-analysis"> Meta-Analysis</label>
-                        <label class="checkbox-item"><input type="checkbox" name="edit_study_type" value="case study"> Case Study</label>
-                        <label class="checkbox-item"><input type="checkbox" name="edit_study_type" value="editorial"> Editorial</label>
+                    <label style="font-size: 0.85rem; font-weight: 600; display: block; margin-bottom: 6px; color: var(--text-primary);">Study Design</label>
+                    <!-- Parent category toggle -->
+                    <div style="display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 8px;">
+                        <button type="button" class="edit-parent-btn" data-parent="clinical" onclick="toggleStudyDesignParent('clinical')" style="padding: 4px 12px; font-size: 0.8rem; border-radius: 4px; cursor: pointer; border: 1px solid rgba(255,255,255,0.12); background: rgba(0,0,0,0.3); color: var(--text-secondary); transition: all 0.15s;">Clinical</button>
+                        <button type="button" class="edit-parent-btn" data-parent="animal" onclick="toggleStudyDesignParent('animal')" style="padding: 4px 12px; font-size: 0.8rem; border-radius: 4px; cursor: pointer; border: 1px solid rgba(255,255,255,0.12); background: rgba(0,0,0,0.3); color: var(--text-secondary); transition: all 0.15s;">Animal Models</button>
+                        <button type="button" class="edit-parent-btn" data-parent="cell" onclick="toggleStudyDesignParent('cell')" style="padding: 4px 12px; font-size: 0.8rem; border-radius: 4px; cursor: pointer; border: 1px solid rgba(255,255,255,0.12); background: rgba(0,0,0,0.3); color: var(--text-secondary); transition: all 0.15s;">Cell Culture</button>
+                        <button type="button" class="edit-parent-btn" data-parent="review" onclick="toggleStudyDesignParent('review')" style="padding: 4px 12px; font-size: 0.8rem; border-radius: 4px; cursor: pointer; border: 1px solid rgba(255,255,255,0.12); background: rgba(0,0,0,0.3); color: var(--text-secondary); transition: all 0.15s;">Review / Other</button>
+                    </div>
+                    <!-- Sub-option groups -->
+                    <div id="edit-sd-clinical" class="edit-sd-group" style="display: none;">
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 4px; background: rgba(0,230,118,0.04); padding: 8px; border-radius: 4px; border: 1px solid rgba(0,230,118,0.12);">
+                            <label class="checkbox-item"><input type="checkbox" name="edit_study_type" value="Clinical (RCT)"> RCT</label>
+                            <label class="checkbox-item"><input type="checkbox" name="edit_study_type" value="Clinical (prospective)"> Prospective</label>
+                            <label class="checkbox-item"><input type="checkbox" name="edit_study_type" value="Clinical (observational)"> Observational</label>
+                            <label class="checkbox-item"><input type="checkbox" name="edit_study_type" value="Clinical (retrospective)"> Retrospective</label>
+                        </div>
+                    </div>
+                    <div id="edit-sd-animal" class="edit-sd-group" style="display: none;">
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 4px; background: rgba(0,230,118,0.04); padding: 8px; border-radius: 4px; border: 1px solid rgba(0,230,118,0.12);">
+                            <label class="checkbox-item"><input type="checkbox" name="edit_study_type" value="Animal Models (Mouse)"> Mouse</label>
+                            <label class="checkbox-item"><input type="checkbox" name="edit_study_type" value="Animal Models (Rat)"> Rat</label>
+                            <label class="checkbox-item"><input type="checkbox" name="edit_study_type" value="Animal Models (Other Rodents)"> Other Rodents</label>
+                            <label class="checkbox-item"><input type="checkbox" name="edit_study_type" value="Animal Models (Non-Human Primates)"> Non-Human Primates</label>
+                            <label class="checkbox-item"><input type="checkbox" name="edit_study_type" value="Animal Models (Other)"> Other</label>
+                        </div>
+                    </div>
+                    <div id="edit-sd-cell" class="edit-sd-group" style="display: none;">
+                        <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 4px; background: rgba(0,230,118,0.04); padding: 8px; border-radius: 4px; border: 1px solid rgba(0,230,118,0.12);">
+                            <label class="checkbox-item"><input type="checkbox" name="edit_study_type" value="Cell Culture (Primary Cells)"> Primary Cells</label>
+                            <label class="checkbox-item"><input type="checkbox" name="edit_study_type" value="Cell Culture (Cell Lines)"> Cell Lines</label>
+                            <label class="checkbox-item"><input type="checkbox" name="edit_study_type" value="Cell Culture (Organoids)"> Organoids</label>
+                            <label class="checkbox-item"><input type="checkbox" name="edit_study_type" value="Cell Culture (Co-Culture)"> Co-Culture</label>
+                            <label class="checkbox-item"><input type="checkbox" name="edit_study_type" value="Cell Culture (PCLS)"> PCLS</label>
+                            <label class="checkbox-item"><input type="checkbox" name="edit_study_type" value="Cell Culture (Other In Vitro)"> Other In Vitro</label>
+                        </div>
+                    </div>
+                    <div id="edit-sd-review" class="edit-sd-group" style="display: none;">
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 4px; background: rgba(0,230,118,0.04); padding: 8px; border-radius: 4px; border: 1px solid rgba(0,230,118,0.12);">
+                            <label class="checkbox-item"><input type="checkbox" name="edit_study_type" value="review"> Review</label>
+                            <label class="checkbox-item"><input type="checkbox" name="edit_study_type" value="meta-analysis"> Meta-Analysis</label>
+                            <label class="checkbox-item"><input type="checkbox" name="edit_study_type" value="case study"> Case Study</label>
+                            <label class="checkbox-item"><input type="checkbox" name="edit_study_type" value="editorial"> Editorial</label>
+                        </div>
                     </div>
                 </div>
                 <div class="form-group" style="margin-bottom: 12px;">
-                    <label style="font-size: 0.85rem; font-weight: 600; display: block; margin-bottom: 4px; color: var(--text-primary);">Exposure Method</label>
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 4px; background: rgba(0,0,0,0.2); padding: 8px; border-radius: 4px; border: 1px solid rgba(255,255,255,0.05); max-height: 120px; overflow-y: auto;">
-                        <label class="checkbox-item"><input type="checkbox" name="edit_exposure" value="smoked"> Smoked</label>
-                        <label class="checkbox-item"><input type="checkbox" name="edit_exposure" value="vaporized"> Vaporized</label>
-                        <label class="checkbox-item"><input type="checkbox" name="edit_exposure" value="oral/edible"> Oral/Edible</label>
-                        <label class="checkbox-item"><input type="checkbox" name="edit_exposure" value="tincture"> Tincture</label>
-                        <label class="checkbox-item"><input type="checkbox" name="edit_exposure" value="injection"> Injection</label>
-                        <label class="checkbox-item"><input type="checkbox" name="edit_exposure" value="forced inhalation"> Forced Inh</label>
-                        <label class="checkbox-item"><input type="checkbox" name="edit_exposure" value="in vitro"> In Vitro</label>
-                        <label class="checkbox-item"><input type="checkbox" name="edit_exposure" value="unknown"> Unknown</label>
+                    <label style="font-size: 0.85rem; font-weight: 600; display: block; margin-bottom: 6px; color: var(--text-primary);">Exposure Method</label>
+                    <!-- Parent category toggle -->
+                    <div style="display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 8px;">
+                        <button type="button" class="edit-parent-btn" data-parent="clinical-exp" onclick="toggleExposureParent('clinical-exp')" style="padding: 4px 12px; font-size: 0.8rem; border-radius: 4px; cursor: pointer; border: 1px solid rgba(255,255,255,0.12); background: rgba(0,0,0,0.3); color: var(--text-secondary); transition: all 0.15s;">Clinical Exposure</button>
+                        <button type="button" class="edit-parent-btn" data-parent="vivo" onclick="toggleExposureParent('vivo')" style="padding: 4px 12px; font-size: 0.8rem; border-radius: 4px; cursor: pointer; border: 1px solid rgba(255,255,255,0.12); background: rgba(0,0,0,0.3); color: var(--text-secondary); transition: all 0.15s;">In Vivo Exposure</button>
+                        <button type="button" class="edit-parent-btn" data-parent="vitro" onclick="toggleExposureParent('vitro')" style="padding: 4px 12px; font-size: 0.8rem; border-radius: 4px; cursor: pointer; border: 1px solid rgba(255,255,255,0.12); background: rgba(0,0,0,0.3); color: var(--text-secondary); transition: all 0.15s;">In Vitro Exposure</button>
+                        <button type="button" class="edit-parent-btn" data-parent="exp-unknown" onclick="toggleExposureParent('exp-unknown')" style="padding: 4px 12px; font-size: 0.8rem; border-radius: 4px; cursor: pointer; border: 1px solid rgba(255,255,255,0.12); background: rgba(0,0,0,0.3); color: var(--text-secondary); transition: all 0.15s;">Unknown</button>
+                    </div>
+                    <!-- Sub-option groups -->
+                    <div id="edit-exp-clinical" class="edit-exp-group" style="display: none;">
+                        <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 4px; background: rgba(0,150,255,0.04); padding: 8px; border-radius: 4px; border: 1px solid rgba(0,150,255,0.12);">
+                            <label class="checkbox-item"><input type="checkbox" name="edit_exposure" value="smoked"> Smoked</label>
+                            <label class="checkbox-item"><input type="checkbox" name="edit_exposure" value="vaporized"> Vaporized</label>
+                            <label class="checkbox-item"><input type="checkbox" name="edit_exposure" value="inhaled"> Inhaled</label>
+                            <label class="checkbox-item"><input type="checkbox" name="edit_exposure" value="oral/edible"> Oral/Edible</label>
+                            <label class="checkbox-item"><input type="checkbox" name="edit_exposure" value="tincture"> Tincture</label>
+                            <label class="checkbox-item"><input type="checkbox" name="edit_exposure" value="sublingual"> Sublingual</label>
+                            <label class="checkbox-item"><input type="checkbox" name="edit_exposure" value="injection"> Injection</label>
+                            <label class="checkbox-item"><input type="checkbox" name="edit_exposure" value="forced inhalation"> Forced Inhalation</label>
+                        </div>
+                    </div>
+                    <div id="edit-exp-vivo" class="edit-exp-group" style="display: none;">
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 4px; background: rgba(0,150,255,0.04); padding: 8px; border-radius: 4px; border: 1px solid rgba(0,150,255,0.12);">
+                            <label class="checkbox-item"><input type="checkbox" name="edit_exposure" value="nose only smoke/vapor"> Nose-Only Smoke/Vapor</label>
+                            <label class="checkbox-item"><input type="checkbox" name="edit_exposure" value="whole body. smoke/vapor"> Whole Body Smoke/Vapor</label>
+                            <label class="checkbox-item"><input type="checkbox" name="edit_exposure" value="injection cannabinoids"> Injection</label>
+                            <label class="checkbox-item"><input type="checkbox" name="edit_exposure" value="oral administration"> Oral Administration</label>
+                            <label class="checkbox-item"><input type="checkbox" name="edit_exposure" value="sub-lingual"> Sub-lingual</label>
+                            <label class="checkbox-item"><input type="checkbox" name="edit_exposure" value="intranasal"> Intranasal</label>
+                            <label class="checkbox-item"><input type="checkbox" name="edit_exposure" value="intratracheal"> Intratracheal</label>
+                        </div>
+                    </div>
+                    <div id="edit-exp-vitro" class="edit-exp-group" style="display: none;">
+                        <div style="display: grid; grid-template-columns: 1fr; gap: 4px; background: rgba(0,150,255,0.04); padding: 8px; border-radius: 4px; border: 1px solid rgba(0,150,255,0.12);">
+                            <label class="checkbox-item"><input type="checkbox" name="edit_exposure" value="exposure of cells to smoke/vapor"> Direct Cell Exposure</label>
+                            <label class="checkbox-item"><input type="checkbox" name="edit_exposure" value="smoke/vapor conditioned media"> Conditioned Media</label>
+                            <label class="checkbox-item"><input type="checkbox" name="edit_exposure" value="cannabinoids dissolved in media"> Dissolved in Media</label>
+                            <label class="checkbox-item"><input type="checkbox" name="edit_exposure" value="in vitro"> In Vitro</label>
+                        </div>
+                    </div>
+                    <div id="edit-exp-unknown" class="edit-exp-group" style="display: none;">
+                        <div style="display: grid; grid-template-columns: 1fr; gap: 4px; background: rgba(0,150,255,0.04); padding: 8px; border-radius: 4px; border: 1px solid rgba(0,150,255,0.12);">
+                            <label class="checkbox-item"><input type="checkbox" name="edit_exposure" value="unknown"> Unknown</label>
+                        </div>
                     </div>
                 </div>
                 <div class="form-group" style="margin-bottom: 12px;">
@@ -2225,11 +2281,11 @@
 
     <!-- Dynamic JavaScript -->
     <script>
-        const IS_LOGGED_IN = {% if session.get('logged_in') %}true{% else %}false{% endif %};
+        const IS_LOGGED_IN = true;
         const CURRENT_USER = {
-            username: "{{ session.get('username') or '' }}",
-            email: "{{ session.get('email') or '' }}",
-            is_google: {% if session.get('is_google') %}true{% else %}false{% endif %}
+            username: "{{ session.get('username') or 'Explorer' }}",
+            email: "{{ session.get('email') or 'local@test.local' }}",
+            is_google: false
         };
 
         function setLogic(key, val) {
@@ -3078,6 +3134,54 @@
             }
         }
 
+        /* ─── Hierarchical Edit Form Toggles ─── */
+
+        function toggleStudyDesignParent(parent) {
+            // Toggle the active state of the parent button
+            document.querySelectorAll('.edit-parent-btn[data-parent^="clinical"], .edit-parent-btn[data-parent^="animal"], .edit-parent-btn[data-parent^="cell"], .edit-parent-btn[data-parent^="review"]').forEach(btn => {
+                btn.style.background = btn.dataset.parent === parent ? 'rgba(0,230,118,0.15)' : 'rgba(0,0,0,0.3)';
+                btn.style.borderColor = btn.dataset.parent === parent ? 'rgba(0,230,118,0.4)' : 'rgba(255,255,255,0.12)';
+                btn.style.color = btn.dataset.parent === parent ? '#00e676' : 'var(--text-secondary)';
+            });
+            // Hide all study design groups
+            document.querySelectorAll('.edit-sd-group').forEach(g => g.style.display = 'none');
+            // Show the selected group
+            const groupMap = { clinical: 'edit-sd-clinical', animal: 'edit-sd-animal', cell: 'edit-sd-cell', review: 'edit-sd-review' };
+            const target = document.getElementById(groupMap[parent]);
+            if (target) target.style.display = 'block';
+        }
+
+        function toggleExposureParent(parent) {
+            document.querySelectorAll('.edit-parent-btn[data-parent^="clinical-exp"], .edit-parent-btn[data-parent^="vivo"], .edit-parent-btn[data-parent^="vitro"], .edit-parent-btn[data-parent^="exp-unknown"]').forEach(btn => {
+                btn.style.background = btn.dataset.parent === parent ? 'rgba(0,150,255,0.15)' : 'rgba(0,0,0,0.3)';
+                btn.style.borderColor = btn.dataset.parent === parent ? 'rgba(0,150,255,0.4)' : 'rgba(255,255,255,0.12)';
+                btn.style.color = btn.dataset.parent === parent ? '#64b5f6' : 'var(--text-secondary)';
+            });
+            document.querySelectorAll('.edit-exp-group').forEach(g => g.style.display = 'none');
+            const groupMap = { 'clinical-exp': 'edit-exp-clinical', vivo: 'edit-exp-vivo', vitro: 'edit-exp-vitro', 'exp-unknown': 'edit-exp-unknown' };
+            const target = document.getElementById(groupMap[parent]);
+            if (target) target.style.display = 'block';
+        }
+
+        function getParentForStudyType(value) {
+            if (value.startsWith('Clinical')) return 'clinical';
+            if (value.startsWith('Animal Models')) return 'animal';
+            if (value.startsWith('Cell Culture')) return 'cell';
+            if (['review','meta-analysis','case study','editorial'].includes(value)) return 'review';
+            return null;
+        }
+
+        function getParentForExposure(value) {
+            const clinical = ['smoked','vaporized','inhaled','oral/edible','tincture','sublingual','injection','forced inhalation'];
+            const vivo = ['nose only smoke/vapor','whole body. smoke/vapor','injection cannabinoids','oral administration','sub-lingual','intranasal','intratracheal'];
+            const vitro = ['exposure of cells to smoke/vapor','smoke/vapor conditioned media','cannabinoids dissolved in media','in vitro'];
+            if (clinical.includes(value)) return 'clinical-exp';
+            if (vivo.includes(value)) return 'vivo';
+            if (vitro.includes(value)) return 'vitro';
+            if (value === 'unknown') return 'exp-unknown';
+            return null;
+        }
+
         function populateEditForm(paper) {
             document.getElementById("edit-pub-type").value = paper.publication_type || "original research";
             document.getElementById("edit-thc").value = paper.thc_pct !== null ? paper.thc_pct : "";
@@ -3110,8 +3214,29 @@
                 });
             }
             
+            // Study Design: activate parent categories and set checkboxes
+            const studyTypes = Array.isArray(paper.study_type) ? paper.study_type : (paper.study_type ? [paper.study_type] : []);
+            const studyParents = new Set();
+            studyTypes.forEach(st => {
+                const p = getParentForStudyType(st);
+                if (p) studyParents.add(p);
+            });
+            // If no parent determined, default to clinical
+            if (studyParents.size === 0) studyParents.add('clinical');
+            studyParents.forEach(p => toggleStudyDesignParent(p));
             setCheckboxes("edit_study_type", paper.study_type);
+            
+            // Exposure Method: activate parent categories and set checkboxes
+            const exposureMethods = Array.isArray(paper.exposure_method) ? paper.exposure_method : (paper.exposure_method ? [paper.exposure_method] : []);
+            const exposureParents = new Set();
+            exposureMethods.forEach(em => {
+                const p = getParentForExposure(em);
+                if (p) exposureParents.add(p);
+            });
+            if (exposureParents.size === 0) exposureParents.add('clinical-exp');
+            exposureParents.forEach(p => toggleExposureParent(p));
             setCheckboxes("edit_exposure", paper.exposure_method);
+            
             setCheckboxes("edit_cannabis_type", paper.cannabis_type);
             setCheckboxes("edit_outcome", paper.outcome_domain);
 
