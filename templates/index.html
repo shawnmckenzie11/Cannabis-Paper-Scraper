@@ -1929,6 +1929,12 @@
                                     <span class="meta-label" id="label-strain-reported">Reported Strain</span>
                                     <span class="meta-value" id="drawer-strain-reported">Bedrocan</span>
                                 </div>
+                                <div class="meta-item" style="grid-column: span 2;">
+                                    <span class="meta-label" id="label-cannabis-types">Cannabis Type</span>
+                                    <div class="tag-container" id="drawer-cannabis-types-container" style="margin-top: 4px;">
+                                        <!-- cannabis type tags -->
+                                    </div>
+                                </div>
                             </div>
                         </div>
 
@@ -1936,12 +1942,6 @@
                         <div class="properties-group">
                             <div class="properties-group-title">Classifications</div>
                             <div class="properties-stacked-items">
-                                <div class="meta-item">
-                                    <span class="meta-label" id="label-cannabis-types">Cannabis Type</span>
-                                    <div class="tag-container" id="drawer-cannabis-types-container" style="margin-top: 4px;">
-                                        <!-- cannabis type tags -->
-                                    </div>
-                                </div>
                                 <div class="meta-item">
                                     <span class="meta-label" id="label-outcomes">Outcome Domains</span>
                                     <div class="tag-container" id="drawer-outcomes-container" style="margin-top: 4px;">
@@ -2636,7 +2636,8 @@
                     cells.push(`<td><span class="badge badge-type">${Array.isArray(p.study_type) ? p.study_type.join(', ') : (p.study_type || "unknown")}</span></td>`);
                 }
                 if (visibleColumns.exposure_method) {
-                    cells.push(`<td style="color: #b0bec5;">${Array.isArray(p.exposure_method) ? p.exposure_method.join(', ') : (p.exposure_method || "unknown")}</td>`);
+                    const exposureStr = Array.isArray(p.exposure_method) ? p.exposure_method.map(formatExposureMethod).join(', ') : (p.exposure_method ? formatExposureMethod(p.exposure_method) : "unknown");
+                    cells.push(`<td style="color: #b0bec5;">${exposureStr}</td>`);
                 }
                 if (visibleColumns.cannabis_type) {
                     cells.push(`<td style="color: var(--text-secondary);">${Array.isArray(p.cannabis_type) ? p.cannabis_type.join(', ') : (p.cannabis_type || "unknown")}</td>`);
@@ -2911,6 +2912,36 @@
             }
         }
 
+        function formatExposureMethod(method) {
+            const map = {
+                "smoked": { cat: "Clinical Exposure", label: "Smoked" },
+                "vaporized": { cat: "Clinical Exposure", label: "Vaporized" },
+                "inhaled": { cat: "Clinical Exposure", label: "Inhaled" },
+                "oral/edible": { cat: "Clinical Exposure", label: "Oral/Edible" },
+                "oral": { cat: "Clinical Exposure", label: "Oral" },
+                "tincture": { cat: "Clinical Exposure", label: "Tincture" },
+                "sublingual": { cat: "Clinical Exposure", label: "Sublingual" },
+                "injection": { cat: "Clinical Exposure", label: "Injection" },
+                "injected": { cat: "Clinical Exposure", label: "Injected" },
+                "forced inhalation": { cat: "Clinical Exposure", label: "Forced Inhalation" },
+                "nose only smoke/vapor": { cat: "In Vivo Exposure", label: "Nose-Only Smoke/Vapor" },
+                "whole body. smoke/vapor": { cat: "In Vivo Exposure", label: "Whole Body Smoke/Vapor" },
+                "injection cannabinoids": { cat: "In Vivo Exposure", label: "Injection" },
+                "oral administration": { cat: "In Vivo Exposure", label: "Oral Administration" },
+                "sub-lingual": { cat: "In Vivo Exposure", label: "Sub-lingual" },
+                "intranasal": { cat: "In Vivo Exposure", label: "Intranasal" },
+                "intratracheal": { cat: "In Vivo Exposure", label: "Intratracheal" },
+                "exposure of cells to smoke/vapor": { cat: "In Vitro Exposure", label: "Direct Cell Exposure" },
+                "smoke/vapor conditioned media": { cat: "In Vitro Exposure", label: "Conditioned Media" },
+                "cannabinoids dissolved in media": { cat: "In Vitro Exposure", label: "Dissolved in Media" },
+                "in vitro": { cat: "In Vitro Exposure", label: "In Vitro" },
+                "unknown": { cat: "Unknown", label: "Unknown" }
+            };
+            const m = method.toLowerCase().trim();
+            const entry = map[m] || { cat: "Unknown", label: method };
+            return `${entry.cat} (${entry.label})`;
+        }
+
         // Open details Drawer slide-in
         function openDrawer(paper) {
             activeEditingPaper = paper;
@@ -2927,7 +2958,8 @@
             document.getElementById("drawer-authors").innerText = (paper.authors || []).join(", ") || "Not Reported";
             document.getElementById("drawer-journal-year").innerHTML = `*${paper.journal || "Unknown Source"}* (${paper.year || "N/A"})`;
             document.getElementById("drawer-citations").innerText = paper.citation_count || 0;
-            document.getElementById("drawer-exposure").innerText = Array.isArray(paper.exposure_method) ? paper.exposure_method.join(', ') : (paper.exposure_method || "unknown");
+            const exposureDisplay = Array.isArray(paper.exposure_method) ? paper.exposure_method.map(formatExposureMethod).join(', ') : (paper.exposure_method ? formatExposureMethod(paper.exposure_method) : "unknown");
+            document.getElementById("drawer-exposure").innerText = exposureDisplay;
             document.getElementById("drawer-population").innerText = Array.isArray(paper.population) ? paper.population.join(', ') : (paper.population || "unknown");
             // Determine exposure type context for dynamic duration and frequency fields
             const studyTypes = Array.isArray(paper.study_type) ? paper.study_type : (paper.study_type ? [paper.study_type] : []);
