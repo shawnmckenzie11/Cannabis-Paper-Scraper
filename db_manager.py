@@ -178,6 +178,9 @@ class DatabaseManager:
                     created_at TEXT DEFAULT CURRENT_TIMESTAMP
                 );
             """)
+            # Ensure analyses table exists
+            self.init_analyses_table()
+
             # Populate publication_date for existing rows using year
             conn.execute("UPDATE papers SET publication_date = year || '-01-01' WHERE publication_date IS NULL AND year IS NOT NULL;")
             conn.commit()
@@ -794,5 +797,105 @@ class DatabaseManager:
             return True
         except sqlite3.Error:
             return False
+        finally:
+            conn.close()
+
+    # ─── Analyses Table ──────────────────────────────────────────
+
+    def init_analyses_table(self):
+        """Creates the analyses table if it does not exist, migrates if needed."""
+        conn = self.get_connection()
+        try:
+            # Check if table exists with the right columns
+            cursor = conn.execute("PRAGMA table_info(analyses);")
+            existing_cols = {row[1] for row in cursor.fetchall()}
+            required_cols = {'id', 'name', 'filter_settings', 'paper_count', 'chart_data', 'created_at'}
+
+            if existing_cols and not required_cols.issubset(existing_cols):
+                # Table exists but is incomplete; drop and recreate
+                conn.execute("DROP TABLE IF EXISTS analyses;")
+
+            conn.execute("""
+                CREATE TABLE IF NOT EXISTS analyses (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    name TEXT DEFAULT 'Analysis',
+                    filter_settings TEXT,
+                    paper_count INTEGER DEFAULT 0,
+                    chart_data TEXT,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                );
+            """)
+            conn.commit()
+        finally:
+            conn.close()
+
+    def create_analysis(self, name: str, filter_settings: str, paper_count: int, chart_data: str) -> int:
+        """Creates a new analysis record and returns its id."""
+        conn = self.get_connection()
+        try:
+            cursor = conn.execute(
+                "INSERT INTO analyses (name, filter_settings, paper_count, chart_data) VALUES (?, ?, ?, ?);",
+                (name, filter_settings, paper_count, chart_data)
+            )
+            conn.commit()
+            return cursor.lastrowid
+        finally:
+            conn.close()
+
+    def get_analysis(self, analysis_id: int) -> Optional[Dict[str, Any]]:
+        """Fetches a single analysis by id."""
+        conn = self.get_connection()
+        conn.row_factory = sqlite3.Row
+        try:
+            cursor = conn.execute("SELECT * FROM analyses WHERE id = ?;", (analysis_id,))
+            row = cursor.fetchone()
+            return dict(row) if row else None
+        finally:
+            conn.close()
+
+    def list_analyses(self) -> List[Dict[str, Any]]:
+        """Returns all analyses ordered by most recent first."""
+        conn = self.get_connection()
+        conn.row_factory = sqlite3.Row
+        try:
+            cursor = conn.execute("SELECT id, name, filter_settings, paper_count, created_at FROM analyses ORDER BY created_at DESC;")
+            return [dict(row) for row in cursor.fetchall()]
+        finally:
+            conn.close()
+
+    def update_analysis(self, analysis_id: int, name: str = None, filter_settings: str = None, chart_data: str = None) -> bool:
+        """Updates an analysis record. Only updates fields that are not None."""
+        conn = self.get_connection()
+        try:
+            sets = []
+            params = []
+            if name is not None:
+                sets.append("name = ?")
+                params.append(name)
+            if filter_settings is not None:
+                sets.append("filter_settings = ?")
+                params.append(filter_settings)
+            if chart_data is not None:
+                sets.append("chart_data = ?")
+                params.append(chart_data)
+            if not sets:
+                return False
+            params.append(analysis_id)
+            cursor = conn.execute(
+                f"UPDATE analyses SET {', '.join(sets)} WHERE id = ?;",
+                params
+            )
+            conn.commit()
+            return cursor.rowcount > 0
+        finally:
+            conn.close()
+
+    def delete_analysis(self, analysis_id: int) -> bool:
+        """Deletes an analysis by id."""
+        conn = self.get_connection()
+        try:
+            cursor = conn.execute("DELETE FROM analyses WHERE id = ?;", (analysis_id,))
+            conn.commit()
+            return cursor.rowcount > 0
         finally:
             conn.close()

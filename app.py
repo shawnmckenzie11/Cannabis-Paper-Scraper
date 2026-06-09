@@ -897,6 +897,192 @@ def api_scheduler_status():
         "query": "cannabis OR cannabinoid OR marijuana"
     })
 
+# ─── Analyses Endpoints ─────────────────────────────────────────
+
+def _compute_analysis_chart_data(papers):
+    """Server-side computation mirroring client-side renderVisualAnalysis logic."""
+    thc_values = [p["thc_pct"] for p in papers if p.get("thc_pct") is not None]
+    cbd_values = [p["cbd_pct"] for p in papers if p.get("cbd_pct") is not None]
+    sample_sizes = [p["sample_size"] for p in papers if p.get("sample_size") is not None]
+
+    aggregates = {
+        "avg_thc": round(sum(thc_values) / len(thc_values), 1) if thc_values else None,
+        "avg_cbd": round(sum(cbd_values) / len(cbd_values), 1) if cbd_values else None,
+        "large_sample_pct": round(sum(1 for s in sample_sizes if s and s > 50) / len(sample_sizes) * 100) if sample_sizes else None
+    }
+
+    study_design = {}
+    timeline = {}
+    thc_bins = {"zero": 0, "low": 0, "medLow": 0, "med": 0, "medHigh": 0, "high": 0, "veryHigh": 0, "ultraHigh": 0, "notReported": 0}
+    clinical_exp = {"inhaled": 0, "oral": 0, "sublingual": 0, "injected": 0}
+    vitro_exp = {"exposure of cells to smoke/vapor": 0, "cannabinoids dissolved in media": 0, "smoke/vapor conditioned media": 0}
+    vivo_exp = {"whole body. smoke/vapor": 0, "nose only smoke/vapor": 0, "injection cannabinoids": 0, "oral administration": 0, "sub-lingual": 0, "intranasal": 0, "intratracheal": 0}
+    cannabis_type = {}
+    outcome = {"pain": 0, "anxiety": 0, "cognition": 0, "inflammation": 0, "addiction": 0, "oncology": 0, "neuroprotection": 0, "sleep": 0}
+
+    for p in papers:
+        # Study design
+        designs = p.get("study_type")
+        if isinstance(designs, list):
+            for d in designs:
+                study_design[d] = study_design.get(d, 0) + 1
+        elif designs:
+            study_design[designs] = study_design.get(designs, 0) + 1
+
+        # Timeline
+        yr = p.get("year") or "N/A"
+        timeline[yr] = timeline.get(yr, 0) + 1
+
+        # THC bins
+        thc = p.get("thc_pct")
+        if thc is None:
+            thc_bins["notReported"] += 1
+        elif thc == 0:
+            thc_bins["zero"] += 1
+        elif thc <= 5:
+            thc_bins["low"] += 1
+        elif thc <= 10:
+            thc_bins["medLow"] += 1
+        elif thc <= 15:
+            thc_bins["med"] += 1
+        elif thc <= 20:
+            thc_bins["medHigh"] += 1
+        elif thc <= 25:
+            thc_bins["high"] += 1
+        elif thc <= 30:
+            thc_bins["veryHigh"] += 1
+        else:
+            thc_bins["ultraHigh"] += 1
+
+        # Exposure methods
+        exps = p.get("exposure_method")
+        if isinstance(exps, list):
+            for e in exps:
+                if e in clinical_exp: clinical_exp[e] += 1
+                elif e in vitro_exp: vitro_exp[e] += 1
+                elif e in vivo_exp: vivo_exp[e] += 1
+        elif exps:
+            if exps in clinical_exp: clinical_exp[exps] += 1
+            elif exps in vitro_exp: vitro_exp[exps] += 1
+            elif exps in vivo_exp: vivo_exp[exps] += 1
+
+        # Cannabis type
+        ctypes = p.get("cannabis_type")
+        if isinstance(ctypes, list):
+            for ct in ctypes:
+                cannabis_type[ct] = cannabis_type.get(ct, 0) + 1
+        elif ctypes:
+            cannabis_type[ctypes] = cannabis_type.get(ctypes, 0) + 1
+
+        # Outcomes
+        outcomes = p.get("outcome_domain") or []
+        for o in outcomes:
+            if o in outcome:
+                outcome[o] += 1
+
+    return {
+        "paper_count": len(papers),
+        "aggregates": aggregates,
+        "study_design": study_design,
+        "thc_bins": thc_bins,
+        "timeline": timeline,
+        "clinical_exposure": clinical_exp,
+        "vitro_exposure": vitro_exp,
+        "vivo_exposure": vivo_exp,
+        "cannabis_type": cannabis_type,
+        "outcome": outcome
+    }
+
+
+@app.route("/api/analyze", methods=["POST"])
+def api_analyze():
+    """Accepts filter params, fetches matching papers, computes chart data, saves analysis to DB."""
+    data = request.get_json() or {}
+    filters = data.get("filters", {})
+    name = data.get("name", f"Analysis {datetime.now().strftime('%b %d %Y %H:%M')}")
+
+    db = DatabaseManager()
+
+    # Fetch ALL matching papers (no pagination limit)
+    filters["limit"] = 100000
+    filters["offset"] = 0
+    papers = db.search_papers(filters)
+
+    chart_data = _compute_analysis_chart_data(papers)
+
+    analysis_id = db.create_analysis(
+        name=name,
+        filter_settings=json.dumps(filters, default=str),
+        paper_count=chart_data["paper_count"],
+        chart_data=json.dumps(chart_data, default=str)
+    )
+
+    return jsonify({
+        "id": analysis_id,
+        "name": name,
+        "paper_count": chart_data["paper_count"],
+        "filter_settings": filters,
+        "chart_data": chart_data,
+        "created_at": datetime.now().isoformat()
+    })
+
+
+@app.route("/api/analyses", methods=["GET"])
+def api_list_analyses():
+    """Returns all saved analyses."""
+    db = DatabaseManager()
+    analyses = db.list_analyses()
+    # Parse JSON fields for the frontend
+    for a in analyses:
+        try:
+            a["filter_settings"] = json.loads(a["filter_settings"])
+        except (json.JSONDecodeError, TypeError):
+            a["filter_settings"] = {}
+    return jsonify(analyses)
+
+
+@app.route("/api/analyses/<int:analysis_id>", methods=["GET"])
+def api_get_analysis(analysis_id):
+    """Returns full analysis data including chart_data."""
+    db = DatabaseManager()
+    analysis = db.get_analysis(analysis_id)
+    if not analysis:
+        return jsonify({"error": "Analysis not found"}), 404
+    try:
+        analysis["filter_settings"] = json.loads(analysis["filter_settings"])
+    except (json.JSONDecodeError, TypeError):
+        analysis["filter_settings"] = {}
+    try:
+        analysis["chart_data"] = json.loads(analysis["chart_data"])
+    except (json.JSONDecodeError, TypeError):
+        analysis["chart_data"] = {}
+    return jsonify(analysis)
+
+
+@app.route("/api/analyses/<int:analysis_id>", methods=["PUT"])
+def api_update_analysis(analysis_id):
+    """Updates an analysis (e.g. rename)."""
+    data = request.get_json(silent=True) or {}
+    db = DatabaseManager()
+    name = data.get("name")
+    if name is not None and (not isinstance(name, str) or len(name.strip()) == 0):
+        return jsonify({"error": "Name cannot be empty"}), 400
+    if name is not None:
+        name = name.strip()
+    if db.update_analysis(analysis_id, name=name):
+        return jsonify({"success": True})
+    return jsonify({"error": "Analysis not found"}), 404
+
+
+@app.route("/api/analyses/<int:analysis_id>", methods=["DELETE"])
+def api_delete_analysis(analysis_id):
+    """Deletes an analysis."""
+    db = DatabaseManager()
+    if db.delete_analysis(analysis_id):
+        return jsonify({"success": True})
+    return jsonify({"error": "Analysis not found"}), 404
+
+
 # Start the background daily scheduler thread, protected against debug reloader double-runs
 if not app.debug or os.environ.get("WERKZEUG_RUN_MAIN") == "true":
     logging.getLogger("scheduler").info("Launching daily automatic harvest scheduler thread...")
