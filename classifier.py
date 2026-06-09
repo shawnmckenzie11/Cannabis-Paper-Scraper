@@ -28,7 +28,7 @@ def load_rules_config() -> Dict[str, Any]:
         "You MUST return a raw JSON object and nothing else. Do not wrap it in markdown block tags like ```json. "
         "Ensure the JSON exactly conforms to the following schema structure:\n"
         "{\n"
-        "  \"study_type\": [\"Clinical (RCT)\" | \"Clinical (prospective)\" | \"Clinical (observational)\" | \"Clinical (retrospective)\" | \"Animal Models (mouse)\" | \"Animal Models (rat)\" | \"Animal Models (non-human primate)\" | \"Animal Models (other)\" | \"Cell Culture (primary cells)\" | \"Cell Culture (cell lines)\" | \"Cell Culture (organoids)\" | \"Cell Culture (co-culture)\" | \"review\" | \"meta-analysis\" | \"case study\" | \"editorial\"] (multi-label array of matching study designs. For original research articles, extract one or more matching designs from the Clinical, Animal Models, or Cell Culture options. For reviews, systematic reviews, meta-analyses, editorials, or case studies, extract 'review', 'meta-analysis', 'editorial', or 'case study' as appropriate),\n"
+        "  \"study_type\": [\"Clinical (RCT)\" | \"Clinical (prospective)\" | \"Clinical (observational)\" | \"Clinical (retrospective)\" | \"Animal Models (Mouse)\" | \"Animal Models (Rat)\" | \"Animal Models (Other Rodents)\" | \"Animal Models (Non-Human Primates)\" | \"Animal Models (Other)\" | \"Cell Culture (Primary Cells)\" | \"Cell Culture (Cell Lines)\" | \"Cell Culture (Organoids)\" | \"Cell Culture (Co-Culture)\" | \"Cell Culture (PCLS)\" | \"Cell Culture (Other In Vitro)\" | \"review\" | \"meta-analysis\" | \"case study\" | \"editorial\"] (multi-label array of matching study designs. For original research articles, extract one or more matching designs from the Clinical, Animal Models, or Cell Culture options. For reviews, systematic reviews, meta-analyses, editorials, or case studies, extract 'review', 'meta-analysis', 'editorial', or 'case study' as appropriate),\n"
         "  \"publication_type\": \"review\" | \"original research\" | \"case study\" | \"systematic review\" | \"meta-analysis\" | \"editorial\" | \"comment\" | \"letter to the editor\" | \"perspectives paper\" (choose exactly one publication type that best describes the paper),\n"
         "  \"exposure_method\": [\"smoked\" | \"vaporized\" | \"oral/edible\" | \"tincture\" | \"injection\" | \"forced inhalation\" | \"in vitro\" | \"unknown\"] (multi-label array of matching exposure methods),\n"
         "  \"thc_pct\": float or null (numeric percent, e.g. 12.5. Do not include '%' sign. Relevant to dried flower, concentrates, vape pen, hashish/kief),\n"
@@ -47,7 +47,7 @@ def load_rules_config() -> Dict[str, Any]:
         "  \"inhaled_exposure_duration\": string or null (the exposure duration for inhaled pathways, e.g. \"10 minutes\", \"5 puffs\", \"30 seconds\". ONLY set if exposure_method is inhaled: smoked, vaporized, forced inhalation, null otherwise),\n"
         "  \"administration_frequency\": string or null (how often cannabis is administered, e.g., \"once daily\", \"twice weekly\", \"single dose\". ONLY set for Clinical or In vivo animal studies, null for In vitro/reviews),\n"
         "  \"treatment_duration\": string or null (the treatment exposure duration for cell culture/in vitro studies, e.g., \"24 hours\", \"3 days\", \"30 minutes\". ONLY set if study_type contains cell culture or exposure_method is in vitro, null otherwise),\n"
-        "  \"population\": [\"human\" | \"mouse\" | \"rat\" | \"cell_line\" | \"other\"] (multi-label array of matching populations),\n"
+
         "  \"sample_size\": integer or null (N value),\n"
         "  \"outcome_domain\": [\"pain\", \"anxiety\", \"cognition\", \"inflammation\", \"addiction\", \"oncology\", \"neuroprotection\", \"sleep\", \"other\"] (multi-label array of matching outcomes),\n"
         "  \"multiple_doses\": boolean (true if multiple doses, varying dose levels, or dose-response parameters are evaluated in study, false otherwise),\n"
@@ -330,7 +330,7 @@ def classify_with_llm(title: str, abstract: str, runs: Optional[int] = None) -> 
         # 1. Model Agreement (LLM vs heuristics fallback)
         heuristic_metadata = extractor.extract_all_heuristics(title, abstract)
         agreements = []
-        check_fields = ["study_type", "exposure_method", "population", "cannabis_type", "publication_type"]
+        check_fields = ["study_type", "exposure_method", "cannabis_type", "publication_type"]
         for field in check_fields:
             llm_val = consensus.get(field)
             h_val = heuristic_metadata.get(field)

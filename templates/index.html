@@ -1318,9 +1318,6 @@
                             <input type="checkbox" id="col-cb-cannabis_type" onchange="toggleColumn('cannabis_type')"> Cannabis Type
                         </label>
                         <label style="display: flex; align-items: center; gap: 8px; font-size: 0.85rem; cursor: pointer; color: var(--text-primary);">
-                            <input type="checkbox" id="col-cb-population" onchange="toggleColumn('population')"> Population
-                        </label>
-                        <label style="display: flex; align-items: center; gap: 8px; font-size: 0.85rem; cursor: pointer; color: var(--text-primary);">
                             <input type="checkbox" id="col-cb-outcome_domain" onchange="toggleColumn('outcome_domain')"> Outcome Domain
                         </label>
                         <label id="col-label-pub-type" style="display: none; align-items: center; gap: 8px; font-size: 0.85rem; cursor: pointer; color: var(--text-primary);">
@@ -1379,14 +1376,17 @@
                     <div
                         style="font-size: 0.75rem; font-weight: 600; color: #00e676; margin-top: 6px; margin-bottom: 2px; text-transform: uppercase; letter-spacing: 0.5px;">
                         Animal Models</div>
-                    <label class="checkbox-item"><input type="checkbox" name="study_type" value="Animal Models (mouse)"
+                    <label class="checkbox-item"><input type="checkbox" name="study_type" value="Animal Models (Mouse)"
                             onchange="triggerSearch()"> Mouse</label>
-                    <label class="checkbox-item"><input type="checkbox" name="study_type" value="Animal Models (rat)"
+                    <label class="checkbox-item"><input type="checkbox" name="study_type" value="Animal Models (Rat)"
                             onchange="triggerSearch()"> Rat</label>
                     <label class="checkbox-item"><input type="checkbox" name="study_type"
-                            value="Animal Models (non-human primate)" onchange="triggerSearch()"> Non-Human
-                        Primate</label>
-                    <label class="checkbox-item"><input type="checkbox" name="study_type" value="Animal Models (other)"
+                            value="Animal Models (Other Rodents)" onchange="triggerSearch()"> Other
+                        Rodents</label>
+                    <label class="checkbox-item"><input type="checkbox" name="study_type"
+                            value="Animal Models (Non-Human Primates)" onchange="triggerSearch()"> Non-Human
+                        Primates</label>
+                    <label class="checkbox-item"><input type="checkbox" name="study_type" value="Animal Models (Other)"
                             onchange="triggerSearch()"> Other</label>
 
                     <!-- Cell Culture Section -->
@@ -1394,13 +1394,17 @@
                         style="font-size: 0.75rem; font-weight: 600; color: #00e676; margin-top: 6px; margin-bottom: 2px; text-transform: uppercase; letter-spacing: 0.5px;">
                         Cell Culture</div>
                     <label class="checkbox-item"><input type="checkbox" name="study_type"
-                            value="Cell Culture (primary cells)" onchange="triggerSearch()"> Primary Cells</label>
+                            value="Cell Culture (Primary Cells)" onchange="triggerSearch()"> Primary Cells</label>
                     <label class="checkbox-item"><input type="checkbox" name="study_type"
-                            value="Cell Culture (cell lines)" onchange="triggerSearch()"> Cell Lines</label>
+                            value="Cell Culture (Cell Lines)" onchange="triggerSearch()"> Cell Lines</label>
                     <label class="checkbox-item"><input type="checkbox" name="study_type"
-                            value="Cell Culture (organoids)" onchange="triggerSearch()"> Organoids</label>
+                            value="Cell Culture (Organoids)" onchange="triggerSearch()"> Organoids</label>
                     <label class="checkbox-item"><input type="checkbox" name="study_type"
-                            value="Cell Culture (co-culture)" onchange="triggerSearch()"> Co-Culture</label>
+                            value="Cell Culture (Co-Culture)" onchange="triggerSearch()"> Co-Culture</label>
+                    <label class="checkbox-item"><input type="checkbox" name="study_type"
+                            value="Cell Culture (PCLS)" onchange="triggerSearch()"> PCLS</label>
+                    <label class="checkbox-item"><input type="checkbox" name="study_type"
+                            value="Cell Culture (Other In Vitro)" onchange="triggerSearch()"> Other In Vitro</label>
                 </div>
 
                 <div class="filter-header-row">
@@ -1488,27 +1492,6 @@
                             onchange="triggerSearch()"> CB receptor agonist</label>
                     <label class="checkbox-item"><input type="checkbox" name="cannabis_type" value="CB receptor antagonist"
                             onchange="triggerSearch()"> CB receptor antagonist</label>
-                </div>
-
-                <div class="filter-header-row">
-                    <div class="filter-header">Population</div>
-                    <div class="logic-toggle" id="toggle-population">
-                        <span class="logic-btn active" onclick="setLogic('population', 'or')">OR</span>
-                        <span class="logic-btn" onclick="setLogic('population', 'and')">AND</span>
-                        <input type="hidden" name="population_logic" id="logic-population" value="or">
-                    </div>
-                </div>
-                <div class="checkbox-group" style="margin-bottom: 12px;">
-                    <label class="checkbox-item"><input type="checkbox" name="population" value="human"
-                            onchange="triggerSearch()"> Human</label>
-                    <label class="checkbox-item"><input type="checkbox" name="population" value="mouse"
-                            onchange="triggerSearch()"> Mouse</label>
-                    <label class="checkbox-item"><input type="checkbox" name="population" value="rat"
-                            onchange="triggerSearch()"> Rat</label>
-                    <label class="checkbox-item"><input type="checkbox" name="population" value="cell_line"
-                            onchange="triggerSearch()"> Cell Line</label>
-                    <label class="checkbox-item"><input type="checkbox" name="population" value="other"
-                            onchange="triggerSearch()"> Other Species</label>
                 </div>
 
                 <div class="form-group" style="margin-bottom: 12px;">
@@ -1602,9 +1585,6 @@
                                 <th id="header-cannabis_type" class="sortable" style="width: 130px; display: none;"
                                     onclick="handleHeaderClick('cannabis_type')">Cannabis Type <span
                                         id="sort-icon-cannabis_type" class="sort-icon">↕</span></th>
-                                <th id="header-population" class="sortable" style="width: 110px; display: none;"
-                                    onclick="handleHeaderClick('population')">Population <span
-                                        id="sort-icon-population" class="sort-icon">↕</span></th>
                                 <th id="header-outcome_domain" class="sortable" style="width: 140px; display: none;"
                                     onclick="handleHeaderClick('outcome_domain')">Outcome Domain <span
                                         id="sort-icon-outcome_domain" class="sort-icon">↕</span></th>
@@ -1792,18 +1772,7 @@
                         </div>
                     </div>
 
-                    <!-- Chart 6: Population (Bar Chart) -->
-                    <div id="container-chart-population"
-                        style="background: rgba(0, 0, 0, 0.2); border: 1px solid rgba(255, 255, 255, 0.05); border-radius: 12px; padding: 15px; display: flex; flex-direction: column; gap: 10px;">
-                        <h4
-                            style="font-family: var(--font-display); font-size: 0.95rem; font-weight: 600; color: var(--text-primary); margin: 0;">
-                            Population Context</h4>
-                        <div style="position: relative; height: 220px; width: 100%;">
-                            <canvas id="chart-population-bar"></canvas>
-                        </div>
-                    </div>
-
-                    <!-- Chart 7: Outcome Domains (Bar Chart) -->
+                    <!-- Chart 6: Outcome Domains (Bar Chart) -->
                     <div id="container-chart-outcome"
                         style="background: rgba(0, 0, 0, 0.2); border: 1px solid rgba(255, 255, 255, 0.05); border-radius: 12px; padding: 15px; display: flex; flex-direction: column; gap: 10px;">
                         <h4
@@ -1869,10 +1838,6 @@
                                 <div class="meta-item">
                                     <span class="meta-label" id="label-study-design">Study Design</span>
                                     <span class="meta-value" id="drawer-study-design">Clinical (RCT)</span>
-                                </div>
-                                <div class="meta-item">
-                                    <span class="meta-label" id="label-population">Population</span>
-                                    <span class="meta-value" id="drawer-population">human</span>
                                 </div>
                                 <div class="meta-item">
                                     <span class="meta-label" id="label-sample-size">Sample Size (N)</span>
@@ -2002,14 +1967,17 @@
                         <label class="checkbox-item"><input type="checkbox" name="edit_study_type" value="Clinical (prospective)"> Clinical (prospective)</label>
                         <label class="checkbox-item"><input type="checkbox" name="edit_study_type" value="Clinical (observational)"> Clinical (observational)</label>
                         <label class="checkbox-item"><input type="checkbox" name="edit_study_type" value="Clinical (retrospective)"> Clinical (retrospective)</label>
-                        <label class="checkbox-item"><input type="checkbox" name="edit_study_type" value="Animal Models (mouse)"> Animal Models (mouse)</label>
-                        <label class="checkbox-item"><input type="checkbox" name="edit_study_type" value="Animal Models (rat)"> Animal Models (rat)</label>
-                        <label class="checkbox-item"><input type="checkbox" name="edit_study_type" value="Animal Models (non-human primate)"> Animal (primate)</label>
-                        <label class="checkbox-item"><input type="checkbox" name="edit_study_type" value="Animal Models (other)"> Animal Models (other)</label>
-                        <label class="checkbox-item"><input type="checkbox" name="edit_study_type" value="Cell Culture (primary cells)"> Cell (primary)</label>
-                        <label class="checkbox-item"><input type="checkbox" name="edit_study_type" value="Cell Culture (cell lines)"> Cell (lines)</label>
-                        <label class="checkbox-item"><input type="checkbox" name="edit_study_type" value="Cell Culture (organoids)"> Cell (organoids)</label>
-                        <label class="checkbox-item"><input type="checkbox" name="edit_study_type" value="Cell Culture (co-culture)"> Cell (co-culture)</label>
+                        <label class="checkbox-item"><input type="checkbox" name="edit_study_type" value="Animal Models (Mouse)"> Animal Models (Mouse)</label>
+                        <label class="checkbox-item"><input type="checkbox" name="edit_study_type" value="Animal Models (Rat)"> Animal Models (Rat)</label>
+                        <label class="checkbox-item"><input type="checkbox" name="edit_study_type" value="Animal Models (Other Rodents)"> Animal Models (Other Rodents)</label>
+                        <label class="checkbox-item"><input type="checkbox" name="edit_study_type" value="Animal Models (Non-Human Primates)"> Animal Models (Non-Human Primates)</label>
+                        <label class="checkbox-item"><input type="checkbox" name="edit_study_type" value="Animal Models (Other)"> Animal Models (Other)</label>
+                        <label class="checkbox-item"><input type="checkbox" name="edit_study_type" value="Cell Culture (Primary Cells)"> Cell Culture (Primary Cells)</label>
+                        <label class="checkbox-item"><input type="checkbox" name="edit_study_type" value="Cell Culture (Cell Lines)"> Cell Culture (Cell Lines)</label>
+                        <label class="checkbox-item"><input type="checkbox" name="edit_study_type" value="Cell Culture (Organoids)"> Cell Culture (Organoids)</label>
+                        <label class="checkbox-item"><input type="checkbox" name="edit_study_type" value="Cell Culture (Co-Culture)"> Cell Culture (Co-Culture)</label>
+                        <label class="checkbox-item"><input type="checkbox" name="edit_study_type" value="Cell Culture (PCLS)"> Cell Culture (PCLS)</label>
+                        <label class="checkbox-item"><input type="checkbox" name="edit_study_type" value="Cell Culture (Other In Vitro)"> Cell Culture (Other In Vitro)</label>
                         <label class="checkbox-item"><input type="checkbox" name="edit_study_type" value="review"> Review</label>
                         <label class="checkbox-item"><input type="checkbox" name="edit_study_type" value="meta-analysis"> Meta-Analysis</label>
                         <label class="checkbox-item"><input type="checkbox" name="edit_study_type" value="case study"> Case Study</label>
@@ -2027,16 +1995,6 @@
                         <label class="checkbox-item"><input type="checkbox" name="edit_exposure" value="forced inhalation"> Forced Inh</label>
                         <label class="checkbox-item"><input type="checkbox" name="edit_exposure" value="in vitro"> In Vitro</label>
                         <label class="checkbox-item"><input type="checkbox" name="edit_exposure" value="unknown"> Unknown</label>
-                    </div>
-                </div>
-                <div class="form-group" style="margin-bottom: 12px;">
-                    <label style="font-size: 0.85rem; font-weight: 600; display: block; margin-bottom: 4px; color: var(--text-primary);">Population</label>
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 4px; background: rgba(0,0,0,0.2); padding: 8px; border-radius: 4px; border: 1px solid rgba(255,255,255,0.05);">
-                        <label class="checkbox-item"><input type="checkbox" name="edit_population" value="human"> Human</label>
-                        <label class="checkbox-item"><input type="checkbox" name="edit_population" value="mouse"> Mouse</label>
-                        <label class="checkbox-item"><input type="checkbox" name="edit_population" value="rat"> Rat</label>
-                        <label class="checkbox-item"><input type="checkbox" name="edit_population" value="cell_line"> Cell Line</label>
-                        <label class="checkbox-item"><input type="checkbox" name="edit_population" value="other"> Other</label>
                     </div>
                 </div>
                 <div class="form-group" style="margin-bottom: 12px;">
@@ -2334,7 +2292,6 @@
             citations: true,
             links: true,
             cannabis_type: false,
-            population: false,
             outcome_domain: false
         };
 
@@ -2351,7 +2308,6 @@
         let chartExposureVitro = null;
         let chartExposureVivo = null;
         let chartCannabisTypeDoughnut = null;
-        let chartPopulationBar = null;
         let chartOutcomeBar = null;
         let chartTimeline = null;
         let chartThcDistribution = null;
@@ -2437,7 +2393,6 @@
             const studyLogic = document.getElementById("logic-study_type").value;
             const methodLogic = document.getElementById("logic-method").value;
             const cannabisLogic = document.getElementById("logic-cannabis_type").value;
-            const populationLogic = document.getElementById("logic-population").value;
             const outcomeLogic = document.getElementById("logic-outcome").value;
 
             // Extract method checkboxes
@@ -2447,10 +2402,6 @@
             // Extract cannabis type checkboxes
             const cannabisTypeCheckboxes = document.querySelectorAll('input[name="cannabis_type"]:checked');
             const cannabisType = Array.from(cannabisTypeCheckboxes).map(cb => cb.value).join(",");
-
-            // Extract population checkboxes
-            const populationCheckboxes = document.querySelectorAll('input[name="population"]:checked');
-            const population = Array.from(populationCheckboxes).map(cb => cb.value).join(",");
 
             // Extract outcome checkboxes
             const outcomeCheckboxes = document.querySelectorAll('input[name="outcome"]:checked');
@@ -2467,10 +2418,6 @@
             if (method) {
                 params.push(`method=${method}`);
                 params.push(`method_logic=${methodLogic}`);
-            }
-            if (population) {
-                params.push(`population=${population}`);
-                params.push(`population_logic=${populationLogic}`);
             }
             if (thcMin && thcMin !== "0") params.push(`thc_min=${thcMin}`);
             if (thcMax && thcMax !== "100") params.push(`thc_max=${thcMax}`);
@@ -2556,7 +2503,7 @@
         }
 
         function updateSortIndicators() {
-            const columns = ['duration', 'title', 'year', 'study_type', 'exposure_method', 'publication_type', 'citations', 'cannabis_type', 'population', 'outcome_domain'];
+            const columns = ['duration', 'title', 'year', 'study_type', 'exposure_method', 'publication_type', 'citations', 'cannabis_type', 'outcome_domain'];
             columns.forEach(col => {
                 const header = document.getElementById(col === 'publication_type' ? 'header-pub-type' : `header-${col}`);
                 const icon = document.getElementById(`sort-icon-${col}`);
@@ -2642,9 +2589,6 @@
                 if (visibleColumns.cannabis_type) {
                     cells.push(`<td style="color: var(--text-secondary);">${Array.isArray(p.cannabis_type) ? p.cannabis_type.join(', ') : (p.cannabis_type || "unknown")}</td>`);
                 }
-                if (visibleColumns.population) {
-                    cells.push(`<td style="color: var(--text-secondary);">${Array.isArray(p.population) ? p.population.join(', ') : (p.population || "unknown")}</td>`);
-                }
                 if (visibleColumns.outcome_domain) {
                     cells.push(`<td style="color: var(--text-secondary);">${Array.isArray(p.outcome_domain) ? p.outcome_domain.join(', ') : (p.outcome_domain || "unknown")}</td>`);
                 }
@@ -2679,7 +2623,7 @@
             updateSliderValues();
 
             // Reset logic hidden inputs and toggles
-            ['method', 'cannabis_type', 'population', 'outcome', 'study_type'].forEach(key => {
+            ['method', 'cannabis_type', 'outcome', 'study_type'].forEach(key => {
                 const hiddenInput = document.getElementById(`logic-${key}`);
                 if (hiddenInput) hiddenInput.value = 'or';
                 const container = document.getElementById(`toggle-${key}`);
@@ -2716,7 +2660,6 @@
                 citations: true,
                 links: true,
                 cannabis_type: false,
-                population: false,
                 outcome_domain: false
             };
             updateColumnVisibility();
@@ -2960,7 +2903,7 @@
             document.getElementById("drawer-citations").innerText = paper.citation_count || 0;
             const exposureDisplay = Array.isArray(paper.exposure_method) ? paper.exposure_method.map(formatExposureMethod).join(', ') : (paper.exposure_method ? formatExposureMethod(paper.exposure_method) : "unknown");
             document.getElementById("drawer-exposure").innerText = exposureDisplay;
-            document.getElementById("drawer-population").innerText = Array.isArray(paper.population) ? paper.population.join(', ') : (paper.population || "unknown");
+
             // Determine exposure type context for dynamic duration and frequency fields
             const studyTypes = Array.isArray(paper.study_type) ? paper.study_type : (paper.study_type ? [paper.study_type] : []);
             const isInvitroStudy = studyTypes.some(t => t.toLowerCase().includes("cell culture") || t.toLowerCase().includes("in vitro"));
@@ -3054,7 +2997,7 @@
             // Render Lock Icons for expert locked fields
             const locked = paper.expert_locked_fields || [];
             updateMetaLabel("label-exposure", "Exposure Pathway", locked.includes("exposure_method"));
-            updateMetaLabel("label-population", "Subject Population", locked.includes("population"));
+
             updateMetaLabel("label-duration", "Study Duration", locked.includes("duration_days"));
             updateMetaLabel("label-admin-frequency", "Admin Frequency", locked.includes("administration_frequency"));
             updateMetaLabel("label-inhaled-duration", "Inhaled Exp Duration", locked.includes("inhaled_exposure_duration"));
@@ -3169,7 +3112,6 @@
             
             setCheckboxes("edit_study_type", paper.study_type);
             setCheckboxes("edit_exposure", paper.exposure_method);
-            setCheckboxes("edit_population", paper.population);
             setCheckboxes("edit_cannabis_type", paper.cannabis_type);
             setCheckboxes("edit_outcome", paper.outcome_domain);
 
@@ -3201,7 +3143,6 @@
                 abstract: document.getElementById("edit-abstract").value.trim() || null,
                 study_type: getCheckedValues("edit_study_type"),
                 exposure_method: getCheckedValues("edit_exposure"),
-                population: getCheckedValues("edit_population"),
                 cannabis_type: getCheckedValues("edit_cannabis_type"),
                 outcome_domain: getCheckedValues("edit_outcome"),
                 
@@ -3526,7 +3467,6 @@
             const studyLogic = document.getElementById("logic-study_type").value;
             const methodLogic = document.getElementById("logic-method").value;
             const cannabisLogic = document.getElementById("logic-cannabis_type").value;
-            const populationLogic = document.getElementById("logic-population").value;
             const outcomeLogic = document.getElementById("logic-outcome").value;
 
             // Extract method checkboxes
@@ -3536,10 +3476,6 @@
             // Extract cannabis type checkboxes
             const cannabisTypeCheckboxes = document.querySelectorAll('input[name="cannabis_type"]:checked');
             const cannabisType = Array.from(cannabisTypeCheckboxes).map(cb => cb.value).join(",");
-
-            // Extract population checkboxes
-            const populationCheckboxes = document.querySelectorAll('input[name="population"]:checked');
-            const population = Array.from(populationCheckboxes).map(cb => cb.value).join(",");
 
             // Extract outcome checkboxes
             const outcomeCheckboxes = document.querySelectorAll('input[name="outcome"]:checked');
@@ -3556,10 +3492,6 @@
             if (method) {
                 params.push(`method=${method}`);
                 params.push(`method_logic=${methodLogic}`);
-            }
-            if (population) {
-                params.push(`population=${population}`);
-                params.push(`population_logic=${populationLogic}`);
             }
             if (thcMin && thcMin !== "0") params.push(`thc_min=${thcMin}`);
             if (thcMax && thcMax !== "100") params.push(`thc_max=${thcMax}`);
@@ -3680,7 +3612,6 @@
             // 3. Check sidebar filter status for the 4 top-level characteristics
             const isExposureFiltered = document.querySelectorAll('input[name="method"]:checked').length > 0;
             const isCannabisTypeFiltered = document.querySelectorAll('input[name="cannabis_type"]:checked').length > 0;
-            const isPopulationFiltered = document.querySelectorAll('input[name="population"]:checked').length > 0;
             const isOutcomeFiltered = document.querySelectorAll('input[name="outcome"]:checked').length > 0;
 
             // Toggle container visibility based on filter status
@@ -3688,7 +3619,6 @@
             document.getElementById("container-chart-exposure-vitro").style.display = isExposureFiltered ? "none" : "flex";
             document.getElementById("container-chart-exposure-vivo").style.display = isExposureFiltered ? "none" : "flex";
             document.getElementById("container-chart-cannabis-type").style.display = isCannabisTypeFiltered ? "none" : "flex";
-            document.getElementById("container-chart-population").style.display = isPopulationFiltered ? "none" : "flex";
             document.getElementById("container-chart-outcome").style.display = isOutcomeFiltered ? "none" : "flex";
 
             // Calculate THC distribution bins
@@ -3782,27 +3712,6 @@
                     });
                 });
                 renderCannabisTypeDoughnutChart(cannabisTypeCounts);
-            }
-
-            if (!isPopulationFiltered) {
-                const populationCounts = {
-                    'human': 0,
-                    'mouse': 0,
-                    'rat': 0,
-                    'cell_line': 0,
-                    'other': 0
-                };
-                papers.forEach(p => {
-                    const pops = Array.isArray(p.population) ? p.population : [p.population || 'unknown'];
-                    pops.forEach(pop => {
-                        if (pop in populationCounts) {
-                            populationCounts[pop]++;
-                        } else if (pop !== 'unknown') {
-                            populationCounts['other']++;
-                        }
-                    });
-                });
-                renderPopulationBarChart(populationCounts);
             }
 
             if (!isOutcomeFiltered) {
@@ -4144,66 +4053,6 @@
             });
         }
 
-        // Render Population Bar Chart
-        function renderPopulationBarChart(counts) {
-            const ctx = document.getElementById('chart-population-bar').getContext('2d');
-            const keyMap = {
-                'human': 'Human',
-                'mouse': 'Mouse',
-                'rat': 'Rat',
-                'cell_line': 'Cell Line',
-                'other': 'Other Species'
-            };
-            const labels = Object.keys(counts).map(k => keyMap[k] || k);
-            const data = Object.values(counts);
-
-            if (chartPopulationBar) {
-                chartPopulationBar.destroy();
-            }
-
-            chartPopulationBar = new Chart(ctx, {
-                type: 'bar',
-                data: {
-                    labels: labels,
-                    datasets: [{
-                        label: 'Papers',
-                        data: data,
-                        backgroundColor: 'rgba(0, 230, 118, 0.4)',
-                        borderColor: '#00e676',
-                        borderWidth: 1.5,
-                        borderRadius: 6
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    scales: {
-                        y: {
-                            beginAtZero: true,
-                            grid: { color: 'rgba(255, 255, 255, 0.05)' },
-                            ticks: { color: '#90a4ae', font: { family: 'Inter', size: 10 }, stepSize: 1 }
-                        },
-                        x: {
-                            grid: { display: false },
-                            ticks: { color: '#90a4ae', font: { family: 'Inter', size: 10 } }
-                        }
-                    },
-                    plugins: {
-                        legend: { display: false },
-                        tooltip: {
-                            backgroundColor: 'rgba(12, 16, 27, 0.95)',
-                            titleColor: '#fff',
-                            bodyColor: '#eceff1',
-                            borderColor: 'rgba(255,255,255,0.08)',
-                            borderWidth: 1,
-                            titleFont: { family: 'Outfit', weight: '600' },
-                            bodyFont: { family: 'Inter' }
-                        }
-                    }
-                }
-            });
-        }
-
         // Render Outcome Prevalence Bar Chart
         function renderOutcomeBarChart(counts) {
             const ctx = document.getElementById('chart-outcome-bar').getContext('2d');
@@ -4438,7 +4287,6 @@
                 document.getElementById("col-cb-citations").checked = visibleColumns.citations;
                 document.getElementById("col-cb-links").checked = visibleColumns.links;
                 document.getElementById("col-cb-cannabis_type").checked = visibleColumns.cannabis_type;
-                document.getElementById("col-cb-population").checked = visibleColumns.population;
                 document.getElementById("col-cb-outcome_domain").checked = visibleColumns.outcome_domain;
 
                 // Show/hide publication type column checkbox in popover depending on current tab
@@ -4465,7 +4313,6 @@
                 'citations': 'header-citations',
                 'links': 'header-links',
                 'cannabis_type': 'header-cannabis_type',
-                'population': 'header-population',
                 'outcome_domain': 'header-outcome_domain'
             };
 

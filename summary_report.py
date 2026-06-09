@@ -222,18 +222,11 @@ def generate_landscape_report(papers: List[Dict[str, Any]], output_filepath: str
                 except Exception: st_type = [st_type]
             st_type_str = ", ".join(st_type) if isinstance(st_type, list) else str(st_type)
             
-            # Format population safely
-            pop = p.get("population") or []
-            if isinstance(pop, str):
-                try: pop = json.loads(pop)
-                except Exception: pop = [pop]
-            pop_str = ", ".join(pop) if isinstance(pop, list) else str(pop)
-            
             link = p.get("full_text_link") or "#"
             
             f.write(f"### {idx+1}. [{title}]({link})\n")
             f.write(f"- **Journal:** *{journal}* ({year})\n")
-            f.write(f"- **Study Type:** {st_type_str} | **Population:** {pop_str}\n")
+            f.write(f"- **Study Type:** {st_type_str}\n")
             f.write(f"- **Citation Count:** {cites}\n")
             
             abstract_text = p.get("abstract") or "No abstract available."
@@ -256,8 +249,6 @@ def main():
     parser.add_argument("--method", type=str, help="Filter by exposure method")
     parser.add_argument("--thc-min", type=float, help="Minimum THC percentage")
     parser.add_argument("--thc-max", type=float, help="Maximum THC percentage")
-    parser.add_argument("--population", type=str, choices=["human", "mouse", "rat", "cell_line", "other"],
-                        help="Filter by population")
     parser.add_argument("--outcome", type=str, help="Outcome domains filter (comma-separated)")
     parser.add_argument("--open-access", type=str, choices=["true", "false", "yes", "no", "1", "0"], help="Filter by open access")
     parser.add_argument("--citations-min", type=int, help="Minimum citation count")
@@ -281,7 +272,6 @@ def main():
         "exposure_method": args.method,
         "thc_min": args.thc_min,
         "thc_max": args.thc_max,
-        "population": args.population,
         "outcome": args.outcome,
         "open_access": oa_filter,
         "citations_min": args.citations_min

@@ -231,7 +231,7 @@ class DatabaseManager:
             "cbd_pct", "dose_mg", "puff_count", "thc_mg_ml", "thc_mg_g", "thc_mg_kg",
             "cbd_mg_ml", "cbd_mg_g", "cbd_mg_kg", "strain_reported", "strain_normalized", "duration_days",
             "inhaled_exposure_duration", "administration_frequency", "treatment_duration",
-            "population", "sample_size", "outcome_domain",
+            "sample_size", "outcome_domain",
             "open_access", "citation_count", "date_harvested", "publication_date", "cannabis_type", 
             "summary", "publication_type", "expert_locked_fields", "classification_confidence", 
             "classification_timestamp", "classifier_version"
@@ -239,7 +239,7 @@ class DatabaseManager:
         
         # Ensure array fields are stored as JSON strings
         paper_copy = paper.copy()
-        for list_field in ["authors", "outcome_domain", "study_type", "exposure_method", "cannabis_type", "population", "expert_locked_fields"]:
+        for list_field in ["authors", "outcome_domain", "study_type", "exposure_method", "cannabis_type", "expert_locked_fields"]:
             if list_field in paper_copy and not isinstance(paper_copy[list_field], str):
                 paper_copy[list_field] = json.dumps(paper_copy[list_field])
             
@@ -326,7 +326,7 @@ class DatabaseManager:
             if row:
                 res = dict(row)
                 # Parse JSON fields
-                for json_field in ["authors", "outcome_domain", "study_type", "exposure_method", "cannabis_type", "population", "expert_locked_fields"]:
+                for json_field in ["authors", "outcome_domain", "study_type", "exposure_method", "cannabis_type", "expert_locked_fields"]:
                     if res.get(json_field):
                         try:
                             val = res[json_field].strip()
@@ -416,9 +416,9 @@ class DatabaseManager:
                     elif s == "observational":
                         expanded_study_types.extend(["Clinical (prospective)", "Clinical (observational)", "Clinical (retrospective)", "observational"])
                     elif s == "animal":
-                        expanded_study_types.extend(["Animal Models (mouse)", "Animal Models (rat)", "Animal Models (non-human primate)", "Animal Models (other)", "animal"])
+                        expanded_study_types.extend(["Animal Models (Mouse)", "Animal Models (Rat)", "Animal Models (Other Rodents)", "Animal Models (Non-Human Primates)", "Animal Models (Other)", "animal"])
                     elif s == "in vitro":
-                        expanded_study_types.extend(["Cell Culture (primary cells)", "Cell Culture (cell lines)", "Cell Culture (organoids)", "Cell Culture (co-culture)", "in vitro"])
+                        expanded_study_types.extend(["Cell Culture (Primary Cells)", "Cell Culture (Cell Lines)", "Cell Culture (Organoids)", "Cell Culture (Co-Culture)", "Cell Culture (PCLS)", "Cell Culture (Other In Vitro)", "in vitro"])
                     else:
                         expanded_study_types.append(s)
                 
@@ -503,29 +503,6 @@ class DatabaseManager:
             where_clauses.append("papers.thc_pct <= ?")
             params.append(float(filters["thc_max"]))
             
-        # Filter on populations (supports comma-separated list or single value)
-        populations = filters.get("population")
-        if populations:
-            if isinstance(populations, str):
-                populations = [p.strip() for p in populations.split(",") if p.strip()]
-            if populations:
-                if filters.get("population_logic", "or").lower() == "and":
-                    for pop in populations:
-                        where_clauses.append(
-                            "((json_valid(papers.population) AND json_type(papers.population) = 'array' AND EXISTS ("
-                            "SELECT 1 FROM json_each(papers.population) WHERE json_each.value = ?"
-                            ")) OR (papers.population = ?))"
-                        )
-                        params.extend([pop, pop])
-                else:
-                    placeholders = ",".join(["?"] * len(populations))
-                    where_clauses.append(
-                        f"((json_valid(papers.population) AND json_type(papers.population) = 'array' AND EXISTS ("
-                        f"SELECT 1 FROM json_each(papers.population) WHERE json_each.value IN ({placeholders})"
-                        f")) OR (papers.population IN ({placeholders})))"
-                    )
-                    params.extend(populations)
-                    params.extend(populations)
             
         if filters.get("open_access") is not None:
             val = filters["open_access"]
@@ -668,8 +645,6 @@ class DatabaseManager:
             sql += f" ORDER BY papers.publication_type {sort_dir}, papers.year DESC"
         elif sort_by == "cannabis_type":
             sql += f" ORDER BY papers.cannabis_type {sort_dir}, papers.year DESC"
-        elif sort_by == "population":
-            sql += f" ORDER BY papers.population {sort_dir}, papers.year DESC"
         elif sort_by == "outcome_domain":
             sql += f" ORDER BY papers.outcome_domain {sort_dir}, papers.year DESC"
         else:
@@ -706,7 +681,7 @@ class DatabaseManager:
                     else:
                         res[json_field] = []
 
-                for json_field in ["study_type", "exposure_method", "cannabis_type", "population", "expert_locked_fields"]:
+                for json_field in ["study_type", "exposure_method", "cannabis_type", "expert_locked_fields"]:
                     if res.get(json_field):
                         try:
                             val = res[json_field].strip()

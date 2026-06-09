@@ -674,36 +674,42 @@ def infer_study_type(title: str, abstract: str) -> List[str]:
     # 2. Animal Models
     # mouse
     if keyword_match(combined, ["mouse", "mice", "murine", "c57bl/6"]):
-        types.append("Animal Models (mouse)")
+        types.append("Animal Models (Mouse)")
     # rat
     if keyword_match(combined, ["rat", "rats", "wistar", "sprague-dawley"]):
-        types.append("Animal Models (rat)")
+        types.append("Animal Models (Rat)")
+    # other rodents
+    if keyword_match(combined, ["hamster", "hamsters", "gerbil", "gerbils", "guinea pig", "guinea pigs", "voles", "vole"]):
+        types.append("Animal Models (Other Rodents)")
     # non-human primate
     if keyword_match(combined, ["macaque", "rhesus", "monkey", "monkeys", "primate", "primates", "baboon", "chimpanzee"]):
-        types.append("Animal Models (non-human primate)")
+        types.append("Animal Models (Non-Human Primates)")
     # other animal
     if keyword_match(combined, ["dog", "dogs", "cat", "cats", "pig", "pigs", "rabbit", "rabbits", "zebrafish", "drosophila"]):
-        types.append("Animal Models (other)")
+        types.append("Animal Models (Other)")
     elif keyword_match(combined, ["animal", "in vivo", "animal model", "rodent", "rodents"]):
         if not any(t.startswith("Animal Models (") for t in types):
-            types.append("Animal Models (other)")
+            types.append("Animal Models (Other)")
             
     # 3. Cell Culture
     # primary cells
     if keyword_match(combined, ["primary cell", "primary cells", "primary culture", "primary neuronal", "primary microglia", "splenocytes", "primary hepatocytes"]):
-        types.append("Cell Culture (primary cells)")
+        types.append("Cell Culture (Primary Cells)")
     # cell lines
     if keyword_match(combined, ["cell line", "cell lines", "hela", "hepg2", "pc12", "raw 264.7", "sh-sy5y", "jurkat", "cho cells"]):
-        types.append("Cell Culture (cell lines)")
+        types.append("Cell Culture (Cell Lines)")
     # organoids
     if keyword_match(combined, ["organoid", "organoids", "spheroid", "spheroids", "3d culture", "3d cultures"]):
-        types.append("Cell Culture (organoids)")
+        types.append("Cell Culture (Organoids)")
     # co-culture
     if keyword_match(combined, ["co-culture", "co-cultures", "coculture", "cocultures"]):
-        types.append("Cell Culture (co-culture)")
+        types.append("Cell Culture (Co-Culture)")
+    # PCLS (precision-cut lung slices)
+    if keyword_match(combined, ["precision-cut lung slices", "pcls", "precision cut lung slices", "lung slice", "lung slices"]):
+        types.append("Cell Culture (PCLS)")
     elif keyword_match(combined, ["in vitro", "cultured cells", "culture assay", "cell culture", "cell cultures", "epithelial cells", "epithelial cell", "airway epithelial"]):
         if not any(t.startswith("Cell Culture (") for t in types):
-            types.append("Cell Culture (cell lines)")
+            types.append("Cell Culture (Other In Vitro)")
             
     if not types:
         types.append("Clinical (observational)")
@@ -727,7 +733,7 @@ def infer_study_type(title: str, abstract: str) -> List[str]:
             "organoid", "organoids", "spheroid", "spheroids", "co-culture", "co-cultures", 
             "coculture", "cocultures", "microglia", "neurons", "epithelial cells", 
             "epithelial cell", "airway epithelial", "cultured cells", "culture assay", 
-            "cell culture", "cell cultures"
+            "cell culture", "cell cultures", "pcls", "precision-cut", "lung slice", "lung slices"
         ]
         
         has_animal_title = any(k in title_lower for k in animal_keywords)
@@ -759,17 +765,17 @@ def postprocess_study_type(study_type: List[str], population: List[str]) -> List
         types = [t for t in types if not t.startswith("Clinical (") and t != "RCT" and t != "observational"]
         if not types:
             if "mouse" in population:
-                types = ["Animal Models (mouse)"]
+                types = ["Animal Models (Mouse)"]
             elif "rat" in population:
-                types = ["Animal Models (rat)"]
+                types = ["Animal Models (Rat)"]
             else:
-                types = ["Animal Models (other)"]
+                types = ["Animal Models (Other)"]
                 
     elif has_cell and not has_human and not has_animal:
         # Pure cell culture study
         types = [t for t in types if not t.startswith("Clinical (") and not t.startswith("Animal Models (") and t != "RCT" and t != "observational"]
         if not types:
-            types = ["Cell Culture (cell lines)"]
+            types = ["Cell Culture (Other In Vitro)"]
             
     return list(set(types))
     
@@ -1087,7 +1093,6 @@ def generate_heuristic_summary(data: Dict[str, Any]) -> str:
     study_type = data.get("study_type") or []
     cannabis_type = data.get("cannabis_type") or []
     exposure_method = data.get("exposure_method") or []
-    population = data.get("population") or []
     strain_reported = data.get("strain_reported")
     
     # Helper to convert list/str to string description
@@ -1101,7 +1106,6 @@ def generate_heuristic_summary(data: Dict[str, Any]) -> str:
     study_desc = to_desc(study_type)
     cannabis_desc = to_desc(cannabis_type)
     exposure_desc = to_desc(exposure_method)
-    pop_desc = to_desc(population)
     
     # Vowel prefix check
     study_word = study_desc.lower()
@@ -1110,7 +1114,7 @@ def generate_heuristic_summary(data: Dict[str, Any]) -> str:
     else:
         prefix = "a"
         
-    summary = f"This is {prefix} {study_desc} study investigating {cannabis_desc} cannabis administration via {exposure_desc} in {pop_desc} models."
+    summary = f"This is {prefix} {study_desc} study investigating {cannabis_desc} cannabis administration via {exposure_desc}."
     
     if strain_reported:
         summary += f" Reported strain: {strain_reported}."
@@ -1154,12 +1158,11 @@ def extract_all_heuristics(title: str, abstract: str) -> Dict[str, Any]:
 
     combined_text = title + " " + (abstract or "")
 
-    pop_set = set(population) if isinstance(population, list) else {population} if isinstance(population, str) else set()
     study_set = set(study_type) if isinstance(study_type, list) else {study_type} if isinstance(study_type, str) else set()
 
-    is_clinical = bool(pop_set.intersection({"human"}) or any(s.startswith("Clinical (") for s in study_set))
-    is_invivo = bool(pop_set.intersection({"mouse", "rat", "other"}) or any(s.startswith("Animal Models (") for s in study_set))
-    is_invitro = bool(pop_set.intersection({"cell_line"}) or any(s.startswith("Cell Culture (") for s in study_set))
+    is_clinical = any(s.startswith("Clinical (") for s in study_set)
+    is_invivo = any(s.startswith("Animal Models (") for s in study_set)
+    is_invitro = any(s.startswith("Cell Culture (") for s in study_set)
 
     if is_clinical or is_invivo:
         duration_days = extract_duration_days(abstract)
@@ -1201,7 +1204,6 @@ def extract_all_heuristics(title: str, abstract: str) -> Dict[str, Any]:
         "inhaled_exposure_duration": inhaled_exposure_duration,
         "administration_frequency": administration_frequency,
         "treatment_duration": treatment_duration,
-        "population": population,
         "sample_size": sample_size,
         "outcome_domain": outcome_domain,
         "methodological_quality_flags": [],

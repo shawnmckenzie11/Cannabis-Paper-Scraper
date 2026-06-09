@@ -447,7 +447,6 @@ def api_search():
     exposure_method = request.args.get("method")
     thc_min = request.args.get("thc_min")
     thc_max = request.args.get("thc_max")
-    population = request.args.get("population")
     outcome = request.args.get("outcome")
     open_access = request.args.get("open_access")
     sort_by = request.args.get("sort_by")
@@ -458,7 +457,6 @@ def api_search():
     cannabis_type = request.args.get("cannabis_type")
     cannabis_logic = request.args.get("cannabis_logic", "or")
     method_logic = request.args.get("method_logic", "or")
-    population_logic = request.args.get("population_logic", "or")
     outcome_logic = request.args.get("outcome_logic", "or")
     study_logic = request.args.get("study_logic", "or")
     
@@ -489,8 +487,6 @@ def api_search():
         clean_filters["thc_min"] = float(thc_min)
     if thc_max:
         clean_filters["thc_max"] = float(thc_max)
-    if population and population != "ALL":
-        clean_filters["population"] = population
     if outcome:
         clean_filters["outcome"] = outcome
     if open_access and open_access != "ALL":
@@ -513,7 +509,6 @@ def api_search():
         
     clean_filters["cannabis_logic"] = cannabis_logic
     clean_filters["exposure_logic"] = method_logic
-    clean_filters["population_logic"] = population_logic
     clean_filters["outcome_logic"] = outcome_logic
     clean_filters["study_logic"] = study_logic
         
@@ -577,7 +572,7 @@ def api_edit_classification(paper_id):
         "dose_mg", "puff_count", "thc_mg_ml", "thc_mg_g", "thc_mg_kg",
         "cbd_mg_ml", "cbd_mg_g", "cbd_mg_kg", "strain_reported", "strain_normalized", "duration_days",
         "inhaled_exposure_duration", "administration_frequency", "treatment_duration",
-        "population", "sample_size", "outcome_domain", "cannabis_type", "summary", "abstract"
+        "sample_size", "outcome_domain", "cannabis_type", "summary", "abstract"
     ]
     
     conn = db.get_connection()
@@ -803,7 +798,7 @@ def api_sync_metadata(paper_id):
             "thc_mg_ml", "thc_mg_g", "thc_mg_kg", "cbd_mg_ml", "cbd_mg_g", "cbd_mg_kg",
             "strain_reported", "strain_normalized", "duration_days",
             "inhaled_exposure_duration", "administration_frequency", "treatment_duration",
-            "population", "sample_size", "outcome_domain", "cannabis_type", "summary", "publication_type",
+            "sample_size", "outcome_domain", "cannabis_type", "summary", "publication_type",
             "classification_confidence", "classification_timestamp", "classifier_version"
         }
         

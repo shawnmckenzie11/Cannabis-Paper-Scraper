@@ -28,7 +28,7 @@ def parse_old_list(val):
 
 def reclassify_all_papers():
     """Iterates through all papers in the SQLite database and re-classifies:
-    study_type, exposure_method, population, cannabis_type, and publication_type.
+    study_type, exposure_method, cannabis_type, and publication_type.
     """
     db = DatabaseManager()
     conn = db.get_connection()
@@ -48,7 +48,7 @@ def reclassify_all_papers():
         # Fetch all papers
         cursor.execute(
             """
-            SELECT id, title, abstract, study_type, exposure_method, population,
+            SELECT id, title, abstract, study_type, exposure_method,
                    thc_pct, cbd_pct, dose_mg, strain_reported, strain_normalized,
                    duration_days, sample_size, journal, cannabis_type, publication_type,
                    expert_locked_fields
@@ -66,7 +66,6 @@ def reclassify_all_papers():
         update_count = 0
         study_type_changes = 0
         exposure_changes = 0
-        population_changes = 0
         cannabis_type_changes = 0
         
         for p in papers:
@@ -85,7 +84,6 @@ def reclassify_all_papers():
             old_pub_type = p.get("publication_type")
             old_study_type = parse_old_list(p.get("study_type"))
             old_exposure = parse_old_list(p.get("exposure_method"))
-            old_population = parse_old_list(p.get("population"))
             old_cannabis_type = parse_old_list(p.get("cannabis_type"))
             old_summary = p.get("summary") or ""
             
@@ -102,7 +100,6 @@ def reclassify_all_papers():
             # Assign values based on locking
             final_publication_type = old_pub_type if "publication_type" in locked_fields else new_publication_type
             final_study_type = old_study_type if "study_type" in locked_fields else new_study_type
-            final_population = old_population if "population" in locked_fields else new_population
             final_exposure_method = old_exposure if "exposure_method" in locked_fields else new_exposure_method
             final_cannabis_type = old_cannabis_type if "cannabis_type" in locked_fields else new_cannabis_type
             
@@ -118,7 +115,6 @@ def reclassify_all_papers():
                     "study_type": final_study_type,
                     "cannabis_type": final_cannabis_type,
                     "exposure_method": final_exposure_method,
-                    "population": final_population,
                     "strain_reported": p.get("strain_reported")
                 })
             else:
@@ -128,7 +124,6 @@ def reclassify_all_papers():
                 final_publication_type != old_pub_type or
                 sorted(final_study_type) != sorted(old_study_type) or
                 sorted(final_exposure_method) != sorted(old_exposure) or
-                sorted(final_population) != sorted(old_population) or
                 sorted(final_cannabis_type) != sorted(old_cannabis_type) or
                 new_summary != old_summary
             )
@@ -138,8 +133,6 @@ def reclassify_all_papers():
                     study_type_changes += 1
                 if sorted(final_exposure_method) != sorted(old_exposure):
                     exposure_changes += 1
-                if sorted(final_population) != sorted(old_population):
-                    population_changes += 1
                 if sorted(final_cannabis_type) != sorted(old_cannabis_type):
                     cannabis_type_changes += 1
                 
@@ -149,7 +142,6 @@ def reclassify_all_papers():
                     UPDATE papers
                     SET study_type = ?,
                         exposure_method = ?,
-                        population = ?,
                         cannabis_type = ?,
                         publication_type = ?,
                         summary = ?,
@@ -160,7 +152,6 @@ def reclassify_all_papers():
                     (
                         json.dumps(final_study_type),
                         json.dumps(final_exposure_method),
-                        json.dumps(final_population),
                         json.dumps(final_cannabis_type),
                         final_publication_type,
                         new_summary,
@@ -176,7 +167,6 @@ def reclassify_all_papers():
                     logger.info(f"  - Publication Type: {old_pub_type} -> {final_publication_type}")
                     logger.info(f"  - Study Type: {old_study_type} -> {final_study_type}")
                     logger.info(f"  - Exposure: {old_exposure} -> {final_exposure_method}")
-                    logger.info(f"  - Population: {old_population} -> {final_population}")
                     logger.info(f"  - Cannabis Type: {old_cannabis_type} -> {final_cannabis_type}")
         
         conn.commit()
@@ -184,7 +174,6 @@ def reclassify_all_papers():
         logger.info(f"Total papers updated: {update_count}")
         logger.info(f"  - Study type changed for {study_type_changes} papers")
         logger.info(f"  - Exposure method changed for {exposure_changes} papers")
-        logger.info(f"  - Population changed for {population_changes} papers")
         logger.info(f"  - Cannabis type changed/populated for {cannabis_type_changes} papers")
         
     except Exception as e:

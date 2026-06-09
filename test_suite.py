@@ -35,11 +35,11 @@ class TestHeuristicExtractor(unittest.TestCase):
         abstract_pub_meta = "Publication Type: Meta-Analysis. This is a study."
 
         self.assertEqual(extractor.infer_study_type(title, abstract_rct), ["Clinical (RCT)"])
-        self.assertEqual(extractor.infer_study_type(title, abstract_animal), ["Animal Models (rat)"])
-        self.assertEqual(extractor.infer_study_type(title, abstract_invitro), ["Cell Culture (cell lines)"])
+        self.assertEqual(extractor.infer_study_type(title, abstract_animal), ["Animal Models (Rat)"])
+        self.assertEqual(extractor.infer_study_type(title, abstract_invitro), ["Cell Culture (Other In Vitro)"])
         self.assertEqual(extractor.infer_study_type(title, abstract_casestudy), ["case study"])
         self.assertEqual(extractor.infer_study_type(title, abstract_editorial), ["editorial"])
-        self.assertEqual(extractor.infer_study_type(title_manifold, abstract_manifold), ["Cell Culture (cell lines)"])
+        self.assertEqual(extractor.infer_study_type(title_manifold, abstract_manifold), ["Cell Culture (Other In Vitro)"])
         self.assertEqual(extractor.infer_study_type(title_review1, abstract_review1), ["review"])
         self.assertEqual(extractor.infer_study_type(title_review2, abstract_review2), ["review"])
         self.assertEqual(extractor.infer_study_type(title_pub_review, abstract_pub_review), ["review"])
@@ -153,20 +153,16 @@ class TestHeuristicExtractor(unittest.TestCase):
         abstract = "Background: Resurgence of research into the effects of plant-derived cannabinoids on mitochondrial health. In particular, a number of studies implicate mitochondrial-Δ9-THC interactions with altered memory, metabolism, and catalepsy in mice. Methods: Blood samples were obtained from a double-blind, placebo-controlled, randomized clinical trial in which adults who regularly use cannabis were randomized. Results: We found that active cannabis was associated with an acute reduction."
         
         study_type = extractor.infer_study_type(title, abstract)
-        population = extractor.infer_population(title, abstract, study_type)
         
         self.assertEqual(study_type, ["Clinical (RCT)"])
-        self.assertEqual(population, ["human"])
 
-    def test_animal_population_with_adult_keywords(self):
+    def test_animal_study_with_adult_keywords(self):
         title = "Effects of cannabis smoke and oral Δ9THC on cognition in young adult and aged rats"
         abstract = "OBJECTIVES: The current study was designed to determine how cannabis influences multiple forms of cognition in young adult and aged rats of both sexes... METHODS: Rats were exposed acutely to cannabis smoke..."
         
         study_type = extractor.infer_study_type(title, abstract)
-        population = extractor.infer_population(title, abstract, study_type)
         
-        self.assertEqual(study_type, ["Animal Models (rat)"])
-        self.assertEqual(population, ["rat"]) # Should NOT include "human")
+        self.assertEqual(study_type, ["Animal Models (Rat)"])
 
     def test_get_methods_text_restrictions(self):
         title = "My Cannabis Study"
@@ -197,26 +193,22 @@ class TestHeuristicExtractor(unittest.TestCase):
             "study_type": "RCT",
             "cannabis_type": "dried flower",
             "exposure_method": "inhaled",
-            "population": "human",
             "strain_reported": "Sour Diesel",
         }
         summary_with = extractor.generate_heuristic_summary(data_with_strain)
         self.assertIn("This is an RCT study", summary_with)
         self.assertIn("dried flower cannabis administration", summary_with)
-        self.assertIn("via inhaled in human models", summary_with)
         self.assertIn("Reported strain: Sour Diesel.", summary_with)
 
         data_no_strain = {
             "study_type": "animal",
             "cannabis_type": "pure cannabinoid",
             "exposure_method": "injection cannabinoids",
-            "population": "mouse",
             "strain_reported": None,
         }
         summary_no = extractor.generate_heuristic_summary(data_no_strain)
         self.assertIn("This is an animal study", summary_no)
         self.assertIn("pure cannabinoid cannabis administration", summary_no)
-        self.assertIn("via injection cannabinoids in mouse models", summary_no)
         self.assertIn("No specific strain was specified.", summary_no)
 
 
@@ -259,7 +251,6 @@ class TestDatabaseManager(unittest.TestCase):
             "strain_reported": "Bedrocan",
             "strain_normalized": "Chemotype I",
             "duration_days": 1.0,
-            "population": "human",
             "sample_size": 120,
             "outcome_domain": ["anxiety", "pain"],
             "open_access": 1,
@@ -300,10 +291,9 @@ class TestDatabaseManager(unittest.TestCase):
         self.assertEqual(len(results_author), 1)
         self.assertEqual(results_author[0]["id"], row_id)
         
-        # 5. Dynamic filter: Study design and population
+        # 5. Dynamic filter: Study design
         results_filter = self.db.search_papers({
             "study_type": "RCT",
-            "population": "human",
             "thc_min": 10.0,
             "outcome": "anxiety"
         })
@@ -418,7 +408,6 @@ class TestDatabaseManager(unittest.TestCase):
             "study_type": ["in vitro"],
             "exposure_method": ["exposure of cells to smoke/vapor", "smoke/vapor conditioned media"],
             "cannabis_type": ["dried flower", "vape pen"],
-            "population": ["cell_line"],
             "date_harvested": "2026-06-03"
         }
         row_id = self.db.insert_paper(mock_multi_paper)
@@ -456,9 +445,8 @@ class TestDatabaseManager(unittest.TestCase):
             "authors": ["Author A"],
             "journal": "Journal A",
             "year": 2026,
-            "study_type": ["Clinical (observational)", "Cell Culture (cell lines)"],
+            "study_type": ["Clinical (observational)", "Cell Culture (Cell Lines)"],
             "cannabis_type": ["dried flower", "vape pen"],
-            "population": ["human", "cell_line"],
             "outcome_domain": ["pain", "anxiety"]
         }
         paper_b = {
@@ -469,7 +457,6 @@ class TestDatabaseManager(unittest.TestCase):
             "year": 2026,
             "study_type": ["Clinical (observational)"],
             "cannabis_type": ["dried flower"],
-            "population": ["human"],
             "outcome_domain": ["pain"]
         }
         id_a = self.db.insert_paper(paper_a)
@@ -510,14 +497,14 @@ class TestDatabaseManager(unittest.TestCase):
 
             # Study type OR logic
             res_or_study = self.db.search_papers({
-                "study_type": "Clinical (observational),Cell Culture (cell lines)",
+                "study_type": "Clinical (observational),Cell Culture (Cell Lines)",
                 "study_logic": "or"
             })
             self.assertEqual(len(res_or_study), 2)
             
             # Study type AND logic
             res_and_study = self.db.search_papers({
-                "study_type": "Clinical (observational),Cell Culture (cell lines)",
+                "study_type": "Clinical (observational),Cell Culture (Cell Lines)",
                 "study_logic": "and"
             })
             self.assertEqual(len(res_and_study), 1)
@@ -632,7 +619,6 @@ class TestDatabaseManager(unittest.TestCase):
             "strain_reported": None,
             "strain_normalized": None,
             "duration_days": 5.0,
-            "population": "animal",
             "sample_size": 10,
             "outcome_domain": ["anxiety"],
             "open_access": 0,
@@ -655,7 +641,6 @@ class TestDatabaseManager(unittest.TestCase):
             "strain_reported": "Bediol",
             "strain_normalized": "Chemotype II",
             "duration_days": 25.0,
-            "population": "human",
             "sample_size": 200,
             "outcome_domain": ["anxiety"],
             "open_access": 1,
@@ -720,7 +705,6 @@ class TestDatabaseManager(unittest.TestCase):
             "publication_type": "original research",
             "study_type": "RCT",
             "exposure_method": "oral/edible",
-            "population": "human",
             "outcome_domain": ["anxiety"],
             "open_access": 1,
             "citation_count": 0,
@@ -737,7 +721,6 @@ class TestDatabaseManager(unittest.TestCase):
             "publication_type": "systematic review",
             "study_type": "review",
             "exposure_method": "oral/edible",
-            "population": "human",
             "outcome_domain": ["anxiety"],
             "open_access": 1,
             "citation_count": 0,
@@ -987,7 +970,7 @@ class TestExpertEditAndActiveLearning(unittest.TestCase):
             ) VALUES (?, ?, ?, ?, ?, ?, ?)
             """,
             (
-                paper_id, "study_type", '["review"]', '["Cell Culture (cell lines)"]',
+                paper_id, "study_type", '["review"]', '["Cell Culture (Cell Lines)"]',
                 "In vitro microglial viability after cannabinoid treatment",
                 "This study used cell lines to evaluate microglial survival.",
                 "2026-06-05T00:00:00"
@@ -1005,7 +988,7 @@ class TestExpertEditAndActiveLearning(unittest.TestCase):
         self.assertTrue(sim > 0.0)
         self.assertIn("Expert Guidance & Corrections", few_shot_text)
         self.assertIn("Incorrect study_type Classification", few_shot_text)
-        self.assertIn('["Cell Culture (cell lines)"]', few_shot_text)
+        self.assertIn('["Cell Culture (Cell Lines)"]', few_shot_text)
 
     def test_jaccard_similarity_and_confidence(self):
         # Test jaccard similarity
