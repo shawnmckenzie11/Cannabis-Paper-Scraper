@@ -233,15 +233,32 @@ def classify_with_llm(title: str, abstract: str, runs: Optional[int] = None) -> 
             temp = 0.5 if num_runs > 1 else 0.0
             
             logger.info(f"Sending paper details to Anthropic API for classification (Run {run_idx+1}/{num_runs})...")
-            message = client.messages.create(
-                model="claude-3-5-sonnet-20241022",
-                max_tokens=1000,
-                temperature=temp,
-                system=system_prompt,
-                messages=[
-                    {"role": "user", "content": user_content}
-                ]
-            )
+            model_to_use = "claude-3-5-sonnet-20241022"
+            try:
+                message = client.messages.create(
+                    model=model_to_use,
+                    max_tokens=1000,
+                    temperature=temp,
+                    system=system_prompt,
+                    messages=[
+                        {"role": "user", "content": user_content}
+                    ]
+                )
+            except Exception as api_err:
+                if "not_found_error" in str(api_err) or "404" in str(api_err):
+                    logger.warning(f"Model {model_to_use} not found. Retrying with claude-3-5-sonnet-20240620...")
+                    model_to_use = "claude-3-5-sonnet-20240620"
+                    message = client.messages.create(
+                        model=model_to_use,
+                        max_tokens=1000,
+                        temperature=temp,
+                        system=system_prompt,
+                        messages=[
+                            {"role": "user", "content": user_content}
+                        ]
+                    )
+                else:
+                    raise api_err
             
             response_text = message.content[0].text.strip()
             

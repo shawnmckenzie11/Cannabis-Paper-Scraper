@@ -11,6 +11,8 @@ SCHEMA_FILE = "schema.sql"
 class DatabaseManager:
     """Manages SQLite operations, FTS5 indexing, and dynamic querying for cannabis papers."""
     
+    _initialized = False
+    
     def __init__(self, db_path: str = DATABASE_FILE):
         self.db_path = db_path
         
@@ -18,8 +20,24 @@ class DatabaseManager:
         dir_name = os.path.dirname(self.db_path)
         if dir_name:
             os.makedirs(dir_name, exist_ok=True)
-                    
-        self.init_db()
+            
+        # Check if papers table exists in this DB
+        db_exists = False
+        if os.path.exists(self.db_path) and os.path.getsize(self.db_path) > 0:
+            try:
+                conn_check = sqlite3.connect(self.db_path, timeout=5.0)
+                cursor = conn_check.cursor()
+                cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='papers';")
+                if cursor.fetchone():
+                    db_exists = True
+                conn_check.close()
+            except sqlite3.Error:
+                pass
+
+        if not db_exists or not DatabaseManager._initialized:
+            self.init_db()
+            if db_exists:
+                DatabaseManager._initialized = True
 
     def get_connection(self) -> sqlite3.Connection:
         """Returns a sqlite3 connection with dict-like row factory and JSON support verification."""
