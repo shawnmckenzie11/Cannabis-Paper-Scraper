@@ -2777,19 +2777,13 @@
                     newBadge = `<span class="badge" style="background: rgba(0, 240, 255, 0.12); color: var(--accent-blue); border: 1px solid rgba(0, 240, 255, 0.35); margin-left: 8px; font-size: 0.65rem; font-weight: 700; letter-spacing: 0.5px; padding: 2px 6px; text-transform: uppercase; border-radius: 4px; display: inline-block; vertical-align: middle;">Auto Ingested</span>`;
                 }
 
-                // Claude LLM classification badge
-                let claudeBadge = "";
-                if (p.classifier_version && p.classifier_version.startsWith('llm-')) {
-                    claudeBadge = `<span class="badge badge-claude" style="margin-left: 8px; font-size: 0.65rem; font-weight: 700; letter-spacing: 0.5px; padding: 2px 6px; border-radius: 4px; display: inline-block; vertical-align: middle;" title="Classified by Claude LLM"><svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor" style="vertical-align: middle; margin-top: -2px; margin-right: 3px; display: inline-block;"><path d="M12 2l2.4 7.2 7.2 2.4-7.2 2.4-2.4 7.2-2.4-7.2-7.2-2.4 7.2-2.4z"/></svg>Claude</span>`;
-                }
-
                 // Format citation count
                 const citationsVal = p.citation_count !== null && p.citation_count !== undefined ? p.citation_count : 0;
 
                 let cells = [];
 
                 // Title (fixed, always first data column)
-                cells.push(`<td class="paper-title-col" title="${p.title}">${p.title}${newBadge}${claudeBadge}</td>`);
+                cells.push(`<td class="paper-title-col" title="${p.title}">${p.title}${newBadge}</td>`);
 
                 // Optional columns
                 if (visibleColumns.duration) {
@@ -3184,7 +3178,11 @@
             // Toggle visibility of reclassify button
             const reclassifyBtn = document.getElementById("btn-reclassify-claude");
             if (reclassifyBtn) {
-                reclassifyBtn.style.display = "inline-flex";
+                if (paper.classifier_version && paper.classifier_version.startsWith('llm-')) {
+                    reclassifyBtn.style.display = "none";
+                } else {
+                    reclassifyBtn.style.display = "inline-flex";
+                }
             }
 
             // Populate newly reformatted property fields
