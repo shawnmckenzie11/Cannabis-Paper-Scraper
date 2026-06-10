@@ -1756,6 +1756,12 @@
                         </tbody>
                     </table>
                 </div>
+                <div style="display: flex; justify-content: flex-end; margin-top: 15px;">
+                    <button type="button" class="btn" id="btn-export-analysis-csv" onclick="exportAnalysisCSV()" disabled
+                        style="padding: 8px 18px; font-size: 0.85rem; border-radius: 8px; font-family: var(--font-display); background: linear-gradient(135deg, rgba(0, 240, 255, 0.2) 0%, rgba(0, 240, 255, 0.05) 100%); border: 1px solid rgba(0, 240, 255, 0.3); color: var(--accent-blue); cursor: not-allowed; opacity: 0.5; box-shadow: 0 0 10px rgba(0, 240, 255, 0.05); display: inline-flex; align-items: center; gap: 6px; transition: all 0.3s ease;">
+                        📥 Export CSV
+                    </button>
+                </div>
             </section>
 
             <!-- SELECTION ANALYTICS PANEL -->
@@ -2491,6 +2497,7 @@
         let timelineTimescale = 'yearly';
         let currentPieChartType = 'exposure';
         let currentAnalyzedPapers = null;
+        let selectedAnalysisId = null;
 
         // Chart.js global instances references
         let chartStudyDesign = null;
@@ -3763,6 +3770,8 @@
                     }
                     renderChartsFromData(result.chart_data);
                     currentAnalyzedPapers = result.chart_data;
+                    selectedAnalysisId = result.id;
+                    updateExportCSVButtonState();
 
                     // Show the My Analyses panel with the new analysis selected
                     openMyAnalyses();
@@ -3802,7 +3811,33 @@
             if (tableSection) tableSection.style.display = 'flex';
             document.getElementById("my-analyses-panel").classList.remove("visible");
             document.getElementById("selection-analytics-panel").style.display = "none";
+            selectedAnalysisId = null;
+            updateExportCSVButtonState();
             triggerSearch(false);
+        }
+
+        function updateExportCSVButtonState() {
+            const btn = document.getElementById("btn-export-analysis-csv");
+            if (!btn) return;
+            if (selectedAnalysisId) {
+                btn.removeAttribute("disabled");
+                btn.style.opacity = "1";
+                btn.style.cursor = "pointer";
+                btn.style.boxShadow = "0 0 15px rgba(0, 240, 255, 0.2)";
+            } else {
+                btn.setAttribute("disabled", "true");
+                btn.style.opacity = "0.5";
+                btn.style.cursor = "not-allowed";
+                btn.style.boxShadow = "0 0 10px rgba(0, 240, 255, 0.05)";
+            }
+        }
+
+        function exportAnalysisCSV() {
+            if (!selectedAnalysisId) {
+                alert("Please select an analysis from the table to export.");
+                return;
+            }
+            window.location.href = `/api/analyses/${selectedAnalysisId}/export-csv`;
         }
 
         function loadAnalysesList(selectId) {
@@ -3813,12 +3848,18 @@
                     document.getElementById("analyses-count-badge").innerText = analyses.length + " saved";
                     if (analyses.length === 0) {
                         tbody.innerHTML = '<tr><td colspan="9" style="text-align: center; color: var(--text-secondary); padding: 30px;">No analyses yet. Click "Analyze Filtered Articles" to run one!</td></tr>';
+                        selectedAnalysisId = null;
+                        updateExportCSVButtonState();
                         return;
                     }
+                    if (selectId !== undefined) {
+                        selectedAnalysisId = selectId;
+                    }
+                    updateExportCSVButtonState();
                     tbody.innerHTML = analyses.map((a) => {
                         const fs = a.filter_settings || {};
                         const tag = (val, prefix) => val ? '<span class="analyses-filter-tag">' + prefix + val + '</span>' : '<span style="color:var(--text-secondary);font-size:0.75rem;">—</span>';
-                        const isSelected = selectId !== undefined && a.id === selectId;
+                        const isSelected = selectedAnalysisId !== null && a.id === selectedAnalysisId;
                         var rowClass = isSelected ? 'selected' : '';
                         return '<tr class="' + rowClass + '" onclick="loadAnalysis(' + a.id + ')" data-id="' + a.id + '">'
                             + '<td style="color:var(--accent-blue);font-size:0.8rem;">\ud83d\udcca</td>'
@@ -3868,6 +3909,8 @@
                 .then(res => res.json())
                 .then(analysis => {
                     if (analysis.error) return;
+                    selectedAnalysisId = id;
+                    updateExportCSVButtonState();
                     document.querySelectorAll("#analyses-tbody tr").forEach(tr => tr.classList.remove("selected"));
                     const row = document.querySelector(`#analyses-tbody tr[data-id="${id}"]`);
                     if (row) row.classList.add("selected");
@@ -3886,7 +3929,13 @@
             fetch("/api/analyses/" + id, { method: "DELETE" })
                 .then(res => res.json())
                 .then(result => {
-                    if (result.success) loadAnalysesList();
+                    if (result.success) {
+                        if (selectedAnalysisId === id) {
+                            selectedAnalysisId = null;
+                            updateExportCSVButtonState();
+                        }
+                        loadAnalysesList();
+                    }
                 });
         }
 

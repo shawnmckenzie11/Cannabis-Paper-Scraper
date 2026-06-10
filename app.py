@@ -1009,6 +1009,7 @@ def api_analyze():
     papers = db.search_papers(filters)
 
     chart_data = _compute_analysis_chart_data(papers)
+    chart_data["paper_ids"] = [p["id"] for p in papers]
 
     analysis_id = db.create_analysis(
         name=name,
@@ -1081,6 +1082,117 @@ def api_delete_analysis(analysis_id):
     if db.delete_analysis(analysis_id):
         return jsonify({"success": True})
     return jsonify({"error": "Analysis not found"}), 404
+
+
+@app.route("/api/analyses/<int:analysis_id>/export-csv", methods=["GET"])
+def api_export_analysis_csv(analysis_id):
+    """Generates and downloads a CSV export of all papers associated with a saved analysis."""
+    db = DatabaseManager()
+    analysis = db.get_analysis(analysis_id)
+    if not analysis:
+        return jsonify({"error": "Analysis not found"}), 404
+
+    try:
+        filter_settings = json.loads(analysis["filter_settings"])
+    except Exception:
+        filter_settings = {}
+
+    try:
+        chart_data = json.loads(analysis["chart_data"])
+    except Exception:
+        chart_data = {}
+
+    # Get paper IDs from chart_data or filter_settings
+    paper_ids = chart_data.get("paper_ids") or filter_settings.get("paper_ids")
+    papers = []
+
+    if paper_ids:
+        import sqlite3
+        conn = db.get_connection()
+        conn.row_factory = sqlite3.Row
+        cursor = conn.cursor()
+        try:
+            placeholders = ",".join(["?"] * len(paper_ids))
+            sql = f"SELECT * FROM papers WHERE id IN ({placeholders})"
+            cursor.execute(sql, paper_ids)
+            rows = cursor.fetchall()
+            for row in rows:
+                res = dict(row)
+                for json_field in ["authors", "outcome_domain"]:
+                    if res.get(json_field):
+                        try:
+                            res[json_field] = json.loads(res[json_field])
+                        except Exception:
+                            res[json_field] = []
+                    else:
+                        res[json_field] = []
+                for json_field in ["study_type", "exposure_method", "cannabis_type", "expert_locked_fields"]:
+                    if res.get(json_field):
+                        try:
+                            val = res[json_field].strip()
+                            if val.startswith("[") and val.endswith("]"):
+                                res[json_field] = json.loads(res[json_field])
+                        except Exception:
+                            pass
+                papers.append(res)
+        except Exception as e:
+            app.logger.error(f"Error querying papers by IDs: {e}")
+        finally:
+            conn.close()
+    else:
+        # Fallback to querying using filter settings
+        filter_settings["limit"] = 100000
+        filter_settings["offset"] = 0
+        try:
+            papers = db.search_papers(filter_settings)
+        except Exception as e:
+            app.logger.error(f"Error searching papers with filters: {e}")
+
+    if not papers:
+        return jsonify({"error": "No papers found for this analysis"}), 404
+
+    import io
+    import csv
+
+    output = io.StringIO()
+    fields = [
+        "id", "pmid", "doi", "semantic_scholar_id", "title", "authors", "journal", "year",
+        "abstract", "full_text_link", "study_type", "publication_type", "exposure_method",
+        "thc_pct", "cbd_pct", "dose_mg", "puff_count", "thc_mg_ml", "thc_mg_g", "thc_mg_kg",
+        "cbd_mg_ml", "cbd_mg_g", "cbd_mg_kg", "strain_reported", "strain_normalized", "duration_days",
+        "inhaled_exposure_duration", "administration_frequency", "treatment_duration",
+        "sample_size", "outcome_domain", "open_access", "citation_count",
+        "date_harvested", "publication_date", "summary", "expert_locked_fields",
+        "classification_confidence", "classification_timestamp", "classifier_version", "cannabis_type"
+    ]
+
+    writer = csv.DictWriter(output, fieldnames=fields)
+    writer.writeheader()
+    for p in papers:
+        p_copy = {}
+        for f in fields:
+            val = p.get(f)
+            if isinstance(val, list):
+                p_copy[f] = json.dumps(val)
+            else:
+                p_copy[f] = val
+        writer.writerow(p_copy)
+
+    csv_data = output.getvalue()
+    output.close()
+
+    filename = f"analysis_{analysis_id}_export.csv"
+    if analysis.get("name"):
+        import re
+        safe_name = re.sub(r'[^a-zA-Z0-9_-]', '_', analysis["name"])
+        filename = f"analysis_{safe_name}.csv"
+
+    from flask import Response
+    return Response(
+        csv_data,
+        mimetype="text/csv",
+        headers={"Content-Disposition": f"attachment; filename={filename}"}
+    )
 
 
 # Start the background daily scheduler thread, protected against debug reloader double-runs

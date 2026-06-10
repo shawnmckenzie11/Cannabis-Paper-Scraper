@@ -597,10 +597,7 @@ class DatabaseManager:
             study_type: exact study type string
             exposure_method: exact exposure method string
             thc_min: minimum numeric THC%
-            thc_max: maximum numeric THC%
-            population: exact population string
             outcome: outcome domains to search (comma-separated string or list)
-            flags: list or comma-separated string of flags, prefixed with +/-
             open_access: boolean or int (0/1) for open access
             sort_by: year, citations, or quality_score
             

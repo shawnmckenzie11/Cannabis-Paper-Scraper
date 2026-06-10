@@ -69,14 +69,14 @@ class TestHeuristicExtractor(unittest.TestCase):
         abstract_smoke = "We investigated smoked joint combustion outcomes."
         abstract_oral = "Rats were fed with oral edible gummies."
         
-        self.assertEqual(extractor.infer_exposure_method(title, abstract_vape, "RCT", "human"), ["inhaled"])
-        self.assertEqual(extractor.infer_exposure_method(title, abstract_smoke, "observational", "human"), ["inhaled"])
-        self.assertEqual(extractor.infer_exposure_method(title, abstract_oral, "animal", "mouse"), ["oral administration"])
+        self.assertEqual(extractor.infer_exposure_method(title, abstract_vape, "Clinical (RCT)"), ["inhaled"])
+        self.assertEqual(extractor.infer_exposure_method(title, abstract_smoke, "Clinical (observational)"), ["inhaled"])
+        self.assertEqual(extractor.infer_exposure_method(title, abstract_oral, "Animal Models (Rat)"), ["oral administration"])
 
         # In vitro ALI lung epithelial cells paper (dissolved -> exposure to smoke/vapor)
         title_ali = "In vitro Cannabis Exposures of Lung Epithelial Cells at the Air-Liquid Interface"
         abstract_ali = "Lung epithelial cells were exposed to cannabis vapor directly at the air-liquid interface."
-        self.assertEqual(extractor.infer_exposure_method(title_ali, abstract_ali, "in vitro", "cell_line"), ["exposure of cells to smoke/vapor"])
+        self.assertEqual(extractor.infer_exposure_method(title_ali, abstract_ali, "Cell Culture (Other In Vitro)"), ["exposure of cells to smoke/vapor"])
 
     def test_thc_cbd_extraction(self):
         abstract = "The material contained 12.5% THC and CBD (2.5%)."
@@ -1085,6 +1085,63 @@ class TestUserAuthentication(unittest.TestCase):
         self.assertEqual(google_user["username"], username)
         self.assertEqual(google_user["email"], email)
         self.assertEqual(google_user["is_verified"], 1)
+
+
+class TestAnalysesExportAPI(unittest.TestCase):
+    """Test cases for the Flask analyses CSV export API."""
+
+    def setUp(self):
+        from db_manager import DatabaseManager
+        self.db = DatabaseManager()
+        self.db.init_analyses_table()
+        
+        from app import app
+        app.config["TESTING"] = True
+        self.client = app.test_client()
+
+    def test_export_csv_endpoint(self):
+        # 1. Insert a test paper
+        paper_id = self.db.insert_paper({
+            "pmid": "888111",
+            "doi": "10.1001/export_test",
+            "title": "CSV Export Test Paper Title",
+            "authors": ["Author Export"],
+            "journal": "JAMA CSV",
+            "year": 2026,
+            "study_type": ["Clinical (RCT)"]
+        })
+        
+        # 2. Insert a test analysis containing this paper
+        chart_data = {
+            "paper_count": 1,
+            "paper_ids": [paper_id],
+            "aggregates": {"avg_thc": 0, "avg_cbd": 0, "large_sample_pct": 0}
+        }
+        
+        analysis_id = self.db.create_analysis(
+            name="Test Export Analysis",
+            filter_settings=json.dumps({"query": "CSV Export"}),
+            paper_count=1,
+            chart_data=json.dumps(chart_data)
+        )
+        
+        try:
+            # 3. Request the export endpoint
+            with self.client.session_transaction() as sess:
+                sess["logged_in"] = True
+                
+            response = self.client.get(f"/api/analyses/{analysis_id}/export-csv")
+            self.assertEqual(response.status_code, 200)
+            self.assertEqual(response.mimetype, "text/csv")
+            self.assertIn("attachment; filename=analysis_Test_Export_Analysis.csv", response.headers.get("Content-Disposition", ""))
+            
+            csv_content = response.data.decode("utf-8")
+            self.assertIn("CSV Export Test Paper Title", csv_content)
+            self.assertIn("Author Export", csv_content)
+            self.assertIn("888111", csv_content)
+        finally:
+            self.db.delete_paper(paper_id)
+            self.db.delete_analysis(analysis_id)
 
 
 if __name__ == "__main__":

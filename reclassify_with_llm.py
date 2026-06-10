@@ -1,0 +1,158 @@
+# reclassify_with_llm.py
+import sqlite3
+import json
+import logging
+import os
+import sys
+import argparse
+from datetime import datetime
+from db_manager import DatabaseManager
+import classifier
+
+logging.basicConfig(
+    level=logging.INFO,
+    format="\033[94m%(asctime)s\033[0m - \033[92m%(levelname)s\033[0m - %(message)s"
+)
+logger = logging.getLogger(__name__)
+
+def reclassify_papers_llm(limit=None, offset=0):
+    """Queries papers from the database and runs the Anthropic Claude LLM classifier on them,
+    respecting expert locked fields.
+    """
+    api_key = os.getenv("ANTHROPIC_API_KEY")
+    if not api_key:
+        logger.error("ANTHROPIC_API_KEY environment variable is not configured. Cannot run LLM reclassification.")
+        sys.exit(1)
+
+    db = DatabaseManager()
+    conn = db.get_connection()
+    conn.row_factory = sqlite3.Row
+    cursor = conn.cursor()
+
+    try:
+        # Load rules config version
+        rules_version = "1.0.0"
+        if os.path.exists("rules_config.json"):
+            try:
+                with open("rules_config.json", "r") as f:
+                    rules_version = json.load(f).get("version", "1.0.0")
+            except Exception:
+                pass
+
+        # Query papers
+        query = """
+            SELECT id, title, abstract, study_type, exposure_method, cannabis_type, publication_type,
+                   outcome_domain, thc_pct, cbd_pct, dose_mg, strain_reported, strain_normalized,
+                   duration_days, inhaled_exposure_duration, administration_frequency, treatment_duration,
+                   sample_size, puff_count, thc_mg_ml, thc_mg_g, thc_mg_kg, cbd_mg_ml, cbd_mg_g, cbd_mg_kg,
+                   expert_locked_fields
+            FROM papers
+        """
+        params = []
+        
+        if limit is not None:
+            query += " LIMIT ? OFFSET ?"
+            params.extend([limit, offset])
+
+        cursor.execute(query, params)
+        papers = [dict(row) for row in cursor.fetchall()]
+
+        if not papers:
+            logger.info("No papers found matching the query criteria.")
+            return
+
+        logger.info(f"Loaded {len(papers)} papers from the database. Starting LLM reclassification...")
+
+        update_count = 0
+        
+        # Valid database columns to filter LLM output fields
+        valid_columns = {
+            "study_type", "exposure_method", "cannabis_type", "publication_type",
+            "outcome_domain", "thc_pct", "cbd_pct", "dose_mg",
+            "strain_reported", "strain_normalized", "duration_days",
+            "inhaled_exposure_duration", "administration_frequency", "treatment_duration",
+            "sample_size", "puff_count", "thc_mg_ml", "thc_mg_g", "thc_mg_kg",
+            "cbd_mg_ml", "cbd_mg_g", "cbd_mg_kg"
+        }
+
+        for idx, p in enumerate(papers):
+            paper_id = p["id"]
+            title = p.get("title") or ""
+            abstract = p.get("abstract") or ""
+
+            logger.info(f"[{idx+1}/{len(papers)}] Processing Paper ID {paper_id}: '{title[:50]}...'")
+
+            # Respect locked fields
+            locked_fields = p.get("expert_locked_fields") or []
+            if isinstance(locked_fields, str):
+                try:
+                    locked_fields = json.loads(locked_fields)
+                except Exception:
+                    locked_fields = []
+            if not isinstance(locked_fields, list):
+                locked_fields = []
+
+            # Call LLM classification
+            try:
+                extracted = classifier.process_paper_metadata(title, abstract, run_llm=True)
+            except Exception as e:
+                logger.error(f"Error calling classifier for paper ID {paper_id}: {e}")
+                continue
+
+            if not extracted:
+                logger.warning(f"No metadata extracted for paper ID {paper_id}. Skipping.")
+                continue
+
+            # Update fields in paper record except those locked or not present in DB
+            update_data = {}
+            for k, v in extracted.items():
+                if k in valid_columns and k not in locked_fields:
+                    update_data[k] = v
+
+            if not update_data:
+                logger.info(f"No fields to update for paper ID {paper_id} (either locked or invalid). Skipping.")
+                continue
+
+            # Update the paper record
+            set_clauses = []
+            update_params = []
+            for k, v in update_data.items():
+                set_clauses.append(f"{k} = ?")
+                if isinstance(v, list) or isinstance(v, dict):
+                    update_params.append(json.dumps(v))
+                else:
+                    update_params.append(v)
+            
+            # Add metadata metadata
+            set_clauses.append("classifier_version = ?")
+            update_params.append(f"llm-reclassify-{rules_version}")
+            
+            set_clauses.append("classification_timestamp = ?")
+            update_params.append(datetime.now().isoformat())
+            
+            update_params.append(paper_id)
+
+            sql = f"UPDATE papers SET {', '.join(set_clauses)} WHERE id = ?"
+            cursor.execute(sql, update_params)
+            update_count += 1
+
+            # Commit periodically
+            if update_count % 10 == 0:
+                conn.commit()
+
+        conn.commit()
+        logger.info(f"LLM Reclassification complete. Updated {update_count} papers.")
+
+    except Exception as e:
+        conn.rollback()
+        logger.error(f"Critical error during LLM reclassification: {e}")
+    finally:
+        conn.close()
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description="Reclassify database papers using Claude LLM.")
+    parser.add_argument("--limit", type=int, default=None, help="Maximum number of papers to reclassify")
+    parser.add_argument("--offset", type=int, default=0, help="Offset to start reclassifying from")
+    args = parser.parse_args()
+
+    reclassify_papers_llm(limit=args.limit, offset=args.offset)

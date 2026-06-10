@@ -20,7 +20,7 @@ def backpopulate_summaries():
         # Fetch papers that don't have a summary
         cursor.execute(
             """
-            SELECT id, title, abstract, study_type, exposure_method, population,
+            SELECT id, title, abstract, study_type, exposure_method,
                    thc_pct, cbd_pct, dose_mg, strain_reported, strain_normalized,
                    duration_days, sample_size, journal, cannabis_type
             FROM papers
@@ -39,7 +39,7 @@ def backpopulate_summaries():
         for p in papers:
             # Generate fallback summary using extractor
             # extractor.generate_heuristic_summary expects a dictionary with keys:
-            # study_type, cannabis_type, exposure_method, population, strain_reported
+            # study_type, cannabis_type, exposure_method, strain_reported
             summary = extractor.generate_heuristic_summary(p)
             
             cursor.execute(

@@ -75,9 +75,7 @@ def reclassify_all_papers():
             # 1. Infer active classifications focusing on the Methods section if present
             new_publication_type = extractor.infer_publication_type(title, abstract)
             new_study_type = extractor.infer_study_type(title, abstract)
-            new_population = extractor.infer_population(title, abstract, new_study_type)
-            new_study_type = extractor.postprocess_study_type(new_study_type, new_population)
-            new_exposure_method = extractor.infer_exposure_method(title, abstract, new_study_type, new_population)
+            new_exposure_method = extractor.infer_exposure_method(title, abstract, new_study_type)
             new_cannabis_type = extractor.infer_cannabis_type(title, abstract, new_study_type, new_exposure_method)
             
             # 2. Check for changes

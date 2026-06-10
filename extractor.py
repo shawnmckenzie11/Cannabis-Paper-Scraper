@@ -746,40 +746,7 @@ def infer_study_type(title: str, abstract: str) -> List[str]:
             
     return list(set(types))
 
-def postprocess_study_type(study_type: List[str], population: List[str]) -> List[str]:
-    """Aligns study_type with population to prevent cross-contamination false positives."""
-    has_human = "human" in population
-    has_animal = any(p in population for p in ["mouse", "rat", "other"])
-    has_cell = "cell_line" in population
-    
-    types = list(study_type)
-    
-    if has_human and not has_animal and not has_cell:
-        # Pure human study
-        types = [t for t in types if not t.startswith("Animal Models (") and not t.startswith("Cell Culture (")]
-        if not types:
-            types = ["Clinical (observational)"]
-            
-    elif has_animal and not has_human:
-        # Pure animal study
-        types = [t for t in types if not t.startswith("Clinical (") and t != "RCT" and t != "observational"]
-        if not types:
-            if "mouse" in population:
-                types = ["Animal Models (Mouse)"]
-            elif "rat" in population:
-                types = ["Animal Models (Rat)"]
-            else:
-                types = ["Animal Models (Other)"]
-                
-    elif has_cell and not has_human and not has_animal:
-        # Pure cell culture study
-        types = [t for t in types if not t.startswith("Clinical (") and not t.startswith("Animal Models (") and t != "RCT" and t != "observational"]
-        if not types:
-            types = ["Cell Culture (Other In Vitro)"]
-            
-    return list(set(types))
-    
-def infer_exposure_method(title: str, abstract: str, study_type: Any, population: Optional[Any] = None) -> List[str]:
+def infer_exposure_method(title: str, abstract: str, study_type: Any) -> List[str]:
     """Extracts exposure method from text keywords, focusing on Methods section if available."""
     if not _paper_has_cannabis_content(title, abstract):
         return ["unknown"]
@@ -793,17 +760,10 @@ def infer_exposure_method(title: str, abstract: str, study_type: Any, population
     else:
         study_types = set(study_type or [])
         
-    if population is None:
-        populations = set(infer_population(title, abstract, study_type))
-    elif isinstance(population, str):
-        populations = {population}
-    else:
-        populations = set(population or [])
-        
     methods = []
     
     # Group A: Clinical exposure (human/clinical setting)
-    if "human" in populations or study_types.intersection({"RCT", "observational"}) or any(s.startswith("Clinical (") for s in study_types):
+    if study_types.intersection({"RCT", "observational"}) or any(s.startswith("Clinical (") for s in study_types):
         if keyword_match(combined, ["smoke", "smoked", "smoking", "joint", "combustion", "cigarette", "cigarettes", "vaporized", "vaporised", "vape", "vaping", "vaporizer", "vaporisation", "inhaled", "inhalation"]):
             methods.append("inhaled")
         if keyword_match(combined, ["oral", "edible", "ingested", "capsule", "gummy", "cookies", "oil ingestion", "brownie", "gavage"]):
@@ -814,14 +774,14 @@ def infer_exposure_method(title: str, abstract: str, study_type: Any, population
             methods.append("injected")
  
     # Group B: In vitro exposure (cells/tissue setting)
-    if "cell_line" in populations or "in vitro" in study_types or any(s.startswith("Cell Culture (") for s in study_types):
+    if "in vitro" in study_types or any(s.startswith("Cell Culture (") for s in study_types):
         if keyword_match(combined, ["conditioned media", "smoke extract", "cse", "vapor extract", "gaseous extract", "smoke-conditioned"]):
             methods.append("smoke/vapor conditioned media")
         if keyword_match(combined, ["cell exposure to smoke", "cells exposed to vapor", "chamber exposure of cells", "smoke stream", "direct vapor exposure", "exposure of cells to smoke", "exposure of cells to vapor", "air-liquid interface", "air liquid interface", "ali exposure", "ali", "aerosol exposure", "exposed directly to vapor", "exposed directly to smoke"]):
             methods.append("exposure of cells to smoke/vapor")
  
     # Group C: In vivo exposure (animal models)
-    if populations.intersection({"mouse", "rat", "other"}) or "animal" in study_types or any(s.startswith("Animal Models (") for s in study_types):
+    if "animal" in study_types or any(s.startswith("Animal Models (") for s in study_types):
         if keyword_match(combined, ["nose-only", "nose only", "snout exposure", "head-out"]):
             methods.append("nose only smoke/vapor")
         if keyword_match(combined, ["whole body", "whole-body", "chamber exposure", "whole body smoke", "whole body vapor"]) or (
@@ -840,9 +800,9 @@ def infer_exposure_method(title: str, abstract: str, study_type: Any, population
             methods.append("intratracheal")
             
     if not methods:
-        if "cell_line" in populations or "in vitro" in study_types or any(s.startswith("Cell Culture (") for s in study_types):
+        if "in vitro" in study_types or any(s.startswith("Cell Culture (") for s in study_types):
             methods.append("cannabinoids dissolved in media")
-        elif "human" in populations or study_types.intersection({"RCT", "observational"}) or any(s.startswith("Clinical (") for s in study_types):
+        elif study_types.intersection({"RCT", "observational"}) or any(s.startswith("Clinical (") for s in study_types):
             methods.append("inhaled")
         else:
             methods.append("injection cannabinoids")
@@ -909,78 +869,6 @@ def infer_cannabis_type(title: str, abstract: str, study_type: Any, exposure_met
         
     return list(set(types))
  
-def infer_population(title: str, abstract: str, study_type: Any) -> List[str]:
-    """Extracts population (human, mouse, rat, cell_line, other) from text, focusing on Methods section if available."""
-    methods_text = get_methods_text(title, abstract)
-    combined = methods_text.lower()
-    
-    if isinstance(study_type, str):
-        study_types = {study_type}
-    else:
-        study_types = set(study_type or [])
-        
-    pops = []
-    
-    if "in vitro" in study_types or any(s.startswith("Cell Culture (") for s in study_types) or keyword_match(combined, ["cell line", "cell lines", "cell culture", "cell cultures", "cultured cells", "hela", "hepg2", "epithelial cells", "bronchial epithelial"]):
-        pops.append("cell_line")
-    if keyword_match(combined, ["mouse", "mice", "murine", "c57bl"]):
-        pops.append("mouse")
-    if keyword_match(combined, ["rat", "rats", "wistar", "sprague"]):
-        pops.append("rat")
-    # Human population keywords check: separate unambiguous and ambiguous terms
-    human_unambiguous = [
-        "patient", "patients", "participant", "participants", "volunteer", "volunteers",
-        "man", "men", "woman", "women", "human", "humans", "clinical", "individual", "individuals",
-        "boy", "boys", "girl", "girls", "child", "children", "pediatric", "pediatrics",
-        "adolescent", "adolescents"
-    ]
-    human_ambiguous = ["adult", "adults", "subject", "subjects"]
-    
-    # If animal-related terms are present in the text, ambiguous words like "adult" or "subject"
-    # are likely to refer to the animals, so we exclude them from the human keywords list.
-    has_animals = keyword_match(combined, [
-        "mouse", "mice", "murine", "c57bl", "rat", "rats", "wistar", "sprague",
-        "rodent", "rodents", "animal", "animals", "dog", "dogs", "monkey", "monkeys",
-        "pig", "pigs", "rabbit", "rabbits", "feline", "canine"
-    ])
-    
-    human_keywords = human_unambiguous
-    if not has_animals:
-        human_keywords = human_unambiguous + human_ambiguous
-        
-    if keyword_match(combined, human_keywords):
-        # Prevent false-positive "human" population in pure animal/cell culture studies
-        # where terms like "human" are used contextually (e.g., "to model human disease")
-        is_pure_non_clinical = (
-            any(s.startswith("Animal Models (") or s.startswith("Cell Culture (") for s in study_types) or 
-            "animal" in study_types or "in vitro" in study_types
-        ) and not (
-            any(s.startswith("Clinical (") or s == "RCT" or s == "observational" for s in study_types)
-        )
-        
-        if is_pure_non_clinical:
-            # Require actual human subjects/cohort terms to confirm human population
-            human_subject_keywords = [
-                "patient", "patients", "participant", "participants", "volunteer", "volunteers",
-                "clinical trial", "clinical study", "men", "women", "cohort", "human subjects", "human participants"
-            ]
-            if keyword_match(combined, human_subject_keywords):
-                pops.append("human")
-        else:
-            pops.append("human")
-    if keyword_match(combined, ["dog", "pig", "monkey", "rabbit", "feline", "canine"]):
-        pops.append("other")
-        
-    if not pops:
-        if study_types.intersection({"RCT", "observational"}) or any(s.startswith("Clinical (") for s in study_types):
-            pops.append("human")
-        elif "animal" in study_types or any(s.startswith("Animal Models (") for s in study_types):
-            pops.append("mouse")
-        else:
-            pops.append("other")
-            
-    return list(set(pops))
-
 def get_intro_objective_text(title: str, abstract: str) -> str:
     """Extracts Title, Introduction/Background, and Objectives/Aims sections,
     discarding Methods, Results, Discussion, Conclusions, and other sections.
@@ -1135,9 +1023,7 @@ def extract_all_heuristics(title: str, abstract: str) -> Dict[str, Any]:
     """
     publication_type = infer_publication_type(title, abstract)
     study_type = infer_study_type(title, abstract)
-    population = infer_population(title, abstract, study_type)
-    study_type = postprocess_study_type(study_type, population)
-    exposure_method = infer_exposure_method(title, abstract, study_type, population)
+    exposure_method = infer_exposure_method(title, abstract, study_type)
     thc_pct = extract_thc_pct(abstract)
     # If title mentions THC, we can check there too
     if thc_pct is None:
@@ -1206,7 +1092,6 @@ def extract_all_heuristics(title: str, abstract: str) -> Dict[str, Any]:
         "treatment_duration": treatment_duration,
         "sample_size": sample_size,
         "outcome_domain": outcome_domain,
-        "methodological_quality_flags": [],
         "multiple_doses": multiple_doses,
         "multiple_time_intervals": multiple_time_intervals,
         "cannabis_type": cannabis_type,

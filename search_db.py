@@ -144,8 +144,8 @@ def export_markdown_table(papers: List[Dict[str, Any]], filepath: str):
             f.write(f"Generated search results containing {len(papers)} matching records.\n\n")
             
             # Header
-            f.write("| Duration | Title | Year | Study Type | Exposure | Population | Quality Score | Citations | Open Access |\n")
-            f.write("|---|---|---|---|---|---|---|---|---|\n")
+            f.write("| Duration | Title | Year | Study Type | Exposure | Quality Score | Citations | Open Access |\n")
+            f.write("|---|---|---|---|---|---|---|---|\n")
             
             # Rows
             for p in papers:
@@ -158,7 +158,6 @@ def export_markdown_table(papers: List[Dict[str, Any]], filepath: str):
                     f"| {p.get('year') or 'N/A'} "
                     f"| {p.get('study_type') or 'unknown'} "
                     f"| {p.get('exposure_method') or 'unknown'} "
-                    f"| {p.get('population') or 'unknown'} "
                     f"| {p.get('methodological_quality_score')}/20 "
                     f"| {p.get('citation_count', 0)} "
                     f"| {oa_str} |\n"
@@ -179,10 +178,7 @@ def main():
     parser.add_argument("--method", type=str, help="Filter by exposure method (smoked, vaporized, oral/edible, etc.)")
     parser.add_argument("--thc-min", type=float, help="Minimum THC percentage")
     parser.add_argument("--thc-max", type=float, help="Maximum THC percentage")
-    parser.add_argument("--population", type=str, choices=["human", "mouse", "rat", "cell_line", "other"],
-                        help="Filter by experimental subject/population")
     parser.add_argument("--outcome", type=str, help="Multi-label outcome filter (comma-separated, e.g. 'pain,anxiety')")
-    parser.add_argument("--flags", type=str, help="Methodological flags filter. Use prefix '+' to require or '-' to exclude (e.g. '+large_sample_size,-self_report_only')")
     parser.add_argument("--open-access", type=str, choices=["true", "false", "yes", "no", "1", "0"], help="Filter by open-access status")
     parser.add_argument("--citations-min", type=int, help="Minimum citation count")
     parser.add_argument("--quality-min", type=int, help="Minimum methodological quality score")
@@ -214,9 +210,7 @@ def main():
         "exposure_method": args.method,
         "thc_min": args.thc_min,
         "thc_max": args.thc_max,
-        "population": args.population,
         "outcome": args.outcome,
-        "flags": args.flags,
         "open_access": oa_filter,
         "citations_min": args.citations_min,
         "quality_min": args.quality_min,
