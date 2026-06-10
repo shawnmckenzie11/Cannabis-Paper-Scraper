@@ -234,6 +234,9 @@ def classify_with_llm(title: str, abstract: str, runs: Optional[int] = None) -> 
             
             logger.info(f"Sending paper details to Anthropic API for classification (Run {run_idx+1}/{num_runs})...")
             models_to_try = [
+                "claude-sonnet-4-6",
+                "claude-haiku-4-5-20251001",
+                "claude-sonnet-4-5-20250929",
                 "claude-3-5-sonnet-20241022",
                 "claude-3-5-sonnet-20240620",
                 "claude-3-5-haiku-20241022",
