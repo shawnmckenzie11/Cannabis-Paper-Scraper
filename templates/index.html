@@ -2007,7 +2007,7 @@
                         </div>
 
                         <!-- Group 2: Dynamic Cannabinoid Profile & Dose -->
-                        <div class="properties-group">
+                        <div class="properties-group" id="group-cannabinoid-profile">
                             <div class="properties-group-title">Cannabinoid Profile & Dose</div>
                             <div class="properties-row-grid" id="drawer-cannabinoid-container">
                                 <!-- Dynamically injected depending on cannabis type -->
@@ -2015,10 +2015,10 @@
                         </div>
 
                         <!-- Group 2b: Administration & Strain -->
-                        <div class="properties-group">
+                        <div class="properties-group" id="group-admin-strain">
                             <div class="properties-group-title">Administration & Strain</div>
                             <div class="properties-row-grid">
-                                <div class="meta-item">
+                                <div class="meta-item" id="item-exposure">
                                     <span class="meta-label" id="label-exposure">Exposure Pathway</span>
                                     <span class="meta-value" id="drawer-exposure">vaporized</span>
                                 </div>
@@ -2038,15 +2038,15 @@
                                     <span class="meta-label" id="label-treatment-duration">Treatment Duration</span>
                                     <span class="meta-value" id="drawer-treatment-duration">Not Reported</span>
                                 </div>
-                                <div class="meta-item">
+                                <div class="meta-item" id="item-strain-normalized">
                                     <span class="meta-label" id="label-strain-normalized">Chemotype</span>
                                     <span class="meta-value" id="drawer-strain-normalized">Chemotype I</span>
                                 </div>
-                                <div class="meta-item" style="grid-column: span 2;">
+                                <div class="meta-item" id="item-strain-reported" style="grid-column: span 2;">
                                     <span class="meta-label" id="label-strain-reported">Reported Strain</span>
                                     <span class="meta-value" id="drawer-strain-reported">Bedrocan</span>
                                 </div>
-                                <div class="meta-item" style="grid-column: span 2;">
+                                <div class="meta-item" id="item-cannabis-types" style="grid-column: span 2;">
                                     <span class="meta-label" id="label-cannabis-types">Cannabis Type</span>
                                     <div class="tag-container" id="drawer-cannabis-types-container" style="margin-top: 4px;">
                                         <!-- cannabis type tags -->
@@ -2892,56 +2892,20 @@
 
         function renderCannabinoidProfile(paper) {
             const cannabinoidFieldDefs = {
-                "thc_pct": { label: "THC Content", fallback: "Not Quantified", format: val => `${val}%` },
-                "cbd_pct": { label: "CBD Content", fallback: "Not Quantified", format: val => `${val}%` },
-                "dose_mg": { label: "Dose", fallback: "Not Reported", format: val => `${val} mg` },
-                "puff_count": { label: "Puff Count", fallback: "Not Reported", format: val => `${val} puffs` },
-                "thc_mg_ml": { label: "THC (mg/mL)", fallback: "Not Reported", format: val => `${val} mg/mL <small style="opacity: 0.7; font-size: 0.75rem;">(product)</small>` },
-                "thc_mg_g": { label: "THC (mg/g)", fallback: "Not Reported", format: val => `${val} mg/g <small style="opacity: 0.7; font-size: 0.75rem;">(subject wt)</small>` },
-                "thc_mg_kg": { label: "THC (mg/kg)", fallback: "Not Reported", format: val => `${val} mg/kg <small style="opacity: 0.7; font-size: 0.75rem;">(subject wt)</small>` },
-                "cbd_mg_ml": { label: "CBD (mg/mL)", fallback: "Not Reported", format: val => `${val} mg/mL <small style="opacity: 0.7; font-size: 0.75rem;">(product)</small>` },
-                "cbd_mg_g": { label: "CBD (mg/g)", fallback: "Not Reported", format: val => `${val} mg/g <small style="opacity: 0.7; font-size: 0.75rem;">(subject wt)</small>` },
-                "cbd_mg_kg": { label: "CBD (mg/kg)", fallback: "Not Reported", format: val => `${val} mg/kg <small style="opacity: 0.7; font-size: 0.75rem;">(subject wt)</small>` }
+                "thc_pct": { label: "THC Content", format: val => `${val}%` },
+                "cbd_pct": { label: "CBD Content", format: val => `${val}%` },
+                "dose_mg": { label: "Dose", format: val => `${val} mg` },
+                "puff_count": { label: "Puff Count", format: val => `${val} puffs` },
+                "thc_mg_ml": { label: "THC (mg/mL)", format: val => `${val} mg/mL <small style="opacity: 0.7; font-size: 0.75rem;">(product)</small>` },
+                "thc_mg_g": { label: "THC (mg/g)", format: val => `${val} mg/g <small style="opacity: 0.7; font-size: 0.75rem;">(subject wt)</small>` },
+                "thc_mg_kg": { label: "THC (mg/kg)", format: val => `${val} mg/kg <small style="opacity: 0.7; font-size: 0.75rem;">(subject wt)</small>` },
+                "cbd_mg_ml": { label: "CBD (mg/mL)", format: val => `${val} mg/mL <small style="opacity: 0.7; font-size: 0.75rem;">(product)</small>` },
+                "cbd_mg_g": { label: "CBD (mg/g)", format: val => `${val} mg/g <small style="opacity: 0.7; font-size: 0.75rem;">(subject wt)</small>` },
+                "cbd_mg_kg": { label: "CBD (mg/kg)", format: val => `${val} mg/kg <small style="opacity: 0.7; font-size: 0.75rem;">(subject wt)</small>` }
             };
-
-            const paperTypes = Array.isArray(paper.cannabis_type) ? paper.cannabis_type : (paper.cannabis_type ? [paper.cannabis_type] : []);
-            const fieldsToDisplay = new Set();
-            
-            const typeToFields = {
-                "dried flower": ["thc_pct", "cbd_pct", "puff_count"],
-                "concentrates": ["thc_pct", "thc_mg_ml", "thc_mg_kg", "cbd_pct", "cbd_mg_ml", "cbd_mg_kg"],
-                "vape pen": ["thc_pct", "cbd_pct", "puff_count"],
-                "pure cannabinoid": ["thc_mg_ml", "thc_mg_kg", "cbd_mg_ml", "cbd_mg_kg"],
-                "edibles": ["thc_mg_ml", "thc_mg_g", "thc_mg_kg", "cbd_mg_ml", "cbd_mg_g", "cbd_mg_kg"],
-                "hashish/kief": ["thc_pct", "cbd_pct"]
-            };
-            
-            let matchedAny = false;
-            paperTypes.forEach(t => {
-                const lowerT = t.toLowerCase().trim();
-                let mappedType = lowerT;
-                if (lowerT === "hash/kief" || lowerT === "hashish/kief") {
-                    mappedType = "hashish/kief";
-                }
-                if (typeToFields[mappedType]) {
-                    matchedAny = true;
-                    typeToFields[mappedType].forEach(f => fieldsToDisplay.add(f));
-                }
-            });
-            
-            Object.keys(cannabinoidFieldDefs).forEach(f => {
-                if (paper[f] !== null && paper[f] !== undefined && paper[f] !== "") {
-                    fieldsToDisplay.add(f);
-                }
-            });
-            
-            if (fieldsToDisplay.size === 0) {
-                fieldsToDisplay.add("thc_pct");
-                fieldsToDisplay.add("cbd_pct");
-                fieldsToDisplay.add("dose_mg");
-            }
 
             const container = document.getElementById("drawer-cannabinoid-container");
+            const groupEl = document.getElementById("group-cannabinoid-profile");
             if (container) {
                 container.innerHTML = "";
                 const locked = paper.expert_locked_fields || [];
@@ -2953,11 +2917,12 @@
                     "thc_mg_kg", "cbd_mg_kg"
                 ];
                 
+                let renderedCount = 0;
                 orderedKeys.forEach(f => {
-                    if (fieldsToDisplay.has(f)) {
+                    const val = paper[f];
+                    if (val !== null && val !== undefined && val !== "") {
                         const def = cannabinoidFieldDefs[f];
-                        const val = paper[f];
-                        const formatted = (val !== null && val !== undefined && val !== "") ? def.format(val) : def.fallback;
+                        const formatted = def.format(val);
                         
                         const itemHtml = `
                             <div class="meta-item">
@@ -2966,10 +2931,15 @@
                             </div>
                         `;
                         container.innerHTML += itemHtml;
+                        renderedCount++;
                         
                         updateMetaLabel(`label-${f}`, def.label, locked.includes(f));
                     }
                 });
+                
+                if (groupEl) {
+                    groupEl.style.display = renderedCount > 0 ? "block" : "none";
+                }
             }
         }
 
@@ -3114,9 +3084,6 @@
             document.getElementById("drawer-authors").innerText = (paper.authors || []).join(", ") || "Not Reported";
             document.getElementById("drawer-journal-year").innerHTML = `*${paper.journal || "Unknown Source"}* (${paper.year || "N/A"})`;
             document.getElementById("drawer-citations").innerText = paper.citation_count || 0;
-            const exposureDisplay = Array.isArray(paper.exposure_method) ? paper.exposure_method.map(formatExposureMethod).join(', ') : (paper.exposure_method ? formatExposureMethod(paper.exposure_method) : "unknown");
-            document.getElementById("drawer-exposure").innerText = exposureDisplay;
-
             // Determine exposure type context for dynamic duration and frequency fields
             const studyTypes = Array.isArray(paper.study_type) ? paper.study_type : (paper.study_type ? [paper.study_type] : []);
             const isInvitroStudy = studyTypes.some(t => t.toLowerCase().includes("cell culture") || t.toLowerCase().includes("in vitro"));
@@ -3131,48 +3098,124 @@
                 return low.includes("smoked") || low.includes("vaporized") || low.includes("inhaled") || low.includes("inhalation");
             });
 
-            // Treatment Duration (In vitro)
-            if (isInvitro) {
-                const itemTreatment = document.getElementById("item-treatment-duration");
-                if (itemTreatment) itemTreatment.style.display = "block";
-                const valEl = document.getElementById("drawer-treatment-duration");
-                if (valEl) valEl.innerText = paper.treatment_duration || "Not Reported";
-            } else {
-                const itemTreatment = document.getElementById("item-treatment-duration");
-                if (itemTreatment) itemTreatment.style.display = "none";
+            // Set visibility and populate properties for Administration & Strain group
+            let showExposure = false;
+            const itemExposure = document.getElementById("item-exposure");
+            if (itemExposure) {
+                const isUnknown = !paper.exposure_method || 
+                                  (Array.isArray(paper.exposure_method) && (paper.exposure_method.length === 0 || (paper.exposure_method.length === 1 && paper.exposure_method[0].toLowerCase() === "unknown"))) ||
+                                  (typeof paper.exposure_method === "string" && paper.exposure_method.toLowerCase() === "unknown");
+                if (!isUnknown) {
+                    showExposure = true;
+                    itemExposure.style.display = "block";
+                    const exposureDisplay = Array.isArray(paper.exposure_method) ? paper.exposure_method.map(formatExposureMethod).join(', ') : (paper.exposure_method ? formatExposureMethod(paper.exposure_method) : "unknown");
+                    document.getElementById("drawer-exposure").innerText = exposureDisplay;
+                } else {
+                    itemExposure.style.display = "none";
+                }
             }
 
-            // Clinical/In vivo fields
-            if (isClinicalInVivo) {
-                const itemStudy = document.getElementById("item-study-duration");
-                if (itemStudy) itemStudy.style.display = "block";
-                const valEl = document.getElementById("drawer-duration");
-                if (valEl) valEl.innerText = paper.duration_days !== null ? formatStudyDuration(paper.duration_days) : "Not Reported";
-                
-                const itemFreq = document.getElementById("item-admin-frequency");
-                if (itemFreq) itemFreq.style.display = "block";
-                const valFreqEl = document.getElementById("drawer-admin-frequency");
-                if (valFreqEl) valFreqEl.innerText = paper.administration_frequency || "Not Reported";
-                
-                if (isInhaled) {
-                    const itemInhaled = document.getElementById("item-inhaled-duration");
-                    if (itemInhaled) itemInhaled.style.display = "block";
-                    const valInhaledEl = document.getElementById("drawer-inhaled-exposure-duration");
-                    if (valInhaledEl) valInhaledEl.innerText = paper.inhaled_exposure_duration || "Not Reported";
+            let showTreatment = false;
+            const itemTreatment = document.getElementById("item-treatment-duration");
+            if (itemTreatment) {
+                if (isInvitro && paper.treatment_duration && paper.treatment_duration.toLowerCase() !== "not reported" && paper.treatment_duration.toLowerCase() !== "unknown" && paper.treatment_duration.toLowerCase() !== "not specified") {
+                    showTreatment = true;
+                    itemTreatment.style.display = "block";
+                    const valEl = document.getElementById("drawer-treatment-duration");
+                    if (valEl) valEl.innerText = paper.treatment_duration;
                 } else {
-                    const itemInhaled = document.getElementById("item-inhaled-duration");
-                    if (itemInhaled) itemInhaled.style.display = "none";
+                    itemTreatment.style.display = "none";
                 }
-            } else {
-                const itemStudy = document.getElementById("item-study-duration");
-                if (itemStudy) itemStudy.style.display = "none";
-                const itemFreq = document.getElementById("item-admin-frequency");
-                if (itemFreq) itemFreq.style.display = "none";
-                const itemInhaled = document.getElementById("item-inhaled-duration");
-                if (itemInhaled) itemInhaled.style.display = "none";
             }
-            document.getElementById("drawer-strain-reported").innerText = paper.strain_reported || "Not Specified";
-            document.getElementById("drawer-strain-normalized").innerText = paper.strain_normalized || "Unverified chemotype";
+
+            let showStudy = false;
+            const itemStudy = document.getElementById("item-study-duration");
+            if (itemStudy) {
+                if (isClinicalInVivo && paper.duration_days !== null && paper.duration_days !== undefined && paper.duration_days !== "") {
+                    showStudy = true;
+                    itemStudy.style.display = "block";
+                    const valEl = document.getElementById("drawer-duration");
+                    if (valEl) valEl.innerText = formatStudyDuration(paper.duration_days);
+                } else {
+                    itemStudy.style.display = "none";
+                }
+            }
+
+            let showFreq = false;
+            const itemFreq = document.getElementById("item-admin-frequency");
+            if (itemFreq) {
+                if (isClinicalInVivo && paper.administration_frequency && paper.administration_frequency.toLowerCase() !== "not reported" && paper.administration_frequency.toLowerCase() !== "unknown" && paper.administration_frequency.toLowerCase() !== "not specified") {
+                    showFreq = true;
+                    itemFreq.style.display = "block";
+                    const valFreqEl = document.getElementById("drawer-admin-frequency");
+                    if (valFreqEl) valFreqEl.innerText = paper.administration_frequency;
+                } else {
+                    itemFreq.style.display = "none";
+                }
+            }
+
+            let showInhaled = false;
+            const itemInhaled = document.getElementById("item-inhaled-duration");
+            if (itemInhaled) {
+                if (isClinicalInVivo && isInhaled && paper.inhaled_exposure_duration && paper.inhaled_exposure_duration.toLowerCase() !== "not reported" && paper.inhaled_exposure_duration.toLowerCase() !== "unknown" && paper.inhaled_exposure_duration.toLowerCase() !== "not specified") {
+                    showInhaled = true;
+                    itemInhaled.style.display = "block";
+                    const valInhaledEl = document.getElementById("drawer-inhaled-exposure-duration");
+                    if (valInhaledEl) valInhaledEl.innerText = paper.inhaled_exposure_duration;
+                } else {
+                    itemInhaled.style.display = "none";
+                }
+            }
+
+            let showStrainReported = false;
+            const itemStrainReported = document.getElementById("item-strain-reported");
+            if (itemStrainReported) {
+                if (paper.strain_reported && paper.strain_reported.toLowerCase() !== "not specified" && paper.strain_reported.toLowerCase() !== "not reported" && paper.strain_reported.toLowerCase() !== "unknown") {
+                    showStrainReported = true;
+                    itemStrainReported.style.display = "block";
+                    document.getElementById("drawer-strain-reported").innerText = paper.strain_reported;
+                } else {
+                    itemStrainReported.style.display = "none";
+                }
+            }
+
+            let showStrainNormalized = false;
+            const itemStrainNormalized = document.getElementById("item-strain-normalized");
+            if (itemStrainNormalized) {
+                if (paper.strain_normalized && paper.strain_normalized.toLowerCase() !== "unverified chemotype" && paper.strain_normalized.toLowerCase() !== "unknown" && paper.strain_normalized.toLowerCase() !== "not reported") {
+                    showStrainNormalized = true;
+                    itemStrainNormalized.style.display = "block";
+                    document.getElementById("drawer-strain-normalized").innerText = paper.strain_normalized;
+                } else {
+                    itemStrainNormalized.style.display = "none";
+                }
+            }
+
+            let showCannabisTypes = false;
+            const itemCannabisTypes = document.getElementById("item-cannabis-types");
+            if (itemCannabisTypes) {
+                const cannabisTypes = Array.isArray(paper.cannabis_type) ? paper.cannabis_type : (paper.cannabis_type ? [paper.cannabis_type] : []);
+                const validTypes = cannabisTypes.filter(ct => ct && ct.toLowerCase() !== "unknown" && ct.toLowerCase() !== "none" && ct.toLowerCase() !== "not reported");
+                if (validTypes.length > 0) {
+                    showCannabisTypes = true;
+                    itemCannabisTypes.style.display = "block";
+                    const cannabisTypesContainer = document.getElementById("drawer-cannabis-types-container");
+                    if (cannabisTypesContainer) {
+                        cannabisTypesContainer.innerHTML = "";
+                        validTypes.forEach(ct => {
+                            cannabisTypesContainer.innerHTML += `<span class="cannabis-tag">${ct}</span>`;
+                        });
+                    }
+                } else {
+                    itemCannabisTypes.style.display = "none";
+                }
+            }
+
+            const groupAdminStrain = document.getElementById("group-admin-strain");
+            if (groupAdminStrain) {
+                const hasAnyVisible = showExposure || showTreatment || showStudy || showFreq || showInhaled || showStrainReported || showStrainNormalized || showCannabisTypes;
+                groupAdminStrain.style.display = hasAnyVisible ? "block" : "none";
+            }
             document.getElementById("drawer-abstract").innerText = paper.abstract || "No abstract content cataloged.";
 
             // Toggle visibility of reclassify button
@@ -3245,14 +3288,7 @@
             });
             if (outcomes.length === 0) outcomesContainer.innerHTML = `<span style="color: var(--text-secondary)">None</span>`;
 
-            // Cannabis Type tags
-            const cannabisTypesContainer = document.getElementById("drawer-cannabis-types-container");
-            cannabisTypesContainer.innerHTML = "";
-            const cannabisTypes = Array.isArray(paper.cannabis_type) ? paper.cannabis_type : (paper.cannabis_type ? [paper.cannabis_type] : []);
-            cannabisTypes.forEach(ct => {
-                cannabisTypesContainer.innerHTML += `<span class="cannabis-tag">${ct}</span>`;
-            });
-            if (cannabisTypes.length === 0) cannabisTypesContainer.innerHTML = `<span style="color: var(--text-secondary)">None</span>`;
+
 
             // Links container inside drawer
             const linksContainer = document.getElementById("drawer-links-container");
