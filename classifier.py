@@ -213,12 +213,24 @@ def classify_with_llm(title: str, abstract: str, runs: Optional[int] = None) -> 
         return None
         
     config = load_rules_config()
-    system_prompt = config.get("system_prompt")
+    static_prompt = config.get("system_prompt")
     
     # Retrieve dynamic few-shot templates
     few_shot_text, max_sim = get_few_shot_examples(title, abstract)
+    
+    # Build system prompt blocks utilizing prompt caching for the large static ruleset
+    system_blocks = [
+        {
+            "type": "text",
+            "text": static_prompt,
+            "cache_control": {"type": "ephemeral"}
+        }
+    ]
     if few_shot_text:
-        system_prompt += few_shot_text
+        system_blocks.append({
+            "type": "text",
+            "text": few_shot_text
+        })
         
     num_runs = runs if runs is not None else config.get("self_consistency_runs", 1)
     
@@ -249,11 +261,21 @@ def classify_with_llm(title: str, abstract: str, runs: Optional[int] = None) -> 
                         model=model_name,
                         max_tokens=1000,
                         temperature=temp,
-                        system=system_prompt,
+                        system=system_blocks,
                         messages=[
                             {"role": "user", "content": user_content}
                         ]
                     )
+                    
+                    # Log cache metrics if available
+                    if message and hasattr(message, "usage"):
+                        usage = message.usage
+                        creation = getattr(usage, "cache_creation_input_tokens", 0) or 0
+                        read = getattr(usage, "cache_read_input_tokens", 0) or 0
+                        if creation == 0 and hasattr(usage, "cache_creation") and usage.cache_creation:
+                            creation = getattr(usage.cache_creation, "ephemeral_5m_input_tokens", 0) or 0
+                        logger.info(f"Anthropic API call complete. Input: {usage.input_tokens} tokens (Cached read: {read} tokens, Cached write: {creation} tokens), Output: {usage.output_tokens} tokens")
+                    
                     break
                 except Exception as api_err:
                     if "not_found_error" in str(api_err) or "404" in str(api_err):
