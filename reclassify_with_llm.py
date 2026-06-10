@@ -15,7 +15,7 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-def reclassify_papers_llm(limit=None, offset=0):
+def reclassify_papers_llm(limit=None, offset=0, prioritize=True):
     """Queries papers from the database and runs the Anthropic Claude LLM classifier on them,
     respecting expert locked fields.
     """
@@ -48,6 +48,20 @@ def reclassify_papers_llm(limit=None, offset=0):
                    expert_locked_fields
             FROM papers
         """
+        if prioritize:
+            query += """
+                ORDER BY 
+                    -- 1. Papers not yet classified by LLM first
+                    (CASE WHEN classifier_version LIKE 'llm-%' THEN 1 ELSE 0 END) ASC,
+                    -- 2. Original research articles before reviews/others
+                    (CASE WHEN publication_type = 'original research' THEN 0 ELSE 1 END) ASC,
+                    -- 3. Low confidence classifications first
+                    COALESCE(classification_confidence, 0) ASC,
+                    -- 4. Highly cited papers first
+                    citation_count DESC,
+                    -- 5. Most recently harvested first
+                    date_harvested DESC
+            """
         params = []
         
         if limit is not None:
@@ -153,6 +167,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Reclassify database papers using Claude LLM.")
     parser.add_argument("--limit", type=int, default=None, help="Maximum number of papers to reclassify")
     parser.add_argument("--offset", type=int, default=0, help="Offset to start reclassifying from")
+    parser.add_argument("--no-prioritize", action="store_true", help="Disable smart prioritization of potentially misclassified/updated papers")
     args = parser.parse_args()
 
-    reclassify_papers_llm(limit=args.limit, offset=args.offset)
+    reclassify_papers_llm(limit=args.limit, offset=args.offset, prioritize=not args.no_prioritize)
