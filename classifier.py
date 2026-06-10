@@ -68,7 +68,7 @@ def get_historical_corrections() -> List[Dict[str, Any]]:
     finally:
         conn.close()
 
-def get_few_shot_examples(new_title: str, new_abstract: str, max_examples: int = 3) -> tuple[str, float]:
+def get_few_shot_examples(new_title: str, new_abstract: str, max_examples: int = 1) -> tuple[str, float]:
     """Retrieves up to max_examples relevant historical expert corrections as few-shot examples.
     
     Returns:
@@ -136,8 +136,8 @@ def get_few_shot_examples(new_title: str, new_abstract: str, max_examples: int =
     
     max_sim = scored_docs[0][0] if scored_docs else 0.0
     
-    # Filter to sim > 0.05 and take top max_examples
-    top_docs = [doc for sim, doc in scored_docs if sim > 0.05][:max_examples]
+    # Filter to sim > 0.25 and take top max_examples
+    top_docs = [doc for sim, doc in scored_docs if sim > 0.25][:max_examples]
     if not top_docs:
         return "", max_sim
         
