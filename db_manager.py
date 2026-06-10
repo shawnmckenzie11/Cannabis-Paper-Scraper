@@ -601,7 +601,9 @@ class DatabaseManager:
                     where_clauses.append(f"EXISTS (SELECT 1 FROM json_each(papers.outcome_domain) WHERE value IN ({placeholders}))")
                     params.extend(outcomes)
                 
-
+        # Claude classified filter (classifier_version starts with llm-)
+        if filters.get("claude_classified"):
+            where_clauses.append("papers.classifier_version LIKE 'llm-%'")
                     
         return where_clauses, params
 

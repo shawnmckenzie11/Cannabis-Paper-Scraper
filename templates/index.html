@@ -1457,6 +1457,14 @@
                         oninput="debounceSearch()">
                 </div>
 
+                <div class="form-group" style="margin-bottom: 15px;">
+                    <label class="checkbox-item" style="font-weight: 500; display: inline-flex; align-items: center; gap: 8px;">
+                        <input type="checkbox" id="filter-claude-classified" onchange="triggerSearch()" style="width: auto; margin: 0;">
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" style="vertical-align: middle; color: var(--accent-amber); display: inline-block; margin-top: -2px;"><path d="M12 2l2.4 7.2 7.2 2.4-7.2 2.4-2.4 7.2-2.4-7.2-7.2-2.4 7.2-2.4z"/></svg>
+                        Claude Classified Only
+                    </label>
+                </div>
+
                 <div class="filter-header-row">
                     <div class="filter-header">Study Design</div>
                     <div class="logic-toggle" id="toggle-study_type">
@@ -1944,6 +1952,7 @@
                 <h3 id="drawer-title">Paper Title</h3>
             </div>
             <div style="display: flex; align-items: center; gap: 10px;">
+                <button class="btn btn-secondary btn-sm" id="btn-reclassify-claude" onclick="reclassifyCurrentPaperWithClaude()" style="padding: 4px 10px; font-size: 0.8rem; background: rgba(245,158,11,0.08); border-color: rgba(245,158,11,0.2); color: var(--accent-amber); cursor: pointer; border-radius: 4px; font-weight: 600; display: inline-flex; align-items: center; gap: 4px;"><svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor" style="vertical-align: middle;"><path d="M12 2l2.4 7.2 7.2 2.4-7.2 2.4-2.4 7.2-2.4-7.2-7.2-2.4 7.2-2.4z"/></svg> Reclassify with Claude</button>
                 <button class="btn btn-secondary btn-sm" id="btn-delete-paper" onclick="deleteCurrentPaper()" style="padding: 4px 10px; font-size: 0.8rem; background: rgba(255,61,0,0.08); border-color: rgba(255,61,0,0.2); color: #ff8a65; cursor: pointer; border-radius: 4px; font-weight: 600;">🗑️ Delete</button>
                 <button class="btn btn-secondary btn-sm" id="btn-edit-classification" onclick="toggleEditMode()" style="padding: 4px 10px; font-size: 0.8rem; background: rgba(0,240,255,0.06); border-color: rgba(0,240,255,0.2); color: var(--accent-blue); cursor: pointer; border-radius: 4px; font-weight: 600;">✏️ Edit</button>
                 <button class="btn-close" onclick="closeDrawer()">&times;</button>
@@ -1962,9 +1971,6 @@
                     <div class="drawer-section abstract-section">
                         <div class="abstract-header-row" style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
                             <h4 style="margin: 0;">Abstract</h4>
-                            <button type="button" id="btn-sync-metadata" class="btn btn-secondary" onclick="syncAbstractMetadata()" style="padding: 4px 8px; font-size: 11px; gap: 4px; display: inline-flex; align-items: center; height: auto;">
-                                <span class="sync-icon">🔄</span> Sync Metadata
-                            </button>
                         </div>
                         <p class="abstract-text" id="drawer-abstract">Full paragraph abstract text...</p>
                     </div>
@@ -2584,6 +2590,7 @@
 
             // Build parameters from sidebar elements
             const query = document.getElementById("filter-query").value;
+            const claudeClassified = document.getElementById("filter-claude-classified").checked;
             const studyTypeCheckboxes = document.querySelectorAll('input[name="study_type"]:checked');
             const studyType = Array.from(studyTypeCheckboxes).map(cb => cb.value).join(",");
             const thcMin = document.getElementById("filter-thc-min").value;
@@ -2642,6 +2649,9 @@
             if (cannabisType) {
                 params.push(`cannabis_type=${cannabisType}`);
                 params.push(`cannabis_logic=${cannabisLogic}`);
+            }
+            if (claudeClassified) {
+                params.push(`claude_classified=true`);
             }
 
             // Append page and limit
@@ -3171,14 +3181,10 @@
             document.getElementById("drawer-strain-normalized").innerText = paper.strain_normalized || "Unverified chemotype";
             document.getElementById("drawer-abstract").innerText = paper.abstract || "No abstract content cataloged.";
 
-            // Toggle visibility of sync metadata button based on DOI or PMID availability
-            const syncBtn = document.getElementById("btn-sync-metadata");
-            if (syncBtn) {
-                if (paper.doi || paper.pmid) {
-                    syncBtn.style.display = "inline-flex";
-                } else {
-                    syncBtn.style.display = "none";
-                }
+            // Toggle visibility of reclassify button
+            const reclassifyBtn = document.getElementById("btn-reclassify-claude");
+            if (reclassifyBtn) {
+                reclassifyBtn.style.display = "inline-flex";
             }
 
             // Populate newly reformatted property fields
@@ -3471,27 +3477,27 @@
             });
         }
 
-        function syncAbstractMetadata() {
+        function reclassifyCurrentPaperWithClaude() {
             if (!activeEditingPaper) return;
             const paperId = activeEditingPaper.id;
-            const btn = document.getElementById("btn-sync-metadata");
+            const btn = document.getElementById("btn-reclassify-claude");
             const originalHtml = btn.innerHTML;
             
             // Set loading state
             btn.disabled = true;
-            btn.innerHTML = `<span class="sync-icon animate-spin" style="display: inline-block;">🔄</span> Syncing...`;
+            btn.innerHTML = `<span class="sync-icon animate-spin" style="display: inline-block;">🔄</span> Reclassifying...`;
             
-            fetch(`/api/papers/${paperId}/sync-metadata`, {
+            fetch(`/api/papers/${paperId}/reclassify-llm`, {
                 method: "POST"
             })
             .then(res => {
                 if (!res.ok) {
-                    return res.json().then(err => { throw new Error(err.error || "Sync failed"); });
+                    return res.json().then(err => { throw new Error(err.error || "Reclassification failed"); });
                 }
                 return res.json();
             })
             .then(data => {
-                alert(data.message || "Metadata synced and classification updated.");
+                alert(data.message || "Paper reclassified with Claude successfully.");
                 // Update activeEditingPaper with the newly retrieved database values
                 if (data.paper) {
                     activeEditingPaper = data.paper;
@@ -3502,8 +3508,8 @@
                 triggerSearch(false);
             })
             .catch(err => {
-                console.error("Error syncing metadata: ", err);
-                alert("Failed to sync metadata: " + err.message);
+                console.error("Error reclassifying: ", err);
+                alert("Failed to reclassify: " + err.message);
             })
             .finally(() => {
                 btn.disabled = false;
@@ -4836,16 +4842,16 @@
                     btnEdit.innerHTML = `✏️ Edit <span style="font-size:0.7rem; opacity:0.6; margin-left: 2px;">🔒</span>`;
                 }
                 
-                // Intercept Sync Metadata in drawer
-                const btnSync = document.getElementById("btn-sync-metadata");
-                if (btnSync) {
-                    btnSync.removeAttribute("onclick");
-                    btnSync.addEventListener("click", (e) => {
+                // Intercept Reclassify with Claude in drawer
+                const btnReclassify = document.getElementById("btn-reclassify-claude");
+                if (btnReclassify) {
+                    btnReclassify.removeAttribute("onclick");
+                    btnReclassify.addEventListener("click", (e) => {
                         e.preventDefault();
                         e.stopPropagation();
                         showAuthModal();
                     });
-                    btnSync.innerHTML = `🔄 Sync Metadata <span style="font-size:0.7rem; opacity:0.6; margin-left: 2px;">🔒</span>`;
+                    btnReclassify.innerHTML = `<svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor" style="vertical-align: middle;"><path d="M12 2l2.4 7.2 7.2 2.4-7.2 2.4-2.4 7.2-2.4-7.2-7.2-2.4 7.2-2.4z"/></svg> Reclassify with Claude <span style="font-size:0.7rem; opacity:0.6; margin-left: 2px;">🔒</span>`;
                 }
             }
         }

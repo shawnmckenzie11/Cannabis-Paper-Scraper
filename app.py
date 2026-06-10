@@ -449,6 +449,7 @@ def api_search():
     recent_range = request.args.get("recent_range")
     tab = request.args.get("tab")
     cannabis_type = request.args.get("cannabis_type")
+    claude_classified = request.args.get("claude_classified")
     cannabis_logic = request.args.get("cannabis_logic", "or")
     method_logic = request.args.get("method_logic", "or")
     outcome_logic = request.args.get("outcome_logic", "or")
@@ -500,6 +501,8 @@ def api_search():
         clean_filters["recent_range"] = recent_range
     if cannabis_type and cannabis_type != "ALL":
         clean_filters["cannabis_type"] = cannabis_type
+    if claude_classified:
+        clean_filters["claude_classified"] = claude_classified == "true"
         
     clean_filters["cannabis_logic"] = cannabis_logic
     clean_filters["exposure_logic"] = method_logic
@@ -827,6 +830,93 @@ def api_sync_metadata(paper_id):
         return jsonify({"error": str(e)}), 500
     finally:
         conn.close()
+
+@app.route("/api/papers/<int:paper_id>/reclassify-llm", methods=["POST"])
+def api_reclassify_llm(paper_id):
+    """Runs the Claude LLM classifier directly on the paper's title and abstract,
+    respecting expert locked fields.
+    """
+    api_key = os.getenv("ANTHROPIC_API_KEY")
+    if not api_key:
+        return jsonify({"error": "Anthropic API key is not configured."}), 400
+
+    db = DatabaseManager()
+    paper = db.get_paper(paper_id)
+    if not paper:
+        return jsonify({"error": "Paper not found."}), 404
+
+    # Load rules config version
+    rules_version = "1.0.0"
+    if os.path.exists("rules_config.json"):
+        try:
+            with open("rules_config.json", "r") as f:
+                rules_version = json.load(f).get("version", "1.0.0")
+        except Exception:
+            pass
+
+    try:
+        # Run Claude LLM classification on current title and abstract
+        extracted = classifier.process_paper_metadata(
+            title=paper.get("title") or "",
+            abstract=paper.get("abstract") or "",
+            run_llm=True
+        )
+
+        if not extracted:
+            return jsonify({"error": "No metadata was extracted by the classifier."}), 500
+
+        # Do not overwrite expert locked fields
+        locked = paper.get("expert_locked_fields") or []
+        if isinstance(locked, str):
+            try:
+                locked = json.loads(locked)
+            except Exception:
+                locked = []
+
+        valid_columns = {
+            "study_type", "exposure_method", "thc_pct", "cbd_pct", "dose_mg", "puff_count",
+            "thc_mg_ml", "thc_mg_g", "thc_mg_kg", "cbd_mg_ml", "cbd_mg_g", "cbd_mg_kg",
+            "strain_reported", "strain_normalized", "duration_days",
+            "inhaled_exposure_duration", "administration_frequency", "treatment_duration",
+            "sample_size", "outcome_domain", "cannabis_type", "summary", "publication_type"
+        }
+
+        update_data = {}
+        for k, v in extracted.items():
+            if k in valid_columns and k not in locked:
+                update_data[k] = v
+
+        # Add metadata fields
+        update_data["classifier_version"] = f"llm-reclassify-{rules_version}"
+        update_data["classification_timestamp"] = datetime.now().isoformat()
+
+        # Build UPDATE query
+        conn = db.get_connection()
+        try:
+            set_clauses = []
+            update_params = []
+            for k, v in update_data.items():
+                set_clauses.append(f"{k} = ?")
+                if isinstance(v, (list, dict)):
+                    update_params.append(json.dumps(v))
+                else:
+                    update_params.append(v)
+            update_params.append(paper_id)
+
+            conn.execute(f"UPDATE papers SET {', '.join(set_clauses)} WHERE id = ?", update_params)
+            conn.commit()
+
+            # Return updated paper
+            updated_paper = db.get_paper(paper_id)
+            return jsonify({
+                "message": "Paper reclassified with Claude successfully.",
+                "paper": updated_paper
+            })
+        finally:
+            conn.close()
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
 
 @app.route("/api/harvest", methods=["POST"])
 def api_harvest():
