@@ -53,13 +53,19 @@ def reclassify_papers_llm(limit=None, offset=0, prioritize=True):
                 ORDER BY 
                     -- 1. Papers not yet classified by LLM first
                     (CASE WHEN classifier_version LIKE 'llm-%' THEN 1 ELSE 0 END) ASC,
-                    -- 2. Original research articles before reviews/others
+                    -- 2. Papers with likely heuristic fallback conflicts prioritized first
+                    (CASE WHEN 
+                        (exposure_method IN ('["inhaled"]', '["injection cannabinoids"]', '["cannabinoids dissolved in media"]', '["unknown"]') OR exposure_method IS NULL) AND
+                        (title LIKE '%oil%' OR title LIKE '%tincture%' OR title LIKE '%gummy%' OR title LIKE '%edible%' OR title LIKE '%capsule%' OR title LIKE '%sublingual%' OR title LIKE '%oral%' OR title LIKE '%ingest%' OR title LIKE '%spray%' OR title LIKE '%sativex%' OR title LIKE '%epidiolex%' OR
+                         abstract LIKE '%oil%' OR abstract LIKE '%tincture%' OR abstract LIKE '%gummy%' OR abstract LIKE '%edible%' OR abstract LIKE '%capsule%' OR abstract LIKE '%sublingual%' OR abstract LIKE '%oral%' OR abstract LIKE '%ingest%' OR abstract LIKE '%spray%' OR abstract LIKE '%sativex%' OR abstract LIKE '%epidiolex%')
+                    THEN 0 ELSE 1 END) ASC,
+                    -- 3. Original research articles before reviews/others
                     (CASE WHEN publication_type = 'original research' THEN 0 ELSE 1 END) ASC,
-                    -- 3. Low confidence classifications first
+                    -- 4. Low confidence classifications first
                     COALESCE(classification_confidence, 0) ASC,
-                    -- 4. Highly cited papers first
+                    -- 5. Highly cited papers first
                     citation_count DESC,
-                    -- 5. Most recently harvested first
+                    -- 6. Most recently harvested first
                     date_harvested DESC
             """
         params = []

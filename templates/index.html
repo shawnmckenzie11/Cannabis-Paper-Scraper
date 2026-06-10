@@ -3745,6 +3745,7 @@
 
             // Build parameters from sidebar elements
             const query = document.getElementById("filter-query").value;
+            const claudeClassified = document.getElementById("filter-claude-classified").checked;
             const studyTypeCheckboxes = document.querySelectorAll('input[name="study_type"]:checked');
             const studyType = Array.from(studyTypeCheckboxes).map(cb => cb.value).join(",");
             const thcMin = document.getElementById("filter-thc-min").value;
@@ -3779,7 +3780,13 @@
             if (yearMax && yearMax !== "2026") filters.year_max = parseInt(yearMax);
             if (outcomes) { filters.outcome = outcomes; filters.outcome_logic = outcomeLogic; }
             if (cannabisType) { filters.cannabis_type = cannabisType; filters.cannabis_logic = cannabisLogic; }
-            filters.tab = "original";
+            filters.tab = currentTab;
+            if (currentTab === 'recent') {
+                filters.recent_range = document.getElementById("recents-timeframe").value;
+            }
+            if (claudeClassified) {
+                filters.claude_classified = true;
+            }
 
             fetch("/api/analyze", {
                 method: "POST",
