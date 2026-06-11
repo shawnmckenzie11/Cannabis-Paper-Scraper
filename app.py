@@ -15,6 +15,7 @@ from db_manager import DatabaseManager
 import classifier
 import harvest
 from extractor import is_cannabis_related
+from citation_graph import CitationGraph
 
 app = Flask(__name__)
 app.secret_key = os.getenv("FLASK_SECRET_KEY", "mckenzian-secret-key-12345")
@@ -1540,6 +1541,90 @@ def api_learning_dashboard_metrics():
         return jsonify({"error": str(e)}), 500
     finally:
         conn.close()
+
+
+# ─── Graph / Connectivity API Routes ──────────────────────────────
+
+
+@app.route("/api/graph/stats", methods=["GET"])
+def api_graph_stats():
+    """Return citation graph statistics."""
+    db = DatabaseManager()
+    cg = CitationGraph(db)
+    try:
+        stats = cg.get_graph_stats()
+        return jsonify(stats)
+    except Exception as e:
+        app.logger.error(f"Graph stats error: {e}")
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route("/api/graph/network", methods=["GET"])
+def api_graph_network():
+    """Return full network data (nodes with degree + internal edges) for visualization."""
+    max_nodes = int(request.args.get("max_nodes", 2000))
+    db = DatabaseManager()
+    cg = CitationGraph(db)
+    try:
+        data = cg.get_network_data(max_nodes=max_nodes)
+        return jsonify(data)
+    except Exception as e:
+        app.logger.error(f"Graph network error: {e}")
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route("/api/papers/search-simple", methods=["GET"])
+def api_papers_search_simple():
+    """Simple paper search returning id + title for the paper selector."""
+    q = request.args.get("q", "").strip()
+    limit = int(request.args.get("limit", 50))
+    db = DatabaseManager()
+    conn = db.get_connection()
+    try:
+        if q:
+            rows = conn.execute("""
+                SELECT id, title, year, authors FROM papers
+                WHERE title LIKE ? ORDER BY year DESC LIMIT ?
+            """, (f"%{q}%", limit)).fetchall()
+        else:
+            rows = conn.execute("""
+                SELECT id, title, year, authors FROM papers
+                ORDER BY year DESC LIMIT ?
+            """, (limit,)).fetchall()
+        results = [dict(r) for r in rows]
+        return jsonify(results)
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+    finally:
+        conn.close()
+
+
+@app.route("/api/papers/<int:paper_id>/references", methods=["GET"])
+def api_paper_references(paper_id):
+    """Return references for a paper."""
+    include_ext = request.args.get("include_external", "false") == "true"
+    db = DatabaseManager()
+    cg = CitationGraph(db)
+    try:
+        refs = cg.get_references(paper_id, include_external=include_ext)
+        return jsonify(refs)
+    except Exception as e:
+        app.logger.error(f"References error for {paper_id}: {e}")
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route("/api/papers/<int:paper_id>/cited-by", methods=["GET"])
+def api_paper_cited_by(paper_id):
+    """Return papers that cite this paper."""
+    include_ext = request.args.get("include_external", "false") == "true"
+    db = DatabaseManager()
+    cg = CitationGraph(db)
+    try:
+        citing = cg.get_cited_by(paper_id, include_external=include_ext)
+        return jsonify(citing)
+    except Exception as e:
+        app.logger.error(f"Cited-by error for {paper_id}: {e}")
+        return jsonify({"error": str(e)}), 500
 
 
 # Start the background daily scheduler thread, protected against debug reloader double-runs
