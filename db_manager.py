@@ -2,66 +2,354 @@
 import sqlite3
 import os
 import json
+import re
 from datetime import datetime
 from typing import List, Dict, Any, Optional, Tuple
+import logging
+
+logger = logging.getLogger(__name__)
+
+try:
+    import psycopg2
+    import psycopg2.extras
+except ImportError:
+    psycopg2 = None
 
 DATABASE_FILE = os.getenv("DATABASE_PATH", "cannabis_papers.db")
 SCHEMA_FILE = "schema.sql"
 
+class PostgresCursorWrapper:
+    def __init__(self, cursor):
+        self.cursor = cursor
+        self.lastrowid_value = None
+
+    def execute(self, sql, params=None):
+        if params is None:
+            params = ()
+        
+        # 1. Replace SQLite parameter placeholder ? or ?1, ?2, etc. with PostgreSQL %s
+        sql = re.sub(r"\?\d*", "%s", sql)
+        
+        # 2. Translate FTS Match
+        if "papers_fts" in sql:
+            # Remove content JOIN and replace MATCH with Postgres @@ search
+            sql = re.sub(
+                r"JOIN\s+papers_fts\s+ON\s+papers\.id\s+=\s+papers_fts\.rowid", 
+                "", 
+                sql, 
+                flags=re.IGNORECASE
+            )
+            sql = re.sub(
+                r"JOIN\s+papers_fts\s+ON\s+papers_fts\.rowid\s+=\s+papers\.id", 
+                "", 
+                sql, 
+                flags=re.IGNORECASE
+            )
+            sql = re.sub(
+                r"papers_fts\.rank", 
+                "0 AS rank", 
+                sql, 
+                flags=re.IGNORECASE
+            )
+            sql = re.sub(
+                r"papers_fts\s+MATCH\s+(%s|\?)", 
+                "to_tsvector('english', papers.title || ' ' || coalesce(papers.abstract, '')) @@ websearch_to_tsquery('english', \\1)", 
+                sql, 
+                flags=re.IGNORECASE
+            )
+            
+        sql = self.translate_json_queries(sql)
+        
+        # 3. Handle RETURNING clause for INSERT queries to emulate lastrowid
+        is_insert = sql.strip().upper().startswith("INSERT INTO")
+        if is_insert and "RETURNING" not in sql.upper():
+            sql = sql.rstrip(';').strip() + " RETURNING id"
+            
+        try:
+            self.cursor.execute(sql, params)
+            if is_insert and "RETURNING" in sql.upper():
+                try:
+                    row = self.cursor.fetchone()
+                    if row:
+                        self.lastrowid_value = row.get("id") or list(row.values())[0]
+                except Exception:
+                    pass
+        except Exception as e:
+            logger.error(f"Postgres execution failed. SQL: {sql}, Params: {params}, Error: {e}")
+            raise e
+        return self
+
+    def executemany(self, sql, seq_of_parameters):
+        sql = re.sub(r"\?\d*", "%s", sql)
+        sql = self.translate_json_queries(sql)
+        try:
+            self.cursor.executemany(sql, seq_of_parameters)
+        except Exception as e:
+            logger.error(f"Postgres executemany failed. SQL: {sql}, Error: {e}")
+            raise e
+        return self
+        
+    def translate_json_queries(self, sql):
+        # Convert EXISTS json_each pattern
+        sql = re.sub(
+            r"EXISTS\s*\(\s*SELECT\s+1\s+FROM\s+json_each\((papers\.)?outcome_domain\)\s+WHERE\s+value\s+=\s+(%s|\?)\s*\)",
+            r"\1outcome_domain @> jsonb_build_array(\2::text)",
+            sql,
+            flags=re.IGNORECASE
+        )
+        def replace_outcome_in(match):
+            prefix = match.group(1) or ""
+            placeholders = match.group(2)
+            return f"{prefix}outcome_domain ?| array[{placeholders}]"
+        sql = re.sub(
+            r"EXISTS\s*\(\s*SELECT\s+1\s+FROM\s+json_each\((papers\.)?outcome_domain\)\s+WHERE\s+value\s+IN\s*\(([^)]+)\)\s*\)",
+            replace_outcome_in,
+            sql,
+            flags=re.IGNORECASE
+        )
+        
+        # Convert study_type, exposure_method, cannabis_type checks
+        for col in ["study_type", "exposure_method", "cannabis_type"]:
+            # Single value check
+            pattern_single = rf"\(\(\s*json_valid\((papers\.)?{col}\)\s+AND\s+json_type\(\1{col}\)\s+=\s+'array'\s+AND\s+EXISTS\s*\(\s*SELECT\s+1\s+FROM\s+json_each\(\1{col}\)\s+WHERE\s+json_each\.value\s+=\s+(%s|\?)\s*\)\s*\)\s+OR\s+\(\1{col}\s+=\s+(%s|\?)\)\)"
+            sql = re.sub(
+                pattern_single,
+                rf"(coalesce(\1{col}, '[]'::jsonb) @> jsonb_build_array(\2::text) OR \1{col} = \3::text)",
+                sql,
+                flags=re.IGNORECASE
+            )
+            # Multi value check (IN)
+            pattern_multi = rf"\(\(\s*json_valid\((papers\.)?{col}\)\s+AND\s+json_type\(\1{col}\)\s+=\s+'array'\s+AND\s+EXISTS\s*\(\s*SELECT\s+1\s+FROM\s+json_each\(\1{col}\)\s+WHERE\s+json_each\.value\s+IN\s*\(([^)]+)\)\s*\)\s*\)\s+OR\s+\(\1{col}\s+IN\s*\(([^)]+)\)\)\)"
+            def replace_multi(match):
+                prefix = match.group(1) or ""
+                p1 = match.group(2)
+                p2 = match.group(3)
+                return f"(coalesce({prefix}{col}, '[]'::jsonb) ?| array[{p1}] OR {prefix}{col} IN ({p2}))"
+            sql = re.sub(
+                pattern_multi,
+                replace_multi,
+                sql,
+                flags=re.IGNORECASE
+            )
+            
+            # Simple NOT EXISTS checks for tab logic
+            pattern_not_exists = rf"NOT\s+EXISTS\s*\(\s*SELECT\s+1\s+FROM\s+json_each\((papers\.)?{col}\)\s+WHERE\s+json_each\.value\s+IN\s*\(([^)]+)\)\s*\)"
+            sql = re.sub(
+                pattern_not_exists,
+                r"NOT (coalesce(\1" + col + r", '[]'::jsonb) ?| array[\2])",
+                sql,
+                flags=re.IGNORECASE
+            )
+            
+            # EXISTS checks for tab logic
+            pattern_exists = rf"EXISTS\s*\(\s*SELECT\s+1\s+FROM\s+json_each\((papers\.)?{col}\)\s+WHERE\s+json_each\.value\s+IN\s*\(([^)]+)\)\s*\)"
+            sql = re.sub(
+                pattern_exists,
+                r"(coalesce(\1" + col + r", '[]'::jsonb) ?| array[\2])",
+                sql,
+                flags=re.IGNORECASE
+            )
+            
+        return sql
+
+    def fetchone(self):
+        row = self.cursor.fetchone()
+        if row is not None:
+            return dict(row)
+        return None
+        
+    def fetchall(self):
+        rows = self.cursor.fetchall()
+        return [dict(row) for row in rows]
+        
+    def close(self):
+        return self.cursor.close()
+        
+    @property
+    def rowcount(self):
+        return self.cursor.rowcount
+        
+    @property
+    def description(self):
+        return self.cursor.description
+        
+    @property
+    def lastrowid(self):
+        return self.lastrowid_value
+
+class PostgresConnectionWrapper:
+    def __init__(self, conn):
+        self.conn = conn
+        
+    def cursor(self):
+        return PostgresCursorWrapper(self.conn.cursor())
+        
+    def commit(self):
+        return self.conn.commit()
+        
+    def rollback(self):
+        return self.conn.rollback()
+        
+    def close(self):
+        return self.conn.close()
+        
+    def executescript(self, script):
+        cursor = self.cursor()
+        cursor.execute(script)
+        self.commit()
+        cursor.close()
+        
+    def execute(self, sql, params=None):
+        cursor = self.cursor()
+        cursor.execute(sql, params)
+        return cursor
+
+    @property
+    def row_factory(self):
+        return None
+        
+    @row_factory.setter
+    def row_factory(self, value):
+        pass
+
 class DatabaseManager:
-    """Manages SQLite operations, FTS5 indexing, and dynamic querying for cannabis papers."""
+    """Manages SQLite and PostgreSQL operations, indexing, and dynamic querying for cannabis papers."""
     
     _initialized = False
     
+    @property
+    def is_postgres(self):
+        db_url = os.getenv("DATABASE_URL")
+        return db_url is not None and (db_url.startswith("postgres://") or db_url.startswith("postgresql://"))
+        
+    @property
+    def database_url(self):
+        return os.getenv("DATABASE_URL")
+        
     def __init__(self, db_path: str = DATABASE_FILE):
         self.db_path = db_path
-        
-        # Ensure the parent directory for the database exists
-        dir_name = os.path.dirname(self.db_path)
-        if dir_name:
-            os.makedirs(dir_name, exist_ok=True)
+            
+        # Ensure the parent directory for the database exists (only if SQLite)
+        if not self.is_postgres:
+            dir_name = os.path.dirname(self.db_path)
+            if dir_name:
+                os.makedirs(dir_name, exist_ok=True)
             
         # Check if papers table exists in this DB
         db_exists = False
-        if os.path.exists(self.db_path) and os.path.getsize(self.db_path) > 0:
+        if self.is_postgres:
             try:
-                conn_check = sqlite3.connect(self.db_path, timeout=5.0)
-                cursor = conn_check.cursor()
-                cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='papers';")
-                if cursor.fetchone():
-                    db_exists = True
+                conn_check = self.get_connection()
+                # Unwrapped connection check
+                unwrapped_conn = conn_check.conn
+                cursor = unwrapped_conn.cursor()
+                cursor.execute("SELECT EXISTS (SELECT FROM information_schema.tables WHERE table_name = 'papers');")
+                row = cursor.fetchone()
+                db_exists = list(row.values())[0] if isinstance(row, dict) else row[0]
                 conn_check.close()
-            except sqlite3.Error:
+            except Exception as e:
+                logger.error(f"Postgres connection check failed: {e}")
                 pass
+        else:
+            if os.path.exists(self.db_path) and os.path.getsize(self.db_path) > 0:
+                try:
+                    conn_check = sqlite3.connect(self.db_path, timeout=5.0)
+                    cursor = conn_check.cursor()
+                    cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='papers';")
+                    if cursor.fetchone():
+                        db_exists = True
+                    conn_check.close()
+                except sqlite3.Error:
+                    pass
 
-        if not db_exists or not DatabaseManager._initialized:
+        if not db_exists:
             self.init_db()
-            if db_exists:
-                DatabaseManager._initialized = True
+            DatabaseManager._initialized = True
+        elif not DatabaseManager._initialized:
+            if not self.is_postgres:
+                self.init_db()
+            DatabaseManager._initialized = True
 
-    def get_connection(self) -> sqlite3.Connection:
-        """Returns a sqlite3 connection with dict-like row factory and JSON support verification."""
-        conn = sqlite3.connect(self.db_path, timeout=30.0)
-        conn.row_factory = sqlite3.Row
-        # Enable foreign keys just in case
-        conn.execute("PRAGMA foreign_keys = ON;")
-        # Enable WAL mode for high concurrency
-        conn.execute("PRAGMA journal_mode = WAL;")
-        return conn
+    def get_connection(self):
+        """Returns a connection wrapper supporting standard operations."""
+        if self.is_postgres:
+            if psycopg2 is None:
+                raise ImportError("PostgreSQL connection requested but psycopg2 is not installed.")
+            # Handle URL scheme adjustment if needed (Fly.io might pass postgres://)
+            url = self.database_url
+            conn = psycopg2.connect(url, cursor_factory=psycopg2.extras.RealDictCursor)
+            return PostgresConnectionWrapper(conn)
+        else:
+            conn = sqlite3.connect(self.db_path, timeout=30.0)
+            conn.row_factory = sqlite3.Row
+            conn.execute("PRAGMA foreign_keys = ON;")
+            conn.execute("PRAGMA journal_mode = WAL;")
+            return conn
+
+    def column_exists(self, table_name, column_name, conn):
+        try:
+            if self.is_postgres:
+                unwrapped = conn.conn if hasattr(conn, "conn") else conn
+                cursor = unwrapped.cursor()
+                cursor.execute(
+                    "SELECT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = %s AND column_name = %s);",
+                    (table_name.lower(), column_name.lower())
+                )
+                row = cursor.fetchone()
+                exists = list(row.values())[0] if isinstance(row, dict) else row[0]
+                cursor.close()
+                return exists
+            else:
+                cursor = conn.cursor()
+                cursor.execute(f"PRAGMA table_info({table_name});")
+                columns = [row["name"] for row in cursor.fetchall()]
+                cursor.close()
+                return column_name in columns
+        except Exception:
+            return False
+
+    def table_exists(self, table_name, conn):
+        try:
+            if self.is_postgres:
+                unwrapped = conn.conn if hasattr(conn, "conn") else conn
+                cursor = unwrapped.cursor()
+                cursor.execute(
+                    "SELECT EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = %s);",
+                    (table_name.lower(),)
+                )
+                row = cursor.fetchone()
+                exists = list(row.values())[0] if isinstance(row, dict) else row[0]
+                cursor.close()
+                return exists
+            else:
+                cursor = conn.cursor()
+                cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name=?;", (table_name,))
+                exists = cursor.fetchone() is not None
+                cursor.close()
+                return exists
+        except Exception:
+            return False
 
     def init_db(self):
-        """Initializes the SQLite database with the schema.sql file if not already set up."""
-        # Read the schema file
+        """Initializes the database with schema.sql and all required tables/migrations."""
         if not os.path.exists(SCHEMA_FILE):
-            # Create a fallback inline schema if the file is missing (should not happen)
             raise FileNotFoundError(f"Schema file '{SCHEMA_FILE}' is required for database initialization.")
             
         with open(SCHEMA_FILE, "r") as f:
             schema_script = f.read()
 
-        # Check if papers_fts needs migration (i.e. does not have 'authors' column)
+        # Remove CREATE TRIGGER blocks from PostgreSQL schema script before split
+        if self.is_postgres:
+            schema_script = re.sub(
+                r"CREATE\s+TRIGGER\s+.*?BEGIN.*?END\s*;", 
+                "", 
+                schema_script, 
+                flags=re.IGNORECASE | re.DOTALL
+            )
+
+        # SQLite FTS migration check
         fts_needs_migration = False
-        if os.path.exists(self.db_path):
+        if not self.is_postgres and os.path.exists(self.db_path):
             try:
                 conn_check = sqlite3.connect(self.db_path, timeout=30.0)
                 conn_check.row_factory = sqlite3.Row
@@ -78,106 +366,93 @@ class DatabaseManager:
 
         conn = self.get_connection()
         try:
-            if fts_needs_migration:
-                # Drop existing triggers and FTS virtual table so they get recreated
-                conn.execute("DROP TRIGGER IF EXISTS papers_ai;")
-                conn.execute("DROP TRIGGER IF EXISTS papers_ad;")
-                conn.execute("DROP TRIGGER IF EXISTS papers_au;")
-                conn.execute("DROP TABLE IF EXISTS papers_fts;")
+            if self.is_postgres:
+                statements = []
+                for stmt in schema_script.split(";"):
+                    stmt_clean = stmt.strip()
+                    if not stmt_clean:
+                        continue
+                    if "CREATE VIRTUAL TABLE" in stmt_clean.upper():
+                        continue
+                    stmt_clean = re.sub(
+                        r"INTEGER\s+PRIMARY\s+KEY\s+AUTOINCREMENT", 
+                        "SERIAL PRIMARY KEY", 
+                        stmt_clean, 
+                        flags=re.IGNORECASE
+                    )
+                    stmt_clean = re.sub(
+                        r"AUTOINCREMENT", 
+                        "", 
+                        stmt_clean, 
+                        flags=re.IGNORECASE
+                    )
+                    statements.append(stmt_clean)
+
+                for stmt in statements:
+                    try:
+                        conn.execute(stmt)
+                    except Exception:
+                        pass
                 conn.commit()
 
-            conn.executescript(schema_script)
+                # Create functional GIN index for search optimization
+                try:
+                    conn.execute("SET maintenance_work_mem = '16MB';")
+                    conn.execute("CREATE INDEX IF NOT EXISTS idx_papers_fts ON papers USING GIN (to_tsvector('english', title || ' ' || coalesce(abstract, '')));")
+                    conn.commit()
+                except Exception:
+                    pass
+            else:
+                if fts_needs_migration:
+                    conn.execute("DROP TRIGGER IF EXISTS papers_ai;")
+                    conn.execute("DROP TRIGGER IF EXISTS papers_ad;")
+                    conn.execute("DROP TRIGGER IF EXISTS papers_au;")
+                    conn.execute("DROP TABLE IF EXISTS papers_fts;")
+                    conn.commit()
 
-            if fts_needs_migration:
-                # Populate recreated FTS virtual table
-                conn.execute("INSERT INTO papers_fts(rowid, title, abstract, authors) SELECT id, title, abstract, authors FROM papers;")
-                conn.commit()
+                conn.executescript(schema_script)
 
-            # Ensure publication_date column exists in existing tables
-            try:
-                conn.execute("ALTER TABLE papers ADD COLUMN publication_date TEXT;")
-            except sqlite3.OperationalError:
-                # Column already exists, ignore
-                pass
-            # Ensure cannabis_type column exists in existing tables
-            try:
-                conn.execute("ALTER TABLE papers ADD COLUMN cannabis_type TEXT;")
-            except sqlite3.OperationalError:
-                # Column already exists, ignore
-                pass
-            # Ensure summary column exists in existing tables
-            try:
-                conn.execute("ALTER TABLE papers ADD COLUMN summary TEXT;")
-            except sqlite3.OperationalError:
-                # Column already exists, ignore
-                pass
-            # Ensure publication_type column exists in existing tables
-            try:
-                conn.execute("ALTER TABLE papers ADD COLUMN publication_type TEXT;")
-            except sqlite3.OperationalError:
-                # Column already exists, ignore
-                pass
-            # Ensure expert_locked_fields column exists
-            try:
-                conn.execute("ALTER TABLE papers ADD COLUMN expert_locked_fields TEXT DEFAULT '[]';")
-            except sqlite3.OperationalError:
-                pass
-            # Ensure classification_confidence column exists
-            try:
-                conn.execute("ALTER TABLE papers ADD COLUMN classification_confidence REAL;")
-            except sqlite3.OperationalError:
-                pass
-            # Ensure classification_timestamp column exists
-            try:
-                conn.execute("ALTER TABLE papers ADD COLUMN classification_timestamp TEXT;")
-            except sqlite3.OperationalError:
-                pass
-            # Ensure classifier_version column exists
-            try:
-                conn.execute("ALTER TABLE papers ADD COLUMN classifier_version TEXT;")
-            except sqlite3.OperationalError:
-                pass
-            # Ensure type-dependent cannabinoid fields exist
-            try:
-                conn.execute("ALTER TABLE papers ADD COLUMN puff_count INTEGER;")
-            except sqlite3.OperationalError:
-                pass
-            try:
-                conn.execute("ALTER TABLE papers ADD COLUMN thc_mg_ml REAL;")
-            except sqlite3.OperationalError:
-                pass
-            try:
-                conn.execute("ALTER TABLE papers ADD COLUMN thc_mg_g REAL;")
-            except sqlite3.OperationalError:
-                pass
-            try:
-                conn.execute("ALTER TABLE papers ADD COLUMN thc_mg_kg REAL;")
-            except sqlite3.OperationalError:
-                pass
-            try:
-                conn.execute("ALTER TABLE papers ADD COLUMN cbd_mg_ml REAL;")
-            except sqlite3.OperationalError:
-                pass
-            try:
-                conn.execute("ALTER TABLE papers ADD COLUMN cbd_mg_g REAL;")
-            except sqlite3.OperationalError:
-                pass
-            try:
-                conn.execute("ALTER TABLE papers ADD COLUMN cbd_mg_kg REAL;")
-            except sqlite3.OperationalError:
-                pass
-            try:
-                conn.execute("ALTER TABLE papers ADD COLUMN inhaled_exposure_duration TEXT;")
-            except sqlite3.OperationalError:
-                pass
-            try:
-                conn.execute("ALTER TABLE papers ADD COLUMN administration_frequency TEXT;")
-            except sqlite3.OperationalError:
-                pass
-            try:
-                conn.execute("ALTER TABLE papers ADD COLUMN treatment_duration TEXT;")
-            except sqlite3.OperationalError:
-                pass
+                if fts_needs_migration:
+                    conn.execute("INSERT INTO papers_fts(rowid, title, abstract, authors) SELECT id, title, abstract, authors FROM papers;")
+                    conn.commit()
+
+            # Ensure columns exist in papers table (dynamic migration)
+            columns_to_add = [
+                ("publication_date", "TEXT"),
+                ("cannabis_type", "TEXT"),
+                ("summary", "TEXT"),
+                ("publication_type", "TEXT"),
+                ("expert_locked_fields", "TEXT DEFAULT '[]'"),
+                ("classification_confidence", "REAL"),
+                ("classification_timestamp", "TEXT"),
+                ("classifier_version", "TEXT"),
+                ("puff_count", "INTEGER"),
+                ("thc_mg_ml", "REAL"),
+                ("thc_mg_g", "REAL"),
+                ("thc_mg_kg", "REAL"),
+                ("cbd_mg_ml", "REAL"),
+                ("cbd_mg_g", "REAL"),
+                ("cbd_mg_kg", "REAL"),
+                ("inhaled_exposure_duration", "TEXT"),
+                ("administration_frequency", "TEXT"),
+                ("treatment_duration", "TEXT")
+            ]
+            
+            for col_name, col_type in columns_to_add:
+                if not self.column_exists("papers", col_name, conn):
+                    pg_type = col_type
+                    if self.is_postgres:
+                        if pg_type.startswith("TEXT DEFAULT '[]'"):
+                            pg_type = "JSONB DEFAULT '[]'::jsonb"
+                        elif pg_type == "REAL":
+                            pg_type = "DOUBLE PRECISION"
+                    try:
+                        conn.execute(f"ALTER TABLE papers ADD COLUMN {col_name} {pg_type};")
+                        conn.commit()
+                    except Exception as e:
+                        logger.error(f"Failed to add column {col_name}: {e}")
+                        pass
+
             # Ensure system_metadata table exists
             conn.execute("""
                 CREATE TABLE IF NOT EXISTS system_metadata (
@@ -185,8 +460,10 @@ class DatabaseManager:
                     value TEXT
                 );
             """)
+            conn.commit()
+
             # Ensure users table exists
-            conn.execute("""
+            users_sql = """
                 CREATE TABLE IF NOT EXISTS users (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
                     username TEXT UNIQUE NOT NULL,
@@ -197,12 +474,18 @@ class DatabaseManager:
                     verification_code TEXT,
                     created_at TEXT DEFAULT CURRENT_TIMESTAMP
                 );
-            """)
+            """
+            if self.is_postgres:
+                users_sql = users_sql.replace("INTEGER PRIMARY KEY AUTOINCREMENT", "SERIAL PRIMARY KEY")
+                users_sql = users_sql.replace("DEFAULT CURRENT_TIMESTAMP", "DEFAULT NOW()")
+            conn.execute(users_sql)
+            conn.commit()
+
             # Ensure analyses table exists
             self.init_analyses_table()
 
             # Ensure citation_edges table exists
-            conn.execute("""
+            citation_edges_sql = """
                 CREATE TABLE IF NOT EXISTS citation_edges (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
                     source_paper_id INTEGER NOT NULL,
@@ -218,37 +501,44 @@ class DatabaseManager:
                     FOREIGN KEY(source_paper_id) REFERENCES papers(id) ON DELETE CASCADE,
                     FOREIGN KEY(target_paper_id) REFERENCES papers(id) ON DELETE SET NULL
                 );
-            """)
-            try:
-                conn.execute("CREATE INDEX IF NOT EXISTS idx_ce_source ON citation_edges(source_paper_id);")
-            except sqlite3.OperationalError:
-                pass
-            try:
-                conn.execute("CREATE INDEX IF NOT EXISTS idx_ce_target ON citation_edges(target_paper_id);")
-            except sqlite3.OperationalError:
-                pass
-            try:
-                conn.execute("CREATE INDEX IF NOT EXISTS idx_ce_rel ON citation_edges(relationship);")
-            except sqlite3.OperationalError:
-                pass
-            try:
-                conn.execute("CREATE INDEX IF NOT EXISTS idx_ce_ext ON citation_edges(target_external_id);")
-            except sqlite3.OperationalError:
-                pass
+            """
+            if self.is_postgres:
+                citation_edges_sql = citation_edges_sql.replace("INTEGER PRIMARY KEY AUTOINCREMENT", "SERIAL PRIMARY KEY")
+                citation_edges_sql = citation_edges_sql.replace("DEFAULT (datetime('now'))", "DEFAULT NOW()")
+                citation_edges_sql = citation_edges_sql.replace("metadata TEXT DEFAULT '{}'", "metadata JSONB DEFAULT '{}'::jsonb")
+            conn.execute(citation_edges_sql)
+            conn.commit()
 
-            # Create indexes on papers table for high-performance filtering and sorting
-            try:
-                conn.execute("CREATE INDEX IF NOT EXISTS idx_papers_year ON papers(year);")
-                conn.execute("CREATE INDEX IF NOT EXISTS idx_papers_citations ON papers(citation_count);")
-                conn.execute("CREATE INDEX IF NOT EXISTS idx_papers_version ON papers(classifier_version);")
-                conn.execute("CREATE INDEX IF NOT EXISTS idx_papers_pubtype ON papers(publication_type);")
-                conn.execute("CREATE INDEX IF NOT EXISTS idx_papers_harvested ON papers(date_harvested);")
-                conn.execute("CREATE INDEX IF NOT EXISTS idx_papers_thc ON papers(thc_pct);")
-            except sqlite3.OperationalError:
-                pass
+            # Create citation_edges indexes
+            for idx_stmt in [
+                "CREATE INDEX IF NOT EXISTS idx_ce_source ON citation_edges(source_paper_id);",
+                "CREATE INDEX IF NOT EXISTS idx_ce_target ON citation_edges(target_paper_id);",
+                "CREATE INDEX IF NOT EXISTS idx_ce_rel ON citation_edges(relationship);",
+                "CREATE INDEX IF NOT EXISTS idx_ce_ext ON citation_edges(target_external_id);"
+            ]:
+                try:
+                    conn.execute(idx_stmt)
+                    conn.commit()
+                except Exception:
+                    pass
+
+            # Create papers indexes for search optimization
+            for idx_stmt in [
+                "CREATE INDEX IF NOT EXISTS idx_papers_year ON papers(year);",
+                "CREATE INDEX IF NOT EXISTS idx_papers_citations ON papers(citation_count);",
+                "CREATE INDEX IF NOT EXISTS idx_papers_version ON papers(classifier_version);",
+                "CREATE INDEX IF NOT EXISTS idx_papers_pubtype ON papers(publication_type);",
+                "CREATE INDEX IF NOT EXISTS idx_papers_harvested ON papers(date_harvested);",
+                "CREATE INDEX IF NOT EXISTS idx_papers_thc ON papers(thc_pct);"
+            ]:
+                try:
+                    conn.execute(idx_stmt)
+                    conn.commit()
+                except Exception:
+                    pass
 
             # Ensure llm_calls_log table exists
-            conn.execute("""
+            llm_calls_sql = """
                 CREATE TABLE IF NOT EXISTS llm_calls_log (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
                     paper_id INTEGER,
@@ -266,13 +556,27 @@ class DatabaseManager:
                     batch_id TEXT,
                     FOREIGN KEY(paper_id) REFERENCES papers(id) ON DELETE SET NULL
                 );
-            """)
-
-            # Populate publication_date for existing rows using year
-            conn.execute("UPDATE papers SET publication_date = year || '-01-01' WHERE publication_date IS NULL AND year IS NOT NULL;")
+            """
+            if self.is_postgres:
+                llm_calls_sql = llm_calls_sql.replace("INTEGER PRIMARY KEY AUTOINCREMENT", "SERIAL PRIMARY KEY")
+                llm_calls_sql = llm_calls_sql.replace("cost REAL", "cost DOUBLE PRECISION")
+                llm_calls_sql = llm_calls_sql.replace("classification_confidence REAL", "classification_confidence DOUBLE PRECISION")
+            conn.execute(llm_calls_sql)
             conn.commit()
-        except sqlite3.Error as e:
-            conn.rollback()
+
+            # Populate publication_date for existing rows using year (only needed for SQLite migrations)
+            if not self.is_postgres:
+                try:
+                    conn.execute("UPDATE papers SET publication_date = year || '-01-01' WHERE publication_date IS NULL AND year IS NOT NULL;")
+                    conn.commit()
+                except Exception:
+                    pass
+
+        except Exception as e:
+            try:
+                conn.rollback()
+            except Exception:
+                pass
             raise RuntimeError(f"Failed to initialize database: {e}")
         finally:
             conn.close()
@@ -940,15 +1244,20 @@ class DatabaseManager:
         conn = self.get_connection()
         try:
             # Check if table exists with the right columns
-            cursor = conn.execute("PRAGMA table_info(analyses);")
-            existing_cols = {row[1] for row in cursor.fetchall()}
             required_cols = {'id', 'name', 'filter_settings', 'paper_count', 'chart_data', 'created_at'}
-
-            if existing_cols and not required_cols.issubset(existing_cols):
-                # Table exists but is incomplete; drop and recreate
-                conn.execute("DROP TABLE IF EXISTS analyses;")
-
-            conn.execute("""
+            
+            table_exists_val = self.table_exists("analyses", conn)
+            if table_exists_val:
+                has_all = True
+                for col in required_cols:
+                    if not self.column_exists("analyses", col, conn):
+                        has_all = False
+                        break
+                if not has_all:
+                    conn.execute("DROP TABLE IF EXISTS analyses;")
+                    conn.commit()
+                    
+            analyses_sql = """
                 CREATE TABLE IF NOT EXISTS analyses (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
                     name TEXT DEFAULT 'Analysis',
@@ -957,7 +1266,11 @@ class DatabaseManager:
                     chart_data TEXT,
                     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
                 );
-            """)
+            """
+            if self.is_postgres:
+                analyses_sql = analyses_sql.replace("INTEGER PRIMARY KEY AUTOINCREMENT", "SERIAL PRIMARY KEY")
+                analyses_sql = analyses_sql.replace("DEFAULT CURRENT_TIMESTAMP", "DEFAULT NOW()")
+            conn.execute(analyses_sql)
             conn.commit()
         finally:
             conn.close()
