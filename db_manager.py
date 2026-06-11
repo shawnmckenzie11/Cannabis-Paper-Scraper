@@ -236,6 +236,17 @@ class DatabaseManager:
             except sqlite3.OperationalError:
                 pass
 
+            # Create indexes on papers table for high-performance filtering and sorting
+            try:
+                conn.execute("CREATE INDEX IF NOT EXISTS idx_papers_year ON papers(year);")
+                conn.execute("CREATE INDEX IF NOT EXISTS idx_papers_citations ON papers(citation_count);")
+                conn.execute("CREATE INDEX IF NOT EXISTS idx_papers_version ON papers(classifier_version);")
+                conn.execute("CREATE INDEX IF NOT EXISTS idx_papers_pubtype ON papers(publication_type);")
+                conn.execute("CREATE INDEX IF NOT EXISTS idx_papers_harvested ON papers(date_harvested);")
+                conn.execute("CREATE INDEX IF NOT EXISTS idx_papers_thc ON papers(thc_pct);")
+            except sqlite3.OperationalError:
+                pass
+
             # Ensure llm_calls_log table exists
             conn.execute("""
                 CREATE TABLE IF NOT EXISTS llm_calls_log (
