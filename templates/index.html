@@ -1865,14 +1865,18 @@
                                 <div style="width: 50%; text-align: center; border-right: 1px solid rgba(255,255,255,0.08); padding-right: 15px; display: flex; flex-direction: column; gap: 4px;">
                                     <div style="font-size: 0.8rem; color: #ff8a65; font-weight: 700;">Without Few-Shot</div>
                                     <div style="font-size: 0.75rem; color: var(--text-secondary);">Correction Rate:</div>
-                                    <div id="dash-rate-without-fs" style="font-size: 1.6rem; font-weight: 800; color: #ff8a65;">0%</div>
+                                    <div id="dash-rate-without-fs" style="font-size: 1.4rem; font-weight: 800; color: #ff8a65;">0%</div>
                                     <div id="dash-count-without-fs" style="font-size: 0.7rem; color: var(--text-secondary);">0 / 0 papers</div>
+                                    <div style="font-size: 0.75rem; color: var(--text-secondary); margin-top: 4px;">Avg Confidence:</div>
+                                    <div id="dash-conf-without-fs" style="font-size: 1.1rem; font-weight: 700; color: #e2e8f0;">0%</div>
                                 </div>
                                 <div style="width: 50%; text-align: center; padding-left: 15px; display: flex; flex-direction: column; gap: 4px;">
                                     <div style="font-size: 0.8rem; color: #4caf50; font-weight: 700;">With Few-Shot (Sim > 0.25)</div>
                                     <div style="font-size: 0.75rem; color: var(--text-secondary);">Correction Rate:</div>
-                                    <div id="dash-rate-with-fs" style="font-size: 1.6rem; font-weight: 800; color: #4caf50;">0%</div>
+                                    <div id="dash-rate-with-fs" style="font-size: 1.4rem; font-weight: 800; color: #4caf50;">0%</div>
                                     <div id="dash-count-with-fs" style="font-size: 0.7rem; color: var(--text-secondary);">0 / 0 papers</div>
+                                    <div style="font-size: 0.75rem; color: var(--text-secondary); margin-top: 4px;">Avg Confidence:</div>
+                                    <div id="dash-conf-with-fs" style="font-size: 1.1rem; font-weight: 700; color: #10b981;">0%</div>
                                 </div>
                             </div>
                         </div>
@@ -4226,9 +4230,11 @@
                     const rates = data.few_shot.comparison;
                     document.getElementById("dash-rate-without-fs").innerText = (rates.without_few_shot.rate * 100).toFixed(1) + '%';
                     document.getElementById("dash-count-without-fs").innerText = `${rates.without_few_shot.corrected} / ${rates.without_few_shot.total} papers`;
+                    document.getElementById("dash-conf-without-fs").innerText = (rates.without_few_shot.avg_confidence * 100).toFixed(1) + '%';
                     
                     document.getElementById("dash-rate-with-fs").innerText = (rates.with_few_shot.rate * 100).toFixed(1) + '%';
                     document.getElementById("dash-count-with-fs").innerText = `${rates.with_few_shot.corrected} / ${rates.with_few_shot.total} papers`;
+                    document.getElementById("dash-conf-with-fs").innerText = (rates.with_few_shot.avg_confidence * 100).toFixed(1) + '%';
                     
                     // Add explanation text in Card 4 if not exists
                     const fsImpactCard = document.getElementById("dash-fs-trigger-rate").closest(".glass-panel");
@@ -4257,7 +4263,7 @@
                         tbody.innerHTML = '<tr><td colspan="9" style="text-align: center; color: var(--text-secondary); padding: 20px;">No batch history logged yet.</td></tr>';
                     } else {
                         tbody.innerHTML = data.batches.map(b => {
-                            const formattedId = b.batch_id.startsWith('reclassify_task_') ? 'Task ' + b.batch_id.replace('reclassify_task_', '') : b.batch_id;
+                            const formattedId = formatBatchLabel(b.batch_id);
                             const timeStr = b.batch_time ? b.batch_time.split('T')[0] + ' ' + b.batch_time.split('T')[1].substring(0, 5) : '—';
                             return `<tr>
                                 <td style="color: var(--accent-blue); font-weight: 600;">${formattedId}</td>
@@ -4289,6 +4295,26 @@
             if (!batchId) return 'Manual';
             if (batchId.startsWith('reclassify_task_')) {
                 return 'Task ' + batchId.replace('reclassify_task_', '');
+            }
+            if (batchId.startsWith('reclassify_')) {
+                const parts = batchId.split('_');
+                if (parts.length >= 3) {
+                    const dateStr = parts[1];
+                    const timeStr = parts[2];
+                    if (dateStr.length === 8 && timeStr.length === 6) {
+                        return `Batch (${dateStr.substring(0,4)}-${dateStr.substring(4,6)}-${dateStr.substring(6,8)} ${timeStr.substring(0,2)}:${timeStr.substring(2,4)})`;
+                    }
+                }
+            }
+            if (batchId.startsWith('harvest_')) {
+                const parts = batchId.split('_');
+                if (parts.length >= 3) {
+                    const dateStr = parts[1];
+                    const timeStr = parts[2];
+                    if (dateStr.length === 8 && timeStr.length === 6) {
+                        return `Harvest (${dateStr.substring(0,4)}-${dateStr.substring(4,6)}-${dateStr.substring(6,8)} ${timeStr.substring(0,2)}:${timeStr.substring(2,4)})`;
+                    }
+                }
             }
             if (batchId === 'single_reclassify') return 'Single Reclass';
             if (batchId === 'sync_metadata') return 'Metadata Sync';

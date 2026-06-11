@@ -1401,7 +1401,7 @@ def api_learning_dashboard_metrics():
             })
             
         # 4. Few-shot Learning Effectiveness
-        cursor.execute("SELECT paper_id, timestamp, few_shot_similarity FROM llm_calls_log WHERE paper_id IS NOT NULL")
+        cursor.execute("SELECT paper_id, timestamp, few_shot_similarity, classification_confidence FROM llm_calls_log WHERE paper_id IS NOT NULL")
         calls = [dict(row) for row in cursor.fetchall()]
         
         cursor.execute("SELECT paper_id, timestamp FROM feedback_audit")
@@ -1422,8 +1422,10 @@ def api_learning_dashboard_metrics():
         
         with_fs_total = 0
         with_fs_corrected = 0
+        with_fs_conf_sum = 0.0
         no_fs_total = 0
         no_fs_corrected = 0
+        no_fs_conf_sum = 0.0
         
         sim_distribution = {
             "0.0-0.25": 0,
@@ -1437,6 +1439,7 @@ def api_learning_dashboard_metrics():
             pid = c["paper_id"]
             sim = c["few_shot_similarity"] or 0.0
             sum_similarity += sim
+            conf = c["classification_confidence"] or 0.0
             
             # Buckets
             if sim <= 0.25:
@@ -1466,10 +1469,12 @@ def api_learning_dashboard_metrics():
                         
             if is_fs:
                 with_fs_total += 1
+                with_fs_conf_sum += conf
                 if corrected:
                     with_fs_corrected += 1
             else:
                 no_fs_total += 1
+                no_fs_conf_sum += conf
                 if corrected:
                     no_fs_corrected += 1
                     
@@ -1512,12 +1517,14 @@ def api_learning_dashboard_metrics():
                     "with_few_shot": {
                         "total": with_fs_total,
                         "corrected": with_fs_corrected,
-                        "rate": round(with_fs_corrected / with_fs_total, 3) if with_fs_total > 0 else 0.0
+                        "rate": round(with_fs_corrected / with_fs_total, 3) if with_fs_total > 0 else 0.0,
+                        "avg_confidence": round(with_fs_conf_sum / with_fs_total, 3) if with_fs_total > 0 else 0.0
                     },
                     "without_few_shot": {
                         "total": no_fs_total,
                         "corrected": no_fs_corrected,
-                        "rate": round(no_fs_corrected / no_fs_total, 3) if no_fs_total > 0 else 0.0
+                        "rate": round(no_fs_corrected / no_fs_total, 3) if no_fs_total > 0 else 0.0,
+                        "avg_confidence": round(no_fs_conf_sum / no_fs_total, 3) if no_fs_total > 0 else 0.0
                     }
                 }
             },
