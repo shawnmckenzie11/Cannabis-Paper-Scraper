@@ -199,6 +199,27 @@ class DatabaseManager:
             # Ensure analyses table exists
             self.init_analyses_table()
 
+            # Ensure llm_calls_log table exists
+            conn.execute("""
+                CREATE TABLE IF NOT EXISTS llm_calls_log (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    paper_id INTEGER,
+                    timestamp TEXT,
+                    model TEXT,
+                    input_tokens INTEGER,
+                    cache_read_tokens INTEGER,
+                    cache_write_tokens INTEGER,
+                    output_tokens INTEGER,
+                    cost REAL,
+                    few_shot_similarity REAL,
+                    few_shot_count INTEGER,
+                    classification_confidence REAL,
+                    classifier_version TEXT,
+                    batch_id TEXT,
+                    FOREIGN KEY(paper_id) REFERENCES papers(id) ON DELETE SET NULL
+                );
+            """)
+
             # Populate publication_date for existing rows using year
             conn.execute("UPDATE papers SET publication_date = year || '-01-01' WHERE publication_date IS NULL AND year IS NOT NULL;")
             conn.commit()
@@ -260,6 +281,8 @@ class DatabaseManager:
         
         # Ensure array fields are stored as JSON strings
         paper_copy = paper.copy()
+        llm_metrics = paper_copy.pop("_llm_call_metrics", None)
+        harvest_batch_id = paper_copy.pop("_harvest_batch_id", None)
         for list_field in ["authors", "outcome_domain", "study_type", "exposure_method", "cannabis_type", "expert_locked_fields"]:
             if list_field in paper_copy and not isinstance(paper_copy[list_field], str):
                 paper_copy[list_field] = json.dumps(paper_copy[list_field])
@@ -329,6 +352,13 @@ class DatabaseManager:
                 cursor.execute(query, values)
                 row_id = cursor.lastrowid
                 
+            if llm_metrics:
+                self.log_llm_call(
+                    paper_id=row_id,
+                    metrics=llm_metrics,
+                    batch_id=harvest_batch_id or "harvest",
+                    cursor=cursor
+                )
             conn.commit()
             return row_id
         except sqlite3.Error as e:
@@ -336,6 +366,44 @@ class DatabaseManager:
             raise RuntimeError(f"Database error during insert/update: {e}")
         finally:
             conn.close()
+
+    def log_llm_call(self, paper_id: Optional[int], metrics: Dict[str, Any], batch_id: Optional[str] = None, cursor = None):
+        """Logs an LLM API call's token usage, model, and cost to the database."""
+        timestamp = datetime.now().isoformat()
+        model = metrics.get("model", "unknown")
+        input_tokens = metrics.get("input_tokens", 0)
+        cache_read = metrics.get("cache_read_tokens", 0)
+        cache_write = metrics.get("cache_write_tokens", 0)
+        output_tokens = metrics.get("output_tokens", 0)
+        cost = metrics.get("cost", 0.0)
+        few_shot_similarity = metrics.get("few_shot_similarity", 0.0)
+        few_shot_count = metrics.get("few_shot_count", 0)
+        classification_confidence = metrics.get("classification_confidence", 0.0)
+        classifier_version = metrics.get("classifier_version", "1.0.0")
+
+        sql = """
+            INSERT INTO llm_calls_log (
+                paper_id, timestamp, model, input_tokens, cache_read_tokens, cache_write_tokens,
+                output_tokens, cost, few_shot_similarity, few_shot_count, classification_confidence, classifier_version, batch_id
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        """
+        params = (
+            paper_id, timestamp, model, input_tokens, cache_read, cache_write,
+            output_tokens, cost, few_shot_similarity, few_shot_count, classification_confidence, classifier_version, batch_id
+        )
+
+        if cursor:
+            cursor.execute(sql, params)
+        else:
+            conn = self.get_connection()
+            try:
+                conn.execute(sql, params)
+                conn.commit()
+            except sqlite3.Error as e:
+                conn.rollback()
+                print(f"[DB ERROR] Failed to log LLM call: {e}")
+            finally:
+                conn.close()
 
     def get_paper(self, paper_id: int) -> Optional[Dict[str, Any]]:
         """Retrieves a single paper by its database ID."""

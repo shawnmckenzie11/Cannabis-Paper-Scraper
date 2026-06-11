@@ -89,3 +89,23 @@ CREATE TABLE IF NOT EXISTS feedback_audit (
     FOREIGN KEY(paper_id) REFERENCES papers(id) ON DELETE CASCADE
 );
 
+-- Metrics logging table for LLM classification calls
+CREATE TABLE IF NOT EXISTS llm_calls_log (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    paper_id INTEGER,
+    timestamp TEXT,
+    model TEXT,
+    input_tokens INTEGER,
+    cache_read_tokens INTEGER,
+    cache_write_tokens INTEGER,
+    output_tokens INTEGER,
+    cost REAL,
+    few_shot_similarity REAL,
+    few_shot_count INTEGER,
+    classification_confidence REAL,
+    classifier_version TEXT,
+    batch_id TEXT,
+    FOREIGN KEY(paper_id) REFERENCES papers(id) ON DELETE SET NULL
+);
+
+

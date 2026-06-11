@@ -20,6 +20,40 @@ logger = logging.getLogger(__name__)
 # Load environment variables
 load_dotenv()
 
+def calculate_token_cost(model: str, input_tokens: int, cache_read: int, cache_write: int, output_tokens: int) -> float:
+    """Calculates API cost dynamically based on model and token types (input, output, cache)."""
+    model = model.lower()
+    # Default is Claude 3.5 Sonnet pricing
+    input_rate = 3.00
+    cache_read_rate = 0.30
+    cache_write_rate = 3.75
+    output_rate = 15.00
+    
+    if "haiku" in model:
+        if "3-5" in model or "3.5" in model:
+            input_rate = 1.00
+            cache_read_rate = 0.10
+            cache_write_rate = 1.25
+            output_rate = 5.00
+        else: # Claude 3 Haiku
+            input_rate = 0.25
+            cache_read_rate = 0.25 # No cache discount
+            cache_write_rate = 0.25
+            output_rate = 1.25
+    elif "opus" in model:
+        input_rate = 15.00
+        cache_read_rate = 1.50
+        cache_write_rate = 18.75
+        output_rate = 75.00
+        
+    cost = (
+        (input_tokens * input_rate) +
+        (cache_read * cache_read_rate) +
+        (cache_write * cache_write_rate) +
+        (output_tokens * output_rate)
+    ) / 1_000_000.0
+    return cost
+
 def load_rules_config() -> Dict[str, Any]:
     """Loads classification rules and configurations, with a fallback default config."""
     default_prompt = 'Classify the attached cannabis/cannabinoid research paper by extracting the following characteristics from its full text. Use the full PDF text (title, abstract, introduction, methods, results, discussion) to inform your judgments. Return a JSON object with ONLY the fields listed below.\n## Fields to extract\n### 1. publication_type (single string)\nWhat kind of publication is this at the article level?\n- "original research" — primary research presenting new data/experiments\n- "review" — narrative or general review (not systematic)\n- "systematic review" — structured, replicable literature review\n- "meta-analysis" — statistical pooling of multiple studies\n- "case study" — detailed report of one or a few cases\n- "editorial" — opinion/editorial piece\n- "comment" — commentary or correspondence\n- "letter to the editor"\n- "perspectives paper"\n### 2. study_type (list of strings, multi-label)\nWhat study design(s) does this paper use? Can have multiple.\n**Clinical/Human:**\n- "Clinical (RCT)" — randomized controlled trial, double-blind, placebo-controlled\n- "Clinical (prospective)" — prospective cohort or longitudinal\n- "Clinical (retrospective)" — retrospective chart review or historical cohort\n- "Clinical (observational)" — cross-sectional, survey, registry, case-control, epidemiological, GWAS\n**Animal Models (in vivo):**\n- "Animal Models (Mouse)" — mouse, murine, C57BL/6\n- "Animal Models (Rat)" — rat, Wistar, Sprague-Dawley\n- "Animal Models (Other Rodents)" — hamster, gerbil, guinea pig, vole\n- "Animal Models (Non-Human Primates)" — macaque, rhesus, monkey, baboon\n- "Animal Models (Other)" — dog, cat, pig, rabbit, zebrafish, drosophila\n**Cell Culture (in vitro):**\n- "Cell Culture (Primary Cells)" — primary cells, splenocytes, primary microglia, primary hepatocytes\n- "Cell Culture (Cell Lines)" — HeLa, HepG2, PC12, RAW 264.7, SH-SY5Y, Jurkat, CHO\n- "Cell Culture (Organoids)" — organoid, spheroid, 3D culture\n- "Cell Culture (Co-Culture)" — co-culture of multiple cell types\n- "Cell Culture (PCLS)" — precision-cut lung slices\n- "Cell Culture (Other In Vitro)" — in vitro, cultured cells, epithelial cells, airway epithelial\n**Review types:**\n- "review" — narrative/systematic/scoping review\n- "meta-analysis"\n- "case study"\n- "editorial"\n### 3. exposure_method (list of strings, multi-label)\nHow was cannabis/cannabinoids administered?\n**Clinical/Human routes:**\n- "inhaled" — smoking, vaping, vaporization, inhalation\n- "oral" — edible, capsule, gummy, ingestion, gavage\n- "sublingual" — under tongue, drops, tincture\n- "injected" — IV, IM, SC (in human subjects)\n**In vitro methods:**\n- "exposure of cells to smoke/vapor" — direct chamber/ALI exposure of cells\n- "smoke/vapor conditioned media" — cells treated with smoke/vapor extract or CSE\n- "cannabinoids dissolved in media" — cannabinoids added directly to culture media\n**In vivo (animal) methods:**\n- "nose only smoke/vapor" — nose-only or snout-only exposure\n- "whole body. smoke/vapor" — whole-body chamber exposure (note: includes period)\n- "injection cannabinoids" — IP, IV, SC, IM injection of cannabinoids\n- "oral administration" — gavage, diet, feeding\n- "sub-lingual"\n- "intranasal" — nasal instillation/drops\n- "intratracheal" — intratracheal instillation\nIf none apply: "unknown"\n### 4. cannabis_type (list of strings, multi-label)\nWhat form of cannabis product was administered?\n- "dried flower" — cannabis flower, bud, joint, combusted herb, marijuana cigarette\n- "concentrates" — shatter, wax, resin, hash oil, BHO, rosin, tincture\n- "vape pen" — vape cartridge, e-cigarette, distillate vape, vaporizer, aerosol\n- "pure cannabinoid" — synthetic cannabinoid, dronabinol, nabilone, isolate\n- "edibles" — gummy, chocolate, brownie, cookie, drink, beverage, capsule\n- "hashish/kief" — hashish, hash, kief, charas\n- "CB receptor agonist" — synthetic agonist (e.g., WIN 55,212-2, CP 55,940, HU-210, JWH-018)\n- "CB receptor antagonist" — rimonabant, SR141716, AM251, AM630, SR144528\nIf none: "unknown"\n### 5. outcome_domain (list of strings, multi-label)\nWhat biological/clinical domain(s) does the study investigate as its primary or secondary outcome? Focus on the stated aims and key findings. Exclude domains that are only mentioned in passing background context.\n- "pain" — pain, analgesic, nociception, hyperalgesia, allodynia, neuropathic\n- "anxiety" — anxiety, anxiolytic, fear, panic, PTSD\n- "cognition" — cognition, memory, learning, attention, executive function, dementia, Alzheimer\'s\n- "inflammation" — inflammation, cytokine, TNF, interleukin, anti-inflammatory, arthritis\n- "addiction" — addiction, dependence, withdrawal, craving, substance use, relapse\n- "oncology" — cancer, tumor, chemotherapy, glioblastoma, carcinoma, antineoplastic (only if a primary focus, not background mention)\n- "neuroprotection" — neuroprotection, stroke, ischemia, brain injury, sclerosis, epilepsy, seizure\n- "sleep" — sleep, insomnia, sleep quality, melatonin\nIf none clearly identified: "other"\n### 6. population (list of strings, multi-label)\nWhat experimental subjects were used?\n- "human"\n- "mouse"\n- "rat"\n- "cell_line"\n- "other" (dog, pig, monkey, rabbit, feline, canine)\n### 7. Cannabinoid concentrations\n**thc_pct** (float or null): THC percentage reported in the cannabis product (e.g., 12.5 for "12.5% THC"). Look in Methods or Results or Product sections.\n**cbd_pct** (float or null): CBD percentage reported in the cannabis product (e.g., 1.0 for "1% CBD").\n**dose_mg** (float or null): Numeric dose in mg (e.g., 10 for "10 mg THC"). Extract dose values associated with cannabis/cannabinoids only (not other drugs).\n### 8. Strain/Chemotype\n**strain_reported** (string or null): Exact strain/cultivar name as written (e.g., "Bedrocan", "OG Kush", "Charlotte\'s Web").\n**strain_normalized** (string or null): One of:\n- "Chemotype I" — High THC, low CBD\n- "Chemotype II" — Balanced THC:CBD (~1:1)\n- "Chemotype III" — High CBD, low THC\n- Or null if not identifiable\n### 9. Timing parameters\n**duration_days** (float or null): Total study duration in days (e.g., 14 for "2 weeks", 30 for "30 days"). Extract from Methods.\n**inhaled_exposure_duration** (string or null): For inhalation studies, the per-session exposure duration (e.g., "30 minutes", "10 puffs", "5 minutes"). Extract from Methods.\n**administration_frequency** (string or null): How often the substance was administered (e.g., "daily", "twice daily", "once weekly", "5 days/week"). Extract from Methods.\n**treatment_duration** (string or null): For in vitro studies, how long cells were exposed (e.g., "24 hours", "48 hours"). Extract from Methods.\n### 10. Sample size and design flags\n**sample_size** (int or null): N value — number of subjects per group or total (e.g., 10 for "n = 10"). Extract from Methods.\n**multiple_doses** (boolean): true if multiple dose levels were tested (dose-response), or multiple concentrations in vitro.\n**multiple_time_intervals** (boolean): true if measurements were taken at multiple timepoints (longitudinal, repeated measures, time course).\n### 11. Puff count and THC/CBD concentrations (per-unit)\n**puff_count** (int or null): Number of puffs administered (relevant to inhaled studies). Null if not reported.\n**thc_mg_ml** (float or null): THC concentration in mg/mL of product volume. Null if not reported.\n**thc_mg_g** (float or null): THC dose in mg/g of product weight or body weight. Null if not reported.\n**thc_mg_kg** (float or null): THC dose in mg/kg of body weight. Null if not reported.\n**cbd_mg_ml** (float or null): CBD concentration in mg/mL of product volume. Null if not reported.\n**cbd_mg_g** (float or null): CBD dose in mg/g of product weight. Null if not reported.\n**cbd_mg_kg** (float or null): CBD dose in mg/kg of body weight. Null if not reported.\n### 12. Methodological quality flags\n**methodological_quality_flags** (list of strings): Any notable quality indicators or concerns. Examples: "randomized", "blinded", "placebo-controlled", "small sample size", "no control group", "confounding factors". Can be empty list.\n## Output format\nReturn ONLY valid JSON matching this schema:\n{\n  "publication_type": "string",\n  "study_type": ["string", ...],\n  "exposure_method": ["string", ...],\n  "cannabis_type": ["string", ...],\n  "outcome_domain": ["string", ...],\n  "population": ["string", ...],\n  "thc_pct": null or float,\n  "cbd_pct": null or float,\n  "dose_mg": null or float,\n  "strain_reported": null or string,\n  "strain_normalized": null or string,\n  "duration_days": null or float,\n  "inhaled_exposure_duration": null or string,\n  "administration_frequency": null or string,\n  "treatment_duration": null or string,\n  "sample_size": null or int,\n  "multiple_doses": false,\n  "multiple_time_intervals": false,\n  "puff_count": null or int,\n  "thc_mg_ml": null or float,\n  "thc_mg_g": null or float,\n  "thc_mg_kg": null or float,\n  "cbd_mg_ml": null or float,\n  "cbd_mg_g": null or float,\n  "cbd_mg_kg": null or float,\n  "methodological_quality_flags": []\n}\n## Important rules\n- Be conservative: only assign values you are confident about. Use null/empty where uncertain.\n- For multi-label fields (study_type, exposure_method, cannabis_type, outcome_domain, population), include ALL that apply.\n- Distinguish between primary research (study has original experiments) and reviews (summarizes other studies).\n- For exposure_method, focus on how cannabis/cannabinoids were administered, not other drugs or procedures.\n- For outcome_domain, exclude domains mentioned only in background/introduction context — focus on what the study actually measured.\n- For cannabinoid concentrations and doses, extract only values that pertain to cannabis/cannabinoids (not other drugs).'
@@ -234,6 +268,12 @@ def classify_with_llm(title: str, abstract: str, runs: Optional[int] = None) -> 
         
     num_runs = runs if runs is not None else config.get("self_consistency_runs", 1)
     
+    total_input_tokens = 0
+    total_cache_read = 0
+    total_cache_write = 0
+    total_output_tokens = 0
+    actual_model_used = "unknown"
+
     try:
         client = Anthropic(api_key=api_key)
         user_content = f"Title: {title}\n\nAbstract: {abstract}"
@@ -267,6 +307,7 @@ def classify_with_llm(title: str, abstract: str, runs: Optional[int] = None) -> 
                         ]
                     )
                     
+                    actual_model_used = model_name
                     # Log cache metrics if available
                     if message and hasattr(message, "usage"):
                         usage = message.usage
@@ -274,6 +315,12 @@ def classify_with_llm(title: str, abstract: str, runs: Optional[int] = None) -> 
                         read = getattr(usage, "cache_read_input_tokens", 0) or 0
                         if creation == 0 and hasattr(usage, "cache_creation") and usage.cache_creation:
                             creation = getattr(usage.cache_creation, "ephemeral_5m_input_tokens", 0) or 0
+                        
+                        total_input_tokens += usage.input_tokens
+                        total_cache_read += read
+                        total_cache_write += creation
+                        total_output_tokens += usage.output_tokens
+                        
                         logger.info(f"Anthropic API call complete. Input: {usage.input_tokens} tokens (Cached read: {read} tokens, Cached write: {creation} tokens), Output: {usage.output_tokens} tokens")
                     
                     break
@@ -367,10 +414,32 @@ def classify_with_llm(title: str, abstract: str, runs: Optional[int] = None) -> 
         # Clamp to 0.0 - 1.0
         final_confidence = max(0.0, min(1.0, final_confidence))
         
+        # Calculate cost
+        cost = calculate_token_cost(
+            actual_model_used,
+            total_input_tokens,
+            total_cache_read,
+            total_cache_write,
+            total_output_tokens
+        )
+        
         # Inject metadata into result
         consensus["classification_confidence"] = final_confidence
         consensus["classification_timestamp"] = datetime.now().isoformat()
         consensus["classifier_version"] = config.get("version", "1.0.0")
+        
+        consensus["_llm_call_metrics"] = {
+            "model": actual_model_used,
+            "input_tokens": total_input_tokens,
+            "cache_read_tokens": total_cache_read,
+            "cache_write_tokens": total_cache_write,
+            "output_tokens": total_output_tokens,
+            "cost": cost,
+            "few_shot_similarity": max_sim,
+            "few_shot_count": 1 if few_shot_text else 0,
+            "classification_confidence": final_confidence,
+            "classifier_version": config.get("version", "1.0.0")
+        }
         
         logger.info(f"LLM Classification complete. Confidence: {final_confidence:.2f}")
         return consensus

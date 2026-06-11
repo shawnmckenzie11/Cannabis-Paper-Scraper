@@ -530,6 +530,7 @@ def run_harvest_pipeline(
         tuple: (success_count, skipped_count_pubmed, filter_skipped)
     """
     db = DatabaseManager()
+    harvest_batch_id = f"harvest_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
     
     # 1. Skip Check setup
     existing_pmids = set()
@@ -627,6 +628,7 @@ def run_harvest_pipeline(
             # Merge extracted data back into our main paper record
             paper.update(extracted)
             paper["date_harvested"] = date_str
+            paper["_harvest_batch_id"] = harvest_batch_id
             
             # Write to Database
             row_id = db.insert_paper(paper)

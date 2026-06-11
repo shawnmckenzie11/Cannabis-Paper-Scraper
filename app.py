@@ -820,6 +820,13 @@ def api_sync_metadata(paper_id):
             conn.execute(f"UPDATE papers SET {', '.join(set_clauses)} WHERE id = ?", update_params)
             conn.commit()
             
+            if "_llm_call_metrics" in extracted:
+                db.log_llm_call(
+                    paper_id=paper_id,
+                    metrics=extracted["_llm_call_metrics"],
+                    batch_id="sync_metadata"
+                )
+            
         # Return updated paper
         updated_paper = db.get_paper(paper_id)
         return jsonify({
@@ -889,6 +896,8 @@ def api_reclassify_llm(paper_id):
         # Add metadata fields
         update_data["classifier_version"] = f"llm-reclassify-{rules_version}"
         update_data["classification_timestamp"] = datetime.now().isoformat()
+        if "classification_confidence" in extracted:
+            update_data["classification_confidence"] = extracted["classification_confidence"]
 
         # Build UPDATE query
         conn = db.get_connection()
@@ -905,6 +914,13 @@ def api_reclassify_llm(paper_id):
 
             conn.execute(f"UPDATE papers SET {', '.join(set_clauses)} WHERE id = ?", update_params)
             conn.commit()
+
+            if "_llm_call_metrics" in extracted:
+                db.log_llm_call(
+                    paper_id=paper_id,
+                    metrics=extracted["_llm_call_metrics"],
+                    batch_id="single_reclassify"
+                )
 
             # Return updated paper
             updated_paper = db.get_paper(paper_id)
@@ -1283,6 +1299,240 @@ def api_export_analysis_csv(analysis_id):
         mimetype="text/csv",
         headers={"Content-Disposition": f"attachment; filename={filename}"}
     )
+
+
+@app.route("/api/learning-dashboard/metrics", methods=["GET"])
+def api_learning_dashboard_metrics():
+    """Returns aggregated metadata and metrics for the Learning Dashboard."""
+    db = DatabaseManager()
+    conn = db.get_connection()
+    cursor = conn.cursor()
+    
+    try:
+        # 1. Summary Statistics
+        cursor.execute("SELECT COUNT(*) FROM papers WHERE classifier_version LIKE 'llm-%'")
+        total_llm_classified = cursor.fetchone()[0] or 0
+        
+        cursor.execute("SELECT COUNT(*) FROM papers WHERE expert_locked_fields IS NOT NULL AND expert_locked_fields != '[]' AND expert_locked_fields != ''")
+        total_locked_papers = cursor.fetchone()[0] or 0
+        
+        # Calculate total count of individual locked fields and their distribution
+        cursor.execute("SELECT expert_locked_fields FROM papers WHERE expert_locked_fields IS NOT NULL AND expert_locked_fields != '[]' AND expert_locked_fields != ''")
+        rows = cursor.fetchall()
+        total_locked_fields_count = 0
+        active_locks_dist = {}
+        for row in rows:
+            try:
+                fields = json.loads(row[0])
+                if isinstance(fields, list):
+                    total_locked_fields_count += len(fields)
+                    for f in fields:
+                        active_locks_dist[f] = active_locks_dist.get(f, 0) + 1
+            except Exception:
+                pass
+                
+        cursor.execute("SELECT AVG(classification_confidence) FROM papers WHERE classifier_version LIKE 'llm-%' AND classification_confidence IS NOT NULL")
+        avg_confidence = cursor.fetchone()[0] or 0.0
+        
+        cursor.execute("SELECT SUM(cost), SUM(input_tokens + cache_read_tokens + cache_write_tokens + output_tokens) FROM llm_calls_log")
+        cost_tokens_row = cursor.fetchone()
+        total_cost = cost_tokens_row[0] or 0.0
+        total_tokens = cost_tokens_row[1] or 0
+        
+        # 2. Token & Cost Trends by Batch
+        cursor.execute("""
+            SELECT 
+                batch_id,
+                MIN(timestamp) as batch_time,
+                model,
+                COUNT(*) as paper_count,
+                AVG(input_tokens) as avg_input,
+                AVG(cache_read_tokens) as avg_cache_read,
+                AVG(cache_write_tokens) as avg_cache_write,
+                AVG(output_tokens) as avg_output,
+                AVG(cost) as avg_cost,
+                SUM(cost) as total_cost,
+                AVG(classification_confidence) as avg_confidence
+            FROM llm_calls_log
+            GROUP BY batch_id
+            ORDER BY batch_time ASC
+        """)
+        batches_rows = cursor.fetchall()
+        batches = []
+        for r in batches_rows:
+            batches.append({
+                "batch_id": r["batch_id"] or "manual/single",
+                "batch_time": r["batch_time"],
+                "model": r["model"],
+                "paper_count": r["paper_count"],
+                "avg_input": round(r["avg_input"] or 0, 1),
+                "avg_cache_read": round(r["avg_cache_read"] or 0, 1),
+                "avg_cache_write": round(r["avg_cache_write"] or 0, 1),
+                "avg_output": round(r["avg_output"] or 0, 1),
+                "avg_cost": round(r["avg_cost"] or 0, 4),
+                "total_cost": round(r["total_cost"] or 0, 4),
+                "avg_confidence": round(r["avg_confidence"] or 0.0, 3)
+            })
+            
+        # 3. expert_locked_fields timeline (Audits over time)
+        cursor.execute("SELECT timestamp, field_name FROM feedback_audit ORDER BY timestamp ASC")
+        audit_rows = cursor.fetchall()
+        
+        # Group audits by date (YYYY-MM-DD)
+        audits_timeline = {}
+        for r in audit_rows:
+            if r["timestamp"]:
+                date_str = r["timestamp"][:10]  # Get YYYY-MM-DD
+                if date_str not in audits_timeline:
+                    audits_timeline[date_str] = {"count": 0, "fields": {}}
+                audits_timeline[date_str]["count"] += 1
+                field = r["field_name"]
+                audits_timeline[date_str]["fields"][field] = audits_timeline[date_str]["fields"].get(field, 0) + 1
+                
+        sorted_timeline = []
+        cumulative_locks = 0
+        for d in sorted(audits_timeline.keys()):
+            cumulative_locks += audits_timeline[d]["count"]
+            sorted_timeline.append({
+                "date": d,
+                "count": audits_timeline[d]["count"],
+                "cumulative": cumulative_locks,
+                "fields": audits_timeline[d]["fields"]
+            })
+            
+        # 4. Few-shot Learning Effectiveness
+        cursor.execute("SELECT paper_id, timestamp, few_shot_similarity FROM llm_calls_log WHERE paper_id IS NOT NULL")
+        calls = [dict(row) for row in cursor.fetchall()]
+        
+        cursor.execute("SELECT paper_id, timestamp FROM feedback_audit")
+        audits = [dict(row) for row in cursor.fetchall()]
+        
+        # Map paper corrections by timestamp
+        audit_map = {}
+        for a in audits:
+            pid = a["paper_id"]
+            if pid not in audit_map:
+                audit_map[pid] = []
+            audit_map[pid].append(a["timestamp"])
+            
+        # Segment calls into with-fewshot (sim > 0.25) vs without-fewshot
+        fs_trigger_count = 0
+        total_calls = len(calls)
+        sum_similarity = 0.0
+        
+        with_fs_total = 0
+        with_fs_corrected = 0
+        no_fs_total = 0
+        no_fs_corrected = 0
+        
+        sim_distribution = {
+            "0.0-0.25": 0,
+            "0.25-0.4": 0,
+            "0.4-0.6": 0,
+            "0.6-0.8": 0,
+            "0.8-1.0": 0
+        }
+        
+        for c in calls:
+            pid = c["paper_id"]
+            sim = c["few_shot_similarity"] or 0.0
+            sum_similarity += sim
+            
+            # Buckets
+            if sim <= 0.25:
+                sim_distribution["0.0-0.25"] += 1
+            elif sim <= 0.4:
+                sim_distribution["0.25-0.4"] += 1
+                fs_trigger_count += 1
+            elif sim <= 0.6:
+                sim_distribution["0.4-0.6"] += 1
+                fs_trigger_count += 1
+            elif sim <= 0.8:
+                sim_distribution["0.6-0.8"] += 1
+                fs_trigger_count += 1
+            else:
+                sim_distribution["0.8-1.0"] += 1
+                fs_trigger_count += 1
+                
+            is_fs = sim > 0.25
+            
+            # Check if corrected *after* classification call
+            corrected = False
+            if pid in audit_map:
+                for audit_time in audit_map[pid]:
+                    if audit_time > c["timestamp"]:
+                        corrected = True
+                        break
+                        
+            if is_fs:
+                with_fs_total += 1
+                if corrected:
+                    with_fs_corrected += 1
+            else:
+                no_fs_total += 1
+                if corrected:
+                    no_fs_corrected += 1
+                    
+        # 5. Confidence Distribution
+        cursor.execute("""
+            SELECT 
+                SUM(CASE WHEN classification_confidence >= 0.85 THEN 1 ELSE 0 END) as high,
+                SUM(CASE WHEN classification_confidence >= 0.60 AND classification_confidence < 0.85 THEN 1 ELSE 0 END) as med,
+                SUM(CASE WHEN classification_confidence < 0.60 THEN 1 ELSE 0 END) as low
+            FROM papers
+            WHERE classifier_version LIKE 'llm-%'
+        """)
+        conf_dist_row = cursor.fetchone()
+        conf_distribution = {
+            "high": conf_dist_row["high"] or 0,
+            "medium": conf_dist_row["med"] or 0,
+            "low": conf_dist_row["low"] or 0
+        }
+        
+        # Prepare response payload
+        metrics = {
+            "summary": {
+                "total_llm_classified": total_llm_classified,
+                "total_locked_papers": total_locked_papers,
+                "total_locked_fields": total_locked_fields_count,
+                "avg_confidence": round(avg_confidence, 3),
+                "total_cost": round(total_cost, 4),
+                "total_tokens": total_tokens
+            },
+            "batches": batches,
+            "expert_locks": {
+                "active_distribution": active_locks_dist,
+                "timeline": sorted_timeline
+            },
+            "few_shot": {
+                "trigger_rate": round(fs_trigger_count / total_calls, 3) if total_calls > 0 else 0.0,
+                "avg_similarity": round(sum_similarity / total_calls, 3) if total_calls > 0 else 0.0,
+                "similarity_distribution": sim_distribution,
+                "comparison": {
+                    "with_few_shot": {
+                        "total": with_fs_total,
+                        "corrected": with_fs_corrected,
+                        "rate": round(with_fs_corrected / with_fs_total, 3) if with_fs_total > 0 else 0.0
+                    },
+                    "without_few_shot": {
+                        "total": no_fs_total,
+                        "corrected": no_fs_corrected,
+                        "rate": round(no_fs_corrected / no_fs_total, 3) if no_fs_total > 0 else 0.0
+                    }
+                }
+            },
+            "confidence": {
+                "distribution": conf_distribution
+            }
+        }
+        
+        return jsonify(metrics)
+        
+    except Exception as e:
+        app.logger.error(f"Error compiling Learning Dashboard metrics: {e}")
+        return jsonify({"error": str(e)}), 500
+    finally:
+        conn.close()
 
 
 # Start the background daily scheduler thread, protected against debug reloader double-runs

@@ -81,7 +81,8 @@ def reclassify_papers_llm(limit=None, offset=0, prioritize=True):
             logger.info("No papers found matching the query criteria.")
             return
 
-        logger.info(f"Loaded {len(papers)} papers from the database. Starting LLM reclassification...")
+        batch_id = f"reclassify_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
+        logger.info(f"Loaded {len(papers)} papers from the database. Starting LLM reclassification (Batch ID: {batch_id})...")
 
         update_count = 0
         
@@ -149,11 +150,26 @@ def reclassify_papers_llm(limit=None, offset=0, prioritize=True):
             
             set_clauses.append("classification_timestamp = ?")
             update_params.append(datetime.now().isoformat())
+
+            # Add confidence score manual update
+            if "classification_confidence" in extracted:
+                set_clauses.append("classification_confidence = ?")
+                update_params.append(extracted["classification_confidence"])
             
             update_params.append(paper_id)
 
             sql = f"UPDATE papers SET {', '.join(set_clauses)} WHERE id = ?"
             cursor.execute(sql, update_params)
+            
+            # Log LLM call details
+            if "_llm_call_metrics" in extracted:
+                db.log_llm_call(
+                    paper_id=paper_id,
+                    metrics=extracted["_llm_call_metrics"],
+                    batch_id=batch_id,
+                    cursor=cursor
+                )
+
             update_count += 1
 
             # Commit periodically

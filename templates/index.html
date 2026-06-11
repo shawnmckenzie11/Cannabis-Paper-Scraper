@@ -1370,6 +1370,10 @@
                     style="padding: 8px 16px; font-size: 0.85rem; background: rgba(0, 240, 255, 0.1); border-color: rgba(0, 240, 255, 0.3); color: var(--accent-blue); display: inline-flex; align-items: center; gap: 6px;">
                     <span>📊</span> My Analyses
                 </button>
+                <button class="btn btn-secondary" onclick="openLearningDashboard()" id="btn-learning-dashboard"
+                    style="padding: 8px 16px; font-size: 0.85rem; background: rgba(0, 240, 255, 0.1); border-color: rgba(0, 240, 255, 0.3); color: var(--accent-blue); display: inline-flex; align-items: center; gap: 6px;">
+                    <span>🧠</span> Learning Dashboard
+                </button>
             </div>
         </div>
         <div class="banner-right">
@@ -1775,6 +1779,129 @@
                         style="padding: 8px 18px; font-size: 0.85rem; border-radius: 8px; font-family: var(--font-display); background: linear-gradient(135deg, rgba(0, 240, 255, 0.2) 0%, rgba(0, 240, 255, 0.05) 100%); border: 1px solid rgba(0, 240, 255, 0.3); color: var(--accent-blue); cursor: not-allowed; opacity: 0.5; box-shadow: 0 0 10px rgba(0, 240, 255, 0.05); display: inline-flex; align-items: center; gap: 6px; transition: all 0.3s ease;">
                         📥 Export CSV
                     </button>
+                </div>
+            </section>
+
+            <!-- LEARNING DASHBOARD PANEL -->
+            <section id="learning-dashboard-panel" style="display: none; flex-direction: column; gap: 20px; padding: 20px 30px;">
+                <!-- Dashboard Header -->
+                <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; border-bottom: 1px solid rgba(255,255,255,0.08); padding-bottom: 15px;">
+                    <div style="display: flex; align-items: center; gap: 12px;">
+                        <span style="display: inline-block; width: 10px; height: 10px; border-radius: 50%; background: #6366f1; box-shadow: 0 0 8px rgba(99, 102, 241, 0.6);"></span>
+                        <h3 style="font-family: var(--font-display); font-size: 1.25rem; font-weight: 700; margin: 0; color: var(--text-primary);">🧠 Learning Dashboard</h3>
+                    </div>
+                    <div style="display: flex; gap: 10px;">
+                        <button class="btn btn-secondary" onclick="refreshDashboardMetrics()" style="padding: 6px 14px; font-size: 0.85rem; background: rgba(99, 102, 241, 0.15); border-color: rgba(99, 102, 241, 0.4); color: #818cf8; display: inline-flex; align-items: center; gap: 6px;">
+                            🔄 Refresh Metrics
+                        </button>
+                        <button class="btn btn-secondary" onclick="closeLearningDashboard()" style="padding: 6px 14px; font-size: 0.85rem; background: rgba(0, 240, 255, 0.1); border-color: rgba(0, 240, 255, 0.3); color: var(--accent-blue); display: inline-flex; align-items: center; gap: 6px;">
+                            🗄️ Back to Database
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Quick Stats Cards Row -->
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px;">
+                    <div class="glass-panel" style="padding: 15px; text-align: center; border-color: rgba(255,255,255,0.05); background: rgba(255,255,255,0.01); border-radius: 10px;">
+                        <div style="font-size: 0.75rem; text-transform: uppercase; color: var(--text-secondary); margin-bottom: 5px; font-weight: 600; letter-spacing: 0.5px;">LLM Classified Papers</div>
+                        <div id="dash-total-llm" style="font-size: 1.8rem; font-weight: 800; color: var(--accent-blue);">0</div>
+                    </div>
+                    <div class="glass-panel" style="padding: 15px; text-align: center; border-color: rgba(255,255,255,0.05); background: rgba(255,255,255,0.01); border-radius: 10px;">
+                        <div style="font-size: 0.75rem; text-transform: uppercase; color: var(--text-secondary); margin-bottom: 5px; font-weight: 600; letter-spacing: 0.5px;">Expert Corrections (Locks)</div>
+                        <div id="dash-total-corrections" style="font-size: 1.8rem; font-weight: 800; color: #ff8a65;">0</div>
+                    </div>
+                    <div class="glass-panel" style="padding: 15px; text-align: center; border-color: rgba(255,255,255,0.05); background: rgba(255,255,255,0.01); border-radius: 10px;">
+                        <div style="font-size: 0.75rem; text-transform: uppercase; color: var(--text-secondary); margin-bottom: 5px; font-weight: 600; letter-spacing: 0.5px;">Avg LLM Confidence</div>
+                        <div id="dash-avg-confidence" style="font-size: 1.8rem; font-weight: 800; color: #4caf50;">0%</div>
+                    </div>
+                    <div class="glass-panel" style="padding: 15px; text-align: center; border-color: rgba(255,255,255,0.05); background: rgba(255,255,255,0.01); border-radius: 10px;">
+                        <div style="font-size: 0.75rem; text-transform: uppercase; color: var(--text-secondary); margin-bottom: 5px; font-weight: 600; letter-spacing: 0.5px;">Cumulative LLM Cost</div>
+                        <div id="dash-total-cost" style="font-size: 1.8rem; font-weight: 800; color: #ffeb3b;">$0.00</div>
+                    </div>
+                </div>
+
+                <!-- Charts Layout Grid -->
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(450px, 1fr)); gap: 20px; margin-top: 10px;">
+                    <!-- Card 1: Cost/Token Trend -->
+                    <div class="glass-panel" style="padding: 20px; display: flex; flex-direction: column; gap: 15px; height: 350px; border-radius: 12px;">
+                        <h4 style="margin: 0; font-size: 1rem; font-weight: 600; color: var(--text-primary); display: flex; align-items: center; gap: 6px;">📈 Cost & Token Trends per Batch</h4>
+                        <div style="flex: 1; min-height: 0; position: relative;">
+                            <canvas id="chart-cost-tokens"></canvas>
+                        </div>
+                    </div>
+
+                    <!-- Card 2: Confidence Trend & Distribution -->
+                    <div class="glass-panel" style="padding: 20px; display: flex; flex-direction: column; gap: 15px; height: 350px; border-radius: 12px;">
+                        <h4 style="margin: 0; font-size: 1rem; font-weight: 600; color: var(--text-primary); display: flex; align-items: center; gap: 6px;">🛡️ Classification Confidence Progression</h4>
+                        <div style="flex: 1; min-height: 0; position: relative;">
+                            <canvas id="chart-confidence-trend"></canvas>
+                        </div>
+                    </div>
+
+                    <!-- Card 3: Expert Locked Fields Distribution -->
+                    <div class="glass-panel" style="padding: 20px; display: flex; flex-direction: column; gap: 15px; height: 350px; border-radius: 12px;">
+                        <h4 style="margin: 0; font-size: 1rem; font-weight: 600; color: var(--text-primary); display: flex; align-items: center; gap: 6px;">🔒 Expert Locked Fields Breakdown</h4>
+                        <div style="flex: 1; min-height: 0; position: relative;">
+                            <canvas id="chart-locked-fields"></canvas>
+                        </div>
+                    </div>
+
+                    <!-- Card 4: Few-Shot Learning Analysis -->
+                    <div class="glass-panel" style="padding: 20px; display: flex; flex-direction: column; gap: 15px; height: 350px; border-radius: 12px; border-color: rgba(99, 102, 241, 0.15);">
+                        <h4 style="margin: 0; font-size: 1rem; font-weight: 600; color: var(--text-primary); display: flex; align-items: center; gap: 6px;">🧠 Dynamic Few-Shot Learning Impact</h4>
+                        <div style="flex: 1; min-height: 0; position: relative; display: flex; flex-direction: column; gap: 12px;">
+                            <div style="display: flex; justify-content: space-around; padding: 12px 0; background: rgba(255,255,255,0.02); border-radius: 8px; border: 1px solid rgba(255,255,255,0.05);">
+                                <div style="text-align: center;">
+                                    <div style="font-size: 0.7rem; color: var(--text-secondary); text-transform: uppercase; font-weight: 600;">Few-Shot Trigger Rate</div>
+                                    <div id="dash-fs-trigger-rate" style="font-size: 1.4rem; font-weight: 700; color: var(--accent-blue);">0%</div>
+                                </div>
+                                <div style="text-align: center;">
+                                    <div style="font-size: 0.7rem; color: var(--text-secondary); text-transform: uppercase; font-weight: 600;">Avg Match Similarity</div>
+                                    <div id="dash-fs-avg-similarity" style="font-size: 1.4rem; font-weight: 700; color: #4caf50;">0.00</div>
+                                </div>
+                            </div>
+                            <!-- Comparison of correction rates -->
+                            <div style="flex: 1; display: flex; align-items: center; justify-content: center; gap: 20px; padding: 10px;">
+                                <div style="width: 50%; text-align: center; border-right: 1px solid rgba(255,255,255,0.08); padding-right: 15px; display: flex; flex-direction: column; gap: 4px;">
+                                    <div style="font-size: 0.8rem; color: #ff8a65; font-weight: 700;">Without Few-Shot</div>
+                                    <div style="font-size: 0.75rem; color: var(--text-secondary);">Correction Rate:</div>
+                                    <div id="dash-rate-without-fs" style="font-size: 1.6rem; font-weight: 800; color: #ff8a65;">0%</div>
+                                    <div id="dash-count-without-fs" style="font-size: 0.7rem; color: var(--text-secondary);">0 / 0 papers</div>
+                                </div>
+                                <div style="width: 50%; text-align: center; padding-left: 15px; display: flex; flex-direction: column; gap: 4px;">
+                                    <div style="font-size: 0.8rem; color: #4caf50; font-weight: 700;">With Few-Shot (Sim > 0.25)</div>
+                                    <div style="font-size: 0.75rem; color: var(--text-secondary);">Correction Rate:</div>
+                                    <div id="dash-rate-with-fs" style="font-size: 1.6rem; font-weight: 800; color: #4caf50;">0%</div>
+                                    <div id="dash-count-with-fs" style="font-size: 0.7rem; color: var(--text-secondary);">0 / 0 papers</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Detailed Batch Table -->
+                <div class="glass-panel" style="padding: 20px; display: flex; flex-direction: column; gap: 15px; border-radius: 12px; margin-top: 10px;">
+                    <h4 style="margin: 0; font-size: 1rem; font-weight: 600; color: var(--text-primary); display: flex; align-items: center; gap: 6px;">📋 Detailed Classification Batch History</h4>
+                    <div class="analyses-table-wrap" style="max-height: 25vh; overflow-y: auto;">
+                        <table>
+                            <thead>
+                                <tr style="background: rgba(255,255,255,0.02);">
+                                    <th style="padding: 10px 15px;">Batch ID</th>
+                                    <th style="padding: 10px 15px;">Start Time</th>
+                                    <th style="padding: 10px 15px;">Model</th>
+                                    <th style="padding: 10px 15px; text-align: right;">Papers</th>
+                                    <th style="padding: 10px 15px; text-align: right;">Avg Input</th>
+                                    <th style="padding: 10px 15px; text-align: right;">Avg Cache Read</th>
+                                    <th style="padding: 10px 15px; text-align: right;">Avg Output</th>
+                                    <th style="padding: 10px 15px; text-align: right;">Avg Cost/Paper</th>
+                                    <th style="padding: 10px 15px; text-align: right;">Total Cost</th>
+                                </tr>
+                            </thead>
+                            <tbody id="dash-batch-tbody">
+                                <tr><td colspan="9" style="text-align: center; color: var(--text-secondary); padding: 20px;">No batch history logged yet.</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
             </section>
 
@@ -2520,6 +2647,9 @@
         let chartOutcomeBar = null;
         let chartTimeline = null;
         let chartThcDistribution = null;
+        let chartCostTokens = null;
+        let chartConfidenceTrend = null;
+        let chartLockedFields = null;
 
         // Switch table views between Original, Review, and Recents
         function switchTab(tab) {
@@ -3859,28 +3989,49 @@
                 });
         }
 
-        /* ─── My Analyses ─── */
+        /* ─── Panel Switching / View Management ─── */
 
-        function openMyAnalyses() {
+        function showView(viewName) {
+            // 1. Hide all views and overlays first
             document.querySelector('.sidebar').style.display = 'none';
             document.getElementById('global-tabs-container').style.display = 'none';
             const tableSection = document.querySelector('.main-content > section.glass-panel');
             if (tableSection) tableSection.style.display = 'none';
-            document.getElementById("my-analyses-panel").classList.add("visible");
-            document.getElementById("selection-analytics-panel").style.display = "flex";
-            loadAnalysesList();
+
+            document.getElementById("my-analyses-panel").classList.remove("visible");
+            document.getElementById("selection-analytics-panel").style.display = "none";
+            document.getElementById("learning-dashboard-panel").style.display = "none";
+
+            // If switching away from My Analyses, reset selection
+            if (viewName !== 'my-analyses') {
+                selectedAnalysisId = null;
+                updateExportCSVButtonState();
+            }
+
+            // 2. Show requested view
+            if (viewName === 'database') {
+                document.querySelector('.sidebar').style.display = '';
+                document.getElementById('global-tabs-container').style.display = '';
+                if (tableSection) tableSection.style.display = 'flex';
+                triggerSearch(false);
+            } else if (viewName === 'my-analyses') {
+                document.getElementById("my-analyses-panel").classList.add("visible");
+                document.getElementById("selection-analytics-panel").style.display = "flex";
+                loadAnalysesList();
+            } else if (viewName === 'learning-dashboard') {
+                document.getElementById("learning-dashboard-panel").style.display = "flex";
+                refreshDashboardMetrics();
+            }
+        }
+
+        /* ─── My Analyses ─── */
+
+        function openMyAnalyses() {
+            showView('my-analyses');
         }
 
         function closeMyAnalyses() {
-            document.querySelector('.sidebar').style.display = '';
-            document.getElementById('global-tabs-container').style.display = '';
-            const tableSection = document.querySelector('.main-content > section.glass-panel');
-            if (tableSection) tableSection.style.display = 'flex';
-            document.getElementById("my-analyses-panel").classList.remove("visible");
-            document.getElementById("selection-analytics-panel").style.display = "none";
-            selectedAnalysisId = null;
-            updateExportCSVButtonState();
-            triggerSearch(false);
+            showView('database');
         }
 
         function updateExportCSVButtonState() {
@@ -3908,7 +4059,7 @@
         }
 
         function loadAnalysesList(selectId) {
-            fetch("/api/analyses")
+            fetch("/api/analyses?_t=" + Date.now())
                 .then(res => res.json())
                 .then(analyses => {
                     const tbody = document.getElementById("analyses-tbody");
@@ -3937,7 +4088,7 @@
                             + '<td>' + tag(fs.exposure_method, '') + '</td>'
                             + '<td>' + tag(fs.cannabis_type, '') + '</td>'
                             + '<td>' + tag(fs.outcome, '') + '</td>'
-                            + '<td><button class="btn-sm-icon" onclick="event.stopPropagation();deleteAnalysis(' + a.id + ')">\ud83d\uddd1\ufe0f</button></td>'
+                            + '<td><button class="btn-sm-icon" onclick="event.stopPropagation(); deleteAnalysis(' + a.id + ', event)">\ud83d\uddd1\ufe0f</button></td>'
                             + '</tr>';
                     }).join('');
                 });
@@ -3991,19 +4142,415 @@
                 });
         }
 
-        function deleteAnalysis(id) {
+        function deleteAnalysis(id, event) {
+            if (event) event.stopPropagation();
             if (!confirm("Delete this analysis?")) return;
-            fetch("/api/analyses/" + id, { method: "DELETE" })
-                .then(res => res.json())
+            fetch("/api/analyses/" + id + "?_t=" + Date.now(), { method: "DELETE" })
+                .then(res => {
+                    if (!res.ok) {
+                        return res.json().then(err => { throw new Error(err.error || "Failed to delete"); });
+                    }
+                    return res.json();
+                })
                 .then(result => {
                     if (result.success) {
                         if (selectedAnalysisId === id) {
                             selectedAnalysisId = null;
                             updateExportCSVButtonState();
+                            renderChartsFromData(null);
                         }
                         loadAnalysesList();
                     }
+                })
+                .catch(err => {
+                    console.error("Error deleting analysis:", err);
+                    alert("Error deleting analysis: " + err.message);
                 });
+        }
+
+        function openLearningDashboard() {
+            showView('learning-dashboard');
+        }
+ 
+        function closeLearningDashboard() {
+            showView('database');
+        }
+
+        function refreshDashboardMetrics() {
+            const btnRefresh = document.querySelector("#learning-dashboard-panel button[onclick='refreshDashboardMetrics()']");
+            if (btnRefresh) {
+                btnRefresh.disabled = true;
+                btnRefresh.innerHTML = '⏳ Loading...';
+            }
+            
+            fetch("/api/learning-dashboard/metrics?_t=" + Date.now())
+                .then(res => res.json())
+                .then(data => {
+                    if (data.error) {
+                        alert("Error loading dashboard metrics: " + data.error);
+                        return;
+                    }
+                    
+                    // 1. Populate summary stats
+                    document.getElementById("dash-total-llm").innerText = data.summary.total_llm_classified;
+                    document.getElementById("dash-total-corrections").innerText = data.summary.total_locked_fields;
+                    document.getElementById("dash-avg-confidence").innerText = (data.summary.avg_confidence * 100).toFixed(1) + '%';
+                    document.getElementById("dash-total-cost").innerText = '$' + data.summary.total_cost.toFixed(2);
+                    
+                    // Add hover info or details to corrections if needed (total locked papers)
+                    const correctionsCard = document.getElementById("dash-total-corrections").parentNode;
+                    let lockedSubtext = correctionsCard.querySelector(".locked-subtext");
+                    if (!lockedSubtext) {
+                        lockedSubtext = document.createElement("div");
+                        lockedSubtext.className = "locked-subtext";
+                        lockedSubtext.style.fontSize = "0.7rem";
+                        lockedSubtext.style.color = "var(--text-secondary)";
+                        lockedSubtext.style.marginTop = "4px";
+                        correctionsCard.appendChild(lockedSubtext);
+                    }
+                    lockedSubtext.innerText = `Across ${data.summary.total_locked_papers} papers`;
+
+                    // 2. Render Card 1: Cost & Token Trends
+                    renderCostTokensChart(data.batches);
+                    
+                    // 3. Render Card 2: Confidence Trend
+                    renderConfidenceTrendChart(data.batches);
+                    
+                    // 4. Render Card 3: Locked Fields Breakdown
+                    renderLockedFieldsChart(data.expert_locks.active_distribution);
+                    
+                    // 5. Populate Card 4: Few-shot Learning Comparison
+                    document.getElementById("dash-fs-trigger-rate").innerText = (data.few_shot.trigger_rate * 100).toFixed(1) + '%';
+                    document.getElementById("dash-fs-avg-similarity").innerText = data.few_shot.avg_similarity.toFixed(3);
+                    
+                    const rates = data.few_shot.comparison;
+                    document.getElementById("dash-rate-without-fs").innerText = (rates.without_few_shot.rate * 100).toFixed(1) + '%';
+                    document.getElementById("dash-count-without-fs").innerText = `${rates.without_few_shot.corrected} / ${rates.without_few_shot.total} papers`;
+                    
+                    document.getElementById("dash-rate-with-fs").innerText = (rates.with_few_shot.rate * 100).toFixed(1) + '%';
+                    document.getElementById("dash-count-with-fs").innerText = `${rates.with_few_shot.corrected} / ${rates.with_few_shot.total} papers`;
+                    
+                    // Add explanation text in Card 4 if not exists
+                    const fsImpactCard = document.getElementById("dash-fs-trigger-rate").closest(".glass-panel");
+                    let fsExplanation = fsImpactCard.querySelector(".fs-explanation");
+                    if (!fsExplanation) {
+                        fsExplanation = document.createElement("div");
+                        fsExplanation.className = "fs-explanation";
+                        fsExplanation.style.fontSize = "0.75rem";
+                        fsExplanation.style.color = "var(--text-secondary)";
+                        fsExplanation.style.marginTop = "10px";
+                        fsExplanation.style.textAlign = "center";
+                        fsExplanation.style.fontStyle = "italic";
+                        fsExplanation.style.borderTop = "1px solid rgba(255,255,255,0.05)";
+                        fsExplanation.style.paddingTop = "8px";
+                        // Find the container under header to insert
+                        const container = fsImpactCard.querySelector("div[style*='flex: 1']");
+                        if (container) container.appendChild(fsExplanation);
+                    }
+                    if (fsExplanation) {
+                        fsExplanation.innerText = "💡 Lower correction rate with few-shot means the model was initially correct and required fewer expert edits.";
+                    }
+
+                    // 6. Populate Batch Table
+                    const tbody = document.getElementById("dash-batch-tbody");
+                    if (data.batches.length === 0) {
+                        tbody.innerHTML = '<tr><td colspan="9" style="text-align: center; color: var(--text-secondary); padding: 20px;">No batch history logged yet.</td></tr>';
+                    } else {
+                        tbody.innerHTML = data.batches.map(b => {
+                            const formattedId = b.batch_id.startsWith('reclassify_task_') ? 'Task ' + b.batch_id.replace('reclassify_task_', '') : b.batch_id;
+                            const timeStr = b.batch_time ? b.batch_time.split('T')[0] + ' ' + b.batch_time.split('T')[1].substring(0, 5) : '—';
+                            return `<tr>
+                                <td style="color: var(--accent-blue); font-weight: 600;">${formattedId}</td>
+                                <td style="font-size: 0.8rem; color: var(--text-secondary);">${timeStr}</td>
+                                <td style="font-size: 0.8rem; color: var(--text-secondary);">${b.model}</td>
+                                <td style="text-align: right; font-weight: 700;">${b.paper_count}</td>
+                                <td style="text-align: right; color: var(--text-secondary);">${b.avg_input}</td>
+                                <td style="text-align: right; color: var(--accent-blue);">${b.avg_cache_read}</td>
+                                <td style="text-align: right; color: var(--text-secondary);">${b.avg_output}</td>
+                                <td style="text-align: right; color: var(--accent-amber); font-weight: 600;">$${b.avg_cost.toFixed(4)}</td>
+                                <td style="text-align: right; color: #ffeb3b; font-weight: 700;">$${b.total_cost.toFixed(2)}</td>
+                            </tr>`;
+                        }).join('');
+                    }
+                })
+                .catch(err => {
+                    console.error("Error fetching learning dashboard metrics:", err);
+                    alert("Failed to load learning dashboard metrics: " + err.message);
+                })
+                .finally(() => {
+                    if (btnRefresh) {
+                        btnRefresh.disabled = false;
+                        btnRefresh.innerHTML = '🔄 Refresh Metrics';
+                    }
+                });
+        }
+
+        function formatBatchLabel(batchId) {
+            if (!batchId) return 'Manual';
+            if (batchId.startsWith('reclassify_task_')) {
+                return 'Task ' + batchId.replace('reclassify_task_', '');
+            }
+            if (batchId === 'single_reclassify') return 'Single Reclass';
+            if (batchId === 'sync_metadata') return 'Metadata Sync';
+            return batchId;
+        }
+
+        function renderCostTokensChart(batches) {
+            const ctx = document.getElementById('chart-cost-tokens').getContext('2d');
+            
+            if (chartCostTokens) {
+                chartCostTokens.destroy();
+            }
+            
+            const labels = batches.map(b => formatBatchLabel(b.batch_id));
+            const uncachedInput = batches.map(b => b.avg_input);
+            const cachedRead = batches.map(b => b.avg_cache_read);
+            const cachedWrite = batches.map(b => b.avg_cache_write);
+            const avgOutput = batches.map(b => b.avg_output);
+            const avgCost = batches.map(b => b.avg_cost);
+            
+            chartCostTokens = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [
+                        {
+                            label: 'Uncached Input',
+                            data: uncachedInput,
+                            backgroundColor: 'rgba(6, 182, 212, 0.4)',
+                            borderColor: 'rgba(6, 182, 212, 1)',
+                            borderWidth: 1.5,
+                            stack: 'tokens',
+                            yAxisID: 'y'
+                        },
+                        {
+                            label: 'Cached Read',
+                            data: cachedRead,
+                            backgroundColor: 'rgba(99, 102, 241, 0.4)',
+                            borderColor: 'rgba(99, 102, 241, 1)',
+                            borderWidth: 1.5,
+                            stack: 'tokens',
+                            yAxisID: 'y'
+                        },
+                        {
+                            label: 'Cached Write',
+                            data: cachedWrite,
+                            backgroundColor: 'rgba(168, 85, 247, 0.4)',
+                            borderColor: 'rgba(168, 85, 247, 1)',
+                            borderWidth: 1.5,
+                            stack: 'tokens',
+                            yAxisID: 'y'
+                        },
+                        {
+                            label: 'Output Tokens',
+                            data: avgOutput,
+                            backgroundColor: 'rgba(34, 197, 94, 0.4)',
+                            borderColor: 'rgba(34, 197, 94, 1)',
+                            borderWidth: 1.5,
+                            stack: 'tokens',
+                            yAxisID: 'y'
+                        },
+                        {
+                            label: 'Avg Cost/Paper ($)',
+                            type: 'line',
+                            data: avgCost,
+                            borderColor: '#ffeb3b',
+                            borderWidth: 3,
+                            pointBackgroundColor: '#ffeb3b',
+                            pointHoverRadius: 6,
+                            fill: false,
+                            yAxisID: 'y1'
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'top',
+                            labels: { color: '#e2e8f0', font: { family: 'Outfit', size: 10 } }
+                        },
+                        tooltip: {
+                            mode: 'index',
+                            intersect: false,
+                            backgroundColor: 'rgba(15, 23, 42, 0.95)',
+                            titleColor: '#fff',
+                            bodyColor: '#e2e8f0',
+                            borderColor: 'rgba(255,255,255,0.1)',
+                            borderWidth: 1
+                        }
+                    },
+                    scales: {
+                        x: {
+                            stacked: true,
+                            grid: { color: 'rgba(255,255,255,0.05)' },
+                            ticks: { color: '#94a3b8', font: { family: 'Outfit' } }
+                        },
+                        y: {
+                            stacked: true,
+                            position: 'left',
+                            title: { display: true, text: 'Tokens per Paper', color: '#94a3b8', font: { family: 'Outfit' } },
+                            grid: { color: 'rgba(255,255,255,0.05)' },
+                            ticks: { color: '#94a3b8', font: { family: 'Outfit' } }
+                        },
+                        y1: {
+                            position: 'right',
+                            title: { display: true, text: 'Avg Cost ($)', color: '#ffeb3b', font: { family: 'Outfit' } },
+                            grid: { drawOnChartArea: false },
+                            ticks: { 
+                                color: '#94a3b8',
+                                font: { family: 'Outfit' },
+                                callback: function(value) { return '$' + value.toFixed(4); }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        function renderConfidenceTrendChart(batches) {
+            const ctx = document.getElementById('chart-confidence-trend').getContext('2d');
+            
+            if (chartConfidenceTrend) {
+                chartConfidenceTrend.destroy();
+            }
+            
+            const labels = batches.map(b => formatBatchLabel(b.batch_id));
+            const confs = batches.map(b => b.avg_confidence);
+            const sizes = batches.map(b => b.paper_count);
+            
+            chartConfidenceTrend = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [
+                        {
+                            label: 'Avg LLM Confidence',
+                            data: confs,
+                            borderColor: '#10b981',
+                            borderWidth: 3,
+                            pointBackgroundColor: '#10b981',
+                            pointHoverRadius: 6,
+                            fill: true,
+                            backgroundColor: 'rgba(16, 185, 129, 0.05)',
+                            yAxisID: 'y'
+                        },
+                        {
+                            label: 'Papers in Batch',
+                            type: 'bar',
+                            data: sizes,
+                            backgroundColor: 'rgba(0, 240, 255, 0.12)',
+                            borderColor: 'rgba(0, 240, 255, 0.3)',
+                            borderWidth: 1,
+                            barThickness: 20,
+                            yAxisID: 'y1'
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'top',
+                            labels: { color: '#e2e8f0', font: { family: 'Outfit', size: 10 } }
+                        },
+                        tooltip: {
+                            mode: 'index',
+                            intersect: false,
+                            backgroundColor: 'rgba(15, 23, 42, 0.95)',
+                            titleColor: '#fff',
+                            bodyColor: '#e2e8f0',
+                            borderColor: 'rgba(255,255,255,0.1)',
+                            borderWidth: 1
+                        }
+                    },
+                    scales: {
+                        x: {
+                            grid: { color: 'rgba(255,255,255,0.05)' },
+                            ticks: { color: '#94a3b8', font: { family: 'Outfit' } }
+                        },
+                        y: {
+                            position: 'left',
+                            min: 0.0,
+                            max: 1.0,
+                            title: { display: true, text: 'Confidence Score', color: '#10b981', font: { family: 'Outfit' } },
+                            grid: { color: 'rgba(255,255,255,0.05)' },
+                            ticks: { 
+                                color: '#94a3b8', 
+                                font: { family: 'Outfit' },
+                                callback: function(value) { return (value * 100).toFixed(0) + '%'; }
+                            }
+                        },
+                        y1: {
+                            position: 'right',
+                            title: { display: true, text: 'Papers Classified', color: '#00f0ff', font: { family: 'Outfit' } },
+                            grid: { drawOnChartArea: false },
+                            ticks: { color: '#94a3b8', font: { family: 'Outfit' } }
+                        }
+                    }
+                }
+            });
+        }
+
+        function renderLockedFieldsChart(activeDistribution) {
+            const ctx = document.getElementById('chart-locked-fields').getContext('2d');
+            
+            if (chartLockedFields) {
+                chartLockedFields.destroy();
+            }
+            
+            // Format labels for presentation
+            const rawLabels = Object.keys(activeDistribution);
+            // Sort by count descending
+            rawLabels.sort((a, b) => activeDistribution[b] - activeDistribution[a]);
+            
+            const counts = rawLabels.map(l => activeDistribution[l]);
+            const formattedLabels = rawLabels.map(l => {
+                // capitalize first letter, replace underscores with spaces
+                return l.split('_').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+            });
+            
+            chartLockedFields = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: formattedLabels,
+                    datasets: [{
+                        label: 'Active Locks',
+                        data: counts,
+                        backgroundColor: 'rgba(255, 138, 101, 0.45)',
+                        borderColor: '#ff8a65',
+                        borderWidth: 1.5,
+                        borderRadius: 4
+                    }]
+                },
+                options: {
+                    indexAxis: 'y',
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            backgroundColor: 'rgba(15, 23, 42, 0.95)',
+                            titleColor: '#fff',
+                            bodyColor: '#e2e8f0',
+                            borderColor: 'rgba(255,255,255,0.1)',
+                            borderWidth: 1
+                        }
+                    },
+                    scales: {
+                        x: {
+                            grid: { color: 'rgba(255,255,255,0.05)' },
+                            ticks: { color: '#94a3b8', font: { family: 'Outfit' }, stepSize: 1 }
+                        },
+                        y: {
+                            grid: { display: false },
+                            ticks: { color: '#e2e8f0', font: { family: 'Outfit', size: 10 } }
+                        }
+                    }
+                }
+            });
         }
 
         function renderChartsFromData(d) {
