@@ -396,7 +396,7 @@ class CitationGraph:
                        p.title as local_title,
                        p.pmid, p.doi, p.year as local_year,
                        p.study_type, p.exposure_method, p.cannabis_type,
-                       ce.created_at
+                       ce.created_at AS created_at
                 FROM citation_edges ce
                 LEFT JOIN papers p ON ce.target_paper_id = p.id
                 WHERE ce.source_paper_id = ? AND ce.relationship = 'cited_by'
@@ -409,7 +409,7 @@ class CitationGraph:
                        p.title as local_title,
                        p.pmid, p.doi, p.year as local_year,
                        p.study_type, p.exposure_method, p.cannabis_type,
-                       ce.created_at
+                       ce.created_at AS created_at
                 FROM citation_edges ce
                 JOIN papers p ON ce.source_paper_id = p.id
                 WHERE ce.target_paper_id = ? AND ce.relationship = 'cites'
