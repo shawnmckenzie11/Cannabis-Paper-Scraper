@@ -160,6 +160,10 @@ def reclassify_all_papers():
                 )
                 update_count += 1
                 
+                # Commit periodically to avoid holding the database lock for too long
+                if update_count % 100 == 0:
+                    conn.commit()
+                
                 if p["id"] == 6895 or "Mitochondrial DNA" in title:
                     logger.info(f"Updated specific paper ID {p['id']}: {title[:60]}...")
                     logger.info(f"  - Publication Type: {old_pub_type} -> {final_publication_type}")

@@ -158,6 +158,8 @@ ehthumbs.db
 Thumbs.db
 
 # Project-specific database and certs
-cannabis_papers.db
-cannabis_papers.db-journal
+*.db
+*.db-journal
+*.db-shm
+*.db-wal
 cert.pem
