@@ -3,6 +3,7 @@ venv/
 .env
 .git/
 .DS_Store
+cannabis_papers.db
 
 # Exclude python cache files
 __pycache__/
