@@ -25,5 +25,30 @@ if [ -f "$SEED_SOURCE" ] && [ ! -f "$DB_PATH" ]; then
     echo "Database seeded successfully."
 fi
 
-# Run the command passed to Docker (gunicorn)
-exec "$@"
+# Start gunicorn in background so the port is immediately available
+"$@" &
+GUNICORN_PID=$!
+
+# Give gunicorn a moment to bind the port before proceeding
+sleep 2
+
+# Run heuristic reclassification in background if needed (non-blocking)
+if [ -f "$DB_PATH" ]; then
+    echo "Checking if heuristic reclassification is needed..."
+    RECLASSIFIED=$(python3 -c "
+import sqlite3
+conn = sqlite3.connect('$DB_PATH')
+count = conn.execute(\"SELECT COUNT(*) FROM papers WHERE classifier_version LIKE 'heuristic-reclassify-%'\").fetchone()[0]
+conn.close()
+print(count)
+")
+    if [ "$RECLASSIFIED" = "0" ]; then
+        echo "Database needs reclassification. Reclassifying in background..."
+        nohup python3 reclassify_metadata.py > /tmp/reclassify.log 2>&1 &
+    else
+        echo "Database already reclassified. Skipping."
+    fi
+fi
+
+# Wait for gunicorn to finish
+wait $GUNICORN_PID
