@@ -2127,12 +2127,14 @@
                                     <span class="meta-value" id="drawer-sample-size">Not Reported</span>
                                 </div>
                                 <div class="meta-item">
-                                    <span class="meta-label" id="label-open-access">Open Access</span>
-                                    <span class="meta-value" id="drawer-open-access">No</span>
-                                </div>
-                                <div class="meta-item">
                                     <span class="meta-label" id="label-citations">Citations</span>
                                     <span class="meta-value" id="drawer-citations">0</span>
+                                </div>
+                                <div class="meta-item" style="grid-column: span 2;">
+                                    <span class="meta-label" id="label-outcomes">Outcome Domains</span>
+                                    <div class="tag-container" id="drawer-outcomes-container" style="margin-top: 4px;">
+                                        <!-- outcomes tags -->
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -2181,19 +2183,6 @@
                                     <span class="meta-label" id="label-cannabis-types">Cannabis Type</span>
                                     <div class="tag-container" id="drawer-cannabis-types-container" style="margin-top: 4px;">
                                         <!-- cannabis type tags -->
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Group 3: Classifications -->
-                        <div class="properties-group">
-                            <div class="properties-group-title">Classifications</div>
-                            <div class="properties-stacked-items">
-                                <div class="meta-item">
-                                    <span class="meta-label" id="label-outcomes">Outcome Domains</span>
-                                    <div class="tag-container" id="drawer-outcomes-container" style="margin-top: 4px;">
-                                        <!-- outcomes tags -->
                                     </div>
                                 </div>
                             </div>
@@ -3368,12 +3357,7 @@
             if (designEl) designEl.innerText = studyTypeStr;
             const sampleSizeEl = document.getElementById("drawer-sample-size");
             if (sampleSizeEl) sampleSizeEl.innerText = paper.sample_size !== null && paper.sample_size !== undefined ? paper.sample_size : "Not Reported";
-            const oaEl = document.getElementById("drawer-open-access");
-            if (oaEl) {
-                oaEl.innerHTML = paper.open_access === 1
-                    ? `<span class="badge badge-oa" style="padding: 2px 6px; font-size: 10px;">Yes</span>`
-                    : `<span style="color: var(--text-secondary)">No</span>`;
-            }
+
             const confEl = document.getElementById("drawer-confidence");
             if (confEl) {
                 const confVal = paper.classification_confidence !== null && paper.classification_confidence !== undefined
