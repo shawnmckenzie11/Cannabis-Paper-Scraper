@@ -1331,7 +1331,7 @@ def api_learning_dashboard_metrics():
             except Exception:
                 pass
                 
-        cursor.execute("SELECT AVG(classification_confidence) FROM papers WHERE classifier_version LIKE 'llm-%' AND classification_confidence IS NOT NULL")
+        cursor.execute("SELECT AVG(classification_confidence) FROM llm_calls_log WHERE classification_confidence IS NOT NULL")
         avg_confidence = cursor.fetchone()[0] or 0.0
         
         cursor.execute("SELECT SUM(cost), SUM(input_tokens + cache_read_tokens + cache_write_tokens + output_tokens) FROM llm_calls_log")
@@ -1479,8 +1479,8 @@ def api_learning_dashboard_metrics():
                 SUM(CASE WHEN classification_confidence >= 0.85 THEN 1 ELSE 0 END) as high,
                 SUM(CASE WHEN classification_confidence >= 0.60 AND classification_confidence < 0.85 THEN 1 ELSE 0 END) as med,
                 SUM(CASE WHEN classification_confidence < 0.60 THEN 1 ELSE 0 END) as low
-            FROM papers
-            WHERE classifier_version LIKE 'llm-%'
+            FROM llm_calls_log
+            WHERE classification_confidence IS NOT NULL
         """)
         conf_dist_row = cursor.fetchone()
         conf_distribution = {
