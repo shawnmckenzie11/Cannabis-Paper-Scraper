@@ -1347,9 +1347,27 @@
         #btn-new-analysis:hover {
             background: linear-gradient(135deg, rgba(0, 240, 255, 0.3) 0%, rgba(0, 240, 255, 0.1) 100%);
         }
+
+        /* ─── Connectivity / Citation Graph ─── */
+        .connect-search-item:hover {
+            background: rgba(99, 102, 241, 0.15) !important;
+        }
+
+        #cy canvas {
+            border-radius: 12px;
+        }
+
+        #connectivity-panel input:focus {
+            border-color: rgba(99, 102, 241, 0.5) !important;
+            box-shadow: 0 0 15px rgba(99, 102, 241, 0.15) !important;
+        }
     </style>
     <!-- Chart.js for premium dynamic subset visualizations -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Cytoscape.js for citation graph visualization -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/cytoscape/3.30.4/cytoscape.min.js"></script>
+    <!-- Cytoscape.js dagre layout -->
+    <script src="https://cdn.jsdelivr.net/npm/cytoscape-dagre@2.5.0/cytoscape-dagre.min.js"></script>
 </head>
 
 <body>
@@ -1373,6 +1391,10 @@
                 <button class="btn btn-secondary" onclick="openLearningDashboard()" id="btn-learning-dashboard"
                     style="padding: 8px 16px; font-size: 0.85rem; background: rgba(0, 240, 255, 0.1); border-color: rgba(0, 240, 255, 0.3); color: var(--accent-blue); display: inline-flex; align-items: center; gap: 6px;">
                     <span>🧠</span> Learning Dashboard
+                </button>
+                <button class="btn btn-secondary" onclick="openConnectivity()" id="btn-connectivity"
+                    style="padding: 8px 16px; font-size: 0.85rem; background: rgba(99, 102, 241, 0.15); border-color: rgba(99, 102, 241, 0.4); color: #818cf8; display: inline-flex; align-items: center; gap: 6px;">
+                    <span>🔗</span> Connectivity
                 </button>
             </div>
         </div>
@@ -1905,6 +1927,73 @@
                                 <tr><td colspan="9" style="text-align: center; color: var(--text-secondary); padding: 20px;">No batch history logged yet.</td></tr>
                             </tbody>
                         </table>
+                    </div>
+                </div>
+            </section>
+
+            <!-- CONNECTIVITY CITATION GRAPH PANEL -->
+            <section id="connectivity-panel" style="display: none; flex-direction: column; gap: 20px; padding: 20px 30px;">
+                <!-- Header -->
+                <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; border-bottom: 1px solid rgba(255,255,255,0.08); padding-bottom: 15px;">
+                    <div style="display: flex; align-items: center; gap: 12px;">
+                        <span style="display: inline-block; width: 10px; height: 10px; border-radius: 50%; background: #818cf8; box-shadow: 0 0 8px rgba(129, 140, 248, 0.6);"></span>
+                        <h3 style="font-family: var(--font-display); font-size: 1.25rem; font-weight: 700; margin: 0; color: var(--text-primary);">🔗 Citation Network</h3>
+                        <span id="graph-node-count" class="badge" style="background: rgba(99, 102, 241, 0.12); color: #818cf8; border: 1px solid rgba(99, 102, 241, 0.3); font-weight: 700; padding: 4px 10px; font-size: 0.85rem;"></span>
+                    </div>
+                    <div style="display: flex; gap: 10px; align-items: center;">
+                        <span id="zoom-paper-title" style="font-size: 0.85rem; color: var(--text-secondary); max-width: 300px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;"></span>
+                        <button class="btn btn-secondary" onclick="resetGraphView()" id="btn-reset-graph" style="display: none; padding: 6px 14px; font-size: 0.85rem; background: rgba(99, 102, 241, 0.15); border-color: rgba(99, 102, 241, 0.4); color: #818cf8; align-items: center; gap: 6px;">
+                            🔄 Reset View
+                        </button>
+                        <button class="btn btn-secondary" onclick="closeConnectivity()" style="padding: 6px 14px; font-size: 0.85rem; background: rgba(0, 240, 255, 0.1); border-color: rgba(0, 240, 255, 0.3); color: var(--accent-blue); display: inline-flex; align-items: center; gap: 6px;">
+                            🗄️ Back to Database
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Search + Stats Row -->
+                <div style="display: flex; gap: 15px; align-items: stretch; flex-wrap: wrap;">
+                    <div style="flex: 2; min-width: 280px; position: relative;">
+                        <input type="text" id="connectivity-search" placeholder="Search paper to zoom in..."
+                            oninput="debounceSearchPaper()"
+                            style="width: 100%; padding: 10px 14px; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; color: var(--text-primary); font-size: 0.9rem; outline: none;">
+                        <div id="connectivity-search-results" style="position: absolute; top: 100%; left: 0; right: 0; background: #1a1a2e; border: 1px solid rgba(255,255,255,0.1); border-radius: 0 0 8px 8px; max-height: 300px; overflow-y: auto; display: none; z-index: 100;"></div>
+                    </div>
+                    <div style="flex: 3; display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px;">
+                        <div class="glass-panel" style="padding: 8px; text-align: center; border-radius: 8px; background: rgba(255,255,255,0.02);">
+                            <div style="font-size: 0.65rem; text-transform: uppercase; color: var(--text-secondary); font-weight: 600;">Nodes</div>
+                            <div id="stat-nodes" style="font-size: 1.2rem; font-weight: 700; color: var(--text-primary);">—</div>
+                        </div>
+                        <div class="glass-panel" style="padding: 8px; text-align: center; border-radius: 8px; background: rgba(255,255,255,0.02);">
+                            <div style="font-size: 0.65rem; text-transform: uppercase; color: var(--text-secondary); font-weight: 600;">Edges</div>
+                            <div id="stat-edges" style="font-size: 1.2rem; font-weight: 700; color: var(--accent-blue);">—</div>
+                        </div>
+                        <div class="glass-panel" style="padding: 8px; text-align: center; border-radius: 8px; background: rgba(255,255,255,0.02);">
+                            <div style="font-size: 0.65rem; text-transform: uppercase; color: var(--text-secondary); font-weight: 600;">Max Degree</div>
+                            <div id="stat-max-degree" style="font-size: 1.2rem; font-weight: 700; color: #fbbf24;">—</div>
+                        </div>
+                        <div class="glass-panel" style="padding: 8px; text-align: center; border-radius: 8px; background: rgba(255,255,255,0.02);">
+                            <div style="font-size: 0.65rem; text-transform: uppercase; color: var(--text-secondary); font-weight: 600;">Zoomed</div>
+                            <div id="stat-zoomed" style="font-size: 1.2rem; font-weight: 700; color: #4caf50;">—</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Legend -->
+                <div style="display: flex; align-items: center; gap: 16px; flex-wrap: wrap; font-size: 0.75rem; color: var(--text-secondary); padding: 4px 0;">
+                    <span style="display: flex; align-items: center; gap: 4px;"><span style="display: inline-block; width: 10px; height: 10px; border-radius: 50%; background: linear-gradient(135deg, #fbbf24, #818cf8);"></span> Node size = degree</span>
+                    <span style="display: flex; align-items: center; gap: 4px;"><span style="display: inline-block; width: 10px; height: 10px; border-radius: 50%; background: #818cf8; border: 2px solid #c7d2fe;"></span> Selected</span>
+                    <span style="display: flex; align-items: center; gap: 4px;"><span style="display: inline-block; width: 10px; height: 10px; border-radius: 50%; background: #4caf50;"></span> Neighbor</span>
+                    <span style="display: flex; align-items: center; gap: 4px;"><span style="display: inline-block; width: 20px; height: 2px; background: rgba(255,255,255,0.2);"></span> Edge</span>
+                    <span style="display: flex; align-items: center; gap: 4px; margin-left: auto;"><span id="hover-paper-info" style="color: var(--accent-blue);">Hover a node to see its title</span></span>
+                </div>
+
+                <!-- Cytoscape Graph Container -->
+                <div id="connectivity-graph-container" class="glass-panel" style="padding: 0; border-radius: 12px; height: 520px; overflow: hidden; position: relative;">
+                    <div id="cy" style="width: 100%; height: 100%;"></div>
+                    <div id="graph-loading-overlay" style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; display: flex; align-items: center; justify-content: center; background: rgba(26, 26, 46, 0.85); z-index: 10; flex-direction: column; gap: 12px;">
+                        <div style="color: var(--accent-blue); font-size: 1rem; animation: pulse 1.5s infinite;">Loading citation network...</div>
+                        <div style="color: var(--text-secondary); font-size: 0.8rem;" id="graph-loading-status"></div>
                     </div>
                 </div>
             </section>
@@ -3989,6 +4078,7 @@
             document.getElementById("my-analyses-panel").classList.remove("visible");
             document.getElementById("selection-analytics-panel").style.display = "none";
             document.getElementById("learning-dashboard-panel").style.display = "none";
+            document.getElementById("connectivity-panel").style.display = "none";
 
             // If switching away from My Analyses, reset selection
             if (viewName !== 'my-analyses') {
@@ -4009,6 +4099,8 @@
             } else if (viewName === 'learning-dashboard') {
                 document.getElementById("learning-dashboard-panel").style.display = "flex";
                 refreshDashboardMetrics();
+            } else if (viewName === 'connectivity') {
+                document.getElementById("connectivity-panel").style.display = "flex";
             }
         }
 
@@ -4163,6 +4255,298 @@
         function closeLearningDashboard() {
             showView('database');
         }
+
+        /* ─── Connectivity / Citation Graph ─── */
+
+        let cyInstance = null;
+        let cyGraphData = null;        // {nodes, edges} from API
+        let cyNodeMap = {};            // id -> node data lookup
+        let connectSearchTimeout = null;
+
+        function openConnectivity() {
+            showView('connectivity');
+            loadFullNetwork();
+        }
+
+        function closeConnectivity() {
+            showView('database');
+        }
+
+        function loadFullNetwork() {
+            const overlay = document.getElementById("graph-loading-overlay");
+            overlay.style.display = "flex";
+            document.getElementById("graph-loading-status").textContent = "Fetching network data...";
+
+            fetch("/api/graph/network?max_nodes=2000&_t=" + Date.now())
+                .then(r => r.json())
+                .then(data => {
+                    if (data.error) { overlay.innerHTML = '<div style="color:#ff8a65;">Error: ' + data.error + '</div>'; return; }
+                    cyGraphData = data;
+                    cyNodeMap = {};
+                    data.nodes.forEach(n => { cyNodeMap[n.id] = n; });
+
+                    document.getElementById("graph-loading-status").textContent =
+                        data.nodes.length + " nodes, " + data.edges.length + " edges. Rendering...";
+
+                    renderFullGraph(data);
+                    overlay.style.display = "none";
+                })
+                .catch(e => {
+                    overlay.innerHTML = '<div style="color:#ff8a65;">Failed to load: ' + e.message + '</div>';
+                });
+        }
+
+        function renderFullGraph(data) {
+            if (cyInstance) { cyInstance.destroy(); cyInstance = null; }
+
+            const nodeSet = new Set(data.nodes.map(n => n.id));
+
+            // Build cytoscape elements
+            const elements = [];
+
+            data.nodes.forEach(n => {
+                const d = n.degree;
+                let size;
+                if (d > 1000) {
+                    size = 100;
+                } else if (d > 500) {
+                    size = 80;
+                } else if (d > 200) {
+                    size = 60;
+                } else if (d > 100) {
+                    size = 40;
+                } else if (d >= 10) {
+                    size = 25;
+                } else if (d >= 1) {
+                    size = 2 + (d - 1) / (9 - 1) * (18 - 2);
+                } else {
+                    size = 2;
+                }
+                elements.push({
+                    data: {
+                        id: String(n.id),
+                        title: n.title || "Unknown",
+                        year: n.year,
+                        degree: n.degree,
+                        size: size
+                    }
+                });
+            });
+
+            data.edges.forEach(e => {
+                if (nodeSet.has(e.source) && nodeSet.has(e.target)) {
+                    elements.push({
+                        data: {
+                            id: "e_" + e.source + "_" + e.target,
+                            source: String(e.source),
+                            target: String(e.target),
+                            relationship: e.relationship
+                        }
+                    });
+                }
+            });
+
+            const container = document.getElementById("cy");
+            cyInstance = cytoscape({
+                container: container,
+                elements: elements,
+                style: [
+                    {
+                        selector: 'node',
+                        style: {
+                            'width': 'data(size)',
+                            'height': 'data(size)',
+                            'background-color': '#818cf8',
+                            'opacity': 0.7,
+                            'label': '',
+                            'border-width': 0,
+                            'transition-property': 'background-color, border-width, border-color, opacity',
+                            'transition-duration': 300
+                        }
+                    },
+                    {
+                        selector: 'edge',
+                        style: {
+                            'width': 0.5,
+                            'line-color': 'rgba(129, 140, 248, 0.25)',
+                            'curve-style': 'haystack',
+                            'haystack-radius': 0.5
+                        }
+                    },
+                    {
+                        selector: 'node.highlighted',
+                        style: {
+                            'background-color': '#818cf8',
+                            'border-width': 3,
+                            'border-color': '#c7d2fe',
+                            'opacity': 1
+                        }
+                    },
+                    {
+                        selector: 'node.neighbor',
+                        style: {
+                            'background-color': '#4caf50',
+                            'opacity': 1
+                        }
+                    },
+                    {
+                        selector: 'node.dimmed',
+                        style: {
+                            'opacity': 0.15
+                        }
+                    },
+                    {
+                        selector: 'edge.highlighted',
+                        style: {
+                            'width': 1.5,
+                            'line-color': 'rgba(129, 140, 248, 0.8)'
+                        }
+                    },
+                    {
+                        selector: 'edge.dimmed',
+                        style: {
+                            'opacity': 0.05
+                        }
+                    }
+                ],
+                layout: {
+                    name: 'concentric',
+                    concentric: function(node) { return node.data('degree'); },
+                    levelWidth: function(nodes) {
+                        const n = nodes.length;
+                        if (n > 500) return Math.floor(n / 12);
+                        if (n > 100) return Math.floor(n / 8);
+                        return Math.floor(n / 4) || 1;
+                    },
+                    animate: false,
+                    spacingFactor: 2.5,
+                    minNodeSpacing: 30,
+                    equidistant: false,
+                    avoidOverlap: true
+                },
+                minZoom: 0.1,
+                maxZoom: 8,
+                wheelSensitivity: 0.3
+            });
+
+            // Update stats
+            document.getElementById("stat-nodes").textContent = data.nodes.length;
+            document.getElementById("stat-edges").textContent = data.edges.length;
+            document.getElementById("stat-max-degree").textContent = Math.max(...data.nodes.map(n => n.degree), 0);
+            document.getElementById("stat-zoomed").textContent = "None";
+            document.getElementById("graph-node-count").textContent =
+                data.nodes.length + " papers";
+
+            // Hover: show title
+            cyInstance.nodes().on('mouseover', function(e) {
+                const n = e.target;
+                document.getElementById("hover-paper-info").textContent =
+                    n.data('title') + (n.data('year') ? ' (' + n.data('year') + ')' : '');
+            });
+            cyInstance.nodes().on('mouseout', function() {
+                document.getElementById("hover-paper-info").textContent = "Hover a node to see its title";
+            });
+
+            // Click: zoom in on node neighborhood
+            cyInstance.nodes().on('click', function(e) {
+                const nid = e.target.id();
+                zoomToNode(nid);
+            });
+        }
+
+        function zoomToNode(nid) {
+            if (!cyInstance) return;
+
+            // Reset all styles first
+            cyInstance.elements().removeClass('highlighted neighbor dimmed');
+
+            const node = cyInstance.getElementById(nid);
+            if (!node || !node.length) {
+                document.getElementById("zoom-paper-title").textContent = "Paper not in graph";
+                return;
+            }
+
+            // Highlight selected
+            node.addClass('highlighted');
+
+            // Find and highlight neighbors (1-hop)
+            const neighbors = node.neighborhood().nodes();
+            neighbors.addClass('neighbor');
+
+            // Highlight connecting edges
+            const connectedEdges = node.connectedEdges();
+            connectedEdges.addClass('highlighted');
+
+            // Dim everything else
+            const allNodes = cyInstance.nodes();
+            const allEdges = cyInstance.edges();
+            allNodes.not(node).not(neighbors).addClass('dimmed');
+            allEdges.not(connectedEdges).addClass('dimmed');
+
+            // Show title, update stats
+            const ndata = node.data();
+            document.getElementById("zoom-paper-title").textContent =
+                ndata.title + ' (' + ndata.degree + ' connections)';
+            document.getElementById("stat-zoomed").textContent = ndata.title.substring(0, 30);
+            document.getElementById("btn-reset-graph").style.display = "inline-flex";
+
+            // Fit view to selected + neighbors
+            cyInstance.fit(node.add(neighbors), 60);
+            cyInstance.center(node);
+        }
+
+        function resetGraphView() {
+            if (!cyInstance) return;
+            cyInstance.elements().removeClass('highlighted neighbor dimmed');
+            document.getElementById("zoom-paper-title").textContent = "";
+            document.getElementById("stat-zoomed").textContent = "None";
+            document.getElementById("btn-reset-graph").style.display = "none";
+            document.getElementById("hover-paper-info").textContent = "Hover a node to see its title";
+            cyInstance.fit(undefined, 40);
+            cyInstance.center();
+        }
+
+        function debounceSearchPaper() {
+            clearTimeout(connectSearchTimeout);
+            connectSearchTimeout = setTimeout(doSearchPaper, 250);
+        }
+
+        function doSearchPaper() {
+            const q = document.getElementById("connectivity-search").value.trim();
+            const resultsDiv = document.getElementById("connectivity-search-results");
+            if (q.length < 2) {
+                resultsDiv.style.display = "none";
+                resultsDiv.innerHTML = "";
+                return;
+            }
+            fetch("/api/papers/search-simple?q=" + encodeURIComponent(q) + "&limit=20")
+                .then(r => r.json())
+                .then(papers => {
+                    resultsDiv.innerHTML = papers.map(p =>
+                        `<div class="connect-search-item" data-id="${p.id}" onclick="selectConnectPaper(${p.id})"
+                              style="padding: 10px 14px; cursor: pointer; border-bottom: 1px solid rgba(255,255,255,0.05); display: flex; justify-content: space-between; align-items: center;">
+                              <span style="color: var(--text-primary);">${p.title}</span>
+                              <span style="color: var(--text-secondary); font-size: 0.8rem;">${p.year || '—'}</span>
+                         </div>`
+                    ).join('');
+                    resultsDiv.style.display = papers.length ? "block" : "none";
+                });
+        }
+
+        function selectConnectPaper(id) {
+            document.getElementById("connectivity-search").value = "";
+            document.getElementById("connectivity-search-results").style.display = "none";
+            zoomToNode(String(id));
+        }
+
+        // Close search results on click outside
+        document.addEventListener("click", function(e) {
+            const results = document.getElementById("connectivity-search-results");
+            const input = document.getElementById("connectivity-search");
+            if (results && input && !results.contains(e.target) && e.target !== input) {
+                results.style.display = "none";
+            }
+        });
 
         function refreshDashboardMetrics() {
             const btnRefresh = document.querySelector("#learning-dashboard-panel button[onclick='refreshDashboardMetrics()']");

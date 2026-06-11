@@ -199,6 +199,41 @@ class DatabaseManager:
             # Ensure analyses table exists
             self.init_analyses_table()
 
+            # Ensure citation_edges table exists
+            conn.execute("""
+                CREATE TABLE IF NOT EXISTS citation_edges (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    source_paper_id INTEGER NOT NULL,
+                    target_paper_id INTEGER,
+                    target_external_id TEXT,
+                    target_title TEXT,
+                    target_year INTEGER,
+                    relationship TEXT NOT NULL DEFAULT 'cites',
+                    confidence TEXT DEFAULT 'medium',
+                    source TEXT DEFAULT 'semantic_scholar',
+                    metadata TEXT DEFAULT '{}',
+                    created_at TEXT DEFAULT (datetime('now')),
+                    FOREIGN KEY(source_paper_id) REFERENCES papers(id) ON DELETE CASCADE,
+                    FOREIGN KEY(target_paper_id) REFERENCES papers(id) ON DELETE SET NULL
+                );
+            """)
+            try:
+                conn.execute("CREATE INDEX IF NOT EXISTS idx_ce_source ON citation_edges(source_paper_id);")
+            except sqlite3.OperationalError:
+                pass
+            try:
+                conn.execute("CREATE INDEX IF NOT EXISTS idx_ce_target ON citation_edges(target_paper_id);")
+            except sqlite3.OperationalError:
+                pass
+            try:
+                conn.execute("CREATE INDEX IF NOT EXISTS idx_ce_rel ON citation_edges(relationship);")
+            except sqlite3.OperationalError:
+                pass
+            try:
+                conn.execute("CREATE INDEX IF NOT EXISTS idx_ce_ext ON citation_edges(target_external_id);")
+            except sqlite3.OperationalError:
+                pass
+
             # Ensure llm_calls_log table exists
             conn.execute("""
                 CREATE TABLE IF NOT EXISTS llm_calls_log (
