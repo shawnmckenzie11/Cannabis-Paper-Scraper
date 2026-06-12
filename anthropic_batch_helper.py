@@ -63,7 +63,7 @@ def create_batch_requests(limit: Optional[int] = None, output_file: str = "reque
                     OR full_text_link LIKE '%nature.com%' 
                     OR full_text_link LIKE '%counter/pdf%'
                   )
-                  AND (classifier_version IS NULL OR classifier_version NOT LIKE 'llm-reclassify%')
+                  AND (classifier_version IS NULL OR (classifier_version NOT LIKE 'llm-reclassify%' AND classifier_version NOT LIKE 'llm-pdf-reclassify%'))
                 ORDER BY 
                   -- Prioritize preclinical
                   (CASE WHEN study_type LIKE '%Animal%' OR study_type LIKE '%Cell%' OR exposure_method LIKE '%media%' THEN 0 ELSE 1 END) ASC,
