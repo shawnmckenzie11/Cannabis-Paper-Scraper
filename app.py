@@ -571,7 +571,7 @@ def api_edit_classification(paper_id):
     editable_fields = [
         "study_type", "publication_type", "exposure_method", "thc_pct", "cbd_pct",
         "dose_mg", "puff_count", "thc_mg_ml", "thc_mg_g", "thc_mg_kg",
-        "cbd_mg_ml", "cbd_mg_g", "cbd_mg_kg", "strain_reported", "strain_normalized", "duration_days",
+        "cbd_mg_ml", "cbd_mg_g", "cbd_mg_kg", "thc_uM", "cbd_uM", "strain_reported", "strain_normalized", "duration_days",
         "inhaled_exposure_duration", "administration_frequency", "treatment_duration",
         "sample_size", "outcome_domain", "cannabis_type", "summary", "abstract"
     ]
@@ -797,7 +797,7 @@ def api_sync_metadata(paper_id):
         valid_columns = {
             "study_type", "exposure_method", "thc_pct", "cbd_pct", "dose_mg", "puff_count",
             "thc_mg_ml", "thc_mg_g", "thc_mg_kg", "cbd_mg_ml", "cbd_mg_g", "cbd_mg_kg",
-            "strain_reported", "strain_normalized", "duration_days",
+            "thc_uM", "cbd_uM", "strain_reported", "strain_normalized", "duration_days",
             "inhaled_exposure_duration", "administration_frequency", "treatment_duration",
             "sample_size", "outcome_domain", "cannabis_type", "summary", "publication_type",
             "classification_confidence", "classification_timestamp", "classifier_version"
@@ -887,7 +887,7 @@ def api_reclassify_llm(paper_id):
         valid_columns = {
             "study_type", "exposure_method", "thc_pct", "cbd_pct", "dose_mg", "puff_count",
             "thc_mg_ml", "thc_mg_g", "thc_mg_kg", "cbd_mg_ml", "cbd_mg_g", "cbd_mg_kg",
-            "strain_reported", "strain_normalized", "duration_days",
+            "thc_uM", "cbd_uM", "strain_reported", "strain_normalized", "duration_days",
             "inhaled_exposure_duration", "administration_frequency", "treatment_duration",
             "sample_size", "outcome_domain", "cannabis_type", "summary", "publication_type"
         }
@@ -1269,7 +1269,7 @@ def api_export_analysis_csv(analysis_id):
         "id", "pmid", "doi", "semantic_scholar_id", "title", "authors", "journal", "year",
         "abstract", "full_text_link", "study_type", "publication_type", "exposure_method",
         "thc_pct", "cbd_pct", "dose_mg", "puff_count", "thc_mg_ml", "thc_mg_g", "thc_mg_kg",
-        "cbd_mg_ml", "cbd_mg_g", "cbd_mg_kg", "strain_reported", "strain_normalized", "duration_days",
+        "cbd_mg_ml", "cbd_mg_g", "cbd_mg_kg", "thc_uM", "cbd_uM", "strain_reported", "strain_normalized", "duration_days",
         "inhaled_exposure_duration", "administration_frequency", "treatment_duration",
         "sample_size", "outcome_domain", "open_access", "citation_count",
         "date_harvested", "publication_date", "summary", "expert_locked_fields",

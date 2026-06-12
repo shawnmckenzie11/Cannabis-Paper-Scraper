@@ -88,7 +88,7 @@ def migrate_table(table, columns, json_fields, sqlite_conn, pg_conn_ref):
     if total_remaining == 0:
         print(f"  All rows for {table} are already migrated.")
         # Enable triggers & recreate indexes
-        enable_triggers_and_indexes(table, pg_conn, indexes_dropped, triggers_disabled)
+        enable_triggers_and_indexes(table, pg_conn_ref, indexes_dropped, triggers_disabled)
         return
 
     chunk_size = 10000
@@ -188,42 +188,118 @@ def migrate_table(table, columns, json_fields, sqlite_conn, pg_conn_ref):
             break
 
     # 3. Enable triggers & recreate indexes
-    enable_triggers_and_indexes(table, pg_conn_ref[0], indexes_dropped, triggers_disabled)
+    enable_triggers_and_indexes(table, pg_conn_ref, indexes_dropped, triggers_disabled)
 
-def enable_triggers_and_indexes(table, pg_conn, indexes_dropped, triggers_disabled):
-    pg_cur = pg_conn.cursor()
-    if triggers_disabled:
+def enable_triggers_and_indexes(table, pg_conn_ref, indexes_dropped, triggers_disabled):
+    # Enable triggers
+    retries = 5
+    while retries > 0:
         try:
-            pg_cur.execute(f"ALTER TABLE {table} ENABLE TRIGGER ALL;")
-            pg_conn.commit()
-            print(f"  Re-enabled triggers for {table}")
+            pg_conn = pg_conn_ref[0]
+            pg_cur = pg_conn.cursor()
+            if triggers_disabled:
+                pg_cur.execute(f"ALTER TABLE {table} ENABLE TRIGGER ALL;")
+                pg_conn.commit()
+                print(f"  Re-enabled triggers for {table}")
+            break
+        except (psycopg2.OperationalError, psycopg2.InterfaceError) as e:
+            retries -= 1
+            print(f"  [ERROR] Database connection lost while enabling triggers for {table}: {e}. Retries remaining: {retries}")
+            try:
+                pg_conn_ref[0].close()
+            except Exception:
+                pass
+            time.sleep(30)
+            try:
+                pg_conn_ref[0] = connect_pg()
+            except Exception as ex:
+                print(f"  [ERROR] Reconnection failed: {ex}")
+            if retries == 0:
+                raise e
         except Exception as e:
             print(f"  Failed to re-enable triggers for {table}: {e}")
-            pg_conn.rollback()
+            try:
+                pg_conn_ref[0].rollback()
+            except Exception:
+                pass
+            break
 
+    # Recreate indexes
     if table == "citation_edges" and indexes_dropped:
-        try:
-            print("  Recreating indexes for citation_edges...")
-            pg_cur.execute("SET maintenance_work_mem = '16MB';")
-            pg_cur.execute("CREATE INDEX IF NOT EXISTS idx_ce_source ON citation_edges(source_paper_id);")
-            pg_cur.execute("CREATE INDEX IF NOT EXISTS idx_ce_target ON citation_edges(target_paper_id);")
-            pg_cur.execute("CREATE INDEX IF NOT EXISTS idx_ce_rel ON citation_edges(relationship);")
-            pg_cur.execute("CREATE INDEX IF NOT EXISTS idx_ce_ext ON citation_edges(target_external_id);")
-            pg_conn.commit()
-            print("  Successfully recreated indexes for citation_edges.")
-        except Exception as e:
-            print(f"  Failed to recreate indexes for citation_edges: {e}")
-            pg_conn.rollback()
+        indexes = [
+            ("idx_ce_source", "CREATE INDEX IF NOT EXISTS idx_ce_source ON citation_edges(source_paper_id);"),
+            ("idx_ce_target", "CREATE INDEX IF NOT EXISTS idx_ce_target ON citation_edges(target_paper_id);"),
+            ("idx_ce_rel", "CREATE INDEX IF NOT EXISTS idx_ce_rel ON citation_edges(relationship);"),
+            ("idx_ce_ext", "CREATE INDEX IF NOT EXISTS idx_ce_ext ON citation_edges(target_external_id);")
+        ]
+        
+        for idx_name, idx_sql in indexes:
+            retries = 5
+            while retries > 0:
+                try:
+                    pg_conn = pg_conn_ref[0]
+                    pg_cur = pg_conn.cursor()
+                    print(f"  Recreating index {idx_name} for citation_edges...")
+                    pg_cur.execute("SET maintenance_work_mem = '16MB';")
+                    pg_cur.execute(idx_sql)
+                    pg_conn.commit()
+                    print(f"  Successfully recreated index {idx_name} for citation_edges.")
+                    break
+                except (psycopg2.OperationalError, psycopg2.InterfaceError) as e:
+                    retries -= 1
+                    print(f"  [ERROR] Database connection lost while recreating index {idx_name}: {e}. Retries remaining: {retries}")
+                    try:
+                        pg_conn_ref[0].close()
+                    except Exception:
+                        pass
+                    time.sleep(30)
+                    try:
+                        pg_conn_ref[0] = connect_pg()
+                    except Exception as ex:
+                        print(f"  [ERROR] Reconnection failed: {ex}")
+                    if retries == 0:
+                        raise e
+                except Exception as e:
+                    print(f"  Failed to recreate index {idx_name} for citation_edges: {e}")
+                    try:
+                        pg_conn_ref[0].rollback()
+                    except Exception:
+                        pass
+                    break
+                    
     elif table == "papers" and indexes_dropped:
-        try:
-            print("  Recreating GIN index for papers...")
-            pg_cur.execute("SET maintenance_work_mem = '16MB';")
-            pg_cur.execute("CREATE INDEX IF NOT EXISTS idx_papers_fts ON papers USING GIN (to_tsvector('english', title || ' ' || coalesce(abstract, '')));")
-            pg_conn.commit()
-            print("  Successfully recreated GIN index for papers.")
-        except Exception as e:
-            print(f"  Failed to recreate GIN index for papers: {e}")
-            pg_conn.rollback()
+        retries = 5
+        while retries > 0:
+            try:
+                pg_conn = pg_conn_ref[0]
+                pg_cur = pg_conn.cursor()
+                print("  Recreating GIN index for papers...")
+                pg_cur.execute("SET maintenance_work_mem = '16MB';")
+                pg_cur.execute("CREATE INDEX IF NOT EXISTS idx_papers_fts ON papers USING GIN (to_tsvector('english', title || ' ' || coalesce(abstract, '')));")
+                pg_conn.commit()
+                print("  Successfully recreated GIN index for papers.")
+                break
+            except (psycopg2.OperationalError, psycopg2.InterfaceError) as e:
+                retries -= 1
+                print(f"  [ERROR] Database connection lost while recreating GIN index for papers: {e}. Retries remaining: {retries}")
+                try:
+                    pg_conn_ref[0].close()
+                except Exception:
+                    pass
+                time.sleep(30)
+                try:
+                    pg_conn_ref[0] = connect_pg()
+                except Exception as ex:
+                    print(f"  [ERROR] Reconnection failed: {ex}")
+                if retries == 0:
+                    raise e
+            except Exception as e:
+                print(f"  Failed to recreate GIN index for papers: {e}")
+                try:
+                    pg_conn_ref[0].rollback()
+                except Exception:
+                    pass
+                break
 
 def migrate():
     if not DATABASE_URL:
@@ -231,11 +307,22 @@ def migrate():
         print("Please export DATABASE_URL before running this script.")
         sys.exit(1)
 
-    print("Initializing DatabaseManager to ensure PostgreSQL tables and indexes exist...")
-    # Since DatabaseManager constructor is now optimized to not run slow checks, this is instant!
-    from db_manager import DatabaseManager
-    db = DatabaseManager()
-    db.init_db()
+    print("Checking database schema status...")
+    # Skip init_db if schema already exists to prevent OOM/timeouts on memory-constrained Postgres
+    pg_conn = connect_pg()
+    pg_cur = pg_conn.cursor()
+    pg_cur.execute("SELECT EXISTS (SELECT FROM information_schema.tables WHERE table_name = 'papers');")
+    schema_exists = pg_cur.fetchone()[0]
+    pg_cur.close()
+    pg_conn.close()
+
+    if not schema_exists:
+        print("Initializing DatabaseManager to ensure PostgreSQL tables and indexes exist...")
+        from db_manager import DatabaseManager
+        db = DatabaseManager()
+        db.init_db()
+    else:
+        print("PostgreSQL schema already exists. Skipping init_db() to avoid timeout/lock issues.")
 
     print(f"Connecting to local SQLite database: {SQLITE_DB}")
     sqlite_conn = sqlite3.connect(SQLITE_DB)

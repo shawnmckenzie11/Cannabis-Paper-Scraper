@@ -93,7 +93,7 @@ def reclassify_papers_llm(limit=None, offset=0, prioritize=True, paper_id=None):
                    outcome_domain, thc_pct, cbd_pct, dose_mg, strain_reported, strain_normalized,
                    duration_days, inhaled_exposure_duration, administration_frequency, treatment_duration,
                    sample_size, puff_count, thc_mg_ml, thc_mg_g, thc_mg_kg, cbd_mg_ml, cbd_mg_g, cbd_mg_kg,
-                   expert_locked_fields, full_text_link
+                   thc_uM, cbd_uM, expert_locked_fields, full_text_link
             FROM papers
         """
         params = []
@@ -144,7 +144,7 @@ def reclassify_papers_llm(limit=None, offset=0, prioritize=True, paper_id=None):
             "strain_reported", "strain_normalized", "duration_days",
             "inhaled_exposure_duration", "administration_frequency", "treatment_duration",
             "sample_size", "puff_count", "thc_mg_ml", "thc_mg_g", "thc_mg_kg",
-            "cbd_mg_ml", "cbd_mg_g", "cbd_mg_kg"
+            "cbd_mg_ml", "cbd_mg_g", "cbd_mg_kg", "thc_uM", "cbd_uM"
         }
 
         for idx, p in enumerate(papers):
@@ -203,7 +203,8 @@ def reclassify_papers_llm(limit=None, offset=0, prioritize=True, paper_id=None):
             
             # Add metadata metadata
             set_clauses.append("classifier_version = ?")
-            update_params.append(f"llm-reclassify-{rules_version}")
+            version_prefix = "llm-pdf-reclassify" if full_text else "llm-reclassify"
+            update_params.append(f"{version_prefix}-{rules_version}")
             
             set_clauses.append("classification_timestamp = ?")
             update_params.append(datetime.now().isoformat())

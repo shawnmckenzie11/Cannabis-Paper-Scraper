@@ -252,6 +252,53 @@ def classify_with_llm(title: str, abstract: str, runs: Optional[int] = None, ful
     # Retrieve dynamic few-shot templates
     few_shot_text, max_sim = get_few_shot_examples(title, abstract)
     
+    # 1. Run Tier 1 native abstract classification via heuristics
+    h = extractor.extract_all_heuristics(title, abstract)
+    h_study = set(h.get("study_type") or [])
+    h_exposure = set(h.get("exposure_method") or [])
+    pub_type = h.get("publication_type")
+    
+    dynamic_rules_list = []
+    
+    # 2. Build dynamic rules list
+    if pub_type == "original research":
+        dynamic_rules_list.append("## Dynamic Context-Specific Extraction Rules (Original Research)")
+        
+        is_preclinical = any("animal" in s.lower() or "cell" in s.lower() or "vitro" in s.lower() for s in h_study)
+        is_clinical = any("clinical" in s.lower() or "rct" in s.lower() or "observational" in s.lower() for s in h_study)
+        
+        if is_preclinical:
+            dynamic_rules_list.append("### Preclinical (Animal / In Vitro) Guidelines:")
+            dynamic_rules_list.append("- Prioritize extracting details from the **Materials & Methods** section.")
+            dynamic_rules_list.append("- Extract chemical manufacturers, suppliers, and compound/ligand details into `strain_reported` (e.g. 'Sigma-Aldrich', 'THC Pharm', 'Cayman Chemical').")
+            dynamic_rules_list.append("- **CRITICAL**: Do NOT extract host animal strains (e.g. Sprague-Dawley, Wistar, C57BL/6, Wistar rats) into `strain_reported`.")
+            
+            is_invitro = any("cell" in s.lower() or "vitro" in s.lower() for s in h_study)
+            if is_invitro:
+                dynamic_rules_list.append("- For Cell Culture models: Extract treatment duration into `treatment_duration`. Extract micromolar concentrations (e.g., 5 µM) as numeric values into `thc_uM` or `cbd_uM`.")
+                
+            is_invivo = any("animal" in s.lower() for s in h_study)
+            if is_invivo:
+                dynamic_rules_list.append("- For Animal Models: Extract in vivo doses in mg/kg or mg/g into `thc_mg_kg` / `cbd_mg_kg` / `thc_mg_g` / `cbd_mg_g`. Extract study duration in days into `duration_days` and frequency into `administration_frequency`.")
+                
+        if is_clinical:
+            dynamic_rules_list.append("### Clinical (Human Study) Guidelines:")
+            dynamic_rules_list.append("- Focus strictly on clinical parameters. Do NOT extract cell line names, animal strains, or chemical suppliers/manufacturers into `strain_reported`.")
+            dynamic_rules_list.append("- Extract study duration (days/weeks/months) into `duration_days` and sample size (number of patients) into `sample_size`.")
+            
+            is_inhaled = any("inhaled" in e.lower() or "smoke" in e.lower() or "vapor" in e.lower() or "vape" in e.lower() for e in h_exposure)
+            if is_inhaled:
+                dynamic_rules_list.append("- For Inhaled Studies: Extract exposure duration per session (e.g., '30 minutes') into `inhaled_exposure_duration` and puff counts into `puff_count`.")
+                
+    elif pub_type in ("review", "systematic review", "meta-analysis"):
+        dynamic_rules_list.append("## Dynamic Context-Specific Extraction Rules (Review Paper)")
+        dynamic_rules_list.append("- This is a review paper. Do NOT extract individual animal strains, cell lines, supplier details, or dose values from reviewed papers. Leave these fields null/empty unless they describe the review methodology itself.")
+
+    dynamic_rules_str = "\n".join(dynamic_rules_list) if dynamic_rules_list else ""
+    
+    if dynamic_rules_str:
+        logger.info(f"Dynamically injected context-specific rules for {pub_type} study type: {list(h_study)}")
+
     # Build system prompt blocks utilizing prompt caching for the large static ruleset
     system_blocks = [
         {
@@ -260,6 +307,11 @@ def classify_with_llm(title: str, abstract: str, runs: Optional[int] = None, ful
             "cache_control": {"type": "ephemeral"}
         }
     ]
+    if dynamic_rules_str:
+        system_blocks.append({
+            "type": "text",
+            "text": dynamic_rules_str
+        })
     if few_shot_text:
         system_blocks.append({
             "type": "text",

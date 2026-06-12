@@ -495,6 +495,8 @@ class DatabaseManager:
                 ("cbd_mg_ml", "REAL"),
                 ("cbd_mg_g", "REAL"),
                 ("cbd_mg_kg", "REAL"),
+                ("thc_uM", "REAL"),
+                ("cbd_uM", "REAL"),
                 ("inhaled_exposure_duration", "TEXT"),
                 ("administration_frequency", "TEXT"),
                 ("treatment_duration", "TEXT")
@@ -732,7 +734,7 @@ class DatabaseManager:
             "pmid", "doi", "semantic_scholar_id", "title", "authors", "journal", "year",
             "abstract", "full_text_link", "study_type", "exposure_method", "thc_pct",
             "cbd_pct", "dose_mg", "puff_count", "thc_mg_ml", "thc_mg_g", "thc_mg_kg",
-            "cbd_mg_ml", "cbd_mg_g", "cbd_mg_kg", "strain_reported", "strain_normalized", "duration_days",
+            "cbd_mg_ml", "cbd_mg_g", "cbd_mg_kg", "thc_uM", "cbd_uM", "strain_reported", "strain_normalized", "duration_days",
             "inhaled_exposure_duration", "administration_frequency", "treatment_duration",
             "sample_size", "outcome_domain",
             "open_access", "citation_count", "date_harvested", "publication_date", "cannabis_type", 
@@ -1225,6 +1227,10 @@ class DatabaseManager:
             sql += f" ORDER BY papers.thc_mg_kg {sort_dir}, papers.year DESC"
         elif sort_by == "cbd_mg_kg":
             sql += f" ORDER BY papers.cbd_mg_kg {sort_dir}, papers.year DESC"
+        elif sort_by == "thc_uM":
+            sql += f" ORDER BY papers.thc_uM {sort_dir}, papers.year DESC"
+        elif sort_by == "cbd_uM":
+            sql += f" ORDER BY papers.cbd_uM {sort_dir}, papers.year DESC"
         elif sort_by == "treatment_duration":
             sql += f" ORDER BY papers.treatment_duration{collate_clause} {sort_dir}, papers.year DESC"
         elif sort_by == "strain_reported":

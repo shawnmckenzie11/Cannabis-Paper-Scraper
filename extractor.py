@@ -1084,6 +1084,8 @@ def extract_all_heuristics(title: str, abstract: str) -> Dict[str, Any]:
         "cbd_mg_ml": None,
         "cbd_mg_g": None,
         "cbd_mg_kg": None,
+        "thc_uM": None,
+        "cbd_uM": None,
         "strain_reported": strain_reported,
         "strain_normalized": strain_normalized,
         "duration_days": duration_days,

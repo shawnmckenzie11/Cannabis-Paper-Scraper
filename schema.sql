@@ -25,6 +25,8 @@ CREATE TABLE IF NOT EXISTS papers (
     cbd_mg_ml REAL,
     cbd_mg_g REAL,
     cbd_mg_kg REAL,
+    thc_uM REAL,
+    cbd_uM REAL,
     strain_reported TEXT,           -- raw string exactly as written in paper
     strain_normalized TEXT,         -- mapped to Chemotype I/II/III
     duration_days REAL,             -- numeric duration in days (or null)

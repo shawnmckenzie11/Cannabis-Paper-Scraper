@@ -169,7 +169,7 @@ def process_batch_results(results_file: str, dry_run: bool = False):
             "strain_reported", "strain_normalized", "duration_days",
             "inhaled_exposure_duration", "administration_frequency", "treatment_duration",
             "sample_size", "puff_count", "thc_mg_ml", "thc_mg_g", "thc_mg_kg",
-            "cbd_mg_ml", "cbd_mg_g", "cbd_mg_kg"
+            "cbd_mg_ml", "cbd_mg_g", "cbd_mg_kg", "thc_uM", "cbd_uM"
         }
 
         success_count = 0
