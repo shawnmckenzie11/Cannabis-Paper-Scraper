@@ -1440,6 +1440,9 @@
                             <input type="checkbox" id="col-cb-duration" checked onchange="toggleColumn('duration')"> Duration
                         </label>
                         <label style="display: flex; align-items: center; gap: 8px; font-size: 0.85rem; cursor: pointer; color: var(--text-primary);">
+                            <input type="checkbox" id="col-cb-treatment_duration" onchange="toggleColumn('treatment_duration')"> Treatment Duration
+                        </label>
+                        <label style="display: flex; align-items: center; gap: 8px; font-size: 0.85rem; cursor: pointer; color: var(--text-primary);">
                             <input type="checkbox" id="col-cb-year" checked onchange="toggleColumn('year')"> Year
                         </label>
                         <label style="display: flex; align-items: center; gap: 8px; font-size: 0.85rem; cursor: pointer; color: var(--text-primary);">
@@ -1453,6 +1456,33 @@
                         </label>
                         <label style="display: flex; align-items: center; gap: 8px; font-size: 0.85rem; cursor: pointer; color: var(--text-primary);">
                             <input type="checkbox" id="col-cb-outcome_domain" onchange="toggleColumn('outcome_domain')"> Outcome Domain
+                        </label>
+                        <label style="display: flex; align-items: center; gap: 8px; font-size: 0.85rem; cursor: pointer; color: var(--text-primary);">
+                            <input type="checkbox" id="col-cb-dose_mg" onchange="toggleColumn('dose_mg')"> Dose (mg)
+                        </label>
+                        <label style="display: flex; align-items: center; gap: 8px; font-size: 0.85rem; cursor: pointer; color: var(--text-primary);">
+                            <input type="checkbox" id="col-cb-puff_count" onchange="toggleColumn('puff_count')"> Puff Count
+                        </label>
+                        <label style="display: flex; align-items: center; gap: 8px; font-size: 0.85rem; cursor: pointer; color: var(--text-primary);">
+                            <input type="checkbox" id="col-cb-admin_frequency" onchange="toggleColumn('admin_frequency')"> Admin Freq
+                        </label>
+                        <label style="display: flex; align-items: center; gap: 8px; font-size: 0.85rem; cursor: pointer; color: var(--text-primary);">
+                            <input type="checkbox" id="col-cb-thc_mg_ml" onchange="toggleColumn('thc_mg_ml')"> THC (mg/mL)
+                        </label>
+                        <label style="display: flex; align-items: center; gap: 8px; font-size: 0.85rem; cursor: pointer; color: var(--text-primary);">
+                            <input type="checkbox" id="col-cb-cbd_mg_ml" onchange="toggleColumn('cbd_mg_ml')"> CBD (mg/mL)
+                        </label>
+                        <label style="display: flex; align-items: center; gap: 8px; font-size: 0.85rem; cursor: pointer; color: var(--text-primary);">
+                            <input type="checkbox" id="col-cb-thc_mg_kg" onchange="toggleColumn('thc_mg_kg')"> THC (mg/kg)
+                        </label>
+                        <label style="display: flex; align-items: center; gap: 8px; font-size: 0.85rem; cursor: pointer; color: var(--text-primary);">
+                            <input type="checkbox" id="col-cb-cbd_mg_kg" onchange="toggleColumn('cbd_mg_kg')"> CBD (mg/kg)
+                        </label>
+                        <label style="display: flex; align-items: center; gap: 8px; font-size: 0.85rem; cursor: pointer; color: var(--text-primary);">
+                            <input type="checkbox" id="col-cb-strain_reported" onchange="toggleColumn('strain_reported')"> Reported Strain
+                        </label>
+                        <label style="display: flex; align-items: center; gap: 8px; font-size: 0.85rem; cursor: pointer; color: var(--text-primary);">
+                            <input type="checkbox" id="col-cb-strain_normalized" onchange="toggleColumn('strain_normalized')"> Normalized Strain
                         </label>
                         <label id="col-label-pub-type" style="display: none; align-items: center; gap: 8px; font-size: 0.85rem; cursor: pointer; color: var(--text-primary);">
                             <input type="checkbox" id="col-cb-publication_type" checked onchange="toggleColumn('publication_type')"> Pub Type
@@ -1484,11 +1514,15 @@
                 </div>
 
                 <div class="form-group" style="margin-bottom: 15px;">
-                    <label class="checkbox-item" style="font-weight: 500; display: inline-flex; align-items: center; gap: 8px;">
-                        <input type="checkbox" id="filter-claude-classified" onchange="triggerSearch()" style="width: auto; margin: 0;">
-                        <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" style="vertical-align: middle; color: var(--accent-amber); display: inline-block; margin-top: -2px;"><path d="M12 2l2.4 7.2 7.2 2.4-7.2 2.4-2.4 7.2-2.4-7.2-7.2-2.4 7.2-2.4z"/></svg>
-                        Claude Classified Only
-                    </label>
+                    <label for="filter-classification-level" style="font-size: 0.8rem; font-weight: 600; margin-bottom: 6px; display: block; color: var(--text-secondary);">Classification Model</label>
+                    <select id="filter-classification-level" onchange="triggerSearch()" style="width: 100%; padding: 8px 12px; border-radius: 8px; background: rgba(15,23,42,0.6); border: 1px solid rgba(255,255,255,0.08); color: var(--text-primary); font-family: 'Outfit', sans-serif; font-size: 0.85rem; cursor: pointer; outline: none; transition: border-color 0.2s;">
+                        <option value="ALL">All Papers (No Model Filter)</option>
+                        <option value="native">Native Abstract Classifications (no Claude)</option>
+                        <option value="claude_abstract">Claude Abstract Classifications (llm-reclassify)</option>
+                        <option value="claude_pdf">Claude PDF Classifications (llm-pdf-reclassify)</option>
+                        <option value="manual">Manual Edit Classifications (expert locked)</option>
+                        <option value="optimal">Optimal Classifications (PDF / Manual Edits)</option>
+                    </select>
                 </div>
 
                 <div class="filter-header-row">
@@ -1715,6 +1749,9 @@
                                 <th id="header-duration" class="sortable" style="width: 95px;"
                                     onclick="handleHeaderClick('duration')">Duration <span id="sort-icon-duration"
                                         class="sort-icon">↕</span></th>
+                                <th id="header-treatment_duration" class="sortable" style="width: 125px; display: none;"
+                                    onclick="handleHeaderClick('treatment_duration')">Tx Duration <span id="sort-icon-treatment_duration"
+                                        class="sort-icon">↕</span></th>
                                 <th id="header-year" class="sortable" style="width: 75px;"
                                     onclick="handleHeaderClick('year')">Year <span id="sort-icon-year"
                                         class="sort-icon">↕</span></th>
@@ -1730,6 +1767,33 @@
                                 <th id="header-outcome_domain" class="sortable" style="width: 140px; display: none;"
                                     onclick="handleHeaderClick('outcome_domain')">Outcome Domain <span
                                         id="sort-icon-outcome_domain" class="sort-icon">↕</span></th>
+                                <th id="header-dose_mg" class="sortable" style="width: 90px; display: none;"
+                                    onclick="handleHeaderClick('dose_mg')">Dose (mg) <span id="sort-icon-dose_mg"
+                                        class="sort-icon">↕</span></th>
+                                <th id="header-puff_count" class="sortable" style="width: 95px; display: none;"
+                                    onclick="handleHeaderClick('puff_count')">Puffs <span id="sort-icon-puff_count"
+                                        class="sort-icon">↕</span></th>
+                                <th id="header-admin_frequency" class="sortable" style="width: 110px; display: none;"
+                                    onclick="handleHeaderClick('administration_frequency')">Admin Freq <span id="sort-icon-admin_frequency"
+                                        class="sort-icon">↕</span></th>
+                                <th id="header-thc_mg_ml" class="sortable" style="width: 110px; display: none;"
+                                    onclick="handleHeaderClick('thc_mg_ml')">THC (mg/mL) <span id="sort-icon-thc_mg_ml"
+                                        class="sort-icon">↕</span></th>
+                                <th id="header-cbd_mg_ml" class="sortable" style="width: 110px; display: none;"
+                                    onclick="handleHeaderClick('cbd_mg_ml')">CBD (mg/mL) <span id="sort-icon-cbd_mg_ml"
+                                        class="sort-icon">↕</span></th>
+                                <th id="header-thc_mg_kg" class="sortable" style="width: 110px; display: none;"
+                                    onclick="handleHeaderClick('thc_mg_kg')">THC (mg/kg) <span id="sort-icon-thc_mg_kg"
+                                        class="sort-icon">↕</span></th>
+                                <th id="header-cbd_mg_kg" class="sortable" style="width: 110px; display: none;"
+                                    onclick="handleHeaderClick('cbd_mg_kg')">CBD (mg/kg) <span id="sort-icon-cbd_mg_kg"
+                                        class="sort-icon">↕</span></th>
+                                <th id="header-strain_reported" class="sortable" style="width: 155px; display: none;"
+                                    onclick="handleHeaderClick('strain_reported')">Reported Strain <span id="sort-icon-strain_reported"
+                                        class="sort-icon">↕</span></th>
+                                <th id="header-strain_normalized" class="sortable" style="width: 145px; display: none;"
+                                    onclick="handleHeaderClick('strain_normalized')">Normalized Strain <span id="sort-icon-strain_normalized"
+                                        class="sort-icon">↕</span></th>
                                 <th id="header-pub-type" class="sortable" style="width: 140px; display: none;"
                                     onclick="handleHeaderClick('publication_type')">Pub Type <span
                                         id="sort-icon-publication_type" class="sort-icon">↕</span></th>
@@ -1902,6 +1966,28 @@
                                 </div>
                             </div>
                         </div>
+                    </div>
+                </div>
+
+                <!-- Reinforcement Learning & Model Version Comparison -->
+                <div class="glass-panel" style="padding: 20px; display: flex; flex-direction: column; gap: 15px; border-radius: 12px; margin-top: 10px; border-color: rgba(99, 102, 241, 0.25);">
+                    <h4 style="margin: 0; font-size: 1rem; font-weight: 600; color: var(--text-primary); display: flex; align-items: center; gap: 6px;">🧠 Reinforcement Learning & Model Version Comparison</h4>
+                    <div class="analyses-table-wrap">
+                        <table>
+                            <thead>
+                                <tr style="background: rgba(255,255,255,0.02);">
+                                    <th style="padding: 10px 15px;">Model/Prompt Version</th>
+                                    <th style="padding: 10px 15px; text-align: right;">Papers Processed</th>
+                                    <th style="padding: 10px 15px; text-align: right;">Avg LLM Confidence</th>
+                                    <th style="padding: 10px 15px; text-align: right;">Corrected Papers</th>
+                                    <th style="padding: 10px 15px; text-align: right;">Error/Correction Rate</th>
+                                    <th style="padding: 10px 15px; text-align: right;">Avg Cost / Paper</th>
+                                </tr>
+                            </thead>
+                            <tbody id="dash-version-tbody">
+                                <tr><td colspan="6" style="text-align: center; color: var(--text-secondary); padding: 20px;">No version metrics compiled yet.</td></tr>
+                            </tbody>
+                        </table>
                     </div>
                 </div>
 
@@ -2702,6 +2788,7 @@
 
         let visibleColumns = {
             duration: true,
+            treatment_duration: false,
             year: true,
             study_type: true,
             exposure_method: true,
@@ -2709,7 +2796,16 @@
             citations: true,
             links: true,
             cannabis_type: false,
-            outcome_domain: false
+            outcome_domain: false,
+            dose_mg: false,
+            puff_count: false,
+            admin_frequency: false,
+            thc_mg_ml: false,
+            cbd_mg_ml: false,
+            thc_mg_kg: false,
+            cbd_mg_kg: false,
+            strain_reported: false,
+            strain_normalized: false
         };
 
         // Subset Selection Tracking & Dynamic Visualizations Variables
@@ -2802,7 +2898,7 @@
 
             // Build parameters from sidebar elements
             const query = document.getElementById("filter-query").value;
-            const claudeClassified = document.getElementById("filter-claude-classified").checked;
+            const classificationLevel = document.getElementById("filter-classification-level").value;
             const studyTypeCheckboxes = document.querySelectorAll('input[name="study_type"]:checked');
             const studyType = Array.from(studyTypeCheckboxes).map(cb => cb.value).join(",");
             const thcMin = document.getElementById("filter-thc-min").value;
@@ -2862,8 +2958,8 @@
                 params.push(`cannabis_type=${cannabisType}`);
                 params.push(`cannabis_logic=${cannabisLogic}`);
             }
-            if (claudeClassified) {
-                params.push(`claude_classified=true`);
+            if (classificationLevel && classificationLevel !== "ALL") {
+                params.push(`classification_level=${classificationLevel}`);
             }
 
             // Append page and limit
@@ -2928,10 +3024,21 @@
         }
 
         function updateSortIndicators() {
-            const columns = ['duration', 'title', 'year', 'study_type', 'exposure_method', 'publication_type', 'citations', 'cannabis_type', 'outcome_domain'];
+            const columns = [
+                'duration', 'treatment_duration', 'title', 'year', 'study_type', 'exposure_method', 'publication_type', 'citations', 
+                'cannabis_type', 'outcome_domain', 'dose_mg', 'puff_count', 'administration_frequency', 
+                'thc_mg_ml', 'cbd_mg_ml', 'thc_mg_kg', 'cbd_mg_kg', 'strain_reported', 'strain_normalized'
+            ];
             columns.forEach(col => {
-                const header = document.getElementById(col === 'publication_type' ? 'header-pub-type' : `header-${col}`);
-                const icon = document.getElementById(`sort-icon-${col}`);
+                let headerId = `header-${col}`;
+                if (col === 'publication_type') headerId = 'header-pub-type';
+                else if (col === 'administration_frequency') headerId = 'header-admin_frequency';
+
+                let iconId = `sort-icon-${col}`;
+                if (col === 'administration_frequency') iconId = 'sort-icon-admin_frequency';
+
+                const header = document.getElementById(headerId);
+                const icon = document.getElementById(iconId);
                 if (!header || !icon) return;
 
                 if (col === currentSortCol) {
@@ -3001,6 +3108,9 @@
                 if (visibleColumns.duration) {
                     cells.push(`<td style="color: var(--text-secondary);">${formatStudyDuration(p.duration_days)}</td>`);
                 }
+                if (visibleColumns.treatment_duration) {
+                    cells.push(`<td style="color: var(--text-secondary);">${p.treatment_duration || "—"}</td>`);
+                }
                 if (visibleColumns.year) {
                     cells.push(`<td>${p.year || "N/A"}</td>`);
                 }
@@ -3016,6 +3126,33 @@
                 }
                 if (visibleColumns.outcome_domain) {
                     cells.push(`<td style="color: var(--text-secondary);">${Array.isArray(p.outcome_domain) ? p.outcome_domain.join(', ') : (p.outcome_domain || "unknown")}</td>`);
+                }
+                if (visibleColumns.dose_mg) {
+                    cells.push(`<td style="color: var(--text-secondary);">${p.dose_mg !== null && p.dose_mg !== undefined ? p.dose_mg : "—"}</td>`);
+                }
+                if (visibleColumns.puff_count) {
+                    cells.push(`<td style="color: var(--text-secondary);">${p.puff_count !== null && p.puff_count !== undefined ? p.puff_count : "—"}</td>`);
+                }
+                if (visibleColumns.admin_frequency) {
+                    cells.push(`<td style="color: var(--text-secondary);">${p.administration_frequency || "—"}</td>`);
+                }
+                if (visibleColumns.thc_mg_ml) {
+                    cells.push(`<td style="color: var(--text-secondary);">${p.thc_mg_ml !== null && p.thc_mg_ml !== undefined ? p.thc_mg_ml : "—"}</td>`);
+                }
+                if (visibleColumns.cbd_mg_ml) {
+                    cells.push(`<td style="color: var(--text-secondary);">${p.cbd_mg_ml !== null && p.cbd_mg_ml !== undefined ? p.cbd_mg_ml : "—"}</td>`);
+                }
+                if (visibleColumns.thc_mg_kg) {
+                    cells.push(`<td style="color: var(--text-secondary);">${p.thc_mg_kg !== null && p.thc_mg_kg !== undefined ? p.thc_mg_kg : "—"}</td>`);
+                }
+                if (visibleColumns.cbd_mg_kg) {
+                    cells.push(`<td style="color: var(--text-secondary);">${p.cbd_mg_kg !== null && p.cbd_mg_kg !== undefined ? p.cbd_mg_kg : "—"}</td>`);
+                }
+                if (visibleColumns.strain_reported) {
+                    cells.push(`<td style="color: var(--text-secondary);" title="${p.strain_reported || ''}">${p.strain_reported || "—"}</td>`);
+                }
+                if (visibleColumns.strain_normalized) {
+                    cells.push(`<td style="color: var(--text-secondary);">${p.strain_normalized || "—"}</td>`);
                 }
                 if (currentTab === 'review' && visibleColumns.publication_type) {
                     const pt = p.publication_type || "unknown";
@@ -3078,6 +3215,7 @@
             // Reset column visibility
             visibleColumns = {
                 duration: true,
+                treatment_duration: false,
                 year: true,
                 study_type: true,
                 exposure_method: true,
@@ -3085,7 +3223,16 @@
                 citations: true,
                 links: true,
                 cannabis_type: false,
-                outcome_domain: false
+                outcome_domain: false,
+                dose_mg: false,
+                puff_count: false,
+                admin_frequency: false,
+                thc_mg_ml: false,
+                cbd_mg_ml: false,
+                thc_mg_kg: false,
+                cbd_mg_kg: false,
+                strain_reported: false,
+                strain_normalized: false
             };
             updateColumnVisibility();
 
@@ -3988,7 +4135,7 @@
 
             // Build parameters from sidebar elements
             const query = document.getElementById("filter-query").value;
-            const claudeClassified = document.getElementById("filter-claude-classified").checked;
+            const classificationLevel = document.getElementById("filter-classification-level").value;
             const studyTypeCheckboxes = document.querySelectorAll('input[name="study_type"]:checked');
             const studyType = Array.from(studyTypeCheckboxes).map(cb => cb.value).join(",");
             const thcMin = document.getElementById("filter-thc-min").value;
@@ -4027,8 +4174,8 @@
             if (currentTab === 'recent') {
                 filters.recent_range = document.getElementById("recents-timeframe").value;
             }
-            if (claudeClassified) {
-                filters.claude_classified = true;
+            if (classificationLevel && classificationLevel !== "ALL") {
+                filters.classification_level = classificationLevel;
             }
 
             fetch("/api/analyze", {
@@ -4625,12 +4772,37 @@
                         fsExplanation.innerText = "💡 Lower correction rate with few-shot means the model was initially correct and required fewer expert edits.";
                     }
 
-                    // 6. Populate Batch Table
+                    // 5.5 Populate Version Table
+                    const versionTbody = document.getElementById("dash-version-tbody");
+                    if (!data.versions || data.versions.length === 0) {
+                        versionTbody.innerHTML = '<tr><td colspan="6" style="text-align: center; color: var(--text-secondary); padding: 20px;">No version history logged yet.</td></tr>';
+                    } else {
+                        versionTbody.innerHTML = data.versions.map(v => {
+                            const errRate = (v.error_rate * 100).toFixed(1);
+                            let rateColor = '#4caf50'; // green for 0%
+                            if (v.error_rate > 0.1) {
+                                rateColor = '#f44336'; // red for >10%
+                            } else if (v.error_rate > 0.0) {
+                                rateColor = '#ff9800'; // orange for >0% and <=10%
+                            }
+                            return `<tr>
+                                <td style="color: var(--accent-blue); font-weight: 700; font-family: monospace;">${v.version}</td>
+                                <td style="text-align: right; font-weight: 600; color: var(--text-primary);">${v.total_classified}</td>
+                                <td style="text-align: right; color: #4caf50; font-weight: 600;">${(v.avg_confidence * 100).toFixed(1)}%</td>
+                                <td style="text-align: right; color: var(--text-secondary);">${v.corrected_count}</td>
+                                <td style="text-align: right; color: ${rateColor}; font-weight: 700;">${errRate}%</td>
+                                <td style="text-align: right; color: #ffeb3b; font-weight: 600;">$${v.avg_cost.toFixed(4)}</td>
+                            </tr>`;
+                        }).join('');
+                    }
+
+                    // 6. Populate Batch Table (newest runs at the top)
                     const tbody = document.getElementById("dash-batch-tbody");
                     if (data.batches.length === 0) {
                         tbody.innerHTML = '<tr><td colspan="9" style="text-align: center; color: var(--text-secondary); padding: 20px;">No batch history logged yet.</td></tr>';
                     } else {
-                        tbody.innerHTML = data.batches.map(b => {
+                        const tableBatches = [...data.batches].reverse();
+                        tbody.innerHTML = tableBatches.map(b => {
                             const formattedId = formatBatchLabel(b.batch_id);
                             const timeStr = b.batch_time ? b.batch_time.split('T')[0] + ' ' + b.batch_time.split('T')[1].substring(0, 5) : '—';
                             return `<tr>
@@ -5617,6 +5789,7 @@
 
             if (!isOpen) {
                 document.getElementById("col-cb-duration").checked = visibleColumns.duration;
+                document.getElementById("col-cb-treatment_duration").checked = visibleColumns.treatment_duration;
                 document.getElementById("col-cb-year").checked = visibleColumns.year;
                 document.getElementById("col-cb-study_type").checked = visibleColumns.study_type;
                 document.getElementById("col-cb-exposure_method").checked = visibleColumns.exposure_method;
@@ -5625,6 +5798,15 @@
                 document.getElementById("col-cb-links").checked = visibleColumns.links;
                 document.getElementById("col-cb-cannabis_type").checked = visibleColumns.cannabis_type;
                 document.getElementById("col-cb-outcome_domain").checked = visibleColumns.outcome_domain;
+                document.getElementById("col-cb-dose_mg").checked = visibleColumns.dose_mg;
+                document.getElementById("col-cb-puff_count").checked = visibleColumns.puff_count;
+                document.getElementById("col-cb-admin_frequency").checked = visibleColumns.admin_frequency;
+                document.getElementById("col-cb-thc_mg_ml").checked = visibleColumns.thc_mg_ml;
+                document.getElementById("col-cb-cbd_mg_ml").checked = visibleColumns.cbd_mg_ml;
+                document.getElementById("col-cb-thc_mg_kg").checked = visibleColumns.thc_mg_kg;
+                document.getElementById("col-cb-cbd_mg_kg").checked = visibleColumns.cbd_mg_kg;
+                document.getElementById("col-cb-strain_reported").checked = visibleColumns.strain_reported;
+                document.getElementById("col-cb-strain_normalized").checked = visibleColumns.strain_normalized;
 
                 // Show/hide publication type column checkbox in popover depending on current tab
                 document.getElementById("col-label-pub-type").style.display = currentTab === 'review' ? 'flex' : 'none';
@@ -5644,13 +5826,23 @@
         function updateColumnVisibility() {
             const optionalColumns = {
                 'duration': 'header-duration',
+                'treatment_duration': 'header-treatment_duration',
                 'year': 'header-year',
                 'study_type': 'header-study_type',
                 'exposure_method': 'header-exposure_method',
                 'citations': 'header-citations',
                 'links': 'header-links',
                 'cannabis_type': 'header-cannabis_type',
-                'outcome_domain': 'header-outcome_domain'
+                'outcome_domain': 'header-outcome_domain',
+                'dose_mg': 'header-dose_mg',
+                'puff_count': 'header-puff_count',
+                'admin_frequency': 'header-admin_frequency',
+                'thc_mg_ml': 'header-thc_mg_ml',
+                'cbd_mg_ml': 'header-cbd_mg_ml',
+                'thc_mg_kg': 'header-thc_mg_kg',
+                'cbd_mg_kg': 'header-cbd_mg_kg',
+                'strain_reported': 'header-strain_reported',
+                'strain_normalized': 'header-strain_normalized'
             };
 
             for (const [col, id] of Object.entries(optionalColumns)) {

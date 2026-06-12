@@ -224,6 +224,8 @@ class TestDatabaseManager(unittest.TestCase):
             except Exception:
                 pass
         self.db = DatabaseManager(self.test_db_path)
+        if self.db.is_postgres:
+            self.db.clear_all_tables()
         
     def tearDown(self):
         # Clean up temporary database file
@@ -844,6 +846,8 @@ class TestExpertEditAndActiveLearning(unittest.TestCase):
             except Exception:
                 pass
         self.db = DatabaseManager(self.test_db_path)
+        if self.db.is_postgres:
+            self.db.clear_all_tables()
         
         # Monkey patch DatabaseManager.__init__ to enforce test_db_path on all instantiations
         from db_manager import DatabaseManager as DBManagerClass
@@ -1004,15 +1008,17 @@ class TestUserAuthentication(unittest.TestCase):
 
     def setUp(self):
         self.db = DatabaseManager()
-        self.db.db_path = "test_catalog.db"
-        self.db.init_db()
-        
-        conn = self.db.get_connection()
-        try:
-            conn.execute("DELETE FROM users;")
-            conn.commit()
-        finally:
-            conn.close()
+        if self.db.is_postgres:
+            self.db.clear_all_tables()
+        else:
+            self.db.db_path = "test_catalog.db"
+            self.db.init_db()
+            conn = self.db.get_connection()
+            try:
+                conn.execute("DELETE FROM users;")
+                conn.commit()
+            finally:
+                conn.close()
 
     def tearDown(self):
         if os.path.exists("test_catalog.db"):
@@ -1093,6 +1099,8 @@ class TestAnalysesExportAPI(unittest.TestCase):
     def setUp(self):
         from db_manager import DatabaseManager
         self.db = DatabaseManager()
+        if self.db.is_postgres:
+            self.db.clear_all_tables()
         self.db.init_analyses_table()
         
         from app import app

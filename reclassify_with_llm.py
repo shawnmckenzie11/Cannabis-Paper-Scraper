@@ -5,6 +5,9 @@ import logging
 import os
 import sys
 import argparse
+import io
+import requests
+import pypdf
 from datetime import datetime
 from db_manager import DatabaseManager
 import classifier
@@ -15,7 +18,52 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-def reclassify_papers_llm(limit=None, offset=0, prioritize=True):
+def download_and_extract_pdf_text(url: str):
+    """Downloads a PDF from the given URL and extracts its text content.
+    Returns the extracted text or None if download/extraction fails.
+    """
+    if not url or not url.startswith("http"):
+        return None
+        
+    headers = {
+        "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36"
+    }
+    
+    try:
+        logger.info(f"Downloading PDF from {url}...")
+        response = requests.get(url, headers=headers, timeout=15)
+        if response.status_code != 200:
+            logger.warning(f"Failed to download PDF. HTTP status code: {response.status_code}")
+            return None
+            
+        content_type = response.headers.get("Content-Type", "").lower()
+        is_pdf = content_type.startswith("application/pdf") or response.content.startswith(b"%PDF")
+        if not is_pdf:
+            logger.warning(f"URL did not return a valid PDF. Content-Type: {content_type}")
+            return None
+            
+        pdf_file = io.BytesIO(response.content)
+        reader = pypdf.PdfReader(pdf_file)
+        
+        text_parts = []
+        for i, page in enumerate(reader.pages):
+            page_text = page.extract_text()
+            if page_text:
+                text_parts.append(page_text)
+                
+        full_text = "\n".join(text_parts).strip()
+        if not full_text:
+            logger.warning("PDF was downloaded but no text could be extracted.")
+            return None
+            
+        logger.info(f"Successfully extracted {len(full_text)} characters of text from PDF ({len(reader.pages)} pages).")
+        return full_text
+        
+    except Exception as e:
+        logger.warning(f"Error downloading or parsing PDF: {e}")
+        return None
+
+def reclassify_papers_llm(limit=None, offset=0, prioritize=True, paper_id=None):
     """Queries papers from the database and runs the Anthropic Claude LLM classifier on them,
     respecting expert locked fields.
     """
@@ -45,34 +93,37 @@ def reclassify_papers_llm(limit=None, offset=0, prioritize=True):
                    outcome_domain, thc_pct, cbd_pct, dose_mg, strain_reported, strain_normalized,
                    duration_days, inhaled_exposure_duration, administration_frequency, treatment_duration,
                    sample_size, puff_count, thc_mg_ml, thc_mg_g, thc_mg_kg, cbd_mg_ml, cbd_mg_g, cbd_mg_kg,
-                   expert_locked_fields
+                   expert_locked_fields, full_text_link
             FROM papers
         """
-        if prioritize:
-            query += """
-                ORDER BY 
-                    -- 1. Papers not yet classified by LLM first
-                    (CASE WHEN classifier_version LIKE 'llm-%' THEN 1 ELSE 0 END) ASC,
-                    -- 2. Papers with likely heuristic fallback conflicts prioritized first
-                    (CASE WHEN 
-                        (exposure_method IN ('["inhaled"]', '["injection cannabinoids"]', '["cannabinoids dissolved in media"]', '["unknown"]') OR exposure_method IS NULL) AND
-                        (title LIKE '%oil%' OR title LIKE '%tincture%' OR title LIKE '%gummy%' OR title LIKE '%edible%' OR title LIKE '%capsule%' OR title LIKE '%sublingual%' OR title LIKE '%oral%' OR title LIKE '%ingest%' OR title LIKE '%spray%' OR title LIKE '%sativex%' OR title LIKE '%epidiolex%' OR
-                         abstract LIKE '%oil%' OR abstract LIKE '%tincture%' OR abstract LIKE '%gummy%' OR abstract LIKE '%edible%' OR abstract LIKE '%capsule%' OR abstract LIKE '%sublingual%' OR abstract LIKE '%oral%' OR abstract LIKE '%ingest%' OR abstract LIKE '%spray%' OR abstract LIKE '%sativex%' OR abstract LIKE '%epidiolex%')
-                    THEN 0 ELSE 1 END) ASC,
-                    -- 3. Original research articles before reviews/others
-                    (CASE WHEN publication_type = 'original research' THEN 0 ELSE 1 END) ASC,
-                    -- 4. Low confidence classifications first
-                    COALESCE(classification_confidence, 0) ASC,
-                    -- 5. Highly cited papers first
-                    citation_count DESC,
-                    -- 6. Most recently harvested first
-                    date_harvested DESC
-            """
         params = []
-        
-        if limit is not None:
-            query += " LIMIT ? OFFSET ?"
-            params.extend([limit, offset])
+        if paper_id is not None:
+            query += " WHERE id = ?"
+            params.append(paper_id)
+        else:
+            if prioritize:
+                query += """
+                    ORDER BY 
+                        -- 1. Papers not yet classified by LLM first
+                        (CASE WHEN classifier_version LIKE 'llm-%' THEN 1 ELSE 0 END) ASC,
+                        -- 2. Papers with likely heuristic fallback conflicts prioritized first
+                        (CASE WHEN 
+                            (exposure_method IN ('["inhaled"]', '["injection cannabinoids"]', '["cannabinoids dissolved in media"]', '["unknown"]') OR exposure_method IS NULL) AND
+                            (title LIKE '%oil%' OR title LIKE '%tincture%' OR title LIKE '%gummy%' OR title LIKE '%edible%' OR title LIKE '%capsule%' OR title LIKE '%sublingual%' OR title LIKE '%oral%' OR title LIKE '%ingest%' OR title LIKE '%spray%' OR title LIKE '%sativex%' OR title LIKE '%epidiolex%' OR
+                             abstract LIKE '%oil%' OR abstract LIKE '%tincture%' OR abstract LIKE '%gummy%' OR abstract LIKE '%edible%' OR abstract LIKE '%capsule%' OR abstract LIKE '%sublingual%' OR abstract LIKE '%oral%' OR abstract LIKE '%ingest%' OR abstract LIKE '%spray%' OR abstract LIKE '%sativex%' OR abstract LIKE '%epidiolex%')
+                        THEN 0 ELSE 1 END) ASC,
+                        -- 3. Original research articles before reviews/others
+                        (CASE WHEN publication_type = 'original research' THEN 0 ELSE 1 END) ASC,
+                        -- 4. Low confidence classifications first
+                        COALESCE(classification_confidence, 0) ASC,
+                        -- 5. Highly cited papers first
+                        citation_count DESC,
+                        -- 6. Most recently harvested first
+                        date_harvested DESC
+                """
+            if limit is not None:
+                query += " LIMIT ? OFFSET ?"
+                params.extend([limit, offset])
 
         cursor.execute(query, params)
         papers = [dict(row) for row in cursor.fetchall()]
@@ -113,9 +164,15 @@ def reclassify_papers_llm(limit=None, offset=0, prioritize=True):
             if not isinstance(locked_fields, list):
                 locked_fields = []
 
+            # Check for PDF full text link
+            full_text_link = p.get("full_text_link") or ""
+            full_text = None
+            if full_text_link:
+                full_text = download_and_extract_pdf_text(full_text_link)
+
             # Call LLM classification
             try:
-                extracted = classifier.process_paper_metadata(title, abstract, run_llm=True)
+                extracted = classifier.process_paper_metadata(title, abstract, run_llm=True, full_text=full_text)
             except Exception as e:
                 logger.error(f"Error calling classifier for paper ID {paper_id}: {e}")
                 continue
@@ -190,6 +247,7 @@ if __name__ == "__main__":
     parser.add_argument("--limit", type=int, default=None, help="Maximum number of papers to reclassify")
     parser.add_argument("--offset", type=int, default=0, help="Offset to start reclassifying from")
     parser.add_argument("--no-prioritize", action="store_true", help="Disable smart prioritization of potentially misclassified/updated papers")
+    parser.add_argument("--paper-id", type=int, default=None, help="Specific paper ID to reclassify")
     args = parser.parse_args()
 
-    reclassify_papers_llm(limit=args.limit, offset=args.offset, prioritize=not args.no_prioritize)
+    reclassify_papers_llm(limit=args.limit, offset=args.offset, prioritize=not args.no_prioritize, paper_id=args.paper_id)

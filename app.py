@@ -451,6 +451,7 @@ def api_search():
     tab = request.args.get("tab")
     cannabis_type = request.args.get("cannabis_type")
     claude_classified = request.args.get("claude_classified")
+    classification_level = request.args.get("classification_level")
     cannabis_logic = request.args.get("cannabis_logic", "or")
     method_logic = request.args.get("method_logic", "or")
     outcome_logic = request.args.get("outcome_logic", "or")
@@ -504,6 +505,8 @@ def api_search():
         clean_filters["cannabis_type"] = cannabis_type
     if claude_classified:
         clean_filters["claude_classified"] = claude_classified == "true"
+    if classification_level and classification_level != "ALL":
+        clean_filters["classification_level"] = classification_level
         
     clean_filters["cannabis_logic"] = cannabis_logic
     clean_filters["exposure_logic"] = method_logic
@@ -1311,11 +1314,13 @@ def api_learning_dashboard_metrics():
     
     try:
         # 1. Summary Statistics
-        cursor.execute("SELECT COUNT(*) FROM papers WHERE classifier_version LIKE 'llm-%'")
-        total_llm_classified = cursor.fetchone()[0] or 0
+        cursor.execute("SELECT COUNT(*) as count FROM papers WHERE classifier_version LIKE 'llm-%'")
+        row = cursor.fetchone()
+        total_llm_classified = row["count"] if row else 0
         
-        cursor.execute("SELECT COUNT(*) FROM papers WHERE expert_locked_fields IS NOT NULL AND expert_locked_fields != '[]' AND expert_locked_fields != ''")
-        total_locked_papers = cursor.fetchone()[0] or 0
+        cursor.execute("SELECT COUNT(*) as count FROM papers WHERE expert_locked_fields IS NOT NULL AND expert_locked_fields != '[]' AND expert_locked_fields != ''")
+        row = cursor.fetchone()
+        total_locked_papers = row["count"] if row else 0
         
         # Calculate total count of individual locked fields and their distribution
         cursor.execute("SELECT expert_locked_fields FROM papers WHERE expert_locked_fields IS NOT NULL AND expert_locked_fields != '[]' AND expert_locked_fields != ''")
@@ -1324,7 +1329,7 @@ def api_learning_dashboard_metrics():
         active_locks_dist = {}
         for row in rows:
             try:
-                fields = json.loads(row[0])
+                fields = json.loads(row["expert_locked_fields"])
                 if isinstance(fields, list):
                     total_locked_fields_count += len(fields)
                     for f in fields:
@@ -1332,20 +1337,21 @@ def api_learning_dashboard_metrics():
             except Exception:
                 pass
                 
-        cursor.execute("SELECT AVG(classification_confidence) FROM llm_calls_log WHERE classification_confidence IS NOT NULL")
-        avg_confidence = cursor.fetchone()[0] or 0.0
+        cursor.execute("SELECT AVG(classification_confidence) as avg_confidence FROM llm_calls_log WHERE classification_confidence IS NOT NULL")
+        row = cursor.fetchone()
+        avg_confidence = row["avg_confidence"] if row else 0.0
         
-        cursor.execute("SELECT SUM(cost), SUM(input_tokens + cache_read_tokens + cache_write_tokens + output_tokens) FROM llm_calls_log")
+        cursor.execute("SELECT SUM(cost) as total_cost, SUM(input_tokens + cache_read_tokens + cache_write_tokens + output_tokens) as total_tokens FROM llm_calls_log")
         cost_tokens_row = cursor.fetchone()
-        total_cost = cost_tokens_row[0] or 0.0
-        total_tokens = cost_tokens_row[1] or 0
+        total_cost = (cost_tokens_row["total_cost"] if cost_tokens_row else 0.0) or 0.0
+        total_tokens = (cost_tokens_row["total_tokens"] if cost_tokens_row else 0) or 0
         
         # 2. Token & Cost Trends by Batch
         cursor.execute("""
             SELECT 
                 batch_id,
                 MIN(timestamp) as batch_time,
-                model,
+                MAX(model) as model,
                 COUNT(*) as paper_count,
                 AVG(input_tokens) as avg_input,
                 AVG(cache_read_tokens) as avg_cache_read,
@@ -1374,6 +1380,23 @@ def api_learning_dashboard_metrics():
                 "total_cost": round(r["total_cost"] or 0, 4),
                 "avg_confidence": round(r["avg_confidence"] or 0.0, 3)
             })
+            
+        def get_batch_time(b):
+            t = b["batch_time"]
+            if not t:
+                return datetime.min
+            try:
+                t_clean = t.replace('T', ' ')
+                if '.' in t_clean:
+                    return datetime.strptime(t_clean, "%Y-%m-%d %H:%M:%S.%f")
+                return datetime.strptime(t_clean, "%Y-%m-%d %H:%M:%S")
+            except Exception:
+                # Fallback: if it's already a datetime/date object
+                if hasattr(t, 'strftime'):
+                    return t
+                return datetime.min
+                
+        batches.sort(key=get_batch_time)
             
         # 3. expert_locked_fields timeline (Audits over time)
         cursor.execute("SELECT timestamp, field_name FROM feedback_audit ORDER BY timestamp ASC")
@@ -1495,6 +1518,54 @@ def api_learning_dashboard_metrics():
             "low": conf_dist_row["low"] or 0
         }
         
+        # 6. Version Comparison & Reinforcement Learning Metrics
+        cursor.execute("""
+            SELECT 
+                classifier_version,
+                COUNT(*) as total_classified,
+                AVG(classification_confidence) as avg_confidence
+            FROM papers
+            WHERE classifier_version IS NOT NULL AND classifier_version LIKE 'llm-%'
+            GROUP BY classifier_version
+            ORDER BY classifier_version ASC
+        """)
+        version_rows = cursor.fetchall()
+        
+        cursor.execute("""
+            SELECT 
+                classifier_version,
+                AVG(cost) as avg_cost
+            FROM llm_calls_log
+            GROUP BY classifier_version
+        """)
+        cost_rows = {r["classifier_version"]: r["avg_cost"] for r in cursor.fetchall()}
+        
+        cursor.execute("""
+            SELECT 
+                classifier_version,
+                COUNT(DISTINCT paper_id) as corrected_count
+            FROM feedback_audit
+            GROUP BY classifier_version
+        """)
+        audit_counts = {r["classifier_version"]: r["corrected_count"] for r in cursor.fetchall()}
+        
+        versions = []
+        for v_row in version_rows:
+            v_name = v_row["classifier_version"]
+            total_c = v_row["total_classified"] or 0
+            corr_c = audit_counts.get(v_name, 0)
+            if corr_c > total_c:
+                corr_c = total_c
+            error_rate = corr_c / total_c if total_c > 0 else 0.0
+            versions.append({
+                "version": v_name,
+                "total_classified": total_c,
+                "corrected_count": corr_c,
+                "error_rate": round(error_rate, 4),
+                "avg_confidence": round(v_row["avg_confidence"] or 0.0, 3),
+                "avg_cost": round(cost_rows.get(v_name, 0.0), 4)
+            })
+
         # Prepare response payload
         metrics = {
             "summary": {
@@ -1531,7 +1602,8 @@ def api_learning_dashboard_metrics():
             },
             "confidence": {
                 "distribution": conf_distribution
-            }
+            },
+            "versions": versions
         }
         
         return jsonify(metrics)
@@ -1627,8 +1699,9 @@ def api_paper_cited_by(paper_id):
         return jsonify({"error": str(e)}), 500
 
 
-# Start the background daily scheduler thread, protected against debug reloader double-runs
-if not app.debug or os.environ.get("WERKZEUG_RUN_MAIN") == "true":
+# Start the background daily scheduler thread, protected against debug reloader double-runs and unit tests
+import sys
+if (not app.debug or os.environ.get("WERKZEUG_RUN_MAIN") == "true") and "unittest" not in sys.modules:
     logging.getLogger("scheduler").info("Launching daily automatic harvest scheduler thread...")
     threading.Thread(target=daily_harvest_scheduler, daemon=True).start()
 

@@ -53,7 +53,7 @@ class PostgresCursorWrapper:
             )
             sql = re.sub(
                 r"papers_fts\s+MATCH\s+(%s|\?)", 
-                "to_tsvector('english', papers.title || ' ' || coalesce(papers.abstract, '')) @@ websearch_to_tsquery('english', \\1)", 
+                "to_tsvector('english', papers.title || ' ' || coalesce(papers.abstract, '') || ' ' || coalesce(papers.authors, '')) @@ websearch_to_tsquery('english', \\1)", 
                 sql, 
                 flags=re.IGNORECASE
             )
@@ -63,8 +63,14 @@ class PostgresCursorWrapper:
         # 3. Handle RETURNING clause for INSERT queries to emulate lastrowid
         is_insert = sql.strip().upper().startswith("INSERT INTO")
         if is_insert and "RETURNING" not in sql.upper():
-            sql = sql.rstrip(';').strip() + " RETURNING id"
+            match = re.match(r"INSERT\s+INTO\s+[\"`\[]?([a-zA-Z0-9_]+)[\"`\]]?", sql.strip(), re.IGNORECASE)
+            table_name = match.group(1).lower() if match else ""
+            if table_name != "system_metadata":
+                sql = sql.rstrip(';').strip() + " RETURNING id"
             
+        # Escape literal % characters (not part of %s placeholders) as %% for psycopg2
+        sql = re.sub(r"%(?!s\b)", "%%", sql)
+        
         try:
             self.cursor.execute(sql, params)
             if is_insert and "RETURNING" in sql.upper():
@@ -82,6 +88,7 @@ class PostgresCursorWrapper:
     def executemany(self, sql, seq_of_parameters):
         sql = re.sub(r"\?\d*", "%s", sql)
         sql = self.translate_json_queries(sql)
+        sql = re.sub(r"%(?!s\b)", "%%", sql)
         try:
             self.cursor.executemany(sql, seq_of_parameters)
         except Exception as e:
@@ -93,14 +100,14 @@ class PostgresCursorWrapper:
         # Convert EXISTS json_each pattern
         sql = re.sub(
             r"EXISTS\s*\(\s*SELECT\s+1\s+FROM\s+json_each\((papers\.)?outcome_domain\)\s+WHERE\s+value\s+=\s+(%s|\?)\s*\)",
-            r"\1outcome_domain @> jsonb_build_array(\2::text)",
+            r"(case when \1outcome_domain like '[%]' then (\1outcome_domain)::jsonb else '[]'::jsonb end) @> jsonb_build_array(\2::text)",
             sql,
             flags=re.IGNORECASE
         )
         def replace_outcome_in(match):
             prefix = match.group(1) or ""
             placeholders = match.group(2)
-            return f"{prefix}outcome_domain ?| array[{placeholders}]"
+            return f"(case when {prefix}outcome_domain like '[%]' then ({prefix}outcome_domain)::jsonb else '[]'::jsonb end) ?| array[{placeholders}]"
         sql = re.sub(
             r"EXISTS\s*\(\s*SELECT\s+1\s+FROM\s+json_each\((papers\.)?outcome_domain\)\s+WHERE\s+value\s+IN\s*\(([^)]+)\)\s*\)",
             replace_outcome_in,
@@ -114,7 +121,7 @@ class PostgresCursorWrapper:
             pattern_single = rf"\(\(\s*json_valid\((papers\.)?{col}\)\s+AND\s+json_type\(\1{col}\)\s+=\s+'array'\s+AND\s+EXISTS\s*\(\s*SELECT\s+1\s+FROM\s+json_each\(\1{col}\)\s+WHERE\s+json_each\.value\s+=\s+(%s|\?)\s*\)\s*\)\s+OR\s+\(\1{col}\s+=\s+(%s|\?)\)\)"
             sql = re.sub(
                 pattern_single,
-                rf"(coalesce(\1{col}, '[]'::jsonb) @> jsonb_build_array(\2::text) OR \1{col} = \3::text)",
+                rf"(case when \1{col} like '[%]' then (\1{col})::jsonb else '[]'::jsonb end @> jsonb_build_array(\2::text) OR \1{col} = \3::text)",
                 sql,
                 flags=re.IGNORECASE
             )
@@ -124,7 +131,7 @@ class PostgresCursorWrapper:
                 prefix = match.group(1) or ""
                 p1 = match.group(2)
                 p2 = match.group(3)
-                return f"(coalesce({prefix}{col}, '[]'::jsonb) ?| array[{p1}] OR {prefix}{col} IN ({p2}))"
+                return f"(case when {prefix}{col} like '[%]' then ({prefix}{col})::jsonb else '[]'::jsonb end ?| array[{p1}] OR {prefix}{col} IN ({p2}))"
             sql = re.sub(
                 pattern_multi,
                 replace_multi,
@@ -136,7 +143,7 @@ class PostgresCursorWrapper:
             pattern_not_exists = rf"NOT\s+EXISTS\s*\(\s*SELECT\s+1\s+FROM\s+json_each\((papers\.)?{col}\)\s+WHERE\s+json_each\.value\s+IN\s*\(([^)]+)\)\s*\)"
             sql = re.sub(
                 pattern_not_exists,
-                r"NOT (coalesce(\1" + col + r", '[]'::jsonb) ?| array[\2])",
+                r"NOT (case when \1" + col + r" like '[%]' then (\1" + col + r")::jsonb else '[]'::jsonb end ?| array[\2])",
                 sql,
                 flags=re.IGNORECASE
             )
@@ -145,7 +152,7 @@ class PostgresCursorWrapper:
             pattern_exists = rf"EXISTS\s*\(\s*SELECT\s+1\s+FROM\s+json_each\((papers\.)?{col}\)\s+WHERE\s+json_each\.value\s+IN\s*\(([^)]+)\)\s*\)"
             sql = re.sub(
                 pattern_exists,
-                r"(coalesce(\1" + col + r", '[]'::jsonb) ?| array[\2])",
+                r"(case when \1" + col + r" like '[%]' then (\1" + col + r")::jsonb else '[]'::jsonb end ?| array[\2])",
                 sql,
                 flags=re.IGNORECASE
             )
@@ -243,12 +250,66 @@ class DatabaseManager:
                 # Unwrapped connection check
                 unwrapped_conn = conn_check.conn
                 cursor = unwrapped_conn.cursor()
+                # Ensure compatibility functions exist
+                cursor.execute("""
+                    CREATE OR REPLACE FUNCTION json_valid(p_val text)
+                    RETURNS boolean AS $$
+                    BEGIN
+                      IF p_val IS NULL THEN
+                        RETURN NULL;
+                      END IF;
+                      PERFORM p_val::jsonb;
+                      RETURN true;
+                    EXCEPTION
+                      WHEN others THEN
+                        RETURN false;
+                    END;
+                    $$ LANGUAGE plpgsql IMMUTABLE;
+                """)
+                cursor.execute("""
+                    CREATE OR REPLACE FUNCTION json_type(p_val text)
+                    RETURNS text AS $$
+                    DECLARE
+                      v_json jsonb;
+                    BEGIN
+                      IF p_val IS NULL THEN
+                        RETURN NULL;
+                      END IF;
+                      v_json := p_val::jsonb;
+                      RETURN jsonb_typeof(v_json);
+                    EXCEPTION
+                      WHEN others THEN
+                        RETURN NULL;
+                    END;
+                    $$ LANGUAGE plpgsql IMMUTABLE;
+                """)
+                unwrapped_conn.commit()
                 cursor.execute("SELECT EXISTS (SELECT FROM information_schema.tables WHERE table_name = 'papers');")
                 row = cursor.fetchone()
                 db_exists = list(row.values())[0] if isinstance(row, dict) else row[0]
+                
+                if db_exists:
+                    try:
+                        cursor.execute("SELECT EXISTS (SELECT FROM information_schema.tables WHERE table_name = 'system_metadata');")
+                        meta_table_exists_row = cursor.fetchone()
+                        meta_table_exists = list(meta_table_exists_row.values())[0] if meta_table_exists_row else False
+                        if meta_table_exists:
+                            cursor.execute("SELECT value FROM system_metadata WHERE key = 'fts_index_updated_authors';")
+                            meta_row = cursor.fetchone()
+                            meta_val = list(meta_row.values())[0] if meta_row else None
+                            if meta_val != 'true':
+                                cursor.execute("SET maintenance_work_mem = '16MB';")
+                                cursor.execute("DROP INDEX IF EXISTS idx_papers_fts;")
+                                cursor.execute("CREATE INDEX IF NOT EXISTS idx_papers_fts ON papers USING GIN (to_tsvector('english', title || ' ' || coalesce(abstract, '') || ' ' || coalesce(authors, '')));")
+                                cursor.execute("INSERT INTO system_metadata (key, value) VALUES ('fts_index_updated_authors', 'true') ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value;")
+                                unwrapped_conn.commit()
+                    except Exception as idx_err:
+                        logger.error(f"Failed to update FTS GIN index: {idx_err}")
+                        pass
+                        
                 conn_check.close()
             except Exception as e:
-                logger.error(f"Postgres connection check failed: {e}")
+                logger.error(f"Postgres connection check/compat functions failed: {e}")
                 pass
         else:
             if os.path.exists(self.db_path) and os.path.getsize(self.db_path) > 0:
@@ -398,7 +459,8 @@ class DatabaseManager:
                 # Create functional GIN index for search optimization
                 try:
                     conn.execute("SET maintenance_work_mem = '16MB';")
-                    conn.execute("CREATE INDEX IF NOT EXISTS idx_papers_fts ON papers USING GIN (to_tsvector('english', title || ' ' || coalesce(abstract, '')));")
+                    conn.execute("DROP INDEX IF EXISTS idx_papers_fts;")
+                    conn.execute("CREATE INDEX IF NOT EXISTS idx_papers_fts ON papers USING GIN (to_tsvector('english', title || ' ' || coalesce(abstract, '') || ' ' || coalesce(authors, '')));")
                     conn.commit()
                 except Exception:
                     pass
@@ -581,6 +643,41 @@ class DatabaseManager:
         finally:
             conn.close()
 
+    def clear_all_tables(self):
+        """Clears all tables in the database (useful for testing)."""
+        conn = self.get_connection()
+        try:
+            if self.is_postgres:
+                # Truncate all tables and restart sequences
+                cursor = conn.cursor()
+                cursor.execute("TRUNCATE TABLE papers, users, analyses, system_metadata RESTART IDENTITY CASCADE;")
+                conn.commit()
+                cursor.close()
+            else:
+                # For SQLite, we can drop and recreate the file or delete all rows
+                cursor = conn.cursor()
+                cursor.execute("PRAGMA foreign_keys = OFF;")
+                cursor.execute("DELETE FROM papers;")
+                cursor.execute("DELETE FROM users;")
+                cursor.execute("DELETE FROM analyses;")
+                cursor.execute("DELETE FROM system_metadata;")
+                cursor.execute("DELETE FROM citation_edges;")
+                cursor.execute("DELETE FROM llm_calls_log;")
+                cursor.execute("DELETE FROM feedback_audit;")
+                cursor.execute("DELETE FROM sqlite_sequence;")
+                cursor.execute("PRAGMA foreign_keys = ON;")
+                conn.commit()
+                cursor.close()
+        except Exception as e:
+            try:
+                conn.rollback()
+            except Exception:
+                pass
+            logger.error(f"Failed to clear database tables: {e}")
+            raise e
+        finally:
+            conn.close()
+
     def get_metadata(self, key: str, default: Optional[str] = None) -> Optional[str]:
         """Fetches a metadata value from the database."""
         conn = self.get_connection()
@@ -588,8 +685,13 @@ class DatabaseManager:
             cursor = conn.cursor()
             cursor.execute("SELECT value FROM system_metadata WHERE key = ?;", (key,))
             row = cursor.fetchone()
-            return row[0] if row else default
-        except sqlite3.Error:
+            if row:
+                try:
+                    return row["value"]
+                except Exception:
+                    return row[0]
+            return default
+        except Exception:
             return default
         finally:
             conn.close()
@@ -598,9 +700,16 @@ class DatabaseManager:
         """Sets a metadata value in the database, overwriting if already exists."""
         conn = self.get_connection()
         try:
-            conn.execute("INSERT OR REPLACE INTO system_metadata (key, value) VALUES (?, ?);", (key, value))
+            if self.is_postgres:
+                conn.execute(
+                    "INSERT INTO system_metadata (key, value) VALUES (?, ?) "
+                    "ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value;", 
+                    (key, value)
+                )
+            else:
+                conn.execute("INSERT OR REPLACE INTO system_metadata (key, value) VALUES (?, ?);", (key, value))
             conn.commit()
-        except sqlite3.Error as e:
+        except Exception as e:
             conn.rollback()
             raise RuntimeError(f"Failed to set metadata key '{key}': {e}")
         finally:
@@ -713,7 +822,7 @@ class DatabaseManager:
                 )
             conn.commit()
             return row_id
-        except sqlite3.Error as e:
+        except Exception as e:
             conn.rollback()
             raise RuntimeError(f"Database error during insert/update: {e}")
         finally:
@@ -751,7 +860,7 @@ class DatabaseManager:
             try:
                 conn.execute(sql, params)
                 conn.commit()
-            except sqlite3.Error as e:
+            except Exception as e:
                 conn.rollback()
                 print(f"[DB ERROR] Failed to log LLM call: {e}")
             finally:
@@ -788,7 +897,7 @@ class DatabaseManager:
             cursor.execute("DELETE FROM papers WHERE id = ?", (paper_id,))
             conn.commit()
             return cursor.rowcount > 0
-        except sqlite3.Error as e:
+        except Exception as e:
             conn.rollback()
             raise RuntimeError(f"Failed to delete paper: {e}")
         finally:
@@ -1021,9 +1130,23 @@ class DatabaseManager:
                     where_clauses.append(f"EXISTS (SELECT 1 FROM json_each(papers.outcome_domain) WHERE value IN ({placeholders}))")
                     params.extend(outcomes)
                 
-        # Claude classified filter (classifier_version starts with llm-)
+        # Claude classified filter (classifier_version starts with llm-) - retained for backwards compatibility
         if filters.get("claude_classified"):
             where_clauses.append("papers.classifier_version LIKE 'llm-%'")
+            
+        # Classification level filter
+        class_level = filters.get("classification_level")
+        if class_level and class_level != "ALL":
+            if class_level == "native":
+                where_clauses.append("(papers.classifier_version IS NULL OR papers.classifier_version NOT LIKE 'llm-%')")
+            elif class_level == "claude_abstract":
+                where_clauses.append("papers.classifier_version LIKE 'llm-reclassify-%'")
+            elif class_level == "claude_pdf":
+                where_clauses.append("papers.classifier_version LIKE 'llm-pdf-reclassify-%'")
+            elif class_level == "manual":
+                where_clauses.append("(papers.expert_locked_fields IS NOT NULL AND papers.expert_locked_fields != '[]' AND papers.expert_locked_fields != '')")
+            elif class_level == "optimal":
+                where_clauses.append("(papers.classifier_version LIKE 'llm-pdf-reclassify-%' OR (papers.expert_locked_fields IS NOT NULL AND papers.expert_locked_fields != '[]' AND papers.expert_locked_fields != ''))")
                     
         return where_clauses, params
 
@@ -1069,24 +1192,45 @@ class DatabaseManager:
         if sort_dir not in ("ASC", "DESC"):
             sort_dir = "DESC"
 
+        collate_clause = ' COLLATE "C"' if self.is_postgres else ''
         if sort_by == "year":
             sql += f" ORDER BY papers.year {sort_dir}, papers.id DESC"
         elif sort_by == "citations":
             sql += f" ORDER BY papers.citation_count {sort_dir}, papers.year DESC"
         elif sort_by == "title":
-            sql += f" ORDER BY papers.title {sort_dir}, papers.year DESC"
+            sql += f" ORDER BY papers.title{collate_clause} {sort_dir}, papers.year DESC"
         elif sort_by == "duration":
             sql += f" ORDER BY papers.duration_days {sort_dir}, papers.year DESC"
         elif sort_by == "study_type":
-            sql += f" ORDER BY papers.study_type {sort_dir}, papers.year DESC"
+            sql += f" ORDER BY papers.study_type{collate_clause} {sort_dir}, papers.year DESC"
         elif sort_by == "exposure_method":
-            sql += f" ORDER BY papers.exposure_method {sort_dir}, papers.year DESC"
+            sql += f" ORDER BY papers.exposure_method{collate_clause} {sort_dir}, papers.year DESC"
         elif sort_by == "publication_type":
-            sql += f" ORDER BY papers.publication_type {sort_dir}, papers.year DESC"
+            sql += f" ORDER BY papers.publication_type{collate_clause} {sort_dir}, papers.year DESC"
         elif sort_by == "cannabis_type":
-            sql += f" ORDER BY papers.cannabis_type {sort_dir}, papers.year DESC"
+            sql += f" ORDER BY papers.cannabis_type{collate_clause} {sort_dir}, papers.year DESC"
         elif sort_by == "outcome_domain":
-            sql += f" ORDER BY papers.outcome_domain {sort_dir}, papers.year DESC"
+            sql += f" ORDER BY papers.outcome_domain{collate_clause} {sort_dir}, papers.year DESC"
+        elif sort_by == "dose_mg":
+            sql += f" ORDER BY papers.dose_mg {sort_dir}, papers.year DESC"
+        elif sort_by == "puff_count":
+            sql += f" ORDER BY papers.puff_count {sort_dir}, papers.year DESC"
+        elif sort_by == "administration_frequency":
+            sql += f" ORDER BY papers.administration_frequency{collate_clause} {sort_dir}, papers.year DESC"
+        elif sort_by == "thc_mg_ml":
+            sql += f" ORDER BY papers.thc_mg_ml {sort_dir}, papers.year DESC"
+        elif sort_by == "cbd_mg_ml":
+            sql += f" ORDER BY papers.cbd_mg_ml {sort_dir}, papers.year DESC"
+        elif sort_by == "thc_mg_kg":
+            sql += f" ORDER BY papers.thc_mg_kg {sort_dir}, papers.year DESC"
+        elif sort_by == "cbd_mg_kg":
+            sql += f" ORDER BY papers.cbd_mg_kg {sort_dir}, papers.year DESC"
+        elif sort_by == "treatment_duration":
+            sql += f" ORDER BY papers.treatment_duration{collate_clause} {sort_dir}, papers.year DESC"
+        elif sort_by == "strain_reported":
+            sql += f" ORDER BY papers.strain_reported{collate_clause} {sort_dir}, papers.year DESC"
+        elif sort_by == "strain_normalized":
+            sql += f" ORDER BY papers.strain_normalized{collate_clause} {sort_dir}, papers.year DESC"
         else:
             # Default sorting: Rank (relevance) or Year DESC
             if query_val:
@@ -1220,7 +1364,7 @@ class DatabaseManager:
             )
             conn.commit()
             return True
-        except sqlite3.IntegrityError:
+        except Exception:
             return False
         finally:
             conn.close()
@@ -1232,7 +1376,7 @@ class DatabaseManager:
             conn.execute("UPDATE users SET is_verified = 1, verification_code = NULL WHERE username = ?;", (username,))
             conn.commit()
             return True
-        except sqlite3.Error:
+        except Exception:
             return False
         finally:
             conn.close()

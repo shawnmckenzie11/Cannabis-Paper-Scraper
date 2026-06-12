@@ -235,7 +235,7 @@ def jaccard_similarity(a, b) -> float:
         
     return len(set_a & set_b) / len(set_a | set_b)
 
-def classify_with_llm(title: str, abstract: str, runs: Optional[int] = None) -> Optional[Dict[str, Any]]:
+def classify_with_llm(title: str, abstract: str, runs: Optional[int] = None, full_text: Optional[str] = None) -> Optional[Dict[str, Any]]:
     """Uses Claude 3.5 Sonnet to perform deep extraction of scientific parameters.
     
     Returns:
@@ -273,10 +273,15 @@ def classify_with_llm(title: str, abstract: str, runs: Optional[int] = None) -> 
     total_cache_write = 0
     total_output_tokens = 0
     actual_model_used = "unknown"
-
+ 
     try:
         client = Anthropic(api_key=api_key)
-        user_content = f"Title: {title}\n\nAbstract: {abstract}"
+        if full_text:
+            # Truncate full text to first 100,000 characters to prevent excessive tokens
+            truncated_text = full_text[:100000]
+            user_content = f"Title: {title}\n\nAbstract: {abstract}\n\nFull Paper Text (PDF):\n{truncated_text}"
+        else:
+            user_content = f"Title: {title}\n\nAbstract: {abstract}"
         
         parsed_results = []
         
@@ -448,7 +453,7 @@ def classify_with_llm(title: str, abstract: str, runs: Optional[int] = None) -> 
         logger.error(f"Anthropic LLM classification failed: {e}. Falling back to heuristics.")
         return None
 
-def process_paper_metadata(title: str, abstract: str, run_llm: bool = False, runs: Optional[int] = None) -> Dict[str, Any]:
+def process_paper_metadata(title: str, abstract: str, run_llm: bool = False, runs: Optional[int] = None, full_text: Optional[str] = None) -> Dict[str, Any]:
     """Extracts metadata from paper, running LLM if requested/available, else falling back to heuristics.
     
     Args:
@@ -456,6 +461,7 @@ def process_paper_metadata(title: str, abstract: str, run_llm: bool = False, run
         abstract: Abstract text of the paper
         run_llm: Whether to attempt LLM classification
         runs: Optional count of self-consistency runs override
+        full_text: Optional full PDF text of the paper
         
     Returns:
         Dict containing all extracted metadata.
@@ -463,7 +469,7 @@ def process_paper_metadata(title: str, abstract: str, run_llm: bool = False, run
     metadata = None
     
     if run_llm:
-        metadata = classify_with_llm(title, abstract, runs=runs)
+        metadata = classify_with_llm(title, abstract, runs=runs, full_text=full_text)
         if metadata:
             if not metadata.get("summary"):
                 metadata["summary"] = extractor.generate_heuristic_summary(metadata)
