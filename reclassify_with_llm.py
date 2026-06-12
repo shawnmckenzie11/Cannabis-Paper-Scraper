@@ -123,7 +123,7 @@ def reclassify_papers_llm(limit=None, offset=0, prioritize=True, paper_id=None):
                 """
             if limit is not None:
                 query += " LIMIT ? OFFSET ?"
-                params.extend([limit, offset])
+                params.extend([limit * 10, offset])
 
         cursor.execute(query, params)
         papers = [dict(row) for row in cursor.fetchall()]
@@ -148,6 +148,10 @@ def reclassify_papers_llm(limit=None, offset=0, prioritize=True, paper_id=None):
         }
 
         for idx, p in enumerate(papers):
+            if limit is not None and update_count >= limit:
+                logger.info(f"Reached successful update limit of {limit}. Stopping batch.")
+                break
+
             paper_id = p["id"]
             title = p.get("title") or ""
             abstract = p.get("abstract") or ""
@@ -169,6 +173,9 @@ def reclassify_papers_llm(limit=None, offset=0, prioritize=True, paper_id=None):
             full_text = None
             if full_text_link:
                 full_text = download_and_extract_pdf_text(full_text_link)
+                if not full_text:
+                    logger.warning(f"Failed to download/extract PDF for paper ID {paper_id}. Skipping paper to find another candidate with a PDF.")
+                    continue
 
             # Call LLM classification
             try:

@@ -1566,8 +1566,69 @@ def api_learning_dashboard_metrics():
                 "avg_cost": round(cost_rows.get(v_name, 0.0), 4)
             })
 
+        # Load reliability manifest
+        reliability_manifest = None
+        manifest_path = "/Users/shawnscomputer/Documents/Cannabis Paper Scraper/reliability_manifest.json"
+        if os.path.exists(manifest_path):
+            try:
+                with open(manifest_path, "r") as f:
+                    reliability_manifest = json.load(f)
+            except Exception as e:
+                app.logger.warning(f"Failed to load reliability manifest: {e}")
+
+        # Compute learning growth trends
+        cursor.execute("""
+            SELECT 
+                classifier_version,
+                study_type,
+                classification_confidence
+            FROM papers
+            WHERE classifier_version IS NOT NULL AND classifier_version LIKE 'llm-%' AND classification_confidence IS NOT NULL
+        """)
+        rows = cursor.fetchall()
+        
+        version_category_stats = {}
+        for r in rows:
+            version_str = r["classifier_version"]
+            suffix_match = re.search(r"(\d+\.\d+\.\d+)", version_str)
+            version_suffix = suffix_match.group(1) if suffix_match else "1.0.0"
+            
+            study_type_str = r["study_type"] or ""
+            if "Clinical" in study_type_str:
+                category = "clinical"
+            elif "Animal" in study_type_str or "Cell" in study_type_str:
+                category = "preclinical"
+            else:
+                category = "preclinical"
+                
+            conf = r["classification_confidence"] or 0.0
+            
+            if version_suffix not in version_category_stats:
+                version_category_stats[version_suffix] = {
+                    "clinical": {"sum": 0.0, "count": 0},
+                    "preclinical": {"sum": 0.0, "count": 0}
+                }
+                
+            version_category_stats[version_suffix][category]["sum"] += conf
+            version_category_stats[version_suffix][category]["count"] += 1
+            
+        sorted_versions = sorted(version_category_stats.keys())
+        learning_growth = []
+        for v in sorted_versions:
+            clin_data = version_category_stats[v]["clinical"]
+            pre_data = version_category_stats[v]["preclinical"]
+            learning_growth.append({
+                "version": v,
+                "clinical_avg_conf": round(clin_data["sum"] / clin_data["count"], 3) if clin_data["count"] > 0 else 0.0,
+                "clinical_count": clin_data["count"],
+                "preclinical_avg_conf": round(pre_data["sum"] / pre_data["count"], 3) if pre_data["count"] > 0 else 0.0,
+                "preclinical_count": pre_data["count"]
+            })
+
         # Prepare response payload
         metrics = {
+            "reliability_manifest": reliability_manifest,
+            "learning_growth": learning_growth,
             "summary": {
                 "total_llm_classified": total_llm_classified,
                 "total_locked_papers": total_locked_papers,

@@ -1944,37 +1944,56 @@
                         </div>
                     </div>
 
-                    <!-- Card 4: Few-Shot Learning Analysis -->
+                    <!-- Card 4: Self-Optimizing Prompting & Reliability Dashboard -->
                     <div class="glass-panel" style="padding: 20px; display: flex; flex-direction: column; gap: 15px; height: 350px; border-radius: 12px; border-color: rgba(99, 102, 241, 0.15);">
-                        <h4 style="margin: 0; font-size: 1rem; font-weight: 600; color: var(--text-primary); display: flex; align-items: center; gap: 6px;">🧠 Dynamic Few-Shot Learning Impact</h4>
-                        <div style="flex: 1; min-height: 0; position: relative; display: flex; flex-direction: column; gap: 12px;">
-                            <div style="display: flex; justify-content: space-around; padding: 12px 0; background: rgba(255,255,255,0.02); border-radius: 8px; border: 1px solid rgba(255,255,255,0.05);">
-                                <div style="text-align: center;">
-                                    <div style="font-size: 0.7rem; color: var(--text-secondary); text-transform: uppercase; font-weight: 600;">Few-Shot Trigger Rate</div>
-                                    <div id="dash-fs-trigger-rate" style="font-size: 1.4rem; font-weight: 700; color: var(--accent-blue);">0%</div>
+                        <h4 style="margin: 0; font-size: 1rem; font-weight: 600; color: var(--text-primary); display: flex; align-items: center; gap: 6px;">🤖 Self-Optimizing Prompting & Category Reliability</h4>
+                        <div style="flex: 1; min-height: 0; display: flex; gap: 15px;">
+                            <!-- Left: Reliability Manifest Flags -->
+                            <div style="width: 42%; display: flex; flex-direction: column; gap: 8px; font-size: 0.8rem; border-right: 1px solid rgba(255,255,255,0.08); padding-right: 10px;">
+                                <div style="font-size: 0.72rem; text-transform: uppercase; color: var(--text-secondary); font-weight: 600; letter-spacing: 0.5px; margin-bottom: 2px;">
+                                    Category Reliability (Threshold: 75%)
                                 </div>
-                                <div style="text-align: center;">
-                                    <div style="font-size: 0.7rem; color: var(--text-secondary); text-transform: uppercase; font-weight: 600;">Avg Match Similarity</div>
-                                    <div id="dash-fs-avg-similarity" style="font-size: 1.4rem; font-weight: 700; color: #4caf50;">0.00</div>
+                                
+                                <div style="background: rgba(255,255,255,0.02); padding: 8px; border-radius: 6px; border: 1px solid rgba(255,255,255,0.05); display: flex; flex-direction: column; gap: 5px;">
+                                    <div style="font-weight: 600; color: var(--accent-blue); font-size: 0.75rem;">🔬 Preclinical Studies</div>
+                                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                                        <span>Study Type:</span>
+                                        <span id="manifest-pre-study" style="font-weight: 700; color: #e2e8f0;">0%</span>
+                                    </div>
+                                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                                        <span>Exposure Method:</span>
+                                        <span id="manifest-pre-exposure" style="font-weight: 700; color: #e2e8f0;">0%</span>
+                                    </div>
+                                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                                        <span>Cannabis Type:</span>
+                                        <span id="manifest-pre-cannabis" style="font-weight: 700; color: #e2e8f0;">0%</span>
+                                    </div>
+                                </div>
+                                
+                                <div style="background: rgba(255,255,255,0.02); padding: 8px; border-radius: 6px; border: 1px solid rgba(255,255,255,0.05); display: flex; flex-direction: column; gap: 5px;">
+                                    <div style="font-weight: 600; color: #10b981; font-size: 0.75rem;">👥 Clinical Studies</div>
+                                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                                        <span>Study Type:</span>
+                                        <span id="manifest-clin-study" style="font-weight: 700; color: #e2e8f0;">0%</span>
+                                    </div>
+                                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                                        <span>Exposure Method:</span>
+                                        <span id="manifest-clin-exposure" style="font-weight: 700; color: #e2e8f0;">0%</span>
+                                    </div>
+                                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                                        <span>Cannabis Type:</span>
+                                        <span id="manifest-clin-cannabis" style="font-weight: 700; color: #e2e8f0;">0%</span>
+                                    </div>
                                 </div>
                             </div>
-                            <!-- Comparison of correction rates -->
-                            <div style="flex: 1; display: flex; align-items: center; justify-content: center; gap: 20px; padding: 10px;">
-                                <div style="width: 50%; text-align: center; border-right: 1px solid rgba(255,255,255,0.08); padding-right: 15px; display: flex; flex-direction: column; gap: 4px;">
-                                    <div style="font-size: 0.8rem; color: #ff8a65; font-weight: 700;">Without Few-Shot</div>
-                                    <div style="font-size: 0.75rem; color: var(--text-secondary);">Correction Rate:</div>
-                                    <div id="dash-rate-without-fs" style="font-size: 1.4rem; font-weight: 800; color: #ff8a65;">0%</div>
-                                    <div id="dash-count-without-fs" style="font-size: 0.7rem; color: var(--text-secondary);">0 / 0 papers</div>
-                                    <div style="font-size: 0.75rem; color: var(--text-secondary); margin-top: 4px;">Avg Confidence:</div>
-                                    <div id="dash-conf-without-fs" style="font-size: 1.1rem; font-weight: 700; color: #e2e8f0;">0%</div>
+                            
+                            <!-- Right: Learning Growth Chart -->
+                            <div style="width: 58%; position: relative; display: flex; flex-direction: column;">
+                                <div style="font-size: 0.72rem; text-transform: uppercase; color: var(--text-secondary); font-weight: 600; letter-spacing: 0.5px; margin-bottom: 5px; text-align: center;">
+                                    LLM Confidence Growth by Subcategory
                                 </div>
-                                <div style="width: 50%; text-align: center; padding-left: 15px; display: flex; flex-direction: column; gap: 4px;">
-                                    <div style="font-size: 0.8rem; color: #4caf50; font-weight: 700;">With Few-Shot (Sim > 0.25)</div>
-                                    <div style="font-size: 0.75rem; color: var(--text-secondary);">Correction Rate:</div>
-                                    <div id="dash-rate-with-fs" style="font-size: 1.4rem; font-weight: 800; color: #4caf50;">0%</div>
-                                    <div id="dash-count-with-fs" style="font-size: 0.7rem; color: var(--text-secondary);">0 / 0 papers</div>
-                                    <div style="font-size: 0.75rem; color: var(--text-secondary); margin-top: 4px;">Avg Confidence:</div>
-                                    <div id="dash-conf-with-fs" style="font-size: 1.1rem; font-weight: 700; color: #10b981;">0%</div>
+                                <div style="flex: 1; min-height: 0; position: relative;">
+                                    <canvas id="chart-reliability-trends"></canvas>
                                 </div>
                             </div>
                         </div>
@@ -2854,6 +2873,7 @@
         let chartCostTokens = null;
         let chartConfidenceTrend = null;
         let chartLockedFields = null;
+        let chartReliabilityTrends = null;
 
         // Switch table views between Original, Review, and Recents
         function switchTab(tab) {
@@ -4797,39 +4817,30 @@
                     // 4. Render Card 3: Locked Fields Breakdown
                     renderLockedFieldsChart(data.expert_locks.active_distribution);
                     
-                    // 5. Populate Card 4: Few-shot Learning Comparison
-                    document.getElementById("dash-fs-trigger-rate").innerText = (data.few_shot.trigger_rate * 100).toFixed(1) + '%';
-                    document.getElementById("dash-fs-avg-similarity").innerText = data.few_shot.avg_similarity.toFixed(3);
-                    
-                    const rates = data.few_shot.comparison;
-                    document.getElementById("dash-rate-without-fs").innerText = (rates.without_few_shot.rate * 100).toFixed(1) + '%';
-                    document.getElementById("dash-count-without-fs").innerText = `${rates.without_few_shot.corrected} / ${rates.without_few_shot.total} papers`;
-                    document.getElementById("dash-conf-without-fs").innerText = (rates.without_few_shot.avg_confidence * 100).toFixed(1) + '%';
-                    
-                    document.getElementById("dash-rate-with-fs").innerText = (rates.with_few_shot.rate * 100).toFixed(1) + '%';
-                    document.getElementById("dash-count-with-fs").innerText = `${rates.with_few_shot.corrected} / ${rates.with_few_shot.total} papers`;
-                    document.getElementById("dash-conf-with-fs").innerText = (rates.with_few_shot.avg_confidence * 100).toFixed(1) + '%';
-                    
-                    // Add explanation text in Card 4 if not exists
-                    const fsImpactCard = document.getElementById("dash-fs-trigger-rate").closest(".glass-panel");
-                    let fsExplanation = fsImpactCard.querySelector(".fs-explanation");
-                    if (!fsExplanation) {
-                        fsExplanation = document.createElement("div");
-                        fsExplanation.className = "fs-explanation";
-                        fsExplanation.style.fontSize = "0.75rem";
-                        fsExplanation.style.color = "var(--text-secondary)";
-                        fsExplanation.style.marginTop = "10px";
-                        fsExplanation.style.textAlign = "center";
-                        fsExplanation.style.fontStyle = "italic";
-                        fsExplanation.style.borderTop = "1px solid rgba(255,255,255,0.05)";
-                        fsExplanation.style.paddingTop = "8px";
-                        // Find the container under header to insert
-                        const container = fsImpactCard.querySelector("div[style*='flex: 1']");
-                        if (container) container.appendChild(fsExplanation);
+                    // 5. Populate Card 4: Self-Optimizing Prompting Manifest
+                    if (data.reliability_manifest && data.reliability_manifest.metrics) {
+                        const m = data.reliability_manifest.metrics;
+                        const renderFlag = (metric) => {
+                            const pct = (metric.score * 100).toFixed(1) + '%';
+                            return metric.reliable 
+                                ? `<span style="color: #10b981; font-weight: bold;">✅ ${pct}</span>` 
+                                : `<span style="color: #ef4444; font-weight: bold;">❌ ${pct}</span>`;
+                        };
+                        
+                        document.getElementById("manifest-pre-study").innerHTML = renderFlag(m.preclinical.study_type);
+                        document.getElementById("manifest-pre-exposure").innerHTML = renderFlag(m.preclinical.exposure_method);
+                        document.getElementById("manifest-pre-cannabis").innerHTML = renderFlag(m.preclinical.cannabis_type);
+                        
+                        document.getElementById("manifest-clin-study").innerHTML = renderFlag(m.clinical.study_type);
+                        document.getElementById("manifest-clin-exposure").innerHTML = renderFlag(m.clinical.exposure_method);
+                        document.getElementById("manifest-clin-cannabis").innerHTML = renderFlag(m.clinical.cannabis_type);
                     }
-                    if (fsExplanation) {
-                        fsExplanation.innerText = "💡 Lower correction rate with few-shot means the model was initially correct and required fewer expert edits.";
+                    
+                    // Render Learning Growth Trends Line Chart
+                    if (data.learning_growth && data.learning_growth.length > 0) {
+                        renderReliabilityTrendsChart(data.learning_growth);
                     }
+
 
                     // 5.5 Populate Version Table
                     const versionTbody = document.getElementById("dash-version-tbody");
@@ -5113,6 +5124,83 @@
                             title: { display: true, text: 'Papers Classified', color: '#00f0ff', font: { family: 'Outfit' } },
                             grid: { drawOnChartArea: false },
                             ticks: { color: '#94a3b8', font: { family: 'Outfit' } }
+                        }
+                    }
+                }
+            });
+        }
+
+        function renderReliabilityTrendsChart(learningGrowth) {
+            const ctx = document.getElementById('chart-reliability-trends').getContext('2d');
+            
+            if (chartReliabilityTrends) {
+                chartReliabilityTrends.destroy();
+            }
+            
+            const labels = learningGrowth.map(g => 'v' + g.version);
+            const clinicalConfs = learningGrowth.map(g => g.clinical_avg_conf);
+            const preclinicalConfs = learningGrowth.map(g => g.preclinical_avg_conf);
+            
+            chartReliabilityTrends = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [
+                        {
+                            label: 'Clinical Avg Conf',
+                            data: clinicalConfs,
+                            borderColor: '#10b981',
+                            borderWidth: 2,
+                            pointBackgroundColor: '#10b981',
+                            pointHoverRadius: 4,
+                            fill: false,
+                            tension: 0.1
+                        },
+                        {
+                            label: 'Preclinical Avg Conf',
+                            data: preclinicalConfs,
+                            borderColor: '#6366f1',
+                            borderWidth: 2,
+                            pointBackgroundColor: '#6366f1',
+                            pointHoverRadius: 4,
+                            fill: false,
+                            tension: 0.1
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'top',
+                            labels: { color: '#e2e8f0', font: { family: 'Outfit', size: 9 } }
+                        },
+                        tooltip: {
+                            mode: 'index',
+                            intersect: false,
+                            backgroundColor: 'rgba(15, 23, 42, 0.95)',
+                            titleColor: '#fff',
+                            bodyColor: '#e2e8f0',
+                            borderColor: 'rgba(255,255,255,0.1)',
+                            borderWidth: 1
+                        }
+                    },
+                    scales: {
+                        x: {
+                            grid: { color: 'rgba(255,255,255,0.03)' },
+                            ticks: { color: '#94a3b8', font: { family: 'Outfit', size: 9 } }
+                        },
+                        y: {
+                            min: 0.5,
+                            max: 1.0,
+                            title: { display: false },
+                            grid: { color: 'rgba(255,255,255,0.03)' },
+                            ticks: { 
+                                color: '#94a3b8', 
+                                font: { family: 'Outfit', size: 9 },
+                                callback: function(value) { return (value * 100).toFixed(0) + '%'; }
+                            }
                         }
                     }
                 }
