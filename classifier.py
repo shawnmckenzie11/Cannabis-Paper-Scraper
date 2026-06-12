@@ -258,6 +258,33 @@ def classify_with_llm(title: str, abstract: str, runs: Optional[int] = None, ful
     h_exposure = set(h.get("exposure_method") or [])
     pub_type = h.get("publication_type")
     
+    # Load reliability manifest
+    manifest_path = "reliability_manifest.json"
+    manifest = {}
+    if os.path.exists(manifest_path):
+        try:
+            with open(manifest_path, "r") as f:
+                manifest = json.load(f)
+        except Exception as e:
+            logger.warning(f"Failed to load reliability manifest: {e}")
+            
+    # Default fallback is study_type is reliable, exposure/cannabis type are unreliable
+    preclinical_study_reliable = True
+    preclinical_exposure_reliable = False
+    preclinical_cannabis_reliable = False
+    clinical_study_reliable = True
+    clinical_exposure_reliable = False
+    clinical_cannabis_reliable = False
+    
+    if manifest:
+        metrics = manifest.get("metrics", {})
+        preclinical_study_reliable = metrics.get("preclinical", {}).get("study_type", {}).get("reliable", True)
+        preclinical_exposure_reliable = metrics.get("preclinical", {}).get("exposure_method", {}).get("reliable", False)
+        preclinical_cannabis_reliable = metrics.get("preclinical", {}).get("cannabis_type", {}).get("reliable", False)
+        clinical_study_reliable = metrics.get("clinical", {}).get("study_type", {}).get("reliable", True)
+        clinical_exposure_reliable = metrics.get("clinical", {}).get("exposure_method", {}).get("reliable", False)
+        clinical_cannabis_reliable = metrics.get("clinical", {}).get("cannabis_type", {}).get("reliable", False)
+
     dynamic_rules_list = []
     
     # 2. Build dynamic rules list
@@ -267,7 +294,7 @@ def classify_with_llm(title: str, abstract: str, runs: Optional[int] = None, ful
         is_preclinical = any("animal" in s.lower() or "cell" in s.lower() or "vitro" in s.lower() for s in h_study)
         is_clinical = any("clinical" in s.lower() or "rct" in s.lower() or "observational" in s.lower() for s in h_study)
         
-        if is_preclinical:
+        if is_preclinical and preclinical_study_reliable:
             dynamic_rules_list.append("### Preclinical (Animal / In Vitro) Guidelines:")
             dynamic_rules_list.append("- Prioritize extracting details from the **Materials & Methods** section.")
             dynamic_rules_list.append("- Extract chemical manufacturers, suppliers, and compound/ligand details into `strain_reported` (e.g. 'Sigma-Aldrich', 'THC Pharm', 'Cayman Chemical').")
@@ -281,13 +308,16 @@ def classify_with_llm(title: str, abstract: str, runs: Optional[int] = None, ful
             if is_invivo:
                 dynamic_rules_list.append("- For Animal Models: Extract in vivo doses in mg/kg or mg/g into `thc_mg_kg` / `cbd_mg_kg` / `thc_mg_g` / `cbd_mg_g`. Extract study duration in days into `duration_days` and frequency into `administration_frequency`.")
                 
-        if is_clinical:
+            if preclinical_exposure_reliable:
+                dynamic_rules_list.append("- **Preclinical Exposure Specific Instructions**: Since Tier 1 exposure classification is highly reliable, pay extra attention to extraction details matching the detected preclinical route.")
+                
+        if is_clinical and clinical_study_reliable:
             dynamic_rules_list.append("### Clinical (Human Study) Guidelines:")
             dynamic_rules_list.append("- Focus strictly on clinical parameters. Do NOT extract cell line names, animal strains, or chemical suppliers/manufacturers into `strain_reported`.")
             dynamic_rules_list.append("- Extract study duration (days/weeks/months) into `duration_days` and sample size (number of patients) into `sample_size`.")
             
             is_inhaled = any("inhaled" in e.lower() or "smoke" in e.lower() or "vapor" in e.lower() or "vape" in e.lower() for e in h_exposure)
-            if is_inhaled:
+            if is_inhaled and clinical_exposure_reliable:
                 dynamic_rules_list.append("- For Inhaled Studies: Extract exposure duration per session (e.g., '30 minutes') into `inhaled_exposure_duration` and puff counts into `puff_count`.")
                 
     elif pub_type in ("review", "systematic review", "meta-analysis"):
@@ -297,7 +327,7 @@ def classify_with_llm(title: str, abstract: str, runs: Optional[int] = None, ful
     dynamic_rules_str = "\n".join(dynamic_rules_list) if dynamic_rules_list else ""
     
     if dynamic_rules_str:
-        logger.info(f"Dynamically injected context-specific rules for {pub_type} study type: {list(h_study)}")
+        logger.info(f"Dynamically injected context-specific rules for {pub_type} study type: {list(h_study)} (manifest flags: preclinical_study={preclinical_study_reliable}, clinical_study={clinical_study_reliable})")
 
     # Build system prompt blocks utilizing prompt caching for the large static ruleset
     system_blocks = [
