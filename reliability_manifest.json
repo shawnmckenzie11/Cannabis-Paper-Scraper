@@ -1,32 +1,32 @@
 {
-  "last_updated": "2026-06-12T14:23:51.261557",
+  "last_updated": "2026-06-12T14:27:41.864360",
   "threshold": 0.75,
   "metrics": {
     "preclinical": {
       "study_type": {
-        "score": 0.779,
+        "score": 0.781,
         "reliable": true
       },
       "exposure_method": {
-        "score": 0.639,
+        "score": 0.641,
         "reliable": false
       },
       "cannabis_type": {
-        "score": 0.29,
+        "score": 0.291,
         "reliable": false
       }
     },
     "clinical": {
       "study_type": {
-        "score": 0.978,
+        "score": 0.979,
         "reliable": true
       },
       "exposure_method": {
-        "score": 0.255,
+        "score": 0.258,
         "reliable": false
       },
       "cannabis_type": {
-        "score": 0.32,
+        "score": 0.314,
         "reliable": false
       }
     }
