@@ -1100,7 +1100,7 @@ def _compute_analysis_chart_data(papers):
             study_design[designs] = study_design.get(designs, 0) + 1
 
         # Timeline
-        yr = p.get("year") or "N/A"
+        yr = str(p.get("year") or "N/A")
         timeline[yr] = timeline.get(yr, 0) + 1
 
         # THC bins
