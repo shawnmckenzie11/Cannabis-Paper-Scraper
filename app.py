@@ -29,7 +29,7 @@ def mvp_gate(f):
         return jsonify({"error": "This feature is locked in the MVP release."}), 403
     return decorated_function
 
-ADMIN_EMAILS = {"shawnmckenzie11.sm@gmail.com"}
+ADMIN_EMAILS = {"shawnmckenzie11.sm@gmail.com", "solutions@mckenzian.com", "nadiadalim@gmail.com"}
 if os.getenv("ADMIN_EMAILS"):
     ADMIN_EMAILS.update(email.strip() for email in os.getenv("ADMIN_EMAILS").split(","))
 
