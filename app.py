@@ -318,7 +318,8 @@ def auth_google():
         "redirect_uri": redirect_uri,
         "response_type": "code",
         "scope": "openid email profile",
-        "state": state
+        "state": state,
+        "prompt": "select_account"
     }
     
     google_auth_url = "https://accounts.google.com/o/oauth2/v2/auth?" + urllib.parse.urlencode(params)
