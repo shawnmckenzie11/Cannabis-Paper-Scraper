@@ -578,6 +578,11 @@ def get_methods_text(title: str, abstract: str) -> str:
 
 def infer_publication_type(title: str, abstract: str) -> str:
     """Infers Stage 1 publication type from text keywords."""
+    # Check if not cannabis-related
+    is_related, reason = is_cannabis_related(title, abstract)
+    if not is_related:
+        return "not cannabis-related"
+        
     methods_text = get_methods_text(title, abstract)
     combined = methods_text.lower()
     
@@ -1105,7 +1110,7 @@ def extract_all_heuristics(title: str, abstract: str) -> Dict[str, Any]:
 # --- Cannabis/Cannabinoid Positive & Negative Context Keywords for Relevance Checking ---
 
 POSITIVE_KEYWORDS = [
-    r"\bcannabi\w*",
+    r"\b(?:endo|phyto)?cannabi\w*",
     r"\btetrahydrocannabi\w*",
     r"\bmarijuana\w*",
     r"\bhemp\w*",
@@ -1182,12 +1187,98 @@ ALL_NEGATIVES = (
     CBD_DEFENSE_PATTERNS
 )
 
+def is_gpr_lpi_dud(title: str, abstract: str) -> tuple[bool, str]:
+    """Helper to detect if a paper is an orphan GPR receptor/LPI study that is not cannabis-related.
+    These papers mention cannabinoids (THC, AEA, CBD) in the first 1-2 sentences of the abstract
+    for background context, but the actual study is about GPR55/LPI or GPR18 or GPR119 and doesn't
+    test or administer any cannabinoid.
+    """
+    title_lower = title.lower()
+    abstract_lower = (abstract or "").lower()
+    combined = title_lower + " " + abstract_lower
+    
+    # 1. Check if the paper deals with GPR55, LPI, GPR18, or GPR119
+    has_gpr = any(term in combined for term in ["gpr55", "gpr-55", "gpr18", "gpr-18", "gpr119", "gpr-119", "g-protein coupled receptor 55", "g protein-coupled receptor 55", "lysophosphatidylinositol"])
+    if not has_gpr:
+        return False, ""
+        
+    # 2. Check if any positive keywords (or cbd/thc/cb1/cb2/cnr/endocannabinoid) are in the title.
+    title_has_positive = any(re.search(pattern, title_lower) for pattern in POSITIVE_KEYWORDS) or any(term in title_lower for term in ["cbd", "thc", "cb1", "cb2", "cnr1", "cnr2", "cnr 1", "cnr 2", "endocannabinoid", "endocannabinoids"])
+    if title_has_positive:
+        return False, ""
+        
+    # 3. Check if it contains the canonical CB1/CB2/CNR1/CNR2 receptors in the abstract/title.
+    has_canonical_cb = any(re.search(rf"\b{term}\b", combined) for term in ["cb1", "cb2", "cnr1", "cnr2", "cnr 1", "cnr 2", "cannabinoid receptor 1", "cannabinoid receptor 2", "cannabinoid receptor type 1", "cannabinoid receptor type 2"])
+    if has_canonical_cb:
+        return False, ""
+        
+    # 4. Split abstract into sentences
+    sentences = [s.strip() for s in re.split(r'\.\s+', abstract_lower) if s.strip()]
+    if not sentences:
+        return False, ""
+        
+    # Specific cannabinoid substances we want to track
+    cannabinoid_substances = [
+        "thc", "cbd", "cannabidiol", "tetrahydrocannabinol", "anandamide", "aea", 
+        "2-ag", "2-arachidonoylglycerol", "win 55,212-2", "win55,212-2", 
+        "cp 55,940", "cp55,940", "rimonabant", "am251", "am630", "sr141716", "epidiolex", "sativex"
+    ]
+    
+    # Find all sentence indices containing cannabinoid substances
+    cannabinoid_sentence_indices = []
+    for idx, s in enumerate(sentences):
+        if any(re.search(rf"\b{term}\b", s) for term in cannabinoid_substances):
+            cannabinoid_sentence_indices.append(idx)
+            
+    if cannabinoid_sentence_indices:
+        all_in_background = all(idx <= 1 for idx in cannabinoid_sentence_indices)
+        if all_in_background:
+            remaining_text = " ".join(sentences[2:])
+            has_gpr_lpi_focus = any(term in remaining_text for term in ["gpr55", "gpr-55", "gpr18", "gpr-18", "gpr119", "gpr-119", "lpi", "lysophosphatidyl", "nagly", "oleoylethanolamide"])
+            if has_gpr_lpi_focus:
+                return True, "Paper is a GPR/LPI/orphan receptor study; cannabinoids are only mentioned in background context (first 2 sentences of abstract)."
+    else:
+        # No specific cannabinoid substance mentioned. Check general terms.
+        has_general_terms = any(re.search(rf"\b{term}\b", combined) for term in ["cannabinoid", "cannabinoids", "endocannabinoid", "endocannabinoids", "marijuana", "hemp"])
+        if has_general_terms:
+            # Let's see if the general terms only appear in background (first 2 sentences)
+            general_sentence_indices = []
+            for idx, s in enumerate(sentences):
+                if any(re.search(rf"\b{term}\b", s) for term in ["cannabinoid", "cannabinoids", "endocannabinoid", "endocannabinoids", "marijuana", "hemp"]):
+                    general_sentence_indices.append(idx)
+            
+            # If they only appear in the first 2 sentences, it is a dud
+            if general_sentence_indices and all(idx <= 1 for idx in general_sentence_indices):
+                return True, "GPR/LPI study; general cannabinoid terms only mentioned in background context (first 2 sentences of abstract)."
+            
+            # Let's also check if "endocannabinoid system" or "endocannabinoids" is mentioned in a characterization way but no cannabinoid is tested
+            passive_mentions_only = True
+            for idx in general_sentence_indices:
+                if idx > 1:
+                    sentence_text = sentences[idx]
+                    is_passive = any(w in sentence_text for w in ["did not affect", "no changes", "levels", "expression", "concentrations", "synthesis", "content", "system"])
+                    is_active = any(w in sentence_text for w in ["treated", "administered", "administration", "agonist", "antagonist", "blocking", "block", "effect of"])
+                    if is_active and not is_passive:
+                        passive_mentions_only = False
+                        break
+            if passive_mentions_only:
+                return True, "GPR/LPI study; general cannabinoid terms are only mentioned passively or in the background, no active cannabinoid testing."
+        else:
+            return True, "GPR/LPI study with no cannabinoid substances or general cannabinoid terms."
+            
+    return False, ""
+
 def is_cannabis_related(title: str, abstract: str) -> tuple[bool, str]:
     """Analyzes a paper's text to determine if it is cannabis-related.
     
     Returns:
         tuple: (is_relevant: bool, reason: str)
     """
+    # 0. Check for GPR55 / LPI / GPR18 / GPR119 duds
+    is_dud, reason = is_gpr_lpi_dud(title, abstract)
+    if is_dud:
+        return False, reason
+
     combined = (title + " " + (abstract or "")).lower()
     
     # 1. Check for negative phrase collision matches

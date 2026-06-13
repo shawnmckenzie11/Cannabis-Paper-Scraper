@@ -139,9 +139,69 @@ def create_batch_requests(limit: Optional[int] = None, output_file: str = "reque
     finally:
         conn.close()
 
+def generate_batch_report(results_file: str, before_states: dict, after_states: dict, paper_details: dict, total_cost: float, rules_version: str):
+    """Generates a markdown reclassification report comparing before/after states."""
+    comparison_fields = [
+        "study_type", "exposure_method", "cannabis_type", "publication_type",
+        "outcome_domain", "thc_pct", "cbd_pct", "dose_mg",
+        "thc_mg_kg", "cbd_mg_kg", "thc_mg_g", "cbd_mg_g",
+        "thc_mg_ml", "cbd_mg_ml", "thc_uM", "cbd_uM",
+        "duration_days", "sample_size", "strain_reported", "strain_normalized",
+        "administration_frequency", "treatment_duration", "inhaled_exposure_duration",
+        "puff_count"
+    ]
+
+    report_lines = []
+    report_lines.append(f"# Batch Reclassification Report (v{rules_version})\n")
+    report_lines.append(f"Generated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n")
+    report_lines.append("This report compares heuristic-based classifications (Before) with LLM full-text PDF classifications (After) for each paper.\n")
+    report_lines.append("---\n")
+
+    for paper_id in sorted(before_states.keys()):
+        before = before_states[paper_id]
+        after = after_states.get(paper_id, {})
+        detail = paper_details.get(paper_id, {})
+        title = detail.get("title", f"Paper {paper_id}")
+        link = detail.get("full_text_link", "")
+
+        report_lines.append(f"## Paper ID {paper_id}: {title[:100]}...\n")
+        if link:
+            report_lines.append(f"- **PDF Link**: {link}\n")
+
+        report_lines.append(f"\n| Attribute | Before (Heuristic) | After (LLM v{rules_version}) |\n")
+        report_lines.append("| :--- | :--- | :--- |\n")
+
+        for field in comparison_fields:
+            val_before = before.get(field)
+            val_after = after.get(field)
+            b_display = json.dumps(val_before) if isinstance(val_before, (list, dict)) else str(val_before) if val_before is not None else "*None*"
+            a_display = json.dumps(val_after) if isinstance(val_after, (list, dict)) else str(val_after) if val_after is not None else "*None*"
+            # Highlight differences
+            if str(val_before) != str(val_after):
+                report_lines.append(f"| **{field}** | {b_display} | **{a_display}** |\n")
+            else:
+                report_lines.append(f"| {field} | {b_display} | {a_display} |\n")
+
+        conf = after.get("classification_confidence")
+        if conf is not None:
+            report_lines.append(f"| **classification_confidence** | *N/A* | **{conf:.2f}** |\n")
+        report_lines.append("\n---\n")
+
+    report_lines.append(f"\n## Summary\n")
+    report_lines.append(f"- **Papers Processed**: {len(before_states)}\n")
+    report_lines.append(f"- **Rules Version**: {rules_version}\n")
+    report_lines.append(f"- **Total API Cost**: ${total_cost:.4f}\n")
+
+    report_path = "scratch/batch_reclassification_report.md"
+    os.makedirs("scratch", exist_ok=True)
+    with open(report_path, "w") as f:
+        f.writelines(report_lines)
+    logger.info(f"Batch reclassification report written to {report_path}")
+
+
 def process_batch_results(results_file: str, dry_run: bool = False):
     """Processes Anthropic's Message Batches API result JSONL file and updates the database,
-    respecting expert locked fields.
+    respecting expert locked fields, and generates a reclassification report.
     """
     if not os.path.exists(results_file):
         logger.error(f"Results file does not exist: {results_file}")
@@ -172,9 +232,11 @@ def process_batch_results(results_file: str, dry_run: bool = False):
             "cbd_mg_ml", "cbd_mg_g", "cbd_mg_kg", "thc_uM", "cbd_uM"
         }
 
-        success_count = 0
-        failure_count = 0
-        batch_id = f"batch_results_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
+        # Collect all paper IDs from the results file first
+        all_paper_ids = []
+        all_extracted = {}  # paper_id -> extracted dict
+        all_message_data = {}  # paper_id -> message data (for metrics)
+        all_heuristic_metadata = {}  # paper_id -> heuristic extraction
 
         with open(results_file, "r", encoding="utf-8") as f:
             for line_idx, line in enumerate(f):
@@ -206,20 +268,16 @@ def process_batch_results(results_file: str, dry_run: bool = False):
                 if result_type != "succeeded":
                     error_info = result_envelope.get("error") or {}
                     logger.error(f"Paper ID {paper_id} failed in batch API. Type: {result_type}, Error: {error_info}")
-                    failure_count += 1
                     continue
 
-                # Parse successful response
                 message_data = result_envelope.get("message") or {}
                 content_list = message_data.get("content") or []
                 if not content_list:
                     logger.warning(f"Paper ID {paper_id} succeeded but returned empty content.")
-                    failure_count += 1
                     continue
 
                 response_text = content_list[0].get("text", "").strip()
 
-                # Clean markdown block wrappers if present
                 if response_text.startswith("```"):
                     lines = response_text.splitlines()
                     if lines[0].startswith("```"):
@@ -232,119 +290,190 @@ def process_batch_results(results_file: str, dry_run: bool = False):
                     extracted = json.loads(response_text)
                 except Exception as e:
                     logger.error(f"Paper ID {paper_id} response content could not be parsed as JSON: {e}")
-                    failure_count += 1
                     continue
 
-                # Retrieve current paper record to respect expert locked fields and compute confidence
-                cursor.execute(
-                    "SELECT title, abstract, expert_locked_fields, study_type, exposure_method, cannabis_type, publication_type FROM papers WHERE id = ?",
-                    (paper_id,)
-                )
-                paper_row = cursor.fetchone()
-                if not paper_row:
-                    logger.warning(f"Paper ID {paper_id} not found in database. Skipping.")
-                    continue
-                paper_row = dict(paper_row)
+                all_paper_ids.append(paper_id)
+                all_extracted[paper_id] = extracted
+                all_message_data[paper_id] = message_data
 
-                locked_fields = paper_row.get("expert_locked_fields") or []
-                if isinstance(locked_fields, str):
+        if not all_paper_ids:
+            logger.info("No successful results to process.")
+            return
+
+        # Capture "before" states for all papers that will be updated
+        before_states = {}
+        paper_details = {}
+        for paper_id in all_paper_ids:
+            cursor.execute(
+                "SELECT title, abstract, expert_locked_fields, study_type, exposure_method, cannabis_type, publication_type, outcome_domain, full_text_link FROM papers WHERE id = ?",
+                (paper_id,)
+            )
+            row = cursor.fetchone()
+            if not row:
+                logger.warning(f"Paper ID {paper_id} not found in database. Skipping.")
+                continue
+            row_dict = dict(row)
+            paper_details[paper_id] = {
+                "title": row_dict.get("title", ""),
+                "full_text_link": row_dict.get("full_text_link", "")
+            }
+            # Snapshot current DB state as "before"
+            before_state = {}
+            for col in valid_columns:
+                val = row_dict.get(col)
+                if isinstance(val, str):
                     try:
-                        locked_fields = json.loads(locked_fields)
-                    except Exception:
-                        locked_fields = []
+                        parsed = json.loads(val)
+                        if isinstance(parsed, (list, dict)):
+                            val = parsed
+                    except (json.JSONDecodeError, TypeError):
+                        pass
+                before_state[col] = val
+            before_state["classification_confidence"] = row_dict.get("classification_confidence")
+            before_state["classifier_version"] = row_dict.get("classifier_version")
+            before_states[paper_id] = before_state
 
-                # Compute confidence score dynamically (using classifier logic)
-                heuristic_metadata = extractor.extract_all_heuristics(paper_row["title"], paper_row["abstract"] or "")
-                agreements = []
-                check_fields = ["study_type", "exposure_method", "cannabis_type", "publication_type"]
-                for field in check_fields:
-                    llm_val = extracted.get(field)
-                    h_val = heuristic_metadata.get(field)
-                    agreements.append(classifier.jaccard_similarity(llm_val, h_val))
-                
-                model_agreement_score = sum(agreements) / len(agreements) if agreements else 1.0
-                
-                # Batch API has self-consistency=1 and similarity=1.0 (neutral baseline)
-                final_confidence = 0.5 * 1.0 + 0.3 * 1.0 + 0.2 * model_agreement_score
-                final_confidence = max(0.0, min(1.0, final_confidence))
+            # Compute heuristic for comparison
+            heuristic_metadata = extractor.extract_all_heuristics(row_dict.get("title", ""), row_dict.get("abstract") or "")
+            all_heuristic_metadata[paper_id] = heuristic_metadata
 
-                # Prepare updates
-                update_data = {}
-                for k, v in extracted.items():
-                    if k in valid_columns and k not in locked_fields:
-                        update_data[k] = v
+        success_count = 0
+        failure_count = 0
+        total_cost = 0.0
+        batch_id = f"batch_results_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
 
-                if not update_data:
-                    logger.info(f"Paper ID {paper_id}: No fields to update (either locked or invalid).")
-                    continue
+        for paper_id in all_paper_ids:
+            extracted = all_extracted.get(paper_id)
+            message_data = all_message_data.get(paper_id)
+            if not extracted or not message_data:
+                continue
 
-                # Log dry-run details or execute database updates
-                if dry_run:
-                    logger.info(f"[DRY-RUN] Paper ID {paper_id} updates:")
-                    for k, v in update_data.items():
-                        logger.info(f"  {k} -> {v}")
-                    logger.info(f"  Confidence -> {final_confidence:.2f}")
-                else:
-                    set_clauses = []
-                    update_params = []
-                    for k, v in update_data.items():
-                        set_clauses.append(f"{k} = ?")
-                        if isinstance(v, list) or isinstance(v, dict):
-                            update_params.append(json.dumps(v))
-                        else:
-                            update_params.append(v)
+            # Re-fetch current record (in case of previous updates in this transaction)
+            cursor.execute(
+                "SELECT title, abstract, expert_locked_fields, study_type, exposure_method, cannabis_type, publication_type FROM papers WHERE id = ?",
+                (paper_id,)
+            )
+            paper_row = cursor.fetchone()
+            if not paper_row:
+                continue
+            paper_row = dict(paper_row)
 
-                    set_clauses.append("classifier_version = ?")
-                    update_params.append(f"llm-pdf-reclassify-{rules_version}")
+            locked_fields = paper_row.get("expert_locked_fields") or []
+            if isinstance(locked_fields, str):
+                try:
+                    locked_fields = json.loads(locked_fields)
+                except Exception:
+                    locked_fields = []
 
-                    set_clauses.append("classification_timestamp = ?")
-                    update_params.append(datetime.now().isoformat())
+            # Compute confidence score
+            heuristic_metadata = all_heuristic_metadata.get(paper_id, {})
+            agreements = []
+            check_fields = ["study_type", "exposure_method", "cannabis_type", "publication_type"]
+            for field in check_fields:
+                llm_val = extracted.get(field)
+                h_val = heuristic_metadata.get(field)
+                agreements.append(classifier.jaccard_similarity(llm_val, h_val))
+            
+            model_agreement_score = sum(agreements) / len(agreements) if agreements else 1.0
+            final_confidence = 0.5 * 1.0 + 0.3 * 1.0 + 0.2 * model_agreement_score
+            final_confidence = max(0.0, min(1.0, final_confidence))
 
-                    set_clauses.append("classification_confidence = ?")
-                    update_params.append(final_confidence)
+            update_data = {}
+            for k, v in extracted.items():
+                if k in valid_columns and k not in locked_fields:
+                    update_data[k] = v
 
-                    update_params.append(paper_id)
+            if not update_data:
+                logger.info(f"Paper ID {paper_id}: No fields to update (either locked or invalid).")
+                continue
 
-                    sql = f"UPDATE papers SET {', '.join(set_clauses)} WHERE id = ?"
-                    cursor.execute(sql, update_params)
+            if dry_run:
+                logger.info(f"[DRY-RUN] Paper ID {paper_id} updates:")
+                for k, v in update_data.items():
+                    logger.info(f"  {k} -> {v}")
+                logger.info(f"  Confidence -> {final_confidence:.2f}")
+            else:
+                set_clauses = []
+                update_params = []
+                for k, v in update_data.items():
+                    set_clauses.append(f"{k} = ?")
+                    if isinstance(v, list) or isinstance(v, dict):
+                        update_params.append(json.dumps(v))
+                    else:
+                        update_params.append(v)
 
-                    # Compute and log metrics
-                    actual_model = message_data.get("model", "claude-sonnet-4-6")
-                    usage = message_data.get("usage") or {}
-                    input_tokens = usage.get("input_tokens", 0)
-                    output_tokens = usage.get("output_tokens", 0)
-                    cache_read = usage.get("cache_read_input_tokens", 0)
-                    cache_write = usage.get("cache_creation_input_tokens", 0)
+                set_clauses.append("classifier_version = ?")
+                update_params.append(f"llm-pdf-reclassify-{rules_version}")
 
-                    # Standard cost calculation (50% Batch API discount applied)
-                    full_cost = classifier.calculate_token_cost(actual_model, input_tokens, cache_read, cache_write, output_tokens)
-                    batch_cost = full_cost * 0.5
+                set_clauses.append("classification_timestamp = ?")
+                update_params.append(datetime.now().isoformat())
 
-                    metrics = {
-                        "model": actual_model,
-                        "input_tokens": input_tokens,
-                        "cache_read_tokens": cache_read,
-                        "cache_write_tokens": cache_write,
-                        "output_tokens": output_tokens,
-                        "cost": batch_cost,
-                        "few_shot_similarity": 1.0,
-                        "few_shot_count": 0,
-                        "classification_confidence": final_confidence,
-                        "classifier_version": f"llm-pdf-reclassify-{rules_version}"
-                    }
+                set_clauses.append("classification_confidence = ?")
+                update_params.append(final_confidence)
 
-                    db.log_llm_call(
-                        paper_id=paper_id,
-                        metrics=metrics,
-                        batch_id=batch_id,
-                        cursor=cursor
-                    )
+                update_params.append(paper_id)
 
-                success_count += 1
+                sql = f"UPDATE papers SET {', '.join(set_clauses)} WHERE id = ?"
+                cursor.execute(sql, update_params)
+
+                actual_model = message_data.get("model", "claude-sonnet-4-6")
+                usage = message_data.get("usage") or {}
+                input_tokens = usage.get("input_tokens", 0)
+                output_tokens = usage.get("output_tokens", 0)
+                cache_read = usage.get("cache_read_input_tokens", 0)
+                cache_write = usage.get("cache_creation_input_tokens", 0)
+
+                full_cost = classifier.calculate_token_cost(actual_model, input_tokens, cache_read, cache_write, output_tokens)
+                batch_cost = full_cost * 0.5
+                total_cost += batch_cost
+
+                metrics = {
+                    "model": actual_model,
+                    "input_tokens": input_tokens,
+                    "cache_read_tokens": cache_read,
+                    "cache_write_tokens": cache_write,
+                    "output_tokens": output_tokens,
+                    "cost": batch_cost,
+                    "few_shot_similarity": 1.0,
+                    "few_shot_count": 0,
+                    "classification_confidence": final_confidence,
+                    "classifier_version": f"llm-pdf-reclassify-{rules_version}"
+                }
+
+                db.log_llm_call(
+                    paper_id=paper_id,
+                    metrics=metrics,
+                    batch_id=batch_id,
+                    cursor=cursor
+                )
+
+            success_count += 1
 
         if not dry_run:
             conn.commit()
             logger.info(f"Database commit successful. Batch ingestion completed.")
+
+            # Collect "after" states for the report
+            after_states = {}
+            for paper_id in before_states:
+                cursor.execute(f"SELECT {', '.join(valid_columns)}, classification_confidence, classifier_version FROM papers WHERE id = ?", (paper_id,))
+                row = cursor.fetchone()
+                if row:
+                    after_state = dict(row)
+                    for col in valid_columns:
+                        val = after_state.get(col)
+                        if isinstance(val, str):
+                            try:
+                                parsed = json.loads(val)
+                                if isinstance(parsed, (list, dict)):
+                                    after_state[col] = parsed
+                            except (json.JSONDecodeError, TypeError):
+                                pass
+                    after_states[paper_id] = after_state
+
+            generate_batch_report(results_file, before_states, after_states, paper_details, total_cost, rules_version)
+        else:
+            logger.info("Dry-run mode: report not generated (no DB changes).")
         
         logger.info(f"Batch Processing Summary: {success_count} papers successfully processed, {failure_count} failures.")
 
@@ -490,7 +619,7 @@ if __name__ == "__main__":
         if not args.results_file_id:
             logger.error("Error: --results-file-id is required when running --download-results")
             sys.exit(1)
-        download_results(args.results_file_id)
+        download_results(args.results_file_id, output_file=args.output)
     elif args.process_results:
         if not args.results:
             logger.error("Error: --results file path is required when running --process-results")

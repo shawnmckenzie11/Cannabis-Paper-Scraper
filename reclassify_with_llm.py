@@ -173,7 +173,7 @@ def reclassify_papers_llm(limit=None, offset=0, prioritize=True, paper_id=None):
             full_text = None
             if full_text_link:
                 full_text = download_and_extract_pdf_text(full_text_link)
-                if not full_text:
+                if not full_text and paper_id is None:
                     logger.warning(f"Failed to download/extract PDF for paper ID {paper_id}. Skipping paper to find another candidate with a PDF.")
                     continue
 
@@ -196,6 +196,15 @@ def reclassify_papers_llm(limit=None, offset=0, prioritize=True, paper_id=None):
 
             if not update_data:
                 logger.info(f"No fields to update for paper ID {paper_id} (either locked or invalid). Skipping.")
+                continue
+
+            # Purge 'dud' papers if LLM classifies them as not cannabis-related
+            if update_data.get("publication_type") == "not cannabis-related":
+                logger.info(f"Purging irrelevant 'dud' paper ID {paper_id} ('{title[:50]}...') from database.")
+                cursor.execute("DELETE FROM papers WHERE id = ?", (paper_id,))
+                update_count += 1
+                if update_count % 10 == 0:
+                    conn.commit()
                 continue
 
             # Update the paper record

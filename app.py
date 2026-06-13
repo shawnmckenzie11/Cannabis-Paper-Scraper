@@ -5,6 +5,7 @@ import re
 import threading
 import logging
 from datetime import datetime, date
+from functools import wraps
 from flask import Flask, render_template, request, jsonify, session, redirect, url_for
 import random
 import smtplib
@@ -21,6 +22,12 @@ from citation_graph import CitationGraph
 app = Flask(__name__)
 app.secret_key = os.getenv("FLASK_SECRET_KEY", "mckenzian-secret-key-12345")
 ACCESS_PASSWORD = os.getenv("ACCESS_PASSWORD", "admin123")
+
+def mvp_gate(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        return jsonify({"error": "This feature is locked in the MVP release."}), 403
+    return decorated_function
 
 # Core global state to track active background harvesting progress
 harvest_lock = threading.Lock()
@@ -940,6 +947,7 @@ def api_reclassify_llm(paper_id):
         return jsonify({"error": str(e)}), 500
 
 @app.route("/api/harvest", methods=["POST"])
+@mvp_gate
 def api_harvest():
     """Triggers an asynchronous background search & ingest run."""
     global harvest_state
@@ -987,6 +995,7 @@ def api_harvest():
     return jsonify({"message": "Background harvest started successfully.", "status": "success"})
 
 @app.route("/api/harvest/status", methods=["GET"])
+@mvp_gate
 def api_harvest_status():
     """Returns the real-time status and logs of the background harvest worker."""
     with harvest_lock:
@@ -1307,6 +1316,7 @@ def api_export_analysis_csv(analysis_id):
 
 
 @app.route("/api/learning-dashboard/metrics", methods=["GET"])
+@mvp_gate
 def api_learning_dashboard_metrics():
     """Returns aggregated metadata and metrics for the Learning Dashboard."""
     db = DatabaseManager()
@@ -1681,6 +1691,7 @@ def api_learning_dashboard_metrics():
 
 
 @app.route("/api/graph/stats", methods=["GET"])
+@mvp_gate
 def api_graph_stats():
     """Return citation graph statistics."""
     db = DatabaseManager()
@@ -1694,6 +1705,7 @@ def api_graph_stats():
 
 
 @app.route("/api/graph/network", methods=["GET"])
+@mvp_gate
 def api_graph_network():
     """Return full network data (nodes with degree + internal edges) for visualization."""
     max_nodes = int(request.args.get("max_nodes", 2000))

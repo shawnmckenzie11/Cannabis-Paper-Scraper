@@ -31,7 +31,7 @@ class TestHeuristicExtractor(unittest.TestCase):
         # Publication Type prefixes
         title_pub_review = "Some Cannabis Study"
         abstract_pub_review = "Publication Type: Review. Objectives: We review things. Methods: Check the literature."
-        title_pub_meta = "Another Study"
+        title_pub_meta = "Another Cannabis Study"
         abstract_pub_meta = "Publication Type: Meta-Analysis. This is a study."
 
         self.assertEqual(extractor.infer_study_type(title, abstract_rct), ["Clinical (RCT)"])
@@ -1152,6 +1152,36 @@ class TestAnalysesExportAPI(unittest.TestCase):
             self.db.delete_analysis(analysis_id)
 
 
+class TestMvpGatingAPI(unittest.TestCase):
+    """Test cases to verify that restricted features are gated in the MVP release."""
+
+    def setUp(self):
+        from app import app
+        app.config["TESTING"] = True
+        self.client = app.test_client()
+
+    def test_gated_endpoints_return_403(self):
+        gated_endpoints = [
+            ("/api/harvest", "POST", {"query": "test"}),
+            ("/api/harvest/status", "GET", None),
+            ("/api/learning-dashboard/metrics", "GET", None),
+            ("/api/graph/stats", "GET", None),
+            ("/api/graph/network", "GET", None)
+        ]
+
+        for route, method, payload in gated_endpoints:
+            if method == "POST":
+                response = self.client.post(route, json=payload or {})
+            else:
+                response = self.client.get(route)
+            
+            self.assertEqual(response.status_code, 403, f"Endpoint {route} with method {method} was not gated (status {response.status_code})")
+            
+            data = json.loads(response.data.decode("utf-8"))
+            self.assertEqual(data.get("error"), "This feature is locked in the MVP release.", f"Endpoint {route} returned unexpected error message: {data}")
+
+
 if __name__ == "__main__":
     unittest.main()
+
 

@@ -1363,7 +1363,7 @@
         }
     </style>
     <!-- Chart.js for premium dynamic subset visualizations -->
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.2"></script>
     <!-- Cytoscape.js for citation graph visualization -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/cytoscape/3.30.4/cytoscape.min.js"></script>
     <!-- Cytoscape.js dagre layout -->
@@ -1380,21 +1380,21 @@
                     style="padding: 8px 16px; font-size: 0.85rem; background: rgba(0, 240, 255, 0.1); border-color: rgba(0, 240, 255, 0.3); color: var(--accent-blue); display: inline-flex; align-items: center; gap: 6px;">
                     <span>🗄️</span> Database
                 </button>
-                <button class="btn btn-secondary" onclick="openHarvestModal()" id="btn-harvest-trigger"
-                    style="padding: 8px 16px; font-size: 0.85rem; background: rgba(0, 240, 255, 0.1); border-color: rgba(0, 240, 255, 0.3); color: var(--accent-blue); display: inline-flex; align-items: center; gap: 6px;">
-                    <span>📥</span> Harvest Papers
+                <button class="btn btn-secondary" onclick="showMvpLockModal('Harvest Papers')" id="btn-harvest-trigger"
+                    style="padding: 8px 16px; font-size: 0.85rem; background: rgba(239, 68, 68, 0.05); border-color: rgba(239, 68, 68, 0.2); color: var(--text-secondary); display: inline-flex; align-items: center; gap: 6px; opacity: 0.65;">
+                    <span>🔒</span> Harvest Papers
                 </button>
                 <button class="btn btn-secondary" onclick="openMyAnalyses()"
                     style="padding: 8px 16px; font-size: 0.85rem; background: rgba(0, 240, 255, 0.1); border-color: rgba(0, 240, 255, 0.3); color: var(--accent-blue); display: inline-flex; align-items: center; gap: 6px;">
                     <span>📊</span> My Analyses
                 </button>
-                <button class="btn btn-secondary" onclick="openLearningDashboard()" id="btn-learning-dashboard"
-                    style="padding: 8px 16px; font-size: 0.85rem; background: rgba(0, 240, 255, 0.1); border-color: rgba(0, 240, 255, 0.3); color: var(--accent-blue); display: inline-flex; align-items: center; gap: 6px;">
-                    <span>🧠</span> Learning Dashboard
+                <button class="btn btn-secondary" onclick="showMvpLockModal('Learning Dashboard')" id="btn-learning-dashboard"
+                    style="padding: 8px 16px; font-size: 0.85rem; background: rgba(239, 68, 68, 0.05); border-color: rgba(239, 68, 68, 0.2); color: var(--text-secondary); display: inline-flex; align-items: center; gap: 6px; opacity: 0.65;">
+                    <span>🔒</span> Learning Dashboard
                 </button>
-                <button class="btn btn-secondary" onclick="openConnectivity()" id="btn-connectivity"
-                    style="padding: 8px 16px; font-size: 0.85rem; background: rgba(99, 102, 241, 0.15); border-color: rgba(99, 102, 241, 0.4); color: #818cf8; display: inline-flex; align-items: center; gap: 6px;">
-                    <span>🔗</span> Connectivity
+                <button class="btn btn-secondary" onclick="showMvpLockModal('Connectivity')" id="btn-connectivity"
+                    style="padding: 8px 16px; font-size: 0.85rem; background: rgba(239, 68, 68, 0.05); border-color: rgba(239, 68, 68, 0.2); color: var(--text-secondary); display: inline-flex; align-items: center; gap: 6px; opacity: 0.65;">
+                    <span>🔒</span> Connectivity
                 </button>
             </div>
         </div>
@@ -6105,19 +6105,27 @@
             }
         }
 
+        function showMvpLockModal(featureName) {
+            const modal = document.getElementById("mvp-lock-modal");
+            const titleEl = document.getElementById("mvp-lock-title");
+            const descEl = document.getElementById("mvp-lock-description");
+            if (modal && titleEl && descEl) {
+                titleEl.textContent = featureName + " Locked";
+                descEl.textContent = `The ${featureName} feature is locked in the MVP release. Upgrade to the Premium version for full access.`;
+                modal.style.display = "flex";
+            }
+        }
+
+        function closeMvpLockModal() {
+            const modal = document.getElementById("mvp-lock-modal");
+            if (modal) {
+                modal.style.display = "none";
+            }
+        }
+
         function setupAuthInterceptors() {
             if (!IS_LOGGED_IN) {
-                // Intercept Harvest Papers trigger
-                const btnHarvest = document.getElementById("btn-harvest-trigger");
-                if (btnHarvest) {
-                    btnHarvest.removeAttribute("onclick");
-                    btnHarvest.addEventListener("click", (e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        showAuthModal();
-                    });
-                    btnHarvest.innerHTML = `<span>📥</span> Harvest Papers <span style="font-size:0.7rem; opacity:0.6; margin-left: 2px;">🔒</span>`;
-                }
+                // btn-harvest-trigger is now locked globally for everyone in MVP; no auth interceptor needed.
                 
                 // Intercept Analyze Filtered Articles trigger
                 const btnAnalyze = document.getElementById("btn-analyze-subset");
@@ -6191,6 +6199,18 @@
             <div style="display: flex; gap: 10px; justify-content: center;">
                 <button type="button" class="btn btn-secondary" onclick="closeAuthModal()" style="padding: 10px 20px; border-radius: 10px; font-weight: 600; font-family: var(--font-sans);">Cancel</button>
                 <a href="/login" class="btn btn-primary" style="padding: 10px 20px; border-radius: 10px; text-decoration: none; display: inline-block; font-weight: 600; font-family: var(--font-sans); background: var(--primary); box-shadow: 0 4px 15px rgba(99, 102, 241, 0.3); color: #fff;">Sign In</a>
+            </div>
+        </div>
+    </div>
+
+    <!-- MVP Feature Gated Lock Modal -->
+    <div id="mvp-lock-modal" class="modal-overlay" style="display: none;">
+        <div class="glass-panel" style="max-width: 420px; width: 90%; padding: 30px; text-align: center; border-radius: 20px; border: 1px solid rgba(239, 68, 68, 0.2); background: rgba(15, 20, 32, 0.95); box-shadow: 0 20px 50px rgba(0,0,0,0.6);">
+            <div style="font-size: 3rem; margin-bottom: 15px; filter: drop-shadow(0 0 10px rgba(239, 68, 68, 0.3));">🔒</div>
+            <h3 id="mvp-lock-title" style="font-family: var(--font-display); font-size: 1.4rem; font-weight: 700; margin-bottom: 10px; color: var(--text-primary);">Feature Locked</h3>
+            <p id="mvp-lock-description" style="font-size: 0.9rem; color: var(--text-muted); margin-bottom: 25px; line-height: 1.5;"></p>
+            <div style="display: flex; gap: 10px; justify-content: center;">
+                <button type="button" class="btn btn-secondary" onclick="closeMvpLockModal()" style="padding: 10px 25px; border-radius: 10px; font-weight: 600; font-family: var(--font-sans);">Dismiss</button>
             </div>
         </div>
     </div>

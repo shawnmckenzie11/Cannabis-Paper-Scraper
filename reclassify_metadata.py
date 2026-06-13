@@ -97,6 +97,15 @@ def reclassify_all_papers():
 
             # Assign values based on locking
             final_publication_type = old_pub_type if "publication_type" in locked_fields else new_publication_type
+            
+            if final_publication_type == "not cannabis-related":
+                logger.info(f"Purging irrelevant 'dud' paper ID {p['id']} ('{title[:50]}...') from database.")
+                cursor.execute("DELETE FROM papers WHERE id = ?", (p["id"],))
+                update_count += 1
+                if update_count % 100 == 0:
+                    conn.commit()
+                continue
+
             final_study_type = old_study_type if "study_type" in locked_fields else new_study_type
             final_exposure_method = old_exposure if "exposure_method" in locked_fields else new_exposure_method
             final_cannabis_type = old_cannabis_type if "cannabis_type" in locked_fields else new_cannabis_type
