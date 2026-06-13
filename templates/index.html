@@ -2771,11 +2771,11 @@
 
     <!-- Dynamic JavaScript -->
     <script>
-        const IS_LOGGED_IN = true;
+        const IS_LOGGED_IN = {{ 'true' if session.get('logged_in') else 'false' }};
         const CURRENT_USER = {
-            username: "{{ session.get('username') or 'Explorer' }}",
-            email: "{{ session.get('email') or 'local@test.local' }}",
-            is_google: false
+            username: "{{ session.get('username') or '' }}",
+            email: "{{ session.get('email') or '' }}",
+            is_google: {{ 'true' if session.get('is_google') else 'false' }}
         };
 
         function setLogic(key, val) {
@@ -6126,30 +6126,6 @@
         function setupAuthInterceptors() {
             if (!IS_LOGGED_IN) {
                 // btn-harvest-trigger is now locked globally for everyone in MVP; no auth interceptor needed.
-                
-                // Intercept Analyze Filtered Articles trigger
-                const btnAnalyze = document.getElementById("btn-analyze-subset");
-                if (btnAnalyze) {
-                    btnAnalyze.removeAttribute("onclick");
-                    btnAnalyze.addEventListener("click", (e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        showAuthModal();
-                    });
-                    btnAnalyze.innerHTML = `📊 Analyze Filtered Articles <span style="font-size:0.7rem; opacity:0.6; margin-left: 2px;">🔒</span>`;
-                }
-                
-                // Intercept Edit Columns trigger
-                const btnColumns = document.getElementById("edit-columns-btn");
-                if (btnColumns) {
-                    btnColumns.removeAttribute("onclick");
-                    btnColumns.addEventListener("click", (e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        showAuthModal();
-                    });
-                    btnColumns.innerHTML = `⚙️ Edit Columns <span style="font-size:0.7rem; opacity:0.6; margin-left: 2px;">🔒</span>`;
-                }
                 
                 // Intercept Delete in drawer
                 const btnDelete = document.getElementById("btn-delete-paper");

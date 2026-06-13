@@ -217,6 +217,7 @@ def login():
                 return redirect(url_for("verify_email", username=user["username"]))
             else:
                 session["logged_in"] = True
+                session["user_id"] = user["id"]
                 session["username"] = user["username"]
                 session["email"] = user["email"]
                 session["is_google"] = False
@@ -225,7 +226,8 @@ def login():
         else:
             error = "Invalid username/email or password."
             
-    return render_template("login.html", error=error)
+    google_client_id = os.getenv("GOOGLE_CLIENT_ID")
+    return render_template("login.html", error=error, google_client_id=google_client_id)
 
 @app.route("/signup", methods=["POST"])
 def signup():
@@ -280,6 +282,7 @@ def verify_email():
         if entered_code == user["verification_code"]:
             db.verify_user(username)
             session["logged_in"] = True
+            session["user_id"] = user["id"]
             session["username"] = user["username"]
             session["email"] = user["email"]
             session["is_google"] = False
@@ -321,7 +324,7 @@ def auth_google():
     google_auth_url = "https://accounts.google.com/o/oauth2/v2/auth?" + urllib.parse.urlencode(params)
     return redirect(google_auth_url)
 
-@app.route("/auth/google/callback")
+@app.route("/auth/google/callback", methods=["GET", "POST"])
 def auth_google_callback():
     client_id = os.getenv("GOOGLE_CLIENT_ID")
     client_secret = os.getenv("GOOGLE_CLIENT_SECRET")
@@ -330,6 +333,51 @@ def auth_google_callback():
     if not redirect_uri:
         scheme = request.headers.get("X-Forwarded-Proto", request.scheme)
         redirect_uri = f"{scheme}://{request.host}/auth/google/callback"
+
+    # Support Google Identity Services (One Tap / Auto Sign-In) JWT credential callback
+    jwt_token = request.form.get("credential")
+    if jwt_token:
+        import base64
+        try:
+            parts = jwt_token.split('.')
+            if len(parts) >= 2:
+                payload_b64 = parts[1]
+                payload_b64 += '=' * (-len(payload_b64) % 4)
+                payload_json = base64.b64decode(payload_b64).decode('utf-8')
+                payload = json.loads(payload_json)
+                
+                email = payload.get("email")
+                google_id = payload.get("sub")
+                name = payload.get("name") or payload.get("given_name") or email.split("@")[0]
+                
+                if email and google_id:
+                    db = DatabaseManager()
+                    user = db.get_user_by_google_id(google_id)
+                    if not user:
+                        user_by_email = db.get_user_by_username_or_email(email)
+                        if user_by_email:
+                            user = user_by_email
+                            conn = db.get_connection()
+                            try:
+                                conn.execute("UPDATE users SET google_id = ?, is_verified = 1 WHERE id = ?;", (google_id, user["id"]))
+                                conn.commit()
+                            finally:
+                                conn.close()
+                            user = db.get_user_by_google_id(google_id)
+                        else:
+                            db.create_user(username=name, email=email, google_id=google_id, is_verified=1)
+                            user = db.get_user_by_google_id(google_id)
+                            
+                    session["logged_in"] = True
+                    session["user_id"] = user["id"]
+                    session["username"] = user["username"]
+                    session["email"] = user["email"]
+                    session["is_google"] = True
+                    session.permanent = True
+                    return redirect(url_for("index"))
+        except Exception as e:
+            print(f"[GOOGLE ONE TAP AUTH ERROR] {e}")
+            return render_template("login.html", error=f"Google One Tap authentication failed: {e}")
         
     if not client_id or not client_secret:
         email = request.args.get("email")
@@ -356,6 +404,7 @@ def auth_google_callback():
                 user = db.get_user_by_google_id(google_id)
                 
         session["logged_in"] = True
+        session["user_id"] = user["id"]
         session["username"] = user["username"]
         session["email"] = user["email"]
         session["is_google"] = True
@@ -417,6 +466,7 @@ def auth_google_callback():
                 user = db.get_user_by_google_id(google_id)
                 
         session["logged_in"] = True
+        session["user_id"] = user["id"]
         session["username"] = user["username"]
         session["email"] = user["email"]
         session["is_google"] = True
@@ -1116,7 +1166,7 @@ def _compute_analysis_chart_data(papers):
 
 @app.route("/api/analyze", methods=["POST"])
 def api_analyze():
-    """Accepts filter params, fetches matching papers, computes chart data, saves analysis to DB."""
+    """Accepts filter params, fetches matching papers, computes chart data, saves analysis to DB if logged in."""
     data = request.get_json() or {}
     filters = data.get("filters", {})
     name = data.get("name", f"Analysis {datetime.now().strftime('%b %d %Y %H:%M')}")
@@ -1131,12 +1181,17 @@ def api_analyze():
     chart_data = _compute_analysis_chart_data(papers)
     chart_data["paper_ids"] = [p["id"] for p in papers]
 
-    analysis_id = db.create_analysis(
-        name=name,
-        filter_settings=json.dumps(filters, default=str),
-        paper_count=chart_data["paper_count"],
-        chart_data=json.dumps(chart_data, default=str)
-    )
+    user_id = session.get("user_id")
+    if user_id:
+        analysis_id = db.create_analysis(
+            name=name,
+            filter_settings=json.dumps(filters, default=str),
+            paper_count=chart_data["paper_count"],
+            chart_data=json.dumps(chart_data, default=str),
+            user_id=user_id
+        )
+    else:
+        analysis_id = None
 
     return jsonify({
         "id": analysis_id,
@@ -1150,9 +1205,13 @@ def api_analyze():
 
 @app.route("/api/analyses", methods=["GET"])
 def api_list_analyses():
-    """Returns all saved analyses."""
+    """Returns all saved analyses for the logged-in user, or empty list if logged out."""
+    user_id = session.get("user_id")
+    if not user_id:
+        return jsonify([]), 200
+
     db = DatabaseManager()
-    analyses = db.list_analyses()
+    analyses = db.list_analyses(user_id=user_id)
     # Parse JSON fields for the frontend
     for a in analyses:
         try:
@@ -1164,11 +1223,19 @@ def api_list_analyses():
 
 @app.route("/api/analyses/<int:analysis_id>", methods=["GET"])
 def api_get_analysis(analysis_id):
-    """Returns full analysis data including chart_data."""
+    """Returns full analysis data including chart_data if owned by user."""
+    user_id = session.get("user_id")
+    if not user_id:
+        return jsonify({"error": "Unauthorized"}), 401
+
     db = DatabaseManager()
     analysis = db.get_analysis(analysis_id)
     if not analysis:
         return jsonify({"error": "Analysis not found"}), 404
+
+    if analysis.get("user_id") != user_id:
+        return jsonify({"error": "Forbidden"}), 403
+
     try:
         analysis["filter_settings"] = json.loads(analysis["filter_settings"])
     except (json.JSONDecodeError, TypeError):
@@ -1182,9 +1249,20 @@ def api_get_analysis(analysis_id):
 
 @app.route("/api/analyses/<int:analysis_id>", methods=["PUT"])
 def api_update_analysis(analysis_id):
-    """Updates an analysis (e.g. rename)."""
-    data = request.get_json(silent=True) or {}
+    """Updates an analysis (e.g. rename) if owned by user."""
+    user_id = session.get("user_id")
+    if not user_id:
+        return jsonify({"error": "Unauthorized"}), 401
+
     db = DatabaseManager()
+    analysis = db.get_analysis(analysis_id)
+    if not analysis:
+        return jsonify({"error": "Analysis not found"}), 404
+
+    if analysis.get("user_id") != user_id:
+        return jsonify({"error": "Forbidden"}), 403
+
+    data = request.get_json(silent=True) or {}
     name = data.get("name")
     if name is not None and (not isinstance(name, str) or len(name.strip()) == 0):
         return jsonify({"error": "Name cannot be empty"}), 400
@@ -1197,8 +1275,19 @@ def api_update_analysis(analysis_id):
 
 @app.route("/api/analyses/<int:analysis_id>", methods=["DELETE"])
 def api_delete_analysis(analysis_id):
-    """Deletes an analysis."""
+    """Deletes an analysis if owned by user."""
+    user_id = session.get("user_id")
+    if not user_id:
+        return jsonify({"error": "Unauthorized"}), 401
+
     db = DatabaseManager()
+    analysis = db.get_analysis(analysis_id)
+    if not analysis:
+        return jsonify({"error": "Analysis not found"}), 404
+
+    if analysis.get("user_id") != user_id:
+        return jsonify({"error": "Forbidden"}), 403
+
     if db.delete_analysis(analysis_id):
         return jsonify({"success": True})
     return jsonify({"error": "Analysis not found"}), 404
@@ -1206,11 +1295,18 @@ def api_delete_analysis(analysis_id):
 
 @app.route("/api/analyses/<int:analysis_id>/export-csv", methods=["GET"])
 def api_export_analysis_csv(analysis_id):
-    """Generates and downloads a CSV export of all papers associated with a saved analysis."""
+    """Generates and downloads a CSV export of all papers associated with a saved analysis if owned by user."""
+    user_id = session.get("user_id")
+    if not user_id:
+        return jsonify({"error": "Unauthorized"}), 401
+
     db = DatabaseManager()
     analysis = db.get_analysis(analysis_id)
     if not analysis:
         return jsonify({"error": "Analysis not found"}), 404
+
+    if analysis.get("user_id") != user_id:
+        return jsonify({"error": "Forbidden"}), 403
 
     try:
         filter_settings = json.loads(analysis["filter_settings"])

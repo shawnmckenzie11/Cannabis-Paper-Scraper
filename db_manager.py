@@ -1394,7 +1394,7 @@ class DatabaseManager:
         conn = self.get_connection()
         try:
             # Check if table exists with the right columns
-            required_cols = {'id', 'name', 'filter_settings', 'paper_count', 'chart_data', 'created_at'}
+            required_cols = {'id', 'user_id', 'name', 'filter_settings', 'paper_count', 'chart_data', 'created_at'}
             
             table_exists_val = self.table_exists("analyses", conn)
             if table_exists_val:
@@ -1410,6 +1410,7 @@ class DatabaseManager:
             analyses_sql = """
                 CREATE TABLE IF NOT EXISTS analyses (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
                     name TEXT DEFAULT 'Analysis',
                     filter_settings TEXT,
                     paper_count INTEGER DEFAULT 0,
@@ -1425,13 +1426,13 @@ class DatabaseManager:
         finally:
             conn.close()
 
-    def create_analysis(self, name: str, filter_settings: str, paper_count: int, chart_data: str) -> int:
+    def create_analysis(self, name: str, filter_settings: str, paper_count: int, chart_data: str, user_id: Optional[int] = None) -> int:
         """Creates a new analysis record and returns its id."""
         conn = self.get_connection()
         try:
             cursor = conn.execute(
-                "INSERT INTO analyses (name, filter_settings, paper_count, chart_data) VALUES (?, ?, ?, ?);",
-                (name, filter_settings, paper_count, chart_data)
+                "INSERT INTO analyses (name, filter_settings, paper_count, chart_data, user_id) VALUES (?, ?, ?, ?, ?);",
+                (name, filter_settings, paper_count, chart_data, user_id)
             )
             conn.commit()
             return cursor.lastrowid
@@ -1449,12 +1450,20 @@ class DatabaseManager:
         finally:
             conn.close()
 
-    def list_analyses(self) -> List[Dict[str, Any]]:
-        """Returns all analyses ordered by most recent first."""
+    def list_analyses(self, user_id: Optional[int] = None) -> List[Dict[str, Any]]:
+        """Returns analyses filtered by user_id if provided, ordered by most recent first."""
         conn = self.get_connection()
         conn.row_factory = sqlite3.Row
         try:
-            cursor = conn.execute("SELECT id, name, filter_settings, paper_count, created_at FROM analyses ORDER BY created_at DESC;")
+            if user_id is not None:
+                cursor = conn.execute(
+                    "SELECT id, user_id, name, filter_settings, paper_count, created_at FROM analyses WHERE user_id = ? ORDER BY created_at DESC;",
+                    (user_id,)
+                )
+            else:
+                cursor = conn.execute(
+                    "SELECT id, user_id, name, filter_settings, paper_count, created_at FROM analyses ORDER BY created_at DESC;"
+                )
             return [dict(row) for row in cursor.fetchall()]
         finally:
             conn.close()

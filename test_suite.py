@@ -1103,6 +1103,11 @@ class TestAnalysesExportAPI(unittest.TestCase):
             self.db.clear_all_tables()
         self.db.init_analyses_table()
         
+        # Create a test user
+        self.db.create_user(username="exportuser", email="export@mckenzian.org", is_verified=1)
+        user = self.db.get_user_by_username_or_email("exportuser")
+        self.user_id = user["id"]
+        
         from app import app
         app.config["TESTING"] = True
         self.client = app.test_client()
@@ -1130,13 +1135,15 @@ class TestAnalysesExportAPI(unittest.TestCase):
             name="Test Export Analysis",
             filter_settings=json.dumps({"query": "CSV Export"}),
             paper_count=1,
-            chart_data=json.dumps(chart_data)
+            chart_data=json.dumps(chart_data),
+            user_id=self.user_id
         )
         
         try:
             # 3. Request the export endpoint
             with self.client.session_transaction() as sess:
                 sess["logged_in"] = True
+                sess["user_id"] = self.user_id
                 
             response = self.client.get(f"/api/analyses/{analysis_id}/export-csv")
             self.assertEqual(response.status_code, 200)
@@ -1150,6 +1157,95 @@ class TestAnalysesExportAPI(unittest.TestCase):
         finally:
             self.db.delete_paper(paper_id)
             self.db.delete_analysis(analysis_id)
+            # Cleanup test user
+            conn = self.db.get_connection()
+            try:
+                conn.execute("DELETE FROM users WHERE id = ?;", (self.user_id,))
+                conn.commit()
+            finally:
+                conn.close()
+
+
+class TestAnalysesUserIsolation(unittest.TestCase):
+    """Test cases to verify user-isolation and public analytics access."""
+
+    def setUp(self):
+        from db_manager import DatabaseManager
+        self.db = DatabaseManager()
+        if self.db.is_postgres:
+            self.db.clear_all_tables()
+        self.db.init_analyses_table()
+        
+        # Create user A
+        self.db.create_user(username="usera", email="usera@test.org", is_verified=1)
+        self.user_a = self.db.get_user_by_username_or_email("usera")
+        
+        # Create user B
+        self.db.create_user(username="userb", email="userb@test.org", is_verified=1)
+        self.user_b = self.db.get_user_by_username_or_email("userb")
+        
+        from app import app
+        app.config["TESTING"] = True
+        self.client = app.test_client()
+
+    def tearDown(self):
+        conn = self.db.get_connection()
+        try:
+            conn.execute("DELETE FROM users WHERE id IN (?, ?);", (self.user_a["id"], self.user_b["id"]))
+            conn.execute("DELETE FROM analyses;")
+            conn.commit()
+        finally:
+            conn.close()
+
+    def test_public_user_behavior(self):
+        # 1. Public user runs subset analyses (allowed, no db save)
+        response = self.client.post("/api/analyze", json={"filters": {"query": "public_test"}})
+        self.assertEqual(response.status_code, 200)
+        data = json.loads(response.data.decode("utf-8"))
+        self.assertIsNone(data["id"])  # should be null/None since not saved
+        self.assertIn("chart_data", data)
+
+        # 2. Public user lists analyses (returns empty list)
+        response = self.client.get("/api/analyses")
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(json.loads(response.data.decode("utf-8")), [])
+
+        # 3. Public user fetching an analysis directly (blocked)
+        response = self.client.get("/api/analyses/12345")
+        self.assertEqual(response.status_code, 401)
+
+    def test_user_ownership_isolation(self):
+        # 1. Create analysis belonging to User A
+        analysis_id = self.db.create_analysis(
+            name="User A Analysis",
+            filter_settings="{}",
+            paper_count=0,
+            chart_data="{}",
+            user_id=self.user_a["id"]
+        )
+
+        # 2. User A fetches own analysis (allowed)
+        with self.client.session_transaction() as sess:
+            sess["logged_in"] = True
+            sess["user_id"] = self.user_a["id"]
+        response = self.client.get(f"/api/analyses/{analysis_id}")
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(json.loads(response.data.decode("utf-8"))["name"], "User A Analysis")
+
+        # 3. User B fetches User A's analysis (Forbidden 403)
+        with self.client.session_transaction() as sess:
+            sess["logged_in"] = True
+            sess["user_id"] = self.user_b["id"]
+        response = self.client.get(f"/api/analyses/{analysis_id}")
+        self.assertEqual(response.status_code, 403)
+
+        # 4. User B updates User A's analysis (Forbidden 403)
+        response = self.client.put(f"/api/analyses/{analysis_id}", json={"name": "Stolen Analysis"})
+        self.assertEqual(response.status_code, 403)
+
+        # 5. User B deletes User A's analysis (Forbidden 403)
+        response = self.client.delete(f"/api/analyses/{analysis_id}")
+        self.assertEqual(response.status_code, 403)
 
 
 class TestMvpGatingAPI(unittest.TestCase):

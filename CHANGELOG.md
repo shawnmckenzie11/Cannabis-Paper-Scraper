@@ -5,6 +5,19 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.0] - 2026-06-13
+
+### Added
+- Integrated Google Identity Services One Tap / Auto Sign-In (`auto_select=true`) on the login screen.
+- Supported POST request handling on `/auth/google/callback` to verify and parse Google JWT credentials.
+- Isolated saved analyses on a per-user basis in the database and added ownership checking.
+- Allowed public (logged-out) users to run subset analyses and edit columns without database persistence (returns `id: null`).
+- Created `TestAnalysesUserIsolation` test cases checking public access and user ownership bounds.
+
+### Changed
+- Simplified fallback simulated Google Sign-In, removing pre-filled mock user accounts.
+- Removed login gate interceptors from subset analyses and column editor buttons in `templates/index.html`.
+
 ## [1.0.0-mvp] - 2026-06-13
 
 ### Added

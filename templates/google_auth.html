@@ -222,34 +222,8 @@
         <div class="google-logo">
             <span class="logo-g">G</span><span class="logo-o1">o</span><span class="logo-o2">o</span><span class="logo-g2">g</span><span class="logo-l">l</span><span class="logo-e">e</span>
         </div>
-        <div class="title">Choose an account</div>
+        <div class="title">Simulated Google Sign-In</div>
         <div class="subtitle">to continue to McKenzian Portal</div>
-
-        <div class="account-list">
-            <div class="account-item" onclick="chooseAccount('analyst@mckenzian.org', 'McKenzian Analyst')">
-                <div class="avatar" style="background-color: #673ab7;">MA</div>
-                <div class="account-details">
-                    <span class="account-name">McKenzian Analyst</span>
-                    <span class="account-email">analyst@mckenzian.org</span>
-                </div>
-            </div>
-            <div class="account-item" onclick="chooseAccount('pi@clinicalcannabis.edu', 'Dr. Cannaboid')">
-                <div class="avatar" style="background-color: #009688;">DC</div>
-                <div class="account-details">
-                    <span class="account-name">Dr. Cannaboid (PI)</span>
-                    <span class="account-email">pi@clinicalcannabis.edu</span>
-                </div>
-            </div>
-            <div class="account-item" onclick="chooseAccount('researcher@nih.gov', 'Guest Researcher')">
-                <div class="avatar" style="background-color: #ff5722;">GR</div>
-                <div class="account-details">
-                    <span class="account-name">Guest Researcher</span>
-                    <span class="account-email">researcher@nih.gov</span>
-                </div>
-            </div>
-        </div>
-
-        <div class="divider">or use another account</div>
 
         <form class="custom-form" onsubmit="handleCustomSubmit(event)">
             <div class="input-group">
@@ -265,10 +239,6 @@
     </div>
 
     <script>
-        function chooseAccount(email, name) {
-            window.location.href = `/auth/google/callback?email=${encodeURIComponent(email)}&name=${encodeURIComponent(name)}`;
-        }
-
         function handleCustomSubmit(e) {
             e.preventDefault();
             const email = document.getElementById("email").value;
