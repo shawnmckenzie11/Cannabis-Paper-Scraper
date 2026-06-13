@@ -29,6 +29,21 @@ def mvp_gate(f):
         return jsonify({"error": "This feature is locked in the MVP release."}), 403
     return decorated_function
 
+ADMIN_EMAILS = {"shawnmckenzie11.sm@gmail.com"}
+if os.getenv("ADMIN_EMAILS"):
+    ADMIN_EMAILS.update(email.strip() for email in os.getenv("ADMIN_EMAILS").split(","))
+
+def admin_required(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if not session.get("logged_in"):
+            return jsonify({"error": "Authentication required."}), 401
+        user_email = session.get("email")
+        if not user_email or user_email not in ADMIN_EMAILS:
+            return jsonify({"error": "This action is restricted to administrators."}), 403
+        return f(*args, **kwargs)
+    return decorated_function
+
 # Core global state to track active background harvesting progress
 harvest_lock = threading.Lock()
 harvest_state = {
@@ -486,7 +501,7 @@ def logout():
 @app.route("/")
 def index():
     """Serves the Single-Page Application dynamic research dashboard."""
-    return render_template("index.html")
+    return render_template("index.html", admin_emails_list=list(ADMIN_EMAILS))
 
 @app.route("/api/search", methods=["GET"])
 def api_search():
@@ -600,6 +615,7 @@ def api_search():
         return jsonify({"error": str(e)}), 500
 
 @app.route("/api/papers/delete", methods=["POST"])
+@admin_required
 def api_delete_papers():
     """Deletes multiple papers by their database IDs."""
     data = request.get_json() or {}
@@ -618,6 +634,7 @@ def api_delete_papers():
         return jsonify({"error": str(e)}), 500
 
 @app.route("/api/papers/<int:paper_id>/edit-classification", methods=["POST"])
+@admin_required
 def api_edit_classification(paper_id):
     """Updates the classification fields of a paper, marks them as expert locked, and logs changes to feedback_audit."""
     db = DatabaseManager()
@@ -902,6 +919,7 @@ def api_sync_metadata(paper_id):
         conn.close()
 
 @app.route("/api/papers/<int:paper_id>/reclassify-llm", methods=["POST"])
+@admin_required
 def api_reclassify_llm(paper_id):
     """Runs the Claude LLM classifier directly on the paper's title and abstract,
     respecting expert locked fields.

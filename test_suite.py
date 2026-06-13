@@ -892,6 +892,7 @@ class TestExpertEditAndActiveLearning(unittest.TestCase):
         # Edit the paper classification via API
         with self.client.session_transaction() as sess:
             sess["logged_in"] = True
+            sess["email"] = "shawnmckenzie11.sm@gmail.com"
             
         payload = {
             "study_type": ["Clinical (RCT)"],
@@ -1275,6 +1276,56 @@ class TestMvpGatingAPI(unittest.TestCase):
             
             data = json.loads(response.data.decode("utf-8"))
             self.assertEqual(data.get("error"), "This feature is locked in the MVP release.", f"Endpoint {route} returned unexpected error message: {data}")
+
+
+class TestAdminRequiredEndpoints(unittest.TestCase):
+    """Test cases to verify that write/delete/reclassify operations require admin status."""
+
+    def setUp(self):
+        from app import app
+        app.config["TESTING"] = True
+        self.client = app.test_client()
+
+    def test_logged_out_users_get_401(self):
+        # 1. Delete papers
+        res1 = self.client.post("/api/papers/delete", json={"ids": [1]})
+        self.assertEqual(res1.status_code, 401)
+
+        # 2. Edit classification
+        res2 = self.client.post("/api/papers/1/edit-classification", json={})
+        self.assertEqual(res2.status_code, 401)
+
+        # 3. Reclassify paper
+        res3 = self.client.post("/api/papers/1/reclassify-llm", json={})
+        self.assertEqual(res3.status_code, 401)
+
+    def test_non_admin_logged_in_users_get_403(self):
+        with self.client.session_transaction() as sess:
+            sess["logged_in"] = True
+            sess["email"] = "researcher@test.org"
+
+        res1 = self.client.post("/api/papers/delete", json={"ids": [1]})
+        self.assertEqual(res1.status_code, 403)
+
+        res2 = self.client.post("/api/papers/1/edit-classification", json={})
+        self.assertEqual(res2.status_code, 403)
+
+        res3 = self.client.post("/api/papers/1/reclassify-llm", json={})
+        self.assertEqual(res3.status_code, 403)
+
+    def test_admin_logged_in_users_pass_decorator(self):
+        with self.client.session_transaction() as sess:
+            sess["logged_in"] = True
+            sess["email"] = "shawnmckenzie11.sm@gmail.com"
+
+        # Should bypass 401/403 (for delete, we expect 400 'No paper IDs provided' if we send empty/invalid data, or normal execution)
+        res1 = self.client.post("/api/papers/delete", json={})
+        self.assertEqual(res1.status_code, 400)
+        self.assertIn("No paper IDs provided", json.loads(res1.data.decode("utf-8"))["error"])
+
+        # For edit-classification, should return 404 since paper 99999 doesn't exist (proving decorator passed)
+        res2 = self.client.post("/api/papers/99999/edit-classification", json={})
+        self.assertEqual(res2.status_code, 404)
 
 
 if __name__ == "__main__":

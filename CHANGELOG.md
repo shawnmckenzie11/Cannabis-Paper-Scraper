@@ -5,6 +5,15 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.2.0] - 2026-06-13
+
+### Added
+- Introduced `@admin_required` backend decorator to restrict catalog write operations (`/api/papers/delete`, `/api/papers/<id>/edit-classification`, `/api/papers/<id>/reclassify-llm`) to authorized administrator accounts.
+- Configured the list of administrator emails to support `shawnmckenzie11.sm@gmail.com` by default and dynamically extend via the `ADMIN_EMAILS` environment variable.
+- Added frontend locking UI for Delete, Edit, and Reclassify drawer buttons with a `🔒` indicator for non-admin users.
+- Implemented an "Admin Access Required" glassmorphic modal to present clear guidance to logged-in non-admin users.
+- Added `TestAdminRequiredEndpoints` class verifying admin/non-admin/anonymous constraints.
+
 ## [1.1.2] - 2026-06-13
 
 ### Changed

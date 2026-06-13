@@ -2777,6 +2777,7 @@
             email: "{{ session.get('email') or '' }}",
             is_google: {{ 'true' if session.get('is_google') else 'false' }}
         };
+        const IS_ADMIN = {{ 'true' if session.get('email') and admin_emails_list and session.get('email') in admin_emails_list else 'false' }};
 
         function setLogic(key, val) {
             document.getElementById(`logic-${key}`).value = val;
@@ -6123,19 +6124,37 @@
             }
         }
 
+        function showAdminModal() {
+            const modal = document.getElementById("admin-required-modal");
+            if (modal) {
+                modal.style.display = "flex";
+            }
+        }
+
+        function closeAdminModal() {
+            const modal = document.getElementById("admin-required-modal");
+            if (modal) {
+                modal.style.display = "none";
+            }
+        }
+
         function setupAuthInterceptors() {
-            if (!IS_LOGGED_IN) {
-                // btn-harvest-trigger is now locked globally for everyone in MVP; no auth interceptor needed.
-                
+            if (!IS_ADMIN) {
+                const clickHandler = (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    if (!IS_LOGGED_IN) {
+                        showAuthModal();
+                    } else {
+                        showAdminModal();
+                    }
+                };
+
                 // Intercept Delete in drawer
                 const btnDelete = document.getElementById("btn-delete-paper");
                 if (btnDelete) {
                     btnDelete.removeAttribute("onclick");
-                    btnDelete.addEventListener("click", (e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        showAuthModal();
-                    });
+                    btnDelete.addEventListener("click", clickHandler);
                     btnDelete.innerHTML = `🗑️ Delete <span style="font-size:0.7rem; opacity:0.6; margin-left: 2px;">🔒</span>`;
                 }
                 
@@ -6143,11 +6162,7 @@
                 const btnEdit = document.getElementById("btn-edit-classification");
                 if (btnEdit) {
                     btnEdit.removeAttribute("onclick");
-                    btnEdit.addEventListener("click", (e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        showAuthModal();
-                    });
+                    btnEdit.addEventListener("click", clickHandler);
                     btnEdit.innerHTML = `✏️ Edit <span style="font-size:0.7rem; opacity:0.6; margin-left: 2px;">🔒</span>`;
                 }
                 
@@ -6155,11 +6170,7 @@
                 const btnReclassify = document.getElementById("btn-reclassify-claude");
                 if (btnReclassify) {
                     btnReclassify.removeAttribute("onclick");
-                    btnReclassify.addEventListener("click", (e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        showAuthModal();
-                    });
+                    btnReclassify.addEventListener("click", clickHandler);
                     btnReclassify.innerHTML = `<svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor" style="vertical-align: middle;"><path d="M12 2l2.4 7.2 7.2 2.4-7.2 2.4-2.4 7.2-2.4-7.2-7.2-2.4 7.2-2.4z"/></svg> Reclassify with Claude <span style="font-size:0.7rem; opacity:0.6; margin-left: 2px;">🔒</span>`;
                 }
             }
@@ -6175,6 +6186,18 @@
             <div style="display: flex; gap: 10px; justify-content: center;">
                 <button type="button" class="btn btn-secondary" onclick="closeAuthModal()" style="padding: 10px 20px; border-radius: 10px; font-weight: 600; font-family: var(--font-sans);">Cancel</button>
                 <a href="/login" class="btn btn-primary" style="padding: 10px 20px; border-radius: 10px; text-decoration: none; display: inline-block; font-weight: 600; font-family: var(--font-sans); background: var(--primary); box-shadow: 0 4px 15px rgba(99, 102, 241, 0.3); color: #fff;">Sign In</a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Admin Required Modal -->
+    <div id="admin-required-modal" class="modal-overlay" style="display: none;">
+        <div class="glass-panel" style="max-width: 400px; width: 90%; padding: 30px; text-align: center; border-radius: 20px; border: 1px solid rgba(255,255,255,0.08); background: rgba(15, 20, 32, 0.95); box-shadow: 0 20px 50px rgba(0,0,0,0.6);">
+            <div style="font-size: 3rem; margin-bottom: 15px;">🛡️</div>
+            <h3 style="font-family: var(--font-display); font-size: 1.4rem; font-weight: 700; margin-bottom: 10px; color: var(--text-primary);">Admin Access Required</h3>
+            <p style="font-size: 0.9rem; color: var(--text-muted); margin-bottom: 25px; line-height: 1.5;">This operation is restricted. Only authorized administrator accounts (like shawnmckenzie11.sm@gmail.com) can modify or delete papers in the catalog.</p>
+            <div style="display: flex; gap: 10px; justify-content: center;">
+                <button type="button" class="btn btn-secondary" onclick="closeAdminModal()" style="padding: 10px 25px; border-radius: 10px; font-weight: 600; font-family: var(--font-sans);">Dismiss</button>
             </div>
         </div>
     </div>
