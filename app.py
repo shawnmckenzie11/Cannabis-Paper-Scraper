@@ -44,6 +44,20 @@ def admin_required(f):
         return f(*args, **kwargs)
     return decorated_function
 
+def _get_unique_username(base_name):
+    db = DatabaseManager()
+    username = base_name
+    # Remove any non-alphanumeric characters for a clean username
+    username = re.sub(r'[^a-zA-Z0-9_]', '', username)
+    if not username:
+        username = "user"
+    base_name = username
+    counter = 1
+    while db.get_user_by_username_or_email(username) is not None:
+        username = f"{base_name}{counter}"
+        counter += 1
+    return username
+
 # Core global state to track active background harvesting progress
 harvest_lock = threading.Lock()
 harvest_state = {
@@ -381,9 +395,13 @@ def auth_google_callback():
                                 conn.close()
                             user = db.get_user_by_google_id(google_id)
                         else:
-                            db.create_user(username=name, email=email, google_id=google_id, is_verified=1)
+                            unique_username = _get_unique_username(name)
+                            db.create_user(username=unique_username, email=email, google_id=google_id, is_verified=1)
                             user = db.get_user_by_google_id(google_id)
                             
+                    if not user:
+                        return render_template("login.html", error="Google One Tap authentication failed: could not create or retrieve user account.")
+
                     session["logged_in"] = True
                     session["user_id"] = user["id"]
                     session["username"] = user["username"]
@@ -478,9 +496,13 @@ def auth_google_callback():
                     conn.close()
                 user = db.get_user_by_google_id(google_id)
             else:
-                db.create_user(username=name, email=email, google_id=google_id, is_verified=1)
+                unique_username = _get_unique_username(name)
+                db.create_user(username=unique_username, email=email, google_id=google_id, is_verified=1)
                 user = db.get_user_by_google_id(google_id)
                 
+        if not user:
+            return render_template("login.html", error="Google authentication failed: could not create or retrieve user account.")
+
         session["logged_in"] = True
         session["user_id"] = user["id"]
         session["username"] = user["username"]
