@@ -25,6 +25,10 @@ def download_and_extract_pdf_text(url: str):
     if not url or not url.startswith("http"):
         return None
         
+    # Skip known HTML landing pages immediately to avoid slow network timeouts
+    if "pubmed.ncbi.nlm.nih.gov" in url or "ncbi.nlm.nih.gov/pubmed" in url:
+        return None
+        
     headers = {
         "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36"
     }
@@ -63,14 +67,21 @@ def download_and_extract_pdf_text(url: str):
         logger.warning(f"Error downloading or parsing PDF: {e}")
         return None
 
-def reclassify_papers_llm(limit=None, offset=0, prioritize=True, paper_id=None):
-    """Queries papers from the database and runs the Anthropic Claude LLM classifier on them,
+def reclassify_papers_llm(limit=None, offset=0, prioritize=True, paper_id=None, engine=None):
+    """Queries papers from the database and runs the LLM classifier on them,
     respecting expert locked fields.
     """
-    api_key = os.getenv("ANTHROPIC_API_KEY")
-    if not api_key:
-        logger.error("ANTHROPIC_API_KEY environment variable is not configured. Cannot run LLM reclassification.")
-        sys.exit(1)
+    if engine is None:
+        engine = os.getenv("CLASSIFIER_ENGINE", "claude").lower().strip()
+    else:
+        os.environ["CLASSIFIER_ENGINE"] = engine
+        engine = engine.lower().strip()
+
+    if engine == "claude":
+        api_key = os.getenv("ANTHROPIC_API_KEY")
+        if not api_key:
+            logger.error("ANTHROPIC_API_KEY environment variable is not configured. Cannot run Claude LLM reclassification.")
+            sys.exit(1)
 
     db = DatabaseManager()
     conn = db.get_connection()
@@ -219,7 +230,10 @@ def reclassify_papers_llm(limit=None, offset=0, prioritize=True, paper_id=None):
             
             # Add metadata metadata
             set_clauses.append("classifier_version = ?")
-            version_prefix = "llm-pdf-reclassify" if full_text else "llm-reclassify"
+            if engine == "maude":
+                version_prefix = "maude-pdf-reclassify" if full_text else "maude-reclassify"
+            else:
+                version_prefix = "llm-pdf-reclassify" if full_text else "llm-reclassify"
             update_params.append(f"{version_prefix}-{rules_version}")
             
             set_clauses.append("classification_timestamp = ?")
@@ -260,11 +274,18 @@ def reclassify_papers_llm(limit=None, offset=0, prioritize=True, paper_id=None):
         conn.close()
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Reclassify database papers using Claude LLM.")
+    parser = argparse.ArgumentParser(description="Reclassify database papers using Claude or Maude LLM.")
     parser.add_argument("--limit", type=int, default=None, help="Maximum number of papers to reclassify")
     parser.add_argument("--offset", type=int, default=0, help="Offset to start reclassifying from")
     parser.add_argument("--no-prioritize", action="store_true", help="Disable smart prioritization of potentially misclassified/updated papers")
     parser.add_argument("--paper-id", type=int, default=None, help="Specific paper ID to reclassify")
+    parser.add_argument("--engine", type=str, choices=["claude", "maude"], default="claude", help="Classification engine to use (claude or maude)")
     args = parser.parse_args()
 
-    reclassify_papers_llm(limit=args.limit, offset=args.offset, prioritize=not args.no_prioritize, paper_id=args.paper_id)
+    reclassify_papers_llm(
+        limit=args.limit,
+        offset=args.offset,
+        prioritize=not args.no_prioritize,
+        paper_id=args.paper_id,
+        engine=args.engine
+    )

@@ -1216,22 +1216,36 @@ class TestAnalysesUserIsolation(unittest.TestCase):
         self.assertEqual(response.status_code, 401)
 
     def test_user_ownership_isolation(self):
-        # 1. Create analysis belonging to User A
+        # 1. Create a mock paper
+        paper_id = self.db.insert_paper({
+            "title": "Test Paper for Analysis",
+            "abstract": "Abstract",
+            "year": 2026,
+            "date_harvested": "2026-06-12",
+            "expert_locked_fields": '["study_type"]',
+            "classification_confidence": 0.95,
+            "classifier_version": "maude-pdf-reclassify-1.0.0"
+        })
+
+        # 2. Create analysis belonging to User A referencing the mock paper
         analysis_id = self.db.create_analysis(
             name="User A Analysis",
             filter_settings="{}",
-            paper_count=0,
-            chart_data="{}",
+            paper_count=1,
+            chart_data=json.dumps({"paper_ids": [paper_id]}),
             user_id=self.user_a["id"]
         )
 
-        # 2. User A fetches own analysis (allowed)
+        # 3. User A fetches own analysis (allowed)
         with self.client.session_transaction() as sess:
             sess["logged_in"] = True
             sess["user_id"] = self.user_a["id"]
         response = self.client.get(f"/api/analyses/{analysis_id}")
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(json.loads(response.data.decode("utf-8"))["name"], "User A Analysis")
+        data = json.loads(response.data.decode("utf-8"))
+        self.assertEqual(data["name"], "User A Analysis")
+        self.assertEqual(len(data["papers"]), 1)
+        self.assertEqual(data["papers"][0]["expert_locked_fields"], ["study_type"])
 
         # 3. User B fetches User A's analysis (Forbidden 403)
         with self.client.session_transaction() as sess:

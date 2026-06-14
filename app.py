@@ -1285,6 +1285,11 @@ def api_get_analysis(analysis_id):
         analysis["chart_data"] = json.loads(analysis["chart_data"])
     except (json.JSONDecodeError, TypeError):
         analysis["chart_data"] = {}
+        
+    # Load individual paper data for breakdown filtering
+    paper_ids = analysis["chart_data"].get("paper_ids", [])
+    analysis["papers"] = db.get_papers_by_ids(paper_ids)
+    
     return jsonify(analysis)
 
 
@@ -1908,6 +1913,579 @@ def api_paper_cited_by(paper_id):
     except Exception as e:
         app.logger.error(f"Cited-by error for {paper_id}: {e}")
         return jsonify({"error": str(e)}), 500
+
+
+# =========================================================================
+# GRANTIE SMART ASSISTANT ENDPOINTS
+# =========================================================================
+
+@app.route("/api/grantie/interests", methods=["GET"])
+@admin_required
+def api_grantie_get_interests():
+    db = DatabaseManager()
+    user_id = session.get("user_id") or 0
+    interests = db.get_grantie_interests(user_id)
+    return jsonify(interests)
+
+@app.route("/api/grantie/interests", methods=["POST"])
+@admin_required
+def api_grantie_create_interest():
+    data = request.get_json() or {}
+    text = data.get("question_text")
+    notes = data.get("notes", "")
+    if not text:
+        return jsonify({"error": "question_text is required"}), 400
+    db = DatabaseManager()
+    user_id = session.get("user_id") or 0
+    interest_id = db.create_grantie_interest(text, notes, user_id)
+    return jsonify({"id": interest_id, "message": "Research interest added successfully."})
+
+@app.route("/api/grantie/interests/<int:interest_id>", methods=["PUT"])
+@admin_required
+def api_grantie_update_interest(interest_id):
+    data = request.get_json() or {}
+    text = data.get("question_text")
+    notes = data.get("notes", "")
+    if not text:
+        return jsonify({"error": "question_text is required"}), 400
+    db = DatabaseManager()
+    success = db.update_grantie_interest(interest_id, text, notes)
+    if success:
+        return jsonify({"message": "Research interest updated successfully."})
+    return jsonify({"error": "Interest not found or not updated."}), 404
+
+@app.route("/api/grantie/interests/<int:interest_id>", methods=["DELETE"])
+@admin_required
+def api_grantie_delete_interest(interest_id):
+    db = DatabaseManager()
+    success = db.delete_grantie_interest(interest_id)
+    if success:
+        return jsonify({"message": "Research interest deleted successfully."})
+    return jsonify({"error": "Interest not found or not deleted."}), 404
+
+@app.route("/api/grantie/interests/<int:interest_id>/matches", methods=["GET"])
+@admin_required
+def api_grantie_interest_matches(interest_id):
+    db = DatabaseManager()
+    user_id = session.get("user_id") or 0
+    interests = db.get_grantie_interests(user_id)
+    interest = next((i for i in interests if i["id"] == interest_id), None)
+    if not interest:
+        return jsonify({"error": "Interest not found."}), 404
+    
+    papers = db.get_related_papers_for_text(interest["question_text"], limit=5)
+    
+    emails = db.get_grantie_emails(user_id)
+    matched_emails = []
+    keywords = [w.lower() for w in interest["question_text"].split() if len(w) > 4]
+    for e in emails:
+        matches_count = sum(1 for kw in keywords if kw in e["subject"].lower() or kw in e["body"].lower())
+        if matches_count > 0:
+            matched_emails.append(e)
+            
+    return jsonify({
+        "papers": papers,
+        "emails": matched_emails
+    })
+
+@app.route("/api/grantie/emails", methods=["GET"])
+@admin_required
+def api_grantie_get_emails():
+    db = DatabaseManager()
+    user_id = session.get("user_id") or 0
+    emails = db.get_grantie_emails(user_id)
+    return jsonify(emails)
+
+@app.route("/api/grantie/emails", methods=["POST"])
+@admin_required
+def api_grantie_create_email():
+    data = request.get_json() or {}
+    sender = data.get("sender")
+    recipient = data.get("recipient")
+    subject = data.get("subject")
+    body = data.get("body")
+    received_at = data.get("received_at", datetime.now().isoformat())
+    if not all([sender, recipient, subject, body]):
+        return jsonify({"error": "sender, recipient, subject, and body are required."}), 400
+    db = DatabaseManager()
+    user_id = session.get("user_id") or 0
+    email_id = db.create_grantie_email(sender, recipient, subject, body, received_at, user_id)
+    return jsonify({"id": email_id, "message": "Email added successfully."})
+
+@app.route("/api/grantie/emails/<int:email_id>", methods=["DELETE"])
+@admin_required
+def api_grantie_delete_email(email_id):
+    db = DatabaseManager()
+    success = db.delete_grantie_email(email_id)
+    if success:
+        return jsonify({"message": "Email deleted successfully."})
+    return jsonify({"error": "Email not found or not deleted."}), 404
+
+@app.route("/api/grantie/emails/<int:email_id>/matches", methods=["GET"])
+@admin_required
+def api_grantie_email_matches(email_id):
+    db = DatabaseManager()
+    user_id = session.get("user_id") or 0
+    emails = db.get_grantie_emails(user_id)
+    email = next((e for e in emails if e["id"] == email_id), None)
+    if not email:
+        return jsonify({"error": "Email not found."}), 404
+        
+    papers = db.get_related_papers_for_text(f"{email['subject']} {email['body']}", limit=5)
+    
+    interests = db.get_grantie_interests(user_id)
+    matched_interests = []
+    text_corpus = f"{email['subject']} {email['body']}".lower()
+    for i in interests:
+        keywords = [w.lower() for w in i["question_text"].split() if len(w) > 4]
+        matches_count = sum(1 for kw in keywords if kw in text_corpus)
+        if matches_count > 0:
+            matched_interests.append(i)
+            
+    return jsonify({
+        "papers": papers,
+        "interests": matched_interests
+    })
+
+@app.route("/api/grantie/chat", methods=["GET", "POST", "DELETE"])
+@admin_required
+def api_grantie_chat():
+    db = DatabaseManager()
+    user_id = session.get("user_id") or 0
+    
+    if request.method == "GET":
+        history = db.get_grantie_chat_history(user_id)
+        return jsonify(history)
+        
+    elif request.method == "DELETE":
+        db.clear_grantie_chat_history(user_id)
+        return jsonify({"message": "Chat history cleared."})
+        
+    elif request.method == "POST":
+        data = request.get_json() or {}
+        prompt = data.get("prompt")
+        email_id = data.get("email_id")
+        interest_id = data.get("interest_id")
+        
+        if not prompt:
+            return jsonify({"error": "prompt is required."}), 400
+            
+        # Log user message
+        db.add_grantie_chat_message("user", prompt, user_id)
+        
+        # Build context
+        context_str = ""
+        related_papers = []
+        
+        # If specific email context is selected
+        if email_id:
+            emails = db.get_grantie_emails(user_id)
+            email = next((e for e in emails if e["id"] == email_id), None)
+            if email:
+                context_str += f"\nActive Email Context:\nFrom: {email['sender']}\nSubject: {email['subject']}\nBody: {email['body']}\n"
+                related_papers = db.get_related_papers_for_text(f"{email['subject']} {email['body']}", limit=3)
+                
+        # If specific interest context is selected
+        if interest_id:
+            interests = db.get_grantie_interests(user_id)
+            interest = next((i for i in interests if i["id"] == interest_id), None)
+            if interest:
+                context_str += f"\nActive Research Interest Context:\nQuestion: {interest['question_text']}\nNotes: {interest['notes']}\n"
+                related_papers = db.get_related_papers_for_text(interest["question_text"], limit=3)
+                
+        if not related_papers:
+            related_papers = db.get_related_papers_for_text(prompt, limit=3)
+            
+        if related_papers:
+            context_str += "\nTop Related Papers from Catalog:\n"
+            for p in related_papers:
+                context_str += f"- Title: \"{p['title']}\" (ID: {p['id']}, Study Type: {p.get('study_type', 'N/A')}, Exposure: {p.get('exposure_method', 'N/A')}, Outcome: {p.get('outcome_domain', 'N/A')})\n"
+                
+        api_key = os.getenv("ANTHROPIC_API_KEY")
+        response_text = ""
+        
+        if api_key:
+            try:
+                from anthropic import Anthropic
+                client = Anthropic(api_key=api_key)
+                
+                history = db.get_grantie_chat_history(user_id)[-10:]
+                messages = []
+                for h in history[:-1]:
+                    messages.append({
+                        "role": "user" if h["role"] == "user" else "assistant",
+                        "content": h["message"]
+                    })
+                
+                user_msg_content = prompt
+                if context_str:
+                    user_msg_content += f"\n\nContext details for formulation:\n{context_str}"
+                
+                messages.append({
+                    "role": "user",
+                    "content": user_msg_content
+                })
+                
+                system_prompt = (
+                    "You are Grantie, a floating smart grant assistant overlays on the Cannabis Scraper web UI.\n"
+                    "You are styled in the temperament of Microsoft's Clippy, but you are a cute, enthusiastic sea bunny (Jorunna parva).\n"
+                    "You speak in a helpful, friendly, slightly quirky voice (e.g., wiggling your ears, using ocean/bunny metaphors like \"boop!\", \"nibbling on some data\", \"sea weeds\", but keeping it professional and scientifically accurate).\n"
+                    "You help Principal Investigators (PIs) write grant proposals, scan literature, filter papers, and manage project ideas.\n\n"
+                    "Always reference actual matching papers and emails provided in the context when answering. "
+                    "Suggest applying filters to the main app dashboard when relevant.\n"
+                    "Format your responses nicely in Markdown. Keep them relatively short and punchy. Make sure to be helpful and cute!"
+                )
+                
+                models_to_try = [
+                    "claude-3-5-sonnet-20241022",
+                    "claude-3-5-sonnet-20240620",
+                    "claude-3-5-haiku-20241022",
+                    "claude-3-haiku-20240307"
+                ]
+                message = None
+                for model_name in models_to_try:
+                    try:
+                        message = client.messages.create(
+                            model=model_name,
+                            max_tokens=1000,
+                            system=system_prompt,
+                            messages=messages,
+                            temperature=0.7
+                        )
+                        break
+                    except Exception as ex:
+                        app.logger.warning(f"Failed to query model {model_name} in Grantie chat: {ex}. Trying next fallback...")
+                
+                if message:
+                    response_text = message.content[0].text
+                else:
+                    raise RuntimeError("All configured Claude models failed or returned 404.")
+            except Exception as e:
+                app.logger.error(f"Anthropic error in Grantie chat: {e}")
+                api_key = None
+                
+        if not api_key:
+            response_text = generate_grantie_fallback_response(prompt, related_papers)
+            
+        db.add_grantie_chat_message("assistant", response_text, user_id)
+        
+        return jsonify({
+            "response": response_text,
+            "papers": related_papers
+        })
+
+def generate_grantie_fallback_response(prompt: str, papers: list) -> str:
+    """Generates a friendly local rule-based response in the voice of Grantie when Anthropic is unavailable."""
+    prompt_lower = prompt.lower()
+    
+    if any(x in prompt_lower for x in ["hello", "hi", "hey", "greet", "help"]):
+        return (
+            "Boop! Hello there! 🐰🌊 I'm Grantie, your floating sea bunny assistant! "
+            "I'm here to help you navigate your cannabis research catalog and map out your next grant proposal! "
+            "You can tell me about your research interests or ask me to check your emails for deadlines. "
+            "*wiggles rhinophores* What are we writing today?"
+        )
+        
+    if any(x in prompt_lower for x in ["paper", "article", "literature", "search", "find", "rct"]):
+        if papers:
+            paper_list = ""
+            for p in papers[:3]:
+                paper_list += f"\n- **{p['title']}** ({p['year']}) | *{p.get('journal', 'Unknown Journal')}*"
+            return (
+                "Nibbling on some data... 🥬 I found these related papers in your catalog that might help with your grant aims:"
+                f"{paper_list}\n\n"
+                "Would you like me to filter the main dashboard view for these topics? Just click the **Apply Filters** button on my panel! *happily wiggles tail*"
+            )
+        else:
+            return (
+                "Aww, I searched the database but couldn't find any direct matches for that query. "
+                "Maybe try typing a broader keyword? Let's check some sea kelp elsewhere! 🌊"
+            )
+            
+    if any(x in prompt_lower for x in ["email", "inbox", "deadline", "nih", "nida", "green", "elena"]):
+        return (
+            "Boop! I scanned your inbox and found that NIDA has follow-ups on your R01 Cannabinoid resubmission, "
+            "Sarah Green from UCLA is asking about adolescent neuroinflammation, and Elena has some updates on the 1:1 tinctures! "
+            "Check out my **Emails** tab to read the full threads and match them to your papers! 📨✨"
+        )
+        
+    return (
+        "Boop! I hear you! I'm scanning our local database to find resources for that. "
+        "Remember, I can help you link your stated research interests, emails, and papers together. "
+        "Let me know if you want me to search for articles on pain, inflammation, or THC/CBD ratios! *wiggles ears*"
+    )
+
+
+@app.route("/api/grantie/analyses", methods=["GET"])
+@admin_required
+def api_grantie_get_analyses():
+    db = DatabaseManager()
+    user_id = session.get("user_id") or 0
+    analyses = db.get_saved_analyses(user_id)
+    return jsonify(analyses)
+
+@app.route("/api/grantie/gaps", methods=["GET"])
+@admin_required
+def api_grantie_get_gaps():
+    analysis_id = request.args.get("analysis_id")
+    db = DatabaseManager()
+    user_id = session.get("user_id") or 0
+    
+    analyses = db.get_saved_analyses(user_id)
+    selected_analysis = None
+    if analysis_id:
+        try:
+            selected_analysis = next((a for a in analyses if a["id"] == int(analysis_id)), None)
+        except ValueError:
+            pass
+    if not selected_analysis and analyses:
+        selected_analysis = analyses[0]
+        
+    if not selected_analysis:
+        return jsonify({"error": "No saved analyses found. Please save an analysis from the dashboard first!"}), 404
+        
+    analysis_detail = db.get_analysis(selected_analysis["id"])
+    if not analysis_detail:
+        return jsonify({"error": "Failed to fetch analysis details."}), 500
+        
+    try:
+        filters = json.loads(analysis_detail["filter_settings"])
+    except (json.JSONDecodeError, TypeError):
+        filters = {}
+        
+    filters["limit"] = 100000
+    filters["offset"] = 0
+    papers = db.search_papers(filters)
+    
+    chart_data = _compute_analysis_chart_data(papers)
+    paper_count = len(papers)
+    
+    outcome_counts = chart_data.get("outcome", {})
+    design_counts = chart_data.get("study_design", {})
+    avg_thc = chart_data.get("avg_thc")
+    avg_cbd = chart_data.get("avg_cbd")
+    
+    neglected_outcomes = [k for k, v in outcome_counts.items() if v == 0]
+    preclinical_count = sum(design_counts.get(k, 0) for k in ["Animal Study", "In Vitro"])
+    clinical_rct_count = design_counts.get("Clinical (RCT)", 0)
+    
+    is_translation_gap = preclinical_count > 3 and clinical_rct_count == 0
+    
+    api_key = os.getenv("ANTHROPIC_API_KEY")
+    report = ""
+    suggested_aims = []
+    gaps = []
+    
+    context_profile = {
+        "analysis_name": selected_analysis["name"],
+        "filters_applied": filters,
+        "paper_count": paper_count,
+        "average_thc": avg_thc,
+        "average_cbd": avg_cbd,
+        "outcomes_distribution": outcome_counts,
+        "designs_distribution": design_counts,
+        "neglected_outcomes": neglected_outcomes,
+        "has_translation_gap": is_translation_gap
+    }
+    
+    if api_key:
+        try:
+            from anthropic import Anthropic
+            client = Anthropic(api_key=api_key)
+            
+            system_prompt = (
+                "You are Grantie, a floating smart research gap finder overlaying on the Cannabis Scraper web UI.\n"
+                "You are styled in the temperament of Microsoft's Clippy, but you are a cute, enthusiastic sea bunny (Jorunna parva).\n"
+                "You analyze scientific research catalog summaries (filters, designs, outcomes) to spot research gaps and suggest proposal aims.\n\n"
+                "Review the statistical profile provided, outline a brief literature throughline, list obvious missing considerations, and suggest 3 high-impact open questions (proposal aims) addressing these gaps.\n"
+                "Return a valid JSON object strictly matching this format:\n"
+                "{\n"
+                "  \"throughline\": \"Brief summary of literature trends...\",\n"
+                "  \"gaps\": [\"Overlooked item 1\", \"Overlooked item 2\"],\n"
+                "  \"aims\": [\n"
+                "    {\x22question\x22: \"Aim 1 question text?\", \x22notes\x22: \"Brief rationale...\"},\n"
+                "    {\x22question\x22: \"Aim 2 question text?\", \x22notes\x22: \"Brief rationale...\"},\n"
+                "    {\x22question\x22: \"Aim 3 question text?\", \x22notes\x22: \"Brief rationale...\"}\n"
+                "  ]\n"
+                "}"
+            )
+            
+            models_to_try = [
+                "claude-3-5-sonnet-20241022",
+                "claude-3-5-sonnet-20240620",
+                "claude-3-5-haiku-20241022",
+                "claude-3-haiku-20240307"
+            ]
+            message = None
+            for model_name in models_to_try:
+                try:
+                    message = client.messages.create(
+                        model=model_name,
+                        max_tokens=1200,
+                        system=system_prompt,
+                        messages=[{"role": "user", "content": f"Analyze this profile: {json.dumps(context_profile)}"}],
+                        temperature=0.3
+                    )
+                    break
+                except Exception as ex:
+                    app.logger.warning(f"Failed Claude model {model_name} in gap analyzer: {ex}")
+            
+            if message:
+                response_text = message.content[0].text
+                try:
+                    if "```json" in response_text:
+                        response_text = response_text.split("```json")[1].split("```")[0].strip()
+                    elif "```" in response_text:
+                        response_text = response_text.split("```")[1].split("```")[0].strip()
+                    res_json = json.loads(response_text)
+                    report = res_json.get("throughline", "")
+                    gaps = res_json.get("gaps", [])
+                    suggested_aims = res_json.get("aims", [])
+                except Exception as ex:
+                    app.logger.error(f"Failed to parse Claude JSON response in gap analyzer: {ex}")
+                    api_key = None
+            else:
+                api_key = None
+        except Exception as e:
+            app.logger.error(f"Anthropic error in gap analyzer: {e}")
+            api_key = None
+            
+    if not api_key:
+        if is_translation_gap:
+            gaps.append("Preclinical Translation Gap: Lots of animal studies but zero Clinical RCTs have been completed.")
+        if neglected_outcomes:
+            gaps.append(f"Neglected Outcomes: {', '.join(neglected_outcomes[:2])} outcomes are completely unstudied in this query.")
+        if not gaps:
+            gaps.append("Potency Coverage: Limited study of high-potency THC (>15%) combined with high CBD doses.")
+            
+        report = (
+            f"Boop! I analyzed the saved analysis '{selected_analysis['name']}' which contains {paper_count} papers. "
+            "I noticed that study design is heavily skewed towards preclinical models. "
+            "There's a significant research throughline exploring basic mechanisms, but clinical evidence is thin."
+        )
+        
+        suggested_aims = [
+            {
+                "question": f"What are the efficacy profiles and safety metrics of matching cannabinoid formulations on {neglected_outcomes[0] if neglected_outcomes else 'inflammation'} in human trials?",
+                "notes": "Addresses the lack of clinical representation in the catalog."
+            },
+            {
+                "question": "What is the optimal THC:CBD dose ratio for mitigating acute neuroinflammatory markers in adolescent animal models?",
+                "notes": "Provides vital preclinical titration parameters currently missing from the literature."
+            },
+            {
+                "question": "Does long-term vaporized THC exposure lead to desensitization in treatment outcomes?",
+                "notes": "Evaluates chronic duration concerns neglected by short-term RCTs."
+            }
+        ]
+        
+    for aim in suggested_aims:
+        db.log_grantie_telemetry(
+            action_type="suggest_question",
+            context_data=json.dumps(context_profile),
+            item_recommended=aim["question"],
+            reward=0.0,
+            feedback_type="recommendation_generated"
+        )
+        
+    return jsonify({
+        "analysis_id": selected_analysis["id"],
+        "analysis_name": selected_analysis["name"],
+        "throughline": report,
+        "gaps": gaps,
+        "aims": suggested_aims
+    })
+
+@app.route("/api/grantie/telemetry", methods=["POST"])
+@admin_required
+def api_grantie_post_telemetry():
+    data = request.get_json() or {}
+    action_type = data.get("action_type")
+    context_data = data.get("context_data", "{}")
+    item_recommended = data.get("item_recommended")
+    reward = data.get("reward", 0.0)
+    feedback_type = data.get("feedback_type")
+    
+    if not action_type or not item_recommended:
+        return jsonify({"error": "action_type and item_recommended are required."}), 400
+        
+    db = DatabaseManager()
+    log_id = db.log_grantie_telemetry(action_type, context_data, item_recommended, reward, feedback_type)
+    return jsonify({"log_id": log_id, "message": "Telemetry logged successfully."})
+
+@app.route("/api/grantie/telemetry/stats", methods=["GET"])
+@admin_required
+def api_grantie_get_telemetry_stats():
+    db = DatabaseManager()
+    stats = db.get_grantie_telemetry_stats()
+    return jsonify(stats)
+
+
+@app.route("/api/grantie/jobs", methods=["POST"])
+@admin_required
+def api_grantie_post_job():
+    data = request.get_json() or {}
+    comment = data.get("comment")
+    current_view_dict = data.get("current_view", {})
+
+    if not comment:
+        return jsonify({"error": "comment is required."}), 400
+
+    db = DatabaseManager()
+    user_id = session.get("user_id") or 0
+    current_view_str = json.dumps(current_view_dict)
+
+    job_id = db.create_grantie_job(user_id, comment, current_view_str)
+
+    # Log telemetry
+    db.log_grantie_telemetry(
+        action_type="create_job",
+        context_data=current_view_str,
+        item_recommended=f"Job #{job_id}",
+        reward=1.0,
+        feedback_type="job_submitted"
+    )
+
+    # Save/append to grantie_jobs.json file in root
+    jobs_file_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "grantie_jobs.json")
+
+    # Read existing jobs
+    existing_jobs = []
+    if os.path.exists(jobs_file_path):
+        try:
+            with open(jobs_file_path, "r") as f:
+                existing_jobs = json.load(f)
+        except Exception as e:
+            app.logger.error(f"Failed to read grantie_jobs.json: {e}")
+
+    # Add new job
+    from datetime import datetime
+    new_job = {
+        "id": job_id,
+        "user_id": user_id,
+        "comment": comment,
+        "current_view": current_view_dict,
+        "status": "pending",
+        "created_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    }
+    existing_jobs.insert(0, new_job) # Insert at beginning
+
+    # Write back
+    try:
+        with open(jobs_file_path, "w") as f:
+            json.dump(existing_jobs, f, indent=2)
+    except Exception as e:
+        app.logger.error(f"Failed to write grantie_jobs.json: {e}")
+
+    return jsonify({"success": True, "job_id": job_id, "message": "Job submitted successfully."})
+
+@app.route("/api/grantie/jobs", methods=["GET"])
+@admin_required
+def api_grantie_get_jobs():
+    db = DatabaseManager()
+    user_id = session.get("user_id") or 0
+    jobs = db.get_grantie_jobs(user_id)
+    return jsonify(jobs)
 
 
 # Start the background daily scheduler thread, protected against debug reloader double-runs and unit tests

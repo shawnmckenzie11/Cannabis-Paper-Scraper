@@ -1026,6 +1026,8 @@ def extract_all_heuristics(title: str, abstract: str) -> Dict[str, Any]:
     Returns:
         Dict: Extracted fields
     """
+    if abstract is None:
+        abstract = ""
     publication_type = infer_publication_type(title, abstract)
     study_type = infer_study_type(title, abstract)
     exposure_method = infer_exposure_method(title, abstract, study_type)
@@ -1091,6 +1093,141 @@ def extract_all_heuristics(title: str, abstract: str) -> Dict[str, Any]:
         "cbd_mg_kg": None,
         "thc_uM": None,
         "cbd_uM": None,
+        "strain_reported": strain_reported,
+        "strain_normalized": strain_normalized,
+        "duration_days": duration_days,
+        "inhaled_exposure_duration": inhaled_exposure_duration,
+        "administration_frequency": administration_frequency,
+        "treatment_duration": treatment_duration,
+        "sample_size": sample_size,
+        "outcome_domain": outcome_domain,
+        "multiple_doses": multiple_doses,
+        "multiple_time_intervals": multiple_time_intervals,
+        "cannabis_type": cannabis_type,
+        "publication_type": publication_type
+    }
+    result["summary"] = generate_heuristic_summary(result)
+    return result
+
+def extract_um_concentration(text: str, keyword: str) -> Optional[float]:
+    """Helper to extract micromolar concentration (uM) of a specific cannabinoid from text."""
+    pattern = re.compile(
+        r'\b(?:' + re.escape(keyword) + r')\b[^.]{0,75}?\b(\d+(?:\.\d+)?)\s*(?:µm|um|micromolar)\b',
+        re.IGNORECASE
+    )
+    match = pattern.search(text)
+    if match:
+        return float(match.group(1))
+    return None
+
+def extract_dose_mg_kg(text: str, keyword: str) -> Optional[float]:
+    """Helper to extract weight-adjusted dose (mg/kg) of a specific cannabinoid."""
+    pattern = re.compile(
+        r'\b(?:' + re.escape(keyword) + r')\b[^.]{0,75}?\b(\d+(?:\.\d+)?)\s*(?:mg/kg)\b',
+        re.IGNORECASE
+    )
+    match = pattern.search(text)
+    if match:
+        return float(match.group(1))
+    return None
+
+def extract_concentration_mg_ml(text: str, keyword: str) -> Optional[float]:
+    """Helper to extract concentration in mg/mL."""
+    pattern = re.compile(
+        r'\b(?:' + re.escape(keyword) + r')\b[^.]{0,75}?\b(\d+(?:\.\d+)?)\s*(?:mg/ml)\b',
+        re.IGNORECASE
+    )
+    match = pattern.search(text)
+    if match:
+        return float(match.group(1))
+    return None
+
+def extract_puff_count(text: str) -> Optional[int]:
+    """Helper to extract puff count from text."""
+    pattern = re.compile(r'\b(\d+)\s*(?:puff|inhalation|inhalations)\b', re.IGNORECASE)
+    match = pattern.search(text)
+    if match:
+        return int(match.group(1))
+    return None
+
+def extract_all_heuristics_full(title: str, abstract: str, full_text: Optional[str] = None) -> Dict[str, Any]:
+    """Convenience pipeline to run all heuristic extractions on a paper, utilizing full text context if available.
+    """
+    search_text = (title or "") + " " + (abstract or "")
+    if full_text:
+        # Limit search text size to avoid regex performance issues, but capture up to first 50k chars
+        search_text += " " + full_text[:50000]
+
+    publication_type = infer_publication_type(title, search_text)
+    study_type = infer_study_type(title, search_text)
+    exposure_method = infer_exposure_method(title, search_text, study_type)
+    
+    thc_pct = extract_thc_pct(search_text)
+    cbd_pct = extract_cbd_pct(search_text)
+    dose_mg = extract_dose_mg(search_text)
+    
+    strain_reported, strain_normalized = extract_strain_info(search_text)
+    if strain_reported:
+        blacklist_pattern = re.compile(
+            r'\b(?:sprague[- ]dawley|wistar|c57bl/6|balb/c|sd rats?|wistar rats?|rats?|mice|mouse|feline|canine|5xfad|transgenic)\b',
+            re.IGNORECASE
+        )
+        if blacklist_pattern.search(str(strain_reported)):
+            strain_reported = None
+    
+    sample_size = extract_sample_size(search_text)
+    outcome_domain = extract_outcomes(title, search_text)
+    cannabis_type = infer_cannabis_type(title, search_text, study_type, exposure_method)
+
+    study_set = set(study_type) if isinstance(study_type, list) else {study_type} if isinstance(study_type, str) else set()
+
+    is_clinical = any(s.startswith("Clinical (") for s in study_set)
+    is_invivo = any(s.startswith("Animal Models (") for s in study_set)
+    is_invitro = any(s.startswith("Cell Culture (") for s in study_set)
+
+    if is_clinical or is_invivo:
+        duration_days = extract_duration_days(search_text)
+        exposure_list = exposure_method if isinstance(exposure_method, list) else [exposure_method]
+        is_inhaled = any("inhaled" in e or "smok" in e or "vapor" in e or "nose" in e or "whole body" in e for e in exposure_list)
+        inhaled_exposure_duration = extract_inhaled_exposure_duration(search_text) if is_inhaled else None
+        administration_frequency = extract_administration_frequency(search_text)
+    else:
+        duration_days = None
+        inhaled_exposure_duration = None
+        administration_frequency = None
+
+    if is_invitro:
+        treatment_duration = extract_treatment_duration(search_text)
+    else:
+        treatment_duration = None
+
+    multiple_doses = detect_multiple_doses(title, search_text)
+    multiple_time_intervals = detect_multiple_time_intervals(title, search_text)
+
+    # Extract advanced local numeric parameters
+    thc_uM = extract_um_concentration(search_text, "THC")
+    cbd_uM = extract_um_concentration(search_text, "CBD")
+    thc_mg_kg = extract_dose_mg_kg(search_text, "THC")
+    cbd_mg_kg = extract_dose_mg_kg(search_text, "CBD")
+    thc_mg_ml = extract_concentration_mg_ml(search_text, "THC")
+    cbd_mg_ml = extract_concentration_mg_ml(search_text, "CBD")
+    puff_count = extract_puff_count(search_text)
+
+    result = {
+        "study_type": study_type,
+        "exposure_method": exposure_method,
+        "thc_pct": thc_pct,
+        "cbd_pct": cbd_pct,
+        "dose_mg": dose_mg,
+        "puff_count": puff_count,
+        "thc_mg_ml": thc_mg_ml,
+        "thc_mg_g": None,
+        "thc_mg_kg": thc_mg_kg,
+        "cbd_mg_ml": cbd_mg_ml,
+        "cbd_mg_g": None,
+        "cbd_mg_kg": cbd_mg_kg,
+        "thc_uM": thc_uM,
+        "cbd_uM": cbd_uM,
         "strain_reported": strain_reported,
         "strain_normalized": strain_normalized,
         "duration_days": duration_days,

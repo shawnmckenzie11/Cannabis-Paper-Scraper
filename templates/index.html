@@ -11,6 +11,7 @@
     <link
         href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700;800&display=swap"
         rel="stylesheet">
+    <link rel="stylesheet" href="/static/grantie.css">
 
     <style>
         :root {
@@ -1523,9 +1524,11 @@
                     <label for="filter-classification-level" style="font-size: 0.8rem; font-weight: 600; margin-bottom: 6px; display: block; color: var(--text-secondary);">Classification Model</label>
                     <select id="filter-classification-level" onchange="triggerSearch()" style="width: 100%; padding: 8px 12px; border-radius: 8px; background: rgba(15,23,42,0.6); border: 1px solid rgba(255,255,255,0.08); color: var(--text-primary); font-family: 'Outfit', sans-serif; font-size: 0.85rem; cursor: pointer; outline: none; transition: border-color 0.2s;">
                         <option value="ALL">All Papers (No Model Filter)</option>
-                        <option value="native">Native Abstract Classifications (no Claude)</option>
+                        <option value="native">Native Heuristic Classifications (no Claude/Maude)</option>
                         <option value="claude_abstract">Claude Abstract Classifications (llm-reclassify)</option>
                         <option value="claude_pdf">Claude PDF Classifications (llm-pdf-reclassify)</option>
+                        <option value="maude_abstract">Maude Abstract Classifications (maude-reclassify)</option>
+                        <option value="maude_pdf">Maude PDF Classifications (maude-pdf-reclassify)</option>
                         <option value="manual">Manual Edit Classifications (expert locked)</option>
                         <option value="optimal">Optimal Classifications (PDF / Manual Edits)</option>
                     </select>
@@ -2130,6 +2133,34 @@
                     <span id="selection-count-badge" class="badge"
                         style="background: rgba(0, 240, 255, 0.12); color: var(--accent-blue); border: 1px solid rgba(0, 240, 255, 0.3); font-weight: 700; padding: 4px 10px; font-size: 0.85rem;">0
                         Selected</span>
+                </div>
+
+                <!-- Saved Analysis Breakdown Controls -->
+                <div id="analysis-breakdown-controls" style="display: none; align-items: center; gap: 20px; padding: 12px 18px; border-radius: 8px; background: rgba(0, 240, 255, 0.03); border: 1px solid rgba(0, 240, 255, 0.1); margin-bottom: 10px; flex-wrap: wrap;">
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                        <span style="font-size: 1.1rem;">📊</span>
+                        <span style="font-family: var(--font-display); font-size: 0.9rem; font-weight: 700; color: var(--accent-blue);">Analysis Breakdown Options:</span>
+                    </div>
+                    
+                    <!-- Slider -->
+                    <div style="display: flex; align-items: center; gap: 10px; min-width: 220px; flex-grow: 1; max-width: 320px;">
+                        <label style="font-size: 0.8rem; font-weight: 600; color: var(--text-secondary); white-space: nowrap; min-width: 130px;">Min Confidence: <span id="analysis-conf-val" style="color: var(--accent-blue); font-weight: 700;">0%</span></label>
+                        <input type="range" id="analysis-conf-slider" min="0" max="100" value="0" step="5" oninput="updateAnalysisBreakdown()" style="flex-grow: 1; height: 5px; border-radius: 3px; background: rgba(255,255,255,0.1); cursor: pointer; outline: none; accent-color: var(--accent-blue);">
+                    </div>
+                    
+                    <!-- Select Model -->
+                    <div style="display: flex; align-items: center; gap: 10px;">
+                        <label style="font-size: 0.8rem; font-weight: 600; color: var(--text-secondary); white-space: nowrap;">Model Type:</label>
+                        <select id="analysis-model-select" onchange="updateAnalysisBreakdown()" style="padding: 6px 12px; border-radius: 6px; background: rgba(15,23,42,0.6); border: 1px solid rgba(255,255,255,0.08); color: var(--text-primary); font-family: 'Outfit', sans-serif; font-size: 0.8rem; cursor: pointer; outline: none; min-width: 180px;">
+                            <option value="ALL">All Models</option>
+                            <option value="native">Native Heuristic (no Claude/Maude)</option>
+                            <option value="claude_abstract">Claude Abstract (llm-reclassify)</option>
+                            <option value="claude_pdf">Claude PDF (llm-pdf-reclassify)</option>
+                            <option value="maude_abstract">Maude Abstract (maude-reclassify)</option>
+                            <option value="maude_pdf">Maude PDF (maude-pdf-reclassify)</option>
+                            <option value="manual">Manual Edits (expert locked)</option>
+                        </select>
+                    </div>
                 </div>
 
                 <!-- Aggregated Numerical Metrics -->
@@ -2861,6 +2892,7 @@
         let currentPieChartType = 'exposure';
         let currentAnalyzedPapers = null;
         let selectedAnalysisId = null;
+        let loadedAnalysisPapers = null;
 
         // Chart.js global instances references
         let chartStudyDesign = null;
@@ -2941,9 +2973,15 @@
 
             // Hide the analysis panel when filters/tabs update
             currentAnalyzedPapers = null;
+            loadedAnalysisPapers = null;
+            selectedAnalysisId = null;
             const panel = document.getElementById("selection-analytics-panel");
             if (panel) {
                 panel.style.display = "none";
+            }
+            const controls = document.getElementById("analysis-breakdown-controls");
+            if (controls) {
+                controls.style.display = "none";
             }
 
             // Build parameters from sidebar elements
@@ -4439,14 +4477,74 @@
                     document.querySelectorAll("#analyses-tbody tr").forEach(tr => tr.classList.remove("selected"));
                     const row = document.querySelector(`#analyses-tbody tr[data-id="${id}"]`);
                     if (row) row.classList.add("selected");
-                    renderChartsFromData(analysis.chart_data);
-                    currentAnalyzedPapers = analysis.chart_data;
+                    
+                    // Reset breakdown controls
+                    document.getElementById("analysis-conf-slider").value = 0;
+                    document.getElementById("analysis-conf-val").innerText = "0%";
+                    document.getElementById("analysis-model-select").value = "ALL";
+                    document.getElementById("analysis-breakdown-controls").style.display = "flex";
+                    
+                    loadedAnalysisPapers = analysis.papers || [];
+                    renderVisualAnalysis(loadedAnalysisPapers);
+                    
                     const panel = document.getElementById("selection-analytics-panel");
                     if (panel) {
                         panel.style.display = "flex";
                         panel.scrollIntoView({ behavior: 'smooth', block: 'start' });
                     }
                 });
+        }
+
+        function updateAnalysisBreakdown() {
+            if (!loadedAnalysisPapers) return;
+            
+            const minConf = parseInt(document.getElementById("analysis-conf-slider").value) / 100.0;
+            document.getElementById("analysis-conf-val").innerText = document.getElementById("analysis-conf-slider").value + "%";
+            
+            const selectedModel = document.getElementById("analysis-model-select").value;
+            
+            const filteredPapers = loadedAnalysisPapers.filter(p => {
+                const isExpert = (p.expert_locked_fields && (Array.isArray(p.expert_locked_fields) ? p.expert_locked_fields.length > 0 : (p.expert_locked_fields !== '[]' && p.expert_locked_fields !== '')));
+                const conf = isExpert ? 1.0 : (p.classification_confidence !== null && p.classification_confidence !== undefined ? p.classification_confidence : 0.0);
+                if (conf < minConf) {
+                    return false;
+                }
+                
+                // 2. Filter by Classification Model Type
+                if (selectedModel !== "ALL") {
+                    const ver = p.classifier_version;
+                    if (selectedModel === "native") {
+                        if (ver && (ver.startsWith("llm-") || ver.startsWith("maude-"))) {
+                            return false;
+                        }
+                    } else if (selectedModel === "claude_abstract") {
+                        if (!ver || !ver.startsWith("llm-reclassify-")) {
+                            return false;
+                        }
+                    } else if (selectedModel === "claude_pdf") {
+                        if (!ver || !ver.startsWith("llm-pdf-reclassify-")) {
+                            return false;
+                        }
+                    } else if (selectedModel === "maude_abstract") {
+                        if (!ver || !ver.startsWith("maude-reclassify-")) {
+                            return false;
+                        }
+                    } else if (selectedModel === "maude_pdf") {
+                        if (!ver || !ver.startsWith("maude-pdf-reclassify-")) {
+                            return false;
+                        }
+                    } else if (selectedModel === "manual") {
+                        if (!isExpert) {
+                            return false;
+                        }
+                    }
+                }
+                
+                return true;
+            });
+            
+            renderVisualAnalysis(filteredPapers);
+            document.getElementById("selection-count-badge").innerText = filteredPapers.length + " / " + loadedAnalysisPapers.length + " Articles";
         }
 
         function deleteAnalysis(id, event) {
@@ -5270,6 +5368,8 @@
         function renderChartsFromData(d) {
             if (!d || d.paper_count === 0) {
                 document.getElementById("selection-analytics-panel").style.display = "none";
+                const controls = document.getElementById("analysis-breakdown-controls");
+                if (controls) controls.style.display = "none";
                 return;
             }
             const panel = document.getElementById("selection-analytics-panel");
@@ -5307,6 +5407,8 @@
 
             if (papers.length === 0) {
                 panel.style.display = "none";
+                const controls = document.getElementById("analysis-breakdown-controls");
+                if (controls) controls.style.display = "none";
                 return;
             }
 
@@ -6213,6 +6315,7 @@
             </div>
         </div>
     </div>
+    <script src="/static/grantie.js"></script>
 </body>
 
 </html>

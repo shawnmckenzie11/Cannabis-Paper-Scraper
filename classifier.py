@@ -241,6 +241,17 @@ def classify_with_llm(title: str, abstract: str, runs: Optional[int] = None, ful
     Returns:
         Optional[Dict]: Structured fields or None if LLM call fails.
     """
+    engine = os.getenv("CLASSIFIER_ENGINE", "claude").lower().strip()
+    if engine == "maude":
+        from maude_classifier import classify_with_maude
+        result = classify_with_maude(title, abstract, full_text=full_text)
+        if result:
+            result["classification_confidence"] = 1.0
+            result["classification_timestamp"] = datetime.now().isoformat()
+            result["classifier_version"] = "maude-1.0.0"
+            return result
+        return None
+
     api_key = os.getenv("ANTHROPIC_API_KEY")
     if not api_key:
         logger.debug("No ANTHROPIC_API_KEY environment variable set. Skipping LLM pass.")

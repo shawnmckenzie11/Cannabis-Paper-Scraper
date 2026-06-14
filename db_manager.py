@@ -548,6 +548,9 @@ class DatabaseManager:
             # Ensure analyses table exists
             self.init_analyses_table()
 
+            # Ensure Grantie tables exist
+            self.init_grantie_tables()
+
             # Ensure citation_edges table exists
             citation_edges_sql = """
                 CREATE TABLE IF NOT EXISTS citation_edges (
@@ -891,6 +894,36 @@ class DatabaseManager:
         finally:
             conn.close()
 
+    def get_papers_by_ids(self, paper_ids: List[int]) -> List[Dict[str, Any]]:
+        """Retrieves a list of papers by their database IDs."""
+        if not paper_ids:
+            return []
+            
+        conn = self.get_connection()
+        cursor = conn.cursor()
+        try:
+            placeholders = ",".join(["?"] * len(paper_ids))
+            sql = f"SELECT id, title, abstract, year, publication_date, thc_pct, cbd_pct, sample_size, study_type, exposure_method, cannabis_type, outcome_domain, classifier_version, classification_confidence, expert_locked_fields FROM papers WHERE id IN ({placeholders})"
+            cursor.execute(sql, tuple(paper_ids))
+            rows = cursor.fetchall()
+            results = []
+            for row in rows:
+                res = dict(row)
+                # Parse JSON fields
+                for json_field in ["outcome_domain", "study_type", "exposure_method", "cannabis_type", "expert_locked_fields"]:
+                    if res.get(json_field) and isinstance(res[json_field], str):
+                        try:
+                            val = res[json_field].strip()
+                            if val.startswith("[") and val.endswith("]"):
+                                res[json_field] = json.loads(res[json_field])
+                        except Exception:
+                            pass
+                results.append(res)
+            return results
+        finally:
+            conn.close()
+
+
     def delete_paper(self, paper_id: int) -> bool:
         """Deletes a paper by database ID."""
         conn = self.get_connection()
@@ -1140,15 +1173,20 @@ class DatabaseManager:
         class_level = filters.get("classification_level")
         if class_level and class_level != "ALL":
             if class_level == "native":
-                where_clauses.append("(papers.classifier_version IS NULL OR papers.classifier_version NOT LIKE 'llm-%')")
+                where_clauses.append("(papers.classifier_version IS NULL OR (papers.classifier_version NOT LIKE 'llm-%' AND papers.classifier_version NOT LIKE 'maude-%'))")
             elif class_level == "claude_abstract":
                 where_clauses.append("papers.classifier_version LIKE 'llm-reclassify-%'")
             elif class_level == "claude_pdf":
                 where_clauses.append("papers.classifier_version LIKE 'llm-pdf-reclassify-%'")
+            elif class_level == "maude_abstract":
+                where_clauses.append("papers.classifier_version LIKE 'maude-reclassify-%'")
+            elif class_level == "maude_pdf":
+                where_clauses.append("papers.classifier_version LIKE 'maude-pdf-reclassify-%'")
             elif class_level == "manual":
                 where_clauses.append("(papers.expert_locked_fields IS NOT NULL AND papers.expert_locked_fields != '[]' AND papers.expert_locked_fields != '')")
             elif class_level == "optimal":
-                where_clauses.append("(papers.classifier_version LIKE 'llm-pdf-reclassify-%' OR (papers.expert_locked_fields IS NOT NULL AND papers.expert_locked_fields != '[]' AND papers.expert_locked_fields != ''))")
+                where_clauses.append("(papers.classifier_version LIKE 'llm-pdf-reclassify-%' OR papers.classifier_version LIKE 'maude-pdf-reclassify-%' OR (papers.expert_locked_fields IS NOT NULL AND papers.expert_locked_fields != '[]' AND papers.expert_locked_fields != ''))")
+
                     
         return where_clauses, params
 
@@ -1502,5 +1540,423 @@ class DatabaseManager:
             cursor = conn.execute("DELETE FROM analyses WHERE id = ?;", (analysis_id,))
             conn.commit()
             return cursor.rowcount > 0
+        finally:
+            conn.close()
+
+    def init_grantie_tables(self):
+        """Initializes Grantie-specific tables (research interests, emails, chat history) and populates them if empty."""
+        conn = self.get_connection()
+        try:
+            # 1. Stated Research Interests table
+            interests_sql = """
+                CREATE TABLE IF NOT EXISTS grantie_research_interests (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    user_id INTEGER,
+                    question_text TEXT NOT NULL,
+                    notes TEXT,
+                    created_at TEXT DEFAULT CURRENT_TIMESTAMP
+                );
+            """
+            if self.is_postgres:
+                interests_sql = interests_sql.replace("INTEGER PRIMARY KEY AUTOINCREMENT", "SERIAL PRIMARY KEY")
+                interests_sql = interests_sql.replace("DEFAULT CURRENT_TIMESTAMP", "DEFAULT NOW()")
+            conn.execute(interests_sql)
+
+            # 2. Client Emails table
+            emails_sql = """
+                CREATE TABLE IF NOT EXISTS grantie_emails (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    user_id INTEGER,
+                    sender TEXT NOT NULL,
+                    recipient TEXT NOT NULL,
+                    subject TEXT NOT NULL,
+                    body TEXT NOT NULL,
+                    received_at TEXT NOT NULL,
+                    created_at TEXT DEFAULT CURRENT_TIMESTAMP
+                );
+            """
+            if self.is_postgres:
+                emails_sql = emails_sql.replace("INTEGER PRIMARY KEY AUTOINCREMENT", "SERIAL PRIMARY KEY")
+                emails_sql = emails_sql.replace("DEFAULT CURRENT_TIMESTAMP", "DEFAULT NOW()")
+            conn.execute(emails_sql)
+
+            # 3. Chat History table
+            chat_sql = """
+                CREATE TABLE IF NOT EXISTS grantie_chat_history (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    user_id INTEGER,
+                    role TEXT NOT NULL,
+                    message TEXT NOT NULL,
+                    created_at TEXT DEFAULT CURRENT_TIMESTAMP
+                );
+            """
+            if self.is_postgres:
+                chat_sql = chat_sql.replace("INTEGER PRIMARY KEY AUTOINCREMENT", "SERIAL PRIMARY KEY")
+                chat_sql = chat_sql.replace("DEFAULT CURRENT_TIMESTAMP", "DEFAULT NOW()")
+            conn.execute(chat_sql)
+
+            # 4. Telemetry feedback logging table
+            telemetry_sql = """
+                CREATE TABLE IF NOT EXISTS grantie_rl_telemetry (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    action_type TEXT NOT NULL,
+                    context_data TEXT,
+                    item_recommended TEXT,
+                    reward REAL DEFAULT 0.0,
+                    feedback_type TEXT,
+                    timestamp TEXT DEFAULT CURRENT_TIMESTAMP
+                );
+            """
+            if self.is_postgres:
+                telemetry_sql = telemetry_sql.replace("INTEGER PRIMARY KEY AUTOINCREMENT", "SERIAL PRIMARY KEY")
+                telemetry_sql = telemetry_sql.replace("DEFAULT CURRENT_TIMESTAMP", "DEFAULT NOW()")
+            conn.execute(telemetry_sql)
+
+            # 5. Correction jobs table
+            jobs_sql = """
+                CREATE TABLE IF NOT EXISTS grantie_jobs (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    user_id INTEGER,
+                    comment TEXT NOT NULL,
+                    current_view TEXT,
+                    status TEXT DEFAULT 'pending',
+                    created_at TEXT DEFAULT CURRENT_TIMESTAMP
+                );
+            """
+            if self.is_postgres:
+                jobs_sql = jobs_sql.replace("INTEGER PRIMARY KEY AUTOINCREMENT", "SERIAL PRIMARY KEY")
+                jobs_sql = jobs_sql.replace("DEFAULT CURRENT_TIMESTAMP", "DEFAULT NOW()")
+            conn.execute(jobs_sql)
+
+            conn.commit()
+
+            # 4. Check if we need to seed the tables (if they are empty)
+            cursor = conn.execute("SELECT COUNT(*) as count FROM grantie_emails;")
+            row = cursor.fetchone()
+            email_count = list(row.values())[0] if self.is_postgres else row[0]
+
+            if email_count == 0:
+                self.seed_grantie_data(conn)
+        except Exception as e:
+            logger.error(f"Failed to initialize Grantie tables: {e}")
+            conn.rollback()
+        finally:
+            conn.close()
+
+    def seed_grantie_data(self, conn):
+        """Seeds default research interests and clinical/preclinical emails for testing."""
+        try:
+            # Seed default research interests (user_id = 0 for guest/global)
+            interests = [
+                ("Vaporized THC vs CBD dose-response relationships in neuropathic pain models.", "Reviewers for NIDA R01 want animal exposure duration details and precise THC/CBD blood level correlations."),
+                ("The impact of high-potency cannabis concentrates on neuroinflammatory markers in adolescents.", "Collaborative grant proposal with UCLA (Dr. Sarah Green). We need to summarize rodent cytokine expression profiles."),
+                ("Comparing efficacy of 1:1 THC:CBD oral tinctures against placebo in clinical trials for chronic pain.", "Elena needs help sorting clinical trial papers in our catalog for a systematic review bibliographical list.")
+            ]
+            for question, notes in interests:
+                conn.execute(
+                    "INSERT INTO grantie_research_interests (user_id, question_text, notes) VALUES (0, ?, ?);",
+                    (question, notes)
+                )
+
+            # Seed default emails
+            emails = [
+                (
+                    "nida-grants-officer@nih.gov",
+                    "pi@smartinlab.org",
+                    "Follow-up on R01 Resubmission: Cannabinoid Pain Therapeutics",
+                    "Dear Dr. McKenzie,\n\nI have reviewed the summary statement for your R01 resubmission on vaporized THC and neuropathic pain. The reviewers were highly enthusiastic about the dose-response RCTs in aim 2. However, they requested additional preliminary data validating the exposure duration and THC/CBD ratios in the animal models.\n\nPlease let me know if you can hop on a call next Tuesday to discuss the response strategy.\n\nBest,\nDr. Aris Carter\nNIDA Program Director",
+                    "2026-06-12T14:30:00Z"
+                ),
+                (
+                    "colleague-dr-green@ucla.edu",
+                    "pi@smartinlab.org",
+                    "Collaborative Grant Proposal on Adolescent Neuroinflammation",
+                    "Hey Shawn,\n\nI'm working on a draft for the upcoming NIH R21 call on adolescent exposure to high-potency cannabis concentrates. I saw your recent paper on cytokine expression profiles in rodents. Would you be open to providing the neuroinflammatory and microglial activation analysis for our aim 1?\n\nI've attached the rough draft of the aims page. Let me know what you think by Friday!\n\nCheers,\nSarah",
+                    "2026-06-13T09:15:00Z"
+                ),
+                (
+                    "lab-manager@smartinlab.org",
+                    "pi@smartinlab.org",
+                    "Update: Literature review on 1:1 oral tinctures",
+                    "Hi Shawn,\n\nI did a quick query on the catalog for clinical studies evaluating 1:1 oral tinctures. There seem to be quite a few papers, but we need to filter them down specifically to randomized controlled trials (RCTs) with chronic pain endpoints.\n\nI have compiled the raw list but could use some help setting up a clean bibliography for the grant proposal. Let me know if you have time to look over the dataset this afternoon.\n\nThanks,\nElena",
+                    "2026-06-14T08:00:00Z"
+                )
+            ]
+            for sender, recipient, subject, body, received_at in emails:
+                conn.execute(
+                    "INSERT INTO grantie_emails (user_id, sender, recipient, subject, body, received_at) VALUES (0, ?, ?, ?, ?, ?);",
+                    (sender, recipient, subject, body, received_at)
+                )
+
+            conn.commit()
+            logger.info("Successfully seeded Grantie mock data.")
+        except Exception as e:
+            logger.error(f"Failed to seed Grantie mock data: {e}")
+            conn.rollback()
+
+    def get_grantie_interests(self, user_id: int = 0) -> List[Dict[str, Any]]:
+        conn = self.get_connection()
+        if not self.is_postgres:
+            conn.row_factory = sqlite3.Row
+        try:
+            # Retrieve global (0) and specific user_id
+            cursor = conn.execute(
+                "SELECT * FROM grantie_research_interests WHERE user_id = ? OR user_id = 0 ORDER BY created_at DESC;",
+                (user_id,)
+            )
+            return [dict(row) for row in cursor.fetchall()]
+        finally:
+            conn.close()
+
+    def create_grantie_interest(self, question_text: str, notes: str, user_id: int = 0) -> int:
+        conn = self.get_connection()
+        try:
+            cursor = conn.execute(
+                "INSERT INTO grantie_research_interests (user_id, question_text, notes) VALUES (?, ?, ?);",
+                (user_id, question_text, notes)
+            )
+            conn.commit()
+            return cursor.lastrowid
+        finally:
+            conn.close()
+
+    def update_grantie_interest(self, interest_id: int, question_text: str, notes: str) -> bool:
+        conn = self.get_connection()
+        try:
+            cursor = conn.execute(
+                "UPDATE grantie_research_interests SET question_text = ?, notes = ? WHERE id = ?;",
+                (question_text, notes, interest_id)
+            )
+            conn.commit()
+            return cursor.rowcount > 0
+        finally:
+            conn.close()
+
+    def delete_grantie_interest(self, interest_id: int) -> bool:
+        conn = self.get_connection()
+        try:
+            cursor = conn.execute("DELETE FROM grantie_research_interests WHERE id = ?;", (interest_id,))
+            conn.commit()
+            return cursor.rowcount > 0
+        finally:
+            conn.close()
+
+    def get_grantie_emails(self, user_id: int = 0) -> List[Dict[str, Any]]:
+        conn = self.get_connection()
+        if not self.is_postgres:
+            conn.row_factory = sqlite3.Row
+        try:
+            cursor = conn.execute(
+                "SELECT * FROM grantie_emails WHERE user_id = ? OR user_id = 0 ORDER BY received_at DESC;",
+                (user_id,)
+            )
+            return [dict(row) for row in cursor.fetchall()]
+        finally:
+            conn.close()
+
+    def create_grantie_email(self, sender: str, recipient: str, subject: str, body: str, received_at: str, user_id: int = 0) -> int:
+        conn = self.get_connection()
+        try:
+            cursor = conn.execute(
+                "INSERT INTO grantie_emails (user_id, sender, recipient, subject, body, received_at) VALUES (?, ?, ?, ?, ?, ?);",
+                (user_id, sender, recipient, subject, body, received_at)
+            )
+            conn.commit()
+            return cursor.lastrowid
+        finally:
+            conn.close()
+
+    def delete_grantie_email(self, email_id: int) -> bool:
+        conn = self.get_connection()
+        try:
+            cursor = conn.execute("DELETE FROM grantie_emails WHERE id = ?;", (email_id,))
+            conn.commit()
+            return cursor.rowcount > 0
+        finally:
+            conn.close()
+
+    def get_grantie_chat_history(self, user_id: int = 0) -> List[Dict[str, Any]]:
+        conn = self.get_connection()
+        if not self.is_postgres:
+            conn.row_factory = sqlite3.Row
+        try:
+            cursor = conn.execute(
+                "SELECT * FROM grantie_chat_history WHERE user_id = ? OR user_id = 0 ORDER BY created_at ASC;",
+                (user_id,)
+            )
+            return [dict(row) for row in cursor.fetchall()]
+        finally:
+            conn.close()
+
+    def add_grantie_chat_message(self, role: str, message: str, user_id: int = 0) -> int:
+        conn = self.get_connection()
+        try:
+            cursor = conn.execute(
+                "INSERT INTO grantie_chat_history (user_id, role, message) VALUES (?, ?, ?);",
+                (user_id, role, message)
+            )
+            conn.commit()
+            return cursor.lastrowid
+        finally:
+            conn.close()
+
+    def clear_grantie_chat_history(self, user_id: int = 0) -> bool:
+        conn = self.get_connection()
+        try:
+            conn.execute("DELETE FROM grantie_chat_history WHERE user_id = ? OR user_id = 0;", (user_id,))
+            conn.commit()
+            return True
+        finally:
+            conn.close()
+
+    def get_related_papers_for_text(self, text: str, limit: int = 5) -> List[Dict[str, Any]]:
+        """Finds related papers in the catalog for a given text query/context using keyword matching."""
+        import re
+        words = re.findall(r'\b[a-zA-Z]{3,}\b', text.lower())
+        stop_words = {'the', 'and', 'for', 'with', 'that', 'this', 'from', 'your', 'about', 'would', 'have', 'will', 'you', 'are', 'was', 'were', 'been', 'has', 'had', 'should', 'could', 'dear', 'thanks', 'best', 'regards', 'hello', 'please'}
+        filtered_words = [w for w in words if w not in stop_words]
+        
+        unique_words = []
+        for w in filtered_words:
+            if w not in unique_words:
+                unique_words.append(w)
+            if len(unique_words) >= 6:
+                break
+                
+        if not unique_words:
+            unique_words = [text[:50].strip()]
+            
+        search_query = " OR ".join(unique_words)
+        
+        filters = {
+            "query": search_query,
+            "limit": limit,
+            "offset": 0
+        }
+        try:
+            # Attempt to use full-text search index through standard search_papers method
+            return self.search_papers(filters)
+        except Exception:
+            # Fallback to simple LIKE syntax if search_papers throws an error
+            conn = self.get_connection()
+            if not self.is_postgres:
+                conn.row_factory = sqlite3.Row
+            try:
+                like_clauses = []
+                params = []
+                for w in unique_words[:3]:
+                    like_clauses.append("(title LIKE ? OR abstract LIKE ?)")
+                    params.extend([f"%{w}%", f"%{w}%"])
+                
+                query = f"SELECT id, title, year, journal, study_type, exposure_method, summary FROM papers WHERE {' OR '.join(like_clauses)} LIMIT ?;"
+                params.append(limit)
+                
+                cursor = conn.execute(query, params)
+                return [dict(row) for row in cursor.fetchall()]
+            except Exception:
+                return []
+            finally:
+                conn.close()
+
+    def log_grantie_telemetry(self, action_type: str, context_data: str, item_recommended: str, reward: float = 0.0, feedback_type: str = None) -> int:
+        """Logs action, state context, and feedback reward into telemetry database for future RL training."""
+        conn = self.get_connection()
+        try:
+            cursor = conn.execute(
+                "INSERT INTO grantie_rl_telemetry (action_type, context_data, item_recommended, reward, feedback_type) VALUES (?, ?, ?, ?, ?);",
+                (action_type, context_data, item_recommended, reward, feedback_type)
+            )
+            conn.commit()
+            return cursor.lastrowid
+        except Exception as e:
+            logger.error(f"Failed to log Grantie telemetry: {e}")
+            return 0
+        finally:
+            conn.close()
+
+    def get_saved_analyses(self, user_id: int = 0) -> List[Dict[str, Any]]:
+        """Retrieves a list of saved analyses from the analyses table."""
+        conn = self.get_connection()
+        if not self.is_postgres:
+            conn.row_factory = sqlite3.Row
+        try:
+            if user_id > 0:
+                cursor = conn.execute("SELECT id, name, filter_settings, paper_count, created_at FROM analyses WHERE user_id = ? ORDER BY created_at DESC;", (user_id,))
+            else:
+                cursor = conn.execute("SELECT id, name, filter_settings, paper_count, created_at FROM analyses ORDER BY created_at DESC;")
+            return [dict(row) for row in cursor.fetchall()]
+        except Exception as e:
+            logger.error(f"Failed to fetch saved analyses: {e}")
+            return []
+        finally:
+            conn.close()
+
+    def get_grantie_telemetry_stats(self) -> Dict[str, Any]:
+        """Calculates aggregated reward counts and metrics for the telemetry loop validation."""
+        conn = self.get_connection()
+        try:
+            cursor = conn.execute("SELECT COUNT(*) as total_actions, SUM(CASE WHEN reward > 0 THEN 1 ELSE 0 END) as positive_rewards, SUM(CASE WHEN reward < 0 THEN 1 ELSE 0 END) as negative_rewards, AVG(reward) as average_reward FROM grantie_rl_telemetry;")
+            row = cursor.fetchone()
+            res = dict(row) if row else {}
+            # Handle postgreSQL dict values conversion
+            for k in res:
+                if res[k] is None:
+                    res[k] = 0.0 if k == "average_reward" else 0
+            return res
+        except Exception:
+            return {"total_actions": 0, "positive_rewards": 0, "negative_rewards": 0, "average_reward": 0.0}
+        finally:
+            conn.close()
+
+    def create_grantie_job(self, user_id: int, comment: str, current_view: str) -> int:
+        from datetime import datetime
+        conn = self.get_connection()
+        try:
+            # 1. Save Job
+            cursor = conn.execute(
+                "INSERT INTO grantie_jobs (user_id, comment, current_view) VALUES (?, ?, ?);",
+                (user_id, comment, current_view)
+            )
+            job_id = cursor.lastrowid
+
+            # 2. Insert mock email to sync with Emails tab
+            sender = "Client Expert"
+            recipient = "dev@mckenzian.org"
+            subject = f"Correction Job #{job_id}: {comment[:30]}..." if len(comment) > 30 else f"Correction Job #{job_id}: {comment}"
+
+            # format body nicely
+            import json
+            try:
+                view_dict = json.loads(current_view)
+                view_pretty = json.dumps(view_dict, indent=2)
+            except Exception:
+                view_pretty = current_view
+
+            body = f"Client Comment:\n{comment}\n\nCaptured Context:\n{view_pretty}"
+            received_at = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
+            conn.execute(
+                "INSERT INTO grantie_emails (user_id, sender, recipient, subject, body, received_at) VALUES (?, ?, ?, ?, ?, ?);",
+                (user_id, sender, recipient, subject, body, received_at)
+            )
+
+            conn.commit()
+            return job_id
+        finally:
+            conn.close()
+
+    def get_grantie_jobs(self, user_id: int = 0) -> List[Dict[str, Any]]:
+        conn = self.get_connection()
+        if not self.is_postgres:
+            conn.row_factory = sqlite3.Row
+        try:
+            if user_id > 0:
+                cursor = conn.execute("SELECT id, comment, current_view, status, created_at FROM grantie_jobs WHERE user_id = ? ORDER BY created_at DESC;", (user_id,))
+            else:
+                cursor = conn.execute("SELECT id, comment, current_view, status, created_at FROM grantie_jobs ORDER BY created_at DESC;")
+            return [dict(row) for row in cursor.fetchall()]
+        except Exception as e:
+            logger.error(f"Failed to fetch Grantie jobs: {e}")
+            return []
         finally:
             conn.close()
