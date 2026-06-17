@@ -1015,6 +1015,11 @@ class TestExpertEditAndActiveLearning(unittest.TestCase):
                     "preclinical_cues": ["primary microglia"],
                     "clinical_cues": ["placebo-controlled"]
                 }
+            },
+            "calibration_variants": {
+                "decision_checklist": {
+                    "prompt_suffix": "Verify active cannabinoid administration."
+                }
             }
         }
         
@@ -1026,6 +1031,61 @@ class TestExpertEditAndActiveLearning(unittest.TestCase):
         self.assertIn("fiber hemp textiles", prompt)
         self.assertIn("primary microglia", prompt)
         self.assertIn("placebo-controlled", prompt)
+        self.assertNotIn("Verify active cannabinoid administration.", prompt)
+        
+        original_variant = os.environ.get("CLASSIFIER_PROMPT_VARIANT")
+        try:
+            os.environ["CLASSIFIER_PROMPT_VARIANT"] = "decision_checklist"
+            variant_prompt = classifier.compile_system_prompt(config)
+        finally:
+            if original_variant is None:
+                os.environ.pop("CLASSIFIER_PROMPT_VARIANT", None)
+            else:
+                os.environ["CLASSIFIER_PROMPT_VARIANT"] = original_variant
+                
+        self.assertIn("Calibration Variant: decision_checklist", variant_prompt)
+        self.assertIn("Verify active cannabinoid administration.", variant_prompt)
+
+    def test_calibration_agent_dry_run_writes_walkthrough(self):
+        import argparse
+        import calibration_agent
+        import tempfile
+        
+        self.db.insert_paper({
+            "pmid": "555666",
+            "title": "Preclinical cannabinoid calibration candidate",
+            "abstract": "Original research in rat cells tested THC exposure.",
+            "study_type": ["Animal Models (Rat)"],
+            "publication_type": "original research",
+            "classification_confidence": 0.51,
+            "classifier_version": "maude-reclassify-1.0.0"
+        })
+        
+        with tempfile.TemporaryDirectory() as temp_dir:
+            args = argparse.Namespace(
+                max_calls=1,
+                fetch_limit=5,
+                mode="preclinical_original",
+                confidence_max=0.6,
+                variants="control,decision_checklist",
+                runs=1,
+                output_dir=temp_dir,
+                dry_run=True,
+                abstract_only=True,
+                require_full_text=False,
+                include_locked=False,
+            )
+            json_path, walkthrough_path = calibration_agent.run_calibration(args)
+            
+            self.assertTrue(json_path.exists())
+            self.assertTrue(walkthrough_path.exists())
+            with open(json_path, "r", encoding="utf-8") as f:
+                payload = json.load(f)
+                
+            self.assertEqual(payload["planned_candidates"], 1)
+            self.assertEqual(payload["calls_attempted"], 0)
+            self.assertTrue(payload["dry_run"])
+            self.assertEqual(payload["updates_applied"], 0)
 
     def test_agent_queue_status_and_recent_feedback_apis(self):
         paper_id = self.db.insert_paper({

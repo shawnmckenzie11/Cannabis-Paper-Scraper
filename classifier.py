@@ -115,6 +115,16 @@ def compile_system_prompt(config: Dict[str, Any]) -> str:
             "Use these domain expert cues as routing evidence, while still grounding every extracted value in the paper text.\n"
             + "\n".join(cue_lines)
         )
+    
+    prompt_variant = os.getenv("CLASSIFIER_PROMPT_VARIANT", "control")
+    variants = config.get("calibration_variants") or {}
+    variant_config = variants.get(prompt_variant) or {}
+    variant_suffix = variant_config.get("prompt_suffix")
+    if variant_suffix:
+        prompt_blocks.append(
+            f"## Calibration Variant: {prompt_variant}\n"
+            f"{variant_suffix}"
+        )
         
     return "\n\n".join(block for block in prompt_blocks if block)
 

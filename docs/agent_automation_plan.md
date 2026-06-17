@@ -17,6 +17,30 @@ This plan turns the re-learning proposal into an agent-ready operating model for
 4. Submit expert-approved edits through `/api/papers/<paper_id>/edit-classification`.
 5. Trigger `/api/classification/run-eval` after enough corrections accumulate or after a major decision-chart update.
 
+## Bounded Calibration Runner
+
+Use `calibration_agent.py` when Claude should supervise a limited learning pass before handing results back for review.
+
+Dry-run candidate selection:
+
+```bash
+python3 calibration_agent.py --dry-run --max-calls 50
+```
+
+Live 50-attempt A/B calibration:
+
+```bash
+python3 calibration_agent.py --max-calls 50 --mode preclinical_original --variants control,decision_checklist
+```
+
+The runner:
+
+- Enforces a local `--max-calls` ceiling of 50 classification attempts.
+- Defaults to abstract-only classification for predictable budget behavior.
+- Alternates configured prompt variants with `CLASSIFIER_PROMPT_VARIANT`.
+- Writes `scratch/calibration_runs/<batch_id>.json` and `<batch_id>_walkthrough.md`.
+- Updates `papers` and `llm_calls_log` only when not running with `--dry-run`.
+
 ## Automation Layers
 
 | Layer | Current implementation | Next extension point |
@@ -27,6 +51,7 @@ This plan turns the re-learning proposal into an agent-ready operating model for
 | Feedback loop | `feedback_audit` plus counters in `system_metadata` | Add correction batch summaries for optimizer prompts. |
 | Reliability eval | `eval_reliability.py` writes repo-local manifest | Schedule eval when correction threshold is reached. |
 | Batch parity | `anthropic_batch_helper.create_batch_requests()` uses cue-aware prompts | Add full dynamic rule parity for PDF batch workflows. |
+| Calibration | `calibration_agent.py` | Use expert-reviewed walkthroughs to patch cues and decision-chart branches. |
 
 ## Decision Chart Intake Format
 
