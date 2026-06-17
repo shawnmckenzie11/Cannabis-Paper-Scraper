@@ -20,6 +20,10 @@ logger = logging.getLogger(__name__)
 # Load environment variables
 load_dotenv()
 
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+RULES_CONFIG_FILE = os.path.join(BASE_DIR, "rules_config.json")
+RELIABILITY_MANIFEST_FILE = os.path.join(BASE_DIR, "reliability_manifest.json")
+
 def calculate_token_cost(model: str, input_tokens: int, cache_read: int, cache_write: int, output_tokens: int) -> float:
     """Calculates API cost dynamically based on model and token types (input, output, cache)."""
     model = model.lower()
@@ -72,14 +76,47 @@ def load_rules_config() -> Dict[str, Any]:
         "system_prompt": default_prompt
     }
     
-    if os.path.exists("rules_config.json"):
+    if os.path.exists(RULES_CONFIG_FILE):
         try:
-            with open("rules_config.json", "r") as f:
+            with open(RULES_CONFIG_FILE, "r") as f:
                 return json.load(f)
         except Exception as e:
             logger.error(f"Failed to load rules_config.json: {e}")
             
     return default_config
+
+def compile_system_prompt(config: Dict[str, Any]) -> str:
+    """Compiles the base classifier prompt with expert-provided cue blocks."""
+    base_prompt = config.get("system_prompt", "")
+    cues = config.get("cues") or {}
+    prompt_blocks = [base_prompt]
+    
+    relevance_cues = cues.get("relevance") or {}
+    extraction_cues = cues.get("extraction") or {}
+    cue_lines = []
+    
+    positive = relevance_cues.get("positive_cues") or []
+    negative = relevance_cues.get("negative_cues") or []
+    preclinical = extraction_cues.get("preclinical_cues") or []
+    clinical = extraction_cues.get("clinical_cues") or []
+    
+    if positive:
+        cue_lines.append(f"- Positive relevance cues: {', '.join(positive)}")
+    if negative:
+        cue_lines.append(f"- Negative relevance cues: {', '.join(negative)}")
+    if preclinical:
+        cue_lines.append(f"- Preclinical extraction cues: {', '.join(preclinical)}")
+    if clinical:
+        cue_lines.append(f"- Clinical extraction cues: {', '.join(clinical)}")
+        
+    if cue_lines:
+        prompt_blocks.append(
+            "## Expert Classification Cues\n"
+            "Use these domain expert cues as routing evidence, while still grounding every extracted value in the paper text.\n"
+            + "\n".join(cue_lines)
+        )
+        
+    return "\n\n".join(block for block in prompt_blocks if block)
 
 def get_historical_corrections() -> List[Dict[str, Any]]:
     """Fetches unique corrected papers from the feedback_audit table."""
@@ -247,7 +284,7 @@ def classify_with_llm(title: str, abstract: str, runs: Optional[int] = None, ful
         return None
         
     config = load_rules_config()
-    static_prompt = config.get("system_prompt")
+    static_prompt = compile_system_prompt(config)
     
     # Retrieve dynamic few-shot templates
     few_shot_text, max_sim = get_few_shot_examples(title, abstract)
@@ -259,11 +296,10 @@ def classify_with_llm(title: str, abstract: str, runs: Optional[int] = None, ful
     pub_type = h.get("publication_type")
     
     # Load reliability manifest
-    manifest_path = "reliability_manifest.json"
     manifest = {}
-    if os.path.exists(manifest_path):
+    if os.path.exists(RELIABILITY_MANIFEST_FILE):
         try:
-            with open(manifest_path, "r") as f:
+            with open(RELIABILITY_MANIFEST_FILE, "r") as f:
                 manifest = json.load(f)
         except Exception as e:
             logger.warning(f"Failed to load reliability manifest: {e}")

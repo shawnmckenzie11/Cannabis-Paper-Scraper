@@ -717,6 +717,104 @@ class DatabaseManager:
         finally:
             conn.close()
 
+    def increment_metadata(self, key: str, amount: int = 1) -> int:
+        """Increments an integer metadata value and returns the updated value."""
+        current_raw = self.get_metadata(key, "0")
+        try:
+            current = int(current_raw or 0)
+        except (TypeError, ValueError):
+            current = 0
+        updated = current + amount
+        self.set_metadata(key, str(updated))
+        return updated
+
+    def count_low_confidence_papers(self, confidence_max: float) -> int:
+        """Counts unlocked papers whose classification confidence is at or below a threshold."""
+        conn = self.get_connection()
+        try:
+            cursor = conn.cursor()
+            cursor.execute(
+                """
+                SELECT COUNT(*) AS total
+                FROM papers
+                WHERE classification_confidence IS NOT NULL
+                  AND classification_confidence <= ?
+                  AND (
+                    expert_locked_fields IS NULL
+                    OR expert_locked_fields = ''
+                    OR expert_locked_fields = '[]'
+                  )
+                """,
+                (confidence_max,)
+            )
+            row = cursor.fetchone()
+            return row["total"] if row else 0
+        finally:
+            conn.close()
+
+    def get_low_confidence_papers(self, confidence_max: float, limit: int = 20) -> List[Dict[str, Any]]:
+        """Returns unlocked low-confidence papers for expert or agent review."""
+        conn = self.get_connection()
+        try:
+            cursor = conn.cursor()
+            cursor.execute(
+                """
+                SELECT
+                    id, pmid, doi, title, abstract, study_type, exposure_method,
+                    cannabis_type, outcome_domain, publication_type,
+                    classification_confidence, classification_timestamp,
+                    classifier_version, expert_locked_fields
+                FROM papers
+                WHERE classification_confidence IS NOT NULL
+                  AND classification_confidence <= ?
+                  AND (
+                    expert_locked_fields IS NULL
+                    OR expert_locked_fields = ''
+                    OR expert_locked_fields = '[]'
+                  )
+                ORDER BY classification_confidence ASC, classification_timestamp DESC, id DESC
+                LIMIT ?
+                """,
+                (confidence_max, limit)
+            )
+            results = []
+            for row in cursor.fetchall():
+                paper = dict(row)
+                for json_field in ["study_type", "exposure_method", "cannabis_type", "outcome_domain", "expert_locked_fields"]:
+                    if paper.get(json_field):
+                        try:
+                            parsed = json.loads(paper[json_field])
+                            if isinstance(parsed, list):
+                                paper[json_field] = parsed
+                        except Exception:
+                            pass
+                    elif json_field == "expert_locked_fields":
+                        paper[json_field] = []
+                results.append(paper)
+            return results
+        finally:
+            conn.close()
+
+    def get_recent_feedback(self, limit: int = 50) -> List[Dict[str, Any]]:
+        """Returns recent expert feedback audit rows for agent context."""
+        conn = self.get_connection()
+        try:
+            cursor = conn.cursor()
+            cursor.execute(
+                """
+                SELECT
+                    id, paper_id, field_name, old_value, new_value, title, abstract,
+                    timestamp, confidence_before_review, classifier_version
+                FROM feedback_audit
+                ORDER BY timestamp DESC, id DESC
+                LIMIT ?
+                """,
+                (limit,)
+            )
+            return [dict(row) for row in cursor.fetchall()]
+        finally:
+            conn.close()
+
     def insert_paper(self, paper: Dict[str, Any]) -> int:
         """Inserts a paper into the database. If conflicts on DOI/PMID/Semantic Scholar ID, handles updates gracefully.
         

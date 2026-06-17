@@ -22,6 +22,27 @@ from citation_graph import CitationGraph
 app = Flask(__name__)
 app.secret_key = os.getenv("FLASK_SECRET_KEY", "mckenzian-secret-key-12345")
 ACCESS_PASSWORD = os.getenv("ACCESS_PASSWORD", "admin123")
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+RELIABILITY_MANIFEST_FILE = os.path.join(BASE_DIR, "reliability_manifest.json")
+
+def load_reliability_manifest():
+    """Loads the repo-local reliability manifest when it exists."""
+    if not os.path.exists(RELIABILITY_MANIFEST_FILE):
+        return None
+    try:
+        with open(RELIABILITY_MANIFEST_FILE, "r", encoding="utf-8") as f:
+            return json.load(f)
+    except Exception as e:
+        app.logger.warning(f"Failed to load reliability manifest: {e}")
+        return None
+
+def coerce_positive_int(value, default: int, maximum: int) -> int:
+    """Coerces request values into bounded positive integers."""
+    try:
+        parsed = int(value)
+    except (TypeError, ValueError):
+        return default
+    return max(1, min(parsed, maximum))
 
 def mvp_gate(f):
     @wraps(f)
@@ -794,6 +815,8 @@ def api_edit_classification(paper_id):
             sql = f"UPDATE papers SET {', '.join(update_sql_parts)} WHERE id = ?"
             cursor.execute(sql, update_params)
             conn.commit()
+            db.increment_metadata("feedback_corrections_since_eval", changes_logged)
+            db.set_metadata("last_feedback_audit_timestamp", now_str)
             
         return jsonify({
             "message": f"Successfully updated paper and logged {changes_logged} corrections.",
@@ -1107,6 +1130,84 @@ def api_scheduler_status():
         "last_run_status": last_status,
         "query": "cannabis OR cannabinoid OR marijuana"
     })
+
+@app.route("/api/agents/automation-status", methods=["GET"])
+def api_agents_automation_status():
+    """Returns agent-readable automation, feedback, and review queue status."""
+    db = DatabaseManager()
+    config = classifier.load_rules_config()
+    thresholds = config.get("confidence_thresholds", {})
+    review_threshold = float(thresholds.get("review_recommended", 0.6))
+    manifest = load_reliability_manifest()
+    
+    return jsonify({
+        "scheduler": {
+            "active": db.get_metadata("scheduler_active", "false") == "true",
+            "last_daily_harvest_date": db.get_metadata("last_daily_harvest_date", "Never"),
+            "last_daily_harvest_status": db.get_metadata("last_daily_harvest_status", "Never run")
+        },
+        "feedback": {
+            "corrections_since_eval": int(db.get_metadata("feedback_corrections_since_eval", "0") or 0),
+            "last_feedback_audit_timestamp": db.get_metadata("last_feedback_audit_timestamp")
+        },
+        "classification": {
+            "low_confidence_queue_count": db.count_low_confidence_papers(review_threshold),
+            "review_threshold": review_threshold,
+            "auto_accept_threshold": float(thresholds.get("auto_accept", 0.85)),
+            "rules_version": config.get("version", "1.0.0")
+        },
+        "agent_automation": config.get("agent_automation", {}),
+        "reliability_manifest": manifest
+    })
+
+@app.route("/api/classification/queue", methods=["GET"])
+def api_classification_queue():
+    """Returns low-confidence papers that need expert or agent review."""
+    config = classifier.load_rules_config()
+    thresholds = config.get("confidence_thresholds", {})
+    try:
+        confidence_max = float(request.args.get("confidence_max", thresholds.get("review_recommended", 0.6)))
+    except (TypeError, ValueError):
+        confidence_max = float(thresholds.get("review_recommended", 0.6))
+    limit = coerce_positive_int(request.args.get("limit"), default=20, maximum=100)
+    
+    db = DatabaseManager()
+    papers = db.get_low_confidence_papers(confidence_max=confidence_max, limit=limit)
+    return jsonify({
+        "confidence_max": confidence_max,
+        "limit": limit,
+        "papers": papers
+    })
+
+@app.route("/api/feedback/recent", methods=["GET"])
+def api_feedback_recent():
+    """Returns recent feedback audit rows for prompt and decision-chart context."""
+    limit = coerce_positive_int(request.args.get("limit"), default=50, maximum=200)
+    db = DatabaseManager()
+    return jsonify({
+        "limit": limit,
+        "feedback": db.get_recent_feedback(limit=limit)
+    })
+
+@app.route("/api/classification/run-eval", methods=["POST"])
+@admin_required
+def api_classification_run_eval():
+    """Runs reliability evaluation and resets the feedback-since-eval counter."""
+    try:
+        import eval_reliability
+        
+        eval_reliability.main()
+        db = DatabaseManager()
+        now_str = datetime.now().isoformat()
+        db.set_metadata("last_reliability_eval_timestamp", now_str)
+        db.set_metadata("feedback_corrections_since_eval", "0")
+        return jsonify({
+            "message": "Reliability evaluation completed.",
+            "last_reliability_eval_timestamp": now_str,
+            "reliability_manifest": load_reliability_manifest()
+        })
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
 
 # ─── Analyses Endpoints ─────────────────────────────────────────
 
@@ -1715,14 +1816,7 @@ def api_learning_dashboard_metrics():
             })
 
         # Load reliability manifest
-        reliability_manifest = None
-        manifest_path = "/Users/shawnscomputer/Documents/Cannabis Paper Scraper/reliability_manifest.json"
-        if os.path.exists(manifest_path):
-            try:
-                with open(manifest_path, "r") as f:
-                    reliability_manifest = json.load(f)
-            except Exception as e:
-                app.logger.warning(f"Failed to load reliability manifest: {e}")
+        reliability_manifest = load_reliability_manifest()
 
         # Compute learning growth trends
         cursor.execute("""

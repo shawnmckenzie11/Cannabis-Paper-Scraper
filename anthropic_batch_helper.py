@@ -34,9 +34,9 @@ def create_batch_requests(limit: Optional[int] = None, output_file: str = "reque
     conn.row_factory = sqlite3.Row
     cursor = conn.cursor()
     
-    # Load static rules system prompt
+    # Load the same cue-aware prompt used by live classification.
     config = classifier.load_rules_config()
-    static_prompt = config.get("system_prompt")
+    static_prompt = classifier.compile_system_prompt(config)
     rules_version = config.get("version", "1.0.0")
 
     try:
@@ -109,6 +109,20 @@ def create_batch_requests(limit: Optional[int] = None, output_file: str = "reque
                 # Truncate text to fit context bounds
                 truncated_text = full_text[:100000]
                 user_content = f"Title: {title}\n\nAbstract: {abstract}\n\nFull Paper Text (PDF):\n{truncated_text}"
+                few_shot_text, _ = classifier.get_few_shot_examples(title, abstract)
+                
+                system_blocks = [
+                    {
+                        "type": "text",
+                        "text": static_prompt,
+                        "cache_control": {"type": "ephemeral"}
+                    }
+                ]
+                if few_shot_text:
+                    system_blocks.append({
+                        "type": "text",
+                        "text": few_shot_text
+                    })
 
                 # Construct Anthropic Message Batch line
                 batch_item = {
@@ -117,13 +131,7 @@ def create_batch_requests(limit: Optional[int] = None, output_file: str = "reque
                         "model": "claude-sonnet-4-6",
                         "max_tokens": 1000,
                         "temperature": 0.0,
-                        "system": [
-                            {
-                                "type": "text",
-                                "text": static_prompt,
-                                "cache_control": {"type": "ephemeral"}
-                            }
-                        ],
+                        "system": system_blocks,
                         "messages": [
                             {"role": "user", "content": user_content}
                         ]

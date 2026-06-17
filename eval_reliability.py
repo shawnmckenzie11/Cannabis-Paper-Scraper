@@ -6,7 +6,9 @@ import logging
 from datetime import datetime
 
 # Set up paths
-sys.path.append("/Users/shawnscomputer/Documents/Cannabis Paper Scraper")
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+sys.path.append(BASE_DIR)
+RELIABILITY_MANIFEST_FILE = os.path.join(BASE_DIR, "reliability_manifest.json")
 from db_manager import DatabaseManager
 import extractor
 
@@ -182,11 +184,10 @@ def main():
         logger.info(f"  - Cannabis Type:   {cannabis_score*100:.1f}% (reliable={cannabis_score >= threshold})")
         
     # Write manifest file
-    manifest_path = "/Users/shawnscomputer/Documents/Cannabis Paper Scraper/reliability_manifest.json"
-    with open(manifest_path, "w", encoding="utf-8") as f:
+    with open(RELIABILITY_MANIFEST_FILE, "w", encoding="utf-8") as f:
         json.dump(manifest, f, indent=2)
         
-    logger.info(f"Successfully generated reliability manifest at: {manifest_path}")
+    logger.info(f"Successfully generated reliability manifest at: {RELIABILITY_MANIFEST_FILE}")
 
 if __name__ == "__main__":
     main()

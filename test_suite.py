@@ -1003,6 +1003,68 @@ class TestExpertEditAndActiveLearning(unittest.TestCase):
         self.assertEqual(classifier.jaccard_similarity("review", "editorial"), 0.0)
         self.assertEqual(classifier.jaccard_similarity(None, None), 1.0)
 
+    def test_compile_system_prompt_injects_expert_cues(self):
+        config = {
+            "system_prompt": "Base classifier prompt.",
+            "cues": {
+                "relevance": {
+                    "positive_cues": ["THC/CBD measurement"],
+                    "negative_cues": ["fiber hemp textiles"]
+                },
+                "extraction": {
+                    "preclinical_cues": ["primary microglia"],
+                    "clinical_cues": ["placebo-controlled"]
+                }
+            }
+        }
+        
+        prompt = classifier.compile_system_prompt(config)
+        
+        self.assertIn("Base classifier prompt.", prompt)
+        self.assertIn("Expert Classification Cues", prompt)
+        self.assertIn("THC/CBD measurement", prompt)
+        self.assertIn("fiber hemp textiles", prompt)
+        self.assertIn("primary microglia", prompt)
+        self.assertIn("placebo-controlled", prompt)
+
+    def test_agent_queue_status_and_recent_feedback_apis(self):
+        paper_id = self.db.insert_paper({
+            "pmid": "444555",
+            "title": "Low confidence CBD trial",
+            "abstract": "This clinical trial evaluated CBD oil in patients.",
+            "study_type": ["review"],
+            "classification_confidence": 0.42,
+            "classifier_version": "llm-reclassify-2.1.0"
+        })
+        
+        queue_response = self.client.get("/api/classification/queue?confidence_max=0.6&limit=5")
+        self.assertEqual(queue_response.status_code, 200)
+        queue_data = json.loads(queue_response.data.decode("utf-8"))
+        queue_ids = {p["id"] for p in queue_data["papers"]}
+        self.assertIn(paper_id, queue_ids)
+        
+        with self.client.session_transaction() as sess:
+            sess["logged_in"] = True
+            sess["email"] = "shawnmckenzie11.sm@gmail.com"
+            
+        edit_response = self.client.post(
+            f"/api/papers/{paper_id}/edit-classification",
+            json={"study_type": ["Clinical (RCT)"]}
+        )
+        self.assertEqual(edit_response.status_code, 200)
+        
+        feedback_response = self.client.get("/api/feedback/recent?limit=5")
+        self.assertEqual(feedback_response.status_code, 200)
+        feedback_data = json.loads(feedback_response.data.decode("utf-8"))
+        self.assertEqual(feedback_data["feedback"][0]["paper_id"], paper_id)
+        self.assertEqual(feedback_data["feedback"][0]["field_name"], "study_type")
+        
+        status_response = self.client.get("/api/agents/automation-status")
+        self.assertEqual(status_response.status_code, 200)
+        status_data = json.loads(status_response.data.decode("utf-8"))
+        self.assertGreaterEqual(status_data["feedback"]["corrections_since_eval"], 1)
+        self.assertIn("/api/classification/queue", status_data["agent_automation"]["agent_entrypoints"])
+
 
 class TestUserAuthentication(unittest.TestCase):
     """Test cases for user registration, verification, password hashing, and Google OAuth methods."""
