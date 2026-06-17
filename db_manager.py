@@ -618,6 +618,7 @@ class DatabaseManager:
                     classification_confidence REAL,
                     classifier_version TEXT,
                     batch_id TEXT,
+                    bm25_retrieval_used INTEGER DEFAULT 0,
                     FOREIGN KEY(paper_id) REFERENCES papers(id) ON DELETE SET NULL
                 );
             """
@@ -627,6 +628,8 @@ class DatabaseManager:
                 llm_calls_sql = llm_calls_sql.replace("classification_confidence REAL", "classification_confidence DOUBLE PRECISION")
             conn.execute(llm_calls_sql)
             conn.commit()
+
+            self._ensure_rl_learning_tables(conn)
 
             # Populate publication_date for existing rows using year (only needed for SQLite migrations)
             if not self.is_postgres:
@@ -666,6 +669,11 @@ class DatabaseManager:
                 cursor.execute("DELETE FROM citation_edges;")
                 cursor.execute("DELETE FROM llm_calls_log;")
                 cursor.execute("DELETE FROM feedback_audit;")
+                cursor.execute("DELETE FROM optimization_log;")
+                try:
+                    cursor.execute("DELETE FROM feedback_audit_fts;")
+                except Exception:
+                    pass
                 cursor.execute("DELETE FROM sqlite_sequence;")
                 cursor.execute("PRAGMA foreign_keys = ON;")
                 conn.commit()
@@ -677,6 +685,341 @@ class DatabaseManager:
                 pass
             logger.error(f"Failed to clear database tables: {e}")
             raise e
+        finally:
+            conn.close()
+
+    def _ensure_rl_learning_tables(self, conn) -> None:
+        """Creates RL learning tables/columns used for BM25 retrieval and optimization logging."""
+        optimization_log_sql = """
+            CREATE TABLE IF NOT EXISTS optimization_log (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                run_id TEXT NOT NULL,
+                timestamp TEXT NOT NULL,
+                field_group_scores TEXT,
+                reward REAL,
+                gate_passed INTEGER DEFAULT 0,
+                failed_attempts INTEGER DEFAULT 0,
+                status TEXT DEFAULT 'pending',
+                patch_summary TEXT,
+                rules_version_before TEXT,
+                rules_version_after TEXT
+            );
+        """
+        if self.is_postgres:
+            optimization_log_sql = optimization_log_sql.replace("INTEGER PRIMARY KEY AUTOINCREMENT", "SERIAL PRIMARY KEY")
+            optimization_log_sql = optimization_log_sql.replace("field_group_scores TEXT", "field_group_scores JSONB")
+            optimization_log_sql = optimization_log_sql.replace("patch_summary TEXT", "patch_summary JSONB")
+        conn.execute(optimization_log_sql)
+        conn.commit()
+
+        if not self.column_exists("llm_calls_log", "bm25_retrieval_used", conn):
+            conn.execute("ALTER TABLE llm_calls_log ADD COLUMN bm25_retrieval_used INTEGER DEFAULT 0;")
+            conn.commit()
+
+        if self.is_postgres:
+            if not self.table_exists("feedback_audit", conn):
+                return
+            try:
+                conn.execute(
+                    """
+                    CREATE INDEX IF NOT EXISTS idx_feedback_audit_search
+                    ON feedback_audit USING GIN (
+                        to_tsvector(
+                            'english',
+                            coalesce(title, '') || ' ' || coalesce(abstract, '') || ' ' ||
+                            coalesce(field_name, '') || ' ' || coalesce(old_value, '') || ' ' || coalesce(new_value, '')
+                        )
+                    );
+                    """
+                )
+                conn.commit()
+            except Exception:
+                pass
+            return
+
+        if not self.table_exists("feedback_audit", conn):
+            return
+
+        conn.execute(
+            """
+            CREATE VIRTUAL TABLE IF NOT EXISTS feedback_audit_fts USING fts5(
+                title,
+                abstract,
+                field_name,
+                correction_text,
+                tokenize='porter'
+            );
+            """
+        )
+        conn.commit()
+
+        for trigger_sql in [
+            "DROP TRIGGER IF EXISTS feedback_audit_ai;",
+            """
+            CREATE TRIGGER feedback_audit_ai AFTER INSERT ON feedback_audit BEGIN
+                INSERT INTO feedback_audit_fts(
+                    rowid, title, abstract, field_name, correction_text
+                ) VALUES (
+                    new.id,
+                    coalesce(new.title, ''),
+                    coalesce(new.abstract, ''),
+                    coalesce(new.field_name, ''),
+                    coalesce(new.field_name, '') || ' ' || coalesce(new.old_value, '') || ' -> ' || coalesce(new.new_value, '')
+                );
+            END;
+            """,
+            "DROP TRIGGER IF EXISTS feedback_audit_ad;",
+            """
+            CREATE TRIGGER feedback_audit_ad AFTER DELETE ON feedback_audit BEGIN
+                INSERT INTO feedback_audit_fts(
+                    feedback_audit_fts, rowid, title, abstract, field_name, correction_text
+                ) VALUES (
+                    'delete', old.id, old.title, old.abstract, old.field_name, ''
+                );
+            END;
+            """,
+        ]:
+            try:
+                conn.execute(trigger_sql)
+                conn.commit()
+            except Exception:
+                pass
+
+        try:
+            cursor = conn.cursor()
+            cursor.execute("SELECT COUNT(*) AS total FROM feedback_audit_fts;")
+            row = cursor.fetchone()
+            fts_count = row["total"] if isinstance(row, dict) else row[0]
+            cursor.execute("SELECT COUNT(*) AS total FROM feedback_audit;")
+            row = cursor.fetchone()
+            audit_count = row["total"] if isinstance(row, dict) else row[0]
+            if fts_count == 0 and audit_count > 0:
+                cursor.execute(
+                    """
+                    INSERT INTO feedback_audit_fts(rowid, title, abstract, field_name, correction_text)
+                    SELECT
+                        id,
+                        coalesce(title, ''),
+                        coalesce(abstract, ''),
+                        coalesce(field_name, ''),
+                        coalesce(field_name, '') || ' ' || coalesce(old_value, '') || ' -> ' || coalesce(new_value, '')
+                    FROM feedback_audit;
+                    """
+                )
+                conn.commit()
+        except Exception:
+            pass
+
+    def insert_feedback_audit(
+        self,
+        paper_id: int,
+        field_name: str,
+        old_value: Optional[str],
+        new_value: Optional[str],
+        title: Optional[str],
+        abstract: Optional[str],
+        timestamp: str,
+        confidence_before_review: Optional[float] = None,
+        classifier_version: Optional[str] = None,
+        cursor=None,
+    ) -> int:
+        """Inserts a feedback audit row and keeps feedback_audit_fts synchronized on SQLite."""
+        sql = """
+            INSERT INTO feedback_audit (
+                paper_id, field_name, old_value, new_value, title, abstract,
+                timestamp, confidence_before_review, classifier_version
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+        """
+        params = (
+            paper_id,
+            field_name,
+            old_value,
+            new_value,
+            title,
+            abstract,
+            timestamp,
+            confidence_before_review,
+            classifier_version,
+        )
+        if cursor is not None:
+            cursor.execute(sql, params)
+            row_id = cursor.lastrowid
+        else:
+            conn = self.get_connection()
+            try:
+                cur = conn.cursor()
+                cur.execute(sql, params)
+                row_id = cur.lastrowid
+                conn.commit()
+            finally:
+                conn.close()
+        return int(row_id)
+
+    @staticmethod
+    def build_bm25_query(text: str, max_terms: int = 8) -> str:
+        """Builds an FTS-friendly OR query from free text for correction retrieval."""
+        if not text:
+            return ""
+        tokens = re.findall(r"[a-z0-9]+", text.lower())
+        stopwords = {
+            "the", "a", "an", "of", "in", "with", "after", "were", "was", "we", "and", "to",
+            "for", "this", "that", "using", "used", "from", "by", "on", "at", "as", "is", "are",
+            "be", "been", "being", "have", "has", "had", "do", "does", "did", "will", "would",
+            "should", "could", "may", "might", "must", "can", "into", "through", "during",
+            "before", "between", "out", "off", "over", "under", "again", "further", "then",
+            "once", "here", "there", "when", "where", "why", "how", "all", "each", "few",
+            "more", "most", "other", "some", "such", "no", "nor", "not", "only", "own", "same",
+            "so", "than", "too", "very", "just", "also", "our", "their", "its", "it", "they",
+        }
+        selected: List[str] = []
+        seen = set()
+        for token in tokens:
+            if len(token) <= 2 or token in stopwords or token in seen:
+                continue
+            seen.add(token)
+            selected.append(token)
+            if len(selected) >= max_terms:
+                break
+        if not selected:
+            return ""
+        return " OR ".join(selected)
+
+    def search_feedback_corrections_bm25(
+        self,
+        query_text: str,
+        limit: int = 5,
+    ) -> List[Dict[str, Any]]:
+        """Retrieves feedback audit rows ranked by BM25/full-text relevance to a query."""
+        cleaned_query = self.build_bm25_query(query_text)
+        if not cleaned_query:
+            return []
+
+        conn = self.get_connection()
+        cursor = conn.cursor()
+        try:
+            if self.is_postgres:
+                pg_query = cleaned_query.replace(" OR ", " | ")
+                cursor.execute(
+                    """
+                    SELECT
+                        id,
+                        paper_id,
+                        field_name,
+                        old_value,
+                        new_value,
+                        title,
+                        abstract,
+                        ts_rank_cd(
+                            to_tsvector(
+                                'english',
+                                coalesce(title, '') || ' ' || coalesce(abstract, '') || ' ' ||
+                                coalesce(field_name, '') || ' ' || coalesce(old_value, '') || ' ' || coalesce(new_value, '')
+                            ),
+                            to_tsquery('english', %s)
+                        ) AS bm25_score
+                    FROM feedback_audit
+                    WHERE to_tsvector(
+                        'english',
+                        coalesce(title, '') || ' ' || coalesce(abstract, '') || ' ' ||
+                        coalesce(field_name, '') || ' ' || coalesce(old_value, '') || ' ' || coalesce(new_value, '')
+                    ) @@ to_tsquery('english', %s)
+                    ORDER BY bm25_score DESC
+                    LIMIT %s
+                    """,
+                    (pg_query, pg_query, limit),
+                )
+            else:
+                if not self.table_exists("feedback_audit_fts", conn):
+                    return []
+                cursor.execute(
+                    """
+                    SELECT
+                        fa.id,
+                        fa.paper_id,
+                        fa.field_name,
+                        fa.old_value,
+                        fa.new_value,
+                        fa.title,
+                        fa.abstract,
+                        bm25(feedback_audit_fts) AS bm25_score
+                    FROM feedback_audit_fts
+                    JOIN feedback_audit fa ON fa.id = feedback_audit_fts.rowid
+                    WHERE feedback_audit_fts MATCH ?
+                    ORDER BY bm25_score
+                    LIMIT ?
+                    """,
+                    (cleaned_query, limit),
+                )
+            rows = [dict(row) for row in cursor.fetchall()]
+            for row in rows:
+                score = float(row.get("bm25_score") or 0.0)
+                if self.is_postgres:
+                    row["retrieval_similarity"] = max(0.0, min(1.0, score))
+                else:
+                    row["retrieval_similarity"] = max(0.0, min(1.0, 1.0 / (1.0 + abs(score))))
+            return rows
+        except Exception:
+            return []
+        finally:
+            conn.close()
+
+    def get_feedback_audit_for_paper(self, paper_id: int) -> List[Dict[str, Any]]:
+        """Returns all feedback audit field corrections for one paper."""
+        conn = self.get_connection()
+        cursor = conn.cursor()
+        try:
+            cursor.execute(
+                """
+                SELECT field_name, old_value, new_value
+                FROM feedback_audit
+                WHERE paper_id = ?
+                ORDER BY id ASC
+                """,
+                (paper_id,),
+            )
+            return [dict(row) for row in cursor.fetchall()]
+        finally:
+            conn.close()
+
+    def insert_optimization_log(
+        self,
+        run_id: str,
+        field_group_scores: Dict[str, Any],
+        reward: float,
+        gate_passed: bool,
+        failed_attempts: int,
+        status: str,
+        patch_summary: Optional[Dict[str, Any]] = None,
+        rules_version_before: Optional[str] = None,
+        rules_version_after: Optional[str] = None,
+    ) -> Dict[str, Any]:
+        """Persists one optimization run with field-group Hamming breakdown."""
+        timestamp = datetime.now().isoformat()
+        conn = self.get_connection()
+        cursor = conn.cursor()
+        try:
+            cursor.execute(
+                """
+                INSERT INTO optimization_log (
+                    run_id, timestamp, field_group_scores, reward, gate_passed,
+                    failed_attempts, status, patch_summary, rules_version_before, rules_version_after
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """,
+                (
+                    run_id,
+                    timestamp,
+                    json.dumps(field_group_scores),
+                    reward,
+                    1 if gate_passed else 0,
+                    failed_attempts,
+                    status,
+                    json.dumps(patch_summary or {}),
+                    rules_version_before,
+                    rules_version_after,
+                ),
+            )
+            conn.commit()
+            return {"id": cursor.lastrowid, "run_id": run_id, "status": status}
         finally:
             conn.close()
 
@@ -939,18 +1282,21 @@ class DatabaseManager:
         cost = metrics.get("cost", 0.0)
         few_shot_similarity = metrics.get("few_shot_similarity", 0.0)
         few_shot_count = metrics.get("few_shot_count", 0)
+        bm25_retrieval_used = int(metrics.get("bm25_retrieval_used", 0) or 0)
         classification_confidence = metrics.get("classification_confidence", 0.0)
         classifier_version = metrics.get("classifier_version", "1.0.0")
 
         sql = """
             INSERT INTO llm_calls_log (
                 paper_id, timestamp, model, input_tokens, cache_read_tokens, cache_write_tokens,
-                output_tokens, cost, few_shot_similarity, few_shot_count, classification_confidence, classifier_version, batch_id
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                output_tokens, cost, few_shot_similarity, few_shot_count, classification_confidence,
+                classifier_version, batch_id, bm25_retrieval_used
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """
         params = (
             paper_id, timestamp, model, input_tokens, cache_read, cache_write,
-            output_tokens, cost, few_shot_similarity, few_shot_count, classification_confidence, classifier_version, batch_id
+            output_tokens, cost, few_shot_similarity, few_shot_count, classification_confidence,
+            classifier_version, batch_id, bm25_retrieval_used,
         )
 
         if cursor:

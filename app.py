@@ -765,25 +765,18 @@ def api_edit_classification(paper_id):
                 old_str = json.dumps(old_val) if isinstance(old_val, (list, dict)) else str(old_val) if old_val is not None else None
                 new_str = json.dumps(new_val) if isinstance(new_val, (list, dict)) else str(new_val) if new_val is not None else None
                 
-                # Insert into feedback_audit
-                cursor.execute(
-                    """
-                    INSERT INTO feedback_audit (
-                        paper_id, field_name, old_value, new_value, title, abstract,
-                        timestamp, confidence_before_review, classifier_version
-                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-                    """,
-                    (
-                        paper_id,
-                        field,
-                        old_str,
-                        new_str,
-                        paper.get("title"),
-                        paper.get("abstract"),
-                        now_str,
-                        paper.get("classification_confidence"),
-                        paper.get("classifier_version") or rules_version
-                    )
+                # Insert into feedback_audit (FTS index sync handled by db layer/triggers)
+                db.insert_feedback_audit(
+                    paper_id=paper_id,
+                    field_name=field,
+                    old_value=old_str,
+                    new_value=new_str,
+                    title=paper.get("title"),
+                    abstract=paper.get("abstract"),
+                    timestamp=now_str,
+                    confidence_before_review=paper.get("classification_confidence"),
+                    classifier_version=paper.get("classifier_version") or rules_version,
+                    cursor=cursor,
                 )
                 
                 # Add to locked fields

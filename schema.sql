@@ -107,7 +107,52 @@ CREATE TABLE IF NOT EXISTS llm_calls_log (
     classification_confidence REAL,
     classifier_version TEXT,
     batch_id TEXT,
+    bm25_retrieval_used INTEGER DEFAULT 0,
     FOREIGN KEY(paper_id) REFERENCES papers(id) ON DELETE SET NULL
+);
+
+-- Full-text index for upward-propagation few-shot retrieval over expert corrections
+CREATE VIRTUAL TABLE IF NOT EXISTS feedback_audit_fts USING fts5(
+    title,
+    abstract,
+    field_name,
+    correction_text,
+    tokenize='porter'
+);
+
+CREATE TRIGGER IF NOT EXISTS feedback_audit_ai AFTER INSERT ON feedback_audit BEGIN
+    INSERT INTO feedback_audit_fts(
+        rowid, title, abstract, field_name, correction_text
+    ) VALUES (
+        new.id,
+        coalesce(new.title, ''),
+        coalesce(new.abstract, ''),
+        coalesce(new.field_name, ''),
+        coalesce(new.field_name, '') || ' ' || coalesce(new.old_value, '') || ' -> ' || coalesce(new.new_value, '')
+    );
+END;
+
+CREATE TRIGGER IF NOT EXISTS feedback_audit_ad AFTER DELETE ON feedback_audit BEGIN
+    INSERT INTO feedback_audit_fts(
+        feedback_audit_fts, rowid, title, abstract, field_name, correction_text
+    ) VALUES (
+        'delete', old.id, old.title, old.abstract, old.field_name, ''
+    );
+END;
+
+-- Optimization run log with field-group Hamming breakdown for single-pass RL
+CREATE TABLE IF NOT EXISTS optimization_log (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    run_id TEXT NOT NULL,
+    timestamp TEXT NOT NULL,
+    field_group_scores TEXT,
+    reward REAL,
+    gate_passed INTEGER DEFAULT 0,
+    failed_attempts INTEGER DEFAULT 0,
+    status TEXT DEFAULT 'pending',
+    patch_summary TEXT,
+    rules_version_before TEXT,
+    rules_version_after TEXT
 );
 
 

@@ -990,11 +990,57 @@ class TestExpertEditAndActiveLearning(unittest.TestCase):
             "Evaluation of cell line microglial cell viability",
             "We treated microglial cell lines with THC in vitro."
         )
+        retrieved_text, retrieved_sim, bm25_used, example_count = classifier.retrieve_few_shot_context(
+            "Evaluation of cell line microglial cell viability",
+            "We treated microglial cell lines with THC in vitro."
+        )
         
         self.assertTrue(sim > 0.0)
         self.assertIn("Expert Guidance & Corrections", few_shot_text)
         self.assertIn("Incorrect study_type Classification", few_shot_text)
         self.assertIn('["Cell Culture (Cell Lines)"]', few_shot_text)
+        self.assertTrue(bm25_used)
+        self.assertEqual(example_count, 1)
+        self.assertEqual(retrieved_text, few_shot_text)
+
+    def test_rule_optimizer_field_group_scoring_and_escalation(self):
+        import rule_optimizer
+
+        baseline = {"relevance": 0.2, "extraction": 0.4}
+        improved = {"relevance": 0.1, "extraction": 0.35}
+        regressed = {"relevance": 0.25, "extraction": 0.5}
+
+        improved_eval = rule_optimizer.evaluate_optimization_candidate(baseline, improved)
+        self.assertTrue(improved_eval["gate_passed"])
+        self.assertTrue(improved_eval["accepted"])
+
+        regressed_eval = rule_optimizer.evaluate_optimization_candidate(baseline, regressed)
+        self.assertFalse(regressed_eval["gate_passed"])
+        self.assertFalse(regressed_eval["accepted"])
+
+        paper_scores = rule_optimizer.score_field_groups(
+            {"publication_type": "review", "study_type": ["review"], "exposure_method": ["unknown"]},
+            {"publication_type": "original research", "study_type": ["Animal Models (Rat)"], "exposure_method": ["injection cannabinoids"]},
+        )
+        self.assertEqual(paper_scores["relevance"], 1.0)
+        self.assertEqual(paper_scores["extraction"], 1.0)
+
+        self.db.set_metadata("optimization_failed_attempts", "0")
+        first = rule_optimizer.record_optimization_result(self.db, regressed_eval, patch_summary={"cue": "test"})
+        second = rule_optimizer.record_optimization_result(self.db, regressed_eval, patch_summary={"cue": "test"})
+        third = rule_optimizer.record_optimization_result(self.db, regressed_eval, patch_summary={"cue": "test"})
+        self.assertEqual(first["status"], "rejected")
+        self.assertEqual(third["status"], "needs_human_review")
+
+        conn = self.db.get_connection()
+        cursor = conn.cursor()
+        cursor.execute("SELECT status, failed_attempts, field_group_scores FROM optimization_log ORDER BY id DESC LIMIT 1")
+        row = dict(cursor.fetchone())
+        conn.close()
+        self.assertEqual(row["status"], "needs_human_review")
+        self.assertGreaterEqual(row["failed_attempts"], 3)
+        field_group_scores = json.loads(row["field_group_scores"])
+        self.assertIn("relevance", field_group_scores)
 
     def test_jaccard_similarity_and_confidence(self):
         # Test jaccard similarity

@@ -6,8 +6,11 @@ import re
 import math
 from collections import Counter
 from datetime import datetime
-from typing import Dict, Any, List, Optional
-from anthropic import Anthropic
+from typing import Dict, Any, List, Optional, Tuple
+try:
+    from anthropic import Anthropic
+except ImportError:  # pragma: no cover - allows unit tests without anthropic installed
+    Anthropic = None
 from dotenv import load_dotenv
 
 # Import extractor as fallback
@@ -169,105 +172,84 @@ def get_historical_corrections() -> List[Dict[str, Any]]:
     finally:
         conn.close()
 
-def get_few_shot_examples(new_title: str, new_abstract: str, max_examples: int = 1) -> tuple[str, float]:
-    """Retrieves up to max_examples relevant historical expert corrections as few-shot examples.
-    
-    Returns:
-        tuple: (few_shot_string, max_similarity_score)
-    """
-    corrections = get_historical_corrections()
-    if not corrections:
-        return "", 1.0  # Default to 1.0 similarity if no corrections exist yet (neutral baseline)
-        
-    query_text = f"{new_title} {new_abstract}".lower()
-    query_tokens = re.findall(r'[a-z0-9]+', query_text)
-    if not query_tokens:
-        return "", 0.0
-        
-    # Build corpus of documents (title + abstract)
-    documents = []
-    doc_tokens_list = []
-    for c in corrections:
-        doc_text = f"{c.get('title') or ''} {c.get('abstract') or ''}".lower()
-        tokens = re.findall(r'[a-z0-9]+', doc_text)
-        documents.append(c)
-        doc_tokens_list.append(tokens)
-        
-    # Calculate IDF for all terms in the corpus
-    num_docs = len(documents)
-    df = Counter()
-    for tokens in doc_tokens_list:
-        unique_tokens = set(tokens)
-        for t in unique_tokens:
-            df[t] += 1
-            
-    idf = {}
-    for t, count in df.items():
-        idf[t] = math.log(1.0 + (num_docs / (1.0 + count)))
-        
-    # Calculate TF-IDF vectors
-    def get_tfidf_vec(tokens):
-        tf = Counter(tokens)
-        vec = {}
-        for t, f in tf.items():
-            if t in idf:
-                vec[t] = (1.0 + math.log(f)) * idf[t]
-        return vec
-        
-    def cosine_similarity(v1, v2):
-        intersection = set(v1.keys()) & set(v2.keys())
-        if not intersection:
-            return 0.0
-        numerator = sum(v1[t] * v2[t] for t in intersection)
-        sum1 = sum(val**2 for val in v1.values())
-        sum2 = sum(val**2 for val in v2.values())
-        if sum1 == 0 or sum2 == 0:
-            return 0.0
-        return numerator / (math.sqrt(sum1) * math.sqrt(sum2))
-        
-    query_vec = get_tfidf_vec(query_tokens)
-    scored_docs = []
-    for i, doc in enumerate(documents):
-        doc_vec = get_tfidf_vec(doc_tokens_list[i])
-        sim = cosine_similarity(query_vec, doc_vec)
-        scored_docs.append((sim, doc))
-        
-    # Sort by similarity desc
-    scored_docs.sort(key=lambda x: x[0], reverse=True)
-    
-    max_sim = scored_docs[0][0] if scored_docs else 0.0
-    
-    # Filter to sim > 0.25 and take top max_examples
-    top_docs = [doc for sim, doc in scored_docs if sim > 0.25][:max_examples]
-    if not top_docs:
-        return "", max_sim
-        
+
+def _format_few_shot_examples(paper_examples: List[Dict[str, Any]]) -> str:
+    """Formats retrieved correction papers into a few-shot prompt block."""
+    if not paper_examples:
+        return ""
+
+    from db_manager import DatabaseManager
+    db = DatabaseManager()
     few_shot_str = "\n\nExpert Guidance & Corrections:\n"
     few_shot_str += "Here are examples of how domain experts corrected previous classifications. Adhere strictly to these patterns:\n\n"
-    
-    for idx, doc in enumerate(top_docs):
+
+    for idx, doc in enumerate(paper_examples):
         few_shot_str += f"Example {idx + 1}:\n"
         few_shot_str += f"Title: {doc.get('title')}\n"
         few_shot_str += f"Abstract: {doc.get('abstract')}\n"
-        
-        # Build individual field correction examples
-        from db_manager import DatabaseManager
-        db = DatabaseManager()
-        conn = db.get_connection()
-        cursor = conn.cursor()
-        cursor.execute(
-            "SELECT field_name, old_value, new_value FROM feedback_audit WHERE paper_id = ?",
-            (doc['paper_id'],)
-        )
-        field_changes = [dict(row) for row in cursor.fetchall()]
-        conn.close()
-        
-        for fc in field_changes:
+        for fc in doc.get("field_changes") or []:
             few_shot_str += f"Incorrect {fc['field_name']} Classification: {fc['old_value']}\n"
             few_shot_str += f"Correct Expert {fc['field_name']} Classification: {fc['new_value']}\n"
         few_shot_str += "\n"
-        
-    return few_shot_str, max_sim
+    return few_shot_str
+
+
+def retrieve_few_shot_context(
+    title: str,
+    abstract: str,
+    max_examples: int = 1,
+) -> tuple[str, float, bool, int]:
+    """Retrieves per-paper few-shot corrections via BM25 over feedback_audit_fts.
+
+    Returns:
+        tuple: (few_shot_string, max_similarity_score, bm25_retrieval_used, example_count)
+    """
+    from db_manager import DatabaseManager
+
+    db = DatabaseManager()
+    query_text = f"{title or ''} {abstract or ''}".strip()
+    if not query_text:
+        return "", 1.0, False, 0
+
+    ranked_rows = db.search_feedback_corrections_bm25(query_text, limit=max(10, max_examples * 4))
+    if not ranked_rows:
+        return "", 1.0, False, 0
+
+    selected_papers: List[Dict[str, Any]] = []
+    seen_paper_ids = set()
+    max_sim = 0.0
+
+    for row in ranked_rows:
+        paper_id = row.get("paper_id")
+        if paper_id in seen_paper_ids:
+            continue
+        seen_paper_ids.add(paper_id)
+        max_sim = max(max_sim, float(row.get("retrieval_similarity") or 0.0))
+        selected_papers.append({
+            "paper_id": paper_id,
+            "title": row.get("title"),
+            "abstract": row.get("abstract"),
+            "field_changes": db.get_feedback_audit_for_paper(paper_id),
+        })
+        if len(selected_papers) >= max_examples:
+            break
+
+    few_shot_text = _format_few_shot_examples(selected_papers)
+    if not few_shot_text:
+        return "", max_sim, False, 0
+
+    return few_shot_text, max_sim, True, len(selected_papers)
+
+
+def get_few_shot_examples(new_title: str, new_abstract: str, max_examples: int = 1) -> tuple[str, float]:
+    """Retrieves relevant historical expert corrections as few-shot examples.
+
+    Returns:
+        tuple: (few_shot_string, max_similarity_score)
+    """
+    few_shot_text, max_sim, _, _ = retrieve_few_shot_context(new_title, new_abstract, max_examples=max_examples)
+    return few_shot_text, max_sim
+
 
 def jaccard_similarity(a, b) -> float:
     """Computes Jaccard similarity between two elements (lists or single values)."""
@@ -309,15 +291,15 @@ def classify_with_llm(title: str, abstract: str, runs: Optional[int] = None, ful
         Optional[Dict]: Structured fields or None if LLM call fails.
     """
     api_key = os.getenv("ANTHROPIC_API_KEY")
-    if not api_key:
+    if not api_key or Anthropic is None:
         logger.debug("No ANTHROPIC_API_KEY environment variable set. Skipping LLM pass.")
         return None
         
     config = load_rules_config()
     static_prompt = compile_system_prompt(config)
     
-    # Retrieve dynamic few-shot templates
-    few_shot_text, max_sim = get_few_shot_examples(title, abstract)
+    # Retrieve dynamic few-shot corrections via BM25 over feedback_audit_fts.
+    few_shot_text, max_sim, bm25_retrieval_used, few_shot_count = retrieve_few_shot_context(title, abstract)
     
     # 1. Run Tier 1 native abstract classification via heuristics
     h = extractor.extract_all_heuristics(title, abstract)
@@ -589,7 +571,8 @@ def classify_with_llm(title: str, abstract: str, runs: Optional[int] = None, ful
             "output_tokens": total_output_tokens,
             "cost": cost,
             "few_shot_similarity": max_sim,
-            "few_shot_count": 1 if few_shot_text else 0,
+            "few_shot_count": few_shot_count,
+            "bm25_retrieval_used": 1 if bm25_retrieval_used else 0,
             "classification_confidence": final_confidence,
             "classifier_version": config.get("version", "1.0.0")
         }

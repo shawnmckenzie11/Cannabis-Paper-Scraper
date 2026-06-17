@@ -49,6 +49,8 @@ The runner:
 | Prompt cues | `classifier.compile_system_prompt()` | Add expert-provided positive and negative cues to `rules_config.json`. |
 | Review queue | `DatabaseManager.get_low_confidence_papers()` | Add priority reasons after the full chart is available. |
 | Feedback loop | `feedback_audit` plus counters in `system_metadata` | Add correction batch summaries for optimizer prompts. |
+| Upward propagation | `retrieve_few_shot_context()` via `feedback_audit_fts` BM25 | Distinct from static cues in `compile_system_prompt()`; injected per paper in `classify_with_llm()`. |
+| Optimization logging | `optimization_log` with relevance/extraction Hamming breakdown | `failed_attempts` escalates to `needs_human_review` after 3 rejected patches. |
 | Reliability eval | `eval_reliability.py` writes repo-local manifest | Schedule eval when correction threshold is reached. |
 | Batch parity | `anthropic_batch_helper.create_batch_requests()` uses cue-aware prompts | Add full dynamic rule parity for PDF batch workflows. |
 | Calibration | `calibration_agent.py` | Use expert-reviewed walkthroughs to patch cues and decision-chart branches. |
@@ -62,6 +64,21 @@ When expert context arrives, convert it into structured patches:
 - `extraction.preclinical_cues`: animal, cell, ligand, dose, and assay cues.
 - `extraction.clinical_cues`: human design, route, product, dose, outcome, and patient context cues.
 - `agent_automation`: queue thresholds, eval thresholds, and operational notes for agents.
+- `field_groups`: relevance vs extraction fields used for per-run Hamming scoring in `optimization_log`.
+- `reward_function`: `lambda_cost`, `lambda_fallback`, and `lambda_regression` weights for future acceptance tuning (zero-regression gate remains binary today).
+
+## Upward Propagation (Phase 1)
+
+At classification time, `classify_with_llm()` calls `retrieve_few_shot_context()` before the Anthropic API request. The function:
+
+1. Queries `feedback_audit_fts` with BM25 over the incoming title/abstract.
+2. Pulls field-level corrections for the top matching papers.
+3. Injects them as dynamic few-shot examples separate from static cues in `compile_system_prompt()`.
+4. Sets `bm25_retrieval_used = 1` in `llm_calls_log` when retrieval fires.
+
+## Optimization Gate
+
+`rule_optimizer.py` scores each candidate patch with separate relevance and extraction Hamming loss, logs both to `optimization_log.field_group_scores`, and applies a zero-regression gate. Three consecutive rejected patches set optimization status to `needs_human_review`.
 
 ## Guardrails
 

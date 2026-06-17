@@ -10,6 +10,43 @@
     "model_agreement": 0.2
   },
   "self_consistency_runs": 1,
+  "field_groups": {
+    "relevance": [
+      "publication_type"
+    ],
+    "extraction": [
+      "study_type",
+      "exposure_method",
+      "cannabis_type",
+      "outcome_domain",
+      "thc_pct",
+      "cbd_pct",
+      "dose_mg",
+      "strain_reported",
+      "strain_normalized",
+      "duration_days",
+      "inhaled_exposure_duration",
+      "administration_frequency",
+      "treatment_duration",
+      "sample_size",
+      "puff_count",
+      "thc_mg_ml",
+      "thc_mg_g",
+      "thc_mg_kg",
+      "cbd_mg_ml",
+      "cbd_mg_g",
+      "cbd_mg_kg",
+      "thc_uM",
+      "cbd_uM"
+    ]
+  },
+  "reward_function": {
+    "lambda_cost": 0.1,
+    "lambda_fallback": 0.5,
+    "lambda_regression": 2.0,
+    "zero_regression_gate": true,
+    "failed_attempts_before_human_review": 3
+  },
   "cues": {
     "relevance": {
       "positive_cues": [
