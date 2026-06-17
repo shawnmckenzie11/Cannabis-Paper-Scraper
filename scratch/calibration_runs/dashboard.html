@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Calibration Learning Dashboard</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@600;700&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.2"></script>
+  <style>
+    :root {
+      --bg: #0b0d14;
+      --panel: rgba(255,255,255,0.03);
+      --border: rgba(255,255,255,0.08);
+      --text: #e8edf2;
+      --muted: #90a4ae;
+      --cyan: #22d3ee;
+      --green: #34d399;
+      --amber: #fbbf24;
+      --red: #f87171;
+      --indigo: #818cf8;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: Inter, sans-serif;
+      background: radial-gradient(circle at top, #121826, var(--bg));
+      color: var(--text);
+      min-height: 100vh;
+    }
+    header {
+      padding: 28px 32px 12px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      justify-content: space-between;
+      gap: 16px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+    header h1 {
+      margin: 0;
+      font-family: Outfit, sans-serif;
+      font-size: 1.6rem;
+    }
+    header p { margin: 6px 0 0; color: var(--muted); font-size: 0.92rem; }
+    .wrap { padding: 24px 32px 48px; display: flex; flex-direction: column; gap: 20px; }
+    .grid { display: grid; gap: 16px; }
+    .grid-4 { grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); }
+    .grid-2 { grid-template-columns: repeat(auto-fit, minmax(420px, 1fr)); }
+    .card {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 18px;
+    }
+    .stat-label {
+      font-size: 0.72rem;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--muted);
+      font-weight: 600;
+    }
+    .stat-value {
+      margin-top: 8px;
+      font-size: 1.8rem;
+      font-weight: 800;
+      font-family: Outfit, sans-serif;
+    }
+    h2 {
+      margin: 0 0 14px;
+      font-family: Outfit, sans-serif;
+      font-size: 1.05rem;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.86rem;
+    }
+    th, td {
+      padding: 10px 12px;
+      border-bottom: 1px solid var(--border);
+      text-align: left;
+      vertical-align: top;
+    }
+    th { color: var(--muted); font-weight: 600; }
+    .chart-box { height: 280px; position: relative; }
+    .badge {
+      display: inline-block;
+      padding: 3px 8px;
+      border-radius: 999px;
+      font-size: 0.72rem;
+      font-weight: 700;
+    }
+    .badge-complete { background: rgba(52,211,153,0.15); color: var(--green); }
+    .badge-progress { background: rgba(251,191,36,0.15); color: var(--amber); }
+    .badge-pending { background: rgba(248,113,113,0.12); color: var(--red); }
+    .mono { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0.8rem; }
+    .muted { color: var(--muted); }
+    .paper-title { max-width: 520px; }
+    .checklist-item {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 10px 0;
+      border-bottom: 1px solid var(--border);
+    }
+    .checklist-item:last-child { border-bottom: none; }
+    footer {
+      padding: 0 32px 32px;
+      color: var(--muted);
+      font-size: 0.82rem;
+    }
+    code { color: var(--cyan); }
+  </style>
+</head>
+<body>
+  <header>
+    <div>
+      <h1>Calibration Learning Dashboard</h1>
+      <p>Manual learning batches · rules v<span id="rules-version"></span> · generated <span id="generated-at"></span></p>
+    </div>
+    <div class="mono muted">Refresh: <code>python3 calibration_metrics.py --build-dashboard</code></div>
+  </header>
+  <div class="wrap">
+    <div class="grid grid-4" id="summary-cards"></div>
+
+    <div class="grid grid-2">
+      <div class="card">
+        <h2>Variant A/B Comparison</h2>
+        <div class="chart-box"><canvas id="chart-variant-confidence"></canvas></div>
+      </div>
+      <div class="card">
+        <h2>High-Level Field Changes (All Batches)</h2>
+        <div class="chart-box"><canvas id="chart-hl-fields"></canvas></div>
+      </div>
+    </div>
+
+    <div class="grid grid-2">
+      <div class="card">
+        <h2>Batch Timeline</h2>
+        <div style="overflow-x:auto">
+          <table id="batch-table">
+            <thead>
+              <tr>
+                <th>Batch</th>
+                <th>Papers</th>
+                <th>HL Changed</th>
+                <th>Avg Conf</th>
+                <th>Cost</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+      <div class="card">
+        <h2>Automation Readiness</h2>
+        <div id="readiness-list"></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Learned Decision Boundaries</h2>
+      <div id="boundaries"></div>
+    </div>
+
+    <div class="card">
+      <h2>Priority Expert Review Queue</h2>
+      <div style="overflow-x:auto">
+        <table id="review-table">
+          <thead>
+            <tr>
+              <th>Paper</th>
+              <th>Conf</th>
+              <th>Variant</th>
+              <th>HL Fields</th>
+              <th>Title</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+  <footer>
+    API endpoint when app is running: <code>/api/calibration/dashboard-metrics</code>
+  </footer>
+  <script>
+    const METRICS = {"generated_at": "2026-06-16T23:35:44.638979", "rules_version": "2.2.0", "confidence_threshold": 0.72, "summary": {"batch_count": 2, "total_papers": 100, "total_cost": 1.0625, "high_level_changed": 98, "high_level_change_rate": 0.98, "queue_overlap_total": 2, "priority_review_count": 20, "expert_notes_count": 1}, "batches": [{"batch_id": "calibration_20260616_222616", "created_at": "2026-06-16T22:31:25.740023", "rules_version": "2.2.0", "mode": "preclinical_original", "variants": ["control", "decision_checklist"], "calls_attempted": 50, "updates_applied": 50, "dry_run": false, "abstract_only": true, "paper_count": 50, "avg_confidence": 0.722, "high_level_changed": 50, "high_level_change_rate": 1.0, "total_cost": 0.5223, "field_change_counts": {"cannabis_type": 48, "strain_reported": 37, "study_type": 21, "exposure_method": 21, "outcome_domain": 12, "administration_frequency": 11, "strain_normalized": 10, "cbd_mg_kg": 7, "thc_mg_kg": 5, "cbd_uM": 3, "treatment_duration": 3, "duration_days": 3, "thc_uM": 2, "publication_type": 1, "dose_mg": 1, "cbd_pct": 1, "sample_size": 1}, "high_level_field_counts": {"cannabis_type": 48, "study_type": 21, "exposure_method": 21, "outcome_domain": 12, "publication_type": 1}, "variant_summaries": [{"variant": "control", "paper_count": 25, "updates_applied": 25, "avg_confidence": 0.724, "high_level_changed": 25, "high_level_change_rate": 1.0, "total_cost": 0.26, "avg_cost": 0.0104, "field_change_counts": {"cannabis_type": 23, "strain_reported": 20, "exposure_method": 11, "study_type": 8, "outcome_domain": 5, "administration_frequency": 4, "strain_normalized": 3, "thc_mg_kg": 3, "thc_uM": 2, "cbd_uM": 2, "treatment_duration": 2, "cbd_mg_kg": 2, "sample_size": 1}, "high_level_field_counts": {"cannabis_type": 23, "exposure_method": 11, "study_type": 8, "outcome_domain": 5}}, {"variant": "decision_checklist", "paper_count": 25, "updates_applied": 25, "avg_confidence": 0.72, "high_level_changed": 25, "high_level_change_rate": 1.0, "total_cost": 0.2624, "avg_cost": 0.0105, "field_change_counts": {"cannabis_type": 25, "strain_reported": 17, "study_type": 13, "exposure_method": 10, "outcome_domain": 7, "strain_normalized": 7, "administration_frequency": 7, "cbd_mg_kg": 5, "duration_days": 3, "thc_mg_kg": 2, "publication_type": 1, "treatment_duration": 1, "cbd_uM": 1, "dose_mg": 1, "cbd_pct": 1}, "high_level_field_counts": {"cannabis_type": 25, "study_type": 13, "exposure_method": 10, "outcome_domain": 7, "publication_type": 1}}], "review_path": "scratch/calibration_runs/calibration_20260616_222616_review.md", "walkthrough_path": "scratch/calibration_runs/calibration_20260616_222616_walkthrough.md", "artifact_path": "scratch/calibration_runs/calibration_20260616_222616.json", "expert_notes": {"31533": "accepted as Maude learning boundary for `review` vs `original research` routing from abstract-level review language."}, "review_candidates": [{"paper_id": 31533, "pmid": "22229018", "title": "Lasting impacts of prenatal cannabis exposure and the role of endogenous cannabinoids in the developing brain", "variant": "decision_checklist", "confidence": 0.607634734061274, "in_review_queue": true, "high_level_fields": ["study_type", "exposure_method", "cannabis_type", "publication_type"], "high_level_field_count": 4, "changes": {"study_type": {"old": "[\"Clinical (observational)\", \"Animal Models (Other)\"]", "new": ["review"]}, "exposure_method": {"old": "[\"inhaled\"]", "new": ["unknown"]}, "cannabis_type": {"old": "[\"pure cannabinoid\"]", "new": ["unknown"]}, "publication_type": {"old": "original research", "new": "review"}}, "expert_status": "accepted as Maude learning boundary for `review` vs `original research` routing from abstract-level review language."}, {"paper_id": 10072, "pmid": "37330445", "title": "Characterization of cannabis strain-plant-derived extracellular vesicles as potential biomarkers", "variant": "control", "confidence": 0.646178170049944, "in_review_queue": true, "high_level_fields": ["study_type", "exposure_method", "cannabis_type"], "high_level_field_count": 3, "changes": {"study_type": {"old": "[\"Animal Models (Other)\"]", "new": ["Cell Culture (Other In Vitro)"]}, "exposure_method": {"old": "[\"injection cannabinoids\"]", "new": ["unknown"]}, "cannabis_type": {"old": "[\"unknown\"]", "new": ["dried flower"]}}}, {"paper_id": 11817, "pmid": "38546067", "title": "A Comparative Analysis on the Potential Anticancer Properties of Tetrahydrocannabinol, Cannabidiol, and Tetrahydrocannabivarin Compounds Through In Silico Approach", "variant": "decision_checklist", "confidence": 0.6470246798426575, "in_review_queue": true, "high_level_fields": ["study_type", "exposure_method", "cannabis_type", "outcome_domain"], "high_level_field_count": 4, "changes": {"study_type": {"old": "[\"Animal Models (Rat)\"]", "new": ["Cell Culture (Other In Vitro)"]}, "exposure_method": {"old": "[\"injection cannabinoids\"]", "new": ["unknown"]}, "cannabis_type": {"old": "[\"unknown\"]", "new": ["pure cannabinoid"]}, "outcome_domain": {"old": "[\"other\"]", "new": ["oncology"]}}}, {"paper_id": 30911, "pmid": "23373571", "title": "The cannabinoid TRPA1 agonist cannabichromene inhibits nitric oxide production in macrophages and ameliorates murine colitis", "variant": "decision_checklist", "confidence": 0.6732018876760968, "in_review_queue": true, "high_level_fields": ["study_type", "exposure_method", "cannabis_type"], "high_level_field_count": 3, "changes": {"study_type": {"old": "[\"Animal Models (Mouse)\", \"Cell Culture (Other In Vitro)\"]", "new": ["Animal Models (Mouse)", "Cell Culture (Primary Cells)"]}, "exposure_method": {"old": "[\"cannabinoids dissolved in media\"]", "new": ["cannabinoids dissolved in media", "injection cannabinoids"]}, "cannabis_type": {"old": "[\"unknown\"]", "new": ["pure cannabinoid", "CB receptor agonist", "CB receptor antagonist"]}}}, {"paper_id": 16543, "pmid": "31437494", "title": "Cannabidiol differentially regulates basal and LPS-induced inflammatory responses in macrophages, lung epithelial cells, and fibroblasts", "variant": "control", "confidence": 0.6737927961115247, "in_review_queue": true, "high_level_fields": ["study_type", "exposure_method", "cannabis_type"], "high_level_field_count": 3, "changes": {"study_type": {"old": "[\"Cell Culture (Other In Vitro)\"]", "new": ["Cell Culture (Cell Lines)"]}, "exposure_method": {"old": "[\"cannabinoids dissolved in media\"]", "new": ["cannabinoids dissolved in media", "exposure of cells to smoke/vapor"]}, "cannabis_type": {"old": "[\"vape pen\"]", "new": ["pure cannabinoid"]}}}, {"paper_id": 17228, "pmid": "30083539", "title": "Pharmacokinetics, Safety, and Clinical Efficacy of Cannabidiol Treatment in Osteoarthritic Dogs", "variant": "control", "confidence": 0.6744135646138167, "in_review_queue": true, "high_level_fields": ["study_type", "exposure_method", "cannabis_type"], "high_level_field_count": 3, "changes": {"study_type": {"old": "[\"Clinical (RCT)\", \"Animal Models (Other)\"]", "new": ["Animal Models (Other)"]}, "exposure_method": {"old": "[\"inhaled\"]", "new": ["oral administration"]}, "cannabis_type": {"old": "[\"dried flower\"]", "new": ["pure cannabinoid", "concentrates"]}}}, {"paper_id": 28277, "pmid": "28439004", "title": "Endocannabinoid system acts as a regulator of immune homeostasis in the gut", "variant": "control", "confidence": 0.6755875290194042, "in_review_queue": true, "high_level_fields": ["study_type", "exposure_method", "cannabis_type"], "high_level_field_count": 3, "changes": {"study_type": {"old": "[\"Animal Models (Mouse)\", \"Cell Culture (Other In Vitro)\"]", "new": ["Animal Models (Mouse)", "Cell Culture (Primary Cells)"]}, "exposure_method": {"old": "[\"oral administration\"]", "new": ["oral administration", "injection cannabinoids", "cannabinoids dissolved in media"]}, "cannabis_type": {"old": "[\"edibles\"]", "new": ["pure cannabinoid"]}}}, {"paper_id": 29912, "pmid": "25269802", "title": "Colon carcinogenesis is inhibited by the TRPM8 antagonist cannabigerol, a Cannabis-derived non-psychotropic cannabinoid", "variant": "decision_checklist", "confidence": 0.6859966829166612, "in_review_queue": true, "high_level_fields": ["study_type", "exposure_method", "cannabis_type"], "high_level_field_count": 3, "changes": {"study_type": {"old": "[\"Animal Models (Mouse)\"]", "new": ["Cell Culture (Cell Lines)", "Animal Models (Mouse)"]}, "exposure_method": {"old": "[\"injection cannabinoids\"]", "new": ["cannabinoids dissolved in media", "injection cannabinoids"]}, "cannabis_type": {"old": "[\"unknown\"]", "new": ["pure cannabinoid"]}}}, {"paper_id": 23523, "pmid": "35007072", "title": "Cannabinoids Block Cellular Entry of SARS-CoV-2 and the Emerging Variants", "variant": "decision_checklist", "confidence": 0.6905024322364989, "in_review_queue": true, "high_level_fields": ["study_type", "cannabis_type", "outcome_domain"], "high_level_field_count": 3, "changes": {"study_type": {"old": "[\"Cell Culture (Other In Vitro)\"]", "new": ["Cell Culture (Cell Lines)"]}, "cannabis_type": {"old": "[\"concentrates\"]", "new": ["pure cannabinoid"]}, "outcome_domain": {"old": "[\"inflammation\", \"other\"]", "new": ["inflammation"]}}}, {"paper_id": 15976, "pmid": "32345916", "title": "A randomized, double-blind, placebo-controlled study of daily cannabidiol for the treatment of canine osteoarthritis pain", "variant": "decision_checklist", "confidence": 0.6933300230901911, "in_review_queue": true, "high_level_fields": ["study_type", "exposure_method", "cannabis_type"], "high_level_field_count": 3, "changes": {"study_type": {"old": "[\"Animal Models (Mouse)\", \"Clinical (RCT)\"]", "new": ["Clinical (RCT)", "Animal Models (Mouse)", "Cell Culture (Cell Lines)"]}, "exposure_method": {"old": "[\"inhaled\"]", "new": ["oral administration", "cannabinoids dissolved in media"]}, "cannabis_type": {"old": "[\"dried flower\"]", "new": ["pure cannabinoid"]}}}, {"paper_id": 26275, "pmid": "32428929", "title": "Perinatal THC exposure via lactation induces lasting alterations to social behavior and prefrontal cortex function in rats at adulthood", "variant": "decision_checklist", "confidence": 0.6985081287581463, "in_review_queue": true, "high_level_fields": ["exposure_method", "cannabis_type"], "high_level_field_count": 2, "changes": {"exposure_method": {"old": "[\"injection cannabinoids\"]", "new": ["oral administration"]}, "cannabis_type": {"old": "[\"unknown\"]", "new": ["pure cannabinoid"]}}}, {"paper_id": 11539, "pmid": "39122786", "title": "Dental pulp stem cells-derived cannabidiol-treated organoid-like microspheroids show robust osteogenic potential via upregulation of WNT6", "variant": "decision_checklist", "confidence": 0.6988285284557787, "in_review_queue": true, "high_level_fields": ["study_type", "exposure_method", "cannabis_type"], "high_level_field_count": 3, "changes": {"study_type": {"old": "[\"Cell Culture (Organoids)\", \"Animal Models (Mouse)\"]", "new": ["Cell Culture (Organoids)", "Cell Culture (Primary Cells)", "Animal Models (Mouse)"]}, "exposure_method": {"old": "[\"cannabinoids dissolved in media\"]", "new": ["cannabinoids dissolved in media", "injection cannabinoids"]}, "cannabis_type": {"old": "[\"unknown\"]", "new": ["pure cannabinoid"]}}}, {"paper_id": 29687, "pmid": "25666611", "title": "Fatty acid-binding proteins (FABPs) are intracellular carriers for \u03949-tetrahydrocannabinol (THC) and cannabidiol (CBD)", "variant": "control", "confidence": 0.7015455471572768, "in_review_queue": true, "high_level_fields": ["study_type", "exposure_method"], "high_level_field_count": 2, "changes": {"study_type": {"old": "[\"Animal Models (Other)\"]", "new": ["Cell Culture (Cell Lines)", "Cell Culture (Primary Cells)"]}, "exposure_method": {"old": "[\"injection cannabinoids\"]", "new": ["cannabinoids dissolved in media"]}}}, {"paper_id": 16761, "pmid": "31052254", "title": "Hepatotoxicity of a Cannabidiol-Rich Cannabis Extract in the Mouse Model", "variant": "decision_checklist", "confidence": 0.7040026296086342, "in_review_queue": true, "high_level_fields": ["exposure_method", "cannabis_type"], "high_level_field_count": 2, "changes": {"exposure_method": {"old": "[\"injection cannabinoids\"]", "new": ["oral administration"]}, "cannabis_type": {"old": "[\"concentrates\"]", "new": ["pure cannabinoid"]}}}, {"paper_id": 31491, "pmid": "22300105", "title": "Inhibitory effect of cannabichromene, a major non-psychotropic cannabinoid extracted from Cannabis sativa, on inflammation-induced hypermotility in mice", "variant": "control", "confidence": 0.7061735997908877, "in_review_queue": true, "high_level_fields": ["exposure_method", "cannabis_type", "outcome_domain"], "high_level_field_count": 3, "changes": {"exposure_method": {"old": "[\"cannabinoids dissolved in media\"]", "new": ["injection cannabinoids", "cannabinoids dissolved in media"]}, "cannabis_type": {"old": "[\"unknown\"]", "new": ["pure cannabinoid", "CB receptor antagonist"]}, "outcome_domain": {"old": "[\"inflammation\"]", "new": ["inflammation", "other"]}}}]}, {"batch_id": "calibration_20260616_231015", "created_at": "2026-06-16T23:15:49.626468", "rules_version": "2.2.0", "mode": "preclinical_original", "variants": ["control", "decision_checklist"], "calls_attempted": 50, "updates_applied": 50, "dry_run": false, "abstract_only": true, "paper_count": 50, "avg_confidence": 0.699, "high_level_changed": 48, "high_level_change_rate": 0.96, "total_cost": 0.5402, "field_change_counts": {"cannabis_type": 45, "exposure_method": 36, "study_type": 35, "strain_reported": 34, "outcome_domain": 20, "strain_normalized": 10, "sample_size": 5, "cbd_uM": 5, "duration_days": 4, "administration_frequency": 4, "treatment_duration": 4, "thc_mg_kg": 3, "thc_uM": 3, "inhaled_exposure_duration": 2, "thc_mg_ml": 2, "cbd_mg_kg": 1, "publication_type": 1, "dose_mg": 1}, "high_level_field_counts": {"cannabis_type": 45, "exposure_method": 36, "study_type": 35, "outcome_domain": 20, "publication_type": 1}, "variant_summaries": [{"variant": "control", "paper_count": 25, "updates_applied": 25, "avg_confidence": 0.707, "high_level_changed": 24, "high_level_change_rate": 0.96, "total_cost": 0.268, "avg_cost": 0.0107, "field_change_counts": {"cannabis_type": 22, "exposure_method": 17, "study_type": 17, "strain_reported": 15, "outcome_domain": 12, "cbd_uM": 4, "strain_normalized": 4, "sample_size": 2, "treatment_duration": 1, "thc_uM": 1, "administration_frequency": 1, "cbd_mg_kg": 1}, "high_level_field_counts": {"cannabis_type": 22, "exposure_method": 17, "study_type": 17, "outcome_domain": 12}}, {"variant": "decision_checklist", "paper_count": 25, "updates_applied": 25, "avg_confidence": 0.69, "high_level_changed": 24, "high_level_change_rate": 0.96, "total_cost": 0.2722, "avg_cost": 0.0109, "field_change_counts": {"cannabis_type": 23, "exposure_method": 19, "strain_reported": 19, "study_type": 18, "outcome_domain": 8, "strain_normalized": 6, "duration_days": 4, "thc_mg_kg": 3, "administration_frequency": 3, "sample_size": 3, "treatment_duration": 3, "inhaled_exposure_duration": 2, "thc_mg_ml": 2, "thc_uM": 2, "publication_type": 1, "cbd_uM": 1, "dose_mg": 1}, "high_level_field_counts": {"cannabis_type": 23, "exposure_method": 19, "study_type": 18, "outcome_domain": 8, "publication_type": 1}}], "review_path": "scratch/calibration_runs/calibration_20260616_231015_review.md", "walkthrough_path": "scratch/calibration_runs/calibration_20260616_231015_walkthrough.md", "artifact_path": "scratch/calibration_runs/calibration_20260616_231015.json", "expert_notes": {}, "review_candidates": [{"paper_id": 9877, "pmid": "37434213", "title": "Cannabis sativa demonstrates anti-hepatocellular carcinoma potentials in animal model: in silico and in vivo studies of the involvement of Akt", "variant": "decision_checklist", "confidence": 0.6320886036951789, "in_review_queue": true, "high_level_fields": ["study_type", "exposure_method", "cannabis_type", "outcome_domain"], "high_level_field_count": 4, "changes": {"study_type": {"old": "[\"Animal Models (Other)\"]", "new": ["Animal Models (Rat)"]}, "exposure_method": {"old": "[\"injection cannabinoids\"]", "new": ["oral administration"]}, "cannabis_type": {"old": "[\"concentrates\"]", "new": ["pure cannabinoid"]}, "outcome_domain": {"old": "[\"oncology\"]", "new": ["oncology", "inflammation"]}}}, {"paper_id": 17333, "pmid": "34676320", "title": "Human Pharmacokinetics and Adverse Effects of Pulmonary and Intravenous THC-CBD Formulations", "variant": "control", "confidence": 0.6436420034595226, "in_review_queue": true, "high_level_fields": ["study_type", "exposure_method", "cannabis_type"], "high_level_field_count": 3, "changes": {"study_type": {"old": "[\"Cell Culture (Other In Vitro)\"]", "new": ["Clinical (prospective)"]}, "exposure_method": {"old": "[\"cannabinoids dissolved in media\"]", "new": ["inhaled", "injected"]}, "cannabis_type": {"old": "[\"vape pen\"]", "new": ["pure cannabinoid"]}}}, {"paper_id": 31303, "pmid": "22646533", "title": "The antinociceptive triterpene \u03b2-amyrin inhibits 2-arachidonoylglycerol (2-AG) hydrolysis without directly targeting cannabinoid receptors", "variant": "decision_checklist", "confidence": 0.650070008942093, "in_review_queue": true, "high_level_fields": ["study_type", "exposure_method", "cannabis_type"], "high_level_field_count": 3, "changes": {"study_type": {"old": "[\"Animal Models (Mouse)\", \"Animal Models (Other)\"]", "new": ["Cell Culture (Cell Lines)"]}, "exposure_method": {"old": "[\"injection cannabinoids\"]", "new": ["cannabinoids dissolved in media"]}, "cannabis_type": {"old": "[\"unknown\"]", "new": ["pure cannabinoid"]}}}, {"paper_id": 13668, "pmid": "35644533", "title": "The effect of a mixed cannabidiol and cannabidiolic acid based oil on client-owned dogs with atopic dermatitis", "variant": "control", "confidence": 0.6524099175172362, "in_review_queue": true, "high_level_fields": ["study_type", "exposure_method", "cannabis_type"], "high_level_field_count": 3, "changes": {"study_type": {"old": "[\"Clinical (prospective)\", \"Clinical (RCT)\", \"Animal Models (Other)\"]", "new": ["Animal Models (Other)"]}, "exposure_method": {"old": "[\"inhaled\"]", "new": ["oral administration"]}, "cannabis_type": {"old": "[\"dried flower\"]", "new": ["pure cannabinoid"]}}}, {"paper_id": 18128, "pmid": "29588939", "title": "Cannabis in epilepsy: From clinical practice to basic research focusing on the possible role of cannabidivarin", "variant": "decision_checklist", "confidence": 0.6549457676112633, "in_review_queue": true, "high_level_fields": ["study_type", "exposure_method", "cannabis_type"], "high_level_field_count": 3, "changes": {"study_type": {"old": "[\"Animal Models (Other)\"]", "new": ["case study", "Cell Culture (Other In Vitro)"]}, "exposure_method": {"old": "[\"injection cannabinoids\"]", "new": ["oral", "cannabinoids dissolved in media"]}, "cannabis_type": {"old": "[\"unknown\"]", "new": ["pure cannabinoid", "dried flower"]}}}, {"paper_id": 10107, "pmid": "37313955", "title": "Evaluation of Cytochrome P450-Mediated Cannabinoid-Drug Interactions in Healthy Adult Participants", "variant": "decision_checklist", "confidence": 0.6557205666240266, "in_review_queue": true, "high_level_fields": ["study_type", "exposure_method", "cannabis_type"], "high_level_field_count": 3, "changes": {"study_type": {"old": "[\"Cell Culture (Other In Vitro)\"]", "new": ["Clinical (RCT)"]}, "exposure_method": {"old": "[\"cannabinoids dissolved in media\"]", "new": ["oral"]}, "cannabis_type": {"old": "[\"concentrates\", \"edibles\"]", "new": ["pure cannabinoid", "edibles"]}}}, {"paper_id": 14771, "pmid": "34066131", "title": "Metabolomic Analysis of Cannabinoid and Essential Oil Profiles in Different Hemp (Cannabis sativa L.) Phenotypes", "variant": "decision_checklist", "confidence": 0.6566554548828305, "in_review_queue": true, "high_level_fields": ["study_type", "exposure_method", "cannabis_type"], "high_level_field_count": 3, "changes": {"study_type": {"old": "[\"Animal Models (Other)\"]", "new": ["Clinical (observational)"]}, "exposure_method": {"old": "[\"injection cannabinoids\"]", "new": ["unknown"]}, "cannabis_type": {"old": "[\"unknown\"]", "new": ["dried flower", "pure cannabinoid"]}}}, {"paper_id": 7518, "pmid": "38630283", "title": "Toxicity of cannabidiol and its metabolites in TM3 mouse Leydig cells: a comparison with primary human Leydig cells", "variant": "control", "confidence": 0.6583494624351239, "in_review_queue": true, "high_level_fields": ["study_type", "exposure_method", "cannabis_type"], "high_level_field_count": 3, "changes": {"study_type": {"old": "[\"Animal Models (Mouse)\"]", "new": ["Cell Culture (Primary Cells)", "Cell Culture (Cell Lines)"]}, "exposure_method": {"old": "[\"injection cannabinoids\"]", "new": ["cannabinoids dissolved in media"]}, "cannabis_type": {"old": "[\"unknown\"]", "new": ["pure cannabinoid"]}}}, {"paper_id": 30091, "pmid": "24911644", "title": "The dual FAAH/MAGL inhibitor JZL195 has enhanced effects on endocannabinoid transmission and motor behavior in rats as compared to those of the MAGL inhibitor JZL184", "variant": "control", "confidence": 0.6605856738073193, "in_review_queue": true, "high_level_fields": ["study_type", "exposure_method", "cannabis_type", "outcome_domain"], "high_level_field_count": 4, "changes": {"study_type": {"old": "[\"Animal Models (Rat)\", \"Animal Models (Mouse)\", \"Cell Culture (Other In Vitro)\"]", "new": ["Animal Models (Rat)"]}, "exposure_method": {"old": "[\"cannabinoids dissolved in media\"]", "new": ["injection cannabinoids"]}, "cannabis_type": {"old": "[\"unknown\"]", "new": ["pure cannabinoid"]}, "outcome_domain": {"old": "[\"other\"]", "new": ["addiction", "other"]}}}, {"paper_id": 26027, "pmid": "32913220", "title": "Low brain endocannabinoids associated with persistent non-goal directed nighttime hyperactivity after traumatic brain injury in mice", "variant": "control", "confidence": 0.6619077490614991, "in_review_queue": true, "high_level_fields": ["study_type", "exposure_method", "cannabis_type", "outcome_domain"], "high_level_field_count": 4, "changes": {"study_type": {"old": "[\"Clinical (observational)\", \"Animal Models (Mouse)\"]", "new": ["Animal Models (Mouse)"]}, "exposure_method": {"old": "[\"inhaled\"]", "new": ["unknown"]}, "cannabis_type": {"old": "[\"dried flower\"]", "new": ["unknown"]}, "outcome_domain": {"old": "[\"cognition\", \"pain\", \"neuroprotection\"]", "new": ["neuroprotection", "cognition", "pain", "anxiety"]}}}, {"paper_id": 8987, "pmid": "37889215", "title": "The efficacy and safety of cannabidiol as adjunct treatment for drug-resistant idiopathic epilepsy in 51 dogs: A double-blinded crossover study", "variant": "control", "confidence": 0.6653866921915568, "in_review_queue": true, "high_level_fields": ["study_type", "exposure_method", "cannabis_type"], "high_level_field_count": 3, "changes": {"study_type": {"old": "[\"Clinical (RCT)\", \"Animal Models (Other)\"]", "new": ["Animal Models (Other)"]}, "exposure_method": {"old": "[\"inhaled\"]", "new": ["oral administration"]}, "cannabis_type": {"old": "[\"dried flower\"]", "new": ["pure cannabinoid"]}}}, {"paper_id": 31049, "pmid": "23104854", "title": "Cannabinoid modulation of mother-infant interaction: is it just about milk?", "variant": "decision_checklist", "confidence": 0.6664931566934748, "in_review_queue": true, "high_level_fields": ["study_type", "exposure_method", "publication_type"], "high_level_field_count": 3, "changes": {"study_type": {"old": "[\"Animal Models (Other)\"]", "new": ["review"]}, "exposure_method": {"old": "[\"injection cannabinoids\"]", "new": ["unknown"]}, "publication_type": {"old": "original research", "new": "review"}}}, {"paper_id": 11988, "pmid": "38143819", "title": "Diclofenac and dexamethasone modulate the effect of cannabidiol on the rat colon motility ex vivo", "variant": "control", "confidence": 0.6716873353057651, "in_review_queue": true, "high_level_fields": ["study_type", "exposure_method", "cannabis_type", "outcome_domain"], "high_level_field_count": 4, "changes": {"study_type": {"old": "[\"Animal Models (Rat)\"]", "new": ["Animal Models (Rat)", "Cell Culture (Other In Vitro)"]}, "exposure_method": {"old": "[\"injection cannabinoids\"]", "new": ["cannabinoids dissolved in media"]}, "cannabis_type": {"old": "[\"unknown\"]", "new": ["pure cannabinoid"]}, "outcome_domain": {"old": "[\"inflammation\"]", "new": ["inflammation", "other"]}}}, {"paper_id": 31495, "pmid": "22293299", "title": "Cannabinoid receptor activation disrupts the internal structure of hippocampal sharp wave-ripple complexes", "variant": "decision_checklist", "confidence": 0.6737193633402051, "in_review_queue": true, "high_level_fields": ["study_type", "exposure_method", "cannabis_type"], "high_level_field_count": 3, "changes": {"study_type": {"old": "[\"Animal Models (Mouse)\"]", "new": ["Animal Models (Mouse)", "Cell Culture (Other In Vitro)"]}, "exposure_method": {"old": "[\"injection cannabinoids\"]", "new": ["cannabinoids dissolved in media"]}, "cannabis_type": {"old": "[\"CB receptor antagonist\"]", "new": ["pure cannabinoid", "CB receptor antagonist"]}}}, {"paper_id": 6472, "pmid": "39112591", "title": "Comparing CB1 receptor GIRK channel responses to receptor internalization using a kinetic imaging assay", "variant": "control", "confidence": 0.6762216198303632, "in_review_queue": true, "high_level_fields": ["study_type", "exposure_method", "cannabis_type", "outcome_domain"], "high_level_field_count": 4, "changes": {"study_type": {"old": "[\"Animal Models (Mouse)\"]", "new": ["Cell Culture (Cell Lines)"]}, "exposure_method": {"old": "[\"injection cannabinoids\"]", "new": ["cannabinoids dissolved in media"]}, "cannabis_type": {"old": "[\"pure cannabinoid\"]", "new": ["CB receptor agonist", "pure cannabinoid"]}, "outcome_domain": {"old": "[\"other\"]", "new": ["addiction", "pain"]}}}]}], "variant_comparison": {"variants": [{"variant": "control", "paper_count": 50, "avg_confidence": 0.716, "high_level_changed": 49, "high_level_change_rate": 0.98, "total_cost": 0.528, "avg_cost": 0.0106, "high_level_field_counts": {"cannabis_type": 45, "exposure_method": 28, "study_type": 25, "outcome_domain": 17}}, {"variant": "decision_checklist", "paper_count": 50, "avg_confidence": 0.705, "high_level_changed": 49, "high_level_change_rate": 0.98, "total_cost": 0.5346, "avg_cost": 0.0107, "high_level_field_counts": {"cannabis_type": 48, "study_type": 31, "exposure_method": 29, "outcome_domain": 15, "publication_type": 2}}]}, "field_change_totals": {"all_fields": {"cannabis_type": 93, "strain_reported": 71, "exposure_method": 57, "study_type": 56, "outcome_domain": 32, "strain_normalized": 20, "administration_frequency": 15, "cbd_mg_kg": 8, "thc_mg_kg": 8, "cbd_uM": 8, "treatment_duration": 7, "duration_days": 7, "sample_size": 6, "thc_uM": 5, "publication_type": 2, "dose_mg": 2, "inhaled_exposure_duration": 2, "thc_mg_ml": 2, "cbd_pct": 1}, "high_level_fields": {"cannabis_type": 93, "exposure_method": 57, "study_type": 56, "outcome_domain": 32, "publication_type": 2}}, "priority_review": [{"paper_id": 31533, "pmid": "22229018", "title": "Lasting impacts of prenatal cannabis exposure and the role of endogenous cannabinoids in the developing brain", "variant": "decision_checklist", "confidence": 0.607634734061274, "in_review_queue": true, "high_level_fields": ["study_type", "exposure_method", "cannabis_type", "publication_type"], "high_level_field_count": 4, "changes": {"study_type": {"old": "[\"Clinical (observational)\", \"Animal Models (Other)\"]", "new": ["review"]}, "exposure_method": {"old": "[\"inhaled\"]", "new": ["unknown"]}, "cannabis_type": {"old": "[\"pure cannabinoid\"]", "new": ["unknown"]}, "publication_type": {"old": "original research", "new": "review"}}, "expert_status": "accepted as Maude learning boundary for `review` vs `original research` routing from abstract-level review language."}, {"paper_id": 9877, "pmid": "37434213", "title": "Cannabis sativa demonstrates anti-hepatocellular carcinoma potentials in animal model: in silico and in vivo studies of the involvement of Akt", "variant": "decision_checklist", "confidence": 0.6320886036951789, "in_review_queue": true, "high_level_fields": ["study_type", "exposure_method", "cannabis_type", "outcome_domain"], "high_level_field_count": 4, "changes": {"study_type": {"old": "[\"Animal Models (Other)\"]", "new": ["Animal Models (Rat)"]}, "exposure_method": {"old": "[\"injection cannabinoids\"]", "new": ["oral administration"]}, "cannabis_type": {"old": "[\"concentrates\"]", "new": ["pure cannabinoid"]}, "outcome_domain": {"old": "[\"oncology\"]", "new": ["oncology", "inflammation"]}}}, {"paper_id": 17333, "pmid": "34676320", "title": "Human Pharmacokinetics and Adverse Effects of Pulmonary and Intravenous THC-CBD Formulations", "variant": "control", "confidence": 0.6436420034595226, "in_review_queue": true, "high_level_fields": ["study_type", "exposure_method", "cannabis_type"], "high_level_field_count": 3, "changes": {"study_type": {"old": "[\"Cell Culture (Other In Vitro)\"]", "new": ["Clinical (prospective)"]}, "exposure_method": {"old": "[\"cannabinoids dissolved in media\"]", "new": ["inhaled", "injected"]}, "cannabis_type": {"old": "[\"vape pen\"]", "new": ["pure cannabinoid"]}}}, {"paper_id": 10072, "pmid": "37330445", "title": "Characterization of cannabis strain-plant-derived extracellular vesicles as potential biomarkers", "variant": "control", "confidence": 0.646178170049944, "in_review_queue": true, "high_level_fields": ["study_type", "exposure_method", "cannabis_type"], "high_level_field_count": 3, "changes": {"study_type": {"old": "[\"Animal Models (Other)\"]", "new": ["Cell Culture (Other In Vitro)"]}, "exposure_method": {"old": "[\"injection cannabinoids\"]", "new": ["unknown"]}, "cannabis_type": {"old": "[\"unknown\"]", "new": ["dried flower"]}}}, {"paper_id": 11817, "pmid": "38546067", "title": "A Comparative Analysis on the Potential Anticancer Properties of Tetrahydrocannabinol, Cannabidiol, and Tetrahydrocannabivarin Compounds Through In Silico Approach", "variant": "decision_checklist", "confidence": 0.6470246798426575, "in_review_queue": true, "high_level_fields": ["study_type", "exposure_method", "cannabis_type", "outcome_domain"], "high_level_field_count": 4, "changes": {"study_type": {"old": "[\"Animal Models (Rat)\"]", "new": ["Cell Culture (Other In Vitro)"]}, "exposure_method": {"old": "[\"injection cannabinoids\"]", "new": ["unknown"]}, "cannabis_type": {"old": "[\"unknown\"]", "new": ["pure cannabinoid"]}, "outcome_domain": {"old": "[\"other\"]", "new": ["oncology"]}}}, {"paper_id": 31303, "pmid": "22646533", "title": "The antinociceptive triterpene \u03b2-amyrin inhibits 2-arachidonoylglycerol (2-AG) hydrolysis without directly targeting cannabinoid receptors", "variant": "decision_checklist", "confidence": 0.650070008942093, "in_review_queue": true, "high_level_fields": ["study_type", "exposure_method", "cannabis_type"], "high_level_field_count": 3, "changes": {"study_type": {"old": "[\"Animal Models (Mouse)\", \"Animal Models (Other)\"]", "new": ["Cell Culture (Cell Lines)"]}, "exposure_method": {"old": "[\"injection cannabinoids\"]", "new": ["cannabinoids dissolved in media"]}, "cannabis_type": {"old": "[\"unknown\"]", "new": ["pure cannabinoid"]}}}, {"paper_id": 13668, "pmid": "35644533", "title": "The effect of a mixed cannabidiol and cannabidiolic acid based oil on client-owned dogs with atopic dermatitis", "variant": "control", "confidence": 0.6524099175172362, "in_review_queue": true, "high_level_fields": ["study_type", "exposure_method", "cannabis_type"], "high_level_field_count": 3, "changes": {"study_type": {"old": "[\"Clinical (prospective)\", \"Clinical (RCT)\", \"Animal Models (Other)\"]", "new": ["Animal Models (Other)"]}, "exposure_method": {"old": "[\"inhaled\"]", "new": ["oral administration"]}, "cannabis_type": {"old": "[\"dried flower\"]", "new": ["pure cannabinoid"]}}}, {"paper_id": 18128, "pmid": "29588939", "title": "Cannabis in epilepsy: From clinical practice to basic research focusing on the possible role of cannabidivarin", "variant": "decision_checklist", "confidence": 0.6549457676112633, "in_review_queue": true, "high_level_fields": ["study_type", "exposure_method", "cannabis_type"], "high_level_field_count": 3, "changes": {"study_type": {"old": "[\"Animal Models (Other)\"]", "new": ["case study", "Cell Culture (Other In Vitro)"]}, "exposure_method": {"old": "[\"injection cannabinoids\"]", "new": ["oral", "cannabinoids dissolved in media"]}, "cannabis_type": {"old": "[\"unknown\"]", "new": ["pure cannabinoid", "dried flower"]}}}, {"paper_id": 10107, "pmid": "37313955", "title": "Evaluation of Cytochrome P450-Mediated Cannabinoid-Drug Interactions in Healthy Adult Participants", "variant": "decision_checklist", "confidence": 0.6557205666240266, "in_review_queue": true, "high_level_fields": ["study_type", "exposure_method", "cannabis_type"], "high_level_field_count": 3, "changes": {"study_type": {"old": "[\"Cell Culture (Other In Vitro)\"]", "new": ["Clinical (RCT)"]}, "exposure_method": {"old": "[\"cannabinoids dissolved in media\"]", "new": ["oral"]}, "cannabis_type": {"old": "[\"concentrates\", \"edibles\"]", "new": ["pure cannabinoid", "edibles"]}}}, {"paper_id": 14771, "pmid": "34066131", "title": "Metabolomic Analysis of Cannabinoid and Essential Oil Profiles in Different Hemp (Cannabis sativa L.) Phenotypes", "variant": "decision_checklist", "confidence": 0.6566554548828305, "in_review_queue": true, "high_level_fields": ["study_type", "exposure_method", "cannabis_type"], "high_level_field_count": 3, "changes": {"study_type": {"old": "[\"Animal Models (Other)\"]", "new": ["Clinical (observational)"]}, "exposure_method": {"old": "[\"injection cannabinoids\"]", "new": ["unknown"]}, "cannabis_type": {"old": "[\"unknown\"]", "new": ["dried flower", "pure cannabinoid"]}}}, {"paper_id": 7518, "pmid": "38630283", "title": "Toxicity of cannabidiol and its metabolites in TM3 mouse Leydig cells: a comparison with primary human Leydig cells", "variant": "control", "confidence": 0.6583494624351239, "in_review_queue": true, "high_level_fields": ["study_type", "exposure_method", "cannabis_type"], "high_level_field_count": 3, "changes": {"study_type": {"old": "[\"Animal Models (Mouse)\"]", "new": ["Cell Culture (Primary Cells)", "Cell Culture (Cell Lines)"]}, "exposure_method": {"old": "[\"injection cannabinoids\"]", "new": ["cannabinoids dissolved in media"]}, "cannabis_type": {"old": "[\"unknown\"]", "new": ["pure cannabinoid"]}}}, {"paper_id": 30091, "pmid": "24911644", "title": "The dual FAAH/MAGL inhibitor JZL195 has enhanced effects on endocannabinoid transmission and motor behavior in rats as compared to those of the MAGL inhibitor JZL184", "variant": "control", "confidence": 0.6605856738073193, "in_review_queue": true, "high_level_fields": ["study_type", "exposure_method", "cannabis_type", "outcome_domain"], "high_level_field_count": 4, "changes": {"study_type": {"old": "[\"Animal Models (Rat)\", \"Animal Models (Mouse)\", \"Cell Culture (Other In Vitro)\"]", "new": ["Animal Models (Rat)"]}, "exposure_method": {"old": "[\"cannabinoids dissolved in media\"]", "new": ["injection cannabinoids"]}, "cannabis_type": {"old": "[\"unknown\"]", "new": ["pure cannabinoid"]}, "outcome_domain": {"old": "[\"other\"]", "new": ["addiction", "other"]}}}, {"paper_id": 26027, "pmid": "32913220", "title": "Low brain endocannabinoids associated with persistent non-goal directed nighttime hyperactivity after traumatic brain injury in mice", "variant": "control", "confidence": 0.6619077490614991, "in_review_queue": true, "high_level_fields": ["study_type", "exposure_method", "cannabis_type", "outcome_domain"], "high_level_field_count": 4, "changes": {"study_type": {"old": "[\"Clinical (observational)\", \"Animal Models (Mouse)\"]", "new": ["Animal Models (Mouse)"]}, "exposure_method": {"old": "[\"inhaled\"]", "new": ["unknown"]}, "cannabis_type": {"old": "[\"dried flower\"]", "new": ["unknown"]}, "outcome_domain": {"old": "[\"cognition\", \"pain\", \"neuroprotection\"]", "new": ["neuroprotection", "cognition", "pain", "anxiety"]}}}, {"paper_id": 8987, "pmid": "37889215", "title": "The efficacy and safety of cannabidiol as adjunct treatment for drug-resistant idiopathic epilepsy in 51 dogs: A double-blinded crossover study", "variant": "control", "confidence": 0.6653866921915568, "in_review_queue": true, "high_level_fields": ["study_type", "exposure_method", "cannabis_type"], "high_level_field_count": 3, "changes": {"study_type": {"old": "[\"Clinical (RCT)\", \"Animal Models (Other)\"]", "new": ["Animal Models (Other)"]}, "exposure_method": {"old": "[\"inhaled\"]", "new": ["oral administration"]}, "cannabis_type": {"old": "[\"dried flower\"]", "new": ["pure cannabinoid"]}}}, {"paper_id": 31049, "pmid": "23104854", "title": "Cannabinoid modulation of mother-infant interaction: is it just about milk?", "variant": "decision_checklist", "confidence": 0.6664931566934748, "in_review_queue": true, "high_level_fields": ["study_type", "exposure_method", "publication_type"], "high_level_field_count": 3, "changes": {"study_type": {"old": "[\"Animal Models (Other)\"]", "new": ["review"]}, "exposure_method": {"old": "[\"injection cannabinoids\"]", "new": ["unknown"]}, "publication_type": {"old": "original research", "new": "review"}}}, {"paper_id": 11988, "pmid": "38143819", "title": "Diclofenac and dexamethasone modulate the effect of cannabidiol on the rat colon motility ex vivo", "variant": "control", "confidence": 0.6716873353057651, "in_review_queue": true, "high_level_fields": ["study_type", "exposure_method", "cannabis_type", "outcome_domain"], "high_level_field_count": 4, "changes": {"study_type": {"old": "[\"Animal Models (Rat)\"]", "new": ["Animal Models (Rat)", "Cell Culture (Other In Vitro)"]}, "exposure_method": {"old": "[\"injection cannabinoids\"]", "new": ["cannabinoids dissolved in media"]}, "cannabis_type": {"old": "[\"unknown\"]", "new": ["pure cannabinoid"]}, "outcome_domain": {"old": "[\"inflammation\"]", "new": ["inflammation", "other"]}}}, {"paper_id": 30911, "pmid": "23373571", "title": "The cannabinoid TRPA1 agonist cannabichromene inhibits nitric oxide production in macrophages and ameliorates murine colitis", "variant": "decision_checklist", "confidence": 0.6732018876760968, "in_review_queue": true, "high_level_fields": ["study_type", "exposure_method", "cannabis_type"], "high_level_field_count": 3, "changes": {"study_type": {"old": "[\"Animal Models (Mouse)\", \"Cell Culture (Other In Vitro)\"]", "new": ["Animal Models (Mouse)", "Cell Culture (Primary Cells)"]}, "exposure_method": {"old": "[\"cannabinoids dissolved in media\"]", "new": ["cannabinoids dissolved in media", "injection cannabinoids"]}, "cannabis_type": {"old": "[\"unknown\"]", "new": ["pure cannabinoid", "CB receptor agonist", "CB receptor antagonist"]}}}, {"paper_id": 31495, "pmid": "22293299", "title": "Cannabinoid receptor activation disrupts the internal structure of hippocampal sharp wave-ripple complexes", "variant": "decision_checklist", "confidence": 0.6737193633402051, "in_review_queue": true, "high_level_fields": ["study_type", "exposure_method", "cannabis_type"], "high_level_field_count": 3, "changes": {"study_type": {"old": "[\"Animal Models (Mouse)\"]", "new": ["Animal Models (Mouse)", "Cell Culture (Other In Vitro)"]}, "exposure_method": {"old": "[\"injection cannabinoids\"]", "new": ["cannabinoids dissolved in media"]}, "cannabis_type": {"old": "[\"CB receptor antagonist\"]", "new": ["pure cannabinoid", "CB receptor antagonist"]}}}, {"paper_id": 16543, "pmid": "31437494", "title": "Cannabidiol differentially regulates basal and LPS-induced inflammatory responses in macrophages, lung epithelial cells, and fibroblasts", "variant": "control", "confidence": 0.6737927961115247, "in_review_queue": true, "high_level_fields": ["study_type", "exposure_method", "cannabis_type"], "high_level_field_count": 3, "changes": {"study_type": {"old": "[\"Cell Culture (Other In Vitro)\"]", "new": ["Cell Culture (Cell Lines)"]}, "exposure_method": {"old": "[\"cannabinoids dissolved in media\"]", "new": ["cannabinoids dissolved in media", "exposure of cells to smoke/vapor"]}, "cannabis_type": {"old": "[\"vape pen\"]", "new": ["pure cannabinoid"]}}}, {"paper_id": 17228, "pmid": "30083539", "title": "Pharmacokinetics, Safety, and Clinical Efficacy of Cannabidiol Treatment in Osteoarthritic Dogs", "variant": "control", "confidence": 0.6744135646138167, "in_review_queue": true, "high_level_fields": ["study_type", "exposure_method", "cannabis_type"], "high_level_field_count": 3, "changes": {"study_type": {"old": "[\"Clinical (RCT)\", \"Animal Models (Other)\"]", "new": ["Animal Models (Other)"]}, "exposure_method": {"old": "[\"inhaled\"]", "new": ["oral administration"]}, "cannabis_type": {"old": "[\"dried flower\"]", "new": ["pure cannabinoid", "concentrates"]}}}], "decision_boundaries": {"review_vs_original_prenatal_cannabis": {"source": "calibration_20260616_222616 paper 31533 / PMID 22229018", "rule": "If the title or abstract discusses lasting impacts, roles, mechanisms, or broad evidence about prenatal cannabis exposure/endogenous cannabinoids without reporting new author-generated Methods/Results, classify the article as a review rather than original research. Do not infer animal, clinical, inhaled, or pure-cannabinoid administration from studies merely being summarized.", "example": "Lasting impacts of prenatal cannabis exposure and the role of endogenous cannabinoids in the developing brain", "expected": {"publication_type": "review", "study_type": ["review"], "exposure_method": ["unknown"], "cannabis_type": ["unknown"]}}}, "calibration_variants": {"control": {"description": "Current production cue-aware prompt with no extra calibration overlay.", "prompt_suffix": ""}, "decision_checklist": {"description": "Adds a final classification checklist for upcoming expert decision-chart cues.", "prompt_suffix": "Before returning JSON, silently verify: (1) the paper actively administers, measures, or pharmacologically tests cannabis, cannabinoids, or endocannabinoid-system compounds; (2) review/editorial/policy-only papers do not receive original-research extraction values; (3) preclinical host animal strains are not written to strain_reported; (4) route, product type, dose, timing, and sample-size values are grounded in Methods or Results rather than background text."}}, "automation_readiness": {"checklist": [{"id": "calibration_runner", "label": "Bounded calibration runner exercised", "status": "complete", "detail": "2 live batch(es), 100 papers"}, {"id": "variant_ab", "label": "Prompt variant A/B comparison captured", "status": "complete", "detail": "control vs decision_checklist"}, {"id": "review_artifacts", "label": "High-level review walkthroughs produced", "status": "complete", "detail": "1 expert note(s) captured"}, {"id": "decision_chart", "label": "Expert decision chart received", "status": "pending", "detail": "awaiting expert flowchart and context cues"}, {"id": "decision_boundaries", "label": "Learned decision boundaries encoded in rules_config", "status": "in_progress", "detail": "1 boundary rule(s)"}, {"id": "expert_corrections", "label": "Expert-approved corrections applied via edit-classification", "status": "in_progress", "detail": "Use /api/papers/<paper_id>/edit-classification after review"}], "completed_count": 3, "total_count": 6, "ready_for_full_automation": false}};
+
+    function pct(value) {
+      return value == null ? '—' : (value * 100).toFixed(1) + '%';
+    }
+
+    function badge(status) {
+      const cls = status === 'complete' ? 'badge-complete' : (status === 'in_progress' ? 'badge-progress' : 'badge-pending');
+      return `<span class="badge ${cls}">${status.replace('_', ' ')}</span>`;
+    }
+
+    function renderSummary() {
+      const s = METRICS.summary;
+      document.getElementById('rules-version').textContent = METRICS.rules_version || '—';
+      document.getElementById('generated-at').textContent = (METRICS.generated_at || '').replace('T', ' ').slice(0, 19);
+      const cards = [
+        ['Calibration Batches', s.batch_count, 'var(--indigo)'],
+        ['Papers Processed', s.total_papers, 'var(--cyan)'],
+        ['HL Field Changes', s.high_level_changed, 'var(--amber)'],
+        ['Total API Cost', '$' + (s.total_cost || 0).toFixed(2), 'var(--green)'],
+      ];
+      document.getElementById('summary-cards').innerHTML = cards.map(([label, value, color]) => `
+        <div class="card">
+          <div class="stat-label">${label}</div>
+          <div class="stat-value" style="color:${color}">${value}</div>
+        </div>`).join('');
+    }
+
+    function renderBatchTable() {
+      const tbody = document.querySelector('#batch-table tbody');
+      tbody.innerHTML = METRICS.batches.map(batch => `
+        <tr>
+          <td class="mono">${batch.batch_id.replace('calibration_', '')}</td>
+          <td>${batch.paper_count}</td>
+          <td>${batch.high_level_changed} (${pct(batch.high_level_change_rate)})</td>
+          <td>${pct(batch.avg_confidence)}</td>
+          <td>$${(batch.total_cost || 0).toFixed(2)}</td>
+        </tr>`).join('');
+    }
+
+    function renderReadiness() {
+      const readiness = METRICS.automation_readiness;
+      document.getElementById('readiness-list').innerHTML = `
+        <div class="muted" style="margin-bottom:12px">${readiness.completed_count} / ${readiness.total_count} complete · full automation ${readiness.ready_for_full_automation ? 'ready' : 'blocked pending expert guidelines'}</div>
+        ${readiness.checklist.map(item => `
+          <div class="checklist-item">
+            <div>
+              <div>${item.label}</div>
+              <div class="muted" style="font-size:0.82rem;margin-top:4px">${item.detail}</div>
+            </div>
+            ${badge(item.status)}
+          </div>`).join('')}`;
+    }
+
+    function renderBoundaries() {
+      const boundaries = METRICS.decision_boundaries || {};
+      const entries = Object.entries(boundaries);
+      if (!entries.length) {
+        document.getElementById('boundaries').innerHTML = '<div class="muted">No decision boundaries encoded yet.</div>';
+        return;
+      }
+      document.getElementById('boundaries').innerHTML = entries.map(([key, rule]) => `
+        <div style="padding:12px 0;border-bottom:1px solid var(--border)">
+          <div class="mono" style="color:var(--cyan);margin-bottom:6px">${key}</div>
+          <div>${rule.rule || ''}</div>
+          <div class="muted" style="margin-top:6px;font-size:0.82rem">Example: ${rule.example || '—'} · Source: ${rule.source || '—'}</div>
+        </div>`).join('');
+    }
+
+    function renderReviewTable() {
+      const tbody = document.querySelector('#review-table tbody');
+      tbody.innerHTML = (METRICS.priority_review || []).map(row => `
+        <tr>
+          <td class="mono">${row.paper_id}<div class="muted">${row.pmid || ''}</div></td>
+          <td>${pct(row.confidence)}${row.in_review_queue ? ' <span class="badge badge-progress">queue</span>' : ''}</td>
+          <td class="mono">${row.variant}</td>
+          <td class="mono">${(row.high_level_fields || []).join(', ')}</td>
+          <td class="paper-title">${row.title || ''}${row.expert_status ? `<div class="muted" style="margin-top:4px">${row.expert_status}</div>` : ''}</td>
+        </tr>`).join('');
+    }
+
+    function renderCharts() {
+      const variants = (METRICS.variant_comparison && METRICS.variant_comparison.variants) || [];
+      new Chart(document.getElementById('chart-variant-confidence'), {
+        type: 'bar',
+        data: {
+          labels: variants.map(v => v.variant),
+          datasets: [
+            {
+              label: 'Avg Confidence',
+              data: variants.map(v => v.avg_confidence || 0),
+              backgroundColor: 'rgba(34,211,238,0.5)',
+              borderColor: '#22d3ee',
+              borderWidth: 1,
+              yAxisID: 'y',
+            },
+            {
+              label: 'HL Change Rate',
+              data: variants.map(v => v.high_level_change_rate || 0),
+              backgroundColor: 'rgba(129,140,248,0.45)',
+              borderColor: '#818cf8',
+              borderWidth: 1,
+              yAxisID: 'y1',
+            },
+          ],
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          scales: {
+            y: { beginAtZero: true, max: 1, ticks: { callback: v => (v * 100) + '%' } },
+            y1: { beginAtZero: true, max: 1, position: 'right', grid: { drawOnChartArea: false }, ticks: { callback: v => (v * 100) + '%' } },
+          },
+        },
+      });
+
+      const hlFields = METRICS.field_change_totals.high_level_fields || {};
+      const labels = Object.keys(hlFields);
+      new Chart(document.getElementById('chart-hl-fields'), {
+        type: 'bar',
+        data: {
+          labels,
+          datasets: [{
+            label: 'Changes',
+            data: labels.map(label => hlFields[label]),
+            backgroundColor: 'rgba(251,191,36,0.55)',
+            borderColor: '#fbbf24',
+            borderWidth: 1,
+          }],
+        },
+        options: {
+          indexAxis: 'y',
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { display: false } },
+        },
+      });
+    }
+
+    renderSummary();
+    renderBatchTable();
+    renderReadiness();
+    renderBoundaries();
+    renderReviewTable();
+    renderCharts();
+  </script>
+</body>
+</html>

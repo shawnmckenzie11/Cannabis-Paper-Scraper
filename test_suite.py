@@ -3,6 +3,7 @@ import unittest
 import os
 import json
 import sqlite3
+from pathlib import Path
 from db_manager import DatabaseManager
 import extractor
 import classifier
@@ -1020,6 +1021,16 @@ class TestExpertEditAndActiveLearning(unittest.TestCase):
                 "decision_checklist": {
                     "prompt_suffix": "Verify active cannabinoid administration."
                 }
+            },
+            "decision_boundaries": {
+                "review_vs_original_prenatal_cannabis": {
+                    "rule": "Classify broad prenatal cannabis impact summaries as reviews when no new Methods/Results are reported.",
+                    "example": "Lasting impacts of prenatal cannabis exposure",
+                    "expected": {
+                        "publication_type": "review",
+                        "study_type": ["review"]
+                    }
+                }
             }
         }
         
@@ -1031,6 +1042,9 @@ class TestExpertEditAndActiveLearning(unittest.TestCase):
         self.assertIn("fiber hemp textiles", prompt)
         self.assertIn("primary microglia", prompt)
         self.assertIn("placebo-controlled", prompt)
+        self.assertIn("Learned Decision Boundaries", prompt)
+        self.assertIn("review_vs_original_prenatal_cannabis", prompt)
+        self.assertIn("Lasting impacts of prenatal cannabis exposure", prompt)
         self.assertNotIn("Verify active cannabinoid administration.", prompt)
         
         original_variant = os.environ.get("CLASSIFIER_PROMPT_VARIANT")
@@ -1074,6 +1088,7 @@ class TestExpertEditAndActiveLearning(unittest.TestCase):
                 abstract_only=True,
                 require_full_text=False,
                 include_locked=False,
+                include_calibrated=False,
             )
             json_path, walkthrough_path = calibration_agent.run_calibration(args)
             
@@ -1086,6 +1101,30 @@ class TestExpertEditAndActiveLearning(unittest.TestCase):
             self.assertEqual(payload["calls_attempted"], 0)
             self.assertTrue(payload["dry_run"])
             self.assertEqual(payload["updates_applied"], 0)
+
+    def test_calibration_metrics_dashboard_aggregates_manual_batches(self):
+        import calibration_metrics
+
+        metrics = calibration_metrics.build_dashboard_metrics(
+            output_dir=Path("scratch/calibration_runs"),
+            rules_config=classifier.load_rules_config(),
+        )
+
+        self.assertGreaterEqual(metrics["summary"]["batch_count"], 2)
+        self.assertEqual(metrics["summary"]["total_papers"], 100)
+        self.assertIn("control", {v["variant"] for v in metrics["variant_comparison"]["variants"]})
+        self.assertIn("decision_checklist", {v["variant"] for v in metrics["variant_comparison"]["variants"]})
+        self.assertGreater(metrics["field_change_totals"]["high_level_fields"].get("cannabis_type", 0), 0)
+        self.assertFalse(metrics["automation_readiness"]["ready_for_full_automation"])
+        self.assertGreater(len(metrics["priority_review"]), 0)
+        self.assertGreaterEqual(metrics["summary"]["expert_notes_count"], 1)
+
+    def test_calibration_dashboard_metrics_api(self):
+        response = self.client.get("/api/calibration/dashboard-metrics")
+        self.assertEqual(response.status_code, 200)
+        data = json.loads(response.data.decode("utf-8"))
+        self.assertEqual(data["summary"]["total_papers"], 100)
+        self.assertIn("automation_readiness", data)
 
     def test_agent_queue_status_and_recent_feedback_apis(self):
         paper_id = self.db.insert_paper({

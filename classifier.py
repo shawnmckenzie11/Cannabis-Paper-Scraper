@@ -116,6 +116,26 @@ def compile_system_prompt(config: Dict[str, Any]) -> str:
             + "\n".join(cue_lines)
         )
     
+    boundary_lines = []
+    decision_boundaries = config.get("decision_boundaries") or {}
+    for boundary_name, boundary in decision_boundaries.items():
+        rule = boundary.get("rule")
+        example = boundary.get("example")
+        expected = boundary.get("expected")
+        if rule:
+            boundary_lines.append(f"- {boundary_name}: {rule}")
+        if example:
+            boundary_lines.append(f"  Example: {example}")
+        if expected:
+            boundary_lines.append(f"  Expected routing: {json.dumps(expected)}")
+    
+    if boundary_lines:
+        prompt_blocks.append(
+            "## Learned Decision Boundaries\n"
+            "Apply these Maude calibration lessons before extracting detailed fields:\n"
+            + "\n".join(boundary_lines)
+        )
+    
     prompt_variant = os.getenv("CLASSIFIER_PROMPT_VARIANT", "control")
     variants = config.get("calibration_variants") or {}
     variant_config = variants.get(prompt_variant) or {}

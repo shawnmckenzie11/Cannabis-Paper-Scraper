@@ -55,6 +55,25 @@
       "/api/classification/run-eval"
     ]
   },
+  "decision_boundaries": {
+    "review_vs_original_prenatal_cannabis": {
+      "source": "calibration_20260616_222616 paper 31533 / PMID 22229018",
+      "rule": "If the title or abstract discusses lasting impacts, roles, mechanisms, or broad evidence about prenatal cannabis exposure/endogenous cannabinoids without reporting new author-generated Methods/Results, classify the article as a review rather than original research. Do not infer animal, clinical, inhaled, or pure-cannabinoid administration from studies merely being summarized.",
+      "example": "Lasting impacts of prenatal cannabis exposure and the role of endogenous cannabinoids in the developing brain",
+      "expected": {
+        "publication_type": "review",
+        "study_type": [
+          "review"
+        ],
+        "exposure_method": [
+          "unknown"
+        ],
+        "cannabis_type": [
+          "unknown"
+        ]
+      }
+    }
+  },
   "calibration_variants": {
     "control": {
       "description": "Current production cue-aware prompt with no extra calibration overlay.",

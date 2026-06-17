@@ -5,6 +5,7 @@ import re
 import threading
 import logging
 from datetime import datetime, date
+from pathlib import Path
 from functools import wraps
 from flask import Flask, render_template, request, jsonify, session, redirect, url_for
 import random
@@ -18,6 +19,7 @@ import classifier
 import harvest
 from extractor import is_cannabis_related
 from citation_graph import CitationGraph
+import calibration_metrics
 
 app = Flask(__name__)
 app.secret_key = os.getenv("FLASK_SECRET_KEY", "mckenzian-secret-key-12345")
@@ -1131,6 +1133,25 @@ def api_scheduler_status():
         "query": "cannabis OR cannabinoid OR marijuana"
     })
 
+@app.route("/api/calibration/dashboard-metrics", methods=["GET"])
+def api_calibration_dashboard_metrics():
+    """Returns aggregated calibration learning metrics for dashboards and agents."""
+    try:
+        confidence_threshold = float(request.args.get("confidence_threshold", 0.72))
+    except (TypeError, ValueError):
+        confidence_threshold = 0.72
+    try:
+        metrics = calibration_metrics.build_dashboard_metrics(
+            output_dir=Path(os.path.join(BASE_DIR, "scratch/calibration_runs")),
+            rules_config=classifier.load_rules_config(),
+            confidence_threshold=confidence_threshold,
+        )
+        return jsonify(metrics)
+    except Exception as e:
+        app.logger.error(f"Error compiling calibration dashboard metrics: {e}")
+        return jsonify({"error": str(e)}), 500
+
+
 @app.route("/api/agents/automation-status", methods=["GET"])
 def api_agents_automation_status():
     """Returns agent-readable automation, feedback, and review queue status."""
@@ -1906,7 +1927,11 @@ def api_learning_dashboard_metrics():
             "confidence": {
                 "distribution": conf_distribution
             },
-            "versions": versions
+            "versions": versions,
+            "calibration": calibration_metrics.build_dashboard_metrics(
+                output_dir=Path(os.path.join(BASE_DIR, "scratch/calibration_runs")),
+                rules_config=classifier.load_rules_config(),
+            ),
         }
         
         return jsonify(metrics)

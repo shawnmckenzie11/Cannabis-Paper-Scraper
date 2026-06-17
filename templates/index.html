@@ -2002,6 +2002,53 @@
 
                 <!-- Reinforcement Learning & Model Version Comparison -->
                 <div class="glass-panel" style="padding: 20px; display: flex; flex-direction: column; gap: 15px; border-radius: 12px; margin-top: 10px; border-color: rgba(99, 102, 241, 0.25);">
+                    <h4 style="margin: 0; font-size: 1rem; font-weight: 600; color: var(--text-primary); display: flex; align-items: center; gap: 6px;">🧪 Calibration Learning Passes</h4>
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 12px;">
+                        <div style="padding: 12px; border-radius: 8px; background: rgba(255,255,255,0.02); text-align: center;">
+                            <div style="font-size: 0.72rem; text-transform: uppercase; color: var(--text-secondary); font-weight: 600;">Batches</div>
+                            <div id="cal-batch-count" style="font-size: 1.5rem; font-weight: 800; color: #818cf8;">0</div>
+                        </div>
+                        <div style="padding: 12px; border-radius: 8px; background: rgba(255,255,255,0.02); text-align: center;">
+                            <div style="font-size: 0.72rem; text-transform: uppercase; color: var(--text-secondary); font-weight: 600;">Papers Calibrated</div>
+                            <div id="cal-paper-count" style="font-size: 1.5rem; font-weight: 800; color: var(--accent-blue);">0</div>
+                        </div>
+                        <div style="padding: 12px; border-radius: 8px; background: rgba(255,255,255,0.02); text-align: center;">
+                            <div style="font-size: 0.72rem; text-transform: uppercase; color: var(--text-secondary); font-weight: 600;">HL Change Rate</div>
+                            <div id="cal-hl-rate" style="font-size: 1.5rem; font-weight: 800; color: #fbbf24;">0%</div>
+                        </div>
+                        <div style="padding: 12px; border-radius: 8px; background: rgba(255,255,255,0.02); text-align: center;">
+                            <div style="font-size: 0.72rem; text-transform: uppercase; color: var(--text-secondary); font-weight: 600;">Automation Ready</div>
+                            <div id="cal-automation-ready" style="font-size: 1.5rem; font-weight: 800; color: #ef4444;">No</div>
+                        </div>
+                    </div>
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(420px, 1fr)); gap: 16px;">
+                        <div style="height: 260px; position: relative;">
+                            <canvas id="chart-calibration-variants"></canvas>
+                        </div>
+                        <div style="height: 260px; position: relative;">
+                            <canvas id="chart-calibration-hl-fields"></canvas>
+                        </div>
+                    </div>
+                    <div class="analyses-table-wrap" style="max-height: 28vh; overflow-y: auto;">
+                        <table>
+                            <thead>
+                                <tr style="background: rgba(255,255,255,0.02);">
+                                    <th style="padding: 10px 15px;">Priority Review</th>
+                                    <th style="padding: 10px 15px;">Conf</th>
+                                    <th style="padding: 10px 15px;">Variant</th>
+                                    <th style="padding: 10px 15px;">HL Fields</th>
+                                    <th style="padding: 10px 15px;">Title</th>
+                                </tr>
+                            </thead>
+                            <tbody id="cal-review-tbody">
+                                <tr><td colspan="5" style="text-align: center; color: var(--text-secondary); padding: 20px;">No calibration review queue compiled yet.</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Reinforcement Learning & Model Version Comparison -->
+                <div class="glass-panel" style="padding: 20px; display: flex; flex-direction: column; gap: 15px; border-radius: 12px; margin-top: 10px; border-color: rgba(99, 102, 241, 0.25);">
                     <h4 style="margin: 0; font-size: 1rem; font-weight: 600; color: var(--text-primary); display: flex; align-items: center; gap: 6px;">🧠 Reinforcement Learning & Model Version Comparison</h4>
                     <div class="analyses-table-wrap">
                         <table>
@@ -2875,6 +2922,8 @@
         let chartConfidenceTrend = null;
         let chartLockedFields = null;
         let chartReliabilityTrends = null;
+        let chartCalibrationVariants = null;
+        let chartCalibrationHlFields = null;
 
         // Switch table views between Original, Review, and Recents
         function switchTab(tab) {
@@ -4842,6 +4891,8 @@
                         renderReliabilityTrendsChart(data.learning_growth);
                     }
 
+                    // Calibration learning metrics
+                    renderCalibrationDashboard(data.calibration);
 
                     // 5.5 Populate Version Table
                     const versionTbody = document.getElementById("dash-version-tbody");
@@ -5206,6 +5257,129 @@
                     }
                 }
             });
+        }
+
+        function renderCalibrationDashboard(calibration) {
+            const summary = calibration && calibration.summary ? calibration.summary : null;
+            document.getElementById("cal-batch-count").innerText = summary ? summary.batch_count : 0;
+            document.getElementById("cal-paper-count").innerText = summary ? summary.total_papers : 0;
+            document.getElementById("cal-hl-rate").innerText = summary
+                ? ((summary.high_level_change_rate || 0) * 100).toFixed(0) + '%'
+                : '0%';
+
+            const readiness = calibration && calibration.automation_readiness;
+            const readyEl = document.getElementById("cal-automation-ready");
+            if (readiness && readiness.ready_for_full_automation) {
+                readyEl.innerText = 'Yes';
+                readyEl.style.color = '#4caf50';
+            } else if (readiness) {
+                readyEl.innerText = readiness.completed_count + '/' + readiness.total_count;
+                readyEl.style.color = '#fbbf24';
+            } else {
+                readyEl.innerText = 'No';
+                readyEl.style.color = '#ef4444';
+            }
+
+            const reviewTbody = document.getElementById("cal-review-tbody");
+            const reviewRows = (calibration && calibration.priority_review) || [];
+            if (!reviewRows.length) {
+                reviewTbody.innerHTML = '<tr><td colspan="5" style="text-align: center; color: var(--text-secondary); padding: 20px;">No calibration review queue compiled yet.</td></tr>';
+            } else {
+                reviewTbody.innerHTML = reviewRows.slice(0, 12).map(row => {
+                    const conf = row.confidence != null ? (row.confidence * 100).toFixed(1) + '%' : '—';
+                    const queueBadge = row.in_review_queue
+                        ? ' <span style="color:#fbbf24;font-size:0.72rem;font-weight:700;">queue</span>'
+                        : '';
+                    return `<tr>
+                        <td style="font-family: monospace; color: var(--accent-blue);">${row.paper_id}<div style="color: var(--text-secondary); font-size: 0.75rem;">${row.pmid || ''}</div></td>
+                        <td>${conf}${queueBadge}</td>
+                        <td style="font-family: monospace; font-size: 0.8rem;">${row.variant || '—'}</td>
+                        <td style="font-family: monospace; font-size: 0.75rem;">${(row.high_level_fields || []).join(', ')}</td>
+                        <td style="font-size: 0.82rem; max-width: 360px;">${row.title || ''}${row.expert_status ? `<div style="color: var(--text-secondary); margin-top: 4px;">${row.expert_status}</div>` : ''}</td>
+                    </tr>`;
+                }).join('');
+            }
+
+            const variants = (calibration && calibration.variant_comparison && calibration.variant_comparison.variants) || [];
+            const variantCtx = document.getElementById('chart-calibration-variants');
+            if (variantCtx) {
+                if (chartCalibrationVariants) chartCalibrationVariants.destroy();
+                chartCalibrationVariants = new Chart(variantCtx.getContext('2d'), {
+                    type: 'bar',
+                    data: {
+                        labels: variants.map(v => v.variant),
+                        datasets: [
+                            {
+                                label: 'Avg Confidence',
+                                data: variants.map(v => v.avg_confidence || 0),
+                                backgroundColor: 'rgba(34, 211, 238, 0.45)',
+                                borderColor: '#22d3ee',
+                                borderWidth: 1,
+                                yAxisID: 'y'
+                            },
+                            {
+                                label: 'HL Change Rate',
+                                data: variants.map(v => v.high_level_change_rate || 0),
+                                backgroundColor: 'rgba(129, 140, 248, 0.45)',
+                                borderColor: '#818cf8',
+                                borderWidth: 1,
+                                yAxisID: 'y1'
+                            }
+                        ]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: { legend: { labels: { color: '#94a3b8' } } },
+                        scales: {
+                            x: { ticks: { color: '#94a3b8' }, grid: { color: 'rgba(255,255,255,0.03)' } },
+                            y: {
+                                beginAtZero: true,
+                                max: 1,
+                                ticks: { color: '#94a3b8', callback: v => (v * 100).toFixed(0) + '%' },
+                                grid: { color: 'rgba(255,255,255,0.03)' }
+                            },
+                            y1: {
+                                beginAtZero: true,
+                                max: 1,
+                                position: 'right',
+                                grid: { drawOnChartArea: false },
+                                ticks: { color: '#94a3b8', callback: v => (v * 100).toFixed(0) + '%' }
+                            }
+                        }
+                    }
+                });
+            }
+
+            const hlFields = (calibration && calibration.field_change_totals && calibration.field_change_totals.high_level_fields) || {};
+            const hlLabels = Object.keys(hlFields);
+            const hlCtx = document.getElementById('chart-calibration-hl-fields');
+            if (hlCtx) {
+                if (chartCalibrationHlFields) chartCalibrationHlFields.destroy();
+                chartCalibrationHlFields = new Chart(hlCtx.getContext('2d'), {
+                    type: 'bar',
+                    data: {
+                        labels: hlLabels,
+                        datasets: [{
+                            label: 'High-Level Field Changes',
+                            data: hlLabels.map(label => hlFields[label]),
+                            backgroundColor: 'rgba(251, 191, 36, 0.5)',
+                            borderColor: '#fbbf24',
+                            borderWidth: 1
+                        }]
+                    },
+                    options: {
+                        indexAxis: 'y',
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: { legend: { display: false } },
+                        scales: {
+                            x: { ticks: { color: '#94a3b8' }, grid: { color: 'rgba(255,255,255,0.03)' } },
+                            y: { ticks: { color: '#94a3b8' }, grid: { color: 'rgba(255,255,255,0.03)' } }
+                        }
+                    }
+                });
+            }
         }
 
         function renderLockedFieldsChart(activeDistribution) {

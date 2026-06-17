@@ -73,6 +73,7 @@ def select_candidates(
     confidence_max: float,
     require_full_text: bool,
     exclude_locked: bool,
+    exclude_calibrated: bool,
 ) -> List[Dict[str, Any]]:
     """Selects candidate papers for a bounded calibration run."""
     db = DatabaseManager()
@@ -93,6 +94,9 @@ def select_candidates(
 
     if require_full_text:
         where_clauses.append("(full_text_link IS NOT NULL AND full_text_link != '')")
+
+    if exclude_calibrated:
+        where_clauses.append("(classifier_version IS NULL OR classifier_version NOT LIKE 'llm-calibration-%')")
 
     if mode == "low_confidence":
         where_clauses.append("classification_confidence IS NOT NULL")
@@ -228,6 +232,7 @@ def run_calibration(args: argparse.Namespace) -> Tuple[Path, Path]:
         confidence_max=args.confidence_max,
         require_full_text=args.require_full_text,
         exclude_locked=not args.include_locked,
+        exclude_calibrated=not args.include_calibrated,
     )
 
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
@@ -421,6 +426,7 @@ def build_arg_parser() -> argparse.ArgumentParser:
     parser.add_argument("--abstract-only", action="store_true", default=True, help="Use title and abstract only for budget-stable calibration.")
     parser.add_argument("--require-full-text", action="store_true", help="Select only papers with a full_text_link.")
     parser.add_argument("--include-locked", action="store_true", help="Include papers with expert-locked fields.")
+    parser.add_argument("--include-calibrated", action="store_true", help="Include papers already labeled by llm-calibration runs.")
     return parser
 
 
