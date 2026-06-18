@@ -614,8 +614,8 @@ def process_paper_metadata(title: str, abstract: str, run_llm: bool = False, run
     if not metadata:
         logger.info("Running standard regex and keyword heuristics extractor.")
         metadata = extractor.extract_all_heuristics(title, abstract)
-        # Apply neutral fallback metadata
-        metadata["classification_confidence"] = 1.0
+        # Heuristic-only path must not auto-clear the review threshold (0.85).
+        metadata["classification_confidence"] = 0.6
         metadata["classification_timestamp"] = datetime.now().isoformat()
         metadata["classifier_version"] = "heuristic-1.0.0"
         

@@ -79,6 +79,22 @@ class TestHeuristicExtractor(unittest.TestCase):
         abstract_ali = "Lung epithelial cells were exposed to cannabis vapor directly at the air-liquid interface."
         self.assertEqual(extractor.infer_exposure_method(title_ali, abstract_ali, "Cell Culture (Other In Vitro)"), ["exposure of cells to smoke/vapor"])
 
+        # Behavioral/mHealth trials with no administration route should not default to inhaled
+        title_mrt = "Mobile intervention for emerging adults with regular cannabis use: a micro-randomized trial"
+        abstract_mrt = (
+            "OBJECTIVE: Test a smartphone-delivered intervention for reducing cannabis use. "
+            "METHODS: Participants (N=122) were randomized in a 30-day MRT to receive "
+            "personalized prompts. Follow-up assessments occurred at 2-month follow-up."
+        )
+        self.assertEqual(
+            extractor.infer_exposure_method(title_mrt, abstract_mrt, "Clinical (observational)"),
+            ["unknown"],
+        )
+        cannabis_type = extractor.infer_cannabis_type(
+            title_mrt, abstract_mrt, "Clinical (observational)", ["unknown"]
+        )
+        self.assertEqual(cannabis_type, ["unknown"])
+
     def test_thc_cbd_extraction(self):
         abstract = "The material contained 12.5% THC and CBD (2.5%)."
         self.assertEqual(extractor.extract_thc_pct(abstract), 12.5)
@@ -103,6 +119,13 @@ class TestHeuristicExtractor(unittest.TestCase):
         text_hyphen = "A 6-week trial of cannabidiol was performed."
         self.assertEqual(extractor.extract_duration_days(text_hyphen), 42.0)
 
+        # Prefer intervention duration over later follow-up window
+        text_mrt = (
+            "Participants were randomized in a 30-day MRT to receive prompts. "
+            "Assessments occurred at 2-month follow-up."
+        )
+        self.assertEqual(extractor.extract_duration_days(text_mrt), 30.0)
+
         # Age exclusions
         text_age = "30-year-old patients were treated with CBD for 5 days."
         self.assertEqual(extractor.extract_duration_days(text_age), 5.0)
@@ -122,6 +145,30 @@ class TestHeuristicExtractor(unittest.TestCase):
         self.assertEqual(extractor.format_study_duration(75.0), "2.5 months")
         self.assertEqual(extractor.format_study_duration(14.0), "14 days")
         self.assertEqual(extractor.format_study_duration(0.0), "N/A")
+
+    def test_outcome_extraction(self):
+        """Outcome keywords should avoid ML false positives and catch cannabis-use addiction studies."""
+        title_ml = "Adaptive intervention using reinforcement learning algorithm"
+        abstract_ml = (
+            "OBJECTIVE: Optimize prompts with a reinforcement learning algorithm. "
+            "METHODS: We tested an adaptive mobile health intervention."
+        )
+        self.assertNotIn("cognition", extractor.extract_outcomes(title_ml, abstract_ml))
+
+        title_addiction = "Mobile intervention for emerging adults with regular cannabis use"
+        abstract_addiction = (
+            "OBJECTIVE: Reduce cannabis use among emerging adults. "
+            "METHODS: Participants received smartphone prompts."
+        )
+        self.assertIn("addiction", extractor.extract_outcomes(title_addiction, abstract_addiction))
+
+    def test_heuristic_fallback_confidence(self):
+        """Heuristic-only classifications must stay below auto-accept threshold."""
+        title = "Mobile intervention for emerging adults with regular cannabis use"
+        abstract = "OBJECTIVE: Reduce cannabis use. METHODS: Smartphone prompts over 30-day MRT."
+        metadata = classifier.process_paper_metadata(title, abstract, run_llm=False)
+        self.assertEqual(metadata["classifier_version"], "heuristic-1.0.0")
+        self.assertLess(metadata["classification_confidence"], 0.85)
 
     def test_sample_size(self):
         text = "A sample size of 84 patients was recruited (n = 84)."

@@ -292,12 +292,13 @@ def extract_duration_days(text: str) -> Optional[float]:
         if days <= 30 * 365.0:
             return days
 
-    # 2. Next, check for hyphenated study duration formats (e.g. "6-week study", "3-month trial")
-    hyphen_pattern = re.compile(
-        r'(?i)\b(\d+(?:\.\d+)?)-(day|week|month|year)s?\b\s*(?:study|trial|intervention|treatment|regimen|course|follow-up|period)'
-    )
-    match = hyphen_pattern.search(text)
-    if match:
+    # 2. Hyphenated durations (e.g. "30-day MRT", "6-week trial") — first match wins;
+    #    skip follow-up windows so intervention length beats post-trial follow-up.
+    hyphen_pattern = re.compile(r'(?i)\b(\d+(?:\.\d+)?)-(day|week|month|year)s?\b')
+    for match in hyphen_pattern.finditer(text):
+        post_context = text[match.end():match.end() + 30].lower()
+        if re.search(r'\bfollow[- ]?up\b', post_context):
+            continue
         days = convert_to_days(float(match.group(1)), match.group(2))
         if days <= 30 * 365.0:
             return days
@@ -808,7 +809,7 @@ def infer_exposure_method(title: str, abstract: str, study_type: Any) -> List[st
         if "in vitro" in study_types or any(s.startswith("Cell Culture (") for s in study_types):
             methods.append("cannabinoids dissolved in media")
         elif study_types.intersection({"RCT", "observational"}) or any(s.startswith("Clinical (") for s in study_types):
-            methods.append("inhaled")
+            methods.append("unknown")
         else:
             methods.append("injection cannabinoids")
             
@@ -926,9 +927,9 @@ def extract_outcomes(title: str, abstract: str) -> List[str]:
     mapping = {
         "pain": ["pain", "analgesic", "nociception", "hyperalgesia", "allodynia", "neuropathic"],
         "anxiety": ["anxiety", "anxiolytic", "fear", "panic", "generalized anxiety", "ptsd"],
-        "cognition": ["cognition", "cognitive", "memory", "learning", "attention", "executive function", "dementia", "alzheimer"],
+        "cognition": ["cognition", "cognitive", "memory", "attention", "executive function", "dementia", "alzheimer"],
         "inflammation": ["inflammation", "inflammatory", "cytokine", "tnf", "interleukin", "il-6", "anti-inflammatory", "arthritis"],
-        "addiction": ["addiction", "dependence", "withdrawal", "craving", "abuse", "substance use", "relapse"],
+        "addiction": ["addiction", "dependence", "withdrawal", "craving", "abuse", "substance use", "cannabis use", "relapse"],
         "oncology": ["oncology", "cancer", "tumor", "tumour", "chemotherapy", "glioblastoma", "carcinoma", "antineoplastic"],
         "neuroprotection": ["neuroprotection", "neuroprotective", "stroke", "ischemia", "brain injury", "sclerosis", "epilepsy", "seizure"],
         "sleep": ["sleep", "insomnia", "actigraphy", "sleep quality", "melatonin"]
