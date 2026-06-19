@@ -3,7 +3,7 @@
 set -euo pipefail
 
 APP="${FLY_APP:-cannabis-paper-scraper}"
-MAX_CALLS="${MAX_CALLS:-586}"
+MAX_CALLS="${MAX_CALLS:-750}"
 OFFSET="${OFFSET:-0}"
 PULL_LOCAL="${PULL_LOCAL:-1}"
 

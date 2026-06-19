@@ -34,10 +34,16 @@ def main() -> None:
         ("llm-pdf-reclassify-%",),
     )
     llm_pdf = _scalar(cursor.fetchone())
+    cursor.execute(
+        "SELECT COUNT(*) FROM papers WHERE classifier_version LIKE ?",
+        ("llm-reclassify-%",),
+    )
+    llm_abstract = _scalar(cursor.fetchone())
     conn.close()
     print("total_papers:", total)
     print("node1_calibrated:", node1)
     print("llm_pdf_reclassify:", llm_pdf)
+    print("llm_reclassify:", llm_abstract)
 
 
 if __name__ == "__main__":

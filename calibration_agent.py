@@ -188,17 +188,22 @@ def select_llm_pdf_reclassify_candidates(
     fetch_limit: int,
     exclude_locked: bool = True,
     offset: int = 0,
+    include_abstract_reclassify: bool = True,
 ) -> List[Dict[str, Any]]:
-    """Selects papers already classified by Claude PDF reclassify for Maude A/B pairing."""
+    """Selects Claude reclassified papers (PDF and/or abstract) for Maude A/B pairing."""
     db = DatabaseManager()
     conn = db.get_connection()
     if not db.is_postgres:
         conn.row_factory = sqlite3.Row
     cursor = conn.cursor()
 
+    version_clauses = ["classifier_version LIKE 'llm-pdf-reclassify-%'"]
+    if include_abstract_reclassify:
+        version_clauses.append("classifier_version LIKE 'llm-reclassify-%'")
+
     where_clauses = [
         "(abstract IS NOT NULL AND abstract != '')",
-        "classifier_version LIKE 'llm-pdf-reclassify-%'",
+        f"({' OR '.join(version_clauses)})",
     ]
     params: List[Any] = []
 
@@ -669,6 +674,7 @@ def run_maude_ab_from_llm_pdf(args: argparse.Namespace) -> Tuple[Path, Path]:
         fetch_limit=fetch_limit,
         exclude_locked=not args.include_locked,
         offset=offset,
+        include_abstract_reclassify=not getattr(args, "pdf_reclassify_only", False),
     )
 
     rules_version = get_rules_version()
@@ -865,7 +871,12 @@ def build_arg_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--maude-from-llm-pdf",
         action="store_true",
-        help="Pair stored llm-pdf-reclassify classifications with Maude (no Claude calls or DB writes).",
+        help="Pair stored llm-reclassify / llm-pdf-reclassify classifications with Maude (no Claude calls or DB writes).",
+    )
+    parser.add_argument(
+        "--pdf-reclassify-only",
+        action="store_true",
+        help="With --maude-from-llm-pdf, include only llm-pdf-reclassify papers (default: PDF + abstract reclassify).",
     )
     parser.add_argument(
         "--offset",
