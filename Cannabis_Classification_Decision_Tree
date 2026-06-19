@@ -1,0 +1,492 @@
+# Cannabis Classification Decision Tree
+# Source: EXPERT FEEDBACK TREE & CUES (2026-06-18) · aligned with rules_config.json v2.4.0
+# Routing order: Node 0 → Node 1B/1C before Node 1A → Node 2 (2A–2D) or Node 3 (3A–3C)
+
+# ─────────────────────────────────────────────────────────────────────────────
+# CUE NOTATION
+# ─────────────────────────────────────────────────────────────────────────────
+# STRONG cues (apply in title/abstract unless suffixed):
+#   "string"     exact match in title or abstract
+#   "string"m    exact match in Methods (or Materials/Treatments subsection)
+#   v"string"    variant/fuzzy match in title or abstract
+#   v"string"m   variant/fuzzy match in Methods
+#
+# Cue types (expert chart):
+#   lexographic (strong) · sectional (strong) · structural · semantic
+#
+# Field status:
+#   [in schema]      — field exists in rules_config field_groups / output JSON
+#   [schema gap]     — proposed field; not yet in rules_config or DB schema
+#   [rules_config]   — canonical enum value in rules_config.json
+
+# ─────────────────────────────────────────────────────────────────────────────
+# NODE 0 · INGESTION
+# ─────────────────────────────────────────────────────────────────────────────
+IF ingestion [node 0] THEN
+  PURPOSE: Decide whether title/abstract warrant full classification.
+
+  OUTPUTS: relevant | tangential | irrelevant | not cannabis-related
+
+  POSITIVE CUES (lexographic):
+    "cannabis", "marijuana", "cannabinoid", "THC", "CBD", "endocannabinoid",
+    "administration", "pharmacology", "clinical outcome"
+
+  NEGATIVE CUES:
+    lexographic: "hemp fiber", "agricultural yield", "textile"
+    semantic: taxonomy-only, legal/policy-only, unrelated acronym collisions
+      (e.g. CBD = common bile duct, corticobasal degeneration, central business district)
+
+  IF NOT actively administering/testing cannabis or cannabinoids THEN
+    SET publication_type = "not cannabis-related"  # [rules_config]
+    CUES (semantic): GPR55, GPR18, GPR119, LPI, lysophosphatidylinositol without
+      cannabinoid treatment (e.g. only LPI + CID 16020046)
+    RESTRICT: skip downstream extraction; flag for purging
+
+  ELSE
+    ROUTE → Node 1B / 1C / 1A
+
+END IF
+
+# ─────────────────────────────────────────────────────────────────────────────
+# NODE 1B · REVIEWS / SECONDARY LITERATURE  (route BEFORE Node 1A)
+# ─────────────────────────────────────────────────────────────────────────────
+IF reviews / secondary [node 1b] THEN
+  PURPOSE: Narrative reviews, systematic reviews, meta-analyses, editorials,
+           comments, letters, perspectives. Route here before original-research extraction.
+
+  POSITIVE CUES (lexographic):
+    "review", "systematic review", "meta-analysis", "narrative synthesis",
+    "scoping review", "editorial", "commentary", v"letter to the editor", "perspectives"
+
+  NEGATIVE CUES (original-research signals — route away from 1B):
+    v"we conducted"m, v"participants were randomized"m, "n="m,
+    v"Methods section with new experiments"m
+
+  SET publication_type ∈ {
+    "review",                    # [rules_config]
+    "systematic review",         # → Node 3A
+    "meta-analysis",             # → Node 3B
+    "editorial",                 # → Node 3C
+    "comment",                   # → Node 3C
+    "letter to the editor",      # → Node 3C
+    "perspectives paper"         # → Node 3C
+  }
+
+  SET study_type ∈ { "review", "meta-analysis", "editorial" }  # [rules_config]
+
+  RESTRICT: leave exposure_method, cannabis_type, dose, strain fields null
+            unless describing the review's own methodology (rare)
+
+  ROUTE → Node 3A | 3B | 3C
+
+END IF
+
+# ─────────────────────────────────────────────────────────────────────────────
+# NODE 1C · CASE REPORT  (route BEFORE Node 1A)
+# ─────────────────────────────────────────────────────────────────────────────
+IF case report [node 1c] THEN
+  PURPOSE: Detailed report of one or a few cases.
+
+  POSITIVE CUES:
+    "case report", "case series", v"we report a case", v"single patient", v"two patients"
+
+  NEGATIVE CUES:
+    "randomized", v"cohort of", "n="m, v"systematic search"
+
+  SET publication_type = "case study"       # [rules_config]
+  SET study_type = "case study"             # [rules_config] · TODO: UI filter option
+
+  EXTRACT (case only, not cited literature):
+    exposure_method, cannabis_type, dose_mg, thc_pct, cbd_pct,
+    strain_reported, outcome_domain, duration_days
+
+END IF
+
+# ─────────────────────────────────────────────────────────────────────────────
+# NODE 1A · ORIGINAL RESEARCH
+# ─────────────────────────────────────────────────────────────────────────────
+IF original research [node 1a] THEN
+  PURPOSE: Primary data, new results, experimental or clinical observations.
+
+  POSITIVE CUES:
+    sectional: Methods, Results
+    lexographic: "in vivo", "in vitro", "exposure", "participants", "cohort",
+      "sample size", "case-control", v"animal experiment", v"cell line assay",
+      "intervention arm", "dose"
+
+  NEGATIVE CUES (review signals — should have routed to 1B):
+    v"we review", v"literature suggests", v"previous studies have shown",
+    v"summarize evidence"
+
+  SET publication_type = "original research"  # [rules_config]
+
+  REQUIRE: targeted Methods scan (Animals, Cell Culture, Treatments, Drugs,
+           Inhalation, Materials) + Results before dose/strain extraction
+
+  ROUTE → Node 2A | 2B | 2C | 2D
+
+END IF
+
+# ─────────────────────────────────────────────────────────────────────────────
+# NODE 2A · CLINICAL (human subjects)
+# ─────────────────────────────────────────────────────────────────────────────
+IF clinical [node 2a] THEN
+  PURPOSE: Human subjects — interventional trials and observational designs.
+
+  POSITIVE CUES:
+    "participants", "patients", "randomized", "placebo", "trial", "cohort",
+    "adverse events", "dose", v"product form", v"route of administration"
+
+  NEGATIVE CUES (route to 2B/2C instead):
+    "cell culture", v"primary neurons", "mouse", "rat", "organoid", v"assay plate"
+
+  SET study_type ∈ {
+    "Clinical (RCT)",           # [node 4a] interventional · [rules_config]
+    "Clinical (prospective)",   # [node 4b] observational · [rules_config]
+    "Clinical (retrospective)", # [node 4c] observational · [rules_config]
+    "Clinical (observational)", # [node 4d] cross-sectional, GWAS, etc. · [rules_config]
+    "case study"                # [node 4e] if single/few cases · [schema gap: UI filter]
+  }
+
+  SET exposure_method ∈ {
+    "inhaled",     # [rules_config] · cues: smoking, vaping, vaporization, inhalation
+    "oral",        # [rules_config] · cues: edible, capsule, gummy, ingestion
+    "sublingual",  # [rules_config] · cues: drops, tincture, v"under the tongue"
+    "injected"     # [rules_config] · cues: IV, IM, SC in human subjects
+  }
+
+  EXTRACT cannabis_type ∈ {
+    "dried flower",        # [rules_config] · cues: flower, bud, joint, combusted herb, marijuana cigarette
+    "concentrates",        # [rules_config] · cues: shatter, wax, resin, hash oil, BHO, rosin
+    "vape pen",            # [rules_config] · cues: vape cartridge, vaporizer, aerosol, distillate vape
+    "pure cannabinoid",    # [rules_config] · cues: dronabinol, nabilone, synthetic cannabinoid, isolate
+    "edibles",             # [rules_config] · cues: gummy, chocolate, brownie, beverage, capsule
+    "hashish/kief",        # [rules_config] · cues: hashish, kief, charas
+    "CB receptor agonist", # [rules_config] · cues: WIN 55,212-2, CP 55,940, HU-210
+    "CB receptor antagonist" # [rules_config] · cues: rimonabant, SR141716, AM251
+    # User-facing aliases (map to above):
+    #   "vape concentrates/cartridge" → vape pen | concentrates
+    #   "oils" → pure cannabinoid | concentrates (oral/sublingual tincture)
+    #   "topicals" → [schema gap] not in rules_config cannabis_type enum
+    #   "pharmaceutical formulations" → pure cannabinoid (Epidiolex, Marinol, dronabinol)
+  }
+
+  EXTRACT [in schema]:
+    sample_size, duration_days, dose_mg, strain_reported, strain_normalized,
+    thc_pct, cbd_pct, cannabis_type, outcome_domain,
+    administration_frequency, multiple_doses, multiple_time_intervals
+
+  EXTRACT [schema gap]:
+    population_age, population_sex, inclusion_criteria, exclusion_criteria
+
+  IF inhaled THEN
+    EXTRACT: inhaled_exposure_duration, puff_count  # [in schema]
+
+  DO NOT EXTRACT: treatment_duration (leave null for clinical human)
+  DO NOT PUT IN strain_reported: animal strains, cell lines, host species
+
+  # ── Node 2A sub-branches ──────────────────────────────────────────────────
+
+  IF RCT [node 4a · interventional] THEN
+    CUES: "randomized", v"double-blind", v"placebo-controlled", "RCT", v"allocation concealed"m
+    SET study_type += "Clinical (RCT)"
+    EXTRACT [in schema]: sample_size, duration_days, dose_mg, administration_frequency
+    EXTRACT [schema gap]: population_age, population_sex, inclusion_criteria, exclusion_criteria
+
+  IF prospective [node 4b · observational] THEN
+    CUES: v"prospective cohort", longitudinal, v"followed for", v"enrolled and followed"m
+    SET study_type = "Clinical (prospective)"
+    EXTRACT: sample_size, duration_days
+
+  IF retrospective [node 4c · observational] THEN
+    CUES: v"retrospective", v"chart review", v"historical cohort", v"medical records"m
+    SET study_type = "Clinical (retrospective)"
+    EXTRACT: sample_size, duration_days
+
+  IF observational / cross-sectional [node 4d] THEN
+    CUES: v"cross-sectional", survey, registry, v"case-control", epidemiological, GWAS
+    SET study_type = "Clinical (observational)"
+    EXTRACT: sample_size
+
+  IF clinical case study [node 4e] THEN
+    CUES: v"case report", v"case series", v"we report a case", v"single patient"
+    SET study_type = "case study"
+    NOTE: overlap with Node 1C; prefer 1C when publication is case-primary
+
+END IF
+
+# ─────────────────────────────────────────────────────────────────────────────
+# NODE 2B · IN VIVO (animal whole-organism)
+# ─────────────────────────────────────────────────────────────────────────────
+IF in vivo [node 2b] THEN
+  PURPOSE: Animal studies, whole-organism pharmacology and behavioral outcomes.
+
+  POSITIVE CUES:
+    "mouse", "mice", "rat", "hamster", v"oral gavage"m, v"intraperitoneal"m,
+    v"behavior test", v"tissue analysis", v"sacrificed animals"m
+
+  NEGATIVE CUES:
+    v"human participant", v"clinical trial", v"patient-reported outcome", v"chart review"
+
+  SET study_type ∈ {
+    "Animal Models (Mouse)",              # [node 5a · rodent] · cues: murine, C57BL/6
+    "Animal Models (Rat)",                # [node 5a · rodent] · cues: Wistar, Sprague-Dawley
+    "Animal Models (Other Rodents)",      # [node 5a · rodent] · cues: hamster, gerbil, guinea pig, vole
+    "Animal Models (Non-Human Primates)", # [node 5b] · cues: macaque, rhesus, monkey, baboon
+    "Animal Models (Other)"               # [node 5c/5d/5e] · see sub-branches below
+  }
+
+  # User-facing labels → rules_config mapping:
+  #   "Rodents" → Mouse | Rat | Other Rodents
+  #   "Non-Human Primates" → Animal Models (Non-Human Primates)
+  #   "Other Mammals" → Animal Models (Other): dog, cat, pig, rabbit
+  #   "Invertebrates" → Animal Models (Other) + [schema gap] dedicated label
+  #   "Vertebrates Non-Mammal" → Animal Models (Other): zebrafish, frog, bird
+
+  IF rodents [node 5a] OR non-human primates [node 5b] OR other mammals [node 5c] THEN
+    CUES (5a): mouse, mice, rat, hamster, gerbil, guinea pig, rabbit, vole
+    CUES (5b): macaque, rhesus, monkey, baboon, v"non-human primate"
+    CUES (5c): dog, cat, pig, v"canine", v"porcine", v"ovine"
+
+    SET exposure_method ∈ {
+      "whole body. smoke/vapor",   # [rules_config] · dried flower, vape · whole-body chamber
+      "nose only smoke/vapor",     # [rules_config] · nose-only / snout-only exposure
+      "injection cannabinoids",    # [rules_config] · IP, IV, SC, IM · pure CBD/THC, oil concentrates
+      "oral administration",       # [rules_config] · gavage, diet, feeding, food supplementation
+      "sub-lingual",               # [rules_config]
+      "intranasal",                # [rules_config] · nasal instillation/drops
+      "intratracheal"              # [rules_config] · intratracheal instillation
+    }
+
+  ELSE IF invertebrates [node 5d] THEN
+    CUES: "C. elegans", drosophila, v"Caenorhabditis", v"Drosophila melanogaster"
+    SET study_type = "Animal Models (Other)"   # [schema gap: dedicated invertebrate label]
+    SET exposure_method = "cannabinoids dissolved in media"  # [rules_config; shared with in vitro enum]
+
+  ELSE IF vertebrates non-mammal [node 5e] THEN
+    CUES: zebrafish, v"Danio rerio", frog, v"Xenopus", bird, v"avian", v"pigeon"
+    SET study_type = "Animal Models (Other)"
+    SET exposure_method ∈ {
+      "whole body. smoke/vapor",
+      "injection cannabinoids",
+      "oral administration"
+    }
+
+  END IF
+
+  # ── Node 7 · exposure_method → cannabis_type + dose fields ────────────────
+
+  IF exposure_method ∈ { "whole body. smoke/vapor", "nose only smoke/vapor" } [node 7a/7b] THEN
+    EXTRACT cannabis_type ∈ { "dried flower", "vape pen", "concentrates" }
+    EXTRACT [in schema]:
+      puff_count, inhaled_exposure_duration, thc_pct, cbd_pct,
+      strain_reported, thc_mg_ml, cbd_mg_ml, duration_days, administration_frequency
+    EXTRACT [schema gap]: joint_count, vol_per_puff
+
+  ELSE IF exposure_method ∈ { "injection cannabinoids", "oral administration" } [node 7c/7d] THEN
+    EXTRACT cannabis_type ∈ { "pure cannabinoid", "concentrates", "edibles" }
+    EXTRACT [in schema]:
+      thc_mg_kg, cbd_mg_kg, thc_mg_g, cbd_mg_g, thc_pct, cbd_pct,
+      dose_mg, duration_days, administration_frequency, strain_reported
+    EXTRACT [schema gap]:
+      administration_route_detail (gavage vs in food/water),
+      total_dose_mg_per_animal, solvent, diluent
+
+  END IF
+
+  IF cannabis_type = "dried flower" THEN
+    EXTRACT [in schema]: thc_pct, cbd_pct, puff_count, strain_reported, thc_mg_ml, cbd_mg_ml
+    EXTRACT [schema gap]: joint_count
+
+  ELSE IF cannabis_type ∈ { "concentrates", "edibles", "pure cannabinoid" } THEN
+    EXTRACT [in schema]: thc_mg_kg, cbd_mg_kg, thc_pct, cbd_pct, strain_reported, thc_mg_ml, cbd_mg_ml
+    EXTRACT [schema gap]: solvent, diluent, volume_uL, administration_route_detail
+
+  END IF
+
+  CRITICAL: DO NOT put host animal strains in strain_reported
+    (Sprague-Dawley, Wistar, C57BL/6J, 5xFAD, gp120 transgenic) → null
+  strain_reported = cannabis cultivar OR synthetic test compound ONLY
+
+  EXTRACT [in schema]: sample_size, multiple_doses, multiple_time_intervals, outcome_domain
+
+END IF
+
+# ─────────────────────────────────────────────────────────────────────────────
+# NODE 2C · IN VITRO (cell-based / biochemical)
+# ─────────────────────────────────────────────────────────────────────────────
+IF in vitro [node 2c] THEN
+  PURPOSE: Cell-based, biochemical, receptor, and assay studies.
+
+  POSITIVE CUES:
+    v"cell line", v"primary cells", v"immortalized cells", "cultured", "incubated",
+    "concentration", v"receptor binding", "assay", "ELISA", "microglia",
+    "hepatocytes", "fibroblast", "macrophage", v"epithelial cell", "THP-1", "A549"
+
+  NEGATIVE CUES:
+    "patient", "participant", "trial", v"animal dosing", v"behavioral endpoint"
+
+  SET study_type ∈ {
+    "Cell Culture (Primary Cells)",    # [node 6a] · cues: splenocytes, primary microglia, primary hepatocytes
+    "Cell Culture (Cell Lines)",       # [node 6b] · cues: HeLa, HepG2, PC12, RAW 264.7, SH-SY5Y, A549, HEK293
+    "Cell Culture (Co-Culture)",       # [node 6c] · cues: co-culture, v"mixed culture"m
+    "Cell Culture (Organoids)",        # [node 6d] · cues: organoid, spheroid, 3D culture
+    "Cell Culture (PCLS)",             # cues: precision-cut lung slices, PCLS
+    "Cell Culture (Other In Vitro)"    # cues: in vitro, epithelial, airway epithelial
+  }
+
+  # User label "Cell Culture (Tissue Origin)" → map to Primary Cells or Other In Vitro
+  #   cues: v"tissue origin", lung, blood, liver, v"ex vivo"m
+
+  SET exposure_method ∈ {
+    "smoke/vapor conditioned media",      # [node 6a · rules_config: smoke/vapor conditioned media]
+      # cues: v"conditioned media", CSE, v"smoke extract", v"cigarette smoke extract"
+    "exposure of cells to smoke/vapor",   # [node 6b · rules_config: direct exposure]
+      # cues: v"direct smoke exposure", v"direct vapor exposure", "expocube", ALI, air-liquid interface
+    "cannabinoids dissolved in media"       # [node 6c]
+      # cues: v"added to media", v"dissolved in", THC, CBD, CBN, WIN 55,212-2, CP 55,940
+  }
+
+  IF co-culture [node 6c · Cell Culture (Co-Culture)] THEN
+    CUES: co-culture, v"mixed culture"m, v"co cultured"m
+    EXTRACT cell_type [schema gap] ∈ {
+      fibroblasts, endothelial cells, macrophages, neutrophils,
+      lymphocytes, monocytes, platelets, red blood cells, white blood cells
+    }
+    NOTE: cell_type not in rules_config; closest field is study_type + strain_reported (supplier/model)
+
+  IF exposure_method = "smoke/vapor conditioned media" [node 6a] THEN
+    EXTRACT cannabis_type ∈ {
+      "dried flower",
+      "vape pen",           # includes heat-not-burn vape · [schema gap: heat-not-burn label]
+      "concentrates"
+    }
+
+  ELSE IF exposure_method = "exposure of cells to smoke/vapor" [node 6b] THEN
+    EXTRACT cannabis_type ∈ { "dried flower", "vape pen", "concentrates" }
+
+  ELSE IF exposure_method = "cannabinoids dissolved in media" [node 6c] THEN
+    SET cannabis_type = "pure cannabinoid"  # [rules_config]
+    EXTRACT strain_reported: synthetic ligands (WIN 55,212-2, CP 55,940, AEA, SR141716A)
+      or supplier (Sigma-Aldrich, Tocris) when no plant strain
+
+  END IF
+
+  IF cannabis_type = "dried flower" THEN
+    EXTRACT [in schema]: thc_mg_ml, cbd_mg_ml, puff_count, thc_pct, cbd_pct, strain_reported
+    EXTRACT [schema gap]: vol_per_puff
+
+  ELSE IF cannabis_type = "vape pen" THEN
+    # includes heat-not-burn
+    EXTRACT [in schema]: thc_mg_ml, cbd_mg_ml, puff_count, thc_pct, cbd_pct, strain_reported
+    EXTRACT [schema gap]: vol_per_puff, heat_settings
+
+  ELSE IF cannabis_type = "pure cannabinoid" THEN
+    EXTRACT [in schema]: thc_uM, cbd_uM, thc_mg_ml, cbd_mg_ml, thc_pct, cbd_pct, treatment_duration
+    EXTRACT [schema gap]: solvent (ethanol, propylene glycol, DMSO)
+
+  END IF
+
+  EXTRACT [in schema]:
+    treatment_duration, multiple_doses, multiple_time_intervals, outcome_domain
+
+  DO NOT write µM values into strain_reported → use thc_uM / cbd_uM
+
+END IF
+
+# ─────────────────────────────────────────────────────────────────────────────
+# NODE 2D · MIXED / UNCLEAR
+# ─────────────────────────────────────────────────────────────────────────────
+IF mixed [node 2d] THEN
+  PURPOSE: Papers combining clinical + preclinical models or multiple systems.
+
+  CUES: v"both clinical and preclinical", v"mixed methods", v"companion animal and cell",
+        v"clinical and animal", v"in vitro and in vivo"
+
+  APPLY all matching study_type labels from Node 2A + 2B + 2C
+  APPLY branch-specific strain/dose rules per Methods subsection
+  EXTRACT [in schema]: multi-label study_type, exposure_method, cannabis_type as applicable
+
+END IF
+
+# ─────────────────────────────────────────────────────────────────────────────
+# NODE 3A · SYSTEMATIC REVIEW
+# ─────────────────────────────────────────────────────────────────────────────
+IF systematic review [node 3a] THEN
+  PARENT: Node 1B
+
+  POSITIVE CUES:
+    "systematic review", v"structured search", "PRISMA", v"included studies", v"search strategy"m
+
+  NEGATIVE CUES:
+    v"original cohort", v"randomized trial", v"animal dosing", v"cell assay"
+
+  SET publication_type = "systematic review"  # [rules_config]
+  SET study_type = "review"                     # [rules_config]
+
+  RESTRICT: no dose/strain/exposure extraction from included studies
+
+END IF
+
+# ─────────────────────────────────────────────────────────────────────────────
+# NODE 3B · META-ANALYSIS
+# ─────────────────────────────────────────────────────────────────────────────
+IF meta-analysis [node 3b] THEN
+  PARENT: Node 1B
+
+  POSITIVE CUES:
+    "meta-analysis", v"pooled estimate", v"forest plot", v"effect size", heterogeneity
+
+  NEGATIVE CUES:
+    v"original cohort", v"randomized trial", v"animal dosing"
+
+  SET publication_type = "meta-analysis"  # [rules_config]
+  SET study_type ∈ { "meta-analysis", "review" }
+
+  RESTRICT: no dose/strain/exposure extraction from pooled studies
+
+END IF
+
+# ─────────────────────────────────────────────────────────────────────────────
+# NODE 3C · NARRATIVE / EDITORIAL / COMMENT / LETTER
+# ─────────────────────────────────────────────────────────────────────────────
+IF narrative / editorial / comment [node 3c] THEN
+  PARENT: Node 1B
+
+  POSITIVE CUES:
+    v"narrative review", "editorial", "commentary", "perspective", v"letter to the editor"
+
+  NEGATIVE CUES:
+    v"original cohort", v"randomized trial", v"we conducted experiments"m
+
+  SET publication_type ∈ {
+    "review", "editorial", "comment", "letter to the editor", "perspectives paper"
+  }
+  SET study_type ∈ { "review", "editorial" }
+
+  RESTRICT: no dose/strain/exposure extraction unless article's own methods (rare)
+
+END IF
+
+# ─────────────────────────────────────────────────────────────────────────────
+# SHARED FIELDS (all routed original-research branches, after Node 1A)
+# ─────────────────────────────────────────────────────────────────────────────
+# [in schema] from rules_config field_groups.extraction:
+#   cannabis_type, outcome_domain, thc_pct, cbd_pct, dose_mg,
+#   strain_reported, strain_normalized, duration_days,
+#   inhaled_exposure_duration, administration_frequency, treatment_duration,
+#   sample_size, puff_count, thc_mg_ml, thc_mg_g, thc_mg_kg,
+#   cbd_mg_ml, cbd_mg_g, cbd_mg_kg, thc_uM, cbd_uM,
+#   multiple_doses, multiple_time_intervals
+#
+# outcome_domain ∈ { pain, anxiety, cognition, inflammation, addiction,
+#                    oncology, neuroprotection, sleep, other }
+#
+# ─────────────────────────────────────────────────────────────────────────────
+# SCHEMA GAPS (proposed — not yet in rules_config / DB)
+# ─────────────────────────────────────────────────────────────────────────────
+#   population_age, population_sex, inclusion_criteria, exclusion_criteria
+#   joint_count, vol_per_puff, heat_settings, cell_type (co-culture)
+#   solvent, diluent, volume_uL, administration_route_detail, total_dose_mg_per_animal
+#   topicals (cannabis_type), heat-not-burn (cannabis_type alias)
+#   dedicated study_type: Invertebrates, Vertebrates Non-Mammal, Clinical (case study) UI filter

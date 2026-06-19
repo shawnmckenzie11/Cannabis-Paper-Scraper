@@ -3,30 +3,30 @@
 
 CREATE TABLE IF NOT EXISTS papers (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
-    pmid TEXT UNIQUE,
-    doi TEXT UNIQUE,
-    semantic_scholar_id TEXT UNIQUE,
-    title TEXT NOT NULL,
+    pmid TEXT UNIQUE,               -- PubMed ID
+    doi TEXT UNIQUE,                -- DOI
+    semantic_scholar_id TEXT UNIQUE, -- Semantic Scholar ID
+    title TEXT NOT NULL,             -- title of the paper
     authors TEXT,                   -- JSON array of strings
-    journal TEXT,
-    year INTEGER,
-    abstract TEXT,
-    full_text_link TEXT,
+    journal TEXT,                  -- journal name
+    year INTEGER,                  -- year of publication
+    abstract TEXT,                 -- abstract of the pap   er
+    full_text_link TEXT,           -- full text link to the paper
     study_type TEXT,                -- RCT, observational, animal, in vitro, review, meta-analysis
     publication_type TEXT,          -- review, original research, case study, systematic review, meta-analysis, editorial, comment, letter to the editor, perspectives paper
     exposure_method TEXT,           -- smoked, vaporized, oral/edible, tincture, injection, forced inhalation, in vitro, unknown
     thc_pct REAL,                   -- numeric percentage (or null)
     cbd_pct REAL,                   -- numeric percentage (or null)
     dose_mg REAL,                   -- numeric dose in mg (or null)
-    puff_count INTEGER,
-    thc_mg_ml REAL,
-    thc_mg_g REAL,
-    thc_mg_kg REAL,
-    cbd_mg_ml REAL,
-    cbd_mg_g REAL,
-    cbd_mg_kg REAL,
-    thc_uM REAL,
-    cbd_uM REAL,
+    puff_count INTEGER,             -- numeric puff count (or null)
+    thc_mg_ml REAL,                 -- numeric concentration in mg/mL (or null)
+    thc_mg_g REAL,                 -- numeric concentration in mg/g (or null)
+    thc_mg_kg REAL,                 -- numeric concentration in mg/kg (or null)
+    cbd_mg_ml REAL,                 -- numeric concentration in mg/mL (or null)
+    cbd_mg_g REAL,                 -- numeric concentration in mg/g (or null)
+    cbd_mg_kg REAL,                 -- numeric concentration in mg/kg (or null)
+    thc_uM REAL,                    -- numeric concentration in µM (or null)
+    cbd_uM REAL,                    -- numeric concentration in µM (or null)
     strain_reported TEXT,           -- raw string exactly as written in paper
     strain_normalized TEXT,         -- mapped to Chemotype I/II/III
     duration_days REAL,             -- numeric duration in days (or null)
@@ -36,14 +36,16 @@ CREATE TABLE IF NOT EXISTS papers (
     sample_size INTEGER,            -- numeric sample size (or null)
     outcome_domain TEXT,            -- JSON array of strings: pain, anxiety, cognition, inflammation, addiction, oncology, neuroprotection, sleep, other
     open_access INTEGER DEFAULT 0,  -- boolean 0 (False) or 1 (True)
-    citation_count INTEGER DEFAULT 0,
-    date_harvested TEXT NOT NULL,
-    publication_date TEXT,
-    summary TEXT,
-    expert_locked_fields TEXT DEFAULT '[]',
-    classification_confidence REAL,
-    classification_timestamp TEXT,
-    classifier_version TEXT
+    citation_count INTEGER DEFAULT 0, -- numeric citation count (or null)
+    date_harvested TEXT NOT NULL, -- timestamp of when the paper was harvested
+    publication_date TEXT, -- timestamp of when the paper was published
+    summary TEXT, -- summary of the paper
+    expert_locked_fields TEXT DEFAULT '[]', -- JSON array of strings: study_type, exposure_method, cannabis_type, outcome_domain, thc_pct, cbd_pct, dose_mg, puff_count, thc_mg_ml, thc_mg_g, thc_mg_kg, cbd_mg_ml, cbd_mg_g, cbd_mg_kg, thc_uM, cbd_uM, strain_reported, strain_normalized, duration_days, inhaled_exposure_duration, administration_frequency, treatment_duration, sample_size, outcome_domain
+    classification_confidence REAL, -- numeric classification confidence (or null)
+    classification_timestamp TEXT, -- timestamp of when the classification was made
+    classifier_version TEXT, -- version of the classifier that made the classification
+    ingestion_status TEXT, -- Node 0: relevant | tangential | irrelevant | not_cannabis_related
+    species TEXT -- host species label from Maude tree (mouse, rat, Rodents branch, etc.)
 );
 
 -- Full-Text Search FTS5 Virtual Table

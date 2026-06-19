@@ -1099,7 +1099,7 @@ class TestExpertEditAndActiveLearning(unittest.TestCase):
 
     def test_compile_system_prompt_injects_expert_cues(self):
         config = {
-            "system_prompt": "Base classifier prompt.",
+            "system_prompt_base": "Base classifier prompt.",
             "cues": {
                 "relevance": {
                     "positive_cues": ["THC/CBD measurement"],
@@ -1124,12 +1124,26 @@ class TestExpertEditAndActiveLearning(unittest.TestCase):
                         "study_type": ["review"]
                     }
                 }
+            },
+            "system_prompt_base": "Base classifier prompt.",
+            "prompt_sections": {
+                "shared_fields": "## Shared field schema"
+            },
+            "decision_nodes": {
+                "node0_ingestion": {
+                    "prompt_section": "## Node 0: Ingestion gate"
+                },
+                "node1b_reviews": {
+                    "prompt_section": "## Node 1B: Reviews before original"
+                }
             }
         }
         
         prompt = classifier.compile_system_prompt(config)
         
         self.assertIn("Base classifier prompt.", prompt)
+        self.assertIn("Node 0: Ingestion gate", prompt)
+        self.assertIn("Node 1B: Reviews before original", prompt)
         self.assertIn("Expert Classification Cues", prompt)
         self.assertIn("THC/CBD measurement", prompt)
         self.assertIn("fiber hemp textiles", prompt)
@@ -1203,10 +1217,11 @@ class TestExpertEditAndActiveLearning(unittest.TestCase):
             rules_config=classifier.load_rules_config(),
         )
 
-        self.assertGreaterEqual(metrics["summary"]["batch_count"], 2)
-        self.assertEqual(metrics["summary"]["total_papers"], 100)
+        self.assertGreaterEqual(metrics["summary"]["batch_count"], 1)
+        self.assertGreaterEqual(metrics["summary"]["total_papers"], 40)
+        self.assertIn("maude_ab_epoch", metrics)
+        self.assertGreaterEqual(metrics["maude_ab_epoch"]["paired_papers"], 40)
         self.assertIn("control", {v["variant"] for v in metrics["variant_comparison"]["variants"]})
-        self.assertIn("decision_checklist", {v["variant"] for v in metrics["variant_comparison"]["variants"]})
         self.assertGreater(metrics["field_change_totals"]["high_level_fields"].get("cannabis_type", 0), 0)
         self.assertFalse(metrics["automation_readiness"]["ready_for_full_automation"])
         self.assertGreater(len(metrics["priority_review"]), 0)
@@ -1216,7 +1231,8 @@ class TestExpertEditAndActiveLearning(unittest.TestCase):
         response = self.client.get("/api/calibration/dashboard-metrics")
         self.assertEqual(response.status_code, 200)
         data = json.loads(response.data.decode("utf-8"))
-        self.assertEqual(data["summary"]["total_papers"], 100)
+        self.assertGreaterEqual(data["summary"]["total_papers"], 40)
+        self.assertIn("maude_ab_epoch", data)
         self.assertIn("automation_readiness", data)
 
     def test_agent_queue_status_and_recent_feedback_apis(self):

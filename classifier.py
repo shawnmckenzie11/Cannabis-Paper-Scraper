@@ -15,6 +15,7 @@ from dotenv import load_dotenv
 
 # Import extractor as fallback
 import extractor
+import classification_schema
 
 # Set up logging
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
@@ -88,12 +89,83 @@ def load_rules_config() -> Dict[str, Any]:
             
     return default_config
 
+# Order for assembling node-linked prompt sections from rules_config.decision_nodes.
+DECISION_NODE_PROMPT_ORDER = (
+    "node0_ingestion",
+    "node1b_reviews",
+    "node1c_case_report",
+    "node1a_original",
+    "node2a_clinical",
+    "node2b_in_vivo",
+    "node2c_in_vitro",
+    "node2d_mixed",
+    "node3a_systematic_review",
+    "node3b_meta_analysis",
+    "node3c_narrative_editorial",
+)
+
+
+def _resolve_system_prompt_base(config: Dict[str, Any]) -> str:
+    """Returns the classifier preamble from split or legacy rules config."""
+    base = config.get("system_prompt_base")
+    if base:
+        return str(base)
+    legacy = config.get("system_prompt")
+    if isinstance(legacy, str):
+        return legacy
+    return ""
+
+
+def _append_node_prompt_sections(config: Dict[str, Any], prompt_blocks: List[str]) -> None:
+    """Appends expert decision-tree node sections in routing order."""
+    decision_nodes = config.get("decision_nodes") or {}
+    if not decision_nodes:
+        return
+
+    ordered_ids = [
+        node_id for node_id in DECISION_NODE_PROMPT_ORDER if node_id in decision_nodes
+    ]
+    remaining = [
+        node_id
+        for node_id in sorted(decision_nodes.keys())
+        if node_id not in ordered_ids
+    ]
+    node_lines: List[str] = []
+    for node_id in ordered_ids + remaining:
+        node = decision_nodes.get(node_id) or {}
+        section = node.get("prompt_section")
+        if section:
+            prompt_blocks.append(str(section).strip())
+            continue
+        purpose = node.get("purpose")
+        if purpose:
+            node_lines.append(f"- {node_id}: {purpose}")
+
+    if node_lines:
+        prompt_blocks.append(
+            "## Expert Decision Tree Nodes\n"
+            "Apply Node 1B (reviews/secondary) routing before Node 1A (original research). "
+            "Use these expert node cues for publication_type and study_type routing:\n"
+            + "\n".join(node_lines)
+        )
+
+
 def compile_system_prompt(config: Dict[str, Any]) -> str:
-    """Compiles the base classifier prompt with expert-provided cue blocks."""
-    base_prompt = config.get("system_prompt", "")
+    """Compiles the classifier prompt from base, node sections, and expert cue blocks."""
+    prompt_blocks: List[str] = []
+    base_prompt = _resolve_system_prompt_base(config)
+    if base_prompt:
+        prompt_blocks.append(base_prompt)
+
+    prompt_sections = config.get("prompt_sections") or {}
+    for section_key in ("shared_fields", "output_format", "global_rules"):
+        section_text = prompt_sections.get(section_key)
+        if section_text:
+            prompt_blocks.append(str(section_text).strip())
+
+    _append_node_prompt_sections(config, prompt_blocks)
+
     cues = config.get("cues") or {}
-    prompt_blocks = [base_prompt]
-    
     relevance_cues = cues.get("relevance") or {}
     extraction_cues = cues.get("extraction") or {}
     cue_lines = []
@@ -138,7 +210,7 @@ def compile_system_prompt(config: Dict[str, Any]) -> str:
             "Apply these Maude calibration lessons before extracting detailed fields:\n"
             + "\n".join(boundary_lines)
         )
-    
+
     prompt_variant = os.getenv("CLASSIFIER_PROMPT_VARIANT", "control")
     variants = config.get("calibration_variants") or {}
     variant_config = variants.get(prompt_variant) or {}
@@ -368,7 +440,7 @@ def classify_with_llm(title: str, abstract: str, runs: Optional[int] = None, ful
             if is_inhaled and clinical_exposure_reliable:
                 dynamic_rules_list.append("- For Inhaled Studies: Extract exposure duration per session (e.g., '30 minutes') into `inhaled_exposure_duration` and puff counts into `puff_count`.")
                 
-    elif pub_type in ("review", "systematic review", "meta-analysis"):
+    elif pub_type in ("review",):
         dynamic_rules_list.append("## Dynamic Context-Specific Extraction Rules (Review Paper)")
         dynamic_rules_list.append("- This is a review paper. Do NOT extract individual animal strains, cell lines, supplier details, or dose values from reviewed papers. Leave these fields null/empty unless they describe the review methodology itself.")
 
@@ -601,22 +673,14 @@ def process_paper_metadata(title: str, abstract: str, run_llm: bool = False, run
     
     if run_llm:
         metadata = classify_with_llm(title, abstract, runs=runs, full_text=full_text)
-        if metadata:
-            if not metadata.get("summary"):
-                metadata["summary"] = extractor.generate_heuristic_summary(metadata)
-            allowed_pub_types = {
-                "review", "original research", "case study", "systematic review",
-                "meta-analysis", "editorial", "comment", "letter to the editor", "perspectives paper"
-            }
-            if not metadata.get("publication_type") or metadata.get("publication_type") not in allowed_pub_types:
-                metadata["publication_type"] = extractor.infer_publication_type(title, abstract)
+        if metadata and not metadata.get("summary"):
+            metadata["summary"] = extractor.generate_heuristic_summary(metadata)
         
     if not metadata:
         logger.info("Running standard regex and keyword heuristics extractor.")
         metadata = extractor.extract_all_heuristics(title, abstract)
-        # Heuristic-only path must not auto-clear the review threshold (0.85).
         metadata["classification_confidence"] = 0.6
         metadata["classification_timestamp"] = datetime.now().isoformat()
         metadata["classifier_version"] = "heuristic-1.0.0"
         
-    return metadata
+    return classification_schema.normalize_classification_record(metadata, title, abstract)

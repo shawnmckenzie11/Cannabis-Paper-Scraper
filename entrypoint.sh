@@ -3,8 +3,11 @@ set -e
 
 DB_PATH=${DATABASE_PATH:-/data/cannabis_papers.db}
 SEED_SOURCE="cannabis_papers.db"
+CALIBRATION_ARTIFACT_DIR="/data/calibration_runs"
 
 echo "Checking database status..."
+mkdir -p "$(dirname "$DB_PATH")"
+mkdir -p "$CALIBRATION_ARTIFACT_DIR"
 
 # If database exists but is incomplete (less than 50MB), delete it so we can re-seed
 if [ -f "$DB_PATH" ]; then

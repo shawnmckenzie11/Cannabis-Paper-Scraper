@@ -1,0 +1,318 @@
+{
+  "version": "2.4.0",
+  "source": "Cannabis_Classification_Decision_Tree",
+  "compiled_from": "rules_config.decision_nodes + rules_config.maude",
+  "decision_nodes": {
+    "node0_ingestion": {
+      "order": 0,
+      "tree_label": "Node 0 · Ingestion",
+      "purpose": "Decide whether title/abstract warrant full classification (relevant vs tangential vs irrelevant).",
+      "outputs": [
+        "relevant",
+        "tangential",
+        "irrelevant",
+        "not cannabis-related"
+      ],
+      "positive_cues": [
+        "cannabis",
+        "marijuana",
+        "cannabinoid",
+        "THC",
+        "CBD",
+        "endocannabinoid",
+        "administration",
+        "pharmacology",
+        "clinical outcome"
+      ],
+      "negative_cues": [
+        "hemp fiber",
+        "agricultural yield",
+        "textile",
+        "taxonomy-only",
+        "legal/policy-only",
+        "unrelated acronym collisions"
+      ],
+      "prompt_section": "## Node 0: Ingestion / Relevance gate\n\n### 1. publication_type (single string)\nWhat kind of publication is this at the article level?\n- \"original research\" — primary research presenting new data/experiments\n- \"review\" — narrative or general review (not systematic)\n- \"systematic review\" — structured, replicable literature review\n- \"meta-analysis\" — statistical pooling of multiple studies\n- \"case study\" — detailed report of one or a few cases\n- \"editorial\" — opinion/editorial piece\n- \"comment\" — commentary or correspondence\n- \"letter to the editor\"\n- \"perspectives paper\"\n- \"not cannabis-related\" — the study does not actually test or administer cannabis or cannabinoids (e.g. cannabinoids/THC/CBD are only mentioned in passing background context, and the experimental treatments and substances studied are entirely non-cannabinoid agents like LPI/lysophosphatidylinositol or other unrelated compounds)\n\n**Relevance and 'not cannabis-related' Classification**:* If a paper discusses GPR55, GPR18, GPR119, or LPI/lysophosphatidylinositol, it is **not cannabis-related** unless the study actively administers or pharmacologically tests cannabis or a cannabinoid (such as THC, CBD, WIN 55,212-2, CP 55,940, AEA, anandamide, 2-AG, etc.) as a treatment.\n  * For example, the paper 'A putative lysophosphatidylinositol receptor GPR55 modulates hippocampal synaptic plasticity' is **not cannabis-related** because it only tests LPI and the antagonist CID 16020046, without administering cannabinoids. In such cases, publication_type must be classified as 'not cannabis-related' to flag the paper for purging."
+    },
+    "node1b_reviews": {
+      "order": 10,
+      "tree_label": "Node 1B · Reviews / Secondary Literature",
+      "purpose": "Route reviews, systematic reviews, meta-analyses, editorials, comments, letters, and perspectives BEFORE original-research extraction.",
+      "route_before": "node1a_original",
+      "positive_cues": [
+        "review",
+        "systematic review",
+        "meta-analysis",
+        "narrative synthesis",
+        "scoping review",
+        "editorial",
+        "commentary",
+        "letter to the editor",
+        "perspectives"
+      ],
+      "negative_cues": [
+        "we conducted",
+        "participants were randomized",
+        "n=",
+        "Methods section with new experiments"
+      ],
+      "prompt_section": "## Node 1B: Reviews / Secondary Literature (route BEFORE Node 1A)\n\nFrom publication_type, apply: review, systematic review, meta-analysis, editorial, comment, letter to the editor, perspectives paper.\n\n**Review types:**\n- \"review\" — narrative/systematic/scoping review\n- \"meta-analysis\"\n- \"case study\"\n- \"editorial\"\n\nDo NOT extract animal strains, cell lines, supplier details, or dose values from cited studies unless describing the review methodology itself."
+    },
+    "node1c_case_report": {
+      "order": 15,
+      "tree_label": "Node 1C · Case Report",
+      "purpose": "Detailed report of one or a few cases.",
+      "route_before": "node1a_original",
+      "positive_cues": [
+        "case report",
+        "case series",
+        "we report a case",
+        "single patient"
+      ],
+      "negative_cues": [
+        "randomized",
+        "cohort of",
+        "n=",
+        "systematic search"
+      ],
+      "prompt_section": "## Node 1C: Case Report\npublication_type: case study. study_type: case study. Extract exposure/dose only for the reported case(s), not literature cited in discussion."
+    },
+    "node1a_original": {
+      "order": 20,
+      "tree_label": "Node 1A · Original Papers",
+      "purpose": "Papers with primary data, new results, or experimental/clinical observations.",
+      "route_after": [
+        "node1b_reviews",
+        "node1c_case_report"
+      ],
+      "positive_cues": [
+        "Methods",
+        "Results",
+        "in vivo",
+        "in vitro",
+        "exposure",
+        "participants",
+        "cohort",
+        "sample size",
+        "case-control",
+        "animal experiment",
+        "cell line assay",
+        "intervention arm",
+        "dose"
+      ],
+      "negative_cues": [
+        "we review",
+        "literature suggests",
+        "previous studies have shown",
+        "summarize evidence"
+      ],
+      "prompt_section": "## Node 1A: Original Research\n\npublication_type: \"original research\" — primary research presenting new data/experiments.\n\n**Optimal Identification and Classification of Original Research with Dose & Strain**:* Ensure the distinction between \"original research\" and reviews is strictly enforced: only label as \"original research\" if the paper reports original experimental data generated by the authors.\n  * For all \"original research\" publications, perform a targeted scan of the **Methods** (specifically sections titled \"Animals\", \"Cell Culture\", \"Treatments\", \"Drugs\", \"Inhalation\", or \"Materials\") and **Results** sections to identify if any active cannabinoid compound was administered, and if so, capture the exact dose and strain information.\n  * If multiple dose levels were tested, mark `multiple_doses` as `true` and record the primary or baseline dose in the appropriate dose field."
+    },
+    "node2a_clinical": {
+      "order": 30,
+      "tree_label": "Node 2A · Clinical",
+      "parent": "node1a_original",
+      "purpose": "Human subjects: interventional and observational designs.",
+      "positive_cues": [
+        "participants",
+        "patients",
+        "randomized",
+        "placebo",
+        "trial",
+        "cohort",
+        "adverse events",
+        "dose",
+        "product form",
+        "route of administration"
+      ],
+      "negative_cues": [
+        "cell culture",
+        "primary neurons",
+        "mouse",
+        "rat",
+        "organoid",
+        "assay plate"
+      ],
+      "sub_branches": {
+        "interventional": [
+          "Clinical (RCT)",
+          "non-randomized trial"
+        ],
+        "observational": [
+          "Clinical (prospective)",
+          "Clinical (retrospective)",
+          "Clinical (observational)"
+        ]
+      },
+      "prompt_section": "## Node 2A: Original → Clinical\n\n**Clinical/Human:**\n- \"Clinical (RCT)\" — randomized controlled trial, double-blind, placebo-controlled\n- \"Clinical (prospective)\" — prospective cohort or longitudinal\n- \"Clinical (retrospective)\" — retrospective chart review or historical cohort\n- \"Clinical (observational)\" — cross-sectional, survey, registry, case-control, epidemiological, GWAS\n\n**Clinical/Human routes:**\n- \"inhaled\" — smoking, vaping, vaporization, inhalation\n- \"oral\" — edible, capsule, gummy, ingestion, gavage\n- \"sublingual\" — under tongue, drops, tincture\n- \"injected\" — IV, IM, SC (in human subjects)\n\n* **Clinical (Human) Context**:- Extract botanical strain names (e.g., \"Bedrocan\", \"OG Kush\", \"Treasure Island Kush\") or chemotype labels. Do NOT extract host/subject animal species or laboratory cell lines into `strain_reported`.\n    - Extract absolute patient doses in `dose_mg`. Do NOT populate `treatment_duration` (leave it null)."
+    },
+    "node2b_in_vivo": {
+      "order": 31,
+      "tree_label": "Node 2B · In Vivo",
+      "parent": "node1a_original",
+      "purpose": "Animal whole-organism experiments.",
+      "positive_cues": [
+        "mouse",
+        "mice",
+        "rat",
+        "hamster",
+        "oral gavage",
+        "intraperitoneal",
+        "behavior test",
+        "tissue analysis",
+        "sacrificed animals"
+      ],
+      "negative_cues": [
+        "human participant",
+        "clinical trial",
+        "patient-reported outcome",
+        "chart review"
+      ],
+      "sub_branches": {
+        "rodent": [
+          "Animal Models (Mouse)",
+          "Animal Models (Rat)",
+          "Animal Models (Other Rodents)"
+        ],
+        "non_rodent_mammal": [
+          "Animal Models (Non-Human Primates)",
+          "Animal Models (Other)"
+        ],
+        "non_mammal": [
+          "Animal Models (Other)"
+        ]
+      },
+      "prompt_section": "## Node 2B: Original → In Vivo\n\n**Animal Models (in vivo):**\n- \"Animal Models (Mouse)\" — mouse, murine, C57BL/6\n- \"Animal Models (Rat)\" — rat, Wistar, Sprague-Dawley\n- \"Animal Models (Other Rodents)\" — hamster, gerbil, guinea pig, vole\n- \"Animal Models (Non-Human Primates)\" — macaque, rhesus, monkey, baboon\n- \"Animal Models (Other)\" — dog, cat, pig, rabbit, zebrafish, drosophila\n\n**In vivo (animal) methods:**\n- \"nose only smoke/vapor\" — nose-only or snout-only exposure\n- \"whole body. smoke/vapor\" — whole-body chamber exposure (note: includes period)\n- \"injection cannabinoids\" — IP, IV, SC, IM injection of cannabinoids\n- \"oral administration\" — gavage, diet, feeding\n- \"sub-lingual\"\n- \"intranasal\" — nasal instillation/drops\n- \"intratracheal\" — intratracheal instillation\n\n* **Preclinical Animal (In Vivo) Context**:- **CRITICAL**: Do NOT extract host animal strains (e.g., \"Sprague-Dawley\", \"Wistar\", \"C57BL/6J\", \"SHR\") or transgenic animal model designations (e.g., \"5xFAD\", \"gp120 transgenic\") into `strain_reported` under any circumstances. The field `strain_reported` is strictly for cannabis/plant strains or synthetic compounds. If cannabis strains are absent, leave `strain_reported` as `null`.\n    - Prioritize weight-adjusted doses: populate `thc_mg_kg` or `cbd_mg_kg` (e.g., 5.0 mg/kg)."
+    },
+    "node2c_in_vitro": {
+      "order": 32,
+      "tree_label": "Node 2C · In Vitro",
+      "parent": "node1a_original",
+      "purpose": "Cell-based, biochemical, receptor, and assay studies.",
+      "positive_cues": [
+        "cell line",
+        "primary cells",
+        "immortalized cells",
+        "cultured",
+        "incubated",
+        "concentration",
+        "receptor binding",
+        "assay",
+        "ELISA",
+        "microglia",
+        "THP-1",
+        "A549"
+      ],
+      "negative_cues": [
+        "patient",
+        "participant",
+        "trial",
+        "animal dosing",
+        "behavioral endpoint"
+      ],
+      "sub_branches": {
+        "immortalized_cell": [
+          "Cell Culture (Cell Lines)"
+        ],
+        "primary_cell": [
+          "Cell Culture (Primary Cells)"
+        ],
+        "co_culture": [
+          "Cell Culture (Co-Culture)"
+        ],
+        "organoid": [
+          "Cell Culture (Organoids)"
+        ]
+      },
+      "prompt_section": "## Node 2C: Original → In Vitro\n\n**Cell Culture (in vitro):**\n- \"Cell Culture (Primary Cells)\" — primary cells, splenocytes, primary microglia, primary hepatocytes\n- \"Cell Culture (Cell Lines)\" — HeLa, HepG2, PC12, RAW 264.7, SH-SY5Y, Jurkat, CHO\n- \"Cell Culture (Organoids)\" — organoid, spheroid, 3D culture\n- \"Cell Culture (Co-Culture)\" — co-culture of multiple cell types\n- \"Cell Culture (PCLS)\" — precision-cut lung slices\n- \"Cell Culture (Other In Vitro)\" — in vitro, cultured cells, epithelial cells, airway epithelial\n\n**In vitro methods:**\n- \"exposure of cells to smoke/vapor\" — direct chamber/ALI exposure of cells\n- \"smoke/vapor conditioned media\" — cells treated with smoke/vapor extract or CSE\n- \"cannabinoids dissolved in media\" — cannabinoids added directly to culture media\n\n* **Cell Culture (In Vitro) Context**:- Extract synthetic receptor ligands/compounds (e.g., \"WIN 55,212-2\", \"CP 55,940\", \"AEA\", \"SR141716A\") and chemical manufacturer/supplier details (e.g., \"Sigma-Aldrich\", \"Tocris Bioscience\", \"SERVA, USA\") into `strain_reported` only if cannabis plant strains are not present.\n    - Populate `treatment_duration` with incubation times (e.g., \"24 hours\", \"30 minutes\").\n    - Liquid concentrations must be converted and populated in `thc_mg_ml` or `cbd_mg_ml` (e.g. convert 10 µg/mL to 0.01 mg/mL).\n    - Micromolar/molar concentrations (e.g. 5 µM) should be populated directly in `thc_uM` or `cbd_uM` as numeric values (e.g. 5.0). Do NOT write micromolar concentrations into `strain_reported`."
+    },
+    "node2d_mixed": {
+      "order": 33,
+      "tree_label": "Node 2D · Mixed / Unclear",
+      "parent": "node1a_original",
+      "purpose": "Papers combining multiple study types.",
+      "prompt_section": "## Node 2D: Original → Mixed / Unclear\nWhen clinical, in vivo, and in vitro labels all apply, include all applicable study_type values and apply branch-specific strain/dose rules per model section."
+    },
+    "node3a_systematic_review": {
+      "order": 40,
+      "tree_label": "Node 3A · Systematic Review",
+      "parent": "node1b_reviews",
+      "purpose": "Structured, replicable literature reviews.",
+      "positive_cues": [
+        "systematic review",
+        "structured search",
+        "PRISMA",
+        "included studies"
+      ],
+      "prompt_section": "## Node 3A: Review → Systematic Review\npublication_type: systematic review. Positive cues: structured search, PRISMA, included studies."
+    },
+    "node3b_meta_analysis": {
+      "order": 41,
+      "tree_label": "Node 3B · Meta-analysis",
+      "parent": "node1b_reviews",
+      "purpose": "Statistical pooling of multiple studies.",
+      "positive_cues": [
+        "meta-analysis",
+        "pooled estimate",
+        "forest plot"
+      ],
+      "prompt_section": "## Node 3B: Review → Meta-analysis\npublication_type: meta-analysis. study_type: meta-analysis, review."
+    },
+    "node3c_narrative_editorial": {
+      "order": 42,
+      "tree_label": "Node 3C · Narrative / Editorial / Comment",
+      "parent": "node1b_reviews",
+      "purpose": "Narrative reviews, editorials, commentary, letters, perspectives.",
+      "positive_cues": [
+        "narrative review",
+        "editorial",
+        "commentary",
+        "perspective"
+      ],
+      "prompt_section": "## Node 3C: Review → Narrative / Editorial / Comment / Letter\npublication_type: review, editorial, comment, letter to the editor, perspectives paper."
+    }
+  },
+  "maude": {
+    "enabled": true,
+    "classifier_version_prefix": "maude",
+    "tree_source": "Cannabis_Classification_Decision_Tree",
+    "compiled_tree": "maude_tree.json",
+    "promotion": {
+      "max_reliability_gap_pct": 10,
+      "eval_field_groups": [
+        "relevance",
+        "study_type"
+      ],
+      "min_batches_within_gap": 3,
+      "description": "Maude may write production when within 10% of LLM on relevance (publication_type) + study_type for 3+ consecutive eval/batch cycles with expert sign-off."
+    },
+    "high_level_fields": [
+      "ingestion_status",
+      "publication_type",
+      "study_type",
+      "exposure_method",
+      "cannabis_type",
+      "outcome_domain",
+      "species"
+    ],
+    "ingestion_status_values": [
+      "relevant",
+      "tangential",
+      "irrelevant",
+      "not_cannabis_related"
+    ],
+    "not_cannabis_related_storage": {
+      "ingestion_status": "not_cannabis_related",
+      "publication_type": "not cannabis-related"
+    }
+  },
+  "high_level_fields": [
+    "ingestion_status",
+    "publication_type",
+    "study_type",
+    "exposure_method",
+    "cannabis_type",
+    "outcome_domain",
+    "species"
+  ]
+}

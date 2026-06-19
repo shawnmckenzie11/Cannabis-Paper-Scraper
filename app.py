@@ -7,7 +7,7 @@ import logging
 from datetime import datetime, date
 from pathlib import Path
 from functools import wraps
-from flask import Flask, render_template, request, jsonify, session, redirect, url_for
+from flask import Flask, render_template, request, jsonify, session, redirect, url_for, send_file
 import random
 import smtplib
 import requests
@@ -20,6 +20,7 @@ import harvest
 from extractor import is_cannabis_related
 from citation_graph import CitationGraph
 import calibration_metrics
+import maude_feedback
 
 app = Flask(__name__)
 app.secret_key = os.getenv("FLASK_SECRET_KEY", "mckenzian-secret-key-12345")
@@ -60,12 +61,19 @@ def admin_required(f):
     @wraps(f)
     def decorated_function(*args, **kwargs):
         if not session.get("logged_in"):
-            return jsonify({"error": "Authentication required."}), 401
+            return jsonify({"error": "Authentication required.", "login_url": url_for("login", next=request.path)}), 401
         user_email = session.get("email")
         if not user_email or user_email not in ADMIN_EMAILS:
-            return jsonify({"error": "This action is restricted to administrators."}), 403
+            return jsonify({"error": "This action is restricted to administrators.", "email": user_email}), 403
         return f(*args, **kwargs)
     return decorated_function
+
+
+def _safe_next_url(next_url):
+    """Returns a same-site relative redirect target when safe."""
+    if not next_url or not next_url.startswith("/") or next_url.startswith("//"):
+        return None
+    return next_url
 
 def _get_unique_username(base_name):
     db = DatabaseManager()
@@ -253,8 +261,9 @@ def require_login():
 
 @app.route("/login", methods=["GET", "POST"])
 def login():
+    next_url = _safe_next_url(request.args.get("next") or request.form.get("next"))
     if session.get("logged_in"):
-        return redirect(url_for("index"))
+        return redirect(next_url or url_for("index"))
         
     error = None
     if request.method == "POST":
@@ -274,12 +283,12 @@ def login():
                 session["email"] = user["email"]
                 session["is_google"] = False
                 session.permanent = True
-                return redirect(url_for("index"))
+                return redirect(next_url or url_for("index"))
         else:
             error = "Invalid username/email or password."
             
     google_client_id = os.getenv("GOOGLE_CLIENT_ID")
-    return render_template("login.html", error=error, google_client_id=google_client_id)
+    return render_template("login.html", error=error, google_client_id=google_client_id, next_url=next_url)
 
 @app.route("/signup", methods=["POST"])
 def signup():
@@ -351,6 +360,9 @@ def verify_email():
 @app.route("/auth/google")
 def auth_google():
     client_id = os.getenv("GOOGLE_CLIENT_ID")
+    next_url = _safe_next_url(request.args.get("next"))
+    if next_url:
+        session["google_oauth_next"] = next_url
     
     redirect_uri = os.getenv("GOOGLE_REDIRECT_URI")
     if not redirect_uri:
@@ -431,7 +443,7 @@ def auth_google_callback():
                     session["email"] = user["email"]
                     session["is_google"] = True
                     session.permanent = True
-                    return redirect(url_for("index"))
+                    return _google_auth_redirect()
         except Exception as e:
             print(f"[GOOGLE ONE TAP AUTH ERROR] {e}")
             return render_template("login.html", error=f"Google One Tap authentication failed: {e}")
@@ -466,7 +478,7 @@ def auth_google_callback():
         session["email"] = user["email"]
         session["is_google"] = True
         session.permanent = True
-        return redirect(url_for("index"))
+        return _google_auth_redirect()
         
     code = request.args.get("code")
     state = request.args.get("state")
@@ -532,11 +544,17 @@ def auth_google_callback():
         session["email"] = user["email"]
         session["is_google"] = True
         session.permanent = True
-        return redirect(url_for("index"))
+        return _google_auth_redirect()
         
     except Exception as e:
         print(f"[GOOGLE AUTH ERROR] Failed to exchange token/fetch info: {e}")
         return render_template("login.html", error=f"Google authentication error: {e}")
+
+
+def _google_auth_redirect():
+    """Returns post-login redirect after Google OAuth."""
+    return redirect(_safe_next_url(session.pop("google_oauth_next", None)) or url_for("index"))
+
 
 @app.route("/logout")
 def logout():
@@ -1126,6 +1144,37 @@ def api_scheduler_status():
         "query": "cannabis OR cannabinoid OR marijuana"
     })
 
+def _calibration_output_dir() -> Path:
+    """Returns the active calibration artifacts directory for this deployment."""
+    return calibration_metrics.resolve_calibration_output_dir()
+
+
+@app.route("/calibration/dashboard")
+def calibration_dashboard_page():
+    """Serves the interactive calibration learning dashboard."""
+    output_dir = _calibration_output_dir()
+    dashboard_path = output_dir / "dashboard.html"
+    if not dashboard_path.exists():
+        calibration_metrics.build_dashboard(
+            output_dir=output_dir,
+            rules_path=Path(BASE_DIR) / "rules_config.json",
+        )
+    return send_file(dashboard_path)
+
+
+@app.route("/api/calibration/auth-status", methods=["GET"])
+def api_calibration_auth_status():
+    """Returns session state for the calibration dashboard resolve workflow."""
+    email = session.get("email")
+    logged_in = bool(session.get("logged_in"))
+    return jsonify({
+        "logged_in": logged_in,
+        "is_admin": bool(email and email in ADMIN_EMAILS),
+        "email": email,
+        "login_url": url_for("login", next="/calibration/dashboard"),
+    })
+
+
 @app.route("/api/calibration/dashboard-metrics", methods=["GET"])
 def api_calibration_dashboard_metrics():
     """Returns aggregated calibration learning metrics for dashboards and agents."""
@@ -1135,13 +1184,49 @@ def api_calibration_dashboard_metrics():
         confidence_threshold = 0.72
     try:
         metrics = calibration_metrics.build_dashboard_metrics(
-            output_dir=Path(os.path.join(BASE_DIR, "scratch/calibration_runs")),
+            output_dir=_calibration_output_dir(),
             rules_config=classifier.load_rules_config(),
             confidence_threshold=confidence_threshold,
         )
         return jsonify(metrics)
     except Exception as e:
         app.logger.error(f"Error compiling calibration dashboard metrics: {e}")
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route("/api/calibration/resolve-disagreement", methods=["POST"])
+@admin_required
+def api_calibration_resolve_disagreement():
+    """Resolves a Maude vs LLM disagreement, teaches Maude cues, and logs feedback."""
+    payload = request.get_json(silent=True) or {}
+    try:
+        paper_id = int(payload.get("paper_id"))
+    except (TypeError, ValueError):
+        return jsonify({"error": "paper_id is required"}), 400
+    batch_id = payload.get("batch_id")
+    fields = payload.get("fields") or []
+    if not batch_id:
+        return jsonify({"error": "batch_id is required"}), 400
+    if not fields:
+        return jsonify({"error": "fields resolutions are required"}), 400
+
+    output_dir = _calibration_output_dir()
+    db = DatabaseManager()
+    try:
+        result = maude_feedback.resolve_disagreement(
+            paper_id=paper_id,
+            batch_id=batch_id,
+            field_resolutions=fields,
+            output_dir=output_dir,
+            db=db,
+        )
+        calibration_metrics.build_dashboard(
+            output_dir=output_dir,
+            rules_path=Path(BASE_DIR) / "rules_config.json",
+        )
+        return jsonify(result)
+    except Exception as e:
+        app.logger.error(f"Error resolving Maude disagreement for paper {paper_id}: {e}")
         return jsonify({"error": str(e)}), 500
 
 
@@ -1922,7 +2007,7 @@ def api_learning_dashboard_metrics():
             },
             "versions": versions,
             "calibration": calibration_metrics.build_dashboard_metrics(
-                output_dir=Path(os.path.join(BASE_DIR, "scratch/calibration_runs")),
+                output_dir=_calibration_output_dir(),
                 rules_config=classifier.load_rules_config(),
             ),
         }

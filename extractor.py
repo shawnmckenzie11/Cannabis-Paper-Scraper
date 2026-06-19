@@ -1,7 +1,10 @@
 # extractor.py
 import re
 import json
-from typing import Dict, Any, List, Optional
+from typing import Dict, Any, List, Optional, TYPE_CHECKING
+
+if TYPE_CHECKING:
+    import classification_schema
 
 # --- Chemotype Lookup Maps ---
 CHEMOTYPE_MAP = {
@@ -577,8 +580,8 @@ def get_methods_text(title: str, abstract: str) -> str:
     combined_abstract = "\n\n".join(allowed_parts)
     return title + "\n\n" + combined_abstract
 
-def infer_publication_type(title: str, abstract: str) -> str:
-    """Infers Stage 1 publication type from text keywords."""
+def infer_granular_publication_label(title: str, abstract: str) -> str:
+    """Infers the legacy granular publication label from text keywords."""
     # Check if not cannabis-related
     is_related, reason = is_cannabis_related(title, abstract)
     if not is_related:
@@ -644,22 +647,32 @@ def infer_publication_type(title: str, abstract: str) -> str:
     # Default to original research
     return "original research"
 
+
+def infer_publication_type(title: str, abstract: str) -> str:
+    """Infers coarse Node 1 publication type (original research, review, or case study)."""
+    import classification_schema
+
+    granular = infer_granular_publication_label(title, abstract)
+    coarse = classification_schema.granular_label_to_coarse_publication(granular)
+    return coarse or "original research"
+
 def infer_study_type(title: str, abstract: str) -> List[str]:
     """Infers Stage 2 study type from text keywords, focusing on Methods section if available."""
     methods_text = get_methods_text(title, abstract)
     combined = methods_text.lower()
     
     # First check publication type for compatibility fallback
-    pub_type = infer_publication_type(title, abstract)
-    if pub_type != "original research":
-        if pub_type in ("review", "systematic review"):
-            return ["review"]
-        elif pub_type == "meta-analysis":
-            return ["meta-analysis"]
-        elif pub_type == "case study":
-            return ["case study"]
-        elif pub_type in ("editorial", "comment", "letter to the editor", "perspectives paper"):
-            return ["editorial"]
+    granular_pub = infer_granular_publication_label(title, abstract)
+    import classification_schema
+
+    coarse_pub = classification_schema.granular_label_to_coarse_publication(granular_pub)
+    if coarse_pub == "review":
+        subtype = classification_schema.granular_label_to_review_subtype(granular_pub)
+        return [subtype or "review"]
+    if coarse_pub == "case study":
+        return ["case study"]
+    if coarse_pub != "original research":
+        return []
             
     types = []
     
@@ -1106,7 +1119,9 @@ def extract_all_heuristics(title: str, abstract: str) -> Dict[str, Any]:
         "publication_type": publication_type
     }
     result["summary"] = generate_heuristic_summary(result)
-    return result
+    import classification_schema
+
+    return classification_schema.normalize_classification_record(result, title, abstract)
 
 # --- Cannabis/Cannabinoid Positive & Negative Context Keywords for Relevance Checking ---
 

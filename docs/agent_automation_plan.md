@@ -2,6 +2,64 @@
 
 Expert decision-tree feedback has been received. This plan turns that chart into an agent-ready operating model for the Cannabis Paper Scraper and maps each node to structured cues in `rules_config.json`.
 
+## Production Database Policy (Required)
+
+**All database writes must target the Fly.io production database.** The live app at `cannabis-paper-scraper.fly.dev` reads from this database; local edits do not appear in the UI.
+
+| Environment | Path / target | Use |
+| --- | --- | --- |
+| **Production (Fly.io)** | `DATABASE_URL` (Postgres) when set; else `DATABASE_PATH=/data/cannabis_papers.db` on volume `mckenzian_db_volume` | **All ingestion, calibration, reclassification, expert edits, eval runs, and schema migrations that mutate `papers` / logs** |
+| **Production artifacts** | `/data/calibration_runs/` on the same Fly volume | Calibration JSON + walkthroughs (persistent; auto-selected by `calibration_agent.resolve_calibration_output_dir()`) |
+| **Local dev** | `./cannabis_papers.db` (repo root) | Read-only inspection, tests, and dry-runs only — **never** apply calibration or bulk classification updates locally |
+
+Fly app: `cannabis-paper-scraper` (region `yyz`). Paper writes use whatever `DatabaseManager` resolves (`DATABASE_URL` takes precedence over SQLite). Calibration artifacts on Fly must land under `/data/calibration_runs/`, not `/app/scratch/` (ephemeral).
+
+### Pre-flight check (before any write)
+
+Run on the Fly machine and confirm you are on production:
+
+```bash
+fly ssh console -a cannabis-paper-scraper -C "cd /app && python3 fly_db_check.py"
+```
+
+Expect `DATABASE_URL set: True` (Postgres) or `DATABASE_PATH: /data/cannabis_papers.db`, and a paper count consistent with production (~21k+). **Abort if the count looks like a dev copy.**
+
+### How agents run write operations on Fly
+
+Use `fly ssh console` so scripts execute inside the deployed app with the mounted volume and secrets (e.g. `ANTHROPIC_API_KEY`):
+
+```bash
+# Interactive session (calibration, eval, one-off fixes)
+fly ssh console -a cannabis-paper-scraper
+cd /app
+python3 calibration_agent.py --max-calls 20 --mode node1_routing --variants control,decision_checklist
+```
+
+One-shot (non-interactive):
+
+```bash
+fly ssh console -a cannabis-paper-scraper -C \
+  "cd /app && python3 calibration_agent.py --max-calls 20 --mode node1_routing --variants control,decision_checklist"
+```
+
+**Do not** run `calibration_agent.py`, `reclassify_metadata.py`, `harvest.py` (live ingest), `eval_reliability.py`, or bulk SQL updates against the repo-root `cannabis_papers.db` unless the user explicitly requests a local-only experiment.
+
+### Artifacts and read-back
+
+- Calibration JSON and walkthroughs on Fly are written to **`/data/calibration_runs/`** (volume-backed). `entrypoint.sh` creates this directory on startup.
+- After a Fly calibration run, pull artifacts for local dashboard inspection:
+  ```bash
+  fly ssh sftp get -a cannabis-paper-scraper /data/calibration_runs/node1_calibration_*.json ./scratch/calibration_runs/
+  fly ssh sftp get -a cannabis-paper-scraper /data/calibration_runs/node1_calibration_*_walkthrough.md ./scratch/calibration_runs/
+  ```
+- Rebuild the local dashboard from pulled JSON only (`python3 calibration_metrics.py --build-dashboard`); inspect at `scratch/calibration_runs/dashboard.html`. Use the **Decision Tree** sidebar to filter results by node (1B, 1A, 2A–2D, 3A–3C, etc.).
+- Prefer production API endpoints (`/api/classification/queue`, `/api/papers/<id>/edit-classification`) when the app is running — they always use the Fly database.
+
+### Code/config changes vs data changes
+
+- **Git-tracked files** (`rules_config.json`, `classifier.py`, etc.): edit in the repo, commit, deploy via `fly deploy`.
+- **Paper rows, `llm_calls_log`, `feedback_audit`, `optimization_log`**: mutate only on Fly (SSH scripts or live API), never on local SQLite for automation work.
+
 ## Expert Decision Tree & Cues (Received)
 
 Source: expert feedback file `EXPERT FEEDBACK TREE & CUES` (2026-06-18).
@@ -133,6 +191,7 @@ When encoding expert nodes, use four cue strengths where noted: **lexographic (s
 
 ## Goals
 
+- **Treat the Fly.io SQLite volume (`/data/cannabis_papers.db`) as the single source of truth** for all paper classification state; local SQLite is not a sync target for automation.
 - Capture expert cannabis paper classification rules as structured cues in `rules_config.json`. Cues can be lexical (strong), sectional (strong), structural, or semantic.
 - Give agents stable API entry points for queue review, recent feedback, and automation status.
 - Keep the existing heuristic-first, single-pass LLM architecture intact for cost control.
@@ -141,36 +200,41 @@ When encoding expert nodes, use four cue strengths where noted: **lexographic (s
 
 ## Agent Workflow
 
-1. Poll `/api/agents/automation-status` for queue counts, feedback counters, rules version, and reliability status.
+0. **Confirm production target** — pre-flight check above; all steps below assume Fly.io DB or the live app API, not local SQLite.
+1. Poll `https://cannabis-paper-scraper.fly.dev/api/agents/automation-status` (or SSH on Fly) for queue counts, feedback counters, rules version, and reliability status.
 2. Pull low-confidence papers from `/api/classification/queue`.
 3. Route each paper through the node hierarchy: Ingestion → Reviews (Node 1B) before Original Papers (Node 1A) → subtype branches (2A–2D, 3A–3C).
 4. Compare each paper against the expert decision chart and recent corrections from `/api/feedback/recent`.
-5. Submit expert-approved edits through `/api/papers/<paper_id>/edit-classification`.
-6. Trigger `/api/classification/run-eval` after enough corrections accumulate or after a major decision-chart update.
+5. Submit expert-approved edits through `/api/papers/<paper_id>/edit-classification` (live API → Fly DB).
+6. Trigger `/api/classification/run-eval` on Fly after enough corrections accumulate or after a major decision-chart update.
 
 ## Bounded Calibration Runner
 
-Use `calibration_agent.py` when Claude should supervise a limited learning pass before handing results back for review.
+Use `calibration_agent.py` when Claude should supervise a limited learning pass before handing results back for review. **Run on Fly.io** so `papers` and `llm_calls_log` updates land in production.
 
-Dry-run candidate selection:
-
-```bash
-python3 calibration_agent.py --dry-run --max-calls 50
-```
-
-Live 50-attempt A/B calibration:
+Dry-run candidate selection (safe locally or on Fly — no DB writes):
 
 ```bash
-python3 calibration_agent.py --max-calls 50 --mode preclinical_original --variants control,decision_checklist
+fly ssh console -a cannabis-paper-scraper -C \
+  "cd /app && python3 calibration_agent.py --dry-run --max-calls 50 --mode node1_routing"
 ```
+
+Live calibration (production DB writes — **Fly only**):
+
+```bash
+fly ssh console -a cannabis-paper-scraper -C \
+  "cd /app && python3 calibration_agent.py --max-calls 20 --mode node1_routing --variants control,decision_checklist"
+```
+
+Example Node 1 routing pass (skip Node 0 when ~20k papers already ingested): three batches of 20, run the live command three times; each batch excludes papers already labeled `llm-node1-calibration-*`.
 
 The runner:
 
-- Enforces a local `--max-calls` ceiling of 50 classification attempts.
+- Enforces a `--max-calls` ceiling of 50 classification attempts per invocation.
 - Defaults to abstract-only classification for predictable budget behavior.
 - Alternates configured prompt variants with `CLASSIFIER_PROMPT_VARIANT`.
-- Writes `scratch/calibration_runs/<batch_id>.json` and `<batch_id>_walkthrough.md`.
-- Updates `papers` and `llm_calls_log` only when not running with `--dry-run`.
+- Writes `scratch/calibration_runs/<batch_id>.json` and `<batch_id>_walkthrough.md` on the machine where it runs.
+- Updates `papers` and `llm_calls_log` on **`/data/cannabis_papers.db`** only when not running with `--dry-run` — therefore execute live runs via `fly ssh console`, not against repo-root SQLite.
 
 ## Automation Layers
 
@@ -184,7 +248,7 @@ The runner:
 | Optimization logging | `optimization_log` with relevance/extraction Hamming breakdown | `failed_attempts` escalates to `needs_human_review` after 3 rejected patches. |
 | Reliability eval | `eval_reliability.py` writes repo-local manifest | Schedule eval when correction threshold is reached. |
 | Batch parity | `anthropic_batch_helper.create_batch_requests()` uses cue-aware prompts | Add full dynamic rule parity for PDF batch workflows. |
-| Calibration | `calibration_agent.py` | Use expert-reviewed walkthroughs to patch cues and decision-chart branches. |
+| Calibration | `calibration_agent.py` on **Fly.io only** (live runs) | Use expert-reviewed walkthroughs to patch cues and decision-chart branches; pull JSON artifacts via `fly ssh sftp`. |
 
 ## Upward Propagation (Phase 1)
 
@@ -201,8 +265,11 @@ At classification time, `classify_with_llm()` calls `retrieve_few_shot_context()
 
 ## Guardrails
 
-- Keep expert edits auditable in `feedback_audit`.
+- **Production DB only for writes** — never calibrate, reclassify, ingest, or bulk-update `papers` on local `cannabis_papers.db` during agent automation; use Fly SSH or the live API.
+- Run the pre-flight `DATABASE_PATH` / paper-count check before any mutating script.
+- Keep expert edits auditable in `feedback_audit` (via live API or Fly-side scripts).
 - Treat `expert_locked_fields` as authoritative during reclassification.
 - Prefer config patches over prompt rewrites when adding chart details.
-- Validate every rules change against the test suite and a representative low-confidence queue sample.
+- Validate every rules change against the test suite; validate queue/calibration behavior against **production** samples after deploy.
 - Enforce Node 1B before Node 1A when routing review vs original-research papers.
+- After changing `rules_config.json`, deploy to Fly before running calibration so production prompts match the config version written to `classifier_version`.

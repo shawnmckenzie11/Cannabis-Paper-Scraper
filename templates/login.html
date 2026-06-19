@@ -250,6 +250,9 @@
 
             <form method="POST" action="/login">
                 <input type="hidden" name="action" value="signin">
+                {% if next_url %}
+                <input type="hidden" name="next" value="{{ next_url }}">
+                {% endif %}
                 <div class="form-group">
                     <label for="username_or_email">Username or Email</label>
                     <input type="text" id="username_or_email" name="username_or_email" placeholder="e.g. researcher" required autofocus autocomplete="username">
@@ -289,7 +292,7 @@
 
         <!-- Google OAuth Integration -->
         <div class="oauth-providers">
-            <button class="btn-google" onclick="window.location.href='/auth/google'">
+            <button class="btn-google" onclick="window.location.href='{{ url_for('auth_google', next=next_url) if next_url else url_for('auth_google') }}'">
                 <!-- Google Material SVG Icon -->
                 <svg class="google-icon" viewBox="0 0 24 24">
                     <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>

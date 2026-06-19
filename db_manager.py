@@ -499,7 +499,9 @@ class DatabaseManager:
                 ("cbd_uM", "REAL"),
                 ("inhaled_exposure_duration", "TEXT"),
                 ("administration_frequency", "TEXT"),
-                ("treatment_duration", "TEXT")
+                ("treatment_duration", "TEXT"),
+                ("ingestion_status", "TEXT"),
+                ("species", "TEXT")
             ]
             
             for col_name, col_type in columns_to_add:
@@ -1155,6 +1157,157 @@ class DatabaseManager:
                 (limit,)
             )
             return [dict(row) for row in cursor.fetchall()]
+        finally:
+            conn.close()
+
+    def get_feedback_loop_metrics(self) -> Dict[str, Any]:
+        """Returns feedback audit counters and eval-threshold progress for the learning dashboard."""
+        conn = self.get_connection()
+        try:
+            cursor = conn.cursor()
+            cursor.execute("SELECT COUNT(*) AS total FROM feedback_audit")
+            total_row = cursor.fetchone()
+            total_corrections = int(list(total_row.values())[0] if hasattr(total_row, "keys") else total_row[0])
+
+            cursor.execute("SELECT COUNT(DISTINCT paper_id) AS papers FROM feedback_audit")
+            papers_row = cursor.fetchone()
+            unique_papers = int(list(papers_row.values())[0] if hasattr(papers_row, "keys") else papers_row[0])
+
+            cursor.execute(
+                """
+                SELECT field_name, COUNT(*) AS count
+                FROM feedback_audit
+                GROUP BY field_name
+                ORDER BY count DESC
+                LIMIT 8
+                """
+            )
+            by_field = {
+                row["field_name"] if hasattr(row, "keys") else row[0]: int(
+                    row["count"] if hasattr(row, "keys") else row[1]
+                )
+                for row in cursor.fetchall()
+            }
+
+            fts_ready = self.table_exists("feedback_audit_fts", conn)
+            if self.is_postgres and not fts_ready:
+                fts_ready = self.table_exists("feedback_audit", conn)
+
+            return {
+                "total_corrections": total_corrections,
+                "unique_papers_corrected": unique_papers,
+                "corrections_by_field": by_field,
+                "corrections_since_eval": int(self.get_metadata("feedback_corrections_since_eval", "0") or 0),
+                "last_feedback_timestamp": self.get_metadata("last_feedback_audit_timestamp"),
+                "last_reliability_eval_timestamp": self.get_metadata("last_reliability_eval_timestamp"),
+                "fts_index_ready": fts_ready,
+            }
+        except Exception:
+            return {
+                "total_corrections": 0,
+                "unique_papers_corrected": 0,
+                "corrections_by_field": {},
+                "corrections_since_eval": int(self.get_metadata("feedback_corrections_since_eval", "0") or 0),
+                "last_feedback_timestamp": self.get_metadata("last_feedback_audit_timestamp"),
+                "last_reliability_eval_timestamp": self.get_metadata("last_reliability_eval_timestamp"),
+                "fts_index_ready": False,
+            }
+        finally:
+            conn.close()
+
+    def get_optimization_log_metrics(self, limit: int = 25) -> Dict[str, Any]:
+        """Returns optimization_log summary including Hamming scores and escalation status."""
+        conn = self.get_connection()
+        try:
+            if not self.table_exists("optimization_log", conn):
+                return {"total_runs": 0, "by_status": {}, "needs_human_review_count": 0, "recent_runs": []}
+
+            cursor = conn.cursor()
+            cursor.execute("SELECT COUNT(*) AS total FROM optimization_log")
+            total_row = cursor.fetchone()
+            total_runs = int(list(total_row.values())[0] if hasattr(total_row, "keys") else total_row[0])
+
+            cursor.execute(
+                """
+                SELECT status, COUNT(*) AS count
+                FROM optimization_log
+                GROUP BY status
+                """
+            )
+            by_status = {}
+            for row in cursor.fetchall():
+                if hasattr(row, "keys"):
+                    by_status[str(row["status"])] = int(row["count"])
+                else:
+                    by_status[str(row[0])] = int(row[1])
+
+            cursor.execute(
+                """
+                SELECT
+                    id, run_id, timestamp, field_group_scores, reward, gate_passed,
+                    failed_attempts, status, rules_version_before, rules_version_after
+                FROM optimization_log
+                ORDER BY timestamp DESC, id DESC
+                LIMIT ?
+                """,
+                (limit,),
+            )
+            recent_runs = []
+            for row in cursor.fetchall():
+                record = dict(row)
+                raw_scores = record.get("field_group_scores")
+                if isinstance(raw_scores, str):
+                    try:
+                        record["field_group_scores"] = json.loads(raw_scores)
+                    except Exception:
+                        record["field_group_scores"] = {}
+                recent_runs.append(record)
+
+            return {
+                "total_runs": total_runs,
+                "by_status": by_status,
+                "needs_human_review_count": by_status.get("needs_human_review", 0),
+                "recent_runs": recent_runs,
+            }
+        except Exception:
+            return {"total_runs": 0, "by_status": {}, "needs_human_review_count": 0, "recent_runs": []}
+        finally:
+            conn.close()
+
+    def get_bm25_propagation_timeline(self, limit: int = 50) -> List[Dict[str, Any]]:
+        """Returns BM25 few-shot retrieval usage aggregated by calibration batch."""
+        conn = self.get_connection()
+        try:
+            if not self.table_exists("llm_calls_log", conn):
+                return []
+            cursor = conn.cursor()
+            cursor.execute(
+                """
+                SELECT
+                    batch_id,
+                    MIN(timestamp) AS first_call,
+                    COUNT(*) AS call_count,
+                    SUM(CASE WHEN bm25_retrieval_used = 1 THEN 1 ELSE 0 END) AS bm25_used_count,
+                    AVG(few_shot_similarity) AS avg_few_shot_similarity,
+                    AVG(classification_confidence) AS avg_confidence
+                FROM llm_calls_log
+                WHERE batch_id IS NOT NULL AND batch_id != ''
+                GROUP BY batch_id
+                ORDER BY first_call ASC
+                LIMIT ?
+                """,
+                (limit,),
+            )
+            timeline = []
+            for row in cursor.fetchall():
+                record = dict(row)
+                call_count = int(record.get("call_count") or 0)
+                bm25_used = int(record.get("bm25_used_count") or 0)
+                record["bm25_usage_rate"] = round(bm25_used / call_count, 3) if call_count else 0.0
+                timeline.append(record)
+            return timeline
+        except Exception:
+            return []
         finally:
             conn.close()
 
