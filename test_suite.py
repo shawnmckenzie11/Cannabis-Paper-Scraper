@@ -3,6 +3,7 @@ import unittest
 import os
 import json
 import sqlite3
+from unittest.mock import patch
 from pathlib import Path
 from db_manager import DatabaseManager
 import extractor
@@ -258,6 +259,117 @@ class TestHeuristicExtractor(unittest.TestCase):
         self.assertIn("This is an animal study", summary_no)
         self.assertIn("pure cannabinoid cannabis administration", summary_no)
         self.assertIn("No specific strain was specified.", summary_no)
+
+
+class TestHeuristicReingestion(unittest.TestCase):
+    """Test cases for safe heuristic re-ingestion batch controls."""
+
+    def test_max_papers_limits_selected_pending_rows(self):
+        """The re-ingestion runner should use a DB-level LIMIT when capped."""
+        import reingest_heuristic_papers
+
+        class FakeCursor:
+            """Minimal cursor that records selects and update attempts."""
+
+            def __init__(self):
+                """Initialize the fake cursor with deterministic pending rows."""
+                self.select_sql = None
+                self.select_params = None
+                self.update_count = 0
+                self.rows = [
+                    {
+                        "id": idx,
+                        "title": f"Cannabis paper {idx}",
+                        "abstract": "Participants used cannabis in a controlled study.",
+                        "expert_locked_fields": None,
+                        "study_type": None,
+                        "exposure_method": None,
+                        "cannabis_type": None,
+                        "outcome_domain": None,
+                        "duration_days": None,
+                        "classification_confidence": 0.5,
+                        "classifier_version": "heuristic-reclassify-1.0.0",
+                    }
+                    for idx in range(1, 4)
+                ]
+
+            def execute(self, sql, params=None):
+                """Record SELECT statements and count UPDATE statements."""
+                if sql.lstrip().upper().startswith("SELECT"):
+                    self.select_sql = sql
+                    self.select_params = params
+                elif sql.lstrip().upper().startswith("UPDATE"):
+                    self.update_count += 1
+                return self
+
+            def fetchall(self):
+                """Return the fake pending rows."""
+                return self.rows
+
+        class FakeConnection:
+            """Minimal connection that exposes the cursor used by the runner."""
+
+            def __init__(self):
+                """Initialize the fake connection state."""
+                self.row_factory = None
+                self.cursor_obj = FakeCursor()
+                self.commit_count = 0
+                self.closed = False
+
+            def cursor(self):
+                """Return the single fake cursor."""
+                return self.cursor_obj
+
+            def commit(self):
+                """Track commit attempts."""
+                self.commit_count += 1
+
+            def close(self):
+                """Mark the connection closed."""
+                self.closed = True
+
+        class FakeDatabaseManager:
+            """Minimal database manager returning the fake connection."""
+
+            def __init__(self):
+                """Create a reusable fake connection."""
+                self.connection = FakeConnection()
+
+            def get_connection(self):
+                """Return the fake connection."""
+                return self.connection
+
+        extracted = {column: None for column in reingest_heuristic_papers.UPDATE_COLUMNS}
+        extracted.update(
+            {
+                "study_type": ["Clinical (observational)"],
+                "exposure_method": ["unknown"],
+                "cannabis_type": ["unknown"],
+                "outcome_domain": ["unknown"],
+                "classification_confidence": 0.6,
+                "classifier_version": "heuristic-1.0.0",
+            }
+        )
+
+        fake_db = FakeDatabaseManager()
+        with patch.object(reingest_heuristic_papers, "DatabaseManager", return_value=fake_db):
+            with patch.object(
+                reingest_heuristic_papers.classifier,
+                "process_paper_metadata",
+                return_value=extracted,
+            ):
+                summary = reingest_heuristic_papers.reingest_heuristic_papers(
+                    batch_size=2,
+                    only_pending=True,
+                    max_papers=3,
+                )
+
+        self.assertIn("classifier_version LIKE 'heuristic-reclassify%'", fake_db.connection.cursor_obj.select_sql)
+        self.assertIn("LIMIT ?", fake_db.connection.cursor_obj.select_sql)
+        self.assertEqual(fake_db.connection.cursor_obj.select_params, [3])
+        self.assertEqual(summary["papers_processed"], 3)
+        self.assertEqual(fake_db.connection.cursor_obj.update_count, 3)
+        self.assertTrue(fake_db.connection.closed)
 
 
 class TestDatabaseManager(unittest.TestCase):
