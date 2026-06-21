@@ -28,6 +28,13 @@ if [ -f "$SEED_SOURCE" ] && [ ! -f "$DB_PATH" ]; then
     echo "Database seeded successfully."
 fi
 
+if [ -f "$DB_PATH" ]; then
+    echo "Ensuring indexed tab membership columns are ready..."
+    if ! python3 ensure_tab_flags.py; then
+        echo "Warning: tab flag backfill did not complete; continuing startup."
+    fi
+fi
+
 # Start gunicorn in background so the port is immediately available
 "$@" &
 GUNICORN_PID=$!

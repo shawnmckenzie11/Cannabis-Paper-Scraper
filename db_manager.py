@@ -8,6 +8,14 @@ from datetime import datetime
 from typing import List, Dict, Any, Optional, Tuple
 import logging
 
+from paper_tab_flags import (
+    BACKFILL_TAB_FLAGS_SQL_FAST,
+    TAB_FLAG_FIELDS,
+    apply_tab_flags_to_record,
+    legacy_tab_sql_for,
+    tab_sql_for,
+)
+
 logger = logging.getLogger(__name__)
 
 try:
@@ -18,90 +26,6 @@ except ImportError:
 
 DATABASE_FILE = os.getenv("DATABASE_PATH", "cannabis_papers.db")
 SCHEMA_FILE = "schema.sql"
-
-_SQL_ORIGINAL_RESEARCH = (
-    "("
-    "  papers.publication_type = 'original research'"
-    "  OR"
-    "  (papers.publication_type IS NULL AND ("
-    "    (json_valid(papers.study_type) AND json_type(papers.study_type) = 'array' AND NOT EXISTS ("
-    "        SELECT 1 FROM json_each(papers.study_type) WHERE json_each.value IN ('review', 'meta-analysis', 'case study', 'editorial')"
-    "    ))"
-    "    OR"
-    "    ((NOT json_valid(papers.study_type) OR json_type(papers.study_type) != 'array') AND (papers.study_type IS NULL OR papers.study_type NOT IN ('review', 'meta-analysis', 'case study', 'editorial')))"
-    "  ))"
-    ")"
-)
-
-_SQL_REVIEW_PUBLICATION = (
-    "("
-    "  (papers.publication_type IS NOT NULL AND papers.publication_type != 'original research')"
-    "  OR"
-    "  (papers.publication_type IS NULL AND ("
-    "    (json_valid(papers.study_type) AND json_type(papers.study_type) = 'array' AND EXISTS ("
-    "        SELECT 1 FROM json_each(papers.study_type) WHERE json_each.value IN ('review', 'meta-analysis', 'case study', 'editorial')"
-    "    ))"
-    "    OR"
-    "    (papers.study_type IN ('review', 'meta-analysis', 'case study', 'editorial'))"
-    "  ))"
-    ")"
-)
-
-_SQL_INGESTION_NOT_CANNABIS = (
-    "LOWER(COALESCE(papers.ingestion_status, '')) IN ('not_cannabis_related', 'not cannabis-related')"
-)
-
-_SQL_INGESTION_IRRELEVANT = "LOWER(COALESCE(papers.ingestion_status, '')) = 'irrelevant'"
-
-_SQL_INGESTION_TANGENTIAL = "LOWER(COALESCE(papers.ingestion_status, '')) = 'tangential'"
-
-_SQL_INGESTION_ROUTED = (
-    "("
-    f"  {_SQL_INGESTION_NOT_CANNABIS}"
-    "  OR "
-    f"  {_SQL_INGESTION_IRRELEVANT}"
-    "  OR "
-    f"  {_SQL_INGESTION_TANGENTIAL}"
-    ")"
-)
-
-_SQL_CLINICAL_STUDY = (
-    "("
-    "  LOWER(COALESCE(papers.study_type, '')) LIKE '%clinical%'"
-    "  OR LOWER(COALESCE(papers.study_type, '')) LIKE '%rct%'"
-    "  OR LOWER(COALESCE(papers.study_type, '')) LIKE '%prospective%'"
-    "  OR LOWER(COALESCE(papers.study_type, '')) LIKE '%retrospective%'"
-    "  OR LOWER(COALESCE(papers.study_type, '')) LIKE '%observational%'"
-    ")"
-)
-
-_SQL_PRECLINICAL_STUDY = (
-    "("
-    "  LOWER(COALESCE(papers.study_type, '')) LIKE '%animal%'"
-    "  OR LOWER(COALESCE(papers.study_type, '')) LIKE '%mouse%'"
-    "  OR LOWER(COALESCE(papers.study_type, '')) LIKE '%rat%'"
-    "  OR LOWER(COALESCE(papers.study_type, '')) LIKE '%rodent%'"
-    "  OR LOWER(COALESCE(papers.study_type, '')) LIKE '%in vivo%'"
-    "  OR LOWER(COALESCE(papers.study_type, '')) LIKE '%cell culture%'"
-    "  OR LOWER(COALESCE(papers.study_type, '')) LIKE '%vitro%'"
-    "  OR LOWER(COALESCE(papers.study_type, '')) LIKE '%organoid%'"
-    ")"
-)
-
-_TAB_SQL = {
-    "preclinical": (
-        f"({_SQL_ORIGINAL_RESEARCH} AND NOT {_SQL_INGESTION_ROUTED} AND {_SQL_PRECLINICAL_STUDY})"
-    ),
-    "clinical": (
-        f"({_SQL_ORIGINAL_RESEARCH} AND NOT {_SQL_INGESTION_ROUTED} AND {_SQL_CLINICAL_STUDY})"
-    ),
-    "unclassified_preclinical": (
-        f"({_SQL_ORIGINAL_RESEARCH} AND NOT {_SQL_INGESTION_ROUTED}"
-        f" AND NOT {_SQL_CLINICAL_STUDY} AND NOT {_SQL_PRECLINICAL_STUDY})"
-    ),
-    "tangential": f"({_SQL_INGESTION_TANGENTIAL})",
-    "review": f"({_SQL_REVIEW_PUBLICATION} AND NOT {_SQL_INGESTION_ROUTED})",
-}
 
 
 class PostgresCursorWrapper:
@@ -308,8 +232,11 @@ class PostgresConnectionWrapper:
 class DatabaseManager:
     """Manages SQLite and PostgreSQL operations, indexing, and dynamic querying for cannabis papers."""
 
-    _bootstrapped = False
+    _bootstrapped_paths: set = set()
     _bootstrap_lock = threading.Lock()
+    _tab_flags_ready_cache: Dict[str, bool] = {}
+    _tab_backfill_started: set = set()
+    _TAB_FLAGS_VERSION = "1"
 
     _PAPERS_COLUMNS_TO_ADD: Tuple[Tuple[str, str], ...] = (
         ("publication_date", "TEXT"),
@@ -336,12 +263,30 @@ class DatabaseManager:
         ("exposure_regimen_bin", "TEXT"),
         ("ingestion_status", "TEXT"),
         ("species", "TEXT"),
+        ("tab_preclinical", "INTEGER DEFAULT 0"),
+        ("tab_clinical", "INTEGER DEFAULT 0"),
+        ("tab_unclassified_preclinical", "INTEGER DEFAULT 0"),
+        ("tab_tangential", "INTEGER DEFAULT 0"),
+        ("tab_review", "INTEGER DEFAULT 0"),
     )
     
     @property
     def is_postgres(self):
+        """Use Postgres only when configured and no production SQLite volume is mounted."""
         db_url = os.getenv("DATABASE_URL")
-        return db_url is not None and (db_url.startswith("postgres://") or db_url.startswith("postgresql://"))
+        if not db_url or not (
+            db_url.startswith("postgres://") or db_url.startswith("postgresql://")
+        ):
+            return False
+
+        sqlite_path = os.getenv("DATABASE_PATH", DATABASE_FILE)
+        if sqlite_path and os.path.exists(sqlite_path):
+            try:
+                if os.path.getsize(sqlite_path) > 50_000_000:
+                    return False
+            except OSError:
+                pass
+        return True
         
     @property
     def database_url(self):
@@ -356,18 +301,48 @@ class DatabaseManager:
                 os.makedirs(dir_name, exist_ok=True)
         self._ensure_bootstrapped()
 
+    def _bootstrap_key(self) -> str:
+        """Returns a stable key for one-time bootstrap per database target."""
+        if self.is_postgres:
+            return self.database_url or "postgres"
+        return os.path.abspath(self.db_path)
+
+    def _database_ready(self) -> bool:
+        """True when the papers table exists (bootstrap already applied for this target)."""
+        try:
+            conn = self.get_connection()
+            try:
+                if self.is_postgres:
+                    cursor = conn.conn.cursor()
+                    cursor.execute(
+                        "SELECT EXISTS (SELECT FROM information_schema.tables WHERE table_name = 'papers');"
+                    )
+                    row = cursor.fetchone()
+                    return bool(list(row.values())[0] if isinstance(row, dict) else row[0])
+                cursor = conn.cursor()
+                cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='papers';")
+                return cursor.fetchone() is not None
+            finally:
+                conn.close()
+        except Exception:
+            return False
+
     def _ensure_bootstrapped(self) -> None:
         """Runs database migrations and compat setup once per worker process."""
-        if DatabaseManager._bootstrapped:
+        bootstrap_key = self._bootstrap_key()
+        if bootstrap_key in DatabaseManager._bootstrapped_paths and self._database_ready():
             return
         with DatabaseManager._bootstrap_lock:
-            if DatabaseManager._bootstrapped:
+            if bootstrap_key in DatabaseManager._bootstrapped_paths and self._database_ready():
                 return
             if self.is_postgres:
                 self._bootstrap_postgres()
             else:
                 self._bootstrap_sqlite()
-            DatabaseManager._bootstrapped = True
+            DatabaseManager._bootstrapped_paths.add(bootstrap_key)
+            self._refresh_tab_flags_ready_cache()
+            if not DatabaseManager._tab_flags_ready_cache.get(bootstrap_key, False):
+                self._schedule_tab_flag_backfill()
 
     def _ensure_postgres_json_compat(self, cursor) -> None:
         """Creates SQLite-compat json_valid/json_type helpers used by tab filter SQL."""
@@ -469,7 +444,7 @@ class DatabaseManager:
         if not db_exists:
             self.init_db()
         else:
-            self.init_db()
+            self.init_db(apply_schema_script=False)
 
     def _ensure_papers_column_migrations(self, conn) -> None:
         """Adds any missing papers-table columns introduced after initial deploy."""
@@ -486,6 +461,179 @@ class DatabaseManager:
                     conn.commit()
                 except Exception as e:
                     logger.error(f"Failed to add column {col_name}: {e}")
+
+    def _ensure_tab_flag_indexes(self, conn) -> None:
+        """Creates partial-friendly indexes for indexed tab membership columns."""
+        for column in TAB_FLAG_FIELDS.values():
+            try:
+                conn.execute(
+                    f"CREATE INDEX IF NOT EXISTS idx_papers_{column} ON papers({column}, year DESC);"
+                )
+                conn.commit()
+            except Exception as e:
+                logger.error(f"Failed to create index for {column}: {e}")
+
+    def _backfill_tab_flags(self, conn) -> None:
+        """One-time population of indexed tab columns for existing rows."""
+        try:
+            conn.execute("""
+                CREATE TABLE IF NOT EXISTS system_metadata (
+                    key TEXT PRIMARY KEY,
+                    value TEXT
+                );
+            """)
+            conn.commit()
+            cursor = conn.cursor()
+            cursor.execute("SELECT value FROM system_metadata WHERE key = 'tab_flags_version';")
+            row = cursor.fetchone()
+            version = None
+            if row is not None:
+                version = row["value"] if isinstance(row, dict) or hasattr(row, "keys") else row[0]
+            if version == "1":
+                return
+
+            logger.info("Backfilling indexed tab membership columns...")
+            conn.execute(BACKFILL_TAB_FLAGS_SQL_FAST)
+            conn.commit()
+            conn.execute(
+                "INSERT INTO system_metadata (key, value) VALUES ('tab_flags_version', ?) "
+                "ON CONFLICT(key) DO UPDATE SET value = excluded.value;",
+                (self._TAB_FLAGS_VERSION,),
+            )
+            conn.commit()
+            self._ensure_tab_flag_indexes(conn)
+            DatabaseManager._tab_flags_ready_cache[self._bootstrap_key()] = True
+            logger.info("Tab membership backfill complete.")
+        except Exception as e:
+            logger.error(f"Tab membership backfill failed: {e}")
+
+    def _refresh_tab_flags_ready_cache(self) -> bool:
+        """Reload the cached tab-flag readiness state for this database."""
+        bootstrap_key = self._bootstrap_key()
+        ready = False
+        conn = self.get_connection()
+        try:
+            conn.execute("""
+                CREATE TABLE IF NOT EXISTS system_metadata (
+                    key TEXT PRIMARY KEY,
+                    value TEXT
+                );
+            """)
+            conn.commit()
+            cursor = conn.cursor()
+            cursor.execute("SELECT value FROM system_metadata WHERE key = 'tab_flags_version';")
+            row = cursor.fetchone()
+            if row is not None:
+                version = row["value"] if hasattr(row, "keys") else row[0]
+                ready = version == self._TAB_FLAGS_VERSION
+                if ready:
+                    cursor.execute(
+                        "SELECT COUNT(*) FROM papers WHERE "
+                        "tab_clinical = 1 OR tab_preclinical = 1 OR tab_review = 1 OR tab_tangential = 1 "
+                        "OR tab_unclassified_preclinical = 1"
+                    )
+                    flagged_row = cursor.fetchone()
+                    flagged_count = int(
+                        flagged_row["COUNT(*)"]
+                        if flagged_row and hasattr(flagged_row, "keys")
+                        else (flagged_row[0] if flagged_row else 0)
+                    )
+                    if flagged_count == 0:
+                        cursor.execute("SELECT COUNT(*) FROM papers")
+                        total_row = cursor.fetchone()
+                        total_count = int(
+                            total_row["COUNT(*)"]
+                            if total_row and hasattr(total_row, "keys")
+                            else (total_row[0] if total_row else 0)
+                        )
+                        if total_count > 0:
+                            ready = False
+        except Exception:
+            ready = False
+        finally:
+            conn.close()
+
+        DatabaseManager._tab_flags_ready_cache[bootstrap_key] = ready
+        return ready
+
+    def _tab_flags_are_ready(self) -> bool:
+        """True when indexed tab columns have been populated for this database."""
+        bootstrap_key = self._bootstrap_key()
+        if bootstrap_key not in DatabaseManager._tab_flags_ready_cache:
+            return self._refresh_tab_flags_ready_cache()
+        return DatabaseManager._tab_flags_ready_cache[bootstrap_key]
+
+    def _tab_filter_sql(self, tab: str) -> str:
+        """Return the fastest available tab filter SQL for the current database state."""
+        if self._tab_flags_are_ready():
+            return tab_sql_for(tab)
+        return legacy_tab_sql_for(tab)
+
+    def _schedule_tab_flag_backfill(self) -> None:
+        """Populate indexed tab columns in the background without blocking requests."""
+        bootstrap_key = self._bootstrap_key()
+        if bootstrap_key in DatabaseManager._tab_backfill_started:
+            return
+        if self._tab_flags_are_ready():
+            return
+
+        DatabaseManager._tab_backfill_started.add(bootstrap_key)
+
+        def _worker() -> None:
+            conn = self.get_connection()
+            try:
+                self._backfill_tab_flags(conn)
+            except Exception as exc:
+                logger.error(f"Background tab backfill failed: {exc}")
+                DatabaseManager._tab_backfill_started.discard(bootstrap_key)
+            finally:
+                conn.close()
+
+        threading.Thread(
+            target=_worker,
+            daemon=True,
+            name=f"tab-flag-backfill-{bootstrap_key}",
+        ).start()
+
+    def sync_tab_flags_for_paper(self, paper_id: int, conn=None) -> None:
+        """Recompute and persist indexed tab flags for a single paper."""
+        owns_connection = conn is None
+        if owns_connection:
+            conn = self.get_connection()
+        try:
+            cursor = conn.cursor()
+            cursor.execute(
+                "SELECT publication_type, study_type, ingestion_status FROM papers WHERE id = ?",
+                (paper_id,),
+            )
+            row = cursor.fetchone()
+            if not row:
+                return
+            flags = apply_tab_flags_to_record(dict(row))
+            cursor.execute(
+                """
+                UPDATE papers SET
+                    tab_preclinical = ?,
+                    tab_clinical = ?,
+                    tab_unclassified_preclinical = ?,
+                    tab_tangential = ?,
+                    tab_review = ?
+                WHERE id = ?
+                """,
+                (
+                    flags["tab_preclinical"],
+                    flags["tab_clinical"],
+                    flags["tab_unclassified_preclinical"],
+                    flags["tab_tangential"],
+                    flags["tab_review"],
+                    paper_id,
+                ),
+            )
+            if owns_connection:
+                conn.commit()
+        finally:
+            if owns_connection:
+                conn.close()
 
     def get_connection(self):
         """Returns a connection wrapper supporting standard operations."""
@@ -547,7 +695,7 @@ class DatabaseManager:
         except Exception:
             return False
 
-    def init_db(self):
+    def init_db(self, *, apply_schema_script: bool = True):
         """Initializes the database with schema.sql and all required tables/migrations."""
         if not os.path.exists(SCHEMA_FILE):
             raise FileNotFoundError(f"Schema file '{SCHEMA_FILE}' is required for database initialization.")
@@ -621,20 +769,20 @@ class DatabaseManager:
                 except Exception:
                     pass
             else:
-                if fts_needs_migration:
-                    conn.execute("DROP TRIGGER IF EXISTS papers_ai;")
-                    conn.execute("DROP TRIGGER IF EXISTS papers_ad;")
-                    conn.execute("DROP TRIGGER IF EXISTS papers_au;")
-                    conn.execute("DROP TABLE IF EXISTS papers_fts;")
-                    conn.commit()
+                if apply_schema_script:
+                    if fts_needs_migration:
+                        conn.execute("DROP TRIGGER IF EXISTS papers_ai;")
+                        conn.execute("DROP TRIGGER IF EXISTS papers_ad;")
+                        conn.execute("DROP TRIGGER IF EXISTS papers_au;")
+                        conn.execute("DROP TABLE IF EXISTS papers_fts;")
+                        conn.commit()
 
-                conn.executescript(schema_script)
+                    conn.executescript(schema_script)
 
-                if fts_needs_migration:
-                    conn.execute("INSERT INTO papers_fts(rowid, title, abstract, authors) SELECT id, title, abstract, authors FROM papers;")
-                    conn.commit()
+                    if fts_needs_migration:
+                        conn.execute("INSERT INTO papers_fts(rowid, title, abstract, authors) SELECT id, title, abstract, authors FROM papers;")
+                        conn.commit()
 
-            # Ensure columns exist in papers table (dynamic migration)
             self._ensure_papers_column_migrations(conn)
 
             # Ensure system_metadata table exists
@@ -1452,6 +1600,8 @@ class DatabaseManager:
             "open_access", "citation_count", "date_harvested", "publication_date", "cannabis_type",
             "summary", "publication_type", "ingestion_status", "species",
             "repeat_exposure_count", "exposure_regimen_bin",
+            "tab_preclinical", "tab_clinical", "tab_unclassified_preclinical",
+            "tab_tangential", "tab_review",
             "expert_locked_fields", "classification_confidence",
             "classification_timestamp", "classifier_version"
         ]
@@ -1483,6 +1633,10 @@ class DatabaseManager:
                 paper_copy.get("title") or "",
                 paper_copy.get("abstract") or ""
             )
+
+        paper_copy.update(
+            apply_tab_flags_to_record(paper_copy)
+        )
 
         # Check if the paper already exists in DB to prevent unique constraint failures and instead update
         existing_id = None
@@ -1786,9 +1940,10 @@ class DatabaseManager:
         tab = filters.get("tab")
         if tab == "original":
             tab = "preclinical"
-        tab_sql = _TAB_SQL.get(tab or "")
-        if tab_sql:
-            where_clauses.append(tab_sql)
+        if tab and tab != "recent":
+            tab_sql = self._tab_filter_sql(tab)
+            if tab_sql:
+                where_clauses.append(tab_sql)
         elif tab == "recent" or filters.get("recent"):
             recent_range = filters.get("recent_range")
             from datetime import datetime as dt, timedelta as td
@@ -1848,7 +2003,35 @@ class DatabaseManager:
                     
         return where_clauses, params
 
-    def search_papers(self, filters: Dict[str, Any]) -> List[Dict[str, Any]]:
+    def _format_paper_row(self, row: Any) -> Dict[str, Any]:
+        """Convert a DB row into the API paper payload."""
+        res = dict(row)
+        res.pop("_search_total", None)
+        for json_field in ["authors", "outcome_domain"]:
+            if res.get(json_field):
+                try:
+                    res[json_field] = json.loads(res[json_field])
+                except Exception:
+                    res[json_field] = []
+            else:
+                res[json_field] = []
+
+        for json_field in ["study_type", "exposure_method", "cannabis_type", "expert_locked_fields"]:
+            if res.get(json_field):
+                try:
+                    val = res[json_field].strip()
+                    if val.startswith("[") and val.endswith("]"):
+                        res[json_field] = json.loads(res[json_field])
+                except Exception:
+                    pass
+        return res
+
+    def search_papers(
+        self,
+        filters: Dict[str, Any],
+        *,
+        include_total: bool = False,
+    ) -> Any:
         """Queries the database dynamically using filters.
         
         Supported filters:
@@ -1869,13 +2052,17 @@ class DatabaseManager:
         cursor = conn.cursor()
         
         query_val = filters.get("query")
+        total_suffix = ", COUNT(*) OVER() AS _search_total" if include_total else ""
         
         # 1. Base Select
         if query_val:
             # Join with FTS table
-            select_sql = "SELECT papers.*, papers_fts.rank FROM papers JOIN papers_fts ON papers.id = papers_fts.rowid"
+            select_sql = (
+                "SELECT papers.*, papers_fts.rank"
+                f"{total_suffix} FROM papers JOIN papers_fts ON papers.id = papers_fts.rowid"
+            )
         else:
-            select_sql = "SELECT papers.* FROM papers"
+            select_sql = f"SELECT papers.*{total_suffix} FROM papers"
             
         where_clauses, params = self._build_filter_clauses(filters)
 
@@ -1953,31 +2140,50 @@ class DatabaseManager:
         try:
             cursor.execute(sql, params)
             rows = cursor.fetchall()
-            
+
+            total_count = None
             results = []
             for row in rows:
-                res = dict(row)
-                # Parse JSON fields
-                for json_field in ["authors", "outcome_domain"]:
-                    if res.get(json_field):
-                        try:
-                            res[json_field] = json.loads(res[json_field])
-                        except Exception:
-                            res[json_field] = []
-                    else:
-                        res[json_field] = []
+                row_dict = dict(row)
+                if include_total and total_count is None:
+                    total_count = int(row_dict.get("_search_total") or 0)
+                results.append(self._format_paper_row(row_dict))
 
-                for json_field in ["study_type", "exposure_method", "cannabis_type", "expert_locked_fields"]:
-                    if res.get(json_field):
-                        try:
-                            val = res[json_field].strip()
-                            if val.startswith("[") and val.endswith("]"):
-                                res[json_field] = json.loads(res[json_field])
-                        except Exception:
-                            pass
-                results.append(res)
-                
+            if include_total:
+                if total_count is None:
+                    total_count = self.count_papers(filters)
+                return results, total_count
             return results
+        finally:
+            conn.close()
+
+    def get_tab_counts(self) -> Dict[str, int]:
+        """Return fast indexed counts for each database UI tab."""
+        conn = self.get_connection()
+        cursor = conn.cursor()
+        try:
+            counts: Dict[str, int] = {}
+            indexed_ready = self._tab_flags_are_ready()
+            for tab, column in TAB_FLAG_FIELDS.items():
+                if indexed_ready:
+                    cursor.execute(f"SELECT COUNT(*) AS total FROM papers WHERE {column} = 1")
+                else:
+                    legacy_sql = legacy_tab_sql_for(tab)
+                    cursor.execute(f"SELECT COUNT(*) AS total FROM papers WHERE {legacy_sql}")
+                row = cursor.fetchone()
+                counts[tab] = int(row["total"] if row else 0)
+
+            from datetime import datetime as dt, timedelta as td
+            now = dt.now()
+            recent_date = (now - td(days=180)).strftime("%Y-%m-%d")
+            current_year = now.year
+            cursor.execute(
+                "SELECT COUNT(*) AS total FROM papers WHERE (publication_date >= ? OR papers.year >= ?)",
+                (recent_date, current_year),
+            )
+            row = cursor.fetchone()
+            counts["recent"] = int(row["total"] if row else 0)
+            return counts
         finally:
             conn.close()
 

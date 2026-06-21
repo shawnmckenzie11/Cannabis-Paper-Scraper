@@ -566,6 +566,15 @@ def index():
     """Serves the Single-Page Application dynamic research dashboard."""
     return render_template("index.html", admin_emails_list=list(ADMIN_EMAILS))
 
+@app.route("/api/tab-counts", methods=["GET"])
+def api_tab_counts():
+    """Return fast indexed counts for each database UI tab."""
+    db = DatabaseManager()
+    try:
+        return jsonify({"counts": db.get_tab_counts()})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
 @app.route("/api/search", methods=["GET"])
 def api_search():
     """API endpoint to query, dynamic filter, and sort papers."""
@@ -596,6 +605,8 @@ def api_search():
     
     page = request.args.get("page", 1)
     limit = request.args.get("limit", 50)
+    skip_count = request.args.get("skip_count", "").lower() in ("1", "true", "yes")
+    known_total = request.args.get("known_total")
     try:
         page = int(page)
     except (ValueError, TypeError):
@@ -651,13 +662,15 @@ def api_search():
     clean_filters["study_logic"] = study_logic
         
     try:
-        total_count = db.count_papers(clean_filters)
-        
-        # Apply pagination params
-        clean_filters["limit"] = limit
-        clean_filters["offset"] = (page - 1) * limit
-        
-        results = db.search_papers(clean_filters)
+        if skip_count and known_total is not None:
+            total_count = int(known_total)
+            clean_filters["limit"] = limit
+            clean_filters["offset"] = (page - 1) * limit
+            results = db.search_papers(clean_filters)
+        else:
+            clean_filters["limit"] = limit
+            clean_filters["offset"] = (page - 1) * limit
+            results, total_count = db.search_papers(clean_filters, include_total=True)
         
         # Calculate newly_harvested boolean based on last auto-harvest timestamp
         last_harvest_ts = db.get_metadata("last_daily_harvest_timestamp")
@@ -828,6 +841,7 @@ def api_edit_classification(paper_id):
             
             sql = f"UPDATE papers SET {', '.join(update_sql_parts)} WHERE id = ?"
             cursor.execute(sql, update_params)
+            db.sync_tab_flags_for_paper(paper_id, conn=conn)
             conn.commit()
             db.increment_metadata("feedback_corrections_since_eval", changes_logged)
             db.set_metadata("last_feedback_audit_timestamp", now_str)
@@ -958,6 +972,7 @@ def api_sync_metadata(paper_id):
             update_params.append(paper_id)
             
             conn.execute(f"UPDATE papers SET {', '.join(set_clauses)} WHERE id = ?", update_params)
+            db.sync_tab_flags_for_paper(paper_id, conn=conn)
             conn.commit()
             
             if "_llm_call_metrics" in extracted:
@@ -1055,6 +1070,7 @@ def api_reclassify_llm(paper_id):
             update_params.append(paper_id)
 
             conn.execute(f"UPDATE papers SET {', '.join(set_clauses)} WHERE id = ?", update_params)
+            db.sync_tab_flags_for_paper(paper_id, conn=conn)
             conn.commit()
 
             if "_llm_call_metrics" in extracted:
