@@ -475,12 +475,36 @@ END IF
 #   cannabis_type, outcome_domain, thc_pct, cbd_pct, dose_mg,
 #   strain_reported, strain_normalized, duration_days,
 #   inhaled_exposure_duration, administration_frequency, treatment_duration,
+#   exposure_regimen_bin, repeat_exposure_count,
 #   sample_size, puff_count, thc_mg_ml, thc_mg_g, thc_mg_kg,
 #   cbd_mg_ml, cbd_mg_g, cbd_mg_kg, thc_uM, cbd_uM,
 #   multiple_doses, multiple_time_intervals
 #
 # outcome_domain ∈ { pain, anxiety, cognition, inflammation, addiction,
 #                    oncology, neuroprotection, sleep, other }
+#
+# ─────────────────────────────────────────────────────────────────────────────
+# APPENDIX · PRECLINICAL DURATION BY EXPOSURE ROUTE (Maude v2.5.0+)
+# ─────────────────────────────────────────────────────────────────────────────
+#
+# IN VITRO
+#   smoke/vapor conditioned media → treatment_duration (minutes, hours, days)
+#   exposure of cells to smoke/vapor → inhaled_exposure_duration (minutes/exposure)
+#                                     + repeat_exposure_count (# repeat exposures)
+#   cannabinoids dissolved in media → treatment_duration (minutes, hours, days)
+#
+# IN VIVO
+#   whole body. smoke/vapor | nose only smoke/vapor →
+#     inhaled_exposure_duration (minutes/hours per exposure)
+#     administration_frequency (exposures/day)
+#     duration_days (days/weeks of repeat exposure)
+#     repeat_exposure_count
+#     exposure_regimen_bin: acute (1-2 exposures total),
+#                           subchronic (4-14 days),
+#                           chronic (>2 weeks)
+#   injection | oral | sub-lingual | intranasal | intratracheal →
+#     administration_frequency (exposures/day)
+#     duration_days (days/weeks of repeat exposure)
 #
 # ─────────────────────────────────────────────────────────────────────────────
 # SCHEMA GAPS (proposed — not yet in rules_config / DB)

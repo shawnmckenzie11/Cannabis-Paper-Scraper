@@ -656,114 +656,195 @@ def infer_publication_type(title: str, abstract: str) -> str:
     coarse = classification_schema.granular_label_to_coarse_publication(granular)
     return coarse or "original research"
 
-def infer_study_type(title: str, abstract: str) -> List[str]:
-    """Infers Stage 2 study type from text keywords, focusing on Methods section if available."""
-    methods_text = get_methods_text(title, abstract)
-    combined = methods_text.lower()
-    
-    # First check publication type for compatibility fallback
-    granular_pub = infer_granular_publication_label(title, abstract)
-    import classification_schema
+LAB_IN_VITRO_CUES = (
+    "in vitro",
+    "enzymolysis",
+    "incubated",
+    "assay",
+    "chromatograph",
+    "spectrometr",
+    "emulsion",
+    "extracted",
+    "dissolved",
+    "cell viability",
+    "culture medium",
+    "primary cells",
+    "cell line",
+)
 
-    coarse_pub = classification_schema.granular_label_to_coarse_publication(granular_pub)
-    if coarse_pub == "review":
-        subtype = classification_schema.granular_label_to_review_subtype(granular_pub)
-        return [subtype or "review"]
-    if coarse_pub == "case study":
-        return ["case study"]
-    if coarse_pub != "original research":
-        return []
-            
-    types = []
-    
-    # 1. Clinical
-    # RCT
+HUMAN_SUBJECT_KEYWORDS = (
+    "participants", "patients", "subjects", "volunteers", "human subjects",
+    "men and women", "adults aged", "healthy volunteers", "human participants",
+)
+
+
+def _looks_like_lab_in_vitro_study(title: str, abstract: str) -> bool:
+    """True when title/abstract suggests bench/analytical work without human/animal subjects."""
+    blob = f"{title} {abstract}".lower()
+    if keyword_match(blob, list(HUMAN_SUBJECT_KEYWORDS)):
+        return False
+    if keyword_match(blob, ["mouse", "mice", "rat", "rats", "patients", "participants", "clinical trial"]):
+        return False
+    return keyword_match(blob, list(LAB_IN_VITRO_CUES))
+
+
+def _refine_study_type_list(types: List[str], combined: str, title: str, abstract: str = "") -> List[str]:
+    """Applies Node 2/4 disambiguation so study_type lists align with LLM taxonomy."""
+    title_lower = title.lower()
+    search_text = f"{combined} {title_lower} {abstract.lower()}"
+
+    if _looks_like_lab_in_vitro_study(title, abstract or combined):
+        types = [item for item in types if not item.startswith("Clinical")]
+        if not any(item.startswith("Cell Culture") for item in types):
+            types.append("Cell Culture (Other In Vitro)")
+
+    has_human = keyword_match(search_text, list(HUMAN_SUBJECT_KEYWORDS) + ["clinical trial", "randomized", "placebo"])
+
+    has_cell = any(item.startswith("Cell Culture") for item in types)
+    has_animal = any(item.startswith("Animal Models") for item in types)
+    if (has_cell or has_animal) and not has_human:
+        types = [item for item in types if not item.startswith("Clinical")]
+
+    if "Clinical (prospective)" in types and "Clinical (observational)" in types:
+        obs_specific = keyword_match(
+            combined,
+            ["cross-sectional", "survey", "observational study", "case-control", "gwas", "registry", "epidemiological"],
+        )
+        if not obs_specific:
+            types.remove("Clinical (observational)")
+
+    if "Clinical (RCT)" in types and "Clinical (prospective)" in types:
+        rct_specific = keyword_match(
+            combined,
+            ["randomized controlled", "randomised controlled", "placebo-controlled", "double-blind", "rct"],
+        )
+        if not rct_specific:
+            types.remove("Clinical (RCT)")
+
+    if "Clinical (retrospective)" in types and "Clinical (observational)" in types:
+        pass
+
+    if "Clinical (RCT)" in types:
+        if "Clinical (observational)" in types:
+            types.remove("Clinical (observational)")
+        animal_keywords = [
+            "mouse", "mice", "murine", "rat", "rats", "rodent", "rodents", "animal", "animals",
+            "dog", "dogs", "cat", "cats", "pig", "pigs", "rabbit", "rabbits", "zebrafish",
+            "drosophila", "macaque", "rhesus", "monkey", "monkeys", "primate", "primates",
+            "baboon", "chimpanzee", "canine", "feline", "in vivo",
+        ]
+        cell_keywords = [
+            "in vitro", "cell line", "cell lines", "hela", "hepg2", "pc12", "raw 264.7",
+            "sh-sy5y", "jurkat", "cho cells", "primary cell", "primary cells", "primary culture",
+            "organoid", "organoids", "spheroid", "spheroids", "co-culture", "co-cultures",
+            "coculture", "cocultures", "microglia", "neurons", "epithelial cells",
+            "epithelial cell", "airway epithelial", "cultured cells", "culture assay",
+            "cell culture", "cell cultures", "pcls", "precision-cut", "lung slice", "lung slices",
+        ]
+        has_animal_title = any(keyword in title_lower for keyword in animal_keywords)
+        has_cell_title = any(keyword in title_lower for keyword in cell_keywords)
+        if not has_animal_title:
+            types = [item for item in types if not item.startswith("Animal Models (")]
+        if not has_cell_title:
+            types = [item for item in types if not item.startswith("Cell Culture (")]
+
+    ordered: List[str] = []
+    seen: set = set()
+    for item in types:
+        key = item.lower()
+        if key not in seen:
+            seen.add(key)
+            ordered.append(item)
+    return ordered
+
+
+def _collect_study_type_hits(combined: str) -> List[str]:
+    """Returns study_type labels matched from a lowercase text blob."""
+    types: List[str] = []
     if keyword_match(combined, ["double-blind", "randomized controlled", "placebo-controlled", "rct", "randomised controlled", "clinical trial"]):
         types.append("Clinical (RCT)")
-    # prospective
     if keyword_match(combined, ["prospective", "prospectively", "prospective cohort"]):
         types.append("Clinical (prospective)")
-    # retrospective
     if keyword_match(combined, ["retrospective", "retrospectively", "chart review", "historical cohort"]):
         types.append("Clinical (retrospective)")
-    # observational
     if keyword_match(combined, ["observational", "cross-sectional", "survey", "surveys", "registry", "registries", "longitudinal", "case-control", "epidemiological", "cohort", "cohorts", "gwas", "genome-wide", "genomewide"]):
         types.append("Clinical (observational)")
-        
-    # 2. Animal Models
-    # mouse
     if keyword_match(combined, ["mouse", "mice", "murine", "c57bl/6"]):
         types.append("Animal Models (Mouse)")
-    # rat
     if keyword_match(combined, ["rat", "rats", "wistar", "sprague-dawley"]):
         types.append("Animal Models (Rat)")
-    # other rodents
     if keyword_match(combined, ["hamster", "hamsters", "gerbil", "gerbils", "guinea pig", "guinea pigs", "voles", "vole"]):
         types.append("Animal Models (Other Rodents)")
-    # non-human primate
     if keyword_match(combined, ["macaque", "rhesus", "monkey", "monkeys", "primate", "primates", "baboon", "chimpanzee"]):
         types.append("Animal Models (Non-Human Primates)")
-    # other animal
     if keyword_match(combined, ["dog", "dogs", "cat", "cats", "pig", "pigs", "rabbit", "rabbits", "zebrafish", "drosophila"]):
         types.append("Animal Models (Other)")
     elif keyword_match(combined, ["animal", "in vivo", "animal model", "rodent", "rodents"]):
-        if not any(t.startswith("Animal Models (") for t in types):
+        if not any(item.startswith("Animal Models (") for item in types):
             types.append("Animal Models (Other)")
-            
-    # 3. Cell Culture
-    # primary cells
     if keyword_match(combined, ["primary cell", "primary cells", "primary culture", "primary neuronal", "primary microglia", "splenocytes", "primary hepatocytes"]):
         types.append("Cell Culture (Primary Cells)")
-    # cell lines
     if keyword_match(combined, ["cell line", "cell lines", "hela", "hepg2", "pc12", "raw 264.7", "sh-sy5y", "jurkat", "cho cells"]):
         types.append("Cell Culture (Cell Lines)")
-    # organoids
     if keyword_match(combined, ["organoid", "organoids", "spheroid", "spheroids", "3d culture", "3d cultures"]):
         types.append("Cell Culture (Organoids)")
-    # co-culture
     if keyword_match(combined, ["co-culture", "co-cultures", "coculture", "cocultures"]):
         types.append("Cell Culture (Co-Culture)")
-    # PCLS (precision-cut lung slices)
     if keyword_match(combined, ["precision-cut lung slices", "pcls", "precision cut lung slices", "lung slice", "lung slices"]):
         types.append("Cell Culture (PCLS)")
     elif keyword_match(combined, ["in vitro", "cultured cells", "culture assay", "cell culture", "cell cultures", "epithelial cells", "epithelial cell", "airway epithelial"]):
-        if not any(t.startswith("Cell Culture (") for t in types):
+        if not any(item.startswith("Cell Culture (") for item in types):
             types.append("Cell Culture (Other In Vitro)")
-            
+    return types
+
+
+def _infer_original_research_study_types(title: str, abstract: str) -> List[str]:
+    """Infers study_type labels for original-research papers from title/abstract/methods cues."""
+    methods_text = get_methods_text(title, abstract)
+    combined = methods_text.lower()
+    full_blob = f"{title} {abstract}".lower()
+    types = _collect_study_type_hits(combined)
+    for label in _collect_study_type_hits(full_blob):
+        if label not in types:
+            types.append(label)
+
+    title_lower = title.lower()
+    search_text = f"{combined} {title_lower} {abstract.lower()}"
     if not types:
-        types.append("Clinical (observational)")
-        
-    if "Clinical (RCT)" in types:
-        # Remove Clinical (observational) as RCTs are interventional, not observational
-        if "Clinical (observational)" in types:
-            types.remove("Clinical (observational)")
-            
-        # Check if animal/cell keywords are in the title to keep them, otherwise remove
-        title_lower = title.lower()
-        animal_keywords = [
-            "mouse", "mice", "murine", "rat", "rats", "rodent", "rodents", "animal", "animals", 
-            "dog", "dogs", "cat", "cats", "pig", "pigs", "rabbit", "rabbits", "zebrafish", 
-            "drosophila", "macaque", "rhesus", "monkey", "monkeys", "primate", "primates", 
-            "baboon", "chimpanzee", "canine", "feline", "in vivo"
-        ]
-        cell_keywords = [
-            "in vitro", "cell line", "cell lines", "hela", "hepg2", "pc12", "raw 264.7", 
-            "sh-sy5y", "jurkat", "cho cells", "primary cell", "primary cells", "primary culture", 
-            "organoid", "organoids", "spheroid", "spheroids", "co-culture", "co-cultures", 
-            "coculture", "cocultures", "microglia", "neurons", "epithelial cells", 
-            "epithelial cell", "airway epithelial", "cultured cells", "culture assay", 
-            "cell culture", "cell cultures", "pcls", "precision-cut", "lung slice", "lung slices"
-        ]
-        
-        has_animal_title = any(k in title_lower for k in animal_keywords)
-        has_cell_title = any(k in title_lower for k in cell_keywords)
-        
-        if not has_animal_title:
-            types = [t for t in types if not t.startswith("Animal Models (")]
-        if not has_cell_title:
-            types = [t for t in types if not t.startswith("Cell Culture (")]
-            
-    return list(set(types))
+        if keyword_match(search_text, list(HUMAN_SUBJECT_KEYWORDS)):
+            types.append("Clinical (observational)")
+        elif keyword_match(search_text, ["in vitro", "cell line", "cell culture", "cultured", "organoid", "assay"]):
+            types.append("Cell Culture (Other In Vitro)")
+        elif keyword_match(search_text, ["mouse", "mice", "rat", "rats", "in vivo", "animal model"]):
+            types.append("Animal Models (Other)")
+
+    return _refine_study_type_list(types, f"{combined} {abstract.lower()}", title, abstract)
+
+
+def infer_study_type_for_publication(
+    title: str,
+    abstract: str,
+    publication_type: Optional[str],
+) -> List[str]:
+    """Infers study_type given a fixed Node 1 publication_type (does not re-route Node 1)."""
+    import classification_schema
+
+    pub = classification_schema.granular_label_to_coarse_publication(publication_type or "")
+    if pub == "review":
+        granular = infer_granular_publication_label(title, abstract)
+        subtype = classification_schema.granular_label_to_review_subtype(granular) or "review"
+        return [subtype]
+    if pub == "case study":
+        return ["case study"]
+    if pub != "original research":
+        return []
+    return _infer_original_research_study_types(title, abstract)
+
+
+def infer_study_type(title: str, abstract: str) -> List[str]:
+    """Infers Stage 2 study type from text keywords, focusing on Methods section if available."""
+    coarse_pub = infer_publication_type(title, abstract)
+    return infer_study_type_for_publication(title, abstract, coarse_pub)
 
 def infer_exposure_method(title: str, abstract: str, study_type: Any) -> List[str]:
     """Extracts exposure method from text keywords, focusing on Methods section if available."""
@@ -1065,27 +1146,20 @@ def extract_all_heuristics(title: str, abstract: str) -> Dict[str, Any]:
 
     study_set = set(study_type) if isinstance(study_type, list) else {study_type} if isinstance(study_type, str) else set()
 
-    is_clinical = any(s.startswith("Clinical (") for s in study_set)
-    is_invivo = any(s.startswith("Animal Models (") for s in study_set)
-    is_invitro = any(s.startswith("Cell Culture (") for s in study_set)
+    import duration_extraction
 
-    if is_clinical or is_invivo:
-        duration_days = extract_duration_days(abstract)
-        if duration_days is None:
-            duration_days = extract_duration_days(title)
-        exposure_list = exposure_method if isinstance(exposure_method, list) else [exposure_method]
-        is_inhaled = any("inhaled" in e or "smok" in e or "vapor" in e or "nose" in e or "whole body" in e for e in exposure_list)
-        inhaled_exposure_duration = extract_inhaled_exposure_duration(combined_text) if is_inhaled else None
-        administration_frequency = extract_administration_frequency(combined_text)
-    else:
-        duration_days = None
-        inhaled_exposure_duration = None
-        administration_frequency = None
-
-    if is_invitro:
-        treatment_duration = extract_treatment_duration(combined_text)
-    else:
-        treatment_duration = None
+    duration_profile = duration_extraction.extract_exposure_duration_profile(
+        title,
+        abstract,
+        study_type,
+        exposure_method,
+    )
+    duration_days = duration_profile.get("duration_days")
+    inhaled_exposure_duration = duration_profile.get("inhaled_exposure_duration")
+    administration_frequency = duration_profile.get("administration_frequency")
+    treatment_duration = duration_profile.get("treatment_duration")
+    exposure_regimen_bin = duration_profile.get("exposure_regimen_bin")
+    repeat_exposure_count = duration_profile.get("repeat_exposure_count")
 
     multiple_doses = detect_multiple_doses(title, abstract)
     multiple_time_intervals = detect_multiple_time_intervals(title, abstract)
@@ -1111,6 +1185,8 @@ def extract_all_heuristics(title: str, abstract: str) -> Dict[str, Any]:
         "inhaled_exposure_duration": inhaled_exposure_duration,
         "administration_frequency": administration_frequency,
         "treatment_duration": treatment_duration,
+        "exposure_regimen_bin": exposure_regimen_bin,
+        "repeat_exposure_count": repeat_exposure_count,
         "sample_size": sample_size,
         "outcome_domain": outcome_domain,
         "multiple_doses": multiple_doses,

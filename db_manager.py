@@ -585,6 +585,8 @@ class DatabaseManager:
                 ("inhaled_exposure_duration", "TEXT"),
                 ("administration_frequency", "TEXT"),
                 ("treatment_duration", "TEXT"),
+                ("exposure_regimen_bin", "TEXT"),
+                ("repeat_exposure_count", "INTEGER"),
                 ("ingestion_status", "TEXT"),
                 ("species", "TEXT")
             ]
@@ -1415,6 +1417,7 @@ class DatabaseManager:
             "cbd_pct", "dose_mg", "puff_count", "thc_mg_ml", "thc_mg_g", "thc_mg_kg",
             "cbd_mg_ml", "cbd_mg_g", "cbd_mg_kg", "thc_uM", "cbd_uM", "strain_reported", "strain_normalized", "duration_days",
             "inhaled_exposure_duration", "administration_frequency", "treatment_duration",
+            "exposure_regimen_bin", "repeat_exposure_count",
             "sample_size", "outcome_domain",
             "open_access", "citation_count", "date_harvested", "publication_date", "cannabis_type",
             "summary", "publication_type", "ingestion_status", "species",

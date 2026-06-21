@@ -26,9 +26,15 @@ CALIBRATION_FIELDS = [
     "outcome_domain", "thc_pct", "cbd_pct", "dose_mg",
     "strain_reported", "strain_normalized", "duration_days",
     "inhaled_exposure_duration", "administration_frequency", "treatment_duration",
+    "exposure_regimen_bin", "repeat_exposure_count",
     "sample_size", "puff_count", "thc_mg_ml", "thc_mg_g", "thc_mg_kg",
     "cbd_mg_ml", "cbd_mg_g", "cbd_mg_kg", "thc_uM", "cbd_uM",
 ]
+
+# All stored classification fields compared in Maude vs LLM A/B batches.
+MAUDE_AB_COMPARE_FIELDS: Tuple[str, ...] = tuple(
+    dict.fromkeys([*CALIBRATION_FIELDS, "species"])
+)
 
 
 def parse_json_list(value: Any) -> List[str]:
@@ -70,6 +76,69 @@ def comparable_value(value: Any) -> Any:
     if isinstance(value, list):
         return sorted(str(item) for item in value)
     return value
+
+
+def calibration_field_equal(left: Any, right: Any) -> bool:
+    """Returns True when two calibration field values are equivalent for A/B comparison."""
+    empty = (None, "", [], {})
+    if left in empty and right in empty:
+        return True
+    if left in empty and right == 0:
+        return True
+    if right in empty and left == 0:
+        return True
+    if isinstance(left, (int, float)) or isinstance(right, (int, float)):
+        try:
+            left_num = None if left in empty else float(left)
+            right_num = None if right in empty else float(right)
+            return left_num == right_num
+        except (TypeError, ValueError):
+            pass
+    return classification_schema.compare_field_values(left, right)
+
+
+def compare_maude_llm_all_fields(
+    maude: Dict[str, Any],
+    llm: Dict[str, Any],
+    title: str = "",
+    abstract: str = "",
+) -> Dict[str, Any]:
+    """Compares all calibration fields plus species between Maude and stored LLM classifications."""
+    left = classification_schema.normalize_classification_record(maude, title, abstract)
+    right = classification_schema.normalize_classification_record(llm, title, abstract)
+    disagreements: Dict[str, Dict[str, Any]] = {}
+    agreed: Dict[str, Any] = {}
+    for field in MAUDE_AB_COMPARE_FIELDS:
+        maude_value = left.get(field)
+        llm_value = right.get(field)
+        if calibration_field_equal(maude_value, llm_value):
+            agreed[field] = maude_value if maude_value not in (None, "", []) else llm_value
+        else:
+            disagreements[field] = {"maude": maude_value, "llm": llm_value}
+    promotion_fields = ("publication_type", "study_type", "ingestion_status")
+    promotion_disagreements = {key: value for key, value in disagreements.items() if key in promotion_fields}
+    return {
+        "fields": disagreements,
+        "agreed_fields": agreed,
+        "high_level_count": len(disagreements),
+        "promotion_field_count": len(promotion_disagreements),
+        "flagged_for_review": len(disagreements) > 0,
+        "promotion_fields": list(promotion_disagreements.keys()),
+        "compare_fields": list(MAUDE_AB_COMPARE_FIELDS),
+    }
+
+
+def maude_output_to_compare_block(maude_out: Dict[str, Any], rules_version: str) -> Dict[str, Any]:
+    """Builds a normalized Maude payload for full-field A/B comparison."""
+    block = {
+        field: maude_out.get(field)
+        for field in MAUDE_AB_COMPARE_FIELDS
+        if field in maude_out or field in MAUDE_AB_COMPARE_FIELDS
+    }
+    block["classification_confidence"] = maude_out.get("classification_confidence")
+    block["classifier_version"] = f"maude-{rules_version}"
+    block["nodes_visited"] = (maude_out.get("_maude_meta") or {}).get("nodes_visited")
+    return block
 
 
 def get_rules_version() -> str:
@@ -184,11 +253,85 @@ def select_candidates(
         conn.close()
 
 
+def select_native_abstract_candidates(
+    fetch_limit: int,
+    exclude_locked: bool = True,
+    offset: int = 0,
+    require_no_pdf_link: bool = False,
+) -> List[Dict[str, Any]]:
+    """Selects papers with native/heuristic abstract classification (non-LLM, non-Maude)."""
+    db = DatabaseManager()
+    conn = db.get_connection()
+    if not db.is_postgres:
+        conn.row_factory = sqlite3.Row
+    cursor = conn.cursor()
+
+    where_clauses = [
+        "(abstract IS NOT NULL AND abstract != '')",
+        "(classifier_version IS NULL OR (classifier_version NOT LIKE 'llm-%' AND classifier_version NOT LIKE 'maude-%'))",
+    ]
+    if require_no_pdf_link:
+        where_clauses.append("(full_text_link IS NULL OR full_text_link = '')")
+    params: List[Any] = []
+    if exclude_locked:
+        where_clauses.append(
+            "(expert_locked_fields IS NULL OR expert_locked_fields = '' OR expert_locked_fields = '[]')"
+        )
+
+    params.extend([fetch_limit, offset])
+    sql = f"""
+        SELECT
+            id, pmid, doi, title, abstract, full_text_link, study_type,
+            exposure_method, cannabis_type, publication_type, outcome_domain,
+            thc_pct, cbd_pct, dose_mg, strain_reported, strain_normalized,
+            duration_days, inhaled_exposure_duration, administration_frequency,
+            treatment_duration, sample_size, puff_count, thc_mg_ml, thc_mg_g,
+            thc_mg_kg, cbd_mg_ml, cbd_mg_g, cbd_mg_kg, thc_uM, cbd_uM,
+            classification_confidence, classification_timestamp,
+            classifier_version, expert_locked_fields, citation_count,
+            date_harvested, ingestion_status, species
+        FROM papers
+        WHERE {' AND '.join(where_clauses)}
+        ORDER BY citation_count DESC, date_harvested DESC, id ASC
+        LIMIT ? OFFSET ?
+    """
+    try:
+        cursor.execute(sql, params)
+        return [dict(row) for row in cursor.fetchall()]
+    finally:
+        conn.close()
+
+
+def llm_extraction_to_compare_block(
+    extracted: Dict[str, Any],
+    title: str,
+    abstract: str,
+    classifier_version: str,
+    *,
+    full_fields: bool = True,
+) -> Dict[str, Any]:
+    """Builds a normalized LLM comparison block from a live Claude extraction payload."""
+    normalized = classification_schema.normalize_classification_record(extracted, title, abstract)
+    compare_fields = MAUDE_AB_COMPARE_FIELDS if full_fields else classification_schema.HIGH_LEVEL_COMPARE_FIELDS
+    block = {field: normalized.get(field) for field in compare_fields}
+    block["classification_confidence"] = (
+        normalized.get("classification_confidence") or extracted.get("classification_confidence")
+    )
+    block["classifier_version"] = classifier_version
+    return block
+
+
+def native_row_to_compare_block(candidate: Dict[str, Any], title: str, abstract: str) -> Dict[str, Any]:
+    """Builds a comparison block from stored native/heuristic classification fields."""
+    return paper_row_to_llm_block(candidate, title, abstract, full_fields=True)
+
+
 def select_llm_pdf_reclassify_candidates(
     fetch_limit: int,
     exclude_locked: bool = True,
     offset: int = 0,
     include_abstract_reclassify: bool = True,
+    abstract_reclassify_only: bool = False,
 ) -> List[Dict[str, Any]]:
     """Selects Claude reclassified papers (PDF and/or abstract) for Maude A/B pairing."""
     db = DatabaseManager()
@@ -197,9 +340,15 @@ def select_llm_pdf_reclassify_candidates(
         conn.row_factory = sqlite3.Row
     cursor = conn.cursor()
 
-    version_clauses = ["classifier_version LIKE 'llm-pdf-reclassify-%'"]
-    if include_abstract_reclassify:
-        version_clauses.append("classifier_version LIKE 'llm-reclassify-%'")
+    if abstract_reclassify_only:
+        version_clauses = ["classifier_version LIKE 'llm-reclassify-%'"]
+    elif include_abstract_reclassify:
+        version_clauses = [
+            "classifier_version LIKE 'llm-pdf-reclassify-%'",
+            "classifier_version LIKE 'llm-reclassify-%'",
+        ]
+    else:
+        version_clauses = ["classifier_version LIKE 'llm-pdf-reclassify-%'"]
 
     where_clauses = [
         "(abstract IS NOT NULL AND abstract != '')",
@@ -241,34 +390,35 @@ def paper_row_to_llm_block(
     candidate: Dict[str, Any],
     title: str,
     abstract: str,
+    *,
+    full_fields: bool = True,
 ) -> Dict[str, Any]:
     """Builds a normalized LLM comparison block from stored paper classification fields."""
-    extracted = classification_schema.normalize_classification_record(
-        {
-            "publication_type": candidate.get("publication_type"),
-            "study_type": parse_json_list(candidate.get("study_type")),
-            "exposure_method": parse_json_list(candidate.get("exposure_method")),
-            "cannabis_type": parse_json_list(candidate.get("cannabis_type")),
-            "outcome_domain": parse_json_list(candidate.get("outcome_domain")),
-            "ingestion_status": candidate.get("ingestion_status"),
-            "species": candidate.get("species"),
-            "classification_confidence": candidate.get("classification_confidence"),
-        },
-        title,
-        abstract,
-    )
-    return {
-        "publication_type": extracted.get("publication_type"),
-        "study_type": extracted.get("study_type"),
-        "exposure_method": extracted.get("exposure_method"),
-        "cannabis_type": extracted.get("cannabis_type"),
-        "outcome_domain": extracted.get("outcome_domain"),
-        "ingestion_status": extracted.get("ingestion_status"),
-        "species": extracted.get("species"),
-        "classification_confidence": extracted.get("classification_confidence")
-        or candidate.get("classification_confidence"),
-        "classifier_version": candidate.get("classifier_version"),
+    raw_record: Dict[str, Any] = {
+        "publication_type": candidate.get("publication_type"),
+        "study_type": parse_json_list(candidate.get("study_type")),
+        "exposure_method": parse_json_list(candidate.get("exposure_method")),
+        "cannabis_type": parse_json_list(candidate.get("cannabis_type")),
+        "outcome_domain": parse_json_list(candidate.get("outcome_domain")),
+        "ingestion_status": candidate.get("ingestion_status"),
+        "species": candidate.get("species"),
+        "classification_confidence": candidate.get("classification_confidence"),
     }
+    if full_fields:
+        for field in CALIBRATION_FIELDS:
+            if field in raw_record:
+                continue
+            raw_record[field] = candidate.get(field)
+    extracted = classification_schema.normalize_classification_record(raw_record, title, abstract)
+    block = {
+        field: extracted.get(field)
+        for field in (MAUDE_AB_COMPARE_FIELDS if full_fields else classification_schema.HIGH_LEVEL_COMPARE_FIELDS)
+    }
+    block["classification_confidence"] = (
+        extracted.get("classification_confidence") or candidate.get("classification_confidence")
+    )
+    block["classifier_version"] = candidate.get("classifier_version")
+    return block
 
 
 def build_change_summary(before: Dict[str, Any], after: Dict[str, Any], locked_fields: Sequence[str]) -> Dict[str, Dict[str, Any]]:
@@ -662,6 +812,179 @@ def refresh_maude_batch(source_path: Path, output_dir: Optional[Path] = None) ->
     return json_path, walkthrough_path
 
 
+def run_claude_maude_ab_native(args: argparse.Namespace) -> Tuple[Path, Path]:
+    """Runs live Claude abstract classification paired with Maude on native (non-LLM) papers without PDF."""
+    max_calls = args.max_calls
+    if max_calls < 1 or max_calls > 100:
+        raise ValueError("--max-calls must be between 1 and 100 for native Claude+Maude A/B.")
+
+    if not os.getenv("ANTHROPIC_API_KEY"):
+        raise RuntimeError("ANTHROPIC_API_KEY is required for live Claude+Maude native A/B.")
+
+    offset = max(int(getattr(args, "offset", 0) or 0), 0)
+    fetch_limit = max(args.fetch_limit, max_calls)
+    candidates = select_native_abstract_candidates(
+        fetch_limit=fetch_limit,
+        exclude_locked=not args.include_locked,
+        offset=offset,
+        require_no_pdf_link=getattr(args, "require_no_pdf_link", False),
+    )
+
+    rules_version = get_rules_version()
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S_%f")[:-3]
+    batch_id = f"native_claude_maude_ab_{timestamp}"
+    output_dir = resolve_calibration_output_dir(getattr(args, "output_dir", None))
+    output_dir.mkdir(parents=True, exist_ok=True)
+    json_path = output_dir / f"{batch_id}.json"
+    walkthrough_path = output_dir / f"{batch_id}_walkthrough.md"
+
+    full_fields = getattr(args, "full_fields", True)
+    use_full_extraction = getattr(args, "full_extraction", False)
+    variant = (args.variants.split(",")[0].strip() if args.variants else "control") or "control"
+    original_variant = os.environ.get("CLASSIFIER_PROMPT_VARIANT")
+
+    results: List[Dict[str, Any]] = []
+    paired = 0
+    flagged = 0
+    calls_attempted = 0
+    field_stats: Dict[str, Dict[str, int]] = {
+        field: {"agree": 0, "disagree": 0} for field in MAUDE_AB_COMPARE_FIELDS
+    }
+
+    try:
+        os.environ["CLASSIFIER_PROMPT_VARIANT"] = variant
+        for candidate in candidates:
+            if paired >= max_calls:
+                break
+
+            paper_id = int(candidate["id"])
+            title = candidate.get("title") or ""
+            abstract = candidate.get("abstract") or ""
+            native_block = native_row_to_compare_block(candidate, title, abstract)
+
+            calls_attempted += 1
+            extracted = classifier.process_paper_metadata(
+                title,
+                abstract,
+                run_llm=True,
+                runs=max(int(getattr(args, "runs", 1) or 1), 1),
+                full_text=None,
+            )
+            if not extracted:
+                results.append({
+                    "paper_id": paper_id,
+                    "pmid": candidate.get("pmid"),
+                    "title": title,
+                    "variant": variant,
+                    "status": "claude_no_extraction",
+                    "native": native_block,
+                })
+                continue
+
+            claude_version = f"llm-native-ab-{variant}-{rules_version}"
+            llm_block = llm_extraction_to_compare_block(
+                extracted,
+                title,
+                abstract,
+                claude_version,
+                full_fields=full_fields,
+            )
+
+            maude_out = maude_classifier.classify_paper(
+                title,
+                abstract,
+                full_text=None,
+                rules_version=rules_version,
+                abstract_only_extraction=not use_full_extraction,
+            )
+            if full_fields:
+                disagreement = compare_maude_llm_all_fields(maude_out, llm_block, title, abstract)
+                maude_block = maude_output_to_compare_block(maude_out, rules_version)
+            else:
+                disagreement = maude_classifier.compare_maude_llm(maude_out, llm_block, title, abstract)
+                maude_block = maude_output_to_compare_block(maude_out, rules_version)
+
+            paired += 1
+            if disagreement.get("flagged_for_review"):
+                flagged += 1
+            for field in MAUDE_AB_COMPARE_FIELDS:
+                if field in (disagreement.get("fields") or {}):
+                    field_stats[field]["disagree"] += 1
+                else:
+                    field_stats[field]["agree"] += 1
+
+            routing_subnode = infer_routing_subnode("node1_routing", llm_block)
+            results.append({
+                "paper_id": paper_id,
+                "pmid": candidate.get("pmid"),
+                "title": title,
+                "variant": variant,
+                "dry_run": True,
+                "locked_fields": parse_json_list(candidate.get("expert_locked_fields")),
+                "before_confidence": candidate.get("classification_confidence"),
+                "before_classifier_version": candidate.get("classifier_version"),
+                "status": "claude_maude_paired",
+                "after_confidence": llm_block.get("classification_confidence"),
+                "after_classifier_version": claude_version,
+                "after_publication_type": llm_block.get("publication_type"),
+                "after_study_type": llm_block.get("study_type"),
+                "routing_subnode": routing_subnode,
+                "changes": {},
+                "native": native_block,
+                "llm": llm_block,
+                "maude": maude_block,
+                "llm_metrics": extracted.get("_llm_call_metrics", {}),
+                "disagreement": disagreement,
+                "flagged_for_review": disagreement.get("flagged_for_review", False),
+            })
+    finally:
+        if original_variant is None:
+            os.environ.pop("CLASSIFIER_PROMPT_VARIANT", None)
+        else:
+            os.environ["CLASSIFIER_PROMPT_VARIANT"] = original_variant
+
+    field_agreement = {
+        field: {
+            "agree": stats["agree"],
+            "disagree": stats["disagree"],
+            "agree_pct": round(stats["agree"] / paired * 100, 1) if paired else None,
+        }
+        for field, stats in field_stats.items()
+    }
+
+    payload = {
+        "batch_id": batch_id,
+        "created_at": datetime.now().isoformat(),
+        "rules_version": rules_version,
+        "mode": "native_claude_maude_ab",
+        "automation_node": "node1",
+        "calibration_label": "native-claude-maude-ab",
+        "variants": [variant],
+        "max_calls": max_calls,
+        "offset": offset,
+        "calls_attempted": calls_attempted,
+        "planned_candidates": paired,
+        "updates_applied": 0,
+        "dry_run": True,
+        "abstract_only": True,
+        "full_fields_compare": full_fields,
+        "compare_fields": list(MAUDE_AB_COMPARE_FIELDS),
+        "field_agreement": field_agreement,
+        "maude_only": False,
+        "native_abstract_no_pdf": not getattr(args, "require_no_pdf_link", False),
+        "abstract_only_classification": True,
+        "candidate_count": len(candidates),
+        "paired_count": paired,
+        "flagged_for_review_count": flagged,
+        "results": results,
+    }
+
+    with open(json_path, "w", encoding="utf-8") as handle:
+        json.dump(payload, handle, indent=2, default=str)
+    write_walkthrough(payload, walkthrough_path)
+    return json_path, walkthrough_path
+
+
 def run_maude_ab_from_llm_pdf(args: argparse.Namespace) -> Tuple[Path, Path]:
     """Pairs stored llm-pdf-reclassify classifications with live Maude (no Claude calls or DB writes)."""
     max_calls = args.max_calls
@@ -670,11 +993,16 @@ def run_maude_ab_from_llm_pdf(args: argparse.Namespace) -> Tuple[Path, Path]:
 
     offset = max(int(getattr(args, "offset", 0) or 0), 0)
     fetch_limit = max(args.fetch_limit, max_calls)
+    abstract_reclassify_only = getattr(args, "abstract_reclassify_only", False)
+    pdf_reclassify_only = getattr(args, "pdf_reclassify_only", False)
+    if abstract_reclassify_only and pdf_reclassify_only:
+        raise ValueError("Use only one of --abstract-reclassify-only or --pdf-reclassify-only.")
     candidates = select_llm_pdf_reclassify_candidates(
         fetch_limit=fetch_limit,
         exclude_locked=not args.include_locked,
         offset=offset,
-        include_abstract_reclassify=not getattr(args, "pdf_reclassify_only", False),
+        include_abstract_reclassify=not pdf_reclassify_only,
+        abstract_reclassify_only=abstract_reclassify_only,
     )
 
     rules_version = get_rules_version()
@@ -688,6 +1016,11 @@ def run_maude_ab_from_llm_pdf(args: argparse.Namespace) -> Tuple[Path, Path]:
     results: List[Dict[str, Any]] = []
     paired = 0
     flagged = 0
+    field_stats: Dict[str, Dict[str, int]] = {
+        field: {"agree": 0, "disagree": 0} for field in MAUDE_AB_COMPARE_FIELDS
+    }
+    full_fields = getattr(args, "full_fields", True)
+    use_full_extraction = getattr(args, "full_extraction", True)
 
     for candidate in candidates:
         if paired >= max_calls:
@@ -696,25 +1029,54 @@ def run_maude_ab_from_llm_pdf(args: argparse.Namespace) -> Tuple[Path, Path]:
         paper_id = int(candidate["id"])
         title = candidate.get("title") or ""
         abstract = candidate.get("abstract") or ""
-        llm_block = paper_row_to_llm_block(candidate, title, abstract)
+        llm_block = paper_row_to_llm_block(candidate, title, abstract, full_fields=full_fields)
 
         maude_out = maude_classifier.classify_paper(
             title,
             abstract,
             full_text=None,
             rules_version=rules_version,
+            abstract_only_extraction=not use_full_extraction,
         )
-        disagreement = maude_classifier.compare_maude_llm(maude_out, llm_block, title, abstract)
+        if full_fields:
+            disagreement = compare_maude_llm_all_fields(maude_out, llm_block, title, abstract)
+            maude_block = maude_output_to_compare_block(maude_out, rules_version)
+        else:
+            disagreement = maude_classifier.compare_maude_llm(maude_out, llm_block, title, abstract)
+            maude_block = {
+                "publication_type": maude_out.get("publication_type"),
+                "study_type": maude_out.get("study_type"),
+                "exposure_method": maude_out.get("exposure_method"),
+                "cannabis_type": maude_out.get("cannabis_type"),
+                "outcome_domain": maude_out.get("outcome_domain"),
+                "ingestion_status": maude_out.get("ingestion_status"),
+                "species": maude_out.get("species"),
+                "classification_confidence": maude_out.get("classification_confidence"),
+                "classifier_version": f"maude-{rules_version}",
+                "nodes_visited": (maude_out.get("_maude_meta") or {}).get("nodes_visited"),
+            }
         routing_subnode = infer_routing_subnode("node1_routing", llm_block)
         paired += 1
         if disagreement.get("flagged_for_review"):
             flagged += 1
+        for field in MAUDE_AB_COMPARE_FIELDS:
+            if field in (disagreement.get("fields") or {}):
+                field_stats[field]["disagree"] += 1
+            else:
+                field_stats[field]["agree"] += 1
+
+        classifier_version = candidate.get("classifier_version") or ""
+        reclassify_variant = (
+            "llm-reclassify"
+            if str(classifier_version).startswith("llm-reclassify-")
+            else "llm-pdf-reclassify"
+        )
 
         results.append({
             "paper_id": paper_id,
             "pmid": candidate.get("pmid"),
             "title": title,
-            "variant": "llm-pdf-reclassify",
+            "variant": reclassify_variant,
             "dry_run": True,
             "locked_fields": parse_json_list(candidate.get("expert_locked_fields")),
             "before_confidence": candidate.get("classification_confidence"),
@@ -727,21 +1089,19 @@ def run_maude_ab_from_llm_pdf(args: argparse.Namespace) -> Tuple[Path, Path]:
             "routing_subnode": routing_subnode,
             "changes": {},
             "llm": llm_block,
-            "maude": {
-                "publication_type": maude_out.get("publication_type"),
-                "study_type": maude_out.get("study_type"),
-                "exposure_method": maude_out.get("exposure_method"),
-                "cannabis_type": maude_out.get("cannabis_type"),
-                "outcome_domain": maude_out.get("outcome_domain"),
-                "ingestion_status": maude_out.get("ingestion_status"),
-                "species": maude_out.get("species"),
-                "classification_confidence": maude_out.get("classification_confidence"),
-                "classifier_version": f"maude-{rules_version}",
-                "nodes_visited": (maude_out.get("_maude_meta") or {}).get("nodes_visited"),
-            },
+            "maude": maude_block,
             "disagreement": disagreement,
             "flagged_for_review": disagreement.get("flagged_for_review", False),
         })
+
+    field_agreement = {
+        field: {
+            "agree": stats["agree"],
+            "disagree": stats["disagree"],
+            "agree_pct": round(stats["agree"] / paired * 100, 1) if paired else None,
+        }
+        for field, stats in field_stats.items()
+    }
 
     payload = {
         "batch_id": batch_id,
@@ -749,15 +1109,20 @@ def run_maude_ab_from_llm_pdf(args: argparse.Namespace) -> Tuple[Path, Path]:
         "rules_version": rules_version,
         "mode": "llm_pdf_maude_ab",
         "automation_node": "node1",
-        "calibration_label": "llm-pdf-maude-ab",
-        "variants": ["llm-pdf-reclassify"],
+        "calibration_label": "llm-reclassify-maude-ab" if abstract_reclassify_only else "llm-pdf-maude-ab",
+        "variants": ["llm-reclassify"] if abstract_reclassify_only else (
+            ["llm-pdf-reclassify"] if pdf_reclassify_only else ["llm-pdf-reclassify", "llm-reclassify"]
+        ),
         "max_calls": max_calls,
         "offset": offset,
         "calls_attempted": 0,
         "planned_candidates": paired,
         "updates_applied": 0,
         "dry_run": True,
-        "abstract_only": True,
+        "abstract_only": not use_full_extraction,
+        "full_fields_compare": full_fields,
+        "compare_fields": list(MAUDE_AB_COMPARE_FIELDS),
+        "field_agreement": field_agreement,
         "maude_only": True,
         "maude_from_llm_pdf": True,
         "candidate_count": len(candidates),
@@ -874,15 +1239,42 @@ def build_arg_parser() -> argparse.ArgumentParser:
         help="Pair stored llm-reclassify / llm-pdf-reclassify classifications with Maude (no Claude calls or DB writes).",
     )
     parser.add_argument(
+        "--claude-maude-native",
+        action="store_true",
+        help="Run live Claude abstract classification vs Maude on native (non-LLM) papers (no DB writes).",
+    )
+    parser.add_argument(
+        "--require-no-pdf-link",
+        action="store_true",
+        help="With --claude-maude-native, restrict to papers with no full_text_link in DB (default: any native paper, abstract-only run).",
+    )
+    parser.add_argument(
         "--pdf-reclassify-only",
         action="store_true",
         help="With --maude-from-llm-pdf, include only llm-pdf-reclassify papers (default: PDF + abstract reclassify).",
+    )
+    parser.add_argument(
+        "--abstract-reclassify-only",
+        action="store_true",
+        help="With --maude-from-llm-pdf, include only llm-reclassify papers (exclude llm-pdf-reclassify).",
     )
     parser.add_argument(
         "--offset",
         type=int,
         default=0,
         help="Row offset when selecting llm-pdf-reclassify candidates (for chunked runs).",
+    )
+    parser.add_argument(
+        "--full-fields",
+        action=argparse.BooleanOptionalAction,
+        default=True,
+        help="Compare all calibration fields (default: true). Use --no-full-fields for high-level only.",
+    )
+    parser.add_argument(
+        "--full-extraction",
+        action=argparse.BooleanOptionalAction,
+        default=True,
+        help="Run Maude with downstream extraction enabled (default: true).",
     )
     return parser
 
@@ -898,6 +1290,8 @@ def main() -> None:
         )
     elif args.maude_from_llm_pdf:
         json_path, walkthrough_path = run_maude_ab_from_llm_pdf(args)
+    elif args.claude_maude_native:
+        json_path, walkthrough_path = run_claude_maude_ab_native(args)
     else:
         json_path, walkthrough_path = run_calibration(args)
     print(f"Calibration JSON: {json_path}")

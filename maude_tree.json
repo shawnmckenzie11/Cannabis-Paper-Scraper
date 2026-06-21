@@ -1,5 +1,5 @@
 {
-  "version": "2.4.0",
+  "version": "2.5.0",
   "source": "Cannabis_Classification_Decision_Tree",
   "compiled_from": "rules_config.decision_nodes + rules_config.maude",
   "decision_nodes": {
@@ -32,7 +32,7 @@
         "legal/policy-only",
         "unrelated acronym collisions"
       ],
-      "prompt_section": "## Node 0: Ingestion / Relevance gate\n\n### 1. publication_type (single string)\nWhat kind of publication is this at the article level?\n- \"original research\" — primary research presenting new data/experiments\n- \"review\" — narrative or general review (not systematic)\n- \"systematic review\" — structured, replicable literature review\n- \"meta-analysis\" — statistical pooling of multiple studies\n- \"case study\" — detailed report of one or a few cases\n- \"editorial\" — opinion/editorial piece\n- \"comment\" — commentary or correspondence\n- \"letter to the editor\"\n- \"perspectives paper\"\n- \"not cannabis-related\" — the study does not actually test or administer cannabis or cannabinoids (e.g. cannabinoids/THC/CBD are only mentioned in passing background context, and the experimental treatments and substances studied are entirely non-cannabinoid agents like LPI/lysophosphatidylinositol or other unrelated compounds)\n\n**Relevance and 'not cannabis-related' Classification**:* If a paper discusses GPR55, GPR18, GPR119, or LPI/lysophosphatidylinositol, it is **not cannabis-related** unless the study actively administers or pharmacologically tests cannabis or a cannabinoid (such as THC, CBD, WIN 55,212-2, CP 55,940, AEA, anandamide, 2-AG, etc.) as a treatment.\n  * For example, the paper 'A putative lysophosphatidylinositol receptor GPR55 modulates hippocampal synaptic plasticity' is **not cannabis-related** because it only tests LPI and the antagonist CID 16020046, without administering cannabinoids. In such cases, publication_type must be classified as 'not cannabis-related' to flag the paper for purging."
+      "prompt_section": "## Node 0: Ingestion / Relevance gate\n\n### ingestion_status (single string)\nNode 0 relevance before Node 1 routing:\n- \"relevant\" — cannabis/cannabinoids are a substantive focus and the paper warrants full classification\n- \"tangential\" — cannabis is mentioned but the paper is primarily legal, policy, agricultural, or non-pharmacological context\n- \"irrelevant\" — not meaningfully about cannabis/cannabinoids\n- \"not_cannabis_related\" — does not actively administer or pharmacologically test cannabis/cannabinoids (e.g. GPR55/LPI-only papers without cannabinoid treatment). Leave publication_type null and skip downstream extraction.\n\n**Relevance rules:** If a paper discusses GPR55, GPR18, GPR119, or LPI/lysophosphatidylinositol without administering cannabinoids, set ingestion_status to \"not_cannabis_related\".\n\n### publication_type (single string — Node 1 coarse routing only)\nUse ONLY one of:\n- \"original research\" — primary data / new experiments\n- \"review\" — any secondary literature (narrative, systematic, meta-analysis, editorial, comment, letter, perspectives)\n- \"case study\" — detailed report of one or a few cases\n\nDo NOT put systematic review, meta-analysis, editorial, comment, letter to the editor, or perspectives paper in publication_type — those belong in study_type when publication_type is \"review\".\n\n### study_type (list of strings)\nWhen publication_type is \"review\", use one or more review subtypes:\n- \"review\", \"systematic review\", \"meta-analysis\", \"editorial\", \"comment\", \"letter to the editor\", \"perspectives paper\"\nWhen publication_type is \"case study\", use [\"case study\"].\nWhen publication_type is \"original research\", use original-research design labels (Clinical, Animal Models, Cell Culture — see Node 2 sections)."
     },
     "node1b_reviews": {
       "order": 10,
@@ -41,6 +41,8 @@
       "route_before": "node1a_original",
       "positive_cues": [
         "review",
+        "overview",
+        "overview paper",
         "systematic review",
         "meta-analysis",
         "narrative synthesis",
@@ -56,7 +58,7 @@
         "n=",
         "Methods section with new experiments"
       ],
-      "prompt_section": "## Node 1B: Reviews / Secondary Literature (route BEFORE Node 1A)\n\nFrom publication_type, apply: review, systematic review, meta-analysis, editorial, comment, letter to the editor, perspectives paper.\n\n**Review types:**\n- \"review\" — narrative/systematic/scoping review\n- \"meta-analysis\"\n- \"case study\"\n- \"editorial\"\n\nDo NOT extract animal strains, cell lines, supplier details, or dose values from cited studies unless describing the review methodology itself."
+      "prompt_section": "## Node 1B: Reviews / Secondary Literature (route BEFORE Node 1A)\n\nSet publication_type = \"review\".\nSet study_type to the specific review subtype:\n- \"review\" — narrative/scoping/overview review\n- \"systematic review\" — structured replicable search (→ Node 3A)\n- \"meta-analysis\" — statistical pooling (→ Node 3B)\n- \"editorial\", \"comment\", \"letter to the editor\", \"perspectives paper\" (→ Node 3C)\n\nDo NOT extract animal strains, cell lines, supplier details, or dose values from cited studies unless describing the review methodology itself."
     },
     "node1c_case_report": {
       "order": 15,
@@ -75,7 +77,7 @@
         "n=",
         "systematic search"
       ],
-      "prompt_section": "## Node 1C: Case Report\npublication_type: case study. study_type: case study. Extract exposure/dose only for the reported case(s), not literature cited in discussion."
+      "prompt_section": "## Node 1C: Case Report\nSet publication_type = \"case study\" and study_type = [\"case study\"]. Extract exposure/dose only for the reported case(s), not literature cited in discussion."
     },
     "node1a_original": {
       "order": 20,
@@ -182,7 +184,7 @@
           "Animal Models (Other)"
         ]
       },
-      "prompt_section": "## Node 2B: Original → In Vivo\n\n**Animal Models (in vivo):**\n- \"Animal Models (Mouse)\" — mouse, murine, C57BL/6\n- \"Animal Models (Rat)\" — rat, Wistar, Sprague-Dawley\n- \"Animal Models (Other Rodents)\" — hamster, gerbil, guinea pig, vole\n- \"Animal Models (Non-Human Primates)\" — macaque, rhesus, monkey, baboon\n- \"Animal Models (Other)\" — dog, cat, pig, rabbit, zebrafish, drosophila\n\n**In vivo (animal) methods:**\n- \"nose only smoke/vapor\" — nose-only or snout-only exposure\n- \"whole body. smoke/vapor\" — whole-body chamber exposure (note: includes period)\n- \"injection cannabinoids\" — IP, IV, SC, IM injection of cannabinoids\n- \"oral administration\" — gavage, diet, feeding\n- \"sub-lingual\"\n- \"intranasal\" — nasal instillation/drops\n- \"intratracheal\" — intratracheal instillation\n\n* **Preclinical Animal (In Vivo) Context**:- **CRITICAL**: Do NOT extract host animal strains (e.g., \"Sprague-Dawley\", \"Wistar\", \"C57BL/6J\", \"SHR\") or transgenic animal model designations (e.g., \"5xFAD\", \"gp120 transgenic\") into `strain_reported` under any circumstances. The field `strain_reported` is strictly for cannabis/plant strains or synthetic compounds. If cannabis strains are absent, leave `strain_reported` as `null`.\n    - Prioritize weight-adjusted doses: populate `thc_mg_kg` or `cbd_mg_kg` (e.g., 5.0 mg/kg)."
+      "prompt_section": "## Node 2B: Original → In Vivo\n\n**Animal Models (in vivo):**\n- \"Animal Models (Mouse)\" — mouse, murine, C57BL/6\n- \"Animal Models (Rat)\" — rat, Wistar, Sprague-Dawley\n- \"Animal Models (Other Rodents)\" — hamster, gerbil, guinea pig, vole\n- \"Animal Models (Non-Human Primates)\" — macaque, rhesus, monkey, baboon\n- \"Animal Models (Other)\" — dog, cat, pig, rabbit, zebrafish, drosophila\n\n**In vivo (animal) methods:**\n- \"nose only smoke/vapor\" — nose-only or snout-only exposure\n- \"whole body. smoke/vapor\" — whole-body chamber exposure (note: includes period)\n- \"injection cannabinoids\" — IP, IV, SC, IM injection of cannabinoids\n- \"oral administration\" — gavage, diet, feeding\n- \"sub-lingual\"\n- \"intranasal\" — nasal instillation/drops\n- \"intratracheal\" — intratracheal instillation\n\n* **Preclinical Animal (In Vivo) Context**:- **CRITICAL**: Do NOT extract host animal strains (e.g., \"Sprague-Dawley\", \"Wistar\", \"C57BL/6J\", \"SHR\") or transgenic animal model designations (e.g., \"5xFAD\", \"gp120 transgenic\") into `strain_reported` under any circumstances. The field `strain_reported` is strictly for cannabis/plant strains or synthetic compounds. If cannabis strains are absent, leave `strain_reported` as `null`.\n    - Prioritize weight-adjusted doses: populate `thc_mg_kg` or `cbd_mg_kg` (e.g., 5.0 mg/kg).\n\n**Duration extraction (In Vivo appendix):**\n- whole body. smoke/vapor or nose only smoke/vapor → `inhaled_exposure_duration` (minutes/hours per exposure), `administration_frequency` (exposures/day), `duration_days` (days/weeks of repeat exposure), `repeat_exposure_count`, `exposure_regimen_bin` (acute=1-2 exposures total; subchronic=4-14 days; chronic=>2 weeks)\n- injection cannabinoids, oral administration, sub-lingual, intranasal, intratracheal → `administration_frequency` (exposures/day), `duration_days` (days/weeks of repeat exposure)"
     },
     "node2c_in_vitro": {
       "order": 32,
@@ -224,7 +226,7 @@
           "Cell Culture (Organoids)"
         ]
       },
-      "prompt_section": "## Node 2C: Original → In Vitro\n\n**Cell Culture (in vitro):**\n- \"Cell Culture (Primary Cells)\" — primary cells, splenocytes, primary microglia, primary hepatocytes\n- \"Cell Culture (Cell Lines)\" — HeLa, HepG2, PC12, RAW 264.7, SH-SY5Y, Jurkat, CHO\n- \"Cell Culture (Organoids)\" — organoid, spheroid, 3D culture\n- \"Cell Culture (Co-Culture)\" — co-culture of multiple cell types\n- \"Cell Culture (PCLS)\" — precision-cut lung slices\n- \"Cell Culture (Other In Vitro)\" — in vitro, cultured cells, epithelial cells, airway epithelial\n\n**In vitro methods:**\n- \"exposure of cells to smoke/vapor\" — direct chamber/ALI exposure of cells\n- \"smoke/vapor conditioned media\" — cells treated with smoke/vapor extract or CSE\n- \"cannabinoids dissolved in media\" — cannabinoids added directly to culture media\n\n* **Cell Culture (In Vitro) Context**:- Extract synthetic receptor ligands/compounds (e.g., \"WIN 55,212-2\", \"CP 55,940\", \"AEA\", \"SR141716A\") and chemical manufacturer/supplier details (e.g., \"Sigma-Aldrich\", \"Tocris Bioscience\", \"SERVA, USA\") into `strain_reported` only if cannabis plant strains are not present.\n    - Populate `treatment_duration` with incubation times (e.g., \"24 hours\", \"30 minutes\").\n    - Liquid concentrations must be converted and populated in `thc_mg_ml` or `cbd_mg_ml` (e.g. convert 10 µg/mL to 0.01 mg/mL).\n    - Micromolar/molar concentrations (e.g. 5 µM) should be populated directly in `thc_uM` or `cbd_uM` as numeric values (e.g. 5.0). Do NOT write micromolar concentrations into `strain_reported`."
+      "prompt_section": "## Node 2C: Original → In Vitro\n\n**Cell Culture (in vitro):**\n- \"Cell Culture (Primary Cells)\" — primary cells, splenocytes, primary microglia, primary hepatocytes\n- \"Cell Culture (Cell Lines)\" — HeLa, HepG2, PC12, RAW 264.7, SH-SY5Y, Jurkat, CHO\n- \"Cell Culture (Organoids)\" — organoid, spheroid, 3D culture\n- \"Cell Culture (Co-Culture)\" — co-culture of multiple cell types\n- \"Cell Culture (PCLS)\" — precision-cut lung slices\n- \"Cell Culture (Other In Vitro)\" — in vitro, cultured cells, epithelial cells, airway epithelial\n\n**In vitro methods:**\n- \"exposure of cells to smoke/vapor\" — direct chamber/ALI exposure of cells\n- \"smoke/vapor conditioned media\" — cells treated with smoke/vapor extract or CSE\n- \"cannabinoids dissolved in media\" — cannabinoids added directly to culture media\n\n* **Cell Culture (In Vitro) Context**:- Extract synthetic receptor ligands/compounds (e.g., \"WIN 55,212-2\", \"CP 55,940\", \"AEA\", \"SR141716A\") and chemical manufacturer/supplier details (e.g., \"Sigma-Aldrich\", \"Tocris Bioscience\", \"SERVA, USA\") into `strain_reported` only if cannabis plant strains are not present.\n    - Populate `treatment_duration` with incubation times (e.g., \"24 hours\", \"30 minutes\").\n    - Liquid concentrations must be converted and populated in `thc_mg_ml` or `cbd_mg_ml` (e.g. convert 10 µg/mL to 0.01 mg/mL).\n    - Micromolar/molar concentrations (e.g. 5 µM) should be populated directly in `thc_uM` or `cbd_uM` as numeric values (e.g. 5.0). Do NOT write micromolar concentrations into `strain_reported`.\n\n**Duration extraction (In Vitro appendix):**\n- smoke/vapor conditioned media → `treatment_duration` (minutes, hours, or days of exposure)\n- exposure of cells to smoke/vapor → `inhaled_exposure_duration` (minutes per exposure) and `repeat_exposure_count` (# of repeat exposures); leave `treatment_duration` null unless a separate incubation window is reported\n- cannabinoids dissolved in media → `treatment_duration` (minutes, hours, or days of exposure)"
     },
     "node2d_mixed": {
       "order": 33,
@@ -303,7 +305,7 @@
     ],
     "not_cannabis_related_storage": {
       "ingestion_status": "not_cannabis_related",
-      "publication_type": "not cannabis-related"
+      "publication_type": null
     }
   },
   "high_level_fields": [

@@ -33,6 +33,8 @@ CREATE TABLE IF NOT EXISTS papers (
     inhaled_exposure_duration TEXT, -- inhaled exposure duration (e.g., 10 min)
     administration_frequency TEXT,  -- administration frequency (e.g., once daily)
     treatment_duration TEXT,        -- in vitro treatment duration (e.g., 24 hours)
+    exposure_regimen_bin TEXT,      -- in vivo smoke bin: acute | subchronic | chronic
+    repeat_exposure_count INTEGER,  -- discrete repeat exposures (in vitro direct smoke / in vivo acute)
     sample_size INTEGER,            -- numeric sample size (or null)
     outcome_domain TEXT,            -- JSON array of strings: pain, anxiety, cognition, inflammation, addiction, oncology, neuroprotection, sleep, other
     open_access INTEGER DEFAULT 0,  -- boolean 0 (False) or 1 (True)

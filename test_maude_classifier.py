@@ -41,6 +41,19 @@ class TestMaudeClassifier(unittest.TestCase):
         self.assertEqual(result["study_type"], ["review"])
         self.assertIn("node1b_reviews", result["_maude_meta"]["nodes_visited"])
 
+    def test_invivo_smoke_duration_profile(self):
+        """Whole-body smoke routes populate exposure-aware duration fields and subchronic bin."""
+        result = maude_classifier.classify_paper(
+            "Chronic whole-body cannabis smoke in mice",
+            "Mice were exposed in a whole body chamber for 30 minutes twice daily for 7 days.",
+            full_text="Methods: Mice were exposed in a whole body chamber for 30 minutes twice daily for 7 days.",
+            rules_version="2.5.0",
+        )
+        self.assertIn("whole body. smoke/vapor", result.get("exposure_method") or [])
+        self.assertEqual(result.get("duration_days"), 7.0)
+        self.assertEqual(result.get("inhaled_exposure_duration"), "30 minutes")
+        self.assertEqual(result.get("exposure_regimen_bin"), "subchronic")
+
     def test_sparse_extraction_fallback_not_cannabis_related(self):
         """Cannabis mention without administration cues and sparse downstream detail → not_cannabis_related."""
         result = maude_classifier.classify_paper(
@@ -49,12 +62,108 @@ class TestMaudeClassifier(unittest.TestCase):
                 "Cannabis legalization has changed public health discourse. This article discusses "
                 "regulatory frameworks without presenting original experimental data."
             ),
+            enable_sparse_fallback=True,
         )
         self.assertIsNone(result["publication_type"])
         self.assertEqual(result["ingestion_status"], "not_cannabis_related")
         self.assertTrue(result["_maude_meta"].get("sparse_extraction_fallback"))
 
-    def test_compare_flags_high_level_disagreement(self):
+    def test_compare_maude_llm_flags_disagreements(self):
+        """Disagreement detector should flag publication_type mismatches."""
+        maude = {"publication_type": "review", "study_type": ["review"], "ingestion_status": "relevant"}
+        llm = {
+            "publication_type": "original research",
+            "study_type": ["Clinical (RCT)"],
+            "ingestion_status": "relevant",
+        }
+        result = maude_classifier.compare_maude_llm(maude, llm)
+        self.assertTrue(result["flagged_for_review"])
+        self.assertIn("publication_type", result["fields"])
+        self.assertIn("study_type", result["fields"])
+        self.assertIn("ingestion_status", result["agreed_fields"])
+
+    def test_routes_pubmed_review_prefix(self):
+        """PubMed PublicationType prefix injected at harvest should route to review via metadata rules."""
+        result = maude_classifier.classify_paper(
+            "Cannabis and chronic pain",
+            "Publication Type: Review. This article summarizes evidence on cannabis for pain.",
+        )
+        self.assertEqual(result["publication_type"], "review")
+        self.assertIn("node1b_reviews", result["_maude_meta"]["nodes_visited"])
+
+    def test_routes_pubmed_meta_analysis_prefix(self):
+        """PubMed meta-analysis publication type should route to review + meta-analysis subtype."""
+        result = maude_classifier.classify_paper(
+            "Cannabis dose-response meta-analysis",
+            "Publication Type: Meta-Analysis. We pooled estimates from 18 trials.",
+        )
+        self.assertEqual(result["publication_type"], "review")
+        self.assertIn("meta-analysis", result["study_type"])
+        self.assertIn("node3b", result["_maude_meta"]["nodes_visited"])
+
+    def test_routes_progress_report_to_review(self):
+        """Progress report titles should route to Node 1B."""
+        result = maude_classifier.classify_paper(
+            "Progress report on new medications for seizures and epilepsy",
+            "A summary of the latest conference findings on antiepileptic drugs.",
+        )
+        self.assertEqual(result["publication_type"], "review")
+
+    def test_chart_review_does_not_route_to_review(self):
+        """Methods-section chart review should stay original research."""
+        pub, subtype, nodes, _ = maude_classifier.route_publication_type(
+            "Prevalence of Cannabinoid Use in Patients With Hip and Knee Osteoarthritis",
+            (
+                "Chart review provided demographic factors. Descriptive statistics were used "
+                "to summarize cannabinoid use in orthopedic patients."
+            ),
+        )
+        self.assertEqual(pub, "original research")
+        self.assertNotIn("node1b_reviews", nodes)
+
+    def test_perspective_in_abstract_does_not_route_to_review(self):
+        """Harm-reduction perspective in abstract should not route when title lacks review cues."""
+        result = maude_classifier.classify_paper(
+            "Medical cannabis use in Australia seven years after legalisation",
+            (
+                "From a harm-reduction perspective there is much to recommend prescribed "
+                "medicinal cannabis for eligible patients."
+            ),
+        )
+        self.assertEqual(result["publication_type"], "original research")
+
+    def test_routes_series_of_patients_to_case_study(self):
+        """Series-of-patients language should route to Node 1C."""
+        pub, subtype, nodes, _ = maude_classifier.route_publication_type(
+            "Cannabidiol in children with epilepsy",
+            "Here we present a series of patients with refractory epilepsy treated with CBD.",
+        )
+        self.assertEqual(pub, "case study")
+        self.assertIn("node1c_case_report", nodes)
+
+    def test_routes_node2_branches_from_cues(self):
+        """Original-research papers should visit Node 2 branches from cue catalog."""
+        result = maude_classifier.classify_paper(
+            "THC effects in C57BL/6 mice",
+            "Male mice received intraperitoneal THC and behavior was assessed.",
+        )
+        nodes = result["_maude_meta"]["nodes_visited"]
+        self.assertIn("node2b_in_vivo", nodes)
+        self.assertIn("Animal Models (Mouse)", result["study_type"])
+
+    def test_abstract_only_clears_downstream_fields(self):
+        """Abstract-only classification should leave downstream extraction fields empty."""
+        result = maude_classifier.classify_paper(
+            "Randomized trial of CBD for anxiety",
+            "Participants were randomized to CBD or placebo in a double-blind trial.",
+        )
+        self.assertEqual(result["exposure_method"], [])
+        self.assertEqual(result["cannabis_type"], [])
+        self.assertEqual(result["outcome_domain"], [])
+        self.assertIsNone(result["species"])
+        self.assertTrue(result["_maude_meta"].get("abstract_only_extraction"))
+
+    def test_compare_maude_llm_flags_disagreements(self):
         """Disagreement detector should flag publication_type mismatches."""
         maude = {"publication_type": "review", "study_type": ["review"], "ingestion_status": "relevant"}
         llm = {
