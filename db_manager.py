@@ -3,6 +3,7 @@ import sqlite3
 import os
 import json
 import re
+import threading
 from datetime import datetime
 from typing import List, Dict, Any, Optional, Tuple
 import logging
@@ -306,8 +307,36 @@ class PostgresConnectionWrapper:
 
 class DatabaseManager:
     """Manages SQLite and PostgreSQL operations, indexing, and dynamic querying for cannabis papers."""
-    
-    _initialized = False
+
+    _bootstrapped = False
+    _bootstrap_lock = threading.Lock()
+
+    _PAPERS_COLUMNS_TO_ADD: Tuple[Tuple[str, str], ...] = (
+        ("publication_date", "TEXT"),
+        ("cannabis_type", "TEXT"),
+        ("summary", "TEXT"),
+        ("publication_type", "TEXT"),
+        ("expert_locked_fields", "TEXT DEFAULT '[]'"),
+        ("classification_confidence", "REAL"),
+        ("classification_timestamp", "TEXT"),
+        ("classifier_version", "TEXT"),
+        ("puff_count", "INTEGER"),
+        ("thc_mg_ml", "REAL"),
+        ("thc_mg_g", "REAL"),
+        ("thc_mg_kg", "REAL"),
+        ("cbd_mg_ml", "REAL"),
+        ("cbd_mg_g", "REAL"),
+        ("cbd_mg_kg", "REAL"),
+        ("thc_uM", "REAL"),
+        ("cbd_uM", "REAL"),
+        ("inhaled_exposure_duration", "TEXT"),
+        ("administration_frequency", "TEXT"),
+        ("treatment_duration", "TEXT"),
+        ("repeat_exposure_count", "INTEGER"),
+        ("exposure_regimen_bin", "TEXT"),
+        ("ingestion_status", "TEXT"),
+        ("species", "TEXT"),
+    )
     
     @property
     def is_postgres(self):
@@ -317,104 +346,146 @@ class DatabaseManager:
     @property
     def database_url(self):
         return os.getenv("DATABASE_URL")
-        
+
     def __init__(self, db_path: str = DATABASE_FILE):
+        """Opens the configured database after a one-time schema bootstrap per process."""
         self.db_path = db_path
-            
-        # Ensure the parent directory for the database exists (only if SQLite)
         if not self.is_postgres:
             dir_name = os.path.dirname(self.db_path)
             if dir_name:
                 os.makedirs(dir_name, exist_ok=True)
-            
-        # Check if papers table exists in this DB
-        db_exists = False
-        if self.is_postgres:
-            try:
-                conn_check = self.get_connection()
-                # Unwrapped connection check
-                unwrapped_conn = conn_check.conn
-                cursor = unwrapped_conn.cursor()
-                # Ensure compatibility functions exist
-                cursor.execute("""
-                    CREATE OR REPLACE FUNCTION json_valid(p_val text)
-                    RETURNS boolean AS $$
-                    BEGIN
-                      IF p_val IS NULL THEN
-                        RETURN NULL;
-                      END IF;
-                      PERFORM p_val::jsonb;
-                      RETURN true;
-                    EXCEPTION
-                      WHEN others THEN
-                        RETURN false;
-                    END;
-                    $$ LANGUAGE plpgsql IMMUTABLE;
-                """)
-                cursor.execute("""
-                    CREATE OR REPLACE FUNCTION json_type(p_val text)
-                    RETURNS text AS $$
-                    DECLARE
-                      v_json jsonb;
-                    BEGIN
-                      IF p_val IS NULL THEN
-                        RETURN NULL;
-                      END IF;
-                      v_json := p_val::jsonb;
-                      RETURN jsonb_typeof(v_json);
-                    EXCEPTION
-                      WHEN others THEN
-                        RETURN NULL;
-                    END;
-                    $$ LANGUAGE plpgsql IMMUTABLE;
-                """)
-                unwrapped_conn.commit()
-                cursor.execute("SELECT EXISTS (SELECT FROM information_schema.tables WHERE table_name = 'papers');")
-                row = cursor.fetchone()
-                db_exists = list(row.values())[0] if isinstance(row, dict) else row[0]
-                
-                if db_exists:
-                    try:
-                        cursor.execute("SELECT EXISTS (SELECT FROM information_schema.tables WHERE table_name = 'system_metadata');")
-                        meta_table_exists_row = cursor.fetchone()
-                        meta_table_exists = list(meta_table_exists_row.values())[0] if meta_table_exists_row else False
-                        if meta_table_exists:
-                            cursor.execute("SELECT value FROM system_metadata WHERE key = 'fts_index_updated_authors';")
-                            meta_row = cursor.fetchone()
-                            meta_val = list(meta_row.values())[0] if meta_row else None
-                            if meta_val != 'true':
-                                cursor.execute("SET maintenance_work_mem = '16MB';")
-                                cursor.execute("DROP INDEX IF EXISTS idx_papers_fts;")
-                                cursor.execute("CREATE INDEX IF NOT EXISTS idx_papers_fts ON papers USING GIN (to_tsvector('english', title || ' ' || coalesce(abstract, '') || ' ' || coalesce(authors, '')));")
-                                cursor.execute("INSERT INTO system_metadata (key, value) VALUES ('fts_index_updated_authors', 'true') ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value;")
-                                unwrapped_conn.commit()
-                    except Exception as idx_err:
-                        logger.error(f"Failed to update FTS GIN index: {idx_err}")
-                        pass
-                        
-                conn_check.close()
-            except Exception as e:
-                logger.error(f"Postgres connection check/compat functions failed: {e}")
-                pass
-        else:
-            if os.path.exists(self.db_path) and os.path.getsize(self.db_path) > 0:
-                try:
-                    conn_check = sqlite3.connect(self.db_path, timeout=5.0)
-                    cursor = conn_check.cursor()
-                    cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='papers';")
-                    if cursor.fetchone():
-                        db_exists = True
-                    conn_check.close()
-                except sqlite3.Error:
-                    pass
+        self._ensure_bootstrapped()
 
+    def _ensure_bootstrapped(self) -> None:
+        """Runs database migrations and compat setup once per worker process."""
+        if DatabaseManager._bootstrapped:
+            return
+        with DatabaseManager._bootstrap_lock:
+            if DatabaseManager._bootstrapped:
+                return
+            if self.is_postgres:
+                self._bootstrap_postgres()
+            else:
+                self._bootstrap_sqlite()
+            DatabaseManager._bootstrapped = True
+
+    def _ensure_postgres_json_compat(self, cursor) -> None:
+        """Creates SQLite-compat json_valid/json_type helpers used by tab filter SQL."""
+        cursor.execute("""
+            CREATE OR REPLACE FUNCTION json_valid(p_val text)
+            RETURNS boolean AS $$
+            BEGIN
+              IF p_val IS NULL THEN
+                RETURN NULL;
+              END IF;
+              PERFORM p_val::jsonb;
+              RETURN true;
+            EXCEPTION
+              WHEN others THEN
+                RETURN false;
+            END;
+            $$ LANGUAGE plpgsql IMMUTABLE;
+        """)
+        cursor.execute("""
+            CREATE OR REPLACE FUNCTION json_type(p_val text)
+            RETURNS text AS $$
+            DECLARE
+              v_json jsonb;
+            BEGIN
+              IF p_val IS NULL THEN
+                RETURN NULL;
+              END IF;
+              v_json := p_val::jsonb;
+              RETURN jsonb_typeof(v_json);
+            EXCEPTION
+              WHEN others THEN
+                RETURN NULL;
+            END;
+            $$ LANGUAGE plpgsql IMMUTABLE;
+        """)
+
+    def _ensure_postgres_fts_index(self, cursor, conn) -> None:
+        """Builds the Postgres full-text index once when authors were added to the search vector."""
+        try:
+            cursor.execute("SELECT EXISTS (SELECT FROM information_schema.tables WHERE table_name = 'system_metadata');")
+            meta_table_exists_row = cursor.fetchone()
+            meta_table_exists = list(meta_table_exists_row.values())[0] if meta_table_exists_row else False
+            if not meta_table_exists:
+                return
+            cursor.execute("SELECT value FROM system_metadata WHERE key = 'fts_index_updated_authors';")
+            meta_row = cursor.fetchone()
+            meta_val = list(meta_row.values())[0] if meta_row else None
+            if meta_val == "true":
+                return
+            cursor.execute("SET maintenance_work_mem = '16MB';")
+            cursor.execute("DROP INDEX IF EXISTS idx_papers_fts;")
+            cursor.execute(
+                "CREATE INDEX IF NOT EXISTS idx_papers_fts ON papers USING GIN "
+                "(to_tsvector('english', title || ' ' || coalesce(abstract, '') || ' ' || coalesce(authors, '')));"
+            )
+            cursor.execute(
+                "INSERT INTO system_metadata (key, value) VALUES ('fts_index_updated_authors', 'true') "
+                "ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value;"
+            )
+            conn.commit()
+        except Exception as idx_err:
+            logger.error(f"Failed to update FTS GIN index: {idx_err}")
+
+    def _bootstrap_postgres(self) -> None:
+        """Initializes Postgres schema, compat helpers, and column migrations once."""
+        conn = self.get_connection()
+        try:
+            cursor = conn.conn.cursor()
+            self._ensure_postgres_json_compat(cursor)
+            conn.conn.commit()
+            cursor.execute("SELECT EXISTS (SELECT FROM information_schema.tables WHERE table_name = 'papers');")
+            row = cursor.fetchone()
+            papers_exists = list(row.values())[0] if isinstance(row, dict) else row[0]
+            if not papers_exists:
+                conn.close()
+                self.init_db()
+                return
+            self._ensure_papers_column_migrations(conn)
+            self._ensure_postgres_fts_index(cursor, conn)
+        except Exception as e:
+            logger.error(f"Postgres bootstrap failed: {e}")
+            raise
+        finally:
+            conn.close()
+
+    def _bootstrap_sqlite(self) -> None:
+        """Initializes SQLite schema and migrations once."""
+        db_exists = False
+        if os.path.exists(self.db_path) and os.path.getsize(self.db_path) > 0:
+            try:
+                conn_check = sqlite3.connect(self.db_path, timeout=5.0)
+                cursor = conn_check.cursor()
+                cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='papers';")
+                if cursor.fetchone():
+                    db_exists = True
+                conn_check.close()
+            except sqlite3.Error:
+                pass
         if not db_exists:
             self.init_db()
-            DatabaseManager._initialized = True
-        elif not DatabaseManager._initialized:
-            if not self.is_postgres:
-                self.init_db()
-            DatabaseManager._initialized = True
+        else:
+            self.init_db()
+
+    def _ensure_papers_column_migrations(self, conn) -> None:
+        """Adds any missing papers-table columns introduced after initial deploy."""
+        for col_name, col_type in self._PAPERS_COLUMNS_TO_ADD:
+            if not self.column_exists("papers", col_name, conn):
+                pg_type = col_type
+                if self.is_postgres:
+                    if pg_type.startswith("TEXT DEFAULT '[]'"):
+                        pg_type = "JSONB DEFAULT '[]'::jsonb"
+                    elif pg_type == "REAL":
+                        pg_type = "DOUBLE PRECISION"
+                try:
+                    conn.execute(f"ALTER TABLE papers ADD COLUMN {col_name} {pg_type};")
+                    conn.commit()
+                except Exception as e:
+                    logger.error(f"Failed to add column {col_name}: {e}")
 
     def get_connection(self):
         """Returns a connection wrapper supporting standard operations."""
@@ -564,47 +635,7 @@ class DatabaseManager:
                     conn.commit()
 
             # Ensure columns exist in papers table (dynamic migration)
-            columns_to_add = [
-                ("publication_date", "TEXT"),
-                ("cannabis_type", "TEXT"),
-                ("summary", "TEXT"),
-                ("publication_type", "TEXT"),
-                ("expert_locked_fields", "TEXT DEFAULT '[]'"),
-                ("classification_confidence", "REAL"),
-                ("classification_timestamp", "TEXT"),
-                ("classifier_version", "TEXT"),
-                ("puff_count", "INTEGER"),
-                ("thc_mg_ml", "REAL"),
-                ("thc_mg_g", "REAL"),
-                ("thc_mg_kg", "REAL"),
-                ("cbd_mg_ml", "REAL"),
-                ("cbd_mg_g", "REAL"),
-                ("cbd_mg_kg", "REAL"),
-                ("thc_uM", "REAL"),
-                ("cbd_uM", "REAL"),
-                ("inhaled_exposure_duration", "TEXT"),
-                ("administration_frequency", "TEXT"),
-                ("treatment_duration", "TEXT"),
-                ("repeat_exposure_count", "INTEGER"),
-                ("exposure_regimen_bin", "TEXT"),
-                ("ingestion_status", "TEXT"),
-                ("species", "TEXT")
-            ]
-            
-            for col_name, col_type in columns_to_add:
-                if not self.column_exists("papers", col_name, conn):
-                    pg_type = col_type
-                    if self.is_postgres:
-                        if pg_type.startswith("TEXT DEFAULT '[]'"):
-                            pg_type = "JSONB DEFAULT '[]'::jsonb"
-                        elif pg_type == "REAL":
-                            pg_type = "DOUBLE PRECISION"
-                    try:
-                        conn.execute(f"ALTER TABLE papers ADD COLUMN {col_name} {pg_type};")
-                        conn.commit()
-                    except Exception as e:
-                        logger.error(f"Failed to add column {col_name}: {e}")
-                        pass
+            self._ensure_papers_column_migrations(conn)
 
             # Ensure system_metadata table exists
             conn.execute("""

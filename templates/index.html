@@ -3082,13 +3082,26 @@
             url += params.join("&");
 
             fetch(url)
-                .then(res => res.json())
+                .then(res => {
+                    if (!res.ok) {
+                        return res.json().then(body => {
+                            throw new Error(body.error || `Search failed (${res.status})`);
+                        });
+                    }
+                    return res.json();
+                })
                 .then(data => {
-                    populateTable(data.papers);
-                    updatePagination(data.total_count, data.page, data.limit);
+                    populateTable(data.papers || []);
+                    updatePagination(data.total_count || 0, data.page || currentPage, data.limit || pageSize);
                 })
                 .catch(err => {
                     console.error("AJAX Search Failed: ", err);
+                    populateTable([]);
+                    updatePagination(0, 1, pageSize);
+                    const rangeEl = document.getElementById("pagination-range");
+                    if (rangeEl) {
+                        rangeEl.innerText = `Search error: ${err.message}`;
+                    }
                 });
         }
 
