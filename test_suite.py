@@ -1258,6 +1258,98 @@ class TestExpertEditAndActiveLearning(unittest.TestCase):
         self.assertIn("/api/classification/queue", status_data["agent_automation"]["agent_entrypoints"])
 
 
+class TestHeuristicReingestion(unittest.TestCase):
+    """Test cases for bounded heuristic paper re-ingestion."""
+
+    def setUp(self):
+        """Create an isolated database and route the re-ingestion module to it."""
+        self.test_db_path = "test_reingest_papers.db"
+        if os.path.exists(self.test_db_path):
+            try:
+                os.remove(self.test_db_path)
+            except Exception:
+                pass
+
+        self.db = DatabaseManager(self.test_db_path)
+
+        import reingest_heuristic_papers
+
+        self.reingest_module = reingest_heuristic_papers
+        self.original_db_manager = reingest_heuristic_papers.DatabaseManager
+        test_db_path = self.test_db_path
+
+        class TestDatabaseManager(DatabaseManager):
+            """Database manager bound to the re-ingestion test database."""
+
+            def __init__(self):
+                """Initialize the manager with the test database path."""
+                super().__init__(test_db_path)
+
+        reingest_heuristic_papers.DatabaseManager = TestDatabaseManager
+
+    def tearDown(self):
+        """Restore module state and remove the isolated database file."""
+        self.reingest_module.DatabaseManager = self.original_db_manager
+        if os.path.exists(self.test_db_path):
+            try:
+                os.remove(self.test_db_path)
+            except Exception:
+                pass
+
+    def test_max_papers_limits_only_pending_reingestion(self):
+        """Ensure capped pending re-ingestion only updates the requested slice."""
+        pending_pmids = ["reingest-001", "reingest-002", "reingest-003"]
+        for pmid in pending_pmids:
+            self.db.insert_paper({
+                "pmid": pmid,
+                "title": f"Bounded cannabis re-ingestion study {pmid}",
+                "abstract": (
+                    "METHODS: Participants reported cannabis use during a "
+                    "30-day observational study."
+                ),
+                "classifier_version": "heuristic-reclassify-1.0.0",
+                "classification_confidence": 0.9,
+            })
+
+        self.db.insert_paper({
+            "pmid": "reingest-current",
+            "title": "Already current cannabis paper",
+            "abstract": "METHODS: This cannabis review was already reprocessed.",
+            "classifier_version": "heuristic-1.0.0",
+            "classification_confidence": 0.6,
+        })
+
+        summary = self.reingest_module.reingest_heuristic_papers(
+            batch_size=1,
+            only_pending=True,
+            max_papers=2,
+        )
+
+        self.assertEqual(summary["papers_processed"], 2)
+        self.assertEqual(summary["max_papers"], 2)
+
+        conn = self.db.get_connection()
+        try:
+            cur = conn.cursor()
+            cur.execute(
+                "SELECT pmid, classifier_version FROM papers ORDER BY id"
+            )
+            versions = {
+                row["pmid"]: row["classifier_version"]
+                for row in cur.fetchall()
+            }
+        finally:
+            conn.close()
+
+        self.assertEqual(versions["reingest-001"], "heuristic-1.0.0")
+        self.assertEqual(versions["reingest-002"], "heuristic-1.0.0")
+        self.assertEqual(
+            versions["reingest-003"],
+            "heuristic-reclassify-1.0.0",
+        )
+        self.assertEqual(versions["reingest-current"], "heuristic-1.0.0")
+
+
 class TestUserAuthentication(unittest.TestCase):
     """Test cases for user registration, verification, password hashing, and Google OAuth methods."""
 
