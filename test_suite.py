@@ -947,14 +947,16 @@ class TestDatabaseManager(unittest.TestCase):
             unclassified_pmids = {p["pmid"] for p in self.db.search_papers({"tab": "unclassified_preclinical"})}
             self.assertEqual(unclassified_pmids, {"tab004"})
 
-            irrelevant_pmids = {p["pmid"] for p in self.db.search_papers({"tab": "irrelevant"})}
-            self.assertEqual(irrelevant_pmids, {"tab006"})
+            tangential_pmids = {p["pmid"] for p in self.db.search_papers({"tab": "tangential"})}
+            self.assertEqual(tangential_pmids, {"tab005"})
 
-            # Tangential and not-cannabis papers have no dedicated tab; excluded from study tabs
+            # Irrelevant and not-cannabis papers have no dedicated tab; excluded from study tabs
             clinical_pmids_all = {p["pmid"] for p in self.db.search_papers({"tab": "clinical"})}
             review_pmids_all = {p["pmid"] for p in self.db.search_papers({"tab": "review"})}
             self.assertNotIn("tab005", clinical_pmids_all)
             self.assertNotIn("tab005", review_pmids_all)
+            self.assertNotIn("tab006", clinical_pmids_all)
+            self.assertNotIn("tab006", review_pmids_all)
             self.assertNotIn("tab007", clinical_pmids_all)
             self.assertNotIn("tab007", review_pmids_all)
 
