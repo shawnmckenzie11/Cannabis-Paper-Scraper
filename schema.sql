@@ -33,8 +33,8 @@ CREATE TABLE IF NOT EXISTS papers (
     inhaled_exposure_duration TEXT, -- inhaled exposure duration (e.g., 10 min)
     administration_frequency TEXT,  -- administration frequency (e.g., once daily)
     treatment_duration TEXT,        -- in vitro treatment duration (e.g., 24 hours)
-    exposure_regimen_bin TEXT,      -- in vivo smoke bin: acute | subchronic | chronic
-    repeat_exposure_count INTEGER,  -- discrete repeat exposures (in vitro direct smoke / in vivo acute)
+    repeat_exposure_count INTEGER,  -- total repeat exposures when reported
+    exposure_regimen_bin TEXT,      -- acute | subchronic | chronic (in vivo smoke/vapor)
     sample_size INTEGER,            -- numeric sample size (or null)
     outcome_domain TEXT,            -- JSON array of strings: pain, anxiety, cognition, inflammation, addiction, oncology, neuroprotection, sleep, other
     open_access INTEGER DEFAULT 0,  -- boolean 0 (False) or 1 (True)
@@ -42,7 +42,7 @@ CREATE TABLE IF NOT EXISTS papers (
     date_harvested TEXT NOT NULL, -- timestamp of when the paper was harvested
     publication_date TEXT, -- timestamp of when the paper was published
     summary TEXT, -- summary of the paper
-    expert_locked_fields TEXT DEFAULT '[]', -- JSON array of strings: study_type, exposure_method, cannabis_type, outcome_domain, thc_pct, cbd_pct, dose_mg, puff_count, thc_mg_ml, thc_mg_g, thc_mg_kg, cbd_mg_ml, cbd_mg_g, cbd_mg_kg, thc_uM, cbd_uM, strain_reported, strain_normalized, duration_days, inhaled_exposure_duration, administration_frequency, treatment_duration, sample_size, outcome_domain
+    expert_locked_fields TEXT DEFAULT '[]', -- JSON array of strings: study_type, exposure_method, cannabis_type, outcome_domain, thc_pct, cbd_pct, dose_mg, puff_count, thc_mg_ml, thc_mg_g, thc_mg_kg, cbd_mg_ml, cbd_mg_g, cbd_mg_kg, thc_uM, cbd_uM, strain_reported, strain_normalized, duration_days, inhaled_exposure_duration, administration_frequency, treatment_duration, repeat_exposure_count, exposure_regimen_bin, sample_size, outcome_domain
     classification_confidence REAL, -- numeric classification confidence (or null)
     classification_timestamp TEXT, -- timestamp of when the classification was made
     classifier_version TEXT, -- version of the classifier that made the classification

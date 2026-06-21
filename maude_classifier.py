@@ -439,7 +439,8 @@ def apply_abstract_only_extraction_policy(result: Dict[str, Any]) -> Dict[str, A
     for field in (
         "thc_pct", "cbd_pct", "dose_mg", "strain_reported", "strain_normalized",
         "duration_days", "inhaled_exposure_duration", "administration_frequency",
-        "treatment_duration", "exposure_regimen_bin", "repeat_exposure_count", "sample_size",
+        "treatment_duration", "repeat_exposure_count", "exposure_regimen_bin",
+        "sample_size",
     ):
         result[field] = None
     return result
@@ -787,8 +788,8 @@ def classify_paper(
         "inhaled_exposure_duration": heuristics.get("inhaled_exposure_duration"),
         "administration_frequency": heuristics.get("administration_frequency"),
         "treatment_duration": heuristics.get("treatment_duration"),
-        "exposure_regimen_bin": heuristics.get("exposure_regimen_bin"),
         "repeat_exposure_count": heuristics.get("repeat_exposure_count"),
+        "exposure_regimen_bin": heuristics.get("exposure_regimen_bin"),
         "sample_size": heuristics.get("sample_size"),
         "classification_confidence": confidence,
         "_maude_meta": {

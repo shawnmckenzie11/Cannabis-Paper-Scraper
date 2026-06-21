@@ -26,7 +26,7 @@ CALIBRATION_FIELDS = [
     "outcome_domain", "thc_pct", "cbd_pct", "dose_mg",
     "strain_reported", "strain_normalized", "duration_days",
     "inhaled_exposure_duration", "administration_frequency", "treatment_duration",
-    "exposure_regimen_bin", "repeat_exposure_count",
+    "repeat_exposure_count", "exposure_regimen_bin",
     "sample_size", "puff_count", "thc_mg_ml", "thc_mg_g", "thc_mg_kg",
     "cbd_mg_ml", "cbd_mg_g", "cbd_mg_kg", "thc_uM", "cbd_uM",
 ]

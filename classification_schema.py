@@ -38,6 +38,32 @@ HIGH_LEVEL_COMPARE_FIELDS: Tuple[str, ...] = (
     "species",
 )
 
+DURATION_FIELD_NAMES: Tuple[str, ...] = (
+    "duration_days",
+    "inhaled_exposure_duration",
+    "administration_frequency",
+    "treatment_duration",
+    "repeat_exposure_count",
+    "exposure_regimen_bin",
+)
+
+IN_VIVO_SMOKE_EXPOSURES: Tuple[str, ...] = (
+    "nose only smoke/vapor",
+    "whole body. smoke/vapor",
+)
+
+IN_VIVO_SYSTEMIC_EXPOSURES: Tuple[str, ...] = (
+    "injection cannabinoids",
+    "oral administration",
+    "sub-lingual",
+    "intranasal",
+    "intratracheal",
+)
+
+IN_VITRO_CONDITIONED_MEDIA = "smoke/vapor conditioned media"
+IN_VITRO_DIRECT_SMOKE = "exposure of cells to smoke/vapor"
+IN_VITRO_DISSOLVED = "cannabinoids dissolved in media"
+
 
 def _clean_text(value: Any) -> str:
     """Returns a normalized lowercase string for label comparisons."""
@@ -91,6 +117,38 @@ def infer_ingestion_status(title: str, abstract: str, publication_type: Optional
     if any(marker in combined for marker in tangential_markers):
         return "tangential"
     return "relevant"
+
+
+def normalize_exposure_method_list(values: Any) -> List[str]:
+    """Normalizes exposure_method to a deduplicated list of strings."""
+    if values is None:
+        return []
+    if isinstance(values, str):
+        stripped = values.strip()
+        if stripped.startswith("[") and stripped.endswith("]"):
+            try:
+                import json
+
+                parsed = json.loads(stripped)
+                if isinstance(parsed, list):
+                    values = parsed
+                else:
+                    values = [stripped]
+            except Exception:
+                values = [stripped]
+        else:
+            values = [stripped] if stripped else []
+    if not isinstance(values, list):
+        return []
+    ordered: List[str] = []
+    seen: set = set()
+    for item in values:
+        label = str(item).strip()
+        if not label or label.lower() in seen:
+            continue
+        seen.add(label.lower())
+        ordered.append(label)
+    return ordered
 
 
 def normalize_study_type_list(values: Any) -> List[str]:
@@ -182,7 +240,79 @@ def normalize_classification_record(
         normalized["study_type"] = []
         normalized["exposure_method"] = []
         normalized["cannabis_type"] = []
+    elif normalized.get("publication_type") == "original research":
+        normalized = apply_duration_by_exposure_method(normalized)
     return normalized
+
+
+def _clear_duration_fields(record: Dict[str, Any], keep: Sequence[str]) -> None:
+    """Nulls duration fields on a record except those listed in keep."""
+    keep_set = {field for field in keep}
+    for field in DURATION_FIELD_NAMES:
+        if field not in keep_set:
+            record[field] = None
+
+
+def _resolve_invitro_duration_route(exposures: Sequence[str]) -> Optional[str]:
+    """Returns the in vitro duration routing bucket for the primary exposure method."""
+    return extractor.resolve_invitro_duration_route(list(exposures))
+
+
+def apply_duration_by_exposure_method(record: Dict[str, Any]) -> Dict[str, Any]:
+    """Routes duration fields by exposure_method per the decision-tree in vivo/in vitro appendix."""
+    routed = dict(record)
+    study_types = normalize_study_type_list(routed.get("study_type"))
+    exposures = normalize_exposure_method_list(routed.get("exposure_method"))
+
+    is_clinical = any(item.startswith("Clinical (") for item in study_types)
+    is_invivo = any(item.startswith("Animal Models (") for item in study_types)
+    is_invitro = any(
+        "cell culture" in item.lower() or "vitro" in item.lower() or "organoid" in item.lower()
+        for item in study_types
+    )
+
+    if is_clinical:
+        _clear_duration_fields(
+            routed,
+            keep=("duration_days", "inhaled_exposure_duration", "administration_frequency"),
+        )
+        return routed
+
+    exposure_set = set(exposures)
+
+    if is_invitro:
+        route = _resolve_invitro_duration_route(exposures)
+        if route == "conditioned_media":
+            _clear_duration_fields(routed, keep=("treatment_duration",))
+        elif route == "direct_smoke":
+            _clear_duration_fields(routed, keep=("inhaled_exposure_duration", "repeat_exposure_count"))
+        elif route == "dissolved":
+            _clear_duration_fields(routed, keep=("treatment_duration",))
+        return routed
+
+    if is_invivo:
+        smoke_hits = [item for item in IN_VIVO_SMOKE_EXPOSURES if item in exposure_set]
+        systemic_hits = [item for item in IN_VIVO_SYSTEMIC_EXPOSURES if item in exposure_set]
+        if smoke_hits:
+            routed["exposure_regimen_bin"] = extractor.infer_exposure_regimen_bin(
+                routed.get("duration_days"),
+                routed.get("repeat_exposure_count"),
+            )
+            _clear_duration_fields(
+                routed,
+                keep=(
+                    "inhaled_exposure_duration",
+                    "administration_frequency",
+                    "duration_days",
+                    "repeat_exposure_count",
+                    "exposure_regimen_bin",
+                ),
+            )
+        elif systemic_hits:
+            _clear_duration_fields(routed, keep=("administration_frequency", "duration_days"))
+        return routed
+
+    return routed
 
 
 def compare_field_values(left: Any, right: Any) -> bool:
@@ -190,7 +320,17 @@ def compare_field_values(left: Any, right: Any) -> bool:
     if isinstance(left, list) or isinstance(right, list):
         left_list = normalize_study_type_list(left)
         right_list = normalize_study_type_list(right)
-        return sorted(item.lower() for item in left_list) == sorted(item.lower() for item in right_list)
+        left_set = {item.lower() for item in left_list}
+        right_set = {item.lower() for item in right_list}
+        if left_set == right_set:
+            return True
+        if not left_set and not right_set:
+            return True
+        # Multi-label study_type: partial extraction counts as agreement when one list
+        # is a subset of the other (LLM may include all applicable design labels).
+        if left_set and right_set and (left_set.issubset(right_set) or right_set.issubset(left_set)):
+            return True
+        return False
     if left in (None, "", []) and right in (None, "", []):
         return True
     return _clean_text(left) == _clean_text(right)
