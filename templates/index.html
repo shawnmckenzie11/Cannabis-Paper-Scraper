@@ -824,14 +824,17 @@
             position: sticky;
             top: 70px;
             z-index: 90;
-            height: 60px;
+            min-height: 60px;
+            height: auto;
             background: rgba(12, 16, 27, 0.95);
             border-bottom: 1px solid rgba(255, 255, 255, 0.08);
             backdrop-filter: blur(20px);
             display: flex;
             justify-content: space-between;
             align-items: center;
-            padding: 0 30px;
+            flex-wrap: wrap;
+            gap: 10px;
+            padding: 10px 30px;
             margin-bottom: 0;
         }
 
@@ -841,11 +844,12 @@
             color: var(--text-secondary);
             font-family: var(--font-display);
             font-weight: 600;
-            font-size: 15px;
+            font-size: 13px;
             cursor: pointer;
             padding-bottom: 6px;
             border-bottom: 2px solid transparent;
             transition: all 0.2s ease;
+            white-space: nowrap;
         }
 
         .tab-btn:hover {
@@ -1405,8 +1409,13 @@
 
     <!-- FULL PAGE WIDTH TABS -->
     <div class="tabs-container" id="global-tabs-container">
-        <div style="display: flex; gap: 15px; align-items: center;">
-            <button class="tab-btn active" id="tab-original" onclick="switchTab('original')">Original Articles</button>
+        <div style="display: flex; gap: 10px 15px; align-items: center; flex-wrap: wrap;">
+            <button class="tab-btn active" id="tab-preclinical" onclick="switchTab('preclinical')">Pre-Clinical Studies</button>
+            <button class="tab-btn" id="tab-clinical" onclick="switchTab('clinical')">Clinical Studies</button>
+            <button class="tab-btn" id="tab-tangential" onclick="switchTab('tangential')">Tangential</button>
+            <button class="tab-btn" id="tab-irrelevant" onclick="switchTab('irrelevant')">Irrelevant</button>
+            <button class="tab-btn" id="tab-not-cannabis" onclick="switchTab('not_cannabis')">Non-Cannabis Related</button>
+            <button class="tab-btn" id="tab-unclassified-preclinical" onclick="switchTab('unclassified_preclinical')">Unclassified Pre-Clinical</button>
             <button class="tab-btn" id="tab-review" onclick="switchTab('review')">Reviews &amp; Meta-Analyses</button>
             <button class="tab-btn" id="tab-recent" onclick="switchTab('recent')">Recents</button>
         </div>
@@ -2873,7 +2882,7 @@
         let harvestPollInterval = null;
         let currentPage = 1;
         const pageSize = 50;
-        let currentTab = 'original';
+        let currentTab = 'preclinical';
         let currentSortCol = "year";
         let currentSortDir = "desc";
 
@@ -2925,26 +2934,35 @@
         let chartCalibrationVariants = null;
         let chartCalibrationHlFields = null;
 
-        // Switch table views between Original, Review, and Recents
+        const TAB_BUTTON_IDS = {
+            preclinical: 'tab-preclinical',
+            clinical: 'tab-clinical',
+            tangential: 'tab-tangential',
+            irrelevant: 'tab-irrelevant',
+            not_cannabis: 'tab-not-cannabis',
+            unclassified_preclinical: 'tab-unclassified-preclinical',
+            review: 'tab-review',
+            recent: 'tab-recent'
+        };
+        const ANALYZE_SUBSET_TABS = new Set(['preclinical', 'clinical']);
+
+        // Switch table views between database tabs
         function switchTab(tab) {
             currentTab = tab;
             document.querySelectorAll(".tab-btn").forEach(btn => {
                 btn.classList.remove("active");
             });
+            const tabButtonId = TAB_BUTTON_IDS[tab];
+            if (tabButtonId) {
+                document.getElementById(tabButtonId).classList.add("active");
+            }
             const analyzeBtn = document.getElementById("btn-analyze-subset");
             const recentsSelect = document.getElementById("recents-timeframe");
-            if (tab === 'original') {
-                document.getElementById("tab-original").classList.add("active");
-                if (analyzeBtn) analyzeBtn.style.display = "inline-flex";
-                if (recentsSelect) recentsSelect.style.display = "none";
-            } else if (tab === 'review') {
-                document.getElementById("tab-review").classList.add("active");
-                if (analyzeBtn) analyzeBtn.style.display = "none";
-                if (recentsSelect) recentsSelect.style.display = "none";
-            } else if (tab === 'recent') {
-                document.getElementById("tab-recent").classList.add("active");
-                if (analyzeBtn) analyzeBtn.style.display = "none";
-                if (recentsSelect) recentsSelect.style.display = "inline-block";
+            if (analyzeBtn) {
+                analyzeBtn.style.display = ANALYZE_SUBSET_TABS.has(tab) ? "inline-flex" : "none";
+            }
+            if (recentsSelect) {
+                recentsSelect.style.display = tab === 'recent' ? "inline-block" : "none";
             }
             updateColumnVisibility();
             triggerSearch(true);
@@ -3307,11 +3325,13 @@
             });
 
             // Reset active tab state
-            currentTab = 'original';
+            currentTab = 'preclinical';
             document.querySelectorAll(".tab-btn").forEach(btn => {
                 btn.classList.remove("active");
             });
-            document.getElementById("tab-original").classList.add("active");
+            document.getElementById("tab-preclinical").classList.add("active");
+            const analyzeBtn = document.getElementById("btn-analyze-subset");
+            if (analyzeBtn) analyzeBtn.style.display = "inline-flex";
 
             // Reset sorting state
             currentSortCol = "year";

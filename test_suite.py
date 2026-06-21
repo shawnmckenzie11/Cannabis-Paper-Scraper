@@ -360,16 +360,37 @@ class TestDatabaseManager(unittest.TestCase):
         })
         self.assertEqual(len(results_cites_miss), 0)
 
+        # Test classification_level filter (Maude vs Claude vs native)
+        maude_paper = mock_paper.copy()
+        maude_paper["pmid"] = "444444"
+        maude_paper["doi"] = "10.1001/maude"
+        maude_paper["classifier_version"] = "maude-2.4.0"
+        maude_row_id = self.db.insert_paper(maude_paper)
+
+        llm_paper = mock_paper.copy()
+        llm_paper["pmid"] = "555555"
+        llm_paper["doi"] = "10.1001/llm"
+        llm_paper["classifier_version"] = "llm-reclassify-2.4.0"
+        llm_row_id = self.db.insert_paper(llm_paper)
+
+        maude_results = self.db.search_papers({"classification_level": "maude"})
+        self.assertEqual(len(maude_results), 1)
+        self.assertEqual(maude_results[0]["id"], maude_row_id)
+
+        claude_results = self.db.search_papers({"classification_level": "claude_abstract"})
+        self.assertEqual(len(claude_results), 1)
+        self.assertEqual(claude_results[0]["id"], llm_row_id)
+
         # Test recent filter
         results_recent = self.db.search_papers({
             "recent": True
         })
-        self.assertEqual(len(results_recent), 1)
+        self.assertEqual(len(results_recent), 3)
 
         count_recent = self.db.count_papers({
             "recent": True
         })
-        self.assertEqual(count_recent, 1)
+        self.assertEqual(count_recent, 3)
 
         # Test case studies & editorials search routing
         case_study_paper = mock_paper.copy()
@@ -386,10 +407,16 @@ class TestDatabaseManager(unittest.TestCase):
         editorial_paper["publication_type"] = "editorial"
         ed_row_id = self.db.insert_paper(editorial_paper)
 
-        # tab = "original" should exclude review, meta-analysis, case study, and editorial
-        original_tab_results = self.db.search_papers({"tab": "original"})
-        self.assertEqual(len(original_tab_results), 1) # Only mock_paper which is "RCT"
-        self.assertEqual(original_tab_results[0]["id"], row_id)
+        # tab routing: RCT papers land in Clinical Studies, not Pre-Clinical
+        clinical_tab_results = self.db.search_papers({"tab": "clinical"})
+        self.assertEqual(len(clinical_tab_results), 3)
+        clinical_ids = {p["id"] for p in clinical_tab_results}
+        self.assertIn(row_id, clinical_ids)
+        self.assertIn(maude_row_id, clinical_ids)
+        self.assertIn(llm_row_id, clinical_ids)
+
+        preclinical_tab_results = self.db.search_papers({"tab": "preclinical"})
+        self.assertEqual(len(preclinical_tab_results), 0)
 
         # tab = "review" should include case study and editorial
         review_tab_results = self.db.search_papers({"tab": "review"})
@@ -781,11 +808,11 @@ class TestDatabaseManager(unittest.TestCase):
         rev_id = self.db.insert_paper(paper_review)
         
         try:
-            # Query original articles tab
-            original_tab = self.db.search_papers({"tab": "original"})
-            original_pmids = {p["pmid"] for p in original_tab}
-            self.assertIn("900001", original_pmids)
-            self.assertNotIn("900002", original_pmids)
+            # Query clinical studies tab
+            clinical_tab = self.db.search_papers({"tab": "clinical"})
+            clinical_pmids = {p["pmid"] for p in clinical_tab}
+            self.assertIn("900001", clinical_pmids)
+            self.assertNotIn("900002", clinical_pmids)
             
             # Query review articles tab
             review_tab = self.db.search_papers({"tab": "review"})
@@ -805,6 +832,139 @@ class TestDatabaseManager(unittest.TestCase):
         finally:
             self.db.delete_paper(orig_id)
             self.db.delete_paper(rev_id)
+
+    def test_tab_routing(self):
+        """Database tabs are mutually exclusive except Recents; clinical/preclinical may overlap."""
+        papers = {
+            "clinical": {
+                "pmid": "tab001",
+                "doi": "10.1001/tab001",
+                "title": "Human RCT of CBD",
+                "authors": ["Author A"],
+                "journal": "Clinical Journal",
+                "year": 2026,
+                "abstract": "Randomized clinical trial in adults.",
+                "publication_type": "original research",
+                "study_type": ["Clinical (RCT)"],
+                "ingestion_status": "relevant",
+            },
+            "preclinical": {
+                "pmid": "tab002",
+                "doi": "10.1001/tab002",
+                "title": "Mouse model of THC",
+                "authors": ["Author B"],
+                "journal": "Preclinical Journal",
+                "year": 2026,
+                "abstract": "Animal model study in mice.",
+                "publication_type": "original research",
+                "study_type": ["Animal Models (Mouse)"],
+                "ingestion_status": "relevant",
+            },
+            "both": {
+                "pmid": "tab003",
+                "doi": "10.1001/tab003",
+                "title": "Clinical and in vitro follow-up",
+                "authors": ["Author C"],
+                "journal": "Mixed Journal",
+                "year": 2026,
+                "abstract": "Observational study with cell culture validation.",
+                "publication_type": "original research",
+                "study_type": ["Clinical (observational)", "Cell Culture (Cell Lines)"],
+                "ingestion_status": "relevant",
+            },
+            "unclassified": {
+                "pmid": "tab004",
+                "doi": "10.1001/tab004",
+                "title": "Cannabis survey methods paper",
+                "authors": ["Author D"],
+                "journal": "Methods Journal",
+                "year": 2026,
+                "abstract": "Original research without a resolved study design label.",
+                "publication_type": "original research",
+                "study_type": [],
+                "ingestion_status": "relevant",
+            },
+            "tangential": {
+                "pmid": "tab005",
+                "doi": "10.1001/tab005",
+                "title": "Cannabis policy review of legalization",
+                "authors": ["Author E"],
+                "journal": "Policy Journal",
+                "year": 2026,
+                "abstract": "Legal and policy analysis of cannabis regulation.",
+                "publication_type": "review",
+                "study_type": ["review"],
+                "ingestion_status": "tangential",
+            },
+            "irrelevant": {
+                "pmid": "tab006",
+                "doi": "10.1001/tab006",
+                "title": "Unrelated pharmacology note",
+                "authors": ["Author F"],
+                "journal": "General Journal",
+                "year": 2026,
+                "abstract": "Brief mention of cannabis in background only.",
+                "publication_type": "original research",
+                "study_type": ["Clinical (RCT)"],
+                "ingestion_status": "irrelevant",
+            },
+            "not_cannabis": {
+                "pmid": "tab007",
+                "doi": "10.1001/tab007",
+                "title": "GPR55 signaling without cannabinoids",
+                "authors": ["Author G"],
+                "journal": "Signal Journal",
+                "year": 2026,
+                "abstract": "LPI pathway without cannabinoid administration.",
+                "publication_type": None,
+                "study_type": [],
+                "ingestion_status": "not_cannabis_related",
+            },
+            "review": {
+                "pmid": "tab008",
+                "doi": "10.1001/tab008",
+                "title": "Systematic review of cannabinoids",
+                "authors": ["Author H"],
+                "journal": "Review Journal",
+                "year": 2026,
+                "abstract": "Structured literature synthesis.",
+                "publication_type": "systematic review",
+                "study_type": ["systematic review"],
+                "ingestion_status": "relevant",
+            },
+        }
+        inserted_ids = {}
+        try:
+            for key, payload in papers.items():
+                inserted_ids[key] = self.db.insert_paper(payload)
+
+            clinical_pmids = {p["pmid"] for p in self.db.search_papers({"tab": "clinical"})}
+            self.assertEqual(clinical_pmids, {"tab001", "tab003"})
+
+            preclinical_pmids = {p["pmid"] for p in self.db.search_papers({"tab": "preclinical"})}
+            self.assertEqual(preclinical_pmids, {"tab002", "tab003"})
+
+            unclassified_pmids = {p["pmid"] for p in self.db.search_papers({"tab": "unclassified_preclinical"})}
+            self.assertEqual(unclassified_pmids, {"tab004"})
+
+            tangential_pmids = {p["pmid"] for p in self.db.search_papers({"tab": "tangential"})}
+            self.assertEqual(tangential_pmids, {"tab005"})
+
+            irrelevant_pmids = {p["pmid"] for p in self.db.search_papers({"tab": "irrelevant"})}
+            self.assertEqual(irrelevant_pmids, {"tab006"})
+
+            not_cannabis_pmids = {p["pmid"] for p in self.db.search_papers({"tab": "not_cannabis"})}
+            self.assertEqual(not_cannabis_pmids, {"tab007"})
+
+            review_pmids = {p["pmid"] for p in self.db.search_papers({"tab": "review"})}
+            self.assertEqual(review_pmids, {"tab008"})
+
+            # Legacy alias still routes to preclinical
+            legacy_preclinical_pmids = {p["pmid"] for p in self.db.search_papers({"tab": "original"})}
+            self.assertEqual(legacy_preclinical_pmids, preclinical_pmids)
+        finally:
+            for paper_id in inserted_ids.values():
+                self.db.delete_paper(paper_id)
 
     def test_system_metadata(self):
         """Test system_metadata read/write operations."""
@@ -1228,12 +1388,19 @@ class TestExpertEditAndActiveLearning(unittest.TestCase):
         self.assertGreaterEqual(metrics["summary"]["expert_notes_count"], 1)
 
     def test_calibration_dashboard_metrics_api(self):
+        with self.client.session_transaction() as sess:
+            sess["logged_in"] = True
+            sess["email"] = "shawnmckenzie11.sm@gmail.com"
         response = self.client.get("/api/calibration/dashboard-metrics")
         self.assertEqual(response.status_code, 200)
         data = json.loads(response.data.decode("utf-8"))
         self.assertGreaterEqual(data["summary"]["total_papers"], 40)
         self.assertIn("maude_ab_epoch", data)
         self.assertIn("automation_readiness", data)
+
+    def test_calibration_dashboard_metrics_requires_admin(self):
+        response = self.client.get("/api/calibration/dashboard-metrics")
+        self.assertEqual(response.status_code, 401)
 
     def test_agent_queue_status_and_recent_feedback_apis(self):
         paper_id = self.db.insert_paper({

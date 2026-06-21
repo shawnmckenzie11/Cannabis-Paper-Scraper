@@ -18,6 +18,93 @@ except ImportError:
 DATABASE_FILE = os.getenv("DATABASE_PATH", "cannabis_papers.db")
 SCHEMA_FILE = "schema.sql"
 
+_SQL_ORIGINAL_RESEARCH = (
+    "("
+    "  papers.publication_type = 'original research'"
+    "  OR"
+    "  (papers.publication_type IS NULL AND ("
+    "    (json_valid(papers.study_type) AND json_type(papers.study_type) = 'array' AND NOT EXISTS ("
+    "        SELECT 1 FROM json_each(papers.study_type) WHERE json_each.value IN ('review', 'meta-analysis', 'case study', 'editorial')"
+    "    ))"
+    "    OR"
+    "    ((NOT json_valid(papers.study_type) OR json_type(papers.study_type) != 'array') AND (papers.study_type IS NULL OR papers.study_type NOT IN ('review', 'meta-analysis', 'case study', 'editorial')))"
+    "  ))"
+    ")"
+)
+
+_SQL_REVIEW_PUBLICATION = (
+    "("
+    "  (papers.publication_type IS NOT NULL AND papers.publication_type != 'original research')"
+    "  OR"
+    "  (papers.publication_type IS NULL AND ("
+    "    (json_valid(papers.study_type) AND json_type(papers.study_type) = 'array' AND EXISTS ("
+    "        SELECT 1 FROM json_each(papers.study_type) WHERE json_each.value IN ('review', 'meta-analysis', 'case study', 'editorial')"
+    "    ))"
+    "    OR"
+    "    (papers.study_type IN ('review', 'meta-analysis', 'case study', 'editorial'))"
+    "  ))"
+    ")"
+)
+
+_SQL_INGESTION_NOT_CANNABIS = (
+    "LOWER(COALESCE(papers.ingestion_status, '')) IN ('not_cannabis_related', 'not cannabis-related')"
+)
+
+_SQL_INGESTION_IRRELEVANT = "LOWER(COALESCE(papers.ingestion_status, '')) = 'irrelevant'"
+
+_SQL_INGESTION_TANGENTIAL = "LOWER(COALESCE(papers.ingestion_status, '')) = 'tangential'"
+
+_SQL_INGESTION_ROUTED = (
+    "("
+    f"  {_SQL_INGESTION_NOT_CANNABIS}"
+    "  OR "
+    f"  {_SQL_INGESTION_IRRELEVANT}"
+    "  OR "
+    f"  {_SQL_INGESTION_TANGENTIAL}"
+    ")"
+)
+
+_SQL_CLINICAL_STUDY = (
+    "("
+    "  LOWER(COALESCE(papers.study_type, '')) LIKE '%clinical%'"
+    "  OR LOWER(COALESCE(papers.study_type, '')) LIKE '%rct%'"
+    "  OR LOWER(COALESCE(papers.study_type, '')) LIKE '%prospective%'"
+    "  OR LOWER(COALESCE(papers.study_type, '')) LIKE '%retrospective%'"
+    "  OR LOWER(COALESCE(papers.study_type, '')) LIKE '%observational%'"
+    ")"
+)
+
+_SQL_PRECLINICAL_STUDY = (
+    "("
+    "  LOWER(COALESCE(papers.study_type, '')) LIKE '%animal%'"
+    "  OR LOWER(COALESCE(papers.study_type, '')) LIKE '%mouse%'"
+    "  OR LOWER(COALESCE(papers.study_type, '')) LIKE '%rat%'"
+    "  OR LOWER(COALESCE(papers.study_type, '')) LIKE '%rodent%'"
+    "  OR LOWER(COALESCE(papers.study_type, '')) LIKE '%in vivo%'"
+    "  OR LOWER(COALESCE(papers.study_type, '')) LIKE '%cell culture%'"
+    "  OR LOWER(COALESCE(papers.study_type, '')) LIKE '%vitro%'"
+    "  OR LOWER(COALESCE(papers.study_type, '')) LIKE '%organoid%'"
+    ")"
+)
+
+_TAB_SQL = {
+    "preclinical": (
+        f"({_SQL_ORIGINAL_RESEARCH} AND NOT {_SQL_INGESTION_ROUTED} AND {_SQL_PRECLINICAL_STUDY})"
+    ),
+    "clinical": (
+        f"({_SQL_ORIGINAL_RESEARCH} AND NOT {_SQL_INGESTION_ROUTED} AND {_SQL_CLINICAL_STUDY})"
+    ),
+    "unclassified_preclinical": (
+        f"({_SQL_ORIGINAL_RESEARCH} AND NOT {_SQL_INGESTION_ROUTED}"
+        f" AND NOT {_SQL_CLINICAL_STUDY} AND NOT {_SQL_PRECLINICAL_STUDY})"
+    ),
+    "tangential": f"({_SQL_INGESTION_TANGENTIAL})",
+    "irrelevant": f"({_SQL_INGESTION_IRRELEVANT})",
+    "not_cannabis": f"({_SQL_INGESTION_NOT_CANNABIS})",
+    "review": f"({_SQL_REVIEW_PUBLICATION} AND NOT {_SQL_INGESTION_ROUTED})",
+}
+
+
 class PostgresCursorWrapper:
     def __init__(self, cursor):
         self.cursor = cursor
@@ -1331,8 +1418,9 @@ class DatabaseManager:
             "cbd_mg_ml", "cbd_mg_g", "cbd_mg_kg", "thc_uM", "cbd_uM", "strain_reported", "strain_normalized", "duration_days",
             "inhaled_exposure_duration", "administration_frequency", "treatment_duration",
             "sample_size", "outcome_domain",
-            "open_access", "citation_count", "date_harvested", "publication_date", "cannabis_type", 
-            "summary", "publication_type", "expert_locked_fields", "classification_confidence", 
+            "open_access", "citation_count", "date_harvested", "publication_date", "cannabis_type",
+            "summary", "publication_type", "ingestion_status", "species",
+            "expert_locked_fields", "classification_confidence",
             "classification_timestamp", "classifier_version"
         ]
         
@@ -1662,36 +1750,13 @@ class DatabaseManager:
             where_clauses.append("papers.open_access = ?")
             params.append(val)
             
-        # Tab-based filtering
+        # Tab-based filtering (mutually exclusive except Recents; clinical/preclinical may overlap)
         tab = filters.get("tab")
         if tab == "original":
-            where_clauses.append(
-                "("
-                "  papers.publication_type = 'original research'"
-                "  OR"
-                "  (papers.publication_type IS NULL AND ("
-                "    (json_valid(papers.study_type) AND json_type(papers.study_type) = 'array' AND NOT EXISTS ("
-                "        SELECT 1 FROM json_each(papers.study_type) WHERE json_each.value IN ('review', 'meta-analysis', 'case study', 'editorial')"
-                "    ))"
-                "    OR"
-                "    ((NOT json_valid(papers.study_type) OR json_type(papers.study_type) != 'array') AND (papers.study_type IS NULL OR papers.study_type NOT IN ('review', 'meta-analysis', 'case study', 'editorial')))"
-                "  ))"
-                ")"
-            )
-        elif tab == "review":
-            where_clauses.append(
-                "("
-                "  (papers.publication_type IS NOT NULL AND papers.publication_type != 'original research')"
-                "  OR"
-                "  (papers.publication_type IS NULL AND ("
-                "    (json_valid(papers.study_type) AND json_type(papers.study_type) = 'array' AND EXISTS ("
-                "        SELECT 1 FROM json_each(papers.study_type) WHERE json_each.value IN ('review', 'meta-analysis', 'case study', 'editorial')"
-                "    ))"
-                "    OR"
-                "    (papers.study_type IN ('review', 'meta-analysis', 'case study', 'editorial'))"
-                "  ))"
-                ")"
-            )
+            tab = "preclinical"
+        tab_sql = _TAB_SQL.get(tab or "")
+        if tab_sql:
+            where_clauses.append(tab_sql)
         elif tab == "recent" or filters.get("recent"):
             recent_range = filters.get("recent_range")
             from datetime import datetime as dt, timedelta as td
@@ -1746,6 +1811,8 @@ class DatabaseManager:
                 where_clauses.append("(papers.expert_locked_fields IS NOT NULL AND papers.expert_locked_fields != '[]' AND papers.expert_locked_fields != '')")
             elif class_level == "optimal":
                 where_clauses.append("(papers.classifier_version LIKE 'llm-pdf-reclassify-%' OR (papers.expert_locked_fields IS NOT NULL AND papers.expert_locked_fields != '[]' AND papers.expert_locked_fields != ''))")
+            elif class_level == "maude":
+                where_clauses.append("papers.classifier_version LIKE 'maude-%'")
                     
         return where_clauses, params
 
