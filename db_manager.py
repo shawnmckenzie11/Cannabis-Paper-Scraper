@@ -98,9 +98,7 @@ _TAB_SQL = {
         f"({_SQL_ORIGINAL_RESEARCH} AND NOT {_SQL_INGESTION_ROUTED}"
         f" AND NOT {_SQL_CLINICAL_STUDY} AND NOT {_SQL_PRECLINICAL_STUDY})"
     ),
-    "tangential": f"({_SQL_INGESTION_TANGENTIAL})",
     "irrelevant": f"({_SQL_INGESTION_IRRELEVANT})",
-    "not_cannabis": f"({_SQL_INGESTION_NOT_CANNABIS})",
     "review": f"({_SQL_REVIEW_PUBLICATION} AND NOT {_SQL_INGESTION_ROUTED})",
 }
 
