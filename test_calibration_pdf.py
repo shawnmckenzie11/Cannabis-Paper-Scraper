@@ -11,6 +11,32 @@ class CalibrationPdfTests(unittest.TestCase):
     """PDF-backed Maude calibration classification."""
 
     @patch("reclassify_with_llm.download_and_extract_pdf_text")
+    def test_classify_maude_for_calibration_caches_on_fetch(self, mock_download):
+        """RL classification writes fetched PDF text to the local disk cache."""
+        import tempfile
+        from pathlib import Path
+
+        import paper_text_cache
+
+        mock_download.return_value = "Methods: oral gavage THC daily."
+        with tempfile.TemporaryDirectory() as tmp:
+            cache_dir = Path(tmp)
+            with patch("paper_text_cache.resolve_cache_dir", return_value=cache_dir):
+                with patch("calibration_pdf.maude_classifier.classify_paper") as mock_classify:
+                    mock_classify.return_value = {"study_type": ["Animal Models (Mouse)"]}
+                    calibration_pdf.classify_maude_for_calibration(
+                        "Title",
+                        "Abstract",
+                        full_text_link="https://example.com/paper.pdf",
+                        paper_id=4242,
+                        rules_version="2.6.0",
+                    )
+            entry = paper_text_cache.read_cached_entry(4242, cache_dir)
+            self.assertIsNotNone(entry)
+            assert entry is not None
+            self.assertIn("oral gavage", entry["text"])
+
+    @patch("reclassify_with_llm.download_and_extract_pdf_text")
     def test_classify_maude_for_calibration_uses_pdf(self, mock_download):
         """Maude receives extracted PDF text when a link is available."""
         mock_download.return_value = "Methods: oral gavage 10 mg/kg THC daily for 14 days."

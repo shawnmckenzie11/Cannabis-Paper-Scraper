@@ -37,6 +37,16 @@ class ContentTierTests(unittest.TestCase):
         self.assertNotIn("dose_mg", scope)
         self.assertNotIn("thc_mg_kg", scope)
 
+    def test_alignment_scope_excludes_strain_on_pdf_extracted(self):
+        """PDF extracted alignment scope drops optional strain fields."""
+        scope = content_tiers.alignment_fields_in_scope_for_tier(
+            "node2b",
+            content_tiers.CONTENT_TIER_PDF_EXTRACTED,
+        )
+        self.assertIn("exposure_method", scope)
+        self.assertNotIn("strain_reported", scope)
+        self.assertNotIn("strain_normalized", scope)
+
     def test_pdf_extracted_sql_clause(self):
         """PDF extracted tier SQL matches llm-pdf-reclassify prefix."""
         clause, params = content_tiers.content_tier_sql_clause(

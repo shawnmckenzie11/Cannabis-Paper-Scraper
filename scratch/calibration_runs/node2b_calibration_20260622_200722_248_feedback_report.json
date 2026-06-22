@@ -1,18 +1,18 @@
 {
   "batch_id": "node2b_calibration_20260622_200722_248",
   "target_subnode": "node2b",
-  "created_at": "2026-06-22T16:08:21.547882",
+  "created_at": "2026-06-22T18:35:22.080747",
   "disagreement_count": 10,
   "gap_summary": {
     "target_subnode": "node2b",
     "scored_paper_count": 10,
     "papers_with_disagreements": 10,
-    "batch_alignment_rate": 0.6238,
-    "batch_alignment_pct": 62.4,
-    "batch_maude_recall_rate": 0.0625,
-    "batch_maude_recall_pct": 6.2,
-    "batch_extraction_fill_rate": 0.0625,
-    "batch_extraction_fill_pct": 6.2,
+    "batch_alignment_rate": 0.6619,
+    "batch_alignment_pct": 66.2,
+    "batch_maude_recall_rate": 0.0543,
+    "batch_maude_recall_pct": 5.4,
+    "batch_extraction_fill_rate": 0.0543,
+    "batch_extraction_fill_pct": 5.4,
     "field_disagreement_stats": [
       {
         "field": "exposure_method",
@@ -22,12 +22,6 @@
       },
       {
         "field": "cannabis_type",
-        "compared_count": 10,
-        "disagree_count": 9,
-        "disagree_pct": 90.0
-      },
-      {
-        "field": "strain_reported",
         "compared_count": 10,
         "disagree_count": 9,
         "disagree_pct": 90.0
@@ -162,17 +156,17 @@
     "top_disagreement_fields": [
       "exposure_method",
       "cannabis_type",
-      "strain_reported",
       "duration_days",
       "administration_frequency",
       "cbd_mg_kg",
       "cbd_pct",
       "study_type",
       "outcome_domain",
-      "sample_size"
+      "sample_size",
+      "thc_mg_kg"
     ]
   },
-  "pattern_summary": "Top scoped disagreement fields on node2b: exposure_method, cannabis_type, strain_reported, duration_days, administration_frequency, cbd_mg_kg. Batch alignment 62.4% \u00b7 Maude recall 6.2%. exposure_method: 10/10 papers disagree (100.0%). cannabis_type: 9/10 papers disagree (90.0%). strain_reported: 9/10 papers disagree (90.0%). duration_days: 8/10 papers disagree (80.0%). administration_frequency: 7/10 papers disagree (70.0%). Examples: paper 11824: exposure_method, cannabis_type, cbd_mg_kg, duration_days; paper 11988: exposure_method, cannabis_type, strain_reported; paper 12689: exposure_method, cannabis_type, cbd_mg_kg, duration_days; paper 12697: exposure_method, cannabis_type, strain_reported; paper 13048: exposure_method, cannabis_type, duration_days, administration_frequency; paper 13089: exposure_method, cannabis_type, cbd_mg_kg, duration_days; paper 13570: exposure_method, cbd_mg_kg, dose_mg, duration_days; paper 13666: exposure_method, cannabis_type, thc_mg_kg, cbd_mg_kg",
+  "pattern_summary": "Top scoped disagreement fields on node2b: exposure_method, cannabis_type, duration_days, administration_frequency, cbd_mg_kg, cbd_pct. Batch alignment 66.2% \u00b7 Maude recall 5.4%. exposure_method: 10/10 papers disagree (100.0%). cannabis_type: 9/10 papers disagree (90.0%). duration_days: 8/10 papers disagree (80.0%). administration_frequency: 7/10 papers disagree (70.0%). cbd_mg_kg: 5/10 papers disagree (50.0%). Examples: paper 11824: exposure_method, cannabis_type, cbd_mg_kg, duration_days; paper 11988: exposure_method, cannabis_type; paper 12689: exposure_method, cannabis_type, cbd_mg_kg, duration_days; paper 12697: exposure_method, cannabis_type; paper 13048: exposure_method, cannabis_type, duration_days, administration_frequency; paper 13089: exposure_method, cannabis_type, cbd_mg_kg, duration_days; paper 13570: exposure_method, cbd_mg_kg, dose_mg, duration_days; paper 13666: exposure_method, cannabis_type, thc_mg_kg, cbd_mg_kg",
   "llm_call_metrics": null,
   "apply_result": {
     "applied_count": 0,
@@ -182,28 +176,28 @@
     "cues_applied": 0
   },
   "refresh_batch_path": null,
-  "staged_patch_path": "scratch/calibration_runs/staged_patches/node2b_20260622_160821.json",
-  "agent_handoff_prompt": "Implement minimal patches for node2b holdout disagreements on: exposure_method, cannabis_type, strain_reported, duration_days, administration_frequency. Edit extractor.py / maude_classifier.py / maude_cues.json and add test_patch_* regressions. Then bump calibration_build.py, deploy, and refresh the same batch with calibration_agent.py --refresh-maude-from-batch.",
+  "staged_patch_path": "scratch/calibration_runs/staged_patches/node2b_20260622_183522.json",
+  "agent_handoff_prompt": "Implement minimal patches for node2b holdout disagreements on: exposure_method, cannabis_type, duration_days, administration_frequency, cbd_mg_kg. Edit extractor.py / maude_classifier.py / maude_cues.json and add test_patch_* regressions. Then bump calibration_build.py, deploy, and refresh the same batch with calibration_agent.py --refresh-maude-from-batch.",
   "salvaged_response": false,
   "local_only": true,
   "feedback": {
-    "pattern_summary": "Top scoped disagreement fields on node2b: exposure_method, cannabis_type, strain_reported, duration_days, administration_frequency, cbd_mg_kg. Batch alignment 62.4% \u00b7 Maude recall 6.2%. exposure_method: 10/10 papers disagree (100.0%). cannabis_type: 9/10 papers disagree (90.0%). strain_reported: 9/10 papers disagree (90.0%). duration_days: 8/10 papers disagree (80.0%). administration_frequency: 7/10 papers disagree (70.0%). Examples: paper 11824: exposure_method, cannabis_type, cbd_mg_kg, duration_days; paper 11988: exposure_method, cannabis_type, strain_reported; paper 12689: exposure_method, cannabis_type, cbd_mg_kg, duration_days; paper 12697: exposure_method, cannabis_type, strain_reported; paper 13048: exposure_method, cannabis_type, duration_days, administration_frequency; paper 13089: exposure_method, cannabis_type, cbd_mg_kg, duration_days; paper 13570: exposure_method, cbd_mg_kg, dose_mg, duration_days; paper 13666: exposure_method, cannabis_type, thc_mg_kg, cbd_mg_kg",
+    "pattern_summary": "Top scoped disagreement fields on node2b: exposure_method, cannabis_type, duration_days, administration_frequency, cbd_mg_kg, cbd_pct. Batch alignment 66.2% \u00b7 Maude recall 5.4%. exposure_method: 10/10 papers disagree (100.0%). cannabis_type: 9/10 papers disagree (90.0%). duration_days: 8/10 papers disagree (80.0%). administration_frequency: 7/10 papers disagree (70.0%). cbd_mg_kg: 5/10 papers disagree (50.0%). Examples: paper 11824: exposure_method, cannabis_type, cbd_mg_kg, duration_days; paper 11988: exposure_method, cannabis_type; paper 12689: exposure_method, cannabis_type, cbd_mg_kg, duration_days; paper 12697: exposure_method, cannabis_type; paper 13048: exposure_method, cannabis_type, duration_days, administration_frequency; paper 13089: exposure_method, cannabis_type, cbd_mg_kg, duration_days; paper 13570: exposure_method, cbd_mg_kg, dose_mg, duration_days; paper 13666: exposure_method, cannabis_type, thc_mg_kg, cbd_mg_kg",
     "proposed_rules_changes": [],
     "proposed_cues": [],
     "maude_improvement_brief": {
-      "agent_handoff_prompt": "Implement minimal patches for node2b holdout disagreements on: exposure_method, cannabis_type, strain_reported, duration_days, administration_frequency. Edit extractor.py / maude_classifier.py / maude_cues.json and add test_patch_* regressions. Then bump calibration_build.py, deploy, and refresh the same batch with calibration_agent.py --refresh-maude-from-batch.",
+      "agent_handoff_prompt": "Implement minimal patches for node2b holdout disagreements on: exposure_method, cannabis_type, duration_days, administration_frequency, cbd_mg_kg. Edit extractor.py / maude_classifier.py / maude_cues.json and add test_patch_* regressions. Then bump calibration_build.py, deploy, and refresh the same batch with calibration_agent.py --refresh-maude-from-batch.",
       "priority_fields": [
         "exposure_method",
         "cannabis_type",
-        "strain_reported",
         "duration_days",
         "administration_frequency",
         "cbd_mg_kg",
         "cbd_pct",
-        "study_type"
+        "study_type",
+        "outcome_domain"
       ]
     },
-    "agent_handoff_prompt": "Implement minimal patches for node2b holdout disagreements on: exposure_method, cannabis_type, strain_reported, duration_days, administration_frequency. Edit extractor.py / maude_classifier.py / maude_cues.json and add test_patch_* regressions. Then bump calibration_build.py, deploy, and refresh the same batch with calibration_agent.py --refresh-maude-from-batch.",
+    "agent_handoff_prompt": "Implement minimal patches for node2b holdout disagreements on: exposure_method, cannabis_type, duration_days, administration_frequency, cbd_mg_kg. Edit extractor.py / maude_classifier.py / maude_cues.json and add test_patch_* regressions. Then bump calibration_build.py, deploy, and refresh the same batch with calibration_agent.py --refresh-maude-from-batch.",
     "_local_only": true
   }
 }

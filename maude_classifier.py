@@ -454,7 +454,20 @@ def resolve_study_type_for_routing(
         list(extractor.HUMAN_SUBJECT_KEYWORDS),
     )
     if extractor.is_plant_cultivation_study(routing_blob) and not has_human_subjects:
+        if re.search(
+            r'(?i)\b(?:hemp variety|hemp plants?|growing season|greenhouse|field trial|'
+            r'harvested|immature flowers?|flowering stage)\b',
+            routing_blob,
+        ):
+            return ["Animal Models (Other)"]
         return ["Cell Culture (Other In Vitro)"]
+    if extractor._extract_detected_substance_strain(routing_blob):
+        return ["Clinical (observational)"]
+    if re.search(
+        r"(?i)\b(?:substances detected|drug checking|toxicology screening|forensic toxicology|designer drug)\b",
+        routing_blob,
+    ) and has_human_subjects:
+        return ["Clinical (observational)"]
     if publication_type == "original research" and extractor.is_analytical_or_computational(full_blob):
         if extractor.is_plant_cultivation_study(routing_blob):
             return ["Cell Culture (Other In Vitro)"]
@@ -481,6 +494,19 @@ def resolve_study_type_for_routing(
             title,
             abstract,
         )
+        if extractor._is_ecb_measurement_clinical_treatment(
+            f"{title} {abstract} {methods_text}", study_type,
+        ):
+            if "Clinical (RCT)" not in study_type:
+                study_type.append("Clinical (RCT)")
+            if "Clinical (observational)" in study_type:
+                study_type.remove("Clinical (observational)")
+            if not any(item.startswith("Cell Culture (") for item in study_type):
+                if extractor.keyword_match(
+                    routing_blob,
+                    ["cell line", "cell lines", "biopsy", "biopsies", "immunohistochemistry"],
+                ):
+                    study_type.append("Cell Culture (Cell Lines)")
         branch_set = set(node2_branches)
         if "node2a_clinical" in branch_set and extractor.keyword_match(
             routing_blob, list(extractor.HUMAN_SUBJECT_KEYWORDS)
@@ -526,7 +552,37 @@ def resolve_study_type_for_routing(
         if re.search(r"\brats\b|\brat\b", blob, re.IGNORECASE):
             return ["Animal Models (Rat)"]
         return ["Animal Models (Other)"]
+    animal_blob = f"{title} {abstract} {methods_text}"
+    if "node2b_in_vivo" in branch_set and should_route_animal_before_review(title, animal_blob):
+        lowered = animal_blob.lower()
+        if re.search(r"\bzebrafish\b|\bdanio rerio\b", lowered, re.IGNORECASE):
+            return ["Animal Models (Other)"]
+        if re.search(r"\bmice\b|\bmouse\b|\bmurine\b", lowered, re.IGNORECASE):
+            return ["Animal Models (Mouse)"]
+        if re.search(r"\brats\b|\brat\b|\bwistar\b|\bsprague[- ]dawley\b", lowered, re.IGNORECASE):
+            return ["Animal Models (Rat)"]
+        return ["Animal Models (Other)"]
     human_blob = f"{title} {abstract} {methods_text}".lower()
+    invitro_blob = f"{title} {abstract} {methods_text}"
+    if not branch_set or "node2c_in_vitro" in branch_set:
+        if (
+            not has_human_subjects
+            and (
+                extractor.is_analytical_or_computational(invitro_blob)
+                or re.search(
+                    r"(?i)\b(?:molecular dynamics|in silico|gromacs|autodock|liposome|mof|"
+                    r"metal.?organic|e-cigarette|electronic cigarette|pyrolysis|in vitro|"
+                    r"cell culture|organoid|incubated with|drug delivery|transfection|"
+                    r"lipofectamine|primary cells|hepatocytes|microglial|neurons?)\b",
+                    invitro_blob,
+                )
+            )
+        ):
+            hits = extractor._collect_study_type_hits(invitro_blob.lower())
+            invitro_hits = [item for item in hits if item.startswith("Cell Culture")]
+            if invitro_hits:
+                return invitro_hits
+            return ["Cell Culture (Other In Vitro)"]
     if extractor.keyword_match(human_blob, list(extractor.HUMAN_SUBJECT_KEYWORDS)):
         return ["Clinical (observational)"]
     return ["Clinical (observational)"]
@@ -556,14 +612,44 @@ def should_run_sparse_fallback(
     return bool(full_text and full_text.strip())
 
 
+def _abstract_allows_downstream_extraction(title: str, abstract: str) -> bool:
+    """True when title/abstract alone carry enough signal for clinical downstream fields."""
+    blob = f"{title} {abstract or ''}"
+    if extractor._extract_detected_substance_strain(blob):
+        return True
+    if extractor._is_delta8_product_survey(blob):
+        return True
+    clinical_types = ["Clinical (observational)", "Clinical (prospective)", "Clinical (RCT)"]
+    if extractor._is_endocannabinoid_biomarker_study(blob, clinical_types):
+        return True
+    if re.search(
+        r"(?i)\b(?:cerebrospinal fluid|\bcsf\b).{0,80}(?:anandamide|endocannabinoid|2-ag)\s+levels?\b",
+        blob,
+    ):
+        return True
+    if extractor.keyword_match(
+        blob.lower(),
+        list(extractor.HUMAN_SUBJECT_KEYWORDS),
+    ) and re.search(
+        r"(?i)\b(?:cannabis use|marijuana use|used cannabis|cannabis users|participants|patients|volunteers)\b",
+        blob,
+    ):
+        return True
+    return False
+
+
 def should_extract_downstream_fields(
     full_text: Optional[str],
     abstract_only_extraction: Optional[bool],
+    title: str = "",
+    abstract: str = "",
 ) -> bool:
     """Returns whether Node 2+ extraction fields should be populated."""
     if abstract_only_extraction is not None:
         return not abstract_only_extraction
-    return bool(full_text and full_text.strip())
+    if full_text and full_text.strip():
+        return True
+    return _abstract_allows_downstream_extraction(title, abstract)
 
 
 def _has_cannabinoid_administration_cues(text: str) -> bool:
@@ -806,7 +892,9 @@ def classify_paper(
     publication_routing_text = routing_text
     if full_text:
         publication_routing_text = f"{title} {full_text[:15000]}"
-    extract_downstream = should_extract_downstream_fields(full_text, abstract_only_extraction)
+    extract_downstream = should_extract_downstream_fields(
+        full_text, abstract_only_extraction, title=title, abstract=abstract,
+    )
     run_sparse_fallback = should_run_sparse_fallback(full_text, enable_sparse_fallback)
 
     ingestion_status = infer_ingestion_status(title, abstract)

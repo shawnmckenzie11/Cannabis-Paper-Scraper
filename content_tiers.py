@@ -33,6 +33,14 @@ METHODS_HEAVY_FIELDS = frozenset({
     "thc_pct", "cbd_pct", "multiple_doses", "multiple_time_intervals",
 })
 
+# Optional fields tracked via recall sidecar, not RL alignment denominator.
+ALIGNMENT_EXCLUDED_FIELDS = frozenset({
+    "strain_reported",
+    "strain_normalized",
+})
+
+OPTIONAL_RECALL_FIELDS = frozenset(ALIGNMENT_EXCLUDED_FIELDS)
+
 
 def _has_text(value: Any) -> bool:
     """Returns True when a string field is non-empty."""
@@ -92,6 +100,19 @@ def fields_in_scope_for_tier(
     if tier in (CONTENT_TIER_PDF_EXTRACTED, CONTENT_TIER_PDF_LINK):
         return scope_fields
     return [field for field in scope_fields if field not in METHODS_HEAVY_FIELDS]
+
+
+def alignment_fields_in_scope_for_tier(
+    subnode: str,
+    tier: str,
+    llm_block: Optional[Dict[str, Any]] = None,
+) -> List[str]:
+    """Returns tier-scoped fields that gate RL alignment (excludes optional recall-only fields)."""
+    return [
+        field
+        for field in fields_in_scope_for_tier(subnode, tier, llm_block)
+        if field not in ALIGNMENT_EXCLUDED_FIELDS
+    ]
 
 
 def summarize_content_tiers(rows: Sequence[Dict[str, Any]]) -> Dict[str, int]:

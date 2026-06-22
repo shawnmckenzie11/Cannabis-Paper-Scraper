@@ -494,19 +494,17 @@ def score_paper_rl_metrics(
         "classifier_version": llm.get("classifier_version") or result.get("before_classifier_version"),
         "full_text_link": result.get("full_text_link"),
     })
-    scope_fields = content_tiers.fields_in_scope_for_tier(subnode, paper_tier, llm)
+    scope_fields = content_tiers.alignment_fields_in_scope_for_tier(subnode, paper_tier, llm)
     if not scope_fields:
         return None
 
-    scoped = result.get("scoped_disagreement")
-    if scoped is None:
-        scoped = subnode_field_scopes.compare_scoped_fields(
-            maude,
-            llm,
-            subnode,
-            classification_schema.compare_field_values,
-            scope_fields=scope_fields,
-        )
+    scoped = subnode_field_scopes.compare_scoped_fields(
+        maude,
+        llm,
+        subnode,
+        classification_schema.compare_field_values,
+        scope_fields=scope_fields,
+    )
 
     claude_populated_fields = [
         field for field in scope_fields if field_is_populated(llm.get(field))
@@ -518,6 +516,16 @@ def score_paper_rl_metrics(
         maude_recall_rate = round(maude_populated / len(claude_populated_fields), 4)
     else:
         maude_recall_rate = None
+
+    optional_recall: Dict[str, Optional[float]] = {}
+    for field in content_tiers.OPTIONAL_RECALL_FIELDS:
+        if not field_is_populated(llm.get(field)):
+            continue
+        optional_recall[field] = (
+            1.0
+            if classification_schema.compare_field_values(maude.get(field), llm.get(field))
+            else 0.0
+        )
 
     alignment_rate = scoped.get("agreement_rate")
     if alignment_rate is None and scoped.get("scoped_field_count"):
@@ -534,6 +542,8 @@ def score_paper_rl_metrics(
         ) if claude_populated_fields else 0,
         "fields_in_scope": len(scope_fields),
         "content_tier": paper_tier,
+        "optional_field_recall": optional_recall,
+        "alignment_disagree_fields": list((scoped.get("fields") or {}).keys()),
     }
 
 

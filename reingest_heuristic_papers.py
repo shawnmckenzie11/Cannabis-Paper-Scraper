@@ -11,7 +11,8 @@ from typing import Optional
 
 import classifier
 import maude_confidence
-from db_manager import DatabaseManager
+import paper_text_cache
+from db_manager import DatabaseManager, _SQL_ORIGINAL_RESEARCH
 
 logging.basicConfig(
     level=logging.INFO,
@@ -85,11 +86,39 @@ def serialize(field, val):
     return val
 
 
+def _reingest_where_clause(
+    *,
+    only_heuristic: bool = True,
+    maude_and_heuristic: bool = False,
+) -> str:
+    """Builds the SQL WHERE clause for Maude re-ingestion targets."""
+    not_llm = (
+        "(classifier_version NOT LIKE 'llm-reclassify-%' "
+        "AND classifier_version NOT LIKE 'llm-pdf-%' "
+        "AND classifier_version NOT LIKE 'llm-node%')"
+    )
+    if maude_and_heuristic:
+        classifier_filter = (
+            "(classifier_version LIKE 'maude-%' "
+            "OR classifier_version LIKE 'heuristic%')"
+        )
+    elif only_heuristic:
+        classifier_filter = "classifier_version = 'heuristic-1.0.0'"
+    else:
+        classifier_filter = (
+            "classifier_version IS NULL "
+            "OR classifier_version = 'heuristic-1.0.0' "
+            "OR classifier_version LIKE 'heuristic-reclassify%'"
+        )
+    return f"{classifier_filter} AND {_SQL_ORIGINAL_RESEARCH} AND {not_llm}"
+
+
 def reingest_heuristic_papers(
     dry_run: bool = False,
     batch_size: int = 25,
     limit: Optional[int] = None,
     only_heuristic: bool = True,
+    maude_and_heuristic: bool = False,
 ) -> dict:
     """Re-classify legacy heuristic papers with the current Maude pipeline.
 
@@ -98,6 +127,8 @@ def reingest_heuristic_papers(
         batch_size: Commit interval for database writes.
         limit: Optional maximum number of papers to process.
         only_heuristic: When True, target heuristic-1.0.0 papers only.
+        maude_and_heuristic: When True, target all maude-* and heuristic-* original
+            research papers that were not LLM-classified (overrides only_heuristic).
 
     Returns:
         Summary statistics for the run.
@@ -107,14 +138,10 @@ def reingest_heuristic_papers(
     conn.row_factory = sqlite3.Row
     cur = conn.cursor()
 
-    if only_heuristic:
-        where_clause = "classifier_version = 'heuristic-1.0.0'"
-    else:
-        where_clause = (
-            "classifier_version IS NULL "
-            "OR classifier_version = 'heuristic-1.0.0' "
-            "OR classifier_version LIKE 'heuristic-reclassify%'"
-        )
+    where_clause = _reingest_where_clause(
+        only_heuristic=only_heuristic,
+        maude_and_heuristic=maude_and_heuristic,
+    )
 
     limit_sql = f" LIMIT {int(limit)}" if limit else ""
     cur.execute(
@@ -154,10 +181,18 @@ def reingest_heuristic_papers(
         if not isinstance(locked, list):
             locked = []
 
+        resolved_text, _ = paper_text_cache.resolve_paper_text(
+            paper_id=paper["id"],
+            full_text_link=paper.get("full_text_link"),
+            pmid=paper.get("pmid"),
+            doi=paper.get("doi"),
+            memory_cache=pdf_cache,
+        )
         extracted = classifier.process_paper_metadata(
             paper.get("title") or "",
             paper.get("abstract") or "",
             run_llm=False,
+            full_text=resolved_text,
             full_text_link=paper.get("full_text_link"),
             pmid=paper.get("pmid"),
             doi=paper.get("doi"),
@@ -300,6 +335,14 @@ def main():
         help="Include NULL/heuristic-reclassify native papers, not only heuristic-1.0.0.",
     )
     parser.add_argument(
+        "--maude-and-heuristic",
+        action="store_true",
+        help=(
+            "Re-classify all maude-* and heuristic-* original research papers "
+            "that were not LLM-classified (excludes reviews)."
+        ),
+    )
+    parser.add_argument(
         "--refresh-maude-confidence",
         action="store_true",
         help="After re-ingestion, refresh classification_confidence on all maude-* papers.",
@@ -317,7 +360,8 @@ def main():
         dry_run=args.dry_run,
         batch_size=args.batch_size,
         limit=args.limit,
-        only_heuristic=not args.all_native,
+        only_heuristic=not args.all_native and not args.maude_and_heuristic,
+        maude_and_heuristic=args.maude_and_heuristic,
     )
     if args.refresh_maude_confidence or summary.get("papers_processed", 0) > 0:
         refresh_maude_confidence_scores(batch_size=args.batch_size)

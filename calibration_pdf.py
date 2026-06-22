@@ -216,19 +216,23 @@ def classify_maude_for_calibration(
     full_text: Optional[str] = None,
     pmid: Optional[str] = None,
     doi: Optional[str] = None,
+    paper_id: Optional[int] = None,
     rules_version: str,
     cache: Optional[MutableMapping[str, Optional[str]]] = None,
+    use_disk_cache: bool = True,
 ) -> Tuple[Dict[str, Any], bool]:
     """Runs Maude using PDF/article full text when available, else abstract-only."""
-    source = CLASSIFICATION_SOURCE_ABSTRACT
-    resolved_text = full_text
-    if resolved_text is None:
-        resolved_text, source = resolve_classification_full_text(
-            full_text_link=full_text_link,
-            pmid=pmid,
-            doi=doi,
-            cache=cache,
-        )
+    import paper_text_cache
+
+    resolved_text, source = paper_text_cache.resolve_paper_text(
+        paper_id=paper_id,
+        full_text=full_text,
+        full_text_link=full_text_link,
+        pmid=pmid,
+        doi=doi,
+        memory_cache=cache,
+        use_disk_cache=use_disk_cache,
+    )
 
     pdf_used = source == CLASSIFICATION_SOURCE_PDF
     maude_out = maude_classifier.classify_paper(

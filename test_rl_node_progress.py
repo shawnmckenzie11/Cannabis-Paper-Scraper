@@ -23,6 +23,30 @@ class RlNodeProgressTests(unittest.TestCase):
         self.assertEqual(progress["nodes"]["node0"]["status"], "passed")
         self.assertEqual(progress["nodes"]["node2b"]["status"], "pending")
 
+    def test_score_paper_ignores_strain_in_alignment(self):
+        """Strain disagreements do not reduce alignment when strain is excluded from gate."""
+        result = {
+            "content_tier": "pdf_extracted",
+            "llm": {
+                "study_type": ["Animal Models (Mouse)"],
+                "exposure_method": ["oral administration"],
+                "strain_reported": "Vendor cultivar X",
+                "duration_days": 14,
+            },
+            "maude": {
+                "study_type": ["Animal Models (Mouse)"],
+                "exposure_method": ["oral administration"],
+                "strain_reported": None,
+                "duration_days": 14,
+            },
+        }
+        scored = calibration_metrics.score_paper_rl_metrics(result, "node2b")
+        self.assertIsNotNone(scored)
+        assert scored is not None
+        self.assertNotIn("strain_reported", scored.get("alignment_disagree_fields") or [])
+        self.assertIn("strain_reported", (scored.get("optional_field_recall") or {}))
+        self.assertEqual(scored["optional_field_recall"]["strain_reported"], 0.0)
+
     def test_score_paper_maude_recall(self):
         """Maude recall counts Claude-populated fields Maude also populated."""
         result = {

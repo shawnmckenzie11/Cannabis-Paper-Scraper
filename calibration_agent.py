@@ -964,6 +964,7 @@ def refresh_maude_batch(source_path: Path, output_dir: Optional[Path] = None) ->
             full_text_link=full_text_link or None,
             pmid=paper_context.get("pmid") or record.get("pmid"),
             doi=paper_context.get("doi") or record.get("doi"),
+            paper_id=paper_id,
             rules_version=rules_version,
             cache=pdf_cache,
         )
@@ -1278,6 +1279,7 @@ def run_subnode_pdf_maude_ab(args: argparse.Namespace) -> Tuple[Path, Path]:
                 full_text_link=full_text_link or None,
                 pmid=candidate.get("pmid"),
                 doi=candidate.get("doi"),
+                paper_id=paper_id,
                 rules_version=rules_version,
                 cache=pdf_cache,
             )
@@ -1429,6 +1431,7 @@ def run_maude_ab_from_llm_pdf(args: argparse.Namespace) -> Tuple[Path, Path]:
             full_text_link=full_text_link or None,
             pmid=candidate.get("pmid"),
             doi=candidate.get("doi"),
+            paper_id=paper_id,
             rules_version=rules_version,
             cache=pdf_cache,
         )

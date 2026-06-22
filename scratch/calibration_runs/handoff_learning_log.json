@@ -1,5 +1,5 @@
 {
-  "updated_at": "2026-06-22T16:24:35.000000",
+  "updated_at": "2026-06-22T19:06:06.028036",
   "handoffs": [
     {
       "id": "node2b_20260622_151932",
@@ -466,8 +466,16 @@
     {
       "id": "node2c_20260622_201423",
       "source_subnode": "node2c",
-      "beneficiary_nodes": ["node2a", "node2b", "node2c"],
-      "beneficiary_node_ids": ["node2a_clinical", "node2b_in_vivo", "node2c_in_vitro"],
+      "beneficiary_nodes": [
+        "node2a",
+        "node2b",
+        "node2c"
+      ],
+      "beneficiary_node_ids": [
+        "node2a_clinical",
+        "node2b_in_vivo",
+        "node2c_in_vitro"
+      ],
       "summary_title": "Node2c offset-20 targeted pass (84.7% \u2192 85.9%) \u2014 strain + treatment_duration",
       "staged_patch_path": "scratch/calibration_runs/staged_patches/node2c_20260622_161539.json",
       "source_batch_id": "node2c_calibration_20260622_201423_837",
@@ -500,8 +508,16 @@
     {
       "id": "node2a_20260622_202129",
       "source_subnode": "node2a",
-      "beneficiary_nodes": ["node2a", "node2b", "node2c"],
-      "beneficiary_node_ids": ["node2a_clinical", "node2b_in_vivo", "node2c_in_vitro"],
+      "beneficiary_nodes": [
+        "node2a",
+        "node2b",
+        "node2c"
+      ],
+      "beneficiary_node_ids": [
+        "node2a_clinical",
+        "node2b_in_vivo",
+        "node2c_in_vitro"
+      ],
       "summary_title": "Node2a offset-20 RL cycle (66.2% \u2192 66.9%) \u2014 clinical routing + sample_size",
       "staged_patch_path": "scratch/calibration_runs/staged_patches/node2a_20260622_162233.json",
       "source_batch_id": "node2a_calibration_20260622_202129_219",
@@ -534,8 +550,16 @@
     {
       "id": "node2a_20260622_202548",
       "source_subnode": "node2a",
-      "beneficiary_nodes": ["node2a", "node2b", "node2c"],
-      "beneficiary_node_ids": ["node2a_clinical", "node2b_in_vivo", "node2c_in_vitro"],
+      "beneficiary_nodes": [
+        "node2a",
+        "node2b",
+        "node2c"
+      ],
+      "beneficiary_node_ids": [
+        "node2a_clinical",
+        "node2b_in_vivo",
+        "node2c_in_vitro"
+      ],
       "summary_title": "Node2a offset-30/40 RL cycles \u2014 study_type sync, exposure, sample_size",
       "staged_patch_path": "scratch/calibration_runs/staged_patches/node2a_20260622_162650.json",
       "source_batch_id": "node2a_calibration_20260622_202548_118",
@@ -548,7 +572,11 @@
         "post_maude_recall_pct": null,
         "offset30_post_pct": 66.9,
         "offset40_post_pct": 68.1,
-        "targeted_fields": ["exposure_method", "sample_size", "cannabis_type"],
+        "targeted_fields": [
+          "exposure_method",
+          "sample_size",
+          "cannabis_type"
+        ],
         "paper_count": 10,
         "offset": 30
       },
@@ -571,9 +599,17 @@
     {
       "id": "node2a_20260622_205900",
       "source_subnode": "node2a",
-      "beneficiary_nodes": ["node2a", "node2b", "node2c"],
-      "beneficiary_node_ids": ["node2a_clinical", "node2b_in_vivo", "node2c_in_vitro"],
-      "summary_title": "Node2a cycle 3 (offset 50) — outcome_domain, strain_reported, biomarker guards",
+      "beneficiary_nodes": [
+        "node2a",
+        "node2b",
+        "node2c"
+      ],
+      "beneficiary_node_ids": [
+        "node2a_clinical",
+        "node2b_in_vivo",
+        "node2c_in_vitro"
+      ],
+      "summary_title": "Node2a cycle 3 (offset 50) \u2014 outcome_domain, strain_reported, biomarker guards",
       "staged_patch_path": "scratch/calibration_runs/staged_patches/node2a_20260622_163847.json",
       "source_batch_id": "node2a_calibration_20260622_203808_631",
       "refresh_batch_id": "calibration_20260622_164145_775",
@@ -584,17 +620,25 @@
         "holdout_batch": "node2a_calibration_20260622_203356_002",
         "offset": 50,
         "paper_count": 1,
-        "targeted_fields": ["outcome_domain", "strain_reported", "cannabis_type"],
+        "targeted_fields": [
+          "outcome_domain",
+          "strain_reported",
+          "cannabis_type"
+        ],
         "field_disagrees_before_after": {
-          "outcome_domain": "6/10 → 4/10",
-          "strain_reported": "7/10 → 4/10",
-          "cannabis_type": "5/10 → 6/10",
-          "exposure_method": "3/10 → 3/10"
+          "outcome_domain": "6/10 \u2192 4/10",
+          "strain_reported": "7/10 \u2192 4/10",
+          "cannabis_type": "5/10 \u2192 6/10",
+          "exposure_method": "3/10 \u2192 3/10"
         }
       },
-      "files_changed": ["extractor.py", "calibration_build.py", "test_patch_node2a_205900.py"],
+      "files_changed": [
+        "extractor.py",
+        "calibration_build.py",
+        "test_patch_node2a_205900.py"
+      ],
       "learning_notes": [
-        "Title-based outcome hints: IBD→inflammation, drug-testing→addiction, delta-8 review→pain/anxiety/cognition.",
+        "Title-based outcome hints: IBD\u2192inflammation, drug-testing\u2192addiction, delta-8 review\u2192pain/anxiety/cognition.",
         "CSF/plasma endocannabinoid biomarker studies suppress bare THC strain and pure-cannabinoid cannabis_type.",
         "Forensic synthetic detection (AMB-FUBINACA) prioritized over unrelated cultivar reference panels.",
         "Offset-50 batch only 1 paper (51 total node2a pdf pool); offset-40 holdout used for primary metric."
@@ -604,9 +648,17 @@
     {
       "id": "node2a_20260622_210200",
       "source_subnode": "node2a",
-      "beneficiary_nodes": ["node2a", "node2b", "node2c"],
-      "beneficiary_node_ids": ["node2a_clinical", "node2b_in_vivo", "node2c_in_vitro"],
-      "summary_title": "Node2a cycle 4 targeted cannabis_type — biomarker PDF fixes",
+      "beneficiary_nodes": [
+        "node2a",
+        "node2b",
+        "node2c"
+      ],
+      "beneficiary_node_ids": [
+        "node2a_clinical",
+        "node2b_in_vivo",
+        "node2c_in_vitro"
+      ],
+      "summary_title": "Node2a cycle 4 targeted cannabis_type \u2014 biomarker PDF fixes",
       "staged_patch_path": null,
       "source_batch_id": "node2a_calibration_20260622_203356_002",
       "refresh_batch_id": "calibration_20260622_164341_448",
@@ -619,58 +671,491 @@
         "paper_count": 10,
         "targeted_field": "cannabis_type",
         "field_disagrees_before_after": {
-          "outcome_domain": "4/10 → 3/10",
-          "strain_reported": "4/10 → 3/10",
-          "cannabis_type": "6/10 → 4/10",
-          "exposure_method": "3/10 → 3/10"
+          "outcome_domain": "4/10 \u2192 3/10",
+          "strain_reported": "4/10 \u2192 3/10",
+          "cannabis_type": "6/10 \u2192 4/10",
+          "exposure_method": "3/10 \u2192 3/10"
         }
       },
-      "files_changed": ["extractor.py", "calibration_build.py", "test_patch_node2a_205900.py"],
+      "files_changed": [
+        "extractor.py",
+        "calibration_build.py",
+        "test_patch_node2a_205900.py"
+      ],
       "learning_notes": [
         "Offset-60 batch empty; cycle 4 ran targeted cannabis_type pass on offset-40 same holdout.",
         "Biomarker administered guard tightened to participant dosing context (not literature mentions in PDF).",
         "CSF cohorts reporting cannabis use map dried flower; forensic synthetics map CB receptor agonist.",
-        "Delta-8 review papers infer product types from review text. Offset-40 holdout 73.1% → 78.8%; 85% gate not met."
+        "Delta-8 review papers infer product types from review text. Offset-40 holdout 73.1% \u2192 78.8%; 85% gate not met."
       ],
       "applied_at": "2026-06-22T16:44:05.000000"
     },
     {
-      "id": "node2a_20260622_211700",
-      "source_subnode": "node2a",
-      "beneficiary_nodes": ["node2a", "node2b", "node2c"],
-      "beneficiary_node_ids": ["node2a_clinical", "node2b_in_vivo", "node2c_in_vitro"],
-      "summary_title": "Node2a cycle 5 — sample_size + administration_frequency (85% gate met)",
-      "staged_patch_path": "scratch/calibration_runs/staged_patches/node2a_20260622_164528.json",
-      "source_batch_id": "node2a_calibration_20260622_203356_002",
-      "refresh_batch_id": "calibration_20260622_165230_335",
-      "build_id": "20260622-node2a-211700-sample-freq-v1",
+      "id": "node2b_20260622_174023",
+      "source_subnode": "node2b",
+      "beneficiary_nodes": [
+        "node2a",
+        "node2b",
+        "node2c"
+      ],
+      "beneficiary_node_ids": [
+        "node2a_clinical",
+        "node2b_in_vivo",
+        "node2c_in_vitro"
+      ],
+      "summary_title": "Node2b cycle \u2014 review misroute fix + vendor strain + injection exposure",
+      "staged_patch_path": "scratch/calibration_runs/staged_patches/node2b_20260622_173352.json",
+      "source_batch_id": "node2b_calibration_20260622_200722_248",
+      "refresh_batch_id": "calibration_20260622_174023_605",
+      "dashboard_batch_id": "node2b_calibration_20260622_214115_800",
+      "build_id": "20260622-node2b-173700-strain-route-v1",
       "metrics": {
-        "baseline_alignment_pct": 78.8,
-        "post_alignment_pct": 85.0,
-        "baseline_maude_recall_pct": 90.8,
-        "post_maude_recall_pct": 91.1,
-        "holdout_batch": "node2a_calibration_20260622_203356_002",
-        "offset": 40,
+        "baseline_alignment_pct": 62.4,
+        "post_alignment_pct": 81.6,
+        "dashboard_alignment_pct": 74.1,
+        "baseline_maude_recall_pct": 6.2,
+        "post_maude_recall_pct": 91.3,
+        "holdout_batch": "node2b_calibration_20260622_200722_248",
         "paper_count": 10,
-        "targeted_fields": ["sample_size", "administration_frequency"],
+        "targeted_fields": [
+          "strain_reported",
+          "exposure_method",
+          "administration_frequency",
+          "duration_days"
+        ],
         "field_disagrees_before_after": {
-          "sample_size": "6/10 → 0/10",
-          "administration_frequency": "4/10 → 0/10",
-          "outcome_domain": "3/10 → 3/10",
-          "cannabis_type": "4/10 → 4/10",
-          "strain_reported": "3/10 → 3/10"
+          "exposure_method": "10/10 \u2192 4/10",
+          "cannabis_type": "9/10 \u2192 1/10",
+          "strain_reported": "9/10 \u2192 9/10",
+          "duration_days": "8/10 \u2192 4/10",
+          "administration_frequency": "7/10 \u2192 5/10"
         }
       },
-      "files_changed": ["extractor.py", "calibration_build.py", "test_patch_node2a_203356.py"],
-      "learning_notes": [
-        "Priority cohort extractors: completed-survey n=, final sample, in-total post-mortem counts, reported-on arm totals beat sign-ups/subgroup n=.",
-        "Split UC/CD participation sentences use first disease-group count; PDF fi-ligatures normalized before regex.",
-        "Administration_frequency rejects user-quote daily use, neuroleptic dosing, and background starting-dose prose without active cohort assignment.",
-        "In-session THC upload dosages (min apart between scan sessions) map to multiple doses per session regardless of observational routing label.",
-        "Offset-40 same holdout 78.8% → 85.0%; node2a 85% RL gate met. Track B (CONTENT_TIER=any) skipped."
+      "files_changed": [
+        "extractor.py",
+        "maude_classifier.py",
+        "calibration_build.py",
+        "test_patch_node2b_173700.py"
       ],
-      "applied_at": "2026-06-22T16:52:30.000000"
+      "learning_notes": [
+        "9/10 holdout papers were misrouted to review (empty Maude fields); stale batch inflated dashboard gap vs live classifier.",
+        "Full-PDF route_scan for Group C animal exposure; widened injection route guard window.",
+        "Pure cannabinoid in-vivo: vendor/catalog strain before animal labels; full_text upgrades bare CBD/THC.",
+        "Plant hemp variety \u2192 Animal Models (Other) routing; Green-Thunder cultivar from abstract.",
+        "Same holdout 62.4% dashboard \u2192 81.6% holdout refresh; offset-0 dashboard batch 74.1%. 95% gate not met."
+      ],
+      "applied_at": "2026-06-22T17:40:30.000000"
+    },
+    {
+      "id": "node2c_20260622_174353",
+      "source_subnode": "node2c",
+      "beneficiary_nodes": [
+        "node2a",
+        "node2b",
+        "node2c"
+      ],
+      "beneficiary_node_ids": [
+        "node2a_clinical",
+        "node2b_in_vivo",
+        "node2c_in_vitro"
+      ],
+      "summary_title": "Node2c cycle \u2014 invitro-only strain guard + treatment_duration ranges",
+      "staged_patch_path": null,
+      "source_batch_id": "node2c_calibration_20260622_201423_837",
+      "refresh_batch_id": "calibration_20260622_174353_306",
+      "dashboard_batch_id": "node2c_calibration_20260622_214445_975",
+      "build_id": "20260622-node2c-174300-invitro-strain-v1",
+      "metrics": {
+        "baseline_alignment_pct": 80.0,
+        "post_alignment_pct": 83.1,
+        "dashboard_alignment_pct": 81.5,
+        "baseline_maude_recall_pct": null,
+        "post_maude_recall_pct": null,
+        "holdout_batch": "node2c_calibration_20260622_201423_837",
+        "paper_count": 10,
+        "targeted_fields": [
+          "strain_reported",
+          "treatment_duration",
+          "exposure_method"
+        ],
+        "field_disagrees_before_after": {
+          "strain_reported": "9/10 \u2192 7/10",
+          "treatment_duration": "5/10 \u2192 4/10",
+          "exposure_method": "3/10 \u2192 4/10"
+        }
+      },
+      "files_changed": [
+        "extractor.py",
+        "calibration_build.py"
+      ],
+      "learning_notes": [
+        "Invitro-only papers return catalog/cell-line/donated compound strain; block BALB/c+THC stacking.",
+        "Treatment duration range low bound inherits high-unit minutes; organoid culture scoring boost.",
+        "Same holdout 82.3% \u2192 83.1%; dashboard 80.0% \u2192 81.5%. 95% gate not met."
+      ],
+      "applied_at": "2026-06-22T17:45:00.000000"
+    },
+    {
+      "id": "node2a_20260622_175019",
+      "source_subnode": "node2a",
+      "beneficiary_nodes": [
+        "node2a",
+        "node2b",
+        "node2c"
+      ],
+      "beneficiary_node_ids": [
+        "node2a_clinical",
+        "node2b_in_vivo",
+        "node2c_in_vitro"
+      ],
+      "summary_title": "Node2a cycle \u2014 biomarker guards, delta-8 survey, cultivar Erez/Avidekel",
+      "staged_patch_path": null,
+      "source_batch_id": "node2a_calibration_20260622_203356_002",
+      "refresh_batch_id": "calibration_20260622_175019_842",
+      "dashboard_batch_id": "node2a_calibration_20260622_215056_583",
+      "build_id": "20260622-node2a-174700-clinical-v1",
+      "metrics": {
+        "baseline_alignment_pct": 75.0,
+        "post_alignment_pct": 83.8,
+        "dashboard_alignment_pct": 76.2,
+        "holdout_batch": "node2a_calibration_20260622_203356_002",
+        "paper_count": 10,
+        "targeted_fields": [
+          "strain_reported",
+          "cannabis_type",
+          "exposure_method",
+          "sample_size"
+        ],
+        "field_disagrees_before_after": {
+          "cannabis_type": "5/10 \u2192 4/10",
+          "strain_reported": "5/10 \u2192 6/10",
+          "exposure_method": "4/10 \u2192 2/10",
+          "outcome_domain": "3/10 \u2192 2/10"
+        }
+      },
+      "files_changed": [
+        "extractor.py",
+        "classification_schema.py",
+        "calibration_build.py",
+        "test_patch_node2a_203356.py"
+      ],
+      "learning_notes": [
+        "Biomarker studies suppress AEA/THC strain stacking; CSF+cannabis use maps dried flower.",
+        "Delta-8 product surveys infer multi-label types with unknown exposure.",
+        "Erez/Avidekel var. Indica cultivar extraction; WIN55212 normalization.",
+        "Holdout 81.9% \u2192 83.8%; dashboard 75.0% \u2192 76.2% (offset-0 batch). 95% gate not met."
+      ],
+      "applied_at": "2026-06-22T17:51:00.000000"
+    },
+    {
+      "id": "node2b_20260622_175613",
+      "source_subnode": "node2b",
+      "beneficiary_nodes": [
+        "node2a",
+        "node2b",
+        "node2c"
+      ],
+      "beneficiary_node_ids": [
+        "node2a_clinical",
+        "node2b_in_vivo",
+        "node2c_in_vitro"
+      ],
+      "summary_title": "Node2b targeted strain pass \u2014 vendor-first catalog, NIDA/THC-1073 fixes",
+      "staged_patch_path": null,
+      "source_batch_id": "node2b_calibration_20260622_200722_248",
+      "refresh_batch_id": "calibration_20260622_175613_899",
+      "dashboard_batch_id": "node2b_calibration_20260622_215655_991",
+      "build_id": "20260622-node2b-175400-strain-vendor-v2",
+      "metrics": {
+        "baseline_alignment_pct": 74.1,
+        "post_alignment_pct": 83.0,
+        "dashboard_alignment_pct": 74.1,
+        "holdout_batch": "node2b_calibration_20260622_200722_248",
+        "paper_count": 10,
+        "targeted_field": "strain_reported",
+        "field_disagrees_before_after": {
+          "strain_reported": "7/10 \u2192 5/10",
+          "exposure_method": "5/10 \u2192 5/10"
+        }
+      },
+      "files_changed": [
+        "extractor.py",
+        "classification_schema.py",
+        "calibration_build.py"
+      ],
+      "learning_notes": [
+        "Vendor patterns prioritized over catalog regex; catalog matches require vendor marker in label.",
+        "NIDA Drug Supply Program full purity string; THC-1073G-1 catalog-id overlap in compare.",
+        "Holdout 81.6% \u2192 83.0%; strain 7/10 \u2192 5/10. Dashboard 74.1% unchanged on offset-0 batch."
+      ],
+      "applied_at": "2026-06-22T17:57:00.000000"
+    },
+    {
+      "id": "node2c_20260622_180334",
+      "source_subnode": "node2c",
+      "beneficiary_nodes": [
+        "node2a",
+        "node2b",
+        "node2c"
+      ],
+      "beneficiary_node_ids": [
+        "node2a_clinical",
+        "node2b_in_vivo",
+        "node2c_in_vitro"
+      ],
+      "summary_title": "Node2c cycle \u2014 analytical GC routing, ex-vivo/e-cig exposure, cell-line strain",
+      "staged_patch_path": "scratch/calibration_runs/staged_patches/node2c_20260622_175929.json",
+      "source_batch_id": "node2c_calibration_20260622_201423_837",
+      "refresh_batch_id": "calibration_20260622_180334_786",
+      "dashboard_batch_id": "node2c_calibration_20260622_220416_165",
+      "build_id": "20260622-node2c-180100-invitro-analytical-v1",
+      "metrics": {
+        "baseline_alignment_pct": 81.5,
+        "post_alignment_pct": 83.9,
+        "dashboard_alignment_pct": 81.5,
+        "holdout_batch": "node2c_calibration_20260622_201423_837",
+        "paper_count": 10,
+        "targeted_fields": [
+          "strain_reported",
+          "treatment_duration",
+          "exposure_method"
+        ],
+        "field_disagrees_before_after": {
+          "strain_reported": "6/10 \u2192 5/10",
+          "treatment_duration": "5/10 \u2192 4/10",
+          "exposure_method": "5/10 \u2192 4/10"
+        }
+      },
+      "files_changed": [
+        "extractor.py",
+        "classification_schema.py",
+        "calibration_build.py",
+        "test_patch_node2c_201423.py"
+      ],
+      "learning_notes": [
+        "Expanded analytical cues (GC, pyrolysis, DES extraction) fix empty study_type on 13088/13718.",
+        "Ex-vivo colon bath + e-cigarette pyrolysis exposure routing; duration range compare normalization.",
+        "HC69.5/Sigma cell-line strain before catalog; olivetol MOF formulation strain.",
+        "Holdout 81.5% \u2192 83.9%; dashboard offset-0 81.5% unchanged. 95% gate not met."
+      ],
+      "applied_at": "2026-06-22T18:05:00.000000"
+    },
+    {
+      "id": "node2a_20260622_181049",
+      "source_subnode": "node2a",
+      "beneficiary_nodes": [
+        "node2a",
+        "node2b",
+        "node2c"
+      ],
+      "beneficiary_node_ids": [
+        "node2a_clinical",
+        "node2b_in_vivo",
+        "node2c_in_vitro"
+      ],
+      "summary_title": "Node2a cycle \u2014 biomarker guards, delta-8/CSF abstract-only, CNR1/WIN55 strain",
+      "staged_patch_path": null,
+      "source_batch_id": "node2a_calibration_20260622_203356_002",
+      "refresh_batch_id": "calibration_20260622_181049_476",
+      "dashboard_batch_id": "node2a_calibration_20260622_215056_583",
+      "build_id": "20260622-node2a-181200-biomarker-clinical-v1",
+      "metrics": {
+        "baseline_alignment_pct": 83.8,
+        "post_alignment_pct": 85.6,
+        "dashboard_alignment_pct": 76.2,
+        "holdout_batch": "node2a_calibration_20260622_203356_002",
+        "paper_count": 10,
+        "targeted_fields": [
+          "cannabis_type",
+          "strain_reported",
+          "exposure_method"
+        ],
+        "field_disagrees_before_after": {
+          "strain_reported": "6/10 \u2192 4/10",
+          "cannabis_type": "4/10 \u2192 4/10",
+          "exposure_method": "2/10 \u2192 2/10"
+        }
+      },
+      "files_changed": [
+        "extractor.py",
+        "maude_classifier.py",
+        "classification_schema.py",
+        "calibration_build.py",
+        "test_patch_node2a_203356.py"
+      ],
+      "learning_notes": [
+        "Abstract-only downstream extraction for CSF biomarker and clinical observational papers (PDF 403 fix).",
+        "Delta-8 product survey + biomarker guards suppress AEA/THC/Lewis strain bleed; CNR1 \u2192 pure cannabinoid.",
+        "Forensic toxicology routes Clinical observational; WIN55 synthetic agonist normalization.",
+        "Holdout 83.8% \u2192 85.6%; dashboard offset-0 76.2% unchanged. User stopped loop; 95% gate not met."
+      ],
+      "applied_at": "2026-06-22T18:12:00.000000"
+    },
+    {
+      "id": "node2b_20260622_184515",
+      "source_subnode": "node2b",
+      "beneficiary_nodes": [
+        "node2a",
+        "node2b",
+        "node2c"
+      ],
+      "beneficiary_node_ids": [
+        "node2a_clinical",
+        "node2b_in_vivo",
+        "node2c_in_vitro"
+      ],
+      "summary_title": "Node2b cycle \u2014 Node7 exposure routing, animal study_type guards, oral/IP disambiguation",
+      "staged_patch_path": "scratch/calibration_runs/staged_patches/node2b_20260622_183522.json",
+      "source_batch_id": "node2b_calibration_20260622_200722_248",
+      "refresh_batch_id": "calibration_20260622_184515_018",
+      "build_id": "20260622-node2b-183800-node7-exposure-v1",
+      "metrics": {
+        "baseline_alignment_pct": 66.4,
+        "post_alignment_pct": 89.3,
+        "holdout_batch": "node2b_calibration_20260622_200722_248",
+        "paper_count": 10,
+        "targeted_fields": [
+          "exposure_method",
+          "duration_days",
+          "administration_frequency",
+          "cbd_mg_kg"
+        ],
+        "field_disagrees_before_after": {
+          "exposure_method": "10/10 \u2192 1/10",
+          "duration_days": "8/10 \u2192 3/10",
+          "administration_frequency": "7/10 \u2192 4/10",
+          "cannabis_type": "9/10 \u2192 0/10"
+        }
+      },
+      "files_changed": [
+        "extractor.py",
+        "maude_classifier.py",
+        "maude_cues.json",
+        "calibration_build.py",
+        "test_patch_node2b_200722.py"
+      ],
+      "learning_notes": [
+        "Review misroute on PDF dosing text fixed via should_route_animal_before_review on methods blob when node2b in mixed branches.",
+        "Node7 exposure: zebrafish waterborne\u2192oral; oral-diet beats failed i.p. narrative; IP guard allows cannabinoid-before-route; whole-body requires smoke context.",
+        "Route scan extended to 80k chars; lifespan guard narrowed so chronic CBD months (6\u2192180d) extracts on Cln1 mouse holdout.",
+        "Holdout node2b alignment 66.4%\u219289.3% (strain excluded); exposure_method 10/10\u21921/10; gate 95% not met."
+      ],
+      "applied_at": "2026-06-22T18:46:00.970942"
+    },
+    {
+      "id": "node2c_20260622_185303",
+      "source_subnode": "node2c",
+      "beneficiary_nodes": [
+        "node2a",
+        "node2b",
+        "node2c"
+      ],
+      "beneficiary_node_ids": [
+        "node2a_clinical",
+        "node2b_in_vivo",
+        "node2c_in_vitro"
+      ],
+      "summary_title": "Node2c cycle \u2014 Node7 in vitro exposure, duration, cbd_mg_ml, study_type fallbacks",
+      "staged_patch_path": "scratch/calibration_runs/staged_patches/node2c_20260622_184628.json",
+      "source_batch_id": "node2c_calibration_20260622_201423_837",
+      "refresh_batch_id": "calibration_20260622_185303_486",
+      "offset0_batch_id": "node2c_calibration_20260622_225323_455",
+      "build_id": "20260622-node2c-185100-node7-invitro-v1",
+      "metrics": {
+        "baseline_alignment_pct": 86.7,
+        "post_alignment_pct": 98.3,
+        "baseline_recall_pct": 79.5,
+        "post_recall_pct": 98.0,
+        "offset0_alignment_pct": 84.0,
+        "holdout_batch": "node2c_calibration_20260622_201423_837",
+        "paper_count": 10,
+        "targeted_fields": [
+          "treatment_duration",
+          "exposure_method",
+          "cbd_mg_ml",
+          "inhaled_exposure_duration"
+        ],
+        "field_disagrees_before_after": {
+          "treatment_duration": "5/9 \u2192 1/9",
+          "exposure_method": "3/10 \u2192 0/10",
+          "cbd_mg_ml": "3/10 \u2192 1/10",
+          "outcome_domain": "2/10 \u2192 0/10",
+          "inhaled_exposure_duration": "1/1 \u2192 0/1"
+        }
+      },
+      "files_changed": [
+        "extractor.py",
+        "maude_classifier.py",
+        "maude_cues.json",
+        "calibration_build.py",
+        "test_patch_node2c_201423.py"
+      ],
+      "learning_notes": [
+        "Removed bare ALI token (author-name false positives) and title-gated e-cig pyrolysis smoke routing.",
+        "In-vitro study_type fallbacks when node2 branches empty; plant-cultivation guard excludes analytical extraction papers.",
+        "Added extract_cbd_mg_ml, ex-vivo treatment_duration path, multi-blob duration merge, and invitro multiple_doses guard.",
+        "Holdout node2c alignment 86.7%\u219298.3% (strain excluded); offset-0 generalization 84.0% (non-gate).",
+        "Remaining holdout gaps: cbd_mg_ml (\u00b5M-derived LLM label) and extraction-kinetic treatment_duration on paper 13718."
+      ],
+      "applied_at": "2026-06-22T18:54:19.256708"
+    },
+    {
+      "id": "node2a_20260622_190525",
+      "source_subnode": "node2a",
+      "beneficiary_nodes": [
+        "node2a",
+        "node2b",
+        "node2c"
+      ],
+      "beneficiary_node_ids": [
+        "node2a_clinical",
+        "node2b_in_vivo",
+        "node2c_in_vitro"
+      ],
+      "summary_title": "Node2a cycle \u2014 clinical biomarker, delta-8 survey, review synthesis, CNR1 guards",
+      "staged_patch_path": "scratch/calibration_runs/staged_patches/node2a_20260622_185451.json",
+      "source_batch_id": "node2a_calibration_20260622_203356_002",
+      "refresh_batch_id": "calibration_20260622_190525_425",
+      "build_id": "20260622-node2a-203356-clinical-v1",
+      "metrics": {
+        "baseline_alignment_pct": 75.7,
+        "post_alignment_pct": 96.4,
+        "baseline_recall_pct": 90.8,
+        "post_recall_pct": 92.0,
+        "holdout_batch": "node2a_calibration_20260622_203356_002",
+        "paper_count": 10,
+        "targeted_fields": [
+          "outcome_domain",
+          "sample_size",
+          "cannabis_type",
+          "administration_frequency",
+          "exposure_method",
+          "duration_days"
+        ],
+        "field_disagrees_before_after": {
+          "outcome_domain": "6/10 \u2192 1/10",
+          "sample_size": "6/10 \u2192 1/10",
+          "cannabis_type": "5/10 \u2192 1/10",
+          "administration_frequency": "4/10 \u2192 0/10",
+          "duration_days": "3/10 \u2192 0/10",
+          "exposure_method": "3/10 \u2192 2/10",
+          "study_type": "3/10 \u2192 0/10",
+          "dose_mg": "2/10 \u2192 0/10"
+        }
+      },
+      "files_changed": [
+        "extractor.py",
+        "maude_classifier.py",
+        "calibration_build.py",
+        "test_patch_node2a_203356.py"
+      ],
+      "learning_notes": [
+        "Clinical node2a guards: CNR1/biomarker/delta-8 survey dose suppression, drug-checking six-month duration, review-synthesis WIN55 CB agonist routing.",
+        "infer_exposure full-text fallback for review synthesis + CNR1 unknown exposure; observational survey multiple_time_intervals suppress.",
+        "Holdout node2a alignment 75.7%\u219296.4% (strain excluded); gate cleared at 95%. Loop paused per user request.",
+        "Remaining gaps: review synthesis exposure on 27862; CSF biomarker paper 30797 (exposure/cannabis_type/outcome/sample_size)."
+      ],
+      "applied_at": "2026-06-22T19:06:06.028027"
     }
-  ],
-  "updated_at": "2026-06-22T16:52:30.000000"
+  ]
 }

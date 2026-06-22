@@ -75,6 +75,7 @@ def summarize_batch_gaps(
         if not _result_is_scorable(result):
             continue
         scored_count += 1
+        metrics = None
         if target_subnode:
             metrics = calibration_metrics.score_paper_rl_metrics(result, target_subnode)
             if metrics:
@@ -83,17 +84,37 @@ def summarize_batch_gaps(
                 if metrics.get("maude_recall_rate") is not None:
                     fill_rates.append(float(metrics["maude_recall_rate"]))
 
-        scoped = result.get("scoped_disagreement") or {}
-        disagree_fields = (scoped.get("fields") or {})
-        if disagree_fields:
-            papers_with_disagreements += 1
-        scope_fields = scoped.get("fields_in_scope") or subnode_field_scopes.fields_in_scope(
+        llm_block = result.get("llm") or {}
+        paper_tier = result.get("content_tier") or content_tiers.infer_content_tier({
+            **llm_block,
+            "classifier_version": llm_block.get("classifier_version") or result.get("before_classifier_version"),
+            "full_text_link": result.get("full_text_link"),
+        })
+        scope_fields = content_tiers.alignment_fields_in_scope_for_tier(
             target_subnode or "",
-            result.get("llm") or {},
+            paper_tier,
+            llm_block,
         )
+        if metrics:
+            disagree_field_names = set(metrics.get("alignment_disagree_fields") or [])
+        else:
+            scoped = result.get("scoped_disagreement") or {}
+            disagree_field_names = {
+                field
+                for field in (scoped.get("fields") or {})
+                if field not in content_tiers.ALIGNMENT_EXCLUDED_FIELDS
+            }
+        if disagree_field_names:
+            papers_with_disagreements += 1
+        if not scope_fields:
+            scoped = result.get("scoped_disagreement") or {}
+            scope_fields = scoped.get("fields_in_scope") or subnode_field_scopes.fields_in_scope(
+                target_subnode or "",
+                llm_block,
+            )
         for field in scope_fields:
             field_compared[field] += 1
-            if field in disagree_fields:
+            if field in disagree_field_names:
                 field_disagree[field] += 1
 
     field_stats: List[Dict[str, Any]] = []
@@ -151,7 +172,7 @@ def collect_disagreement_rows(
                 **llm,
                 "classifier_version": llm.get("classifier_version") or result.get("before_classifier_version"),
             })
-            scope_fields = content_tiers.fields_in_scope_for_tier(subnode, paper_tier, llm)
+            scope_fields = content_tiers.alignment_fields_in_scope_for_tier(subnode, paper_tier, llm)
             scoped = subnode_field_scopes.compare_scoped_fields(
                 maude,
                 llm,
@@ -160,6 +181,11 @@ def collect_disagreement_rows(
                 scope_fields=scope_fields,
             )
         disagreement_fields = (scoped or result.get("disagreement") or {}).get("fields") or {}
+        disagreement_fields = {
+            field: payload
+            for field, payload in disagreement_fields.items()
+            if field not in content_tiers.ALIGNMENT_EXCLUDED_FIELDS
+        }
         if not disagreement_fields:
             continue
 

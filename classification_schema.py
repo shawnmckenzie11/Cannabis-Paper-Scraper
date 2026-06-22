@@ -44,6 +44,34 @@ def _clean_text(value: Any) -> str:
     return str(value or "").strip().lower()
 
 
+def _normalize_duration_range(value: str) -> str:
+    """Normalizes duration ranges so unit placement variants compare equal."""
+    cleaned = value.strip()
+    shared_unit = re.match(
+        r'^([\d.]+)\s+(\w+)\s+to\s+([\d.]+)\s+(\w+)$',
+        cleaned,
+        re.I,
+    )
+    if shared_unit and shared_unit.group(2).lower() == shared_unit.group(4).lower():
+        return f"{shared_unit.group(1)} to {shared_unit.group(3)} {shared_unit.group(4).lower()}"
+    trailing_unit = re.match(
+        r'^([\d.]+)\s+to\s+([\d.]+)\s+(\w+)$',
+        cleaned,
+        re.I,
+    )
+    if trailing_unit:
+        return (
+            f"{trailing_unit.group(1)} to {trailing_unit.group(2)} "
+            f"{trailing_unit.group(3).lower()}"
+        )
+    return cleaned.lower()
+
+
+def _duration_values_equivalent(left: str, right: str) -> bool:
+    """True when two treatment_duration strings describe the same window."""
+    return _normalize_duration_range(left) == _normalize_duration_range(right)
+
+
 def granular_label_to_coarse_publication(granular: str) -> Optional[str]:
     """Maps legacy granular publication labels to coarse Node 1 types."""
     label = _clean_text(granular)
@@ -210,6 +238,14 @@ def _strain_labels_overlap(left: str, right: str) -> bool:
         return True
     if left_lower in right_lower or right_lower in left_lower:
         return True
+    if re.search(r"(?i)\bWIN\s*55[\s,]*212", left_lower) and re.search(r"(?i)\bWIN\s*55", right_lower):
+        return True
+    catalog_ids = re.findall(r"thc[- ]?\d[\w-]+", left_lower) + re.findall(r"thc[- ]?\d[\w-]+", right_lower)
+    if catalog_ids:
+        left_compact = re.sub(r"\s+", "", left_lower)
+        right_compact = re.sub(r"\s+", "", right_lower)
+        if any(re.sub(r"\s+", "", cid) in left_compact and re.sub(r"\s+", "", cid) in right_compact for cid in catalog_ids):
+            return True
     left_tokens = _strain_provenance_tokens(left)
     right_tokens = _strain_provenance_tokens(right)
     shared_vendors = left_tokens & right_tokens & _STRAIN_PROVENANCE_VENDORS
@@ -229,6 +265,8 @@ def compare_field_values(left: Any, right: Any) -> bool:
     """Returns True when two high-level field values are equivalent after normalization."""
     if isinstance(left, str) and isinstance(right, str):
         if _strain_labels_overlap(left, right):
+            return True
+        if _duration_values_equivalent(left, right):
             return True
     if isinstance(left, list) or isinstance(right, list):
         left_list = normalize_study_type_list(left)

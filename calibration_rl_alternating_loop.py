@@ -12,21 +12,24 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
 import calibration_feedback_agent as cfa
+import calibration_metrics
 import subnode_field_scopes
-from calibration_agent import calibration_field_equal, refresh_maude_batch
+from calibration_agent import refresh_maude_batch
 from calibration_rl_orchestrator import SUBNODE_TO_MODE
 
 DEFAULT_SEQUENCE = ["node2b", "node2c", "node2a"]
+DEFAULT_OFFSET0_EVERY_N_CYCLES = 3
+DEFAULT_GATE_MODE = "holdout_field_subset"
 TARGETED_FIELD_CANDIDATES = frozenset({
     "treatment_duration",
-    "strain_reported",
-    "strain_normalized",
     "duration_days",
     "sample_size",
     "administration_frequency",
     "inhaled_exposure_duration",
     "cannabis_type",
     "exposure_method",
+    "outcome_domain",
+    "dose_mg",
 })
 STATE_FILENAME = "rl_alternating_loop_state.json"
 
@@ -54,8 +57,13 @@ def load_loop_state(output_dir: Optional[Path] = None) -> Dict[str, Any]:
         "paper_offsets": {"node2a": 10, "node2b": 10, "node2c": 10},
         "papers_per_batch": 10,
         "target_alignment_pct": 85.0,
+        "gate_mode": DEFAULT_GATE_MODE,
+        "offset0_every_n_cycles": DEFAULT_OFFSET0_EVERY_N_CYCLES,
+        "primary_holdout_batches": {},
         "cycles_completed": 0,
         "latest_alignment_pct": {},
+        "latest_holdout_alignment_pct": {},
+        "latest_offset0_alignment_pct": {},
         "history": [],
         "updated_at": datetime.now().isoformat(),
     }
@@ -72,40 +80,47 @@ def save_loop_state(state: Dict[str, Any], output_dir: Optional[Path] = None) ->
 
 
 def compute_scoped_metrics(batch_payload: Dict[str, Any]) -> Dict[str, Any]:
-    """Computes scoped alignment/recall and field disagree counts for a batch."""
-    target = batch_payload.get("target_subnode") or batch_payload.get("automation_node")
-    fields = batch_payload.get("fields_in_scope") or subnode_field_scopes.fields_in_scope(target or "")
-    agree = total = 0
-    recall_agree = recall_total = 0
+    """Computes dashboard-aligned alignment/recall and field disagree counts for a batch."""
+    target = batch_payload.get("target_subnode") or batch_payload.get("automation_node") or ""
     field_disagrees: Dict[str, int] = {}
+    optional_recall_hits = 0
+    optional_recall_total = 0
+    align_rates: List[float] = []
+    recall_rates: List[float] = []
+    paper_count = 0
+
     for result in batch_payload.get("results") or []:
-        maude = result.get("maude") or {}
-        llm = result.get("llm") or {}
-        scoped = subnode_field_scopes.compare_scoped_fields(
-            maude, llm, target or "", calibration_field_equal,
-        )
-        disagree_fields = (scoped.get("fields") or {})
-        for field in fields:
-            total += 1
-            if field in disagree_fields:
-                field_disagrees[field] = field_disagrees.get(field, 0) + 1
-            else:
-                agree += 1
-            llm_val = llm.get(field)
-            if llm_val not in (None, "", [], {}):
-                recall_total += 1
-                if field not in disagree_fields:
-                    recall_agree += 1
-    alignment_pct = round(100 * agree / total, 1) if total else None
-    recall_pct = round(100 * recall_agree / recall_total, 1) if recall_total else None
+        scored = calibration_metrics.score_paper_rl_metrics(result, target)
+        if not scored:
+            continue
+        paper_count += 1
+        if scored.get("alignment_rate") is not None:
+            align_rates.append(float(scored["alignment_rate"]))
+        if scored.get("maude_recall_rate") is not None:
+            recall_rates.append(float(scored["maude_recall_rate"]))
+        for field in scored.get("alignment_disagree_fields") or []:
+            field_disagrees[field] = field_disagrees.get(field, 0) + 1
+        for field, hit in (scored.get("optional_field_recall") or {}).items():
+            optional_recall_total += 1
+            optional_recall_hits += int(hit)
+
     top_fields = sorted(field_disagrees.items(), key=lambda item: (-item[1], item[0]))
+    alignment_pct = round(100 * sum(align_rates) / len(align_rates), 1) if align_rates else None
+    recall_pct = round(100 * sum(recall_rates) / len(recall_rates), 1) if recall_rates else None
+    optional_recall_pct = (
+        round(100 * optional_recall_hits / optional_recall_total, 1)
+        if optional_recall_total
+        else None
+    )
     return {
         "alignment_pct": alignment_pct,
         "maude_recall_pct": recall_pct,
+        "optional_strain_recall_pct": optional_recall_pct,
         "field_disagrees": top_fields,
         "top_disagree_field": top_fields[0][0] if top_fields else None,
         "top_disagree_count": top_fields[0][1] if top_fields else 0,
-        "paper_count": len(batch_payload.get("results") or []),
+        "paper_count": paper_count,
+        "gate_mode": DEFAULT_GATE_MODE,
     }
 
 
@@ -137,15 +152,42 @@ def should_run_targeted_pass(
 
 def min_node_alignment(state: Dict[str, Any]) -> Optional[float]:
     """Returns the minimum latest alignment % across node2 sub-nodes."""
-    latest = state.get("latest_alignment_pct") or {}
+    latest = _gate_alignment_table(state)
     values = [latest[key] for key in ("node2a", "node2b", "node2c") if latest.get(key) is not None]
     return min(values) if values else None
+
+
+def _gate_alignment_table(state: Dict[str, Any]) -> Dict[str, float]:
+    """Returns the alignment table used for target_met checks."""
+    gate_mode = state.get("gate_mode") or DEFAULT_GATE_MODE
+    if gate_mode == "holdout_field_subset":
+        holdout = state.get("latest_holdout_alignment_pct") or {}
+        if holdout:
+            return {key: float(value) for key, value in holdout.items() if value is not None}
+    latest = state.get("latest_alignment_pct") or {}
+    return {key: float(value) for key, value in latest.items() if value is not None}
+
+
+def holdout_batch_id(state: Dict[str, Any], subnode: str) -> Optional[str]:
+    """Returns the fixed holdout batch id for a sub-node, if configured."""
+    holdouts = state.get("primary_holdout_batches") or {}
+    batch_id = holdouts.get(subnode)
+    return str(batch_id) if batch_id else None
+
+
+def should_run_offset0_batch(state: Dict[str, Any]) -> bool:
+    """True when a fresh offset-0 generalization batch should run this cycle."""
+    interval = int(state.get("offset0_every_n_cycles") or DEFAULT_OFFSET0_EVERY_N_CYCLES)
+    if interval <= 0:
+        return False
+    cycles = int(state.get("cycles_completed") or 0)
+    return cycles > 0 and cycles % interval == 0
 
 
 def target_met(state: Dict[str, Any]) -> bool:
     """True when all tracked sub-nodes meet the target alignment threshold."""
     target = float(state.get("target_alignment_pct") or 85.0)
-    latest = state.get("latest_alignment_pct") or {}
+    latest = _gate_alignment_table(state)
     for subnode in ("node2a", "node2b", "node2c"):
         value = latest.get(subnode)
         if value is None or value < target:
@@ -193,6 +235,8 @@ def record_cycle_result(
     post_metrics: Optional[Dict[str, Any]] = None,
     targeted_field: Optional[str] = None,
     build_id: Optional[str] = None,
+    dashboard_metrics: Optional[Dict[str, Any]] = None,
+    is_holdout_gate: bool = True,
 ) -> None:
     """Appends a cycle summary and updates latest alignment per sub-node."""
     entry = {
@@ -204,12 +248,21 @@ def record_cycle_result(
         "baseline_recall_pct": baseline_metrics.get("maude_recall_pct"),
         "post_alignment_pct": (post_metrics or {}).get("alignment_pct"),
         "post_recall_pct": (post_metrics or {}).get("maude_recall_pct"),
+        "optional_strain_recall_pct": (post_metrics or {}).get("optional_strain_recall_pct"),
         "targeted_field": targeted_field,
         "build_id": build_id,
+        "is_holdout_gate": is_holdout_gate,
     }
     state.setdefault("history", []).append(entry)
     if post_metrics and post_metrics.get("alignment_pct") is not None:
-        state.setdefault("latest_alignment_pct", {})[subnode] = post_metrics["alignment_pct"]
+        pct = post_metrics["alignment_pct"]
+        if is_holdout_gate:
+            state.setdefault("latest_holdout_alignment_pct", {})[subnode] = pct
+            state.setdefault("latest_alignment_pct", {})[subnode] = pct
+        else:
+            state.setdefault("latest_offset0_alignment_pct", {})[subnode] = pct
+    if dashboard_metrics and dashboard_metrics.get("alignment_pct") is not None:
+        state.setdefault("latest_offset0_alignment_pct", {})[subnode] = dashboard_metrics["alignment_pct"]
     state["cycles_completed"] = int(state.get("cycles_completed") or 0) + 1
 
 
@@ -309,11 +362,18 @@ def main() -> None:
     if args.command == "plan-next":
         state = load_loop_state(output_dir)
         subnode = next_subnode(state)
+        holdout = holdout_batch_id(state, subnode)
         print(json.dumps({
             "subnode": subnode,
             "offset": current_offset(state, subnode),
             "papers_per_batch": state.get("papers_per_batch"),
             "target_alignment_pct": state.get("target_alignment_pct"),
+            "gate_mode": state.get("gate_mode") or DEFAULT_GATE_MODE,
+            "holdout_batch_id": holdout,
+            "run_offset0_generalization": should_run_offset0_batch(state),
+            "offset0_every_n_cycles": state.get("offset0_every_n_cycles") or DEFAULT_OFFSET0_EVERY_N_CYCLES,
+            "latest_holdout_alignment_pct": state.get("latest_holdout_alignment_pct"),
+            "latest_offset0_alignment_pct": state.get("latest_offset0_alignment_pct"),
             "latest_alignment_pct": state.get("latest_alignment_pct"),
             "target_met": target_met(state),
         }, indent=2))

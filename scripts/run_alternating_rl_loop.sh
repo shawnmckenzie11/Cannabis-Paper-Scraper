@@ -1,15 +1,16 @@
 #!/usr/bin/env bash
-# Continuous alternating node2b→node2c→node2a RL cycles until 85% alignment.
-# Each cycle: Fly batch (10 fresh papers via OFFSET) → local feedback → implement patch
-# → deploy → same-holdout refresh → handoff log → optional targeted pass → next node.
+# Continuous alternating node2b→node2c→node2a RL cycles until holdout field-subset alignment gate.
+# Gate: fixed holdout batches (strain excluded from alignment). Offset-0 every 3 cycles for generalization.
 set -euo pipefail
 
 APP="${FLY_APP:-cannabis-paper-scraper}"
-TARGET_PCT="${TARGET_ALIGNMENT_PCT:-85}"
+TARGET_PCT="${TARGET_ALIGNMENT_PCT:-95}"
 MAX_CYCLES="${MAX_CYCLES:-999}"
+OFFSET0_EVERY="${OFFSET0_EVERY_N_CYCLES:-3}"
 
-echo "==> RL alternating loop (target ${TARGET_PCT}% per node, max ${MAX_CYCLES} cycles)"
+echo "==> RL alternating loop (holdout gate ${TARGET_PCT}%, offset-0 every ${OFFSET0_EVERY} cycles)"
 echo "    State: scratch/calibration_runs/rl_alternating_loop_state.json"
+echo "    Audit: python3 audit_tier_field_gaps.py"
 echo "    Plan next: python3 calibration_rl_alternating_loop.py plan-next"
 echo ""
 echo "This script is a pointer — run cycles via calibration-automation agent or:"

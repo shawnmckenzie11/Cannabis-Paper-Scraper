@@ -140,24 +140,24 @@
       "maude": {
         "ingestion_status": "relevant",
         "study_type": [
-          "Cell Culture (Other In Vitro)"
+          "Clinical (observational)"
         ],
         "exposure_method": [
           "unknown"
         ],
         "cannabis_type": [
-          "unknown"
+          "CB receptor agonist"
         ],
         "publication_type": "original research",
         "outcome_domain": [
-          "other"
+          "addiction"
         ],
         "thc_pct": null,
         "cbd_pct": null,
         "dose_mg": null,
-        "strain_reported": "Treasure Island",
-        "strain_normalized": "Chemotype III",
-        "duration_days": null,
+        "strain_reported": "AMB-FUBINACA",
+        "strain_normalized": null,
+        "duration_days": 182.0,
         "inhaled_exposure_duration": null,
         "administration_frequency": null,
         "treatment_duration": null,
@@ -172,14 +172,12 @@
         "thc_uM": null,
         "cbd_uM": null,
         "species": null,
-        "classification_confidence": 0.799,
+        "classification_confidence": 0.806,
         "classifier_version": "maude-2.6.0",
         "nodes_visited": [
           "node0_ingestion",
           "node1a_original",
-          "node2b_in_vivo",
-          "node2c_in_vitro",
-          "node2d_mixed"
+          "node2c_in_vitro"
         ]
       },
       "disagreement": {
@@ -429,24 +427,26 @@
           "Clinical (observational)"
         ],
         "exposure_method": [
-          "inhaled",
-          "oral"
+          "unknown"
         ],
         "cannabis_type": [
+          "concentrates",
           "pure cannabinoid"
         ],
         "publication_type": "original research",
         "outcome_domain": [
-          "other"
+          "pain",
+          "anxiety",
+          "cognition"
         ],
         "thc_pct": null,
         "cbd_pct": null,
         "dose_mg": null,
-        "strain_reported": "THC",
+        "strain_reported": null,
         "strain_normalized": null,
         "duration_days": null,
         "inhaled_exposure_duration": null,
-        "administration_frequency": "daily",
+        "administration_frequency": null,
         "treatment_duration": null,
         "sample_size": 521,
         "puff_count": null,
@@ -699,14 +699,15 @@
           "Clinical (observational)"
         ],
         "exposure_method": [
-          "unknown"
+          "inhaled"
         ],
         "cannabis_type": [
           "dried flower"
         ],
         "publication_type": "original research",
         "outcome_domain": [
-          "other"
+          "anxiety",
+          "cognition"
         ],
         "thc_pct": null,
         "cbd_pct": null,
@@ -717,7 +718,7 @@
         "inhaled_exposure_duration": null,
         "administration_frequency": null,
         "treatment_duration": null,
-        "sample_size": 654,
+        "sample_size": 321,
         "puff_count": null,
         "thc_mg_ml": null,
         "thc_mg_g": null,
@@ -976,7 +977,7 @@
         "inhaled_exposure_duration": null,
         "administration_frequency": null,
         "treatment_duration": null,
-        "sample_size": 36,
+        "sample_size": 41,
         "puff_count": null,
         "thc_mg_ml": null,
         "thc_mg_g": null,
@@ -1195,34 +1196,38 @@
       "maude": {
         "ingestion_status": "relevant",
         "study_type": [
-          "Clinical (observational)"
+          "Clinical (RCT)",
+          "Cell Culture (Cell Lines)"
         ],
         "exposure_method": [
-          "inhaled"
+          "inhaled",
+          "oral",
+          "cannabinoids dissolved in media"
         ],
         "cannabis_type": [
+          "dried flower",
           "pure cannabinoid",
           "concentrates"
         ],
         "publication_type": "original research",
         "outcome_domain": [
-          "other"
+          "inflammation"
         ],
-        "thc_pct": null,
+        "thc_pct": 23.0,
         "cbd_pct": null,
-        "dose_mg": null,
+        "dose_mg": 11.5,
         "strain_reported": "AEA, THC",
         "strain_normalized": null,
-        "duration_days": null,
+        "duration_days": 56.0,
         "inhaled_exposure_duration": null,
-        "administration_frequency": "twice daily",
-        "treatment_duration": null,
-        "sample_size": 30,
+        "administration_frequency": null,
+        "treatment_duration": "48 hours",
+        "sample_size": 19,
         "puff_count": null,
         "thc_mg_ml": null,
         "thc_mg_g": null,
         "thc_mg_kg": null,
-        "cbd_mg_ml": null,
+        "cbd_mg_ml": 8.0,
         "cbd_mg_g": null,
         "cbd_mg_kg": null,
         "thc_uM": null,
@@ -1510,10 +1515,12 @@
           "unknown"
         ],
         "cannabis_type": [
-          "unknown"
+          "pure cannabinoid"
         ],
         "publication_type": "original research",
         "outcome_domain": [
+          "cognition",
+          "neuroprotection",
           "addiction"
         ],
         "thc_pct": null,
@@ -1523,9 +1530,9 @@
         "strain_normalized": null,
         "duration_days": null,
         "inhaled_exposure_duration": null,
-        "administration_frequency": "daily",
+        "administration_frequency": null,
         "treatment_duration": null,
-        "sample_size": 175,
+        "sample_size": 703,
         "puff_count": null,
         "thc_mg_ml": null,
         "thc_mg_g": null,
@@ -1765,17 +1772,16 @@
           "unknown"
         ],
         "cannabis_type": [
-          "pure cannabinoid"
+          "unknown"
         ],
         "publication_type": "original research",
         "outcome_domain": [
-          "anxiety",
-          "cognition"
+          "other"
         ],
         "thc_pct": null,
         "cbd_pct": null,
         "dose_mg": null,
-        "strain_reported": "THC",
+        "strain_reported": "AEA, \u03949-THC",
         "strain_normalized": null,
         "duration_days": null,
         "inhaled_exposure_duration": null,
@@ -2025,22 +2031,23 @@
         "study_type": [
           "Clinical (observational)",
           "Animal Models (Mouse)",
-          "Cell Culture (Other In Vitro)"
+          "Cell Culture (Primary Cells)"
         ],
         "exposure_method": [
           "unknown"
         ],
         "cannabis_type": [
-          "unknown"
+          "CB receptor agonist"
         ],
         "publication_type": "original research",
         "outcome_domain": [
+          "neuroprotection",
           "other"
         ],
         "thc_pct": null,
         "cbd_pct": null,
         "dose_mg": null,
-        "strain_reported": "WIN55; THC",
+        "strain_reported": null,
         "strain_normalized": null,
         "duration_days": null,
         "inhaled_exposure_duration": null,
@@ -2304,26 +2311,20 @@
         "study_type": [
           "Clinical (observational)"
         ],
-        "exposure_method": [
-          "inhaled"
-        ],
-        "cannabis_type": [
-          "pure cannabinoid"
-        ],
+        "exposure_method": [],
+        "cannabis_type": [],
         "publication_type": "original research",
-        "outcome_domain": [
-          "addiction"
-        ],
+        "outcome_domain": [],
         "thc_pct": null,
         "cbd_pct": null,
         "dose_mg": null,
-        "strain_reported": "THC",
+        "strain_reported": null,
         "strain_normalized": null,
         "duration_days": null,
         "inhaled_exposure_duration": null,
         "administration_frequency": null,
         "treatment_duration": null,
-        "sample_size": 10,
+        "sample_size": null,
         "puff_count": null,
         "thc_mg_ml": null,
         "thc_mg_g": null,
@@ -2572,19 +2573,19 @@
         ],
         "publication_type": "original research",
         "outcome_domain": [
-          "anxiety",
-          "addiction"
+          "addiction",
+          "anxiety"
         ],
         "thc_pct": null,
         "cbd_pct": null,
-        "dose_mg": null,
+        "dose_mg": 6.0,
         "strain_reported": "THC",
         "strain_normalized": null,
-        "duration_days": 7.0,
-        "inhaled_exposure_duration": null,
-        "administration_frequency": null,
+        "duration_days": null,
+        "inhaled_exposure_duration": "2-3 minutes",
+        "administration_frequency": "multiple doses per session",
         "treatment_duration": null,
-        "sample_size": 30,
+        "sample_size": 21,
         "puff_count": null,
         "thc_mg_ml": null,
         "thc_mg_g": null,
@@ -2768,5 +2769,8 @@
       "node7_path": "node2a",
       "flagged_for_review": true
     }
-  ]
+  ],
+  "refreshed_at": "2026-06-22T19:05:59.328824",
+  "refresh_batch_id": "calibration_20260622_190525_425",
+  "maude_classifier_build_id": "20260622-node2a-203356-clinical-v1"
 }

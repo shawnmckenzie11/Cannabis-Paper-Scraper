@@ -163,3 +163,6 @@ Thumbs.db
 *.db-shm
 *.db-wal
 cert.pem
+
+# Local paper PDF/full-text cache (not for git)
+scratch/paper_cache/

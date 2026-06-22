@@ -65,10 +65,11 @@ def schedule_maude_reingest(
     timezone_name: str = DEFAULT_TIMEZONE,
     batch_size: int = 25,
     refresh_maude_confidence: bool = True,
+    maude_and_heuristic: bool = False,
     job_id: Optional[str] = None,
     db: Optional[DatabaseManager] = None,
 ) -> Dict[str, Any]:
-    """Registers a one-shot Maude re-ingest job for heuristic-1.0.0 papers."""
+    """Registers a one-shot Maude re-ingest job for heuristic/maude papers."""
     db = db or DatabaseManager()
     run_at = parse_local_run_at(at_time, run_date=run_date, timezone_name=timezone_name)
     if run_at <= datetime.now(tz=run_at.tzinfo):
@@ -93,6 +94,7 @@ def schedule_maude_reingest(
         "payload": {
             "batch_size": batch_size,
             "refresh_maude_confidence": refresh_maude_confidence,
+            "maude_and_heuristic": maude_and_heuristic,
         },
     }
     jobs.append(record)
@@ -120,16 +122,34 @@ def _execute_maude_reingest(payload: Dict[str, Any]) -> Dict[str, Any]:
     import reingest_heuristic_papers
 
     batch_size = int(payload.get("batch_size") or 25)
+    maude_and_heuristic = bool(payload.get("maude_and_heuristic"))
     summary = reingest_heuristic_papers.reingest_heuristic_papers(
         dry_run=False,
         batch_size=batch_size,
-        only_heuristic=True,
+        only_heuristic=not maude_and_heuristic,
+        maude_and_heuristic=maude_and_heuristic,
     )
     if payload.get("refresh_maude_confidence") or summary.get("papers_processed", 0) > 0:
         summary["confidence_refresh"] = reingest_heuristic_papers.refresh_maude_confidence_scores(
             batch_size=batch_size
         )
     return summary
+
+
+def run_maude_reingest_now(
+    batch_size: int = 50,
+    refresh_maude_confidence: bool = True,
+    maude_and_heuristic: bool = True,
+    db: Optional[DatabaseManager] = None,
+) -> Dict[str, Any]:
+    """Immediately runs the Maude re-ingest job (does not require a scheduled record)."""
+    payload = {
+        "batch_size": batch_size,
+        "refresh_maude_confidence": refresh_maude_confidence,
+        "maude_and_heuristic": maude_and_heuristic,
+    }
+    logger.info("Starting immediate Maude re-ingest: %s", payload)
+    return _execute_maude_reingest(payload)
 
 
 def run_due_jobs(db: Optional[DatabaseManager] = None) -> List[Dict[str, Any]]:
@@ -203,6 +223,27 @@ def main() -> None:
     )
     schedule_parser.add_argument("--batch-size", type=int, default=25)
     schedule_parser.add_argument(
+        "--maude-and-heuristic",
+        action="store_true",
+        help="Target all maude-* and heuristic-* original research (not LLM-classified).",
+    )
+    schedule_parser.add_argument(
+        "--no-confidence-refresh",
+        action="store_true",
+        help="Skip post-run maude-* confidence refresh.",
+    )
+
+    run_now_parser = sub.add_parser(
+        "run-maude-reingest-now",
+        help="Run Maude re-ingest immediately (maude-* + heuristic-* original research).",
+    )
+    run_now_parser.add_argument("--batch-size", type=int, default=50)
+    run_now_parser.add_argument(
+        "--heuristic-only",
+        action="store_true",
+        help="Only re-classify heuristic-1.0.0 papers (legacy scheduled scope).",
+    )
+    run_now_parser.add_argument(
         "--no-confidence-refresh",
         action="store_true",
         help="Skip post-run maude-* confidence refresh.",
@@ -222,6 +263,15 @@ def main() -> None:
             refresh_maude_confidence=not args.no_confidence_refresh,
         )
         print(json.dumps(record, indent=2))
+        return
+
+    if args.command == "run-maude-reingest-now":
+        result = run_maude_reingest_now(
+            batch_size=args.batch_size,
+            refresh_maude_confidence=not args.no_confidence_refresh,
+            maude_and_heuristic=not args.heuristic_only,
+        )
+        print(json.dumps(result, indent=2))
         return
 
     if args.command == "list":

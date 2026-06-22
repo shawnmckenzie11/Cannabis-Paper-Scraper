@@ -5,6 +5,21 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.6.0] - 2026-06-22
+
+### Added
+- **Maude 2.6.0 bulk reclassification** of all original-research papers tagged `maude-*` or `heuristic-*` that were not LLM-classified (~15,000 papers on production).
+- `reingest_heuristic_papers.py --maude-and-heuristic` and `scheduled_jobs.py run-maude-reingest-now` for immediate or scheduled full-corpus Maude refresh.
+- `paper_text_cache.py` lazy disk cache for PDF/full-text resolution during batch re-ingest (persists on Fly `/data`).
+- Tier-scoped RL alignment gates (`content_tiers.alignment_fields_in_scope_for_tier`) and `audit_tier_field_gaps.py` for field-subset holdout scoring.
+- Node 2a/2b/2c RL handoffs through build `20260622-node2a-203356-clinical-v1` (node2a 96.4%, node2c 98.3% holdout alignment; strain excluded from gate).
+
+### Changed
+- Expanded `extractor.py` and `maude_classifier.py` with RL-tuned extraction for clinical, in vivo, and in vitro tiers (cannabis type, exposure, strain, dose mg/kg, duration, frequency).
+- Re-ingest stamps papers with tiered versions: `maude-pdf-2.6.0`, `maude-fulltext-2.6.0`, or `maude-2.6.0` (replacing legacy `maude-reclassify-*` and `heuristic-reclassify-*` labels).
+- Post-run `classification_confidence` refresh on all `maude-*` papers from node alignment percentages.
+- RL alternating loop uses holdout field-subset gate mode and optional offset-0 generalization every 3 cycles.
+
 ## [1.2.2] - 2026-06-13
 
 ### Fixed

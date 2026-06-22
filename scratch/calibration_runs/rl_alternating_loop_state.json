@@ -6,161 +6,118 @@
   ],
   "next_index": 0,
   "paper_offsets": {
-    "node2a": 51,
-    "node2b": 30,
-    "node2c": 30
+    "node2a": 0,
+    "node2b": 0,
+    "node2c": 0
   },
   "papers_per_batch": 10,
-  "target_alignment_pct": 85.0,
-  "cycles_completed": 11,
+  "target_alignment_pct": 95.0,
+  "gate_mode": "holdout_field_subset",
+  "offset0_every_n_cycles": 3,
+  "alignment_excluded_fields": [
+    "strain_reported",
+    "strain_normalized"
+  ],
+  "cycles_completed": 20,
   "latest_alignment_pct": {
-    "node2a": 85.0,
-    "node2b": 85.8,
-    "node2c": 85.9
+    "node2a": 96.4,
+    "node2b": 89.3,
+    "node2c": 98.3
+  },
+  "latest_holdout_alignment_pct": {
+    "node2a": 96.4,
+    "node2b": 89.3,
+    "node2c": 98.3
+  },
+  "latest_offset0_alignment_pct": {
+    "node2c": 84.0
+  },
+  "primary_holdout_batches": {
+    "node2a": "node2a_calibration_20260622_203356_002",
+    "node2b": "node2b_calibration_20260622_200722_248",
+    "node2c": "node2c_calibration_20260622_201423_837"
   },
   "history": [
     {
-      "at": "2026-06-22T16:00:55.028707",
-      "subnode": "node2b",
-      "batch_id": "node2b_calibration_20260622_195454_576",
-      "offset": 10,
-      "baseline_alignment_pct": 78.8,
-      "baseline_recall_pct": 48.9,
-      "post_alignment_pct": 81.7,
-      "post_recall_pct": 60.0,
-      "targeted_field": "strain_reported",
-      "build_id": "20260622-node2b-195454-strain-v1"
-    },
-    {
-      "at": "2026-06-22T16:04:00.231793",
+      "at": "2026-06-22T18:05:00.000000",
       "subnode": "node2c",
-      "batch_id": "node2c_calibration_20260622_200113_934",
-      "offset": 10,
-      "baseline_alignment_pct": 80.0,
-      "baseline_recall_pct": 49.2,
-      "post_alignment_pct": 82.4,
-      "post_recall_pct": 59.0,
-      "targeted_field": null,
-      "build_id": "20260622-node2c-200113-v1"
+      "batch_id": "node2c_calibration_20260622_201423_837",
+      "refresh_batch_id": "calibration_20260622_180334_786",
+      "dashboard_batch_id": "node2c_calibration_20260622_220416_165",
+      "baseline_alignment_pct": 81.5,
+      "post_alignment_pct": 83.9,
+      "dashboard_alignment_pct": 81.5,
+      "targeted_fields": [
+        "treatment_duration",
+        "exposure_method"
+      ],
+      "build_id": "20260622-node2c-180100-invitro-analytical-v1"
     },
     {
-      "at": "2026-06-22T16:06:24.858856",
+      "at": "2026-06-22T18:12:00.000000",
       "subnode": "node2a",
-      "batch_id": "node2a_calibration_20260622_200414_742",
-      "offset": 10,
-      "baseline_alignment_pct": 69.4,
-      "baseline_recall_pct": 41.1,
-      "post_alignment_pct": 70.0,
-      "post_recall_pct": 45.2,
-      "targeted_field": null,
-      "build_id": "20260622-node2a-200414-v1"
+      "batch_id": "node2a_calibration_20260622_203356_002",
+      "refresh_batch_id": "calibration_20260622_181049_476",
+      "dashboard_batch_id": "node2a_calibration_20260622_215056_583",
+      "baseline_alignment_pct": 83.8,
+      "post_alignment_pct": 85.6,
+      "dashboard_alignment_pct": 76.2,
+      "targeted_fields": [
+        "cannabis_type",
+        "exposure_method"
+      ],
+      "build_id": "20260622-node2a-181200-biomarker-clinical-v1"
     },
     {
-      "at": "2026-06-22T16:13:54.853195",
+      "at": "2026-06-22T18:46:00.970274",
       "subnode": "node2b",
       "batch_id": "node2b_calibration_20260622_200722_248",
       "offset": 20,
-      "baseline_alignment_pct": 76.7,
-      "baseline_recall_pct": 34.5,
-      "post_alignment_pct": 85.8,
-      "post_recall_pct": 64.3,
-      "targeted_field": "strain_reported",
-      "build_id": "20260622-node2b-200722-routing-v1"
+      "baseline_alignment_pct": 66.4,
+      "baseline_recall_pct": 2.1,
+      "post_alignment_pct": 89.3,
+      "post_recall_pct": 30.0,
+      "optional_strain_recall_pct": null,
+      "targeted_field": "exposure_method,node7_paths",
+      "build_id": "20260622-node2b-183800-node7-exposure-v1",
+      "is_holdout_gate": true
     },
     {
-      "at": "2026-06-22T16:21:08.500149",
+      "at": "2026-06-22T18:54:19.256708",
       "subnode": "node2c",
       "batch_id": "node2c_calibration_20260622_201423_837",
       "offset": 20,
-      "baseline_alignment_pct": 85.3,
-      "baseline_recall_pct": 61.9,
-      "post_alignment_pct": 85.9,
-      "post_recall_pct": 63.5,
-      "targeted_field": "strain_reported",
-      "build_id": "20260622-node2c-201423-strain-v1"
+      "baseline_alignment_pct": 86.7,
+      "baseline_recall_pct": 79.5,
+      "post_alignment_pct": 98.3,
+      "post_recall_pct": 98.0,
+      "offset0_batch_id": "node2c_calibration_20260622_225323_455",
+      "offset0_alignment_pct": 84.0,
+      "targeted_field": "treatment_duration,exposure_method,cbd_mg_ml,inhaled_exposure_duration",
+      "build_id": "20260622-node2c-185100-node7-invitro-v1",
+      "refresh_batch_id": "calibration_20260622_185303_486",
+      "is_holdout_gate": true
     },
     {
-      "at": "2026-06-22T16:24:35.861107",
+      "at": "2026-06-22T19:05:59.331726",
       "subnode": "node2a",
-      "batch_id": "node2a_calibration_20260622_202129_219",
+      "batch_id": "node2a_calibration_20260622_203356_002",
       "offset": 20,
-      "baseline_alignment_pct": 66.2,
-      "baseline_recall_pct": 41.3,
-      "post_alignment_pct": 66.9,
-      "post_recall_pct": 42.7,
-      "targeted_field": "sample_size",
-      "build_id": "20260622-node2a-202129-clinical-v1"
-    },
-    {
-      "at": "2026-06-22T16:36:00.000000",
-      "subnode": "node2a",
-      "batch_id": "node2a_calibration_20260622_202548_118",
-      "offset": 30,
-      "baseline_alignment_pct": 70.6,
-      "baseline_recall_pct": 80.6,
-      "post_alignment_pct": 66.9,
-      "post_recall_pct": null,
-      "targeted_field": "exposure_method",
-      "build_id": "20260622-node2a-203356-cannabis-v1"
-    },
-    {
-      "at": "2026-06-22T16:36:00.000000",
-      "subnode": "node2a",
-      "batch_id": "node2a_calibration_20260622_203356_002",
-      "offset": 40,
-      "baseline_alignment_pct": 68.1,
-      "baseline_recall_pct": null,
-      "post_alignment_pct": 68.1,
-      "post_recall_pct": null,
-      "targeted_field": "cannabis_type",
-      "build_id": "20260622-node2a-203356-cannabis-v1"
-    },
-    {
-      "at": "2026-06-22T16:44:00.000000",
-      "subnode": "node2a",
-      "batch_id": "node2a_calibration_20260622_203808_631",
-      "offset": 50,
-      "baseline_alignment_pct": 73.1,
-      "baseline_recall_pct": null,
-      "post_alignment_pct": 76.2,
-      "post_recall_pct": null,
-      "targeted_field": "outcome_domain",
-      "refresh_holdout_batch": "node2a_calibration_20260622_203356_002",
-      "build_id": "20260622-node2a-205900-outcome-v1",
-      "notes": "Offset-50 PDF pool had 1 paper (51 total node2a pdf_extracted). Primary metric on offset-40 same holdout."
-    },
-    {
-      "at": "2026-06-22T16:44:00.000000",
-      "subnode": "node2a",
-      "batch_id": "node2a_calibration_20260622_203356_002",
-      "offset": 60,
-      "baseline_alignment_pct": 76.2,
-      "baseline_recall_pct": null,
-      "post_alignment_pct": 78.8,
-      "post_recall_pct": null,
-      "targeted_field": "cannabis_type",
-      "refresh_holdout_batch": "node2a_calibration_20260622_203356_002",
-      "build_id": "20260622-node2a-210200-cannabis-v2",
-      "notes": "Offset-60 batch empty (pdf pool exhausted at 51). Cycle 4 = targeted cannabis_type pass on offset-40 holdout."
-    },
-    {
-      "at": "2026-06-22T16:52:30.000000",
-      "subnode": "node2a",
-      "batch_id": "node2a_calibration_20260622_203356_002",
-      "offset": 40,
-      "baseline_alignment_pct": 78.8,
+      "baseline_alignment_pct": 75.7,
       "baseline_recall_pct": 90.8,
-      "post_alignment_pct": 85.0,
-      "post_recall_pct": 91.1,
-      "targeted_field": "sample_size,administration_frequency",
-      "refresh_holdout_batch": "node2a_calibration_20260622_203356_002",
-      "refresh_batch_id": "calibration_20260622_165230_335",
-      "build_id": "20260622-node2a-211700-sample-freq-v1",
-      "notes": "Track A targeted pass on offset-40 holdout. 85% gate met; Track B skipped."
+      "post_alignment_pct": 96.4,
+      "post_recall_pct": 92.0,
+      "targeted_field": "outcome_domain,sample_size,cannabis_type,administration_frequency,exposure_method",
+      "build_id": "20260622-node2a-203356-clinical-v1",
+      "refresh_batch_id": "calibration_20260622_190525_425",
+      "is_holdout_gate": true
     }
   ],
-  "updated_at": "2026-06-22T16:52:30.000000",
-  "target_met": true,
-  "status": "complete",
-  "notes": "All node2 subnodes >= 85% gate. node2a offset-40 holdout 78.8% → 85.0% after cycle 5 (sample_size + administration_frequency)."
+  "updated_at": "2026-06-22T19:05:59.331731",
+  "target_met": false,
+  "status": "paused",
+  "stop_after_subnode": "node2a",
+  "focus": "node7_paths",
+  "notes": "Paused after node2a holdout cycle. Final holdout alignments (strain excluded): node2a=96.4%, node2b=89.3%, node2c=98.3%.",
+  "stop_reason": "User requested stop after node2a cycle"
 }
