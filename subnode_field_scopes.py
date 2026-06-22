@@ -214,9 +214,13 @@ def compare_scoped_fields(
     llm: Dict[str, Any],
     target_subnode: str,
     field_equal_fn,
+    scope_fields: Optional[Sequence[str]] = None,
 ) -> Dict[str, Any]:
     """Compares Maude vs LLM on branch-tailored fields only."""
-    scope_fields = fields_in_scope(target_subnode, llm)
+    if scope_fields is None:
+        scope_fields = fields_in_scope(target_subnode, llm)
+    else:
+        scope_fields = list(dict.fromkeys(scope_fields))
     disagreements: Dict[str, Dict[str, Any]] = {}
     agreed: Dict[str, Any] = {}
     for field in scope_fields:

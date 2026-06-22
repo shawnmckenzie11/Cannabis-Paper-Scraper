@@ -13,6 +13,8 @@ import maude_classifier
 import classification_schema
 import calibration_coordinator
 import subnode_field_scopes
+import content_tiers
+import calibration_pdf
 
 
 REVIEW_PUBLICATION_TYPES = {"review", "case study"}
@@ -147,6 +149,68 @@ def get_rules_version() -> str:
     return classifier.load_rules_config().get("version", "1.0.0")
 
 
+def mode_calibration_where_clauses(mode: str) -> List[str]:
+    """Returns SQL WHERE fragments for calibration candidate mode filters."""
+    if mode == "low_confidence":
+        return []
+    if mode == "unclassified":
+        return ["(classifier_version IS NULL OR classifier_version NOT LIKE 'llm-%')"]
+    if mode == "preclinical_original":
+        return [
+            "publication_type = 'original research'",
+            "(study_type LIKE '%Animal%' OR study_type LIKE '%Cell%' OR study_type LIKE '%vitro%')",
+        ]
+    if mode == "node1_routing":
+        return [
+            """(
+                publication_type IN (
+                    'review', 'systematic review', 'meta-analysis', 'editorial',
+                    'comment', 'letter to the editor', 'perspectives paper', 'case study'
+                )
+                OR publication_type = 'original research'
+                OR publication_type IS NULL
+                OR publication_type = ''
+            )"""
+        ]
+    if mode == "node2a_clinical":
+        return [
+            "publication_type = 'original research'",
+            """(
+                study_type LIKE '%Clinical%'
+                OR study_type LIKE '%RCT%'
+                OR study_type LIKE '%prospective%'
+                OR study_type LIKE '%retrospective%'
+                OR study_type LIKE '%observational%'
+                OR study_type LIKE '%case study%'
+            )""",
+        ]
+    if mode == "node2b_in_vivo":
+        return [
+            "publication_type = 'original research'",
+            """(
+                study_type LIKE '%Animal%'
+                OR study_type LIKE '%Mouse%'
+                OR study_type LIKE '%Rat%'
+                OR study_type LIKE '%Rodent%'
+                OR study_type LIKE '%Primates%'
+                OR study_type LIKE '%in vivo%'
+            )""",
+        ]
+    if mode == "node2c_in_vitro":
+        return [
+            "publication_type = 'original research'",
+            """(
+                study_type LIKE '%Cell%'
+                OR study_type LIKE '%vitro%'
+                OR study_type LIKE '%Organoid%'
+                OR study_type LIKE '%PCLS%'
+            )""",
+        ]
+    if mode in ("mixed", None, ""):
+        return []
+    raise ValueError(f"Unknown calibration candidate mode: {mode}")
+
+
 def select_candidates(
     mode: str,
     fetch_limit: int,
@@ -155,6 +219,7 @@ def select_candidates(
     exclude_locked: bool,
     exclude_calibrated: bool,
     calibration_label: str = "calibration",
+    content_tier: Optional[str] = None,
 ) -> List[Dict[str, Any]]:
     """Selects candidate papers for a bounded calibration run."""
     db = DatabaseManager()
@@ -173,8 +238,13 @@ def select_candidates(
             "(expert_locked_fields IS NULL OR expert_locked_fields = '' OR expert_locked_fields = '[]')"
         )
 
-    if require_full_text:
+    if require_full_text and not content_tier:
         where_clauses.append("(full_text_link IS NOT NULL AND full_text_link != '')")
+
+    tier_clause, tier_params = content_tiers.content_tier_sql_clause(content_tier or "")
+    if tier_clause:
+        where_clauses.append(tier_clause)
+        params.extend(tier_params)
 
     if exclude_calibrated:
         where_clauses.append(
@@ -185,61 +255,8 @@ def select_candidates(
         where_clauses.append("classification_confidence IS NOT NULL")
         where_clauses.append("classification_confidence <= ?")
         params.append(confidence_max)
-    elif mode == "unclassified":
-        where_clauses.append("(classifier_version IS NULL OR classifier_version NOT LIKE 'llm-%')")
-    elif mode == "preclinical_original":
-        where_clauses.append("publication_type = 'original research'")
-        where_clauses.append(
-            "(study_type LIKE '%Animal%' OR study_type LIKE '%Cell%' OR study_type LIKE '%vitro%')"
-        )
-    elif mode == "node1_routing":
-        where_clauses.append(
-            """(
-                publication_type IN (
-                    'review', 'systematic review', 'meta-analysis', 'editorial',
-                    'comment', 'letter to the editor', 'perspectives paper', 'case study'
-                )
-                OR publication_type = 'original research'
-                OR publication_type IS NULL
-                OR publication_type = ''
-            )"""
-        )
-    elif mode == "node2a_clinical":
-        where_clauses.append("publication_type = 'original research'")
-        where_clauses.append(
-            """(
-                study_type LIKE '%Clinical%'
-                OR study_type LIKE '%RCT%'
-                OR study_type LIKE '%prospective%'
-                OR study_type LIKE '%retrospective%'
-                OR study_type LIKE '%observational%'
-                OR study_type LIKE '%case study%'
-            )"""
-        )
-    elif mode == "node2b_in_vivo":
-        where_clauses.append("publication_type = 'original research'")
-        where_clauses.append(
-            """(
-                study_type LIKE '%Animal%'
-                OR study_type LIKE '%Mouse%'
-                OR study_type LIKE '%Rat%'
-                OR study_type LIKE '%Rodent%'
-                OR study_type LIKE '%Primates%'
-                OR study_type LIKE '%in vivo%'
-            )"""
-        )
-    elif mode == "node2c_in_vitro":
-        where_clauses.append("publication_type = 'original research'")
-        where_clauses.append(
-            """(
-                study_type LIKE '%Cell%'
-                OR study_type LIKE '%vitro%'
-                OR study_type LIKE '%Organoid%'
-                OR study_type LIKE '%PCLS%'
-            )"""
-        )
     elif mode != "mixed":
-        raise ValueError(f"Unknown calibration candidate mode: {mode}")
+        where_clauses.extend(mode_calibration_where_clauses(mode))
 
     params.append(fetch_limit)
 
@@ -367,6 +384,8 @@ def select_llm_pdf_reclassify_candidates(
     offset: int = 0,
     include_abstract_reclassify: bool = True,
     abstract_reclassify_only: bool = False,
+    mode: Optional[str] = None,
+    content_tier: Optional[str] = None,
 ) -> List[Dict[str, Any]]:
     """Selects Claude reclassified papers (PDF and/or abstract) for Maude A/B pairing."""
     db = DatabaseManager()
@@ -375,7 +394,9 @@ def select_llm_pdf_reclassify_candidates(
         conn.row_factory = sqlite3.Row
     cursor = conn.cursor()
 
-    if abstract_reclassify_only:
+    if content_tier:
+        version_clauses = []
+    elif abstract_reclassify_only:
         version_clauses = ["classifier_version LIKE 'llm-reclassify-%'"]
     elif include_abstract_reclassify:
         version_clauses = [
@@ -387,9 +408,17 @@ def select_llm_pdf_reclassify_candidates(
 
     where_clauses = [
         "(abstract IS NOT NULL AND abstract != '')",
-        f"({' OR '.join(version_clauses)})",
     ]
-    params: List[Any] = []
+    if version_clauses:
+        where_clauses.append(f"({' OR '.join(version_clauses)})")
+
+    tier_clause, tier_params = content_tiers.content_tier_sql_clause(content_tier or "")
+    params: List[Any] = list(tier_params)
+    if tier_clause:
+        where_clauses.append(tier_clause)
+
+    if mode and mode != "mixed":
+        where_clauses.extend(mode_calibration_where_clauses(mode))
 
     if exclude_locked:
         where_clauses.append(
@@ -599,6 +628,9 @@ def run_calibration(args: argparse.Namespace) -> Tuple[Path, Path]:
         lock_acquired = True
 
     fetch_limit = max(args.fetch_limit, args.max_calls * max(2, len(variants)))
+    batch_content_tier = getattr(args, "content_tier", None)
+    if batch_content_tier in ("any", "all", ""):
+        batch_content_tier = None
     candidates = select_candidates(
         mode=args.mode,
         fetch_limit=fetch_limit,
@@ -607,6 +639,7 @@ def run_calibration(args: argparse.Namespace) -> Tuple[Path, Path]:
         exclude_locked=not args.include_locked,
         exclude_calibrated=not args.include_calibrated,
         calibration_label=calibration_label,
+        content_tier=batch_content_tier,
     )
 
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S_%f")[:-3]
@@ -648,6 +681,7 @@ def run_calibration(args: argparse.Namespace) -> Tuple[Path, Path]:
                 "locked_fields": locked_fields,
                 "before_confidence": candidate.get("classification_confidence"),
                 "before_classifier_version": candidate.get("classifier_version"),
+                "content_tier": content_tiers.infer_content_tier(candidate),
             }
 
             if args.dry_run:
@@ -824,6 +858,8 @@ def run_calibration(args: argparse.Namespace) -> Tuple[Path, Path]:
         "updates_applied": updates_applied,
         "dry_run": args.dry_run,
         "abstract_only": args.abstract_only,
+        "content_tier": batch_content_tier,
+        "content_tier_counts": content_tiers.summarize_content_tiers(candidates),
         "candidate_count": len(candidates),
         "results": results,
     }
@@ -836,17 +872,30 @@ def run_calibration(args: argparse.Namespace) -> Tuple[Path, Path]:
 
 def fetch_paper_text(db: DatabaseManager, paper_id: int) -> Tuple[str, str]:
     """Returns title and abstract for a paper id from the active database."""
+    context = fetch_paper_calibration_context(db, paper_id)
+    return context["title"], context["abstract"]
+
+
+def fetch_paper_calibration_context(db: DatabaseManager, paper_id: int) -> Dict[str, str]:
+    """Returns title, abstract, and full_text_link for calibration rescoring."""
     conn = db.get_connection()
     if not db.is_postgres:
         conn.row_factory = sqlite3.Row
     cursor = conn.cursor()
     try:
-        cursor.execute("SELECT title, abstract FROM papers WHERE id = ?", (paper_id,))
+        cursor.execute(
+            "SELECT title, abstract, full_text_link FROM papers WHERE id = ?",
+            (paper_id,),
+        )
         row = cursor.fetchone()
         if not row:
             raise ValueError(f"Paper id {paper_id} not found in database.")
         data = dict(row)
-        return (data.get("title") or "", data.get("abstract") or "")
+        return {
+            "title": data.get("title") or "",
+            "abstract": data.get("abstract") or "",
+            "full_text_link": data.get("full_text_link") or "",
+        }
     finally:
         conn.close()
 
@@ -869,6 +918,7 @@ def refresh_maude_batch(source_path: Path, output_dir: Optional[Path] = None) ->
     resolved_output_dir.mkdir(parents=True, exist_ok=True)
 
     source_batch_id = source_payload.get("batch_id") or source_path.stem
+    target_subnode = source_payload.get("target_subnode") or source_payload.get("automation_node")
     batch_prefix = "node1_calibration" if source_payload.get("mode") == "node1_routing" else "calibration"
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S_%f")[:-3]
     batch_id = f"{batch_prefix}_{timestamp}"
@@ -876,58 +926,69 @@ def refresh_maude_batch(source_path: Path, output_dir: Optional[Path] = None) ->
     walkthrough_path = resolved_output_dir / f"{batch_id}_walkthrough.md"
 
     refreshed_results: List[Dict[str, Any]] = []
+    pdf_cache: Dict[str, Optional[str]] = {}
+    pdf_used_count = 0
     for record in source_results:
+        if record.get("status") not in (None, "maude_paired", "candidate_only", "no_extraction"):
+            if not record.get("llm") or not record.get("maude"):
+                continue
         paper_id = int(record["paper_id"])
-        title, abstract = fetch_paper_text(db, paper_id)
-        if not title and record.get("title"):
-            title = str(record["title"])
-
-        maude_out = maude_classifier.classify_paper(
-            title,
-            abstract,
-            full_text=None,
-            rules_version=rules_version,
+        paper_context = fetch_paper_calibration_context(db, paper_id)
+        title = paper_context["title"] or (record.get("title") or "")
+        abstract = paper_context["abstract"]
+        full_text_link = (
+            record.get("full_text_link")
+            or paper_context.get("full_text_link")
+            or ""
         )
+
         llm_block = classification_schema.normalize_classification_record(
             record.get("llm") or {},
             title,
             abstract,
         )
-        disagreement = maude_classifier.compare_maude_llm(maude_out, llm_block, title, abstract)
+
+        maude_out, pdf_used = calibration_pdf.classify_maude_for_calibration(
+            title,
+            abstract,
+            full_text_link=full_text_link or None,
+            rules_version=rules_version,
+            cache=pdf_cache,
+        )
+        if pdf_used:
+            pdf_used_count += 1
+        maude_block = maude_output_to_compare_block(maude_out, rules_version)
+        disagreement = compare_maude_llm_all_fields(maude_block, llm_block, title, abstract)
+
+        scoped_disagreement = record.get("scoped_disagreement")
+        if target_subnode:
+            paper_tier = record.get("content_tier") or content_tiers.infer_content_tier({
+                **llm_block,
+                "classifier_version": llm_block.get("classifier_version") or record.get("before_classifier_version"),
+            })
+            tier_scope_fields = content_tiers.fields_in_scope_for_tier(
+                target_subnode,
+                paper_tier,
+                llm_block,
+            )
+            scoped_disagreement = subnode_field_scopes.compare_scoped_fields(
+                maude_block,
+                llm_block,
+                target_subnode,
+                calibration_field_equal,
+                scope_fields=tier_scope_fields,
+            )
 
         refreshed = dict(record)
         refreshed.update({
             "title": title or record.get("title"),
             "abstract": abstract,
-            "llm": {
-                "publication_type": llm_block.get("publication_type"),
-                "study_type": llm_block.get("study_type"),
-                "exposure_method": llm_block.get("exposure_method"),
-                "cannabis_type": llm_block.get("cannabis_type"),
-                "outcome_domain": llm_block.get("outcome_domain"),
-                "ingestion_status": llm_block.get("ingestion_status"),
-                "species": llm_block.get("species"),
-                "classification_confidence": llm_block.get("classification_confidence")
-                or (record.get("llm") or {}).get("classification_confidence"),
-                "classifier_version": (record.get("llm") or {}).get("classifier_version"),
-            },
-            "routing_subnode": infer_routing_subnode(
-                source_payload.get("mode") or "node1_routing",
-                llm_block,
-            ),
-            "maude": {
-                "publication_type": maude_out.get("publication_type"),
-                "study_type": maude_out.get("study_type"),
-                "exposure_method": maude_out.get("exposure_method"),
-                "cannabis_type": maude_out.get("cannabis_type"),
-                "outcome_domain": maude_out.get("outcome_domain"),
-                "ingestion_status": maude_out.get("ingestion_status"),
-                "species": maude_out.get("species"),
-                "classification_confidence": maude_out.get("classification_confidence"),
-                "classifier_version": f"maude-{rules_version}",
-                "nodes_visited": (maude_out.get("_maude_meta") or {}).get("nodes_visited"),
-            },
+            "full_text_link": full_text_link or record.get("full_text_link"),
+            "pdf_text_used": pdf_used,
+            "llm": llm_block,
+            "maude": maude_block,
             "disagreement": disagreement,
+            "scoped_disagreement": scoped_disagreement,
             "flagged_for_review": disagreement.get("flagged_for_review", False),
         })
         refreshed_results.append(refreshed)
@@ -939,6 +1000,7 @@ def refresh_maude_batch(source_path: Path, output_dir: Optional[Path] = None) ->
         "rules_version": rules_version,
         "maude_refresh_source_batch": source_batch_id,
         "maude_refresh_only": True,
+        "pdf_text_used_count": pdf_used_count,
         "calls_attempted": 0,
         "updates_applied": 0,
         "dry_run": True,
@@ -1124,6 +1186,175 @@ def run_claude_maude_ab_native(args: argparse.Namespace) -> Tuple[Path, Path]:
     return json_path, walkthrough_path
 
 
+def run_subnode_pdf_maude_ab(args: argparse.Namespace) -> Tuple[Path, Path]:
+    """Pairs stored Claude PDF classifications with live Maude for sub-node RL batches."""
+    max_calls = args.max_calls
+    if max_calls < 1 or max_calls > 1000:
+        raise ValueError("--max-calls must be between 1 and 1000 for sub-node PDF Maude A/B.")
+
+    target_subnode = subnode_field_scopes.mode_to_target_subnode(
+        args.mode,
+        getattr(args, "target_subnode", None),
+    )
+    if not target_subnode:
+        raise ValueError("--subnode-pdf-maude-ab requires node2a/2b/2c mode or --target-subnode.")
+
+    batch_content_tier = getattr(args, "content_tier", None) or content_tiers.CONTENT_TIER_PDF_EXTRACTED
+    offset = max(int(getattr(args, "offset", 0) or 0), 0)
+    fetch_limit = max(args.fetch_limit, max_calls)
+    rules_version = get_rules_version()
+    batch_prefix = subnode_field_scopes.batch_prefix_for_subnode(target_subnode, args.mode)
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S_%f")[:-3]
+    batch_id = f"{batch_prefix}_{timestamp}"
+    output_dir = resolve_calibration_output_dir(getattr(args, "output_dir", None))
+    output_dir.mkdir(parents=True, exist_ok=True)
+    json_path = output_dir / f"{batch_id}.json"
+    walkthrough_path = output_dir / f"{batch_id}_walkthrough.md"
+    fields_in_scope = subnode_field_scopes.fields_in_scope(target_subnode)
+
+    db = DatabaseManager()
+    lock_owner = getattr(args, "lock_owner", None) or batch_prefix
+    lock_acquired = False
+    if not getattr(args, "skip_lock", False):
+        calibration_coordinator.check_lock_available(db)
+        calibration_coordinator.acquire_lock(
+            "running_batch",
+            lock_owner,
+            subnode=target_subnode,
+            db=db,
+        )
+        lock_acquired = True
+
+    candidates = select_llm_pdf_reclassify_candidates(
+        fetch_limit=fetch_limit,
+        exclude_locked=not args.include_locked,
+        offset=offset,
+        include_abstract_reclassify=False,
+        abstract_reclassify_only=False,
+        mode=args.mode,
+        content_tier=batch_content_tier,
+    )
+
+    results: List[Dict[str, Any]] = []
+    paired = 0
+    flagged = 0
+    pdf_used_count = 0
+    pdf_cache: Dict[str, Optional[str]] = {}
+    full_fields = getattr(args, "full_fields", True)
+
+    try:
+        for candidate in candidates:
+            if paired >= max_calls:
+                break
+
+            paper_id = int(candidate["id"])
+            title = candidate.get("title") or ""
+            abstract = candidate.get("abstract") or ""
+            full_text_link = candidate.get("full_text_link") or ""
+            paper_tier = content_tiers.infer_content_tier(candidate)
+            llm_block = paper_row_to_llm_block(candidate, title, abstract, full_fields=full_fields)
+
+            maude_out, pdf_used = calibration_pdf.classify_maude_for_calibration(
+                title,
+                abstract,
+                full_text_link=full_text_link or None,
+                rules_version=rules_version,
+                cache=pdf_cache,
+            )
+            if pdf_used:
+                pdf_used_count += 1
+            if full_fields:
+                disagreement = compare_maude_llm_all_fields(maude_out, llm_block, title, abstract)
+                maude_block = maude_output_to_compare_block(maude_out, rules_version)
+            else:
+                disagreement = maude_classifier.compare_maude_llm(maude_out, llm_block, title, abstract)
+                maude_block = maude_output_to_compare_block(maude_out, rules_version)
+
+            tier_scope_fields = content_tiers.fields_in_scope_for_tier(
+                target_subnode,
+                paper_tier,
+                llm_block,
+            )
+            scoped_disagreement = subnode_field_scopes.compare_scoped_fields(
+                maude_block,
+                llm_block,
+                target_subnode,
+                calibration_field_equal,
+                scope_fields=tier_scope_fields,
+            )
+
+            paired += 1
+            if disagreement.get("flagged_for_review"):
+                flagged += 1
+
+            routing_subnode = infer_routing_subnode("node1_routing", llm_block)
+            results.append({
+                "paper_id": paper_id,
+                "pmid": candidate.get("pmid"),
+                "title": title,
+                "full_text_link": full_text_link or None,
+                "pdf_text_used": pdf_used,
+                "variant": "llm-pdf-reclassify",
+                "dry_run": True,
+                "locked_fields": parse_json_list(candidate.get("expert_locked_fields")),
+                "before_confidence": candidate.get("classification_confidence"),
+                "before_classifier_version": candidate.get("classifier_version"),
+                "status": "maude_paired",
+                "content_tier": paper_tier,
+                "after_confidence": llm_block.get("classification_confidence"),
+                "after_classifier_version": candidate.get("classifier_version"),
+                "after_publication_type": llm_block.get("publication_type"),
+                "after_study_type": llm_block.get("study_type"),
+                "routing_subnode": routing_subnode,
+                "changes": {},
+                "llm": llm_block,
+                "maude": maude_block,
+                "disagreement": disagreement,
+                "scoped_disagreement": scoped_disagreement,
+                "node7_path": scoped_disagreement.get("scope_key"),
+                "flagged_for_review": disagreement.get("flagged_for_review", False),
+            })
+    finally:
+        if lock_acquired:
+            calibration_coordinator.release_lock(db)
+
+    payload = {
+        "batch_id": batch_id,
+        "created_at": datetime.now().isoformat(),
+        "rules_version": rules_version,
+        "mode": args.mode,
+        "automation_node": target_subnode,
+        "target_subnode": target_subnode,
+        "fields_in_scope": fields_in_scope,
+        "calibration_label": subnode_field_scopes.calibration_label_for_subnode(target_subnode, args.mode),
+        "variants": ["llm-pdf-reclassify"],
+        "max_calls": max_calls,
+        "offset": offset,
+        "calls_attempted": 0,
+        "planned_candidates": paired,
+        "updates_applied": 0,
+        "dry_run": True,
+        "abstract_only": paired > 0 and pdf_used_count == 0,
+        "pdf_text_used_count": pdf_used_count,
+        "content_tier": batch_content_tier,
+        "content_tier_counts": content_tiers.summarize_content_tiers(candidates[:paired]),
+        "full_fields_compare": full_fields,
+        "compare_fields": list(MAUDE_AB_COMPARE_FIELDS),
+        "maude_only": True,
+        "maude_from_stored_claude": True,
+        "maude_from_llm_pdf": True,
+        "candidate_count": len(candidates),
+        "paired_count": paired,
+        "flagged_for_review_count": flagged,
+        "results": results,
+    }
+
+    with open(json_path, "w", encoding="utf-8") as handle:
+        json.dump(payload, handle, indent=2, default=str)
+    write_walkthrough(payload, walkthrough_path)
+    return json_path, walkthrough_path
+
+
 def run_maude_ab_from_llm_pdf(args: argparse.Namespace) -> Tuple[Path, Path]:
     """Pairs stored llm-pdf-reclassify classifications with live Maude (no Claude calls or DB writes)."""
     max_calls = args.max_calls
@@ -1159,7 +1390,8 @@ def run_maude_ab_from_llm_pdf(args: argparse.Namespace) -> Tuple[Path, Path]:
         field: {"agree": 0, "disagree": 0} for field in MAUDE_AB_COMPARE_FIELDS
     }
     full_fields = getattr(args, "full_fields", True)
-    use_full_extraction = getattr(args, "full_extraction", True)
+    pdf_cache: Dict[str, Optional[str]] = {}
+    pdf_used_count = 0
 
     for candidate in candidates:
         if paired >= max_calls:
@@ -1168,15 +1400,18 @@ def run_maude_ab_from_llm_pdf(args: argparse.Namespace) -> Tuple[Path, Path]:
         paper_id = int(candidate["id"])
         title = candidate.get("title") or ""
         abstract = candidate.get("abstract") or ""
+        full_text_link = candidate.get("full_text_link") or ""
         llm_block = paper_row_to_llm_block(candidate, title, abstract, full_fields=full_fields)
 
-        maude_out = maude_classifier.classify_paper(
+        maude_out, pdf_used = calibration_pdf.classify_maude_for_calibration(
             title,
             abstract,
-            full_text=None,
+            full_text_link=full_text_link or None,
             rules_version=rules_version,
-            abstract_only_extraction=not use_full_extraction,
+            cache=pdf_cache,
         )
+        if pdf_used:
+            pdf_used_count += 1
         if full_fields:
             disagreement = compare_maude_llm_all_fields(maude_out, llm_block, title, abstract)
             maude_block = maude_output_to_compare_block(maude_out, rules_version)
@@ -1215,6 +1450,8 @@ def run_maude_ab_from_llm_pdf(args: argparse.Namespace) -> Tuple[Path, Path]:
             "paper_id": paper_id,
             "pmid": candidate.get("pmid"),
             "title": title,
+            "full_text_link": full_text_link or None,
+            "pdf_text_used": pdf_used,
             "variant": reclassify_variant,
             "dry_run": True,
             "locked_fields": parse_json_list(candidate.get("expert_locked_fields")),
@@ -1258,7 +1495,8 @@ def run_maude_ab_from_llm_pdf(args: argparse.Namespace) -> Tuple[Path, Path]:
         "planned_candidates": paired,
         "updates_applied": 0,
         "dry_run": True,
-        "abstract_only": not use_full_extraction,
+        "abstract_only": paired > 0 and pdf_used_count == 0,
+        "pdf_text_used_count": pdf_used_count,
         "full_fields_compare": full_fields,
         "compare_fields": list(MAUDE_AB_COMPARE_FIELDS),
         "field_agreement": field_agreement,
@@ -1396,6 +1634,17 @@ def build_arg_parser() -> argparse.ArgumentParser:
         help="Pair stored llm-reclassify / llm-pdf-reclassify classifications with Maude (no Claude calls or DB writes).",
     )
     parser.add_argument(
+        "--subnode-pdf-maude-ab",
+        action="store_true",
+        help="Pair stored Claude PDF classifications with live Maude for a node2 sub-node RL batch.",
+    )
+    parser.add_argument(
+        "--content-tier",
+        default=None,
+        choices=["pdf_extracted", "abstract_reclassify", "pdf_link", "abstract_only", "any"],
+        help="Restrict candidate pool to a content tier (default: pdf_extracted for --subnode-pdf-maude-ab).",
+    )
+    parser.add_argument(
         "--claude-maude-native",
         action="store_true",
         help="Run live Claude abstract classification vs Maude on native (non-LLM) papers (no DB writes).",
@@ -1447,6 +1696,8 @@ def main() -> None:
         )
     elif args.maude_from_llm_pdf:
         json_path, walkthrough_path = run_maude_ab_from_llm_pdf(args)
+    elif args.subnode_pdf_maude_ab:
+        json_path, walkthrough_path = run_subnode_pdf_maude_ab(args)
     elif args.claude_maude_native:
         json_path, walkthrough_path = run_claude_maude_ab_native(args)
     else:

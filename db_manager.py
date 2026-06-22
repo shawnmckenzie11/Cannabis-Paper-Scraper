@@ -1802,7 +1802,9 @@ class DatabaseManager:
             if class_level == "native":
                 where_clauses.append("(papers.classifier_version IS NULL OR papers.classifier_version NOT LIKE 'llm-%')")
             elif class_level == "claude_abstract":
-                where_clauses.append("papers.classifier_version LIKE 'llm-reclassify-%'")
+                where_clauses.append(
+                    "(papers.classifier_version LIKE 'llm-reclassify-%' AND papers.classifier_version NOT LIKE 'llm-pdf-%')"
+                )
             elif class_level == "claude_pdf":
                 where_clauses.append("papers.classifier_version LIKE 'llm-pdf-reclassify-%'")
             elif class_level == "manual":
@@ -1811,10 +1813,23 @@ class DatabaseManager:
                 where_clauses.append("(papers.classifier_version LIKE 'llm-pdf-reclassify-%' OR (papers.expert_locked_fields IS NOT NULL AND papers.expert_locked_fields != '[]' AND papers.expert_locked_fields != ''))")
             elif class_level == "maude":
                 where_clauses.append("papers.classifier_version LIKE 'maude-%'")
+
+        content_tier = filters.get("content_tier")
+        if content_tier and content_tier not in ("any", "all"):
+            import content_tiers
+
+            tier_clause, tier_params = content_tiers.content_tier_sql_clause(content_tier)
+            if tier_clause:
+                where_clauses.append(tier_clause)
+                params.extend(tier_params)
                     
         return where_clauses, params
 
-    def search_papers(self, filters: Dict[str, Any]) -> List[Dict[str, Any]]:
+    def search_papers(
+        self,
+        filters: Dict[str, Any],
+        include_total: bool = False,
+    ):
         """Queries the database dynamically using filters.
         
         Supported filters:
@@ -1942,7 +1957,15 @@ class DatabaseManager:
                         except Exception:
                             pass
                 results.append(res)
-                
+
+            if include_total:
+                count_filters = {
+                    key: value
+                    for key, value in filters.items()
+                    if key not in ("limit", "offset")
+                }
+                return results, self.count_papers(count_filters)
+
             return results
         finally:
             conn.close()

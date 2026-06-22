@@ -1,0 +1,302 @@
+{
+  "target_subnode": "node2b",
+  "created_at": "2026-06-22T16:37:33.891720",
+  "pattern_summary": "The dominant error is strain_reported (100% disagreement): Maude extracts animal strain/vendor catalog IDs while Claude correctly captures the cannabinoid compound source/vendor as strain_reported for pure-cannabinoid studies. Secondary errors include exposure_method (Maude defaults to 'injection cannabinoids' when the actual route is oral or bath/dissolved-in-media), administration_frequency (minor wording mismatches like 'once daily' vs 'daily'), and cannabis_type (Maude mis-tags dietary/food-mixed pure cannabinoids as 'edibles'). Duration_days and dose-per-kg fields are also missed when not in the abstract snippet.",
+  "gap_summary": {
+    "target_subnode": "node2b",
+    "scored_paper_count": 10,
+    "papers_with_disagreements": 10,
+    "batch_alignment_rate": 0.7565,
+    "batch_alignment_pct": 75.6,
+    "batch_maude_recall_rate": 0.7187,
+    "batch_maude_recall_pct": 71.9,
+    "batch_extraction_fill_rate": 0.7187,
+    "batch_extraction_fill_pct": 71.9,
+    "field_disagreement_stats": [
+      {
+        "field": "strain_reported",
+        "compared_count": 10,
+        "disagree_count": 10,
+        "disagree_pct": 100.0
+      },
+      {
+        "field": "exposure_method",
+        "compared_count": 10,
+        "disagree_count": 5,
+        "disagree_pct": 50.0
+      },
+      {
+        "field": "administration_frequency",
+        "compared_count": 10,
+        "disagree_count": 5,
+        "disagree_pct": 50.0
+      },
+      {
+        "field": "duration_days",
+        "compared_count": 10,
+        "disagree_count": 4,
+        "disagree_pct": 40.0
+      },
+      {
+        "field": "cannabis_type",
+        "compared_count": 10,
+        "disagree_count": 3,
+        "disagree_pct": 30.0
+      },
+      {
+        "field": "cbd_mg_kg",
+        "compared_count": 10,
+        "disagree_count": 2,
+        "disagree_pct": 20.0
+      },
+      {
+        "field": "cbd_pct",
+        "compared_count": 10,
+        "disagree_count": 2,
+        "disagree_pct": 20.0
+      },
+      {
+        "field": "dose_mg",
+        "compared_count": 10,
+        "disagree_count": 2,
+        "disagree_pct": 20.0
+      },
+      {
+        "field": "study_type",
+        "compared_count": 1,
+        "disagree_count": 1,
+        "disagree_pct": 100.0
+      },
+      {
+        "field": "sample_size",
+        "compared_count": 1,
+        "disagree_count": 1,
+        "disagree_pct": 100.0
+      },
+      {
+        "field": "thc_mg_kg",
+        "compared_count": 10,
+        "disagree_count": 1,
+        "disagree_pct": 10.0
+      },
+      {
+        "field": "cbd_mg_g",
+        "compared_count": 10,
+        "disagree_count": 1,
+        "disagree_pct": 10.0
+      },
+      {
+        "field": "thc_mg_g",
+        "compared_count": 10,
+        "disagree_count": 0,
+        "disagree_pct": 0.0
+      },
+      {
+        "field": "thc_pct",
+        "compared_count": 10,
+        "disagree_count": 0,
+        "disagree_pct": 0.0
+      },
+      {
+        "field": "repeat_exposure_count",
+        "compared_count": 10,
+        "disagree_count": 0,
+        "disagree_pct": 0.0
+      },
+      {
+        "field": "exposure_regimen_bin",
+        "compared_count": 10,
+        "disagree_count": 0,
+        "disagree_pct": 0.0
+      },
+      {
+        "field": "species",
+        "compared_count": 1,
+        "disagree_count": 0,
+        "disagree_pct": 0.0
+      },
+      {
+        "field": "outcome_domain",
+        "compared_count": 1,
+        "disagree_count": 0,
+        "disagree_pct": 0.0
+      },
+      {
+        "field": "multiple_doses",
+        "compared_count": 1,
+        "disagree_count": 0,
+        "disagree_pct": 0.0
+      },
+      {
+        "field": "multiple_time_intervals",
+        "compared_count": 1,
+        "disagree_count": 0,
+        "disagree_pct": 0.0
+      },
+      {
+        "field": "puff_count",
+        "compared_count": 1,
+        "disagree_count": 0,
+        "disagree_pct": 0.0
+      },
+      {
+        "field": "inhaled_exposure_duration",
+        "compared_count": 1,
+        "disagree_count": 0,
+        "disagree_pct": 0.0
+      },
+      {
+        "field": "thc_mg_ml",
+        "compared_count": 1,
+        "disagree_count": 0,
+        "disagree_pct": 0.0
+      },
+      {
+        "field": "cbd_mg_ml",
+        "compared_count": 1,
+        "disagree_count": 0,
+        "disagree_pct": 0.0
+      }
+    ],
+    "top_disagreement_fields": [
+      "strain_reported",
+      "exposure_method",
+      "administration_frequency",
+      "duration_days",
+      "cannabis_type",
+      "cbd_mg_kg",
+      "cbd_pct",
+      "dose_mg",
+      "study_type",
+      "sample_size"
+    ]
+  },
+  "proposed_rules_changes": [
+    {
+      "type": "extractor_logic",
+      "description": "strain_reported: add dual-target extraction \u2014 (1) animal strain/vendor catalog, (2) cannabinoid compound source/supplier. For pure-cannabinoid studies, populate strain_reported with compound provenance when no animal strain string is found. Prefer Claude pattern: compound name + vendor + purity.",
+      "patch_hint": "extractor.py: split strain_reported into two sub-extractors; if cannabis_type=='pure cannabinoid' and no JAX/Envigo/Charles River pattern found, assign compound-source string to strain_reported.",
+      "priority": "high"
+    },
+    {
+      "type": "classifier_logic",
+      "description": "exposure_method: add explicit 'dissolved in media / bath' class. Current injection-detection regex is over-triggering for ex vivo tissue bath and zebrafish immersion contexts. Guard injection cue with 'i.p.', 'i.v.', 'subcutaneous', 'intrathecal' keywords only.",
+      "patch_hint": "extractor.py: if 'isolated...strips' or 'embryos were exposed to' or 'tank water' in text, set exposure_method='cannabinoids dissolved in media'; block injection fallback.",
+      "priority": "high"
+    },
+    {
+      "type": "classifier_logic",
+      "description": "cannabis_type: restrict 'edibles' tag to explicit edible product mentions ('cannabis-infused', 'edible product', 'brownie', 'cookie'). Pure compound mixed into animal chow = 'pure cannabinoid', not edibles.",
+      "patch_hint": "maude_classifier.py: add negative guard \u2014 if 'Sigma-Aldrich|Cayman|Tocris|NIDA Drug Supply|THC Pharm|purity' in compound description, override cannabis_type to 'pure cannabinoid' regardless of dietary delivery.",
+      "priority": "high"
+    },
+    {
+      "type": "extractor_logic",
+      "description": "duration_days: broaden regex to capture 'for N days', 'N-day', 'N days of treatment' patterns anywhere in abstract, not just Methods headers. Also compute duration from week expressions: '6 weeks' = 42 days. Reconcile when full PDF gives additional weeks.",
+      "patch_hint": "extractor.py duration_days: add patterns r'for (\\d+) days' and r'(\\d+)[- ]day' with abstract-wide scope; also parse 'X weeks' * 7 as fallback integer.",
+      "priority": "high"
+    },
+    {
+      "type": "extractor_logic",
+      "description": "cbd_mg_kg / thc_mg_kg: parse 'X mg/kg/day' and 'X mg/kg per day' as dose-per-kg fields. Currently Maude fails to populate these when the per-day qualifier is attached.",
+      "patch_hint": "extractor.py: regex r'(\\d+\\.?\\d*)\\s*mg/kg(?:/day|\\s+per\\s+day)?' should match and populate thc_mg_kg or cbd_mg_kg based on compound mentioned in same sentence.",
+      "priority": "high"
+    },
+    {
+      "type": "extractor_logic",
+      "description": "administration_frequency: do not default to 'once daily' / 'once per day' without explicit textual evidence. Return null if frequency not stated. Normalize 'daily' and 'once daily' as equivalent but do not invent either.",
+      "patch_hint": "extractor.py administration_frequency: remove any fallback default value; only assign if frequency keyword present ('daily','once daily','twice daily','X days/week','every N days').",
+      "priority": "medium"
+    },
+    {
+      "type": "extractor_logic",
+      "description": "dose_mg: do not back-calculate absolute dose from mg/kg without known animal weight. Maude computed 60 mg (paper 13048) and 180 mg (paper 13570) via assumed body weight. Claude correctly returned null when only mg/kg is given.",
+      "patch_hint": "extractor.py dose_mg: only populate if an explicit absolute dose (e.g. 'X mg per animal', 'X mg total') appears in text; remove weight-multiplication inference.",
+      "priority": "medium"
+    }
+  ],
+  "proposed_cues": [
+    {
+      "node_id": "node2b_in_vivo",
+      "field": "strain_reported",
+      "cue": "purity \u226599%; THC Pharm GmbH",
+      "explanation": "When strain_reported context is compound supplier/purity, not animal strain, flag for compound-source extraction not animal-catalog lookup."
+    },
+    {
+      "node_id": "node2b_in_vivo",
+      "field": "strain_reported",
+      "cue": "NIDA Drug Supply Program",
+      "explanation": "NIDA supply cue = pure cannabinoid source; should populate strain_reported with compound provenance string, not animal vendor ID."
+    },
+    {
+      "node_id": "node2b_in_vivo",
+      "field": "exposure_method",
+      "cue": "dissolved in tank water",
+      "explanation": "Zebrafish bath/immersion exposure maps to 'cannabinoids dissolved in media', not injection."
+    },
+    {
+      "node_id": "node2b_in_vivo",
+      "field": "exposure_method",
+      "cue": "isolated rat colon strips in isometric conditions",
+      "explanation": "Ex vivo bath application is 'cannabinoids dissolved in media'; injection cue must not fire for ex vivo tissue experiments."
+    },
+    {
+      "node_id": "node2b_in_vivo",
+      "field": "exposure_method",
+      "cue": "embryos were exposed to",
+      "explanation": "Embryo immersion exposure = bath/dissolved-in-media, not injection. Add as affirmative cue for dissolved-media route."
+    },
+    {
+      "node_id": "node2b_in_vivo",
+      "field": "cannabis_type",
+      "cue": "Sigma-Aldrich",
+      "explanation": "Cannabinoid sourced from Sigma-Aldrich, Cayman Chemical, Tocris = pure cannabinoid; do not tag as edibles even if mixed into diet."
+    },
+    {
+      "node_id": "node2b_in_vivo",
+      "field": "cannabis_type",
+      "cue": "added to the experimental diet",
+      "explanation": "Pure compound added to diet \u2260 edibles product. Edibles cue should require 'edible cannabis product', 'cannabis-infused food', or commercial edible."
+    },
+    {
+      "node_id": "node2b_in_vivo",
+      "field": "administration_frequency",
+      "cue": "5 days/week",
+      "explanation": "Normalize '5 days/week' and 'once daily' as distinct values; do not default to 'once per day' without textual evidence."
+    },
+    {
+      "node_id": "node2b_in_vivo",
+      "field": "duration_days",
+      "cue": "for 14 days",
+      "explanation": "Regex pattern 'for N days' must fire even within abstract body; Maude missed this in paper 12689."
+    },
+    {
+      "node_id": "node2b_in_vivo",
+      "field": "cbd_mg_kg",
+      "cue": "mg/kg/day",
+      "explanation": "Pattern 'Xmg/kg/day' or 'X mg/kg per day' should populate cbd_mg_kg or thc_mg_kg; Maude missed this in paper 13570."
+    }
+  ],
+  "maude_improvement_brief": {
+    "summary": "The largest batch gap is driven by three systematic errors: (1) strain_reported is universally wrong because Maude conflates animal strain catalog IDs with cannabinoid compound provenance strings \u2014 for pure-cannabinoid studies, the compound source IS the strain_reported value; (2) exposure_method defaults to 'injection cannabinoids' even for ex vivo bath application and zebrafish immersion protocols, requiring explicit bath/dissolved-in-media detection guards; (3) cannabis_type incorrectly assigns 'edibles' when pure compounds are mixed into animal chow, and should only use 'edibles' for explicit commercial or cannabis-infused food products. Secondary gaps in duration_days, cbd/thc_mg_kg, and administration_frequency stem from regex scope being too narrow (abstract-only) and inappropriate default-value imputation. Fixing these five extractor behaviors should close the majority of the 24.4% alignment gap.",
+    "top_gap_patterns": [
+      "strain_reported conflation: animal catalog IDs vs. cannabinoid compound vendor/purity strings \u2014 100% disagreement rate requires dual-target extraction logic",
+      "exposure_method over-firing of injection classifier for ex vivo bath and zebrafish immersion studies \u2014 needs explicit dissolved-in-media route detection and injection keyword guards (i.p., i.v., s.c. only)",
+      "cannabis_type 'edibles' mis-tag when pure compound is dietary-mixed \u2014 requires vendor/purity guard to override to 'pure cannabinoid'",
+      "dose field imputation errors: back-calculating absolute dose_mg from mg/kg without body weight, and missing mg/kg/day regex pattern for cbd_mg_kg/thc_mg_kg"
+    ],
+    "agent_handoff_prompt": "CANNABIS PAPER SCRAPER \u2014 NODE 2B IMPLEMENTATION BRIEF\nSub-node: node2b | Alignment baseline: 75.6%\nFiles in scope: extractor.py, maude_classifier.py, maude_cues.json\n\n\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\nOVERVIEW\n\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\n\nThis brief covers seven rule changes derived from gap analysis showing systematic extraction failures across four categories: strain/compound provenance conflation, exposure-method misfires in ex vivo and aquatic contexts, dietary-delivery misclassification as edibles, and dose field imputation errors. All seven changes are required to move alignment above the 80% threshold. Changes are ordered high-priority first.\n\n\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\nCHANGE 1 \u2014 strain_reported: DUAL-TARGET EXTRACTION\nFile: extractor.py | Priority: HIGH\n\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\n\nProblem: strain_reported currently attempts one extraction pass looking for animal catalog strings (e.g., Sprague-Dawley, C57BL/6, JAX colony numbers). For pure-cannabinoid studies that source compound from a chemical vendor, the field returns null or incorrectly inherits an irrelevant string. Claude returns the compound provenance string (compound name + vendor + purity) in these cases, creating 100% disagreement on the strain_reported field for that paper subset.\n\nImplementation:\n\nSplit the extraction function into two sequential sub-extractors operating on the full abstract and any available methods text.\n\nSub-extractor A \u2014 Animal strain/vendor: retain all existing patterns for JAX, Envigo, Charles River, Harlan, Taconic, and common inbred/outbred strain designators (Sprague-Dawley, Wistar, C57BL/6, BALB/c, CD-1, Long-Evans, etc.). This runs first. If a match is found, assign it and skip sub-extractor B.\n\nSub-extractor B \u2014 Compound provenance: activated only when (a) cannabis_type resolves to 'pure cannabinoid' AND (b) sub-extractor A returns null. Build a pattern that captures: compound name (THC, CBD, cannabidiol, delta-9-tetrahydrocannabinol, CBG, CBDV, etc.) followed within 0\u201380 characters by any of: Sigma-Aldrich, Cayman Chemical, Tocris, NIDA Drug Supply Program, THC Pharm, Lipomed, or a purity expression (greater-than N%, NNN mg/mL, certified reference). Concatenate the matched compound name, vendor name, and purity string into strain_reported separated by a semicolon. Example output: \"CBD; Cayman Chemical; >98% purity\".\n\nIf neither sub-extractor fires, return null explicitly rather than an empty string.\n\nmaude_cues.json additions: add a \"compound_provenance_vendors\" key containing the vendor list above so it can be maintained without touching extractor.py. Add a \"animal_strain_patterns\" key enumerating the catalog phrases currently hardcoded, making them patchable.\n\n\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\nCHANGE 2 \u2014 exposure_method: DISSOLVED IN MEDIA CLASS + INJECTION GUARD\nFile: extractor.py | Priority: HIGH\n\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\n\nProblem: The injection classifier fires on any administration-adjacent language, including ex vivo tissue bath descriptions and zebrafish embryo immersion protocols. \"Animals were injected with vehicle\" appearing in a paper that primarily uses tissue strips is tagging the paper as injection, overriding the correct route.\n\nImplementation:\n\nStep 1 \u2014 Add explicit detection block for dissolved-in-media route. Before any injection detection runs, scan full text for any of the following trigger phrases: \"isolated...strips\", \"isolated tissue\", \"tissue bath\", \"organ bath\", \"bath application\", \"embryos were exposed to\", \"tank water contained\", \"immersion in\", \"dissolved in artificial cerebrospinal fluid\", \"superfusion\". If any trigger fires, set exposure_method to \"cannabinoids dissolved in media\" and return immediately \u2014 do not continue to injection detection.\n\nStep 2 \u2014 Restrict injection detection to hard route abbreviations only. The injection branch may only fire if at least one of the following explicit strings is present: \"i.p.\", \"i.v.\", \"s.c.\", \"subcutaneous\", \"intraperitoneal\", \"intravenous\", \"intrathecal\", \"intracerebroventricular\", \"i.c.v.\". Remove any broader \"inject\" stem matching (inject*, injection) that is not accompanied by one of these abbreviations or spelled-out route names.\n\nStep 3 \u2014 Add \"oral gavage\" and \"gavage\" as a distinct exposure_method value if either word appears and no dissolved-in-media trigger is active.\n\nmaude_cues.json additions: add \"dissolved_in_media_triggers\" array and \"injection_route_guards\" array so both lists are configurable.\n\n\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\nCHANGE 3 \u2014 cannabis_type: GUARD AGAINST EDIBLES MIS-TAG FOR DIETARY COMPOUNDS\nFile: maude_classifier.py | Priority: HIGH\n\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\n\nProblem: Pure compound (THC, CBD) mixed into rodent chow or gelatin pellets is being tagged cannabis_type='edibles' because the classifier detects a dietary delivery context. The correct tag is 'pure cannabinoid' because the substance is a chemically defined compound sourced from a verified supplier, not an edible cannabis product.\n\nImplementation:\n\nIn the cannabis_type classification function in maude_classifier.py, after any initial label is assigned, run a vendor/purity override check. If the text associated with the compound description contains any of: Sigma-Aldrich, Cayman, Tocris, NIDA Drug Supply, THC Pharm, Lipomed, or a purity expression pattern (r'\\d+\\.?\\d*\\s*%\\s*purity' or r'certified reference standard'), override cannabis_type to 'pure cannabinoid' regardless of the delivery vehicle. This override must fire even if words like 'chow', 'diet', 'food', 'pellet', 'cookie', or 'brownie' are also present, because the decisive criterion is compound identity, not delivery form.\n\nSeparately, tighten the edibles detection to require at least one explicit product phrase: 'cannabis-infused', 'edible product', 'cannabis edible', 'brownie', 'cookie', 'cannabis cookie', 'infused brownie'. Generic dietary words alone must not trigger the edibles tag.\n\nUpdate maude_cues.json: add \"edibles_required_phrases\" array (the explicit product strings above) and \"pure_cannabinoid_vendor_override\" array (the vendor/purity strings) to keep classification logic data-driven.\n\n\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\nCHANGE 4 \u2014 duration_days: BROADEN REGEX AND ADD WEEK CONVERSION\nFile: extractor.py | Priority: HIGH\n\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\n\nProblem: Duration extraction only fires on Methods-section header context. Many abstracts state duration inline (\"Animals were treated for 14 days\", \"following a 28-day protocol\") without section headers. Week expressions are also not converted.\n\nImplementation:\n\nReplace the existing single pattern with a cascade of three patterns applied to the full available text (abstract + methods if present), taking the first non-null result in priority order:\n\nPattern 1 \u2014 explicit day count in treatment context: r'(?:for|following|after)\\s+(\\d+)\\s+days?\\b' and r'(\\d+)[- ]day\\s+(?:treatment|exposure|protocol|administration|regimen)'. Capture group is the integer day count.\n\nPattern 2 \u2014 days of treatment phrasing: r'(\\d+)\\s+days?\\s+of\\s+(?:treatment|exposure|administration)'. Capture group is the integer day count.\n\nPattern 3 \u2014 week expression fallback: r'(?:for|following)\\s+(\\d+)\\s+weeks?\\b' and r'(\\d+)[- ]week\\s+(?:treatment|exposure|protocol)'. Multiply captured integer by 7 and store as duration_days. Add a boolean flag duration_from_weeks=True in the extraction metadata to signal downstream reconciliation that this is a derived value.\n\nWhen full PDF is available and yields a conflicting week count, prefer the PDF value over the abstract-derived value. Log both for audit.\n\n\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\nCHANGE 5 \u2014 cbd_mg_kg / thc_mg_kg: PARSE PER-DAY QUALIFIER\nFile: extractor.py | Priority: HIGH\n\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\n\nProblem: Dose expressions written as \"10 mg/kg/day\" or \"10 mg/kg per day\" are not being captured because the current regex requires exactly \"mg/kg\" with no trailing qualifier. The per-day suffix causes a non-match.\n\nImplementation:\n\nUpdate the dose regex to: r'(\\d+\\.?\\d*)\\s*mg/kg(?:\\s*/\\s*day|/day|\\s+per\\s+day)?' making the per-day qualifier optional with the trailing ? so both \"mg/kg\" and \"mg/kg/day\" and \"mg/kg per day\" all match and populate the same numeric field.\n\nAfter capturing the numeric value, assign it to thc_mg_kg or cbd_mg_kg based on compound context: scan the sentence containing the match for THC synonyms (THC, delta-9-THC, delta-9-tetrahydrocannabinol, \u03949-THC) to assign thc_mg_kg, or CBD synonyms (CBD, cannabidiol) to assign cbd_mg_kg. If both appear in the same sentence (combination study), populate both fields with the same value only if the sentence clearly applies the dose to both; otherwise flag for manual review.\n\nmaude_cues.json: add \"thc_synonyms\" and \"cbd_synonyms\" arrays used by this context-assignment logic.\n\n\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\nCHANGE 6 \u2014 administration_frequency: REMOVE FALLBACK DEFAULT\nFile: extractor.py | Priority: MEDIUM\n\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\n\nProblem: When no frequency keyword is found in text, extractor.py returns 'once daily' as a default. This invented value propagates into downstream analyses and was confirmed to disagree with Claude's null return in papers where frequency was genuinely unstated.\n\nImplementation:\n\nRemove any fallback default assignment in the administration_frequency extraction function. The function must return null (Python None, serialized as JSON null) when no frequency keyword is detected.\n\nRecognized frequency values and their normalized forms: 'daily' \u2192 'daily', 'once daily' \u2192 'daily', 'once per day' \u2192 'daily', 'twice daily' \u2192 'twice daily', 'bid' \u2192 'twice daily', 'three times daily' \u2192 'three times daily', 'tid' \u2192 'three times daily', 'every other day' \u2192 'every other day', 'X times per week' \u2192 'X times per week', 'X days per week' \u2192 'X days per week', 'every N days' \u2192 'every N days', 'weekly' \u2192 'weekly'.\n\nDo not normalize 'daily' and 'once daily' as equivalent \u2014 both should map to the single canonical string 'daily'. No other normalization collapse is permitted. If frequency appears multiple times in text with different values (e.g., escalating dose schedule), return an array of the distinct values and set a multi_frequency flag.\n\n\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\nCHANGE 7 \u2014 dose_mg: REMOVE WEIGHT-MULTIPLICATION INFERENCE\nFile: extractor.py | Priority: MEDIUM\n\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\n\nProblem: When only a mg/kg dose is present, extractor.py back-calculates an absolute dose_mg using an assumed animal body weight (30g mouse, 300g rat). This is methodologically incorrect \u2014 assumed weight is not ground truth \u2014 and produced confirmed errors of 60mg and 180mg in papers 13048 and 13570.\n\nImplementation:\n\nRemove all body-weight multiplication logic from the dose_mg extraction path. dose_mg must only be populated when the source text contains an explicit absolute dose expression: 'X mg per animal', 'X mg total dose', 'X mg injected', or a numeric mg value that is not qualified by /kg or /kg/day. If the text gives only mg/kg, populate thc_mg_kg or cbd_mg_kg (per Change 5) and leave dose_mg as null.\n\nAdd a source_is_absolute boolean to the extraction output that is True only when an unqualified mg expression was found. This allows downstream validation to distinguish clean absolute doses from null-due-to-inference.\n\n\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\nmaude_cues.json \u2014 CONSOLIDATED KEY ADDITIONS\n\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\n\nThe following keys should be added or created if the file does not already contain them. All are arrays of strings unless noted.\n\ncompound_provenance_vendors \u2014 vendor names for sub-extractor B in Change 1\nanimal_strain_patterns \u2014 catalog strain strings currently hardcoded in extractor.py\ndissolved_in_media_triggers \u2014 tissue bath and aquatic immersion phrases for Change 2\ninjection_route_guards \u2014 explicit route abbreviations and spellings for Change 2\nedibles_required_phrases \u2014 mandatory phrases for edibles classification in Change 3\npure_cannabinoid_vendor_override \u2014 vendor/purity strings triggering override in Change 3\nthc_synonyms \u2014 THC compound name variants for Change 5\ncbd_synonyms \u2014 CBD compound name variants for Change 5\n\n\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\nTEST IDEAS\n\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\n\nTest 1 \u2014 strain_reported dual target: Feed a pure-cannabinoid paper abstract containing \"CBD obtained from Cayman Chemical (>98% purity)\" with no animal strain mention. Assert strain_reported equals \"CBD; Cayman Chemical; >98% purity\". Feed a rodent paper with \"C57BL/6 mice (Jackson Laboratories)\". Assert strain_reported equals the JAX string and sub-extractor B did not fire.\n\nTest 2 \u2014 exposure_method dissolved-in-media guard: Feed abstract containing \"isolated aortic strips were incubated with 10 \u00b5M CBD\". Assert exposure_method equals \"cannabinoids dissolved in media\". Feed zebrafish abstract \"embryos were exposed to THC in tank water\". Assert same value. Verify neither triggers injection class.\n\nTest 3 \u2014 exposure_method injection guard: Feed abstract \"Rats received i.p. injections of THC (5 mg/kg)\". Assert exposure_method equals \"injection\". Feed abstract with only the word \"injected\" and no route abbreviation. Assert exposure_method is not \"injection\" \u2014 should be null or require a separate route to resolve.\n\nTest 4 \u2014 cannabis_type edibles override: Feed text \"THC (Sigma-Aldrich, >99% purity) was incorporated into standard rodent chow\". Assert cannabis_type equals \"pure cannabinoid\". Feed text \"rats received cannabis-infused brownies\". Assert cannabis_type equals \"edibles\".\n\nTest 5 \u2014 duration_days week conversion: Feed \"Animals were treated for 6 weeks\". Assert duration_days equals 42 and duration_from_weeks flag is True. Feed \"following a 28-day protocol\". Assert duration_days equals 28 and flag is False.\n\nTest 6 \u2014 dose per day parsing: Feed \"CBD (10 mg/kg/day) was administered by gavage\". Assert cbd_mg_kg equals 10.0. Feed \"THC at 5 mg/kg per day\". Assert thc_mg_kg equals 5.0. Feed \"vehicle or CBD (20 mg/kg)\". Assert cbd_mg_kg equals 20.0 (no per-day qualifier required).\n\nTest 7 \u2014 administration_frequency no default: Feed abstract with no frequency language. Assert administration_frequency is null. Feed \"once daily gavage\". Assert value is \"daily\". Feed \"injections every other day\". Assert \"every other day\". Confirm \"daily\" and \"once daily\" both normalize to \"daily\".\n\nTest 8 \u2014 dose_mg no inference: Feed \"THC 5 mg/kg i.p.\". Assert dose_mg is null and thc_mg_kg equals 5.0. Feed \"each rat received 2 mg THC total\". Assert dose_mg equals 2.0 and source_is_absolute is True. Confirm papers 13048 and 13570 now return null for dose_mg rather than 60mg and 180mg.\n\nTest 9 \u2014 integration regression: Re-run all papers in the node2b disagreement set after all seven changes are applied. Target: alignment rises from 75.6% to at least 82%. Log any new disagreement fields introduced by the changes so they can be caught in node2c."
+  },
+  "agent_handoff_prompt": "CANNABIS PAPER SCRAPER \u2014 NODE 2B IMPLEMENTATION BRIEF\nSub-node: node2b | Alignment baseline: 75.6%\nFiles in scope: extractor.py, maude_classifier.py, maude_cues.json\n\n\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\nOVERVIEW\n\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\n\nThis brief covers seven rule changes derived from gap analysis showing systematic extraction failures across four categories: strain/compound provenance conflation, exposure-method misfires in ex vivo and aquatic contexts, dietary-delivery misclassification as edibles, and dose field imputation errors. All seven changes are required to move alignment above the 80% threshold. Changes are ordered high-priority first.\n\n\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\nCHANGE 1 \u2014 strain_reported: DUAL-TARGET EXTRACTION\nFile: extractor.py | Priority: HIGH\n\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\n\nProblem: strain_reported currently attempts one extraction pass looking for animal catalog strings (e.g., Sprague-Dawley, C57BL/6, JAX colony numbers). For pure-cannabinoid studies that source compound from a chemical vendor, the field returns null or incorrectly inherits an irrelevant string. Claude returns the compound provenance string (compound name + vendor + purity) in these cases, creating 100% disagreement on the strain_reported field for that paper subset.\n\nImplementation:\n\nSplit the extraction function into two sequential sub-extractors operating on the full abstract and any available methods text.\n\nSub-extractor A \u2014 Animal strain/vendor: retain all existing patterns for JAX, Envigo, Charles River, Harlan, Taconic, and common inbred/outbred strain designators (Sprague-Dawley, Wistar, C57BL/6, BALB/c, CD-1, Long-Evans, etc.). This runs first. If a match is found, assign it and skip sub-extractor B.\n\nSub-extractor B \u2014 Compound provenance: activated only when (a) cannabis_type resolves to 'pure cannabinoid' AND (b) sub-extractor A returns null. Build a pattern that captures: compound name (THC, CBD, cannabidiol, delta-9-tetrahydrocannabinol, CBG, CBDV, etc.) followed within 0\u201380 characters by any of: Sigma-Aldrich, Cayman Chemical, Tocris, NIDA Drug Supply Program, THC Pharm, Lipomed, or a purity expression (greater-than N%, NNN mg/mL, certified reference). Concatenate the matched compound name, vendor name, and purity string into strain_reported separated by a semicolon. Example output: \"CBD; Cayman Chemical; >98% purity\".\n\nIf neither sub-extractor fires, return null explicitly rather than an empty string.\n\nmaude_cues.json additions: add a \"compound_provenance_vendors\" key containing the vendor list above so it can be maintained without touching extractor.py. Add a \"animal_strain_patterns\" key enumerating the catalog phrases currently hardcoded, making them patchable.\n\n\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\nCHANGE 2 \u2014 exposure_method: DISSOLVED IN MEDIA CLASS + INJECTION GUARD\nFile: extractor.py | Priority: HIGH\n\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\n\nProblem: The injection classifier fires on any administration-adjacent language, including ex vivo tissue bath descriptions and zebrafish embryo immersion protocols. \"Animals were injected with vehicle\" appearing in a paper that primarily uses tissue strips is tagging the paper as injection, overriding the correct route.\n\nImplementation:\n\nStep 1 \u2014 Add explicit detection block for dissolved-in-media route. Before any injection detection runs, scan full text for any of the following trigger phrases: \"isolated...strips\", \"isolated tissue\", \"tissue bath\", \"organ bath\", \"bath application\", \"embryos were exposed to\", \"tank water contained\", \"immersion in\", \"dissolved in artificial cerebrospinal fluid\", \"superfusion\". If any trigger fires, set exposure_method to \"cannabinoids dissolved in media\" and return immediately \u2014 do not continue to injection detection.\n\nStep 2 \u2014 Restrict injection detection to hard route abbreviations only. The injection branch may only fire if at least one of the following explicit strings is present: \"i.p.\", \"i.v.\", \"s.c.\", \"subcutaneous\", \"intraperitoneal\", \"intravenous\", \"intrathecal\", \"intracerebroventricular\", \"i.c.v.\". Remove any broader \"inject\" stem matching (inject*, injection) that is not accompanied by one of these abbreviations or spelled-out route names.\n\nStep 3 \u2014 Add \"oral gavage\" and \"gavage\" as a distinct exposure_method value if either word appears and no dissolved-in-media trigger is active.\n\nmaude_cues.json additions: add \"dissolved_in_media_triggers\" array and \"injection_route_guards\" array so both lists are configurable.\n\n\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\nCHANGE 3 \u2014 cannabis_type: GUARD AGAINST EDIBLES MIS-TAG FOR DIETARY COMPOUNDS\nFile: maude_classifier.py | Priority: HIGH\n\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\n\nProblem: Pure compound (THC, CBD) mixed into rodent chow or gelatin pellets is being tagged cannabis_type='edibles' because the classifier detects a dietary delivery context. The correct tag is 'pure cannabinoid' because the substance is a chemically defined compound sourced from a verified supplier, not an edible cannabis product.\n\nImplementation:\n\nIn the cannabis_type classification function in maude_classifier.py, after any initial label is assigned, run a vendor/purity override check. If the text associated with the compound description contains any of: Sigma-Aldrich, Cayman, Tocris, NIDA Drug Supply, THC Pharm, Lipomed, or a purity expression pattern (r'\\d+\\.?\\d*\\s*%\\s*purity' or r'certified reference standard'), override cannabis_type to 'pure cannabinoid' regardless of the delivery vehicle. This override must fire even if words like 'chow', 'diet', 'food', 'pellet', 'cookie', or 'brownie' are also present, because the decisive criterion is compound identity, not delivery form.\n\nSeparately, tighten the edibles detection to require at least one explicit product phrase: 'cannabis-infused', 'edible product', 'cannabis edible', 'brownie', 'cookie', 'cannabis cookie', 'infused brownie'. Generic dietary words alone must not trigger the edibles tag.\n\nUpdate maude_cues.json: add \"edibles_required_phrases\" array (the explicit product strings above) and \"pure_cannabinoid_vendor_override\" array (the vendor/purity strings) to keep classification logic data-driven.\n\n\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\nCHANGE 4 \u2014 duration_days: BROADEN REGEX AND ADD WEEK CONVERSION\nFile: extractor.py | Priority: HIGH\n\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\n\nProblem: Duration extraction only fires on Methods-section header context. Many abstracts state duration inline (\"Animals were treated for 14 days\", \"following a 28-day protocol\") without section headers. Week expressions are also not converted.\n\nImplementation:\n\nReplace the existing single pattern with a cascade of three patterns applied to the full available text (abstract + methods if present), taking the first non-null result in priority order:\n\nPattern 1 \u2014 explicit day count in treatment context: r'(?:for|following|after)\\s+(\\d+)\\s+days?\\b' and r'(\\d+)[- ]day\\s+(?:treatment|exposure|protocol|administration|regimen)'. Capture group is the integer day count.\n\nPattern 2 \u2014 days of treatment phrasing: r'(\\d+)\\s+days?\\s+of\\s+(?:treatment|exposure|administration)'. Capture group is the integer day count.\n\nPattern 3 \u2014 week expression fallback: r'(?:for|following)\\s+(\\d+)\\s+weeks?\\b' and r'(\\d+)[- ]week\\s+(?:treatment|exposure|protocol)'. Multiply captured integer by 7 and store as duration_days. Add a boolean flag duration_from_weeks=True in the extraction metadata to signal downstream reconciliation that this is a derived value.\n\nWhen full PDF is available and yields a conflicting week count, prefer the PDF value over the abstract-derived value. Log both for audit.\n\n\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\nCHANGE 5 \u2014 cbd_mg_kg / thc_mg_kg: PARSE PER-DAY QUALIFIER\nFile: extractor.py | Priority: HIGH\n\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\n\nProblem: Dose expressions written as \"10 mg/kg/day\" or \"10 mg/kg per day\" are not being captured because the current regex requires exactly \"mg/kg\" with no trailing qualifier. The per-day suffix causes a non-match.\n\nImplementation:\n\nUpdate the dose regex to: r'(\\d+\\.?\\d*)\\s*mg/kg(?:\\s*/\\s*day|/day|\\s+per\\s+day)?' making the per-day qualifier optional with the trailing ? so both \"mg/kg\" and \"mg/kg/day\" and \"mg/kg per day\" all match and populate the same numeric field.\n\nAfter capturing the numeric value, assign it to thc_mg_kg or cbd_mg_kg based on compound context: scan the sentence containing the match for THC synonyms (THC, delta-9-THC, delta-9-tetrahydrocannabinol, \u03949-THC) to assign thc_mg_kg, or CBD synonyms (CBD, cannabidiol) to assign cbd_mg_kg. If both appear in the same sentence (combination study), populate both fields with the same value only if the sentence clearly applies the dose to both; otherwise flag for manual review.\n\nmaude_cues.json: add \"thc_synonyms\" and \"cbd_synonyms\" arrays used by this context-assignment logic.\n\n\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\nCHANGE 6 \u2014 administration_frequency: REMOVE FALLBACK DEFAULT\nFile: extractor.py | Priority: MEDIUM\n\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\n\nProblem: When no frequency keyword is found in text, extractor.py returns 'once daily' as a default. This invented value propagates into downstream analyses and was confirmed to disagree with Claude's null return in papers where frequency was genuinely unstated.\n\nImplementation:\n\nRemove any fallback default assignment in the administration_frequency extraction function. The function must return null (Python None, serialized as JSON null) when no frequency keyword is detected.\n\nRecognized frequency values and their normalized forms: 'daily' \u2192 'daily', 'once daily' \u2192 'daily', 'once per day' \u2192 'daily', 'twice daily' \u2192 'twice daily', 'bid' \u2192 'twice daily', 'three times daily' \u2192 'three times daily', 'tid' \u2192 'three times daily', 'every other day' \u2192 'every other day', 'X times per week' \u2192 'X times per week', 'X days per week' \u2192 'X days per week', 'every N days' \u2192 'every N days', 'weekly' \u2192 'weekly'.\n\nDo not normalize 'daily' and 'once daily' as equivalent \u2014 both should map to the single canonical string 'daily'. No other normalization collapse is permitted. If frequency appears multiple times in text with different values (e.g., escalating dose schedule), return an array of the distinct values and set a multi_frequency flag.\n\n\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\nCHANGE 7 \u2014 dose_mg: REMOVE WEIGHT-MULTIPLICATION INFERENCE\nFile: extractor.py | Priority: MEDIUM\n\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\n\nProblem: When only a mg/kg dose is present, extractor.py back-calculates an absolute dose_mg using an assumed animal body weight (30g mouse, 300g rat). This is methodologically incorrect \u2014 assumed weight is not ground truth \u2014 and produced confirmed errors of 60mg and 180mg in papers 13048 and 13570.\n\nImplementation:\n\nRemove all body-weight multiplication logic from the dose_mg extraction path. dose_mg must only be populated when the source text contains an explicit absolute dose expression: 'X mg per animal', 'X mg total dose', 'X mg injected', or a numeric mg value that is not qualified by /kg or /kg/day. If the text gives only mg/kg, populate thc_mg_kg or cbd_mg_kg (per Change 5) and leave dose_mg as null.\n\nAdd a source_is_absolute boolean to the extraction output that is True only when an unqualified mg expression was found. This allows downstream validation to distinguish clean absolute doses from null-due-to-inference.\n\n\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\nmaude_cues.json \u2014 CONSOLIDATED KEY ADDITIONS\n\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\n\nThe following keys should be added or created if the file does not already contain them. All are arrays of strings unless noted.\n\ncompound_provenance_vendors \u2014 vendor names for sub-extractor B in Change 1\nanimal_strain_patterns \u2014 catalog strain strings currently hardcoded in extractor.py\ndissolved_in_media_triggers \u2014 tissue bath and aquatic immersion phrases for Change 2\ninjection_route_guards \u2014 explicit route abbreviations and spellings for Change 2\nedibles_required_phrases \u2014 mandatory phrases for edibles classification in Change 3\npure_cannabinoid_vendor_override \u2014 vendor/purity strings triggering override in Change 3\nthc_synonyms \u2014 THC compound name variants for Change 5\ncbd_synonyms \u2014 CBD compound name variants for Change 5\n\n\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\nTEST IDEAS\n\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\n\nTest 1 \u2014 strain_reported dual target: Feed a pure-cannabinoid paper abstract containing \"CBD obtained from Cayman Chemical (>98% purity)\" with no animal strain mention. Assert strain_reported equals \"CBD; Cayman Chemical; >98% purity\". Feed a rodent paper with \"C57BL/6 mice (Jackson Laboratories)\". Assert strain_reported equals the JAX string and sub-extractor B did not fire.\n\nTest 2 \u2014 exposure_method dissolved-in-media guard: Feed abstract containing \"isolated aortic strips were incubated with 10 \u00b5M CBD\". Assert exposure_method equals \"cannabinoids dissolved in media\". Feed zebrafish abstract \"embryos were exposed to THC in tank water\". Assert same value. Verify neither triggers injection class.\n\nTest 3 \u2014 exposure_method injection guard: Feed abstract \"Rats received i.p. injections of THC (5 mg/kg)\". Assert exposure_method equals \"injection\". Feed abstract with only the word \"injected\" and no route abbreviation. Assert exposure_method is not \"injection\" \u2014 should be null or require a separate route to resolve.\n\nTest 4 \u2014 cannabis_type edibles override: Feed text \"THC (Sigma-Aldrich, >99% purity) was incorporated into standard rodent chow\". Assert cannabis_type equals \"pure cannabinoid\". Feed text \"rats received cannabis-infused brownies\". Assert cannabis_type equals \"edibles\".\n\nTest 5 \u2014 duration_days week conversion: Feed \"Animals were treated for 6 weeks\". Assert duration_days equals 42 and duration_from_weeks flag is True. Feed \"following a 28-day protocol\". Assert duration_days equals 28 and flag is False.\n\nTest 6 \u2014 dose per day parsing: Feed \"CBD (10 mg/kg/day) was administered by gavage\". Assert cbd_mg_kg equals 10.0. Feed \"THC at 5 mg/kg per day\". Assert thc_mg_kg equals 5.0. Feed \"vehicle or CBD (20 mg/kg)\". Assert cbd_mg_kg equals 20.0 (no per-day qualifier required).\n\nTest 7 \u2014 administration_frequency no default: Feed abstract with no frequency language. Assert administration_frequency is null. Feed \"once daily gavage\". Assert value is \"daily\". Feed \"injections every other day\". Assert \"every other day\". Confirm \"daily\" and \"once daily\" both normalize to \"daily\".\n\nTest 8 \u2014 dose_mg no inference: Feed \"THC 5 mg/kg i.p.\". Assert dose_mg is null and thc_mg_kg equals 5.0. Feed \"each rat received 2 mg THC total\". Assert dose_mg equals 2.0 and source_is_absolute is True. Confirm papers 13048 and 13570 now return null for dose_mg rather than 60mg and 180mg.\n\nTest 9 \u2014 integration regression: Re-run all papers in the node2b disagreement set after all seven changes are applied. Target: alignment rises from 75.6% to at least 82%. Log any new disagreement fields introduced by the changes so they can be caught in node2c.",
+  "llm_call_metrics": {
+    "model": "claude-sonnet-4-6",
+    "input_tokens": 7266,
+    "output_tokens": 3593,
+    "total_tokens": 10859,
+    "estimated_cost_usd": 0.075693,
+    "prompt_chars": 21887,
+    "disagreement_rows_sent": 10
+  },
+  "status": "applied",
+  "applied_at": "2026-06-22T12:40:10.101541"
+}

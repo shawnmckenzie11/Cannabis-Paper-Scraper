@@ -11,9 +11,11 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional, Sequence, Tuple
 
 import classification_schema
+import handoff_learning_log
 import maude_feedback
 import subnode_field_scopes
 import calibration_coordinator
+import content_tiers
 
 HIGH_LEVEL_FIELDS = (
     "study_type",
@@ -481,13 +483,18 @@ def score_paper_rl_metrics(
     result: Dict[str, Any],
     subnode: str,
 ) -> Optional[Dict[str, float]]:
-    """Computes alignment and extraction-fill rates for one paired paper result."""
+    """Computes alignment and Maude recall rates for one paired paper result."""
     llm = result.get("llm") or {}
     maude = result.get("maude") or {}
     if not llm or not maude:
         return None
 
-    scope_fields = subnode_field_scopes.fields_in_scope(subnode, llm)
+    paper_tier = result.get("content_tier") or content_tiers.infer_content_tier({
+        **llm,
+        "classifier_version": llm.get("classifier_version") or result.get("before_classifier_version"),
+        "full_text_link": result.get("full_text_link"),
+    })
+    scope_fields = content_tiers.fields_in_scope_for_tier(subnode, paper_tier, llm)
     if not scope_fields:
         return None
 
@@ -498,10 +505,20 @@ def score_paper_rl_metrics(
             llm,
             subnode,
             classification_schema.compare_field_values,
+            scope_fields=scope_fields,
         )
 
-    populated = sum(1 for field in scope_fields if field_is_populated(llm.get(field)))
-    fill_rate = round(populated / len(scope_fields), 4)
+    claude_populated_fields = [
+        field for field in scope_fields if field_is_populated(llm.get(field))
+    ]
+    if claude_populated_fields:
+        maude_populated = sum(
+            1 for field in claude_populated_fields if field_is_populated(maude.get(field))
+        )
+        maude_recall_rate = round(maude_populated / len(claude_populated_fields), 4)
+    else:
+        maude_recall_rate = None
+
     alignment_rate = scoped.get("agreement_rate")
     if alignment_rate is None and scoped.get("scoped_field_count"):
         disagreements = len((scoped.get("fields") or {}))
@@ -510,9 +527,13 @@ def score_paper_rl_metrics(
 
     return {
         "alignment_rate": float(alignment_rate) if alignment_rate is not None else None,
-        "extraction_fill_rate": fill_rate,
+        "maude_recall_rate": maude_recall_rate,
+        "claude_fields_populated": len(claude_populated_fields),
+        "maude_fields_populated": sum(
+            1 for field in claude_populated_fields if field_is_populated(maude.get(field))
+        ) if claude_populated_fields else 0,
         "fields_in_scope": len(scope_fields),
-        "fields_populated": populated,
+        "content_tier": paper_tier,
     }
 
 
@@ -527,8 +548,9 @@ def _average_metric(values: Sequence[Optional[float]]) -> Optional[float]:
 def build_rl_node_progress(
     batch_payloads: Sequence[Dict[str, Any]],
     rules_config: Optional[Dict[str, Any]] = None,
+    output_dir: Optional[Path] = None,
 ) -> Dict[str, Any]:
-    """Builds cross-node RL progress timelines for alignment and extraction fill rates."""
+    """Builds cross-node RL progress timelines for alignment and Maude recall rates."""
     rules_config = rules_config or load_rules_config()
     rl_cfg = (rules_config.get("agent_automation") or {}).get("calibration_rl") or {}
     threshold_pct = float(rl_cfg.get("agreement_threshold_pct") or 90)
@@ -537,6 +559,7 @@ def build_rl_node_progress(
     active_queue = list(rl_cfg.get("subnode_queue") or calibration_coordinator.DEFAULT_SUBNODE_QUEUE)
     deferred = list(rl_cfg.get("subnode_reevaluate_later") or calibration_coordinator.DEFAULT_REEVALUATE_LATER)
     prerequisites = list(rl_cfg.get("prerequisites_passed") or RL_PREREQUISITE_NODES)
+    handoffs = handoff_learning_log.load_handoff_learning_log(output_dir)
 
     ordered_nodes: List[str] = []
     for node_id in prerequisites:
@@ -557,6 +580,9 @@ def build_rl_node_progress(
 
     nodes: Dict[str, Any] = {}
     combined_runs: List[Dict[str, Any]] = []
+    tier_timelines: Dict[str, List[Dict[str, Any]]] = {
+        tier: [] for tier in content_tiers.CONTENT_TIERS
+    }
 
     for node_id in ordered_nodes:
         if node_id in prerequisites:
@@ -572,19 +598,42 @@ def build_rl_node_progress(
         runs: List[Dict[str, Any]] = []
         consecutive_pass = 0
         for payload in sorted(batches_by_node.get(node_id) or [], key=lambda row: row.get("created_at") or ""):
+            # Feedback refresh artifacts re-score Maude but are not new RL measurement batches.
+            if payload.get("maude_refresh_only"):
+                continue
             paper_metrics: List[Dict[str, float]] = []
             for result in payload.get("results") or []:
                 scored = score_paper_rl_metrics(result, node_id)
                 if scored:
                     paper_metrics.append(scored)
 
-            alignment_rate = _average_metric([row.get("alignment_rate") for row in paper_metrics])
-            extraction_fill_rate = _average_metric([row.get("extraction_fill_rate") for row in paper_metrics])
+            gate_metrics = [
+                row for row in paper_metrics
+                if row.get("content_tier") == content_tiers.CONTENT_TIER_PDF_EXTRACTED
+            ] or paper_metrics
+            alignment_rate = _average_metric([row.get("alignment_rate") for row in gate_metrics])
+            maude_recall_rate = _average_metric([row.get("maude_recall_rate") for row in gate_metrics])
             passed = alignment_rate is not None and alignment_rate >= threshold
             if passed:
                 consecutive_pass += 1
             else:
                 consecutive_pass = 0
+
+            tier_metrics: Dict[str, Any] = {}
+            for tier in content_tiers.CONTENT_TIERS:
+                tier_rows = [row for row in paper_metrics if row.get("content_tier") == tier]
+                if not tier_rows:
+                    continue
+                tier_alignment = _average_metric([row.get("alignment_rate") for row in tier_rows])
+                tier_recall = _average_metric([row.get("maude_recall_rate") for row in tier_rows])
+                tier_metrics[tier] = {
+                    "label": content_tiers.CONTENT_TIER_LABELS.get(tier, tier),
+                    "paper_count": len(tier_rows),
+                    "alignment_rate": tier_alignment,
+                    "alignment_pct": round(tier_alignment * 100, 1) if tier_alignment is not None else None,
+                    "maude_recall_rate": tier_recall,
+                    "maude_recall_pct": round(tier_recall * 100, 1) if tier_recall is not None else None,
+                }
 
             run_index = len(runs) + 1
             run_row = {
@@ -592,10 +641,13 @@ def build_rl_node_progress(
                 "batch_id": payload.get("batch_id"),
                 "created_at": payload.get("created_at"),
                 "paper_count": len(paper_metrics),
+                "content_tier": payload.get("content_tier"),
+                "content_tier_counts": payload.get("content_tier_counts") or {},
                 "alignment_rate": alignment_rate,
                 "alignment_pct": round(alignment_rate * 100, 1) if alignment_rate is not None else None,
-                "extraction_fill_rate": extraction_fill_rate,
-                "extraction_fill_pct": round(extraction_fill_rate * 100, 1) if extraction_fill_rate is not None else None,
+                "maude_recall_rate": maude_recall_rate,
+                "maude_recall_pct": round(maude_recall_rate * 100, 1) if maude_recall_rate is not None else None,
+                "tier_metrics": tier_metrics,
                 "passed": passed,
                 "mode": payload.get("mode"),
             }
@@ -606,6 +658,16 @@ def build_rl_node_progress(
                 "node_label": RL_NODE_LABELS.get(node_id, node_id),
                 "series_label": f"{node_id} run {run_index}",
             })
+
+        for run_row in runs:
+            for tier, metrics in (run_row.get("tier_metrics") or {}).items():
+                tier_timelines.setdefault(tier, []).append({
+                    "run_index": run_row.get("run_index"),
+                    "batch_id": run_row.get("batch_id"),
+                    "created_at": run_row.get("created_at"),
+                    "node_id": node_id,
+                    **metrics,
+                })
 
         if phase == "active" and runs:
             status = "passed" if consecutive_pass >= min_consecutive else "in_progress"
@@ -627,8 +689,13 @@ def build_rl_node_progress(
             "run_count": len(runs),
             "latest_alignment_rate": latest.get("alignment_rate"),
             "latest_alignment_pct": latest.get("alignment_pct"),
-            "latest_extraction_fill_rate": latest.get("extraction_fill_rate"),
-            "latest_extraction_fill_pct": latest.get("extraction_fill_pct"),
+            "latest_maude_recall_rate": latest.get("maude_recall_rate"),
+            "latest_maude_recall_pct": latest.get("maude_recall_pct"),
+            "learning_timeline": handoff_learning_log.build_node_learning_timeline(
+                node_id,
+                handoffs,
+                runs,
+            ),
         }
 
     combined_runs.sort(key=lambda row: row.get("created_at") or "")
@@ -642,6 +709,8 @@ def build_rl_node_progress(
         "ordered_nodes": ordered_nodes,
         "nodes": nodes,
         "combined_runs": combined_runs,
+        "tier_timelines": tier_timelines,
+        "content_tier_labels": content_tiers.CONTENT_TIER_LABELS,
         "reset_at": None,
     }
 
@@ -695,12 +764,12 @@ def build_subnode_promotion_readiness(
                     paper_scores.append(float(rate))
 
             batch_rate = round(sum(paper_scores) / len(paper_scores), 4) if paper_scores else None
-            fill_scores: List[float] = []
+            recall_scores: List[float] = []
             for result in payload.get("results") or []:
                 scored = score_paper_rl_metrics(result, subnode)
-                if scored and scored.get("extraction_fill_rate") is not None:
-                    fill_scores.append(float(scored["extraction_fill_rate"]))
-            extraction_fill_rate = _average_metric(fill_scores)
+                if scored and scored.get("maude_recall_rate") is not None:
+                    recall_scores.append(float(scored["maude_recall_rate"]))
+            maude_recall_rate = _average_metric(recall_scores)
             passed = batch_rate is not None and batch_rate >= threshold
             if passed:
                 consecutive_pass += 1
@@ -713,8 +782,8 @@ def build_subnode_promotion_readiness(
                 "agreement_rate": batch_rate,
                 "alignment_rate": batch_rate,
                 "alignment_pct": round(batch_rate * 100, 1) if batch_rate is not None else None,
-                "extraction_fill_rate": extraction_fill_rate,
-                "extraction_fill_pct": round(extraction_fill_rate * 100, 1) if extraction_fill_rate is not None else None,
+                "maude_recall_rate": maude_recall_rate,
+                "maude_recall_pct": round(maude_recall_rate * 100, 1) if maude_recall_rate is not None else None,
                 "passed": passed,
             })
 
@@ -1730,8 +1799,9 @@ def build_dashboard_metrics(
         "maude_feedback": _build_maude_feedback_metrics(maude_ab_payloads, output_dir),
         "calibration_lock": calibration_coordinator.get_lock_status(db=_get_database_manager(), rules_config=rules_config),
         "subnode_promotion": build_subnode_promotion_readiness(maude_ab_payloads, rules_config),
-        "rl_node_progress": build_rl_node_progress(maude_ab_payloads, rules_config),
+        "rl_node_progress": build_rl_node_progress(maude_ab_payloads, rules_config, output_dir),
         "staged_patches": load_staged_patches(output_dir),
+        "handoff_learning_log": handoff_learning_log.load_handoff_learning_log(output_dir),
         "subnode_field_scopes": SUBNODE_FIELD_SCOPES,
     }
 
@@ -2019,6 +2089,47 @@ def write_dashboard_html(metrics: Dict[str, Any], output_path: Path) -> Path:
       background: rgba(52,211,153,0.18);
       border-color: rgba(52,211,153,0.35);
     }}
+    #rl-node-progress-table tbody tr.rl-node-row {{
+      cursor: pointer;
+      transition: background 0.12s ease;
+    }}
+    #rl-node-progress-table tbody tr.rl-node-row:hover {{
+      background: rgba(34,211,238,0.08);
+    }}
+    #rl-node-progress-table tbody tr.rl-node-row.selected {{
+      background: rgba(34,211,238,0.14);
+      outline: 1px solid rgba(34,211,238,0.35);
+    }}
+    .rl-learning-timeline {{
+      margin: 0 0 16px;
+      padding: 14px 16px;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      background: rgba(255,255,255,0.02);
+    }}
+    .rl-learning-event {{
+      position: relative;
+      padding: 0 0 16px 18px;
+      border-left: 2px solid rgba(34,211,238,0.35);
+      margin-left: 6px;
+    }}
+    .rl-learning-event:last-child {{
+      padding-bottom: 0;
+    }}
+    .rl-learning-event::before {{
+      content: '';
+      position: absolute;
+      left: -7px;
+      top: 4px;
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: #22d3ee;
+      border: 2px solid var(--bg);
+    }}
+    .rl-learning-event.kind-batch_run::before {{
+      background: #a78bfa;
+    }}
     .disagreement-card {{
       border: 1px solid var(--border);
       border-radius: 12px;
@@ -2183,10 +2294,11 @@ def write_dashboard_html(metrics: Dict[str, Any], output_path: Path) -> Path:
         <div class="grid grid-4" id="summary-cards"></div>
 
         <div class="card" id="rl-progress-section">
-          <h2>RL Progress by Node <span class="muted" style="font-size:0.82rem;font-weight:400">· alignment + extraction fill · 90% gate</span></h2>
+          <h2>RL Progress by Node <span class="muted" style="font-size:0.82rem;font-weight:400">· alignment + Maude recall · 90% gate</span></h2>
           <div class="muted" style="font-size:0.82rem;margin-bottom:12px" id="rl-progress-summary">
-            Track Maude vs Claude field alignment and Claude extraction completeness per sub-node run.
+            Track Maude vs Claude field alignment and Maude recall on Claude-populated fields per sub-node run.
           </div>
+          <div class="muted" style="font-size:0.78rem;margin-bottom:8px">Click an active node row to view its learning sequence (handoffs and batch runs).</div>
           <div style="overflow-x:auto;margin-bottom:16px">
             <table id="rl-node-progress-table">
               <thead>
@@ -2196,7 +2308,7 @@ def write_dashboard_html(metrics: Dict[str, Any], output_path: Path) -> Path:
                   <th>Status</th>
                   <th>Runs</th>
                   <th>Latest alignment</th>
-                  <th>Latest extraction fill</th>
+                  <th>Latest Maude recall</th>
                   <th>Consecutive pass</th>
                 </tr>
               </thead>
@@ -2205,6 +2317,7 @@ def write_dashboard_html(metrics: Dict[str, Any], output_path: Path) -> Path:
               </tbody>
             </table>
           </div>
+          <div id="rl-node-learning-detail" class="rl-learning-timeline" style="display:none;margin-bottom:16px"></div>
           <div class="grid grid-2" style="margin-bottom:12px">
             <div>
               <h3 style="font-size:0.9rem;margin:0 0 8px">Field Alignment Over Runs (Maude vs Claude)</h3>
@@ -2212,12 +2325,25 @@ def write_dashboard_html(metrics: Dict[str, Any], output_path: Path) -> Path:
               <div class="chart-box-sm"><canvas id="chart-rl-alignment"></canvas></div>
             </div>
             <div>
-              <h3 style="font-size:0.9rem;margin:0 0 8px">Expected Field Extraction Fill (Claude)</h3>
-              <div class="muted" style="font-size:0.78rem;margin-bottom:8px">Percent of in-scope fields populated by Claude in each batch.</div>
-              <div class="chart-box-sm"><canvas id="chart-rl-extraction-fill"></canvas></div>
+              <h3 style="font-size:0.9rem;margin:0 0 8px">Maude Recall vs Claude Fields</h3>
+              <div class="muted" style="font-size:0.78rem;margin-bottom:8px">Percent of Claude-populated in-scope fields where Maude extracted any value (includes misses).</div>
+              <div class="chart-box-sm"><canvas id="chart-rl-maude-recall"></canvas></div>
+            </div>
+          </div>
+          <h3 style="font-size:0.9rem;margin:0 0 8px">Alignment by Content Tier</h3>
+          <div class="muted" style="font-size:0.78rem;margin-bottom:8px">PDF-extracted batches use full field scope; abstract tiers use routing/coarse fields only.</div>
+          <div class="grid grid-2" style="margin-bottom:12px">
+            <div>
+              <h4 style="font-size:0.85rem;margin:0 0 6px">PDF extracted (llm-pdf-reclassify)</h4>
+              <div class="chart-box-sm"><canvas id="chart-rl-tier-pdf-alignment"></canvas></div>
+            </div>
+            <div>
+              <h4 style="font-size:0.85rem;margin:0 0 6px">Abstract reclassify (llm-reclassify)</h4>
+              <div class="chart-box-sm"><canvas id="chart-rl-tier-abstract-alignment"></canvas></div>
             </div>
           </div>
           <div id="subnode-promotion-panel" class="muted"></div>
+          <div id="handoff-learning-log-panel" style="margin-top:12px"></div>
           <div id="staged-patches-panel" style="margin-top:12px"></div>
         </div>
 
@@ -2368,6 +2494,8 @@ def write_dashboard_html(metrics: Dict[str, Any], output_path: Path) -> Path:
     let chartBm25 = null;
     let chartRlAlignment = null;
     let chartRlExtraction = null;
+    let chartRlTierPdf = null;
+    let chartRlTierAbstract = null;
     let authStatus = {{ logged_in: false, is_admin: false, login_url: '/login?next=/calibration/dashboard' }};
     let selectedAgreementField = null;
 
@@ -3378,6 +3506,60 @@ def write_dashboard_html(metrics: Dict[str, Any], output_path: Path) -> Path:
       return 'badge badge-progress';
     }}
 
+    let selectedRlNodeId = null;
+
+    function renderRlNodeLearningDetail(nodeId) {{
+      const panel = document.getElementById('rl-node-learning-detail');
+      if (!panel) return;
+      const progress = METRICS.rl_node_progress || {{}};
+      const nodes = progress.nodes || {{}};
+      const row = nodes[nodeId] || {{}};
+      const timeline = (row.learning_timeline || []).filter(event =>
+        event.kind === 'handoff' && (event.source_subnode || '') === nodeId
+      );
+      if (!nodeId || !timeline.length) {{
+        panel.style.display = 'none';
+        panel.innerHTML = '';
+        return;
+      }}
+      panel.style.display = 'block';
+      const label = row.label || nodeId;
+      panel.innerHTML = `<div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:12px">`
+        + `<h3 style="font-size:0.95rem;margin:0">Learning sequence · ${{escapeHtml(label)}}</h3>`
+        + `<span class="mono muted" style="font-size:0.75rem">${{nodeId}}</span></div>`
+        + `<div class="muted" style="font-size:0.78rem;margin-bottom:14px">Handoffs and batch runs in chronological order. Learning notes capture classifier improvements applied after each feedback cycle.</div>`
+        + timeline.map(event => {{
+          const when = (event.occurred_at || '').replace('T', ' ').slice(0, 19);
+          const kind = event.kind || 'handoff';
+          const metrics = kind === 'batch_run'
+            ? `<div class="mono muted" style="font-size:0.75rem;margin-top:4px">`
+              + (event.alignment_pct != null ? `alignment ${{Number(event.alignment_pct).toFixed(1)}}%` : '')
+              + (event.maude_recall_pct != null ? ` · recall ${{Number(event.maude_recall_pct).toFixed(1)}}%` : '')
+              + `</div>`
+            : '';
+          const notes = (event.learning_notes || []).map(note =>
+            `<li style="margin-bottom:4px">${{escapeHtml(note)}}</li>`
+          ).join('');
+          const notesBlock = notes
+            ? `<ul style="margin:8px 0 0;padding-left:20px;font-size:0.84rem;line-height:1.45;list-style:disc">${{notes}}</ul>`
+            : `<div class="muted" style="font-size:0.78rem;margin-top:6px">No learning notes recorded for this step yet.</div>`;
+          return `<div class="rl-learning-event kind-${{kind}}">`
+            + `<div style="font-weight:600;font-size:0.88rem">${{escapeHtml(event.title || 'Event')}}</div>`
+            + `<div class="mono muted" style="font-size:0.75rem;margin-top:2px">${{kind === 'handoff' ? 'Handoff' : 'Batch run'}} · ${{when || '—'}}</div>`
+            + metrics
+            + notesBlock
+            + `</div>`;
+        }}).join('');
+    }}
+
+    function selectRlNodeRow(nodeId) {{
+      selectedRlNodeId = nodeId;
+      document.querySelectorAll('#rl-node-progress-body tr.rl-node-row').forEach(tr => {{
+        tr.classList.toggle('selected', tr.dataset.nodeId === nodeId);
+      }});
+      renderRlNodeLearningDetail(nodeId);
+    }}
+
     function pctOrDash(value) {{
       return value != null ? (Number(value).toFixed(1) + '%') : '—';
     }}
@@ -3395,7 +3577,7 @@ def write_dashboard_html(metrics: Dict[str, Any], output_path: Path) -> Path:
         const resetNote = progress.reset_at ? ` · session reset ${{progress.reset_at}}` : '';
         summary.textContent = runCount
           ? `${{runCount}} RL batch run(s) tracked · ${{threshold}}% alignment gate · prerequisites: ${{(progress.prerequisites_passed || []).join(', ') || 'none'}}${{resetNote}}`
-          : 'No RL batch runs yet — dashboard reset complete. Execute sub-node batches to populate alignment and extraction-fill timelines.' + resetNote;
+          : 'No RL batch runs yet — dashboard reset complete. Execute sub-node batches to populate alignment and Maude recall timelines.' + resetNote;
       }}
 
       if (tbody) {{
@@ -3404,16 +3586,28 @@ def write_dashboard_html(metrics: Dict[str, Any], output_path: Path) -> Path:
         }} else {{
           tbody.innerHTML = ordered.map(nodeId => {{
             const row = nodes[nodeId] || {{}};
-            return `<tr>
+            const selected = selectedRlNodeId === nodeId ? ' selected' : '';
+            const hasTimeline = (row.learning_timeline || []).length ? ' rl-node-row' : '';
+            return `<tr class="${{hasTimeline ? 'rl-node-row' + selected : ''}}" data-node-id="${{nodeId}}">
               <td><strong>${{row.label || nodeId}}</strong><div class="mono muted">${{nodeId}}</div></td>
               <td>${{row.phase || '—'}}</td>
               <td><span class="${{rlStatusBadge(row.status)}}">${{row.status || 'pending'}}</span></td>
               <td>${{row.run_count || 0}}</td>
               <td>${{pctOrDash(row.latest_alignment_pct)}}</td>
-              <td>${{pctOrDash(row.latest_extraction_fill_pct)}}</td>
+              <td>${{pctOrDash(row.latest_maude_recall_pct)}}</td>
               <td>${{row.consecutive_pass_batches || 0}} / ${{row.min_consecutive_pass_batches || 2}}</td>
             </tr>`;
           }}).join('');
+          tbody.querySelectorAll('tr.rl-node-row').forEach(tr => {{
+            tr.addEventListener('click', () => selectRlNodeRow(tr.dataset.nodeId));
+          }});
+          if (!selectedRlNodeId) {{
+            const defaultNode = ordered.find(nodeId => ((nodes[nodeId] || {{}}).learning_timeline || []).length)
+              || null;
+            if (defaultNode) selectRlNodeRow(defaultNode);
+          }} else {{
+            selectRlNodeRow(selectedRlNodeId);
+          }}
         }}
       }}
 
@@ -3432,12 +3626,12 @@ def write_dashboard_html(metrics: Dict[str, Any], output_path: Path) -> Path:
         }};
       }}).filter(dataset => dataset.data.length);
 
-      const extractionDatasets = activeNodes.map((nodeId, index) => {{
+      const recallDatasets = activeNodes.map((nodeId, index) => {{
         const row = nodes[nodeId] || {{}};
         const runs = row.runs || [];
         return {{
           label: row.label || nodeId,
-          data: runs.map(run => run.extraction_fill_pct),
+          data: runs.map(run => run.maude_recall_pct),
           borderColor: palette[index % palette.length],
           backgroundColor: palette[index % palette.length] + '33',
           tension: 0.25,
@@ -3479,14 +3673,14 @@ def write_dashboard_html(metrics: Dict[str, Any], output_path: Path) -> Path:
         }});
       }}
 
-      const extractionCanvas = document.getElementById('chart-rl-extraction-fill');
+      const extractionCanvas = document.getElementById('chart-rl-maude-recall');
       if (extractionCanvas) {{
         if (chartRlExtraction) chartRlExtraction.destroy();
         chartRlExtraction = new Chart(extractionCanvas, {{
           type: 'line',
           data: {{
             labels: runLabels,
-            datasets: extractionDatasets.length ? extractionDatasets : [{{
+            datasets: recallDatasets.length ? recallDatasets : [{{
               label: 'Awaiting runs',
               data: [],
             }}],
@@ -3522,9 +3716,101 @@ def write_dashboard_html(metrics: Dict[str, Any], output_path: Path) -> Path:
               (row.proposed_rules_changes || []).length
             }} proposal(s) · ${{
               row.created_at || ''
-            }}</div>`).join('')
+            }}${{ row.status === 'applied' ? ' · applied' : '' }}</div>`).join('')
           : '';
       }}
+
+      const handoffLog = document.getElementById('handoff-learning-log-panel');
+      if (handoffLog) {{
+        const entries = METRICS.handoff_learning_log || [];
+        handoffLog.innerHTML = entries.length
+          ? `<h3 style="font-size:0.9rem;margin:0 0 8px">Applied Maude Learning Handoffs</h3>`
+            + `<div class="muted" style="font-size:0.78rem;margin-bottom:10px">Human-readable summaries of classifier patches applied from RL feedback.</div>`
+            + entries.slice(0, 8).map(entry => {{
+              const notes = (entry.learning_notes || []).map(note =>
+                `<li style="margin-bottom:4px">${{escapeHtml(note)}}</li>`
+              ).join('');
+              const beneficiaries = (entry.beneficiary_nodes || entry.beneficiary_subnodes || []).join(', ');
+              const when = (entry.applied_at || '').replace('T', ' ').slice(0, 19);
+              return `<div style="margin-bottom:14px;padding:10px 12px;border:1px solid var(--border);border-radius:8px">`
+                + `<div style="font-weight:600;margin-bottom:4px">${{escapeHtml(entry.summary_title || entry.source_subnode || 'Handoff')}}</div>`
+                + `<div class="mono muted" style="font-size:0.75rem;margin-bottom:8px">${{escapeHtml(entry.source_subnode || '')}} · ${{when}}`
+                + (beneficiaries ? ` · also benefits: ${{escapeHtml(beneficiaries)}}` : '')
+                + `</div>`
+                + `<ul style="margin:0;padding-left:18px;font-size:0.84rem;line-height:1.45">${{notes}}</ul>`
+                + `</div>`;
+            }}).join('')
+          : '';
+      }}
+
+      renderRlTierChart(
+        'chart-rl-tier-pdf-alignment',
+        'chartRlTierPdf',
+        progress.tier_timelines && progress.tier_timelines.pdf_extracted,
+        activeNodes,
+        nodes,
+        'PDF extracted alignment',
+      );
+      renderRlTierChart(
+        'chart-rl-tier-abstract-alignment',
+        'chartRlTierAbstract',
+        progress.tier_timelines && progress.tier_timelines.abstract_reclassify,
+        activeNodes,
+        nodes,
+        'Abstract reclassify alignment',
+      );
+    }}
+
+    function renderRlTierChart(canvasId, chartVarName, timeline, activeNodes, nodes, emptyLabel) {{
+      const canvas = document.getElementById(canvasId);
+      if (!canvas) return;
+      const palette = ['#34d399', '#22d3ee', '#a78bfa', '#fbbf24'];
+      const datasets = (activeNodes || []).map((nodeId, index) => {{
+        const row = nodes[nodeId] || {{}};
+        const runs = row.runs || [];
+        const data = runs.map(run => {{
+          const tierMetrics = (run.tier_metrics || {{}})[
+            canvasId.includes('pdf') ? 'pdf_extracted' : 'abstract_reclassify'
+          ];
+          return tierMetrics ? tierMetrics.alignment_pct : null;
+        }});
+        return {{
+          label: row.label || nodeId,
+          data,
+          borderColor: palette[index % palette.length],
+          backgroundColor: palette[index % palette.length] + '33',
+          tension: 0.25,
+          spanGaps: true,
+        }};
+      }}).filter(dataset => dataset.data.some(value => value != null));
+
+      const maxRuns = Math.max(0, ...(activeNodes || []).map(nodeId => ((nodes[nodeId] || {{}}).runs || []).length));
+      const runLabels = Array.from({{ length: maxRuns }}, (_, idx) => 'Run ' + (idx + 1));
+      const chartOptions = {{
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: {{
+          y: {{
+            beginAtZero: true,
+            max: 100,
+            ticks: {{ callback: value => value + '%' }},
+          }},
+        }},
+        plugins: {{ legend: {{ position: 'bottom' }} }},
+      }};
+
+      if (chartVarName === 'chartRlTierPdf' && chartRlTierPdf) chartRlTierPdf.destroy();
+      if (chartVarName === 'chartRlTierAbstract' && chartRlTierAbstract) chartRlTierAbstract.destroy();
+      const chart = new Chart(canvas, {{
+        type: 'line',
+        data: {{
+          labels: runLabels,
+          datasets: datasets.length ? datasets : [{{ label: emptyLabel + ' — awaiting runs', data: [] }}],
+        }},
+        options: chartOptions,
+      }});
+      if (chartVarName === 'chartRlTierPdf') chartRlTierPdf = chart;
+      if (chartVarName === 'chartRlTierAbstract') chartRlTierAbstract = chart;
     }}
 
     function renderSubnodePromotion() {{

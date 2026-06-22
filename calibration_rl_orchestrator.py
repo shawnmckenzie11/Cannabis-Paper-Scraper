@@ -14,7 +14,12 @@ import calibration_feedback_agent
 import calibration_metrics
 import classifier
 import subnode_field_scopes
-from calibration_agent import build_arg_parser, run_calibration
+import content_tiers
+from calibration_agent import (
+    build_arg_parser as build_calibration_arg_parser,
+    run_calibration,
+    run_subnode_pdf_maude_ab,
+)
 
 
 SUBNODE_TO_MODE = {
@@ -22,6 +27,8 @@ SUBNODE_TO_MODE = {
     "node2b": "node2b_in_vivo",
     "node2c": "node2c_in_vitro",
 }
+
+PDF_MAUDE_AB_SUBNODES = frozenset({"node2a", "node2b", "node2c"})
 
 
 def load_rl_config() -> Dict[str, Any]:
@@ -84,16 +91,31 @@ def run_orchestrator(args: argparse.Namespace) -> Dict[str, Any]:
                 "cycle_reports": cycle_reports,
             }
 
-        cal_parser = build_arg_parser()
-        cal_args = cal_parser.parse_args([
-            "--max-calls", str(args.max_calls),
-            "--mode", mode,
-            "--target-subnode", subnode,
-            "--variants", args.variants,
-            "--abstract-only",
-            "--skip-lock",
-            "--lock-owner", f"orchestrator-{subnode}-cycle{cycle}",
-        ])
+        cal_parser = build_calibration_arg_parser()
+        lock_owner = f"orchestrator-{subnode}-cycle{cycle}"
+        use_pdf_maude_ab = subnode in PDF_MAUDE_AB_SUBNODES
+
+        if use_pdf_maude_ab:
+            cal_args = cal_parser.parse_args([
+                "--subnode-pdf-maude-ab",
+                "--max-calls", str(args.max_calls),
+                "--mode", mode,
+                "--target-subnode", subnode,
+                "--content-tier", getattr(args, "content_tier", None) or content_tiers.CONTENT_TIER_PDF_EXTRACTED,
+                "--full-extraction",
+                "--skip-lock",
+                "--lock-owner", lock_owner,
+            ])
+        else:
+            cal_args = cal_parser.parse_args([
+                "--max-calls", str(args.max_calls),
+                "--mode", mode,
+                "--target-subnode", subnode,
+                "--variants", args.variants,
+                "--abstract-only",
+                "--skip-lock",
+                "--lock-owner", lock_owner,
+            ])
         if args.output_dir:
             cal_args.output_dir = args.output_dir
         if args.include_calibrated:
@@ -101,11 +123,14 @@ def run_orchestrator(args: argparse.Namespace) -> Dict[str, Any]:
 
         calibration_coordinator.acquire_lock(
             "running_batch",
-            f"orchestrator-{subnode}-cycle{cycle}",
+            lock_owner,
             subnode=subnode,
         )
         try:
-            json_path, walkthrough_path = run_calibration(cal_args)
+            if use_pdf_maude_ab:
+                json_path, walkthrough_path = run_subnode_pdf_maude_ab(cal_args)
+            else:
+                json_path, walkthrough_path = run_calibration(cal_args)
         finally:
             calibration_coordinator.release_lock()
 
@@ -130,19 +155,28 @@ def run_orchestrator(args: argparse.Namespace) -> Dict[str, Any]:
             "walkthrough_path": str(walkthrough_path),
             "latest_agreement_rate": latest_rate,
             "promotion_ready": bool(subnode_row.get("promotion_ready")),
+            "content_tier": getattr(cal_args, "content_tier", None) or (
+                content_tiers.CONTENT_TIER_PDF_EXTRACTED if use_pdf_maude_ab else None
+            ),
         }
 
-        if latest_rate is not None and latest_rate >= threshold and not subnode_row.get("promotion_ready"):
-            feedback_report = calibration_feedback_agent.run_feedback_cycle(
-                json_path,
-                output_dir=output_dir,
-                skip_lock=False,
-            )
-            cycle_report["feedback"] = feedback_report
-            calibration_metrics.build_dashboard(
-                output_dir=output_dir,
-                rules_path=Path("rules_config.json"),
-            )
+        if latest_rate is not None and latest_rate < threshold:
+            try:
+                feedback_report = calibration_feedback_agent.run_feedback_cycle(
+                    json_path,
+                    output_dir=output_dir,
+                    skip_lock=False,
+                )
+                cycle_report["feedback"] = feedback_report
+                calibration_metrics.build_dashboard(
+                    output_dir=output_dir,
+                    rules_path=Path("rules_config.json"),
+                )
+            except Exception as exc:
+                cycle_report["feedback"] = {
+                    "status": "error",
+                    "error": str(exc),
+                }
 
         cycle_reports.append(cycle_report)
         if subnode_row.get("promotion_ready"):
@@ -163,15 +197,21 @@ def run_orchestrator(args: argparse.Namespace) -> Dict[str, Any]:
     }
 
 
-def build_arg_parser() -> argparse.ArgumentParser:
+def build_orchestrator_arg_parser() -> argparse.ArgumentParser:
     """Builds CLI parser for the RL orchestrator."""
     parser = argparse.ArgumentParser(description="Run sub-node Maude RL calibration orchestrator.")
     parser.add_argument("--subnode", required=True, choices=["node2a", "node2b", "node2c"])
-    parser.add_argument("--max-calls", type=int, default=40)
+    parser.add_argument("--max-calls", type=int, default=20)
     parser.add_argument("--max-cycles", type=int, default=5)
     parser.add_argument("--variants", default="control")
     parser.add_argument("--output-dir", default=None)
     parser.add_argument("--include-calibrated", action="store_true")
+    parser.add_argument(
+        "--content-tier",
+        default=content_tiers.CONTENT_TIER_PDF_EXTRACTED,
+        choices=["pdf_extracted", "abstract_reclassify", "pdf_link", "abstract_only", "any"],
+        help="Content tier for node2b/2c PDF Maude A/B batches.",
+    )
     parser.add_argument("--preflight", action="store_true", default=True)
     parser.add_argument("--no-preflight", action="store_false", dest="preflight")
     return parser
@@ -179,7 +219,7 @@ def build_arg_parser() -> argparse.ArgumentParser:
 
 def main() -> None:
     """CLI entry point."""
-    parser = build_arg_parser()
+    parser = build_orchestrator_arg_parser()
     args = parser.parse_args()
     result = run_orchestrator(args)
     print(result)

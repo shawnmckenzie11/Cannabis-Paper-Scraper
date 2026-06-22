@@ -44,6 +44,56 @@ class CalibrationFeedbackAgentTests(unittest.TestCase):
         self.assertEqual(len(rows), 1)
         self.assertIn("study_type", rows[0]["fields"])
 
+    def test_collect_disagreement_rows_includes_dry_run_paired_batches(self):
+        """PDF Maude A/B batches use dry_run=True but must still feed feedback."""
+        batch = {
+            "batch_id": "node2b_calibration_test",
+            "target_subnode": "node2b",
+            "results": [{
+                "paper_id": 2,
+                "title": "Rat inhalation",
+                "dry_run": True,
+                "status": "maude_paired",
+                "llm": {"exposure_method": ["whole body. smoke/vapor"]},
+                "maude": {"exposure_method": ["unknown"]},
+                "scoped_disagreement": {
+                    "fields": {
+                        "exposure_method": {
+                            "maude": ["unknown"],
+                            "llm": ["whole body. smoke/vapor"],
+                        }
+                    }
+                },
+            }],
+        }
+        rows = calibration_feedback_agent.collect_disagreement_rows(batch, "node2b")
+        self.assertEqual(len(rows), 1)
+
+    def test_summarize_batch_gaps_counts_disagreements(self):
+        """Gap summary reports batch alignment and top disagreement fields."""
+        batch = {
+            "target_subnode": "node2b",
+            "results": [{
+                "paper_id": 1,
+                "status": "maude_paired",
+                "dry_run": True,
+                "llm": {"study_type": ["Animal Models (Mouse)"], "species": "mouse"},
+                "maude": {"study_type": ["Animal Models (Rat)"], "species": "rat"},
+                "scoped_disagreement": {
+                    "fields_in_scope": ["study_type", "species"],
+                    "fields": {
+                        "study_type": {"maude": ["Animal Models (Rat)"], "llm": ["Animal Models (Mouse)"]},
+                        "species": {"maude": "rat", "llm": "mouse"},
+                    },
+                    "scoped_field_count": 2,
+                    "agreement_rate": 0.0,
+                },
+            }],
+        }
+        summary = calibration_feedback_agent.summarize_batch_gaps(batch, "node2b")
+        self.assertEqual(summary["papers_with_disagreements"], 1)
+        self.assertGreater(len(summary["top_disagreement_fields"]), 0)
+
     def test_save_staged_patches(self):
         """Proposed rules changes are written under staged_patches/."""
         with tempfile.TemporaryDirectory() as tmp:
@@ -64,6 +114,39 @@ class CalibrationFeedbackAgentTests(unittest.TestCase):
             payload = json.loads(path.read_text(encoding="utf-8"))
             self.assertEqual(payload["target_subnode"], "node2b")
             self.assertEqual(len(payload["proposed_rules_changes"]), 1)
+
+    def test_parse_claude_json_salvages_truncated_learning(self):
+        """Truncated Claude JSON still yields field_resolutions and cues for Maude."""
+        truncated = (
+            '{"pattern_summary": "Strain gaps dominate.", '
+            '"field_resolutions": [{"paper_id": 1, "field": "strain_reported", "source": "llm", '
+            '"resolved_value": "CN2", "explanation": "Methods lists CN2."}], '
+            '"proposed_cues": [{"node_id": "node2b_in_vivo", "field": "strain_reported", '
+            '"cue": "cultivar", "explanation": "cue"}], '
+            '"proposed_rules_changes": [{"type": "classifier_logic", "description": "fix", '
+            '"patch_hint": "extractor.py", "priority": "high"}], '
+            '"maude_improvement_brief": {"summary": "brief", "top_gap_patterns": ["a"'
+        )
+        parsed = calibration_feedback_agent._parse_claude_json(truncated)
+        self.assertEqual(len(parsed.get("field_resolutions") or []), 1)
+        self.assertEqual(len(parsed.get("proposed_cues") or []), 1)
+        self.assertTrue(parsed.get("_salvaged_from_truncated_response"))
+
+    def test_synthesize_agent_handoff_prompt(self):
+        """Handoff brief can be synthesized from proposed_rules_changes."""
+        feedback = {
+            "pattern_summary": "Duration parsing weak.",
+            "proposed_rules_changes": [{
+                "type": "classifier_logic",
+                "description": "Parse GD ranges",
+                "patch_hint": "extractor.py",
+                "priority": "high",
+            }],
+            "maude_improvement_brief": {"summary": "Fix duration", "top_gap_patterns": ["duration_days null"]},
+        }
+        prompt = calibration_feedback_agent.synthesize_agent_handoff_prompt(feedback, "node2b")
+        self.assertIn("extractor.py", prompt)
+        self.assertIn("duration_days", prompt)
 
     @patch("calibration_feedback_agent.request_claude_feedback")
     def test_run_feedback_cycle_skips_when_empty(self, mock_claude):

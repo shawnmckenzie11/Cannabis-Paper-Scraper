@@ -3,6 +3,7 @@
 
 import os
 
+from calibration_build import maude_build_info
 from db_manager import DatabaseManager
 
 
@@ -44,6 +45,8 @@ def main() -> None:
     print("node1_calibrated:", node1)
     print("llm_pdf_reclassify:", llm_pdf)
     print("llm_reclassify:", llm_abstract)
+    for key, value in maude_build_info().items():
+        print(f"{key}:", value)
 
 
 if __name__ == "__main__":

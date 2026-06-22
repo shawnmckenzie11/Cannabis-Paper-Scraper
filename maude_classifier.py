@@ -178,6 +178,21 @@ def get_review_suppress_patterns() -> Tuple[str, ...]:
     return patterns or REVIEW_SUPPRESS_PATTERNS
 
 
+IN_VIVO_OVERRIDE_TERMS = ("in vivo", "in-vivo")
+IN_VIVO_ANIMAL_TERMS = (
+    "rat", "rats", "mouse", "mice", "rodent", "rodents", "rabbit", "rabbits",
+    "monkey", "monkeys", "primate", "primates", "zebrafish", "canine", "dog", "dogs",
+)
+
+
+def should_route_in_vivo_before_review(title: str, abstract: str) -> bool:
+    """Returns True when abstract signals in vivo animal work despite review-like title cues."""
+    text = f"{title} {abstract}".lower()
+    if not any(term in text for term in IN_VIVO_OVERRIDE_TERMS):
+        return False
+    return any(re.search(rf"\b{re.escape(term)}\b", text) for term in IN_VIVO_ANIMAL_TERMS)
+
+
 def matches_review_route(title: str, abstract: str) -> bool:
     """True when title/abstract cues justify Node 1B review routing."""
     text = f"{title} {abstract}"
@@ -384,6 +399,10 @@ def resolve_study_type_for_routing(
     node2_branches: Sequence[str],
 ) -> List[str]:
     """Resolves study_type using Node 1 publication route plus Node 2 branch fallbacks."""
+    full_blob = f"{title} {abstract}"
+    if publication_type == "original research" and extractor.is_analytical_or_computational(full_blob):
+        return ["Cell Culture (Other In Vitro)"]
+
     study_type = extractor.infer_study_type_for_publication(title, abstract, publication_type)
     if publication_type == "review" and review_subtype and review_subtype not in study_type:
         return [review_subtype]
@@ -627,6 +646,10 @@ def route_publication_type(title: str, abstract: str) -> Tuple[str, Optional[str
     case_patterns = get_case_routing_patterns()
     original_negative_patterns = get_original_negative_patterns()
 
+    if should_route_in_vivo_before_review(title, abstract):
+        nodes.append("node1a_original")
+        return "original research", None, nodes, score + 0.25
+
     if matches_review_route(title, abstract):
         nodes.append("node1b_reviews")
         score += 0.35
@@ -658,6 +681,16 @@ def compute_maude_confidence(cue_score: float, nodes: Sequence[str]) -> float:
     return round(min(0.95, max(0.35, cue_score + depth_bonus)), 3)
 
 
+MAUDE_DOWNSTREAM_EXTRACTION_FIELDS: Tuple[str, ...] = (
+    "thc_pct", "cbd_pct", "dose_mg", "strain_reported", "strain_normalized",
+    "duration_days", "sample_size", "administration_frequency", "inhaled_exposure_duration",
+    "thc_mg_kg", "cbd_mg_kg", "thc_mg_ml", "cbd_mg_ml", "thc_mg_g", "cbd_mg_g",
+    "thc_uM", "cbd_uM", "puff_count", "treatment_duration",
+    "multiple_doses", "multiple_time_intervals", "repeat_exposure_count",
+    "exposure_regimen_bin",
+)
+
+
 def classify_paper(
     title: str,
     abstract: str,
@@ -673,6 +706,9 @@ def classify_paper(
     routing_text = f"{title} {abstract}"
     methods_text = extract_methods_section(full_text)
     extraction_text = methods_text or routing_text
+    publication_routing_text = routing_text
+    if full_text:
+        publication_routing_text = f"{title} {full_text[:15000]}"
     extract_downstream = should_extract_downstream_fields(full_text, abstract_only_extraction)
     run_sparse_fallback = should_run_sparse_fallback(full_text, enable_sparse_fallback)
 
@@ -699,7 +735,10 @@ def classify_paper(
             },
         }, title, abstract)
 
-    publication_type, review_subtype, route_nodes, route_score = route_publication_type(title, abstract)
+    publication_type, review_subtype, route_nodes, route_score = route_publication_type(
+        title,
+        publication_routing_text,
+    )
     nodes = _dedupe_nodes(nodes + route_nodes)
     cue_score += route_score
 
@@ -722,12 +761,17 @@ def classify_paper(
             node2_branches,
         )
         if extract_downstream:
-            heuristics = extractor.extract_all_heuristics(title, extraction_text)
+            heuristics = extractor.extract_all_heuristics(title, extraction_text, full_text=full_text)
             species = infer_species(extraction_text)
             exposure_method = heuristics.get("exposure_method") or []
             cannabis_type = heuristics.get("cannabis_type") or []
             outcome_domain = heuristics.get("outcome_domain") or []
             if not any(item.startswith("Animal Models") for item in study_type):
+                species = None
+            elif (
+                any(item.startswith("Cell Culture (") for item in study_type)
+                and not extractor._looks_like_invivo_primary(extraction_text)
+            ):
                 species = None
     else:
         study_type = resolve_study_type_for_routing(
@@ -777,13 +821,6 @@ def classify_paper(
         "cannabis_type": cannabis_type,
         "outcome_domain": outcome_domain,
         "species": species,
-        "thc_pct": heuristics.get("thc_pct"),
-        "cbd_pct": heuristics.get("cbd_pct"),
-        "dose_mg": heuristics.get("dose_mg"),
-        "strain_reported": heuristics.get("strain_reported"),
-        "strain_normalized": heuristics.get("strain_normalized"),
-        "duration_days": heuristics.get("duration_days"),
-        "sample_size": heuristics.get("sample_size"),
         "classification_confidence": confidence,
         "_maude_meta": {
             "classifier": "maude",
@@ -795,6 +832,9 @@ def classify_paper(
             "abstract_only_extraction": not extract_downstream,
         },
     }
+    for field in MAUDE_DOWNSTREAM_EXTRACTION_FIELDS:
+        if field in heuristics:
+            result[field] = heuristics.get(field)
     if not extract_downstream:
         apply_abstract_only_extraction_policy(result)
     return classification_schema.normalize_classification_record(result, title, abstract)

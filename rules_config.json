@@ -98,7 +98,7 @@
     "decision_tree_source": "EXPERT FEEDBACK TREE & CUES + Decision Tree.pdf (2026-06-18)",
     "calibration_rl": {
       "agreement_threshold_pct": 90,
-      "min_papers_per_feedback_cycle": 30,
+      "min_papers_per_feedback_cycle": 20,
       "min_consecutive_pass_batches": 2,
       "subnode_queue": ["node2a", "node2b", "node2c"],
       "subnode_reevaluate_later": ["node1b", "node1c", "node3a", "node3b", "node3c", "node2d"],

@@ -1,0 +1,265 @@
+{
+  "target_subnode": "node2c",
+  "created_at": "2026-06-22T16:55:31.841920",
+  "pattern_summary": "Four dominant error patterns: (1) strain_reported captures reagent/vendor strings instead of compound identifiers or cultivar names (90% disagreement); (2) treatment_duration is systematically null in Maude for in vitro incubation times, simulation durations, and storage periods (85%); (3) outcome_domain defaults to 'other' when oncology, pain, or addiction keywords are present (45%); (4) study_type mis-routes analytical/computational papers as 'Clinical (observational)' and thc_pct/cbd_pct parse percentage-of-acid-fraction rather than plant content values.",
+  "gap_summary": {
+    "target_subnode": "node2c",
+    "scored_paper_count": 20,
+    "papers_with_disagreements": 20,
+    "batch_alignment_rate": 0.7536,
+    "batch_alignment_pct": 75.4,
+    "batch_maude_recall_rate": 0.7345,
+    "batch_maude_recall_pct": 73.5,
+    "batch_extraction_fill_rate": 0.7345,
+    "batch_extraction_fill_pct": 73.5,
+    "field_disagreement_stats": [
+      {
+        "field": "strain_reported",
+        "compared_count": 20,
+        "disagree_count": 18,
+        "disagree_pct": 90.0
+      },
+      {
+        "field": "treatment_duration",
+        "compared_count": 20,
+        "disagree_count": 17,
+        "disagree_pct": 85.0
+      },
+      {
+        "field": "cannabis_type",
+        "compared_count": 20,
+        "disagree_count": 9,
+        "disagree_pct": 45.0
+      },
+      {
+        "field": "outcome_domain",
+        "compared_count": 20,
+        "disagree_count": 9,
+        "disagree_pct": 45.0
+      },
+      {
+        "field": "exposure_method",
+        "compared_count": 20,
+        "disagree_count": 7,
+        "disagree_pct": 35.0
+      },
+      {
+        "field": "study_type",
+        "compared_count": 5,
+        "disagree_count": 3,
+        "disagree_pct": 60.0
+      },
+      {
+        "field": "cbd_mg_ml",
+        "compared_count": 20,
+        "disagree_count": 2,
+        "disagree_pct": 10.0
+      },
+      {
+        "field": "thc_pct",
+        "compared_count": 20,
+        "disagree_count": 2,
+        "disagree_pct": 10.0
+      },
+      {
+        "field": "cbd_pct",
+        "compared_count": 20,
+        "disagree_count": 2,
+        "disagree_pct": 10.0
+      },
+      {
+        "field": "thc_uM",
+        "compared_count": 20,
+        "disagree_count": 0,
+        "disagree_pct": 0.0
+      },
+      {
+        "field": "cbd_uM",
+        "compared_count": 20,
+        "disagree_count": 0,
+        "disagree_pct": 0.0
+      },
+      {
+        "field": "thc_mg_ml",
+        "compared_count": 20,
+        "disagree_count": 0,
+        "disagree_pct": 0.0
+      },
+      {
+        "field": "multiple_doses",
+        "compared_count": 20,
+        "disagree_count": 0,
+        "disagree_pct": 0.0
+      },
+      {
+        "field": "multiple_time_intervals",
+        "compared_count": 20,
+        "disagree_count": 0,
+        "disagree_pct": 0.0
+      },
+      {
+        "field": "puff_count",
+        "compared_count": 5,
+        "disagree_count": 0,
+        "disagree_pct": 0.0
+      },
+      {
+        "field": "inhaled_exposure_duration",
+        "compared_count": 5,
+        "disagree_count": 0,
+        "disagree_pct": 0.0
+      },
+      {
+        "field": "repeat_exposure_count",
+        "compared_count": 5,
+        "disagree_count": 0,
+        "disagree_pct": 0.0
+      }
+    ],
+    "top_disagreement_fields": [
+      "strain_reported",
+      "treatment_duration",
+      "cannabis_type",
+      "outcome_domain",
+      "exposure_method",
+      "study_type",
+      "cbd_mg_ml",
+      "thc_pct",
+      "cbd_pct"
+    ]
+  },
+  "proposed_rules_changes": [
+    {
+      "type": "extractor_logic",
+      "description": "treatment_duration extractor: add regex for in-vitro time patterns (e.g. '\\d+ h(ours?)?', '\\d+ ns', '\\d+ days? of storage') scoped to Methods/Results sections. Prefer shortest incubation over cell-maintenance window.",
+      "patch_hint": "extractor.py: extend extract_treatment_duration() with pattern list [r'incubated?\\s+for\\s+([\\d.]+\\s*h)', r'([\\d.]+)\\s*ns\\s+(?:MD|molecular dynamics)', r'stored?\\s+for\\s+([\\d]+)\\s*days?']",
+      "priority": "high"
+    },
+    {
+      "type": "extractor_logic",
+      "description": "strain_reported extractor: prioritise cultivar/compound names over reagent vendor strings. Filter tokens matching vendor patterns (Sigma-Aldrich, Tocris, Cayman, catalog codes) unless no other candidate exists.",
+      "patch_hint": "extractor.py: extract_strain_reported() \u2014 add vendor blocklist filter; prefer matches to r'cv\\.\\s*[\\w ]+', 'chemovar', 'chemotype [I-V]+', or named cannabinoid isolate lists.",
+      "priority": "high"
+    },
+    {
+      "type": "extractor_logic",
+      "description": "thc_pct / cbd_pct: must capture plant-level weight-percent values, not acid-fraction ratios. Add context guard: reject values >50 when surrounding text contains 'acidic cannabinoid' or 'acid to total' ratio language.",
+      "patch_hint": "extractor.py: extract_cannabinoid_pct() \u2014 after numeric capture, check \u00b130-char window for ['acid', 'ratio', 'acidic'] and skip if found; otherwise accept only values <=40 for THC and <=25 for CBD as plant-content defaults.",
+      "priority": "high"
+    },
+    {
+      "type": "classifier_logic",
+      "description": "study_type: analytical chemistry papers (HPLC, UHPLC, HRMS, mass spectrometry, docking, molecular dynamics) should never resolve to 'Clinical (observational)'. Add pre-check before clinical routing.",
+      "patch_hint": "classifier.py: node2c study_type rule \u2014 if any of ['UHPLC','HPLC','molecular docking','GROMACS','AutoDock','Orbitrap'] in abstract then force study_type='Cell Culture (Other In Vitro)' and skip clinical branch.",
+      "priority": "high"
+    },
+    {
+      "type": "extractor_logic",
+      "description": "outcome_domain: expand oncology keyword list to include ['leukemia','glioblastoma','T-ALL','lymphoma','tumor cell','apoptosis in','cytotoxicity']; expand pain list to ['GIRK','analgesia']; expand addiction to ['drug tolerance','receptor internalization'].",
+      "patch_hint": "extractor.py: OUTCOME_DOMAIN_KEYWORDS dict \u2014 append terms above to 'oncology', 'pain', 'addiction' sublists respectively.",
+      "priority": "medium"
+    },
+    {
+      "type": "extractor_logic",
+      "description": "cannabis_type: isolated named cannabinoids (THC, CBD, CBDV, THCV, CBG etc.) used without plant matrix should map to 'pure cannabinoid', not 'concentrates' or 'unknown'. Add isolate-name list check before fallback.",
+      "patch_hint": "extractor.py: extract_cannabis_type() \u2014 if compound name in CANNABINOID_ISOLATE_LIST and no 'extract' or 'oil' context, return 'pure cannabinoid'.",
+      "priority": "medium"
+    }
+  ],
+  "proposed_cues": [
+    {
+      "node_id": "node2c",
+      "field": "treatment_duration",
+      "cue": "incubated for",
+      "explanation": "Triggers in-vitro incubation duration extraction; Maude misses short-phrase time anchors."
+    },
+    {
+      "node_id": "node2c",
+      "field": "treatment_duration",
+      "cue": "molecular dynamics simulation",
+      "explanation": "Maps simulation runtime (e.g. '100 ns') to treatment_duration for computational papers."
+    },
+    {
+      "node_id": "node2c",
+      "field": "treatment_duration",
+      "cue": "stored for",
+      "explanation": "Captures storage/decarboxylation duration as treatment_duration in analytical studies."
+    },
+    {
+      "node_id": "node2c",
+      "field": "strain_reported",
+      "cue": "isolated from",
+      "explanation": "Shifts strain_reported capture to compound source/cultivar, not downstream reagent vendor."
+    },
+    {
+      "node_id": "node2c",
+      "field": "strain_reported",
+      "cue": "Cannabis sativa cv.",
+      "explanation": "Direct cultivar name cue ensures named strains are captured over reagent catalog strings."
+    },
+    {
+      "node_id": "node2c",
+      "field": "strain_reported",
+      "cue": "chemovar",
+      "explanation": "Chemotype/chemovar descriptors identify the cannabis source material for node2c papers."
+    },
+    {
+      "node_id": "node2c",
+      "field": "outcome_domain",
+      "cue": "apoptosis",
+      "explanation": "Apoptosis in tumor cell lines is a strong oncology signal; resolves 'other' default."
+    },
+    {
+      "node_id": "node2c",
+      "field": "outcome_domain",
+      "cue": "leukemia",
+      "explanation": "Cancer cell-line names (leukemia, glioblastoma, T-ALL) should map to oncology."
+    },
+    {
+      "node_id": "node2c",
+      "field": "outcome_domain",
+      "cue": "GIRK channel",
+      "explanation": "GIRK/receptor internalization context links to pain and addiction outcome domains."
+    },
+    {
+      "node_id": "node2c",
+      "field": "cannabis_type",
+      "cue": "pure cannabinoid",
+      "explanation": "Isolated THC, CBD, CBDV etc. without plant matrix should always resolve to pure cannabinoid."
+    },
+    {
+      "node_id": "node2c",
+      "field": "study_type",
+      "cue": "UHPLC",
+      "explanation": "Analytical chemistry methods (UHPLC, HPLC, HRMS) signal Cell Culture / Other In Vitro, not clinical."
+    },
+    {
+      "node_id": "node2c",
+      "field": "study_type",
+      "cue": "molecular docking",
+      "explanation": "Computational/docking studies must not be routed to Clinical (observational)."
+    }
+  ],
+  "maude_improvement_brief": {
+    "summary": "Node2c suffers from four systemic extraction failures. First, treatment_duration is null in 85% of papers because the extractor lacks regex patterns for in-vitro incubation phrases, simulation runtimes, and storage durations. Second, strain_reported captures downstream reagent vendor strings (Sigma-Aldrich catalog codes) rather than cultivar names or compound identifiers because no blocklist or priority ranking exists. Third, outcome_domain defaults to 'other' instead of oncology, pain, or addiction because the keyword dictionary omits cell-biology terms like 'apoptosis', 'glioblastoma', 'GIRK', and 'drug tolerance'. Fourth, study_type and thc_pct/cbd_pct are mis-classified because analytical chemistry papers (HPLC, UHPLC, docking) are incorrectly routed through the clinical branch, and percentage extractors capture acid-fraction ratios instead of plant-content values. Fixing the four extractor functions and adding a pre-routing guard for analytical methods will close the majority of the 26.5-point alignment gap.",
+    "top_gap_patterns": [
+      "treatment_duration null for in-vitro incubation, simulation, and storage durations (85% disagreement) \u2014 extractor regex gaps",
+      "strain_reported captures reagent vendor strings instead of cultivar/compound names (90% disagreement) \u2014 no blocklist or priority ranking",
+      "outcome_domain defaults to 'other' when oncology/pain/addiction cell-biology keywords are present (45% disagreement) \u2014 incomplete keyword dictionary",
+      "study_type mis-routes analytical chemistry and computational papers to 'Clinical (observational)' (60% of compared cases) \u2014 missing pre-routing guard"
+    ],
+    "agent_handoff_prompt": "CANNABIS PAPER SCRAPER - NODE2C IMPLEMENTATION BRIEF\nAlignment baseline: 75.4% | Target: >90%\nFiles in scope: extractor.py, maude_classifier.py, maude_cues.json\n\n---\n\nOVERVIEW\n\nFour gap patterns account for the bulk of alignment loss in node2c. In order of impact: study_type misrouting of analytical and computational papers (60% disagreement), strain_reported capturing vendor strings (90% disagreement), treatment_duration returning null for in-vitro durations (85% disagreement), and outcome_domain defaulting to other when cell-biology oncology or pain terms are present (45% disagreement). Two additional medium-priority improvements cover cannabinoid percentage context guards and cannabis_type isolate classification. All changes are self-contained within the three named files.\n\n---\n\nSECTION 1: extractor.py CHANGES\n\n1A. extract_treatment_duration() - In-vitro time pattern expansion\n\nCurrent behavior: The function regex-matches human dosing schedules and clinical time windows. It misses in-vitro incubation periods, molecular dynamics simulation lengths, and cold-storage durations that appear in cell biology and analytical papers.\n\nImplementation steps:\n\nAdd a second pattern list specifically for in-vitro and computational contexts. Insert this before the fallback return so that if the primary (clinical) pattern list returns nothing, the function proceeds to try the in-vitro list.\n\nPrimary in-vitro patterns to add (compile with re.IGNORECASE):\n\n  r'incubated?\\s+for\\s+([\\d.]+\\s*(?:h(?:ours?)?|min(?:utes?)?|days?))'\n  r'treated?\\s+for\\s+([\\d.]+\\s*(?:h(?:ours?)?|min(?:utes?)?|days?))'\n  r'([\\d.]+)\\s*ns\\s+(?:MD|molecular dynamics|simulation)'\n  r'simulation\\s+(?:of|for|totaling)\\s+([\\d.]+\\s*(?:ns|us|microseconds?))'\n  r'stored?\\s+for\\s+([\\d]+)\\s*days?'\n  r'([\\d]+)[- ]day\\s+(?:storage|stability|shelf)'\n\nScope guard: Before attempting in-vitro patterns, verify that the text block being searched is tagged or contextually associated with Methods or Results. If section tagging is not available, check that the 30-character left-context of any match does not contain clinical scheduling language such as \"weeks treatment\" or \"daily dose\" to avoid false positives in mixed papers.\n\nPreference rule: When multiple in-vitro duration matches exist, prefer the shortest numeric value on the assumption that it represents the acute incubation window rather than a cell-maintenance or storage period. Implement by collecting all matches from the in-vitro list, converting to a common unit (hours), sorting ascending, and returning the first.\n\nReturn format: Keep consistent with existing function output. Append unit string to the numeric value (e.g., \"24 h\", \"100 ns\"). Do not strip units as downstream consumers rely on them for normalization.\n\n1B. extract_strain_reported() - Vendor blocklist and cultivar prioritization\n\nCurrent behavior: Token-level matching picks up vendor names and catalog strings such as \"Sigma-Aldrich\" or \"Cayman Chemical\" and returns them as the strain value.\n\nImplementation steps:\n\nDefine a module-level constant VENDOR_BLOCKLIST as a list of lowercase patterns:\n  [\"sigma\", \"aldrich\", \"tocris\", \"cayman\", \"abcam\", \"santa cruz\", \"millipore\",\n   \"catalog no\", \"cat no\", \"cat #\", r'[a-z]{1,3}\\d{4,}', \"lot no\", \"item no\",\n   \"selleckchem\", \"apexbio\", \"biolegend\"]\n\nThe final pattern in that list catches alphanumeric catalog codes like \"C7522\" or \"THC-001\".\n\nBefore returning any candidate token, iterate through VENDOR_BLOCKLIST. If any pattern matches (case-insensitive substring or regex match), remove that candidate from consideration.\n\nAdd a prioritized positive-match list checked before the main extraction loop. Patterns in priority order:\n\n  1. r'cv\\.\\s*([\\w ]+)'  (cultivar abbreviation common in botany papers)\n  2. r'chemovar\\s+([\\w -]+)'\n  3. r'chemotype\\s+([IVX]+)'\n  4. Named isolate match: compound name appears in CANNABINOID_ISOLATE_LIST (defined in 1E below)\n  5. Strain name following \"strain\", \"variety\", \"cultivar\" keyword\n\nIf a prioritized match is found, return it immediately without running the general token scan.\n\nOnly if the full candidate list is empty after blocklist filtering should the function fall back to returning the best available token, including a vendor string, to avoid returning None where something is better than nothing.\n\n1C. extract_cannabinoid_pct() - Context guard for acid-fraction values\n\nCurrent behavior: The function captures numeric percentages without verifying whether they describe plant-level weight-percent or acidic-form ratios. Acid-form ratios can exceed 50 and are not comparable to plant-content defaults.\n\nImplementation steps:\n\nAfter capturing a numeric value from the existing regex, extract the surrounding window of plus-or-minus 30 characters from the source string.\n\nCheck the window (lowercased) for any of: \"acid\", \"acidic\", \"ratio\", \"acid to total\", \"thca\", \"cbda\". If any are found, discard this match and continue searching.\n\nAdd a range validation step after the context check:\n  - For THC, accept values only in range 0.0 to 40.0 (plant-content ceiling)\n  - For CBD, accept values only in range 0.0 to 25.0\n\nValues above these ceilings that are not already discarded by the acid context guard should be flagged with a warning log line but not returned as the primary value. If no value passes both guards, return None rather than a likely-incorrect high value.\n\nThis guard should wrap both thc_pct and cbd_pct extraction paths since the same acid-ratio contamination occurs in both.\n\n1D. OUTCOME_DOMAIN_KEYWORDS dictionary expansion\n\nLocate the OUTCOME_DOMAIN_KEYWORDS dictionary (or equivalent structure) in extractor.py. Append the following terms to the listed sublists:\n\nOncology sublist additions:\n  \"leukemia\", \"glioblastoma\", \"T-ALL\", \"lymphoma\", \"tumor cell\",\n  \"apoptosis in\", \"cytotoxicity\", \"antiproliferative\", \"cell viability\",\n  \"IC50\", \"MTT assay\", \"colony formation\"\n\nPain sublist additions:\n  \"GIRK\", \"analgesia\", \"analgesic\", \"nociception\", \"hyperalgesia\",\n  \"allodynia\", \"pain threshold\"\n\nAddiction sublist additions:\n  \"drug tolerance\", \"receptor internalization\", \"desensitization\",\n  \"withdrawal\", \"conditioned place preference\", \"CPP\"\n\nAfter appending, ensure matching is case-insensitive (either lowercase all text before comparison or use re.IGNORECASE flags). The IC50 and MTT additions are particularly important for cell-biology papers that dominate the node2c gap.\n\n1E. extract_cannabis_type() - Isolate detection before fallback\n\nDefine module-level constant CANNABINOID_ISOLATE_LIST:\n  [\"THC\", \"CBD\", \"CBDV\", \"THCV\", \"CBG\", \"CBGA\", \"CBCA\", \"CBC\",\n   \"delta-9-THC\", \"delta-8-THC\", \"cannabidiol\", \"cannabigerol\",\n   \"tetrahydrocannabivarin\", \"cannabidivarin\", \"dronabinol\", \"nabilone\",\n   \"JWH-018\", \"WIN 55,212\", \"HU-210\", \"CP 55,940\", \"anandamide\", \"AEA\",\n   \"2-AG\", \"2-arachidonoylglycerol\"]\n\nIn extract_cannabis_type(), before the existing logic runs the fallback or concentrate-detection path, add an isolate check:\n\n  1. Tokenize or scan the abstract and methods text for any member of CANNABINOID_ISOLATE_LIST (case-insensitive, whole-word or dash-adjacent match to avoid catching \"CBD\" inside \"CBDA\").\n  2. If a match is found, check that neither \"extract\", \"oil\", \"flower\", \"plant material\", \"crude\", nor \"tincture\" appears within 50 characters of the match.\n  3. If the isolate is confirmed without a plant-matrix context word, return \"pure cannabinoid\".\n  4. Otherwise continue to existing logic.\n\nThis prevents concentrates or unknown from being returned for papers that use a single synthetic or isolated compound in cell culture.\n\n---\n\nSECTION 2: maude_classifier.py CHANGES\n\n2A. study_type - Analytical and computational pre-routing guard\n\nThis is the highest-impact single fix. The clinical routing branch is being reached by papers about HPLC method development, HRMS identification studies, and molecular dynamics simulations, which share surface language with observational studies (e.g., \"patients\" mentioned in introduction, \"reported\" outcomes).\n\nAdd a pre-check function called is_analytical_or_computational(text) that returns True if any of the following terms appear (case-insensitive, whole-word):\n\n  [\"UHPLC\", \"HPLC\", \"HRMS\", \"Orbitrap\", \"LC-MS\", \"GC-MS\", \"mass spectrometry\",\n   \"molecular docking\", \"molecular dynamics\", \"GROMACS\", \"AutoDock\", \"Vina\",\n   \"DFT\", \"density functional\", \"in silico\", \"docking score\", \"binding affinity\",\n   \"pharmacophore model\", \"ADMET prediction\"]\n\nCall this function at the very top of the study_type classification logic, before any routing branch. If it returns True, immediately assign study_type = \"Cell Culture (Other In Vitro)\" and return without entering any other branch including the clinical branch.\n\nRationale for \"Cell Culture (Other In Vitro)\" as the forced value: this is the least-wrong bucket for analytical and computational work in the current taxonomy. If a dedicated \"Analytical / Computational\" category is added later, this pre-check function is already isolated and easy to redirect.\n\nDocument the override in a comment: if a paper mentions both HPLC and a clinical trial, the pre-check will misclassify it. This edge case is rare enough that the trade-off is acceptable given the 60% disagreement rate on analytical papers. If needed, a later rule can add a counter-signal check for explicit RCT language that overrides the analytical pre-check.\n\n---\n\nSECTION 3: maude_cues.json CHANGES\n\nAdd or update the following cue groups. Keep the existing schema (cue group name, pattern list, weight, field target).\n\nGroup: treatment_duration_invitro\n  Target field: treatment_duration\n  Patterns: the six regex strings listed in 1A above\n  Weight: 0.7 (lower than clinical dosing cues to avoid overriding confirmed clinical values)\n  Section scope hint: \"methods, results\"\n\nGroup: strain_vendor_blocklist\n  Target field: strain_reported\n  Patterns: VENDOR_BLOCKLIST entries reformatted as cue patterns\n  Weight: -1.0 (negative weight signals suppression, not match)\n  Notes: If the cue system supports suppression weights, apply here. If not, treat as documentation and enforce via extractor.py only.\n\nGroup: cannabinoid_isolate_type\n  Target field: cannabis_type\n  Patterns: CANNABINOID_ISOLATE_LIST members as word-boundary regex entries\n  Weight: 0.85\n  Return value override: \"pure cannabinoid\"\n\nGroup: analytical_study_guard\n  Target field: study_type\n  Patterns: the is_analytical_or_computational term list from 2A\n  Weight: 1.0\n  Return value override: \"Cell Culture (Other In Vitro)\"\n  Priority: highest (evaluate before all other study_type cue groups)\n\nGroup: oncology_expanded\n  Target field: outcome_domain\n  Patterns: new oncology terms from 1D\n  Weight: 0.9\n  Return value override: \"oncology\"\n\nGroup: pain_expanded\n  Target field: outcome_domain\n  Patterns: new pain terms from 1D\n  Weight: 0.9\n  Return value override: \"pain\"\n\nGroup: addiction_expanded\n  Target field: outcome_domain\n  Patterns: new addiction terms from 1D\n  Weight: 0.9\n  Return value override: \"addiction\"\n\n---\n\nSECTION 4: TEST IDEAS\n\nUnit tests for extractor.py:\n\ntest_treatment_duration_incubation_hours: Input \"Cells were incubated for 24 h with THC.\" Expect \"24 h\".\n\ntest_treatment_duration_md_simulation: Input \"A 100 ns molecular dynamics simulation was performed.\" Expect \"100 ns\".\n\ntest_treatment_duration_storage: Input \"Samples were stored for 7 days at -20C.\" Expect \"7 days\".\n\ntest_treatment_duration_prefers_shortest: Input with two durations \"cells maintained for 5 days then incubated for 6 h before assay\". Expect \"6 h\" (shortest in hours).\n\ntest_strain_vendor_blocked: Input abstract mentioning \"Sigma-Aldrich THC (catalog no. T4764)\". Expect strain_reported is not \"Sigma-Aldrich\" and ideally returns None or the compound name \"THC\".\n\ntest_strain_cultivar_priority: Input containing \"cv. Skunk #1 obtained from Sigma-Aldrich\". Expect \"Skunk #1\" is returned, not \"Sigma-Aldrich\".\n\ntest_thc_pct_acid_context_rejected: Input \"THCA/total ratio was 68.3%\". Expect thc_pct returns None.\n\ntest_thc_pct_valid_range: Input \"THC content was 18.5% w/w\". Expect 18.5.\n\ntest_thc_pct_over_ceiling: Input \"THC detected at 55%\" with no acid context. Expect None with warning logged.\n\ntest_outcome_domain_glioblastoma: Input abstract with \"glioblastoma cell line\". Expect outcome_domain \"oncology\".\n\ntest_outcome_domain_girk: Input \"GIRK channel activation was measured\". Expect outcome_domain \"pain\".\n\ntest_outcome_domain_receptor_internalization: Input \"receptor internalization following THC\". Expect outcome_domain \"addiction\".\n\ntest_cannabis_type_pure_isolate: Input \"CBD was dissolved in DMSO\". Expect cannabis_type \"pure cannabinoid\".\n\ntest_cannabis_type_isolate_with_extract: Input \"CBD-rich extract was used\". Expect cannabis_type not \"pure cannabinoid\".\n\nIntegration tests for maude_classifier.py:\n\ntest_study_type_hplc_paper: Full abstract of an HPLC method paper should return study_type \"Cell Culture (Other In Vitro)\" and not \"Clinical (observational)\".\n\ntest_study_type_molecular_docking: Abstract mentioning \"AutoDock Vina docking score\". Same expectation.\n\ntest_study_type_gromacs: Abstract mentioning \"GROMACS 2021 simulation\". Same expectation.\n\ntest_study_type_rct_not_overridden: Abstract of a genuine randomized controlled trial with no analytical keywords. Should still return clinical study type and not be caught by the pre-check guard.\n\nRegression test:\n\ntest_alignment_node2c_batch: Run the existing node2c comparison batch (the 75.4% baseline set) through the updated extractors and classifier. Assert that overall alignment improves to at least 88% before merging. Track per-field alignment separately for treatment_duration, strain_reported, outcome_domain, and study_type to confirm each gap pattern shows improvement.\n\n---\n\nIMPLEMENTATION ORDER\n\n1. maude_classifier.py study_type pre-routing guard (2A) - highest disagreement volume, lowest code risk\n2. extractor.py OUTCOME_DOMAIN_KEYWORDS expansion (1D) - simple append, no logic change\n3. extractor.py extract_treatment_duration() in-vitro patterns (1A)\n4. extractor.py extract_strain_reported() vendor blocklist (1B)\n5. extractor.py extract_cannabis_type() isolate check (1E)\n6. extractor.py extract_cannabinoid_pct() context guard (1C) - most complex, do last\n7. maude_cues.json updates to mirror all of the above\n\nRun the regression alignment test after each numbered step to confirm monotonic improvement and catch any regressions early."
+  },
+  "agent_handoff_prompt": "CANNABIS PAPER SCRAPER - NODE2C IMPLEMENTATION BRIEF\nAlignment baseline: 75.4% | Target: >90%\nFiles in scope: extractor.py, maude_classifier.py, maude_cues.json\n\n---\n\nOVERVIEW\n\nFour gap patterns account for the bulk of alignment loss in node2c. In order of impact: study_type misrouting of analytical and computational papers (60% disagreement), strain_reported capturing vendor strings (90% disagreement), treatment_duration returning null for in-vitro durations (85% disagreement), and outcome_domain defaulting to other when cell-biology oncology or pain terms are present (45% disagreement). Two additional medium-priority improvements cover cannabinoid percentage context guards and cannabis_type isolate classification. All changes are self-contained within the three named files.\n\n---\n\nSECTION 1: extractor.py CHANGES\n\n1A. extract_treatment_duration() - In-vitro time pattern expansion\n\nCurrent behavior: The function regex-matches human dosing schedules and clinical time windows. It misses in-vitro incubation periods, molecular dynamics simulation lengths, and cold-storage durations that appear in cell biology and analytical papers.\n\nImplementation steps:\n\nAdd a second pattern list specifically for in-vitro and computational contexts. Insert this before the fallback return so that if the primary (clinical) pattern list returns nothing, the function proceeds to try the in-vitro list.\n\nPrimary in-vitro patterns to add (compile with re.IGNORECASE):\n\n  r'incubated?\\s+for\\s+([\\d.]+\\s*(?:h(?:ours?)?|min(?:utes?)?|days?))'\n  r'treated?\\s+for\\s+([\\d.]+\\s*(?:h(?:ours?)?|min(?:utes?)?|days?))'\n  r'([\\d.]+)\\s*ns\\s+(?:MD|molecular dynamics|simulation)'\n  r'simulation\\s+(?:of|for|totaling)\\s+([\\d.]+\\s*(?:ns|us|microseconds?))'\n  r'stored?\\s+for\\s+([\\d]+)\\s*days?'\n  r'([\\d]+)[- ]day\\s+(?:storage|stability|shelf)'\n\nScope guard: Before attempting in-vitro patterns, verify that the text block being searched is tagged or contextually associated with Methods or Results. If section tagging is not available, check that the 30-character left-context of any match does not contain clinical scheduling language such as \"weeks treatment\" or \"daily dose\" to avoid false positives in mixed papers.\n\nPreference rule: When multiple in-vitro duration matches exist, prefer the shortest numeric value on the assumption that it represents the acute incubation window rather than a cell-maintenance or storage period. Implement by collecting all matches from the in-vitro list, converting to a common unit (hours), sorting ascending, and returning the first.\n\nReturn format: Keep consistent with existing function output. Append unit string to the numeric value (e.g., \"24 h\", \"100 ns\"). Do not strip units as downstream consumers rely on them for normalization.\n\n1B. extract_strain_reported() - Vendor blocklist and cultivar prioritization\n\nCurrent behavior: Token-level matching picks up vendor names and catalog strings such as \"Sigma-Aldrich\" or \"Cayman Chemical\" and returns them as the strain value.\n\nImplementation steps:\n\nDefine a module-level constant VENDOR_BLOCKLIST as a list of lowercase patterns:\n  [\"sigma\", \"aldrich\", \"tocris\", \"cayman\", \"abcam\", \"santa cruz\", \"millipore\",\n   \"catalog no\", \"cat no\", \"cat #\", r'[a-z]{1,3}\\d{4,}', \"lot no\", \"item no\",\n   \"selleckchem\", \"apexbio\", \"biolegend\"]\n\nThe final pattern in that list catches alphanumeric catalog codes like \"C7522\" or \"THC-001\".\n\nBefore returning any candidate token, iterate through VENDOR_BLOCKLIST. If any pattern matches (case-insensitive substring or regex match), remove that candidate from consideration.\n\nAdd a prioritized positive-match list checked before the main extraction loop. Patterns in priority order:\n\n  1. r'cv\\.\\s*([\\w ]+)'  (cultivar abbreviation common in botany papers)\n  2. r'chemovar\\s+([\\w -]+)'\n  3. r'chemotype\\s+([IVX]+)'\n  4. Named isolate match: compound name appears in CANNABINOID_ISOLATE_LIST (defined in 1E below)\n  5. Strain name following \"strain\", \"variety\", \"cultivar\" keyword\n\nIf a prioritized match is found, return it immediately without running the general token scan.\n\nOnly if the full candidate list is empty after blocklist filtering should the function fall back to returning the best available token, including a vendor string, to avoid returning None where something is better than nothing.\n\n1C. extract_cannabinoid_pct() - Context guard for acid-fraction values\n\nCurrent behavior: The function captures numeric percentages without verifying whether they describe plant-level weight-percent or acidic-form ratios. Acid-form ratios can exceed 50 and are not comparable to plant-content defaults.\n\nImplementation steps:\n\nAfter capturing a numeric value from the existing regex, extract the surrounding window of plus-or-minus 30 characters from the source string.\n\nCheck the window (lowercased) for any of: \"acid\", \"acidic\", \"ratio\", \"acid to total\", \"thca\", \"cbda\". If any are found, discard this match and continue searching.\n\nAdd a range validation step after the context check:\n  - For THC, accept values only in range 0.0 to 40.0 (plant-content ceiling)\n  - For CBD, accept values only in range 0.0 to 25.0\n\nValues above these ceilings that are not already discarded by the acid context guard should be flagged with a warning log line but not returned as the primary value. If no value passes both guards, return None rather than a likely-incorrect high value.\n\nThis guard should wrap both thc_pct and cbd_pct extraction paths since the same acid-ratio contamination occurs in both.\n\n1D. OUTCOME_DOMAIN_KEYWORDS dictionary expansion\n\nLocate the OUTCOME_DOMAIN_KEYWORDS dictionary (or equivalent structure) in extractor.py. Append the following terms to the listed sublists:\n\nOncology sublist additions:\n  \"leukemia\", \"glioblastoma\", \"T-ALL\", \"lymphoma\", \"tumor cell\",\n  \"apoptosis in\", \"cytotoxicity\", \"antiproliferative\", \"cell viability\",\n  \"IC50\", \"MTT assay\", \"colony formation\"\n\nPain sublist additions:\n  \"GIRK\", \"analgesia\", \"analgesic\", \"nociception\", \"hyperalgesia\",\n  \"allodynia\", \"pain threshold\"\n\nAddiction sublist additions:\n  \"drug tolerance\", \"receptor internalization\", \"desensitization\",\n  \"withdrawal\", \"conditioned place preference\", \"CPP\"\n\nAfter appending, ensure matching is case-insensitive (either lowercase all text before comparison or use re.IGNORECASE flags). The IC50 and MTT additions are particularly important for cell-biology papers that dominate the node2c gap.\n\n1E. extract_cannabis_type() - Isolate detection before fallback\n\nDefine module-level constant CANNABINOID_ISOLATE_LIST:\n  [\"THC\", \"CBD\", \"CBDV\", \"THCV\", \"CBG\", \"CBGA\", \"CBCA\", \"CBC\",\n   \"delta-9-THC\", \"delta-8-THC\", \"cannabidiol\", \"cannabigerol\",\n   \"tetrahydrocannabivarin\", \"cannabidivarin\", \"dronabinol\", \"nabilone\",\n   \"JWH-018\", \"WIN 55,212\", \"HU-210\", \"CP 55,940\", \"anandamide\", \"AEA\",\n   \"2-AG\", \"2-arachidonoylglycerol\"]\n\nIn extract_cannabis_type(), before the existing logic runs the fallback or concentrate-detection path, add an isolate check:\n\n  1. Tokenize or scan the abstract and methods text for any member of CANNABINOID_ISOLATE_LIST (case-insensitive, whole-word or dash-adjacent match to avoid catching \"CBD\" inside \"CBDA\").\n  2. If a match is found, check that neither \"extract\", \"oil\", \"flower\", \"plant material\", \"crude\", nor \"tincture\" appears within 50 characters of the match.\n  3. If the isolate is confirmed without a plant-matrix context word, return \"pure cannabinoid\".\n  4. Otherwise continue to existing logic.\n\nThis prevents concentrates or unknown from being returned for papers that use a single synthetic or isolated compound in cell culture.\n\n---\n\nSECTION 2: maude_classifier.py CHANGES\n\n2A. study_type - Analytical and computational pre-routing guard\n\nThis is the highest-impact single fix. The clinical routing branch is being reached by papers about HPLC method development, HRMS identification studies, and molecular dynamics simulations, which share surface language with observational studies (e.g., \"patients\" mentioned in introduction, \"reported\" outcomes).\n\nAdd a pre-check function called is_analytical_or_computational(text) that returns True if any of the following terms appear (case-insensitive, whole-word):\n\n  [\"UHPLC\", \"HPLC\", \"HRMS\", \"Orbitrap\", \"LC-MS\", \"GC-MS\", \"mass spectrometry\",\n   \"molecular docking\", \"molecular dynamics\", \"GROMACS\", \"AutoDock\", \"Vina\",\n   \"DFT\", \"density functional\", \"in silico\", \"docking score\", \"binding affinity\",\n   \"pharmacophore model\", \"ADMET prediction\"]\n\nCall this function at the very top of the study_type classification logic, before any routing branch. If it returns True, immediately assign study_type = \"Cell Culture (Other In Vitro)\" and return without entering any other branch including the clinical branch.\n\nRationale for \"Cell Culture (Other In Vitro)\" as the forced value: this is the least-wrong bucket for analytical and computational work in the current taxonomy. If a dedicated \"Analytical / Computational\" category is added later, this pre-check function is already isolated and easy to redirect.\n\nDocument the override in a comment: if a paper mentions both HPLC and a clinical trial, the pre-check will misclassify it. This edge case is rare enough that the trade-off is acceptable given the 60% disagreement rate on analytical papers. If needed, a later rule can add a counter-signal check for explicit RCT language that overrides the analytical pre-check.\n\n---\n\nSECTION 3: maude_cues.json CHANGES\n\nAdd or update the following cue groups. Keep the existing schema (cue group name, pattern list, weight, field target).\n\nGroup: treatment_duration_invitro\n  Target field: treatment_duration\n  Patterns: the six regex strings listed in 1A above\n  Weight: 0.7 (lower than clinical dosing cues to avoid overriding confirmed clinical values)\n  Section scope hint: \"methods, results\"\n\nGroup: strain_vendor_blocklist\n  Target field: strain_reported\n  Patterns: VENDOR_BLOCKLIST entries reformatted as cue patterns\n  Weight: -1.0 (negative weight signals suppression, not match)\n  Notes: If the cue system supports suppression weights, apply here. If not, treat as documentation and enforce via extractor.py only.\n\nGroup: cannabinoid_isolate_type\n  Target field: cannabis_type\n  Patterns: CANNABINOID_ISOLATE_LIST members as word-boundary regex entries\n  Weight: 0.85\n  Return value override: \"pure cannabinoid\"\n\nGroup: analytical_study_guard\n  Target field: study_type\n  Patterns: the is_analytical_or_computational term list from 2A\n  Weight: 1.0\n  Return value override: \"Cell Culture (Other In Vitro)\"\n  Priority: highest (evaluate before all other study_type cue groups)\n\nGroup: oncology_expanded\n  Target field: outcome_domain\n  Patterns: new oncology terms from 1D\n  Weight: 0.9\n  Return value override: \"oncology\"\n\nGroup: pain_expanded\n  Target field: outcome_domain\n  Patterns: new pain terms from 1D\n  Weight: 0.9\n  Return value override: \"pain\"\n\nGroup: addiction_expanded\n  Target field: outcome_domain\n  Patterns: new addiction terms from 1D\n  Weight: 0.9\n  Return value override: \"addiction\"\n\n---\n\nSECTION 4: TEST IDEAS\n\nUnit tests for extractor.py:\n\ntest_treatment_duration_incubation_hours: Input \"Cells were incubated for 24 h with THC.\" Expect \"24 h\".\n\ntest_treatment_duration_md_simulation: Input \"A 100 ns molecular dynamics simulation was performed.\" Expect \"100 ns\".\n\ntest_treatment_duration_storage: Input \"Samples were stored for 7 days at -20C.\" Expect \"7 days\".\n\ntest_treatment_duration_prefers_shortest: Input with two durations \"cells maintained for 5 days then incubated for 6 h before assay\". Expect \"6 h\" (shortest in hours).\n\ntest_strain_vendor_blocked: Input abstract mentioning \"Sigma-Aldrich THC (catalog no. T4764)\". Expect strain_reported is not \"Sigma-Aldrich\" and ideally returns None or the compound name \"THC\".\n\ntest_strain_cultivar_priority: Input containing \"cv. Skunk #1 obtained from Sigma-Aldrich\". Expect \"Skunk #1\" is returned, not \"Sigma-Aldrich\".\n\ntest_thc_pct_acid_context_rejected: Input \"THCA/total ratio was 68.3%\". Expect thc_pct returns None.\n\ntest_thc_pct_valid_range: Input \"THC content was 18.5% w/w\". Expect 18.5.\n\ntest_thc_pct_over_ceiling: Input \"THC detected at 55%\" with no acid context. Expect None with warning logged.\n\ntest_outcome_domain_glioblastoma: Input abstract with \"glioblastoma cell line\". Expect outcome_domain \"oncology\".\n\ntest_outcome_domain_girk: Input \"GIRK channel activation was measured\". Expect outcome_domain \"pain\".\n\ntest_outcome_domain_receptor_internalization: Input \"receptor internalization following THC\". Expect outcome_domain \"addiction\".\n\ntest_cannabis_type_pure_isolate: Input \"CBD was dissolved in DMSO\". Expect cannabis_type \"pure cannabinoid\".\n\ntest_cannabis_type_isolate_with_extract: Input \"CBD-rich extract was used\". Expect cannabis_type not \"pure cannabinoid\".\n\nIntegration tests for maude_classifier.py:\n\ntest_study_type_hplc_paper: Full abstract of an HPLC method paper should return study_type \"Cell Culture (Other In Vitro)\" and not \"Clinical (observational)\".\n\ntest_study_type_molecular_docking: Abstract mentioning \"AutoDock Vina docking score\". Same expectation.\n\ntest_study_type_gromacs: Abstract mentioning \"GROMACS 2021 simulation\". Same expectation.\n\ntest_study_type_rct_not_overridden: Abstract of a genuine randomized controlled trial with no analytical keywords. Should still return clinical study type and not be caught by the pre-check guard.\n\nRegression test:\n\ntest_alignment_node2c_batch: Run the existing node2c comparison batch (the 75.4% baseline set) through the updated extractors and classifier. Assert that overall alignment improves to at least 88% before merging. Track per-field alignment separately for treatment_duration, strain_reported, outcome_domain, and study_type to confirm each gap pattern shows improvement.\n\n---\n\nIMPLEMENTATION ORDER\n\n1. maude_classifier.py study_type pre-routing guard (2A) - highest disagreement volume, lowest code risk\n2. extractor.py OUTCOME_DOMAIN_KEYWORDS expansion (1D) - simple append, no logic change\n3. extractor.py extract_treatment_duration() in-vitro patterns (1A)\n4. extractor.py extract_strain_reported() vendor blocklist (1B)\n5. extractor.py extract_cannabis_type() isolate check (1E)\n6. extractor.py extract_cannabinoid_pct() context guard (1C) - most complex, do last\n7. maude_cues.json updates to mirror all of the above\n\nRun the regression alignment test after each numbered step to confirm monotonic improvement and catch any regressions early.",
+  "llm_call_metrics": {
+    "model": "claude-sonnet-4-6",
+    "input_tokens": 7165,
+    "output_tokens": 3368,
+    "total_tokens": 10533,
+    "estimated_cost_usd": 0.072015,
+    "prompt_chars": 21532,
+    "disagreement_rows_sent": 20
+  },
+  "status": "applied",
+  "applied_at": "2026-06-22T12:59:45.816582"
+}

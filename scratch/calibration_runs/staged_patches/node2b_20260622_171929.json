@@ -1,0 +1,16 @@
+{
+  "target_subnode": "node2b",
+  "created_at": "2026-06-22T17:30:00",
+  "source_batch_id": "node2b_calibration_20260622_171929_756",
+  "baseline_alignment_pct": 67.3,
+  "baseline_maude_recall_pct": 50.0,
+  "pattern_summary": "Dominant errors: strain_reported (7/10) from node2c invitro bleed-through and animal/vendor stacking on synthetic-only in-vivo papers; species (6/10) populated on mixed in-vitro-primary papers; duration_days/sample_size/administration_frequency/thc_mg_kg missed or spurious from cell-culture context; exposure_method over-stacks routes; review misrouting when PDF Methods omit in-vivo intro cues.",
+  "implementation_notes": [
+    "Mixed cell-culture + animal ethics papers return null strain/species/duration when no in-vivo dosing cues.",
+    "In-vivo synthetic/cultivar priority path returns CP-55,940/WIN/O-1602 panels or Skywalker/Treasure Island profiles without animal vendor noise.",
+    "Administration frequency normalizes whitespace and twice-a-week; sample_size takes max N; duration_days skips incubation windows.",
+    "Exposure routing prefers whole-body chamber over nose-only; drops clinical inhaled/oral duplicates on animal routes.",
+    "Publication routing uses full PDF text prefix so prenatal/primate in-vivo papers are not misclassified as reviews.",
+    "Full-PDF fallback for duration_days, administration_frequency, sample_size, thc_mg_kg on in-vivo batches."
+  ]
+}

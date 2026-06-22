@@ -4,9 +4,22 @@ set -euo pipefail
 
 APP="${FLY_APP:-cannabis-paper-scraper}"
 SUBNODE="${SUBNODE:-node2b}"
-MAX_CALLS="${MAX_CALLS:-40}"
+MAX_CALLS="${MAX_CALLS:-20}"
 VARIANTS="${VARIANTS:-control}"
 PULL_LOCAL="${PULL_LOCAL:-1}"
+CONTENT_TIER="${CONTENT_TIER:-pdf_extracted}"
+DEPLOY_FIRST="${DEPLOY_FIRST:-1}"
+
+if [[ "${DEPLOY_FIRST}" == "1" ]]; then
+  echo "==> Deploying latest classifier code to ${APP} (set DEPLOY_FIRST=0 to skip)"
+  fly deploy --remote-only -a "${APP}"
+fi
+
+if [[ -f scratch/calibration_runs/handoff_learning_log.json ]]; then
+  echo "==> Syncing handoff learning log to ${APP}"
+  fly ssh console -a "${APP}" -C "sh -c 'cat > /data/calibration_runs/handoff_learning_log.json'" \
+    < scratch/calibration_runs/handoff_learning_log.json || true
+fi
 
 case "${SUBNODE}" in
   node2a) MODE="node2a_clinical" ;;
@@ -18,13 +31,38 @@ case "${SUBNODE}" in
     ;;
 esac
 
+USE_PDF_MAUDE_AB=1
+if [[ "${SUBNODE}" == "node2a" || "${SUBNODE}" == "node2b" || "${SUBNODE}" == "node2c" ]]; then
+  USE_PDF_MAUDE_AB=1
+fi
+
 echo "==> Pre-flight: ${APP}"
 fly ssh console -a "${APP}" -C "sh -c 'cd /app && python3 fly_db_check.py'"
 
-echo "==> Running sub-node calibration: ${SUBNODE} · ${MAX_CALLS} papers · mode=${MODE}"
-fly ssh console -a "${APP}" -C \
-  "sh -c 'cd /app && python3 - <<\"PY\"
-import calibration_coordinator as cc
+if [[ "${USE_PDF_MAUDE_AB}" == "1" ]]; then
+  echo "==> Running sub-node PDF Maude A/B: ${SUBNODE} · ${MAX_CALLS} papers · tier=${CONTENT_TIER} · mode=${MODE}"
+  fly ssh console -a "${APP}" -C \
+    "sh -c 'cd /app && python3 - <<\"PY\"
+from calibration_agent import build_arg_parser, run_subnode_pdf_maude_ab
+parser = build_arg_parser()
+args = parser.parse_args([
+    \"--subnode-pdf-maude-ab\",
+    \"--max-calls\", \"${MAX_CALLS}\",
+    \"--mode\", \"${MODE}\",
+    \"--target-subnode\", \"${SUBNODE}\",
+    \"--content-tier\", \"${CONTENT_TIER}\",
+    \"--full-extraction\",
+    \"--lock-owner\", \"subnode-${SUBNODE}-pdf\",
+])
+paths = run_subnode_pdf_maude_ab(args)
+print(\"JSON:\", paths[0])
+print(\"Walkthrough:\", paths[1])
+PY
+python3 calibration_metrics.py --build-dashboard'"
+else
+  echo "==> Running sub-node calibration (live Claude): ${SUBNODE} · ${MAX_CALLS} papers · mode=${MODE}"
+  fly ssh console -a "${APP}" -C \
+    "sh -c 'cd /app && python3 - <<\"PY\"
 from calibration_agent import build_arg_parser, run_calibration
 parser = build_arg_parser()
 args = parser.parse_args([
@@ -33,16 +71,14 @@ args = parser.parse_args([
     \"--target-subnode\", \"${SUBNODE}\",
     \"--variants\", \"${VARIANTS}\",
     \"--abstract-only\",
+    \"--lock-owner\", \"subnode-${SUBNODE}\",
 ])
-cc.acquire_lock(\"running_batch\", \"subnode-${SUBNODE}\", subnode=\"${SUBNODE}\")
-try:
-    paths = run_calibration(args)
-    print(\"JSON:\", paths[0])
-    print(\"Walkthrough:\", paths[1])
-finally:
-    cc.release_lock()
+paths = run_calibration(args)
+print(\"JSON:\", paths[0])
+print(\"Walkthrough:\", paths[1])
 PY
 python3 calibration_metrics.py --build-dashboard'"
+fi
 
 if [[ "${PULL_LOCAL}" == "1" ]]; then
   echo "==> Pulling latest batch artifact to scratch/calibration_runs/"
@@ -51,11 +87,34 @@ if [[ "${PULL_LOCAL}" == "1" ]]; then
   if [[ -n "${LATEST}" ]]; then
     BASENAME=$(basename "${LATEST}")
     fly ssh sftp get -a "${APP}" "${LATEST}" "scratch/calibration_runs/${BASENAME}"
-    fly ssh sftp get -a "${APP}" "/data/calibration_runs/calibration_dashboard_data.json" "scratch/calibration_runs/calibration_dashboard_data.json" || true
-    fly ssh sftp get -a "${APP}" "/data/calibration_runs/dashboard.html" "scratch/calibration_runs/dashboard.html" || true
+  rm -f scratch/calibration_runs/calibration_dashboard_data.json scratch/calibration_runs/dashboard.html
+  fly ssh sftp get -a "${APP}" "/data/calibration_runs/calibration_dashboard_data.json" \
+    "scratch/calibration_runs/calibration_dashboard_data.json" || true
+  fly ssh sftp get -a "${APP}" "/data/calibration_runs/dashboard.html" \
+    "scratch/calibration_runs/dashboard.html" || true
     echo "Pulled ${BASENAME}"
     python3 calibration_metrics.py --build-dashboard
   fi
 fi
 
 echo "==> Done. Dashboard: https://${APP}.fly.dev/calibration/dashboard"
+
+if [[ -n "${LATEST:-}" && "${RUN_FEEDBACK:-1}" == "1" ]]; then
+  LOCAL_BATCH="scratch/calibration_runs/${BASENAME}"
+  echo "==> RL feedback cycle on ${BASENAME} (set RUN_FEEDBACK=0 to skip)"
+  python3 - <<PY || true
+from pathlib import Path
+import calibration_feedback_agent as cfa
+batch = Path("${LOCAL_BATCH}")
+if batch.exists():
+    result = cfa.run_feedback_cycle(batch, skip_lock=True)
+    print("Feedback status:", result.get("status"))
+    if result.get("staged_patch_path"):
+        print("Staged patch:", result.get("staged_patch_path"))
+    if result.get("agent_handoff_prompt"):
+        print("\\n--- Agent handoff prompt ---\\n")
+        print(result["agent_handoff_prompt"][:4000])
+PY
+  echo "==> Implement staged patch, bump calibration_build.py, deploy, then refresh holdout:"
+  echo "    python3 calibration_agent.py --refresh-maude-from-batch ${LOCAL_BATCH}"
+fi

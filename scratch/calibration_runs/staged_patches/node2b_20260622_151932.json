@@ -1,0 +1,343 @@
+{
+  "target_subnode": "node2b",
+  "status": "applied",
+  "applied_at": "2026-06-22T16:00:00",
+  "created_at": "2026-06-22T15:19:32.810791",
+  "pattern_summary": "Four dominant error patterns drive the 68.4% alignment rate: (1) Maude fails to extract strain_reported in 92.5% of cases, treating cultivar names, receptor agonist identifiers, and pure compound names as null rather than as strain/compound identifiers; (2) cannabis_type is mis-classified in 85% of cases, with Maude defaulting to 'unknown', 'concentrates', or 'vape pen' instead of correctly identifying 'pure cannabinoid', 'CB receptor agonist', 'CB receptor antagonist', or 'dried flower'; (3) administration_frequency and duration_days are nearly always null in Maude (67.5% and 60% disagreement) because temporal dosing language in Methods sections is not parsed; (4) thc_mg_kg and cbd_mg_kg are systematically missed (27.8% and 33.3%) because Maude lacks extraction logic for numeric mg/kg dose values from structured Methods text.",
+  "gap_summary": {
+    "target_subnode": "node2b",
+    "scored_paper_count": 40,
+    "papers_with_disagreements": 40,
+    "batch_alignment_rate": 0.6836,
+    "batch_alignment_pct": 68.4,
+    "batch_extraction_fill_rate": 0.3854,
+    "batch_extraction_fill_pct": 38.5,
+    "field_disagreement_stats": [
+      {
+        "field": "strain_reported",
+        "compared_count": 40,
+        "disagree_count": 37,
+        "disagree_pct": 92.5
+      },
+      {
+        "field": "cannabis_type",
+        "compared_count": 40,
+        "disagree_count": 34,
+        "disagree_pct": 85.0
+      },
+      {
+        "field": "administration_frequency",
+        "compared_count": 40,
+        "disagree_count": 27,
+        "disagree_pct": 67.5
+      },
+      {
+        "field": "duration_days",
+        "compared_count": 40,
+        "disagree_count": 24,
+        "disagree_pct": 60.0
+      },
+      {
+        "field": "exposure_method",
+        "compared_count": 40,
+        "disagree_count": 14,
+        "disagree_pct": 35.0
+      },
+      {
+        "field": "cbd_mg_kg",
+        "compared_count": 36,
+        "disagree_count": 12,
+        "disagree_pct": 33.3
+      },
+      {
+        "field": "thc_mg_kg",
+        "compared_count": 36,
+        "disagree_count": 10,
+        "disagree_pct": 27.8
+      },
+      {
+        "field": "cbd_pct",
+        "compared_count": 40,
+        "disagree_count": 6,
+        "disagree_pct": 15.0
+      },
+      {
+        "field": "inhaled_exposure_duration",
+        "compared_count": 5,
+        "disagree_count": 4,
+        "disagree_pct": 80.0
+      },
+      {
+        "field": "thc_pct",
+        "compared_count": 40,
+        "disagree_count": 3,
+        "disagree_pct": 7.5
+      },
+      {
+        "field": "dose_mg",
+        "compared_count": 36,
+        "disagree_count": 2,
+        "disagree_pct": 5.6
+      },
+      {
+        "field": "study_type",
+        "compared_count": 1,
+        "disagree_count": 1,
+        "disagree_pct": 100.0
+      },
+      {
+        "field": "sample_size",
+        "compared_count": 1,
+        "disagree_count": 1,
+        "disagree_pct": 100.0
+      },
+      {
+        "field": "puff_count",
+        "compared_count": 5,
+        "disagree_count": 1,
+        "disagree_pct": 20.0
+      },
+      {
+        "field": "thc_mg_ml",
+        "compared_count": 5,
+        "disagree_count": 1,
+        "disagree_pct": 20.0
+      },
+      {
+        "field": "cbd_mg_g",
+        "compared_count": 36,
+        "disagree_count": 1,
+        "disagree_pct": 2.8
+      },
+      {
+        "field": "repeat_exposure_count",
+        "compared_count": 40,
+        "disagree_count": 0,
+        "disagree_pct": 0.0
+      },
+      {
+        "field": "exposure_regimen_bin",
+        "compared_count": 40,
+        "disagree_count": 0,
+        "disagree_pct": 0.0
+      },
+      {
+        "field": "thc_mg_g",
+        "compared_count": 36,
+        "disagree_count": 0,
+        "disagree_pct": 0.0
+      },
+      {
+        "field": "cbd_mg_ml",
+        "compared_count": 5,
+        "disagree_count": 0,
+        "disagree_pct": 0.0
+      },
+      {
+        "field": "species",
+        "compared_count": 1,
+        "disagree_count": 0,
+        "disagree_pct": 0.0
+      },
+      {
+        "field": "outcome_domain",
+        "compared_count": 1,
+        "disagree_count": 0,
+        "disagree_pct": 0.0
+      },
+      {
+        "field": "multiple_doses",
+        "compared_count": 1,
+        "disagree_count": 0,
+        "disagree_pct": 0.0
+      },
+      {
+        "field": "multiple_time_intervals",
+        "compared_count": 1,
+        "disagree_count": 0,
+        "disagree_pct": 0.0
+      }
+    ],
+    "top_disagreement_fields": [
+      "strain_reported",
+      "cannabis_type",
+      "administration_frequency",
+      "duration_days",
+      "exposure_method",
+      "cbd_mg_kg",
+      "thc_mg_kg",
+      "cbd_pct",
+      "inhaled_exposure_duration",
+      "thc_pct"
+    ]
+  },
+  "proposed_rules_changes": [
+    {
+      "type": "classifier_logic",
+      "description": "Cannabis_type: Replace the 'unknown' default with a multi-signal classifier. Priority order: (1) if compound name is a known synthetic agonist (CP-55940, WIN55212, O-1602, JWH-*, HU-*) \u2192 'CB receptor agonist'; (2) if compound name is a known antagonist (SR141716, AM251, rimonabant) \u2192 'CB receptor antagonist'; (3) if text contains isolated THC/CBD/CBG/CBDV + mg/kg dosing + no plant-matter language \u2192 'pure cannabinoid'; (4) if 'cannabis plant matter' or 'dried flower' or explicit THC% \u2192 'dried flower'; (5) if 'extract' or 'whole plant extract' \u2192 'full spectrum extract'; (6) else \u2192 'unknown'.",
+      "patch_hint": "Refactor classify_cannabis_type() in maude_classifier.py; add a synthetic_agonist_compounds list and a pure_cannabinoid_compounds list; check text for these before falling through to 'unknown'.",
+      "priority": "high"
+    },
+    {
+      "type": "classifier_logic",
+      "description": "Strain_reported: Implement a named-entity extraction pass for (a) known cannabis cultivar names, (b) compound identifiers adjacent to 'isolated', 'chemovar', 'cultivar', (c) coded cultivar labels like CN2/CN4/CN6, (d) pharmaceutical-grade compound descriptions including supplier. Return concatenated string rather than null.",
+      "patch_hint": "Add extract_strain_reported() function using regex patterns: named compound IDs (e.g. [A-Z]{2,}-?[0-9]+), quoted strain names, cultivar keyword context window (\u00b130 chars around 'cultivar'/'chemovar'/'strain').",
+      "priority": "high"
+    },
+    {
+      "type": "classifier_logic",
+      "description": "Administration_frequency: Add a regex extraction pass over Methods text for patterns: 'once daily', 'twice daily', 'every other day', 'alternating days', 'X times/week', 'N days on / M days off', 'daily from GD X'. Map these to a controlled vocabulary and store as administration_frequency.",
+      "patch_hint": "Add extract_administration_frequency() in maude_classifier.py. Use ordered regex list with named groups. Apply to full abstract + Methods excerpt when available.",
+      "priority": "high"
+    },
+    {
+      "type": "classifier_logic",
+      "description": "Duration_days: Add numeric extraction for explicit day-count patterns: 'N days', 'N-day treatment', 'N-day chronic', 'gestational day(s) X-Y' (compute Y-X), 'PND X to PND Y' (compute Y-X), 'X weeks' (multiply by 7). Prefer explicit numeric values over inferred values.",
+      "patch_hint": "Add extract_duration_days() function; handle gestational day ranges specially: GD_pattern = r'gestational day[s]?\\s*(\\d+)[\u2013-](\\d+)' \u2192 int(m.group(2)) - int(m.group(1)). PND pattern similarly.",
+      "priority": "high"
+    },
+    {
+      "type": "classifier_logic",
+      "description": "thc_mg_kg / cbd_mg_kg: Add targeted regex extraction for mg/kg dose values. Patterns: 'THC\\s*\\(?([0-9.]+)\\s*mg/kg', 'delta-9-THC.*?([0-9.]+)\\s*mg/kg', 'CBD\\s*\\(?([0-9.]+)\\s*mg/kg'. Handle \u00b5g/kg by converting to mg/kg (divide by 1000). Extract first match; if multiple doses present set multiple_doses=true.",
+      "patch_hint": "Add extract_thc_cbd_mg_kg() in maude_classifier.py. Run on abstract + Methods. Handle \u00b5g/kg unit conversion. Store in thc_mg_kg / cbd_mg_kg fields.",
+      "priority": "high"
+    },
+    {
+      "type": "classifier_logic",
+      "description": "Inhaled_exposure_duration: When exposure_method includes smoke/vapor, parse 'N-min session', 'N minutes of exposure', 'exposed for N min' patterns and store as inhaled_exposure_duration string.",
+      "patch_hint": "Add extract_inhaled_duration() triggered only when inhalation method detected. Regex: r'(\\d+)[- ]min(?:ute)?\\s*(?:session|exposure|period)'.",
+      "priority": "medium"
+    },
+    {
+      "type": "classifier_logic",
+      "description": "Exposure_method / 'edible' mapping: Add 'edible' and 'food treat' and 'mixed in food' as positive cues for oral administration. Remove spurious injection-keyword match when the broader context describes edible/oral delivery.",
+      "patch_hint": "In classify_exposure_method(), add edible_cues list; check context window before assigning injection. If 'edible' appears within 50 chars of THC/CBD mention, prefer oral_administration over injection.",
+      "priority": "medium"
+    },
+    {
+      "type": "classifier_logic",
+      "description": "Cannabis_type 'vape pen' over-triggering: 'vape pen' should only be assigned when the text explicitly references a consumer vape pen device or cartridge. 'Vapor inhalation' or 'vaporized' alone with plant matter should map to 'dried flower'; with pure compounds should map to 'pure cannabinoid'. Add a device-specificity check before assigning 'vape pen'.",
+      "patch_hint": "In classify_cannabis_type(), gate 'vape pen' on presence of 'vape pen', 'vape cartridge', 'e-cigarette cartridge' \u2014 not on 'vapor' alone.",
+      "priority": "high"
+    },
+    {
+      "type": "classifier_logic",
+      "description": "cbd_pct extraction: When multiple strains/cultivars are described with different CBD percentages, extract the highest/primary CBD% (or all values) rather than the first numeric match which may be the THC% of a secondary strain. Associate the % with the correct cannabinoid via a paired (compound, value, unit) extraction.",
+      "patch_hint": "Refactor extract_cannabinoid_pct() to use paired regex: r'([0-9.]+)%\\s*(THC|CBD|cannabidiol|tetrahydrocannabinol)' and r'(THC|CBD).*?([0-9.]+)%'. Resolve ambiguity by compound name proximity.",
+      "priority": "medium"
+    }
+  ],
+  "proposed_cues": [
+    {
+      "node_id": "node2b_in_vivo",
+      "field": "cannabis_type",
+      "cue": "mg/kg",
+      "explanation": "When dosing is expressed as mg/kg alongside a cannabinoid name (THC, CBD, cannabidiol, tetrahydrocannabinol) and no plant-matter language appears, this strongly signals 'pure cannabinoid'."
+    },
+    {
+      "node_id": "node2b_in_vivo",
+      "field": "cannabis_type",
+      "cue": "Sigma-Aldrich",
+      "explanation": "Pharmaceutical supplier names (Sigma-Aldrich, Cayman Chemical, Tocris) confirm isolated pure cannabinoid, not plant extract."
+    },
+    {
+      "node_id": "node2b_in_vivo",
+      "field": "cannabis_type",
+      "cue": "cannabinoid agonist",
+      "explanation": "Phrase 'cannabinoid agonist' or 'CB1 agonist' / 'CB2 agonist' maps to 'CB receptor agonist', not 'unknown'."
+    },
+    {
+      "node_id": "node2b_in_vivo",
+      "field": "cannabis_type",
+      "cue": "vaporized cannabis plant matter",
+      "explanation": "Distinguishes dried flower / whole plant vapor from vape pen products; should trigger 'dried flower' classification."
+    },
+    {
+      "node_id": "node2b_in_vivo",
+      "field": "cannabis_type",
+      "cue": "synthetic cannabinoid",
+      "explanation": "Explicit label 'synthetic cannabinoid' maps to 'CB receptor agonist' category."
+    },
+    {
+      "node_id": "node2b_in_vivo",
+      "field": "strain_reported",
+      "cue": "cultivar",
+      "explanation": "Word 'cultivar' or 'chemovar' adjacent to a name string signals a strain name to extract."
+    },
+    {
+      "node_id": "node2b_in_vivo",
+      "field": "strain_reported",
+      "cue": "isolated from",
+      "explanation": "'isolated from [strain name]' pattern identifies the source cultivar as strain_reported."
+    },
+    {
+      "node_id": "node2b_in_vivo",
+      "field": "administration_frequency",
+      "cue": "twice daily",
+      "explanation": "Phrase 'twice daily' should map to administration_frequency = 'twice daily'."
+    },
+    {
+      "node_id": "node2b_in_vivo",
+      "field": "administration_frequency",
+      "cue": "daily from gestational day",
+      "explanation": "Pattern 'daily from gestational day X-Y' encodes both frequency (daily) and duration (Y-X days)."
+    },
+    {
+      "node_id": "node2b_in_vivo",
+      "field": "duration_days",
+      "cue": "gestational day(s) X-Y",
+      "explanation": "Compute duration_days = Y - X when gestational day range is stated (e.g., GD 6-20 \u2192 15 days)."
+    },
+    {
+      "node_id": "node2b_in_vivo",
+      "field": "duration_days",
+      "cue": "28 days",
+      "explanation": "Explicit 'N days' or 'N-day treatment' phrases should be parsed directly as duration_days."
+    },
+    {
+      "node_id": "node2b_in_vivo",
+      "field": "inhaled_exposure_duration",
+      "cue": "30-min sessions",
+      "explanation": "'N-min sessions' or 'N minutes' in inhalation context maps to inhaled_exposure_duration."
+    },
+    {
+      "node_id": "node2b_in_vivo",
+      "field": "exposure_method",
+      "cue": "THC edible",
+      "explanation": "'edible' or 'food treat' signals oral administration route."
+    },
+    {
+      "node_id": "node2b_in_vivo",
+      "field": "thc_mg_kg",
+      "cue": "THC (X mg/kg)",
+      "explanation": "Regex pattern 'THC\\s*\\(?([0-9.]+)\\s*mg/kg' should extract thc_mg_kg numeric value."
+    },
+    {
+      "node_id": "node2b_in_vivo",
+      "field": "cbd_mg_kg",
+      "cue": "CBD (X mg/kg)",
+      "explanation": "Regex pattern 'CBD\\s*\\(?([0-9.]+)\\s*mg/kg' should extract cbd_mg_kg numeric value."
+    }
+  ],
+  "maude_improvement_brief": {
+    "summary": "Node2b batch alignment sits at 68.4% driven by four systemic failures: (1) strain_reported is null in 92.5% of papers because Maude has no named-entity extraction for compound identifiers, cultivar codes, or supplier-qualified compound descriptions; (2) cannabis_type defaults to 'unknown', 'concentrates', or 'vape pen' due to overly broad or absent compound-type classification logic; (3) administration_frequency and duration_days are not extracted from Methods text because no temporal-dosing regex parser exists; and (4) thc_mg_kg/cbd_mg_kg are not parsed from mg/kg dosing strings in abstracts. The fix requires adding five new extraction functions and refactoring the cannabis_type classifier with a priority-ordered compound-type decision tree.",
+    "top_gap_patterns": [
+      "strain_reported null in 92.5% of papers: no extraction of cultivar codes, compound names, or supplier descriptions",
+      "cannabis_type mis-labelled in 85% of papers: 'vape pen' and 'unknown' over-fire; 'pure cannabinoid' and 'CB receptor agonist' under-fire",
+      "administration_frequency and duration_days null in 67.5% and 60% of papers: no Methods-text temporal regex parser",
+      "thc_mg_kg/cbd_mg_kg null in 28-33% of papers: no mg/kg numeric extraction with unit-conversion for \u00b5g/kg",
+      "inhaled_exposure_duration null in 80% of inhalation papers: no session-duration regex for vapor/smoke studies"
+    ],
+    "agent_handoff_prompt": "You are implementing fixes to maude_classifier.py and maude_cues.json for decision node node2b (animal whole-organism experiments). The calibration analysis has identified five high-priority gaps. Implement the following changes:\n\n## FILE: maude_classifier.py\n\n### 1. Refactor classify_cannabis_type(text) \u2014 HIGH PRIORITY\nReplace the current logic with a priority-ordered decision tree:\n```python\nSYNTHETIC_AGONISTS = ['cp-55940', 'cp55940', 'win55212', 'win 55,212', 'o-1602', 'jwh-', 'hu-210', 'hu210', 'am2201']\nSYNTHETIC_ANTAGONISTS = ['sr141716', 'am251', 'am-251', 'rimonabant', 'am630', 'cid16020046']\nPURE_CANNABINOIDS = ['delta-9-thc', 'delta9-thc', 'tetrahydrocannabinol', 'cannabidiol', 'cannabigerol', 'cannabidivarin', 'cbdv', 'cbg', 'thcv']\nPLANT_MATTER_CUES = ['plant matter', 'dried flower', 'cannabis sativa plant', 'cannabis flower', 'smoked cannabis', 'combusted cannabis']\nEXTRACT_CUES = ['whole plant extract', 'full spectrum extract', 'cannabis extract', 'botanical extract']\nVAPE_PEN_CUES = ['vape pen', 'vape cartridge', 'e-cigarette cartridge', 'vaping device']\n```\nPriority: synthetic agonist \u2192 antagonist \u2192 vape pen (device-specific only) \u2192 plant matter \u2192 extract \u2192 pure cannabinoid (isolated compound + mg/kg) \u2192 unknown.\n\n### 2. Add extract_strain_reported(text) \u2014 HIGH PRIORITY\nExtract:\n- Named cultivar strings near 'cultivar', 'chemovar', 'strain', 'variety' (\u00b140 char window)\n- Coded cultivar labels: regex r'\\b(CN\\d+|[A-Z]{2,3}-?\\d{2,}|\\d{3}-\\d{2}[A-Z])\\b'\n- Compound identifiers qualified by supplier: pattern 'COMPOUND_NAME.*?Sigma-Aldrich|Cayman|Tocris'\n- Explicit compound names in isolation context: 'isolated [compound]', 'purified [compound]'\nReturn semicolon-joined string of all matches, or null if none.\n\n### 3. Add extract_administration_frequency(text) \u2014 HIGH PRIORITY\nUse ordered regex list:\n```python\nFREQ_PATTERNS = [\n    (r'\\btwice\\s+daily\\b', 'twice daily'),\n    (r'\\bonce\\s+daily\\b|\\bdaily\\b(?!\\s+from)', 'daily'),\n    (r'\\bevery\\s+other\\s+day\\b|\\balternating\\s+days\\b', 'every other day'),\n    (r'(\\d+)\\s*times?\\s*/\\s*week', lambda m: f\"{m.group(1)}x/week\"),\n    (r'daily\\s+(?:for\\s+)?5\\s+days?.*?2\\s+days?\\s+off', '5 days on / 2 days off'),\n    (r'\\bonce\\s+weekly\\b|\\bweekly\\b', 'once weekly'),\n    (r'\\btwice\\s+weekly\\b|\\b2x\\s*weekly\\b', 'twice weekly'),\n]\n```\nReturn first match string or null.\n\n### 4. Add extract_duration_days(text) \u2014 HIGH PRIORITY\nHandle these patterns in priority order:\n```python\n# Explicit N-day\nr'(\\d+)[- ]day\\s+(?:treatment|chronic|exposure|study)' \u2192 int(match)\n# Explicit 'for N days'\nr'for\\s+(\\d+)\\s+days?' \u2192 int(match)\n# Gestational day range\nr'gestational\\s+day[s]?\\s*(\\d+)[\u2013\\-](\\d+)' \u2192 int(m2) - int(m1)\n# PND range\nr'PND\\s*(\\d+)\\s+to\\s+PND\\s*(\\d+)' \u2192 int(m2) - int(m1)\n# Post-natal day range\nr'post-natal\\s+day[s]?\\s*(\\d+)[\u2013\\-](\\d+)' \u2192 int(m2) - int(m1)\n# N weeks\nr'(\\d+)[- ]week\\s+(?:treatment|chronic|exposure)' \u2192 int(match) * 7\n```\nReturn float or null.\n\n### 5. Add extract_thc_cbd_mg_kg(text) \u2014 HIGH PRIORITY\n```python\n# THC mg/kg\nr'(?:THC|tetrahydrocannabinol|delta-?9)[^.]{0,40}?([0-9.]+)\\s*mg/kg'\n# CBD mg/kg  \nr'(?:CBD|cannabidiol)[^.]{0,40}?([0-9.]+)\\s*mg/kg'\n# \u00b5g/kg \u2192 divide by 1000\nr'(?:THC|cannabinoid\\s+agonist)[^.]{0,40}?([0-9.]+)\\s*[\u00b5u]g/kg'\n```\nIf multiple doses found, set multiple_doses=True and store lowest dose (or list). Return (thc_mg_kg, cbd_mg_kg) floats.\n\n### 6. Add extract_inhaled_duration(text) \u2014 MEDIUM PRIORITY\nTrigger only when exposure_method contains smoke/vapor:\n```python\nr'(\\d+)[- ]min(?:ute)?\\s*(?:session|exposure|inhalation|period)'\nr'exposed\\s+for\\s+(\\d+)\\s*min'\nr'(\\d+)\\s*minutes?\\s+of\\s+(?:vapor|smoke|inhalation)'\n```\nReturn string like '30 minutes'.\n\n### 7. Fix exposure_method 'edible' mapping \u2014 MEDIUM PRIORITY\nAdd to oral_cues: ['edible', 'food treat', 'mixed in food', 'in peanut butter', 'gavage'].\nAdd context check: if 'edible' within 60 chars of cannabinoid name \u2192 oral, override injection.\n\n### 8. Fix cannabis_type 'vape pen' over-trigger \u2014 HIGH PRIORITY\nOnly assign 'vape pen' when text contains explicit device terms: 'vape pen', 'vape cartridge', 'e-cigarette cartridge'. Do NOT assign on 'vapor', 'vaporized', 'vapor inhalation' alone.\n\n## FILE: maude_cues.json \u2014 node2b_in_vivo additions\nAdd the following cues under node2b_in_vivo:\n- cannabis_type pure_cannabinoid: ['mg/kg', 'Sigma-Aldrich', 'Cayman Chemical', 'Tocris', 'isolated THC', 'isolated CBD', 'pharmaceutical grade']\n- cannabis_type cb_receptor_agonist: ['cannabinoid agonist', 'CB1 agonist', 'CB2 agonist', 'synthetic cannabinoid', 'receptor agonist CP-', 'WIN 55', 'O-1602']\n- cannabis_type cb_receptor_antagonist: ['cannabinoid antagonist', 'CB1 antagonist', 'SR141716', 'AM251', 'rimonabant']\n- cannabis_type dried_flower: ['vaporized cannabis plant matter', 'cannabis plant matter', 'smoked cannabis', 'combusted cannabis flower']\n- strain_reported: ['cultivar', 'chemovar', 'Skywalker', 'Treasure Island', 'isolated from']\n- administration_frequency: ['once daily', 'twice daily', 'every other day', 'alternating days', 'days on', 'days off']\n- duration_days: ['gestational day', 'GD 6-20', 'PND', 'post-natal day', '-day treatment', '-day chronic']\n- inhaled_exposure_duration: ['30-min session', '10-minute', 'min of vapor', 'min exposure']\n\n## TEST CASES to validate after patching\n1. paper_id 9044: cannabis_type \u2192 ['pure cannabinoid'], thc_mg_kg \u2192 0.205, cbd_mg_kg \u2192 0.273, administration_frequency \u2192 'daily', duration_days \u2192 28.0\n2. paper_id 7558: cannabis_type \u2192 ['CB receptor agonist'], exposure_method unchanged (IP injection), duration_days \u2192 4.0\n3. paper_id 8709: cbd_pct \u2192 13.0 (not 0.7), strain_reported contains 'Skywalker Kush' and 'Treasure Island Kush'\n4. paper_id 7832: exposure_method \u2192 ['oral administration'] (edible cue present)\n5. paper_id 8182: inhaled_exposure_duration \u2192 '30 minutes', thc_mg_ml \u2192 100.0, duration_days \u2192 10.0\n6. paper_id 8442: cannabis_type \u2192 ['dried flower', 'CB receptor agonist'] (not 'vape pen')\n7. paper_id 7209: strain_reported \u2192 'CN2, CN4, CN6', duration_days \u2192 15.0, administration_frequency \u2192 'daily'\n8. Regression: papers correctly classified as 'vape pen' should still pass (must have explicit device term).\n\n## ACCEPTANCE CRITERION\nAfter patching, re-run node2b batch. Target: strain_reported disagree_pct < 30%, cannabis_type < 25%, administration_frequency < 20%, duration_days < 20%, overall batch alignment > 85%."
+  },
+  "agent_handoff_prompt": "You are implementing fixes to maude_classifier.py and maude_cues.json for decision node node2b (animal whole-organism experiments). The calibration analysis has identified five high-priority gaps. Implement the following changes:\n\n## FILE: maude_classifier.py\n\n### 1. Refactor classify_cannabis_type(text) \u2014 HIGH PRIORITY\nReplace the current logic with a priority-ordered decision tree:\n```python\nSYNTHETIC_AGONISTS = ['cp-55940', 'cp55940', 'win55212', 'win 55,212', 'o-1602', 'jwh-', 'hu-210', 'hu210', 'am2201']\nSYNTHETIC_ANTAGONISTS = ['sr141716', 'am251', 'am-251', 'rimonabant', 'am630', 'cid16020046']\nPURE_CANNABINOIDS = ['delta-9-thc', 'delta9-thc', 'tetrahydrocannabinol', 'cannabidiol', 'cannabigerol', 'cannabidivarin', 'cbdv', 'cbg', 'thcv']\nPLANT_MATTER_CUES = ['plant matter', 'dried flower', 'cannabis sativa plant', 'cannabis flower', 'smoked cannabis', 'combusted cannabis']\nEXTRACT_CUES = ['whole plant extract', 'full spectrum extract', 'cannabis extract', 'botanical extract']\nVAPE_PEN_CUES = ['vape pen', 'vape cartridge', 'e-cigarette cartridge', 'vaping device']\n```\nPriority: synthetic agonist \u2192 antagonist \u2192 vape pen (device-specific only) \u2192 plant matter \u2192 extract \u2192 pure cannabinoid (isolated compound + mg/kg) \u2192 unknown.\n\n### 2. Add extract_strain_reported(text) \u2014 HIGH PRIORITY\nExtract:\n- Named cultivar strings near 'cultivar', 'chemovar', 'strain', 'variety' (\u00b140 char window)\n- Coded cultivar labels: regex r'\\b(CN\\d+|[A-Z]{2,3}-?\\d{2,}|\\d{3}-\\d{2}[A-Z])\\b'\n- Compound identifiers qualified by supplier: pattern 'COMPOUND_NAME.*?Sigma-Aldrich|Cayman|Tocris'\n- Explicit compound names in isolation context: 'isolated [compound]', 'purified [compound]'\nReturn semicolon-joined string of all matches, or null if none.\n\n### 3. Add extract_administration_frequency(text) \u2014 HIGH PRIORITY\nUse ordered regex list:\n```python\nFREQ_PATTERNS = [\n    (r'\\btwice\\s+daily\\b', 'twice daily'),\n    (r'\\bonce\\s+daily\\b|\\bdaily\\b(?!\\s+from)', 'daily'),\n    (r'\\bevery\\s+other\\s+day\\b|\\balternating\\s+days\\b', 'every other day'),\n    (r'(\\d+)\\s*times?\\s*/\\s*week', lambda m: f\"{m.group(1)}x/week\"),\n    (r'daily\\s+(?:for\\s+)?5\\s+days?.*?2\\s+days?\\s+off', '5 days on / 2 days off'),\n    (r'\\bonce\\s+weekly\\b|\\bweekly\\b', 'once weekly'),\n    (r'\\btwice\\s+weekly\\b|\\b2x\\s*weekly\\b', 'twice weekly'),\n]\n```\nReturn first match string or null.\n\n### 4. Add extract_duration_days(text) \u2014 HIGH PRIORITY\nHandle these patterns in priority order:\n```python\n# Explicit N-day\nr'(\\d+)[- ]day\\s+(?:treatment|chronic|exposure|study)' \u2192 int(match)\n# Explicit 'for N days'\nr'for\\s+(\\d+)\\s+days?' \u2192 int(match)\n# Gestational day range\nr'gestational\\s+day[s]?\\s*(\\d+)[\u2013\\-](\\d+)' \u2192 int(m2) - int(m1)\n# PND range\nr'PND\\s*(\\d+)\\s+to\\s+PND\\s*(\\d+)' \u2192 int(m2) - int(m1)\n# Post-natal day range\nr'post-natal\\s+day[s]?\\s*(\\d+)[\u2013\\-](\\d+)' \u2192 int(m2) - int(m1)\n# N weeks\nr'(\\d+)[- ]week\\s+(?:treatment|chronic|exposure)' \u2192 int(match) * 7\n```\nReturn float or null.\n\n### 5. Add extract_thc_cbd_mg_kg(text) \u2014 HIGH PRIORITY\n```python\n# THC mg/kg\nr'(?:THC|tetrahydrocannabinol|delta-?9)[^.]{0,40}?([0-9.]+)\\s*mg/kg'\n# CBD mg/kg  \nr'(?:CBD|cannabidiol)[^.]{0,40}?([0-9.]+)\\s*mg/kg'\n# \u00b5g/kg \u2192 divide by 1000\nr'(?:THC|cannabinoid\\s+agonist)[^.]{0,40}?([0-9.]+)\\s*[\u00b5u]g/kg'\n```\nIf multiple doses found, set multiple_doses=True and store lowest dose (or list). Return (thc_mg_kg, cbd_mg_kg) floats.\n\n### 6. Add extract_inhaled_duration(text) \u2014 MEDIUM PRIORITY\nTrigger only when exposure_method contains smoke/vapor:\n```python\nr'(\\d+)[- ]min(?:ute)?\\s*(?:session|exposure|inhalation|period)'\nr'exposed\\s+for\\s+(\\d+)\\s*min'\nr'(\\d+)\\s*minutes?\\s+of\\s+(?:vapor|smoke|inhalation)'\n```\nReturn string like '30 minutes'.\n\n### 7. Fix exposure_method 'edible' mapping \u2014 MEDIUM PRIORITY\nAdd to oral_cues: ['edible', 'food treat', 'mixed in food', 'in peanut butter', 'gavage'].\nAdd context check: if 'edible' within 60 chars of cannabinoid name \u2192 oral, override injection.\n\n### 8. Fix cannabis_type 'vape pen' over-trigger \u2014 HIGH PRIORITY\nOnly assign 'vape pen' when text contains explicit device terms: 'vape pen', 'vape cartridge', 'e-cigarette cartridge'. Do NOT assign on 'vapor', 'vaporized', 'vapor inhalation' alone.\n\n## FILE: maude_cues.json \u2014 node2b_in_vivo additions\nAdd the following cues under node2b_in_vivo:\n- cannabis_type pure_cannabinoid: ['mg/kg', 'Sigma-Aldrich', 'Cayman Chemical', 'Tocris', 'isolated THC', 'isolated CBD', 'pharmaceutical grade']\n- cannabis_type cb_receptor_agonist: ['cannabinoid agonist', 'CB1 agonist', 'CB2 agonist', 'synthetic cannabinoid', 'receptor agonist CP-', 'WIN 55', 'O-1602']\n- cannabis_type cb_receptor_antagonist: ['cannabinoid antagonist', 'CB1 antagonist', 'SR141716', 'AM251', 'rimonabant']\n- cannabis_type dried_flower: ['vaporized cannabis plant matter', 'cannabis plant matter', 'smoked cannabis', 'combusted cannabis flower']\n- strain_reported: ['cultivar', 'chemovar', 'Skywalker', 'Treasure Island', 'isolated from']\n- administration_frequency: ['once daily', 'twice daily', 'every other day', 'alternating days', 'days on', 'days off']\n- duration_days: ['gestational day', 'GD 6-20', 'PND', 'post-natal day', '-day treatment', '-day chronic']\n- inhaled_exposure_duration: ['30-min session', '10-minute', 'min of vapor', 'min exposure']\n\n## TEST CASES to validate after patching\n1. paper_id 9044: cannabis_type \u2192 ['pure cannabinoid'], thc_mg_kg \u2192 0.205, cbd_mg_kg \u2192 0.273, administration_frequency \u2192 'daily', duration_days \u2192 28.0\n2. paper_id 7558: cannabis_type \u2192 ['CB receptor agonist'], exposure_method unchanged (IP injection), duration_days \u2192 4.0\n3. paper_id 8709: cbd_pct \u2192 13.0 (not 0.7), strain_reported contains 'Skywalker Kush' and 'Treasure Island Kush'\n4. paper_id 7832: exposure_method \u2192 ['oral administration'] (edible cue present)\n5. paper_id 8182: inhaled_exposure_duration \u2192 '30 minutes', thc_mg_ml \u2192 100.0, duration_days \u2192 10.0\n6. paper_id 8442: cannabis_type \u2192 ['dried flower', 'CB receptor agonist'] (not 'vape pen')\n7. paper_id 7209: strain_reported \u2192 'CN2, CN4, CN6', duration_days \u2192 15.0, administration_frequency \u2192 'daily'\n8. Regression: papers correctly classified as 'vape pen' should still pass (must have explicit device term).\n\n## ACCEPTANCE CRITERION\nAfter patching, re-run node2b batch. Target: strain_reported disagree_pct < 30%, cannabis_type < 25%, administration_frequency < 20%, duration_days < 20%, overall batch alignment > 85%.",
+  "llm_call_metrics": {
+    "model": "claude-sonnet-4-6",
+    "input_tokens": 11561,
+    "output_tokens": 7674,
+    "total_tokens": 19235,
+    "estimated_cost_usd": 0.149793,
+    "prompt_chars": 36055,
+    "disagreement_rows_sent": 40
+  }
+}
