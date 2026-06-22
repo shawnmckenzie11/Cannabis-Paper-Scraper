@@ -215,6 +215,8 @@ def resolve_disagreement(
     field_resolutions: Sequence[Dict[str, Any]],
     output_dir: Optional[Path] = None,
     db=None,
+    skip_feedback_eval_counter: bool = False,
+    resolution_source: Optional[str] = None,
 ) -> Dict[str, Any]:
     """Resolves Maude vs LLM disagreements for one paper and updates learned cues + feedback loop."""
     output_dir = output_dir or DEFAULT_OUTPUT_DIR
@@ -281,6 +283,9 @@ def resolve_disagreement(
             })
 
         if db is not None:
+            audit_version = f"maude-feedback-{rules_version}"
+            if resolution_source == "claude_auto":
+                audit_version = f"claude-auto-feedback-{rules_version}"
             db.insert_feedback_audit(
                 paper_id=paper_id,
                 field_name=f"maude:{field}",
@@ -290,9 +295,10 @@ def resolve_disagreement(
                 abstract=abstract,
                 timestamp=now_str,
                 confidence_before_review=(maude_before.get("classification_confidence")),
-                classifier_version=f"maude-feedback-{rules_version}",
+                classifier_version=audit_version,
             )
-            db.increment_metadata("feedback_corrections_since_eval", 1)
+            if not skip_feedback_eval_counter:
+                db.increment_metadata("feedback_corrections_since_eval", 1)
             db.set_metadata("last_feedback_audit_timestamp", now_str)
 
         applied_fields.append({
@@ -303,6 +309,7 @@ def resolve_disagreement(
             "maude_before": maude_value,
             "llm_value": llm_values.get(field),
             "cue_added": cue,
+            "resolution_source": resolution_source or item.get("resolution_source"),
         })
 
     maude_after = maude_classifier.classify_paper(title, abstract, rules_version=rules_version)

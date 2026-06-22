@@ -2166,3 +2166,96 @@ class DatabaseManager:
             return cursor.rowcount > 0
         finally:
             conn.close()
+
+    def sync_tab_flags_for_paper(
+        self,
+        paper_id: int,
+        conn=None,
+        publication_type: Optional[str] = None,
+        study_type: Any = None,
+        ingestion_status: Optional[str] = None,
+    ) -> None:
+        """Updates denormalized tab_* columns for one paper when those columns exist."""
+        from paper_tab_flags import TAB_FLAG_FIELDS, compute_tab_flags
+
+        own_conn = conn is None
+        if own_conn:
+            conn = self.get_connection()
+        cursor = conn.cursor()
+        try:
+            if publication_type is None and study_type is None and ingestion_status is None:
+                cursor.execute(
+                    "SELECT publication_type, study_type, ingestion_status FROM papers WHERE id = ?",
+                    (paper_id,),
+                )
+                row = cursor.fetchone()
+                if not row:
+                    return
+                if hasattr(row, "keys"):
+                    publication_type = row["publication_type"]
+                    study_type = row["study_type"]
+                    ingestion_status = row["ingestion_status"]
+                else:
+                    publication_type, study_type, ingestion_status = row[0], row[1], row[2]
+
+            flags = compute_tab_flags(
+                publication_type=publication_type,
+                study_type=study_type,
+                ingestion_status=ingestion_status,
+            )
+            set_parts = []
+            params: List[Any] = []
+            for column in TAB_FLAG_FIELDS.values():
+                if column in flags:
+                    set_parts.append(f"{column} = ?")
+                    params.append(flags[column])
+            if not set_parts:
+                return
+            params.append(paper_id)
+            cursor.execute(
+                f"UPDATE papers SET {', '.join(set_parts)} WHERE id = ?",
+                params,
+            )
+            if own_conn:
+                conn.commit()
+        except Exception as exc:
+            if "no such column" in str(exc).lower() or "does not exist" in str(exc).lower():
+                logger.debug("Tab flag columns unavailable; skipping sync for paper %s", paper_id)
+                return
+            raise
+        finally:
+            if own_conn:
+                conn.close()
+
+    def _tab_flags_are_ready(self) -> bool:
+        """Returns True when indexed tab columns exist and are populated."""
+        conn = self.get_connection()
+        try:
+            cursor = conn.cursor()
+            cursor.execute(
+                "SELECT tab_preclinical FROM papers LIMIT 1"
+            )
+            cursor.fetchone()
+            return True
+        except Exception:
+            return False
+        finally:
+            conn.close()
+
+    def _refresh_tab_flags_ready_cache(self) -> None:
+        """Placeholder for startup cache refresh (no-op when columns are absent)."""
+        return
+
+    def _backfill_tab_flags(self, conn) -> None:
+        """Backfills tab_* columns using paper_tab_flags SQL when columns exist."""
+        from paper_tab_flags import BACKFILL_TAB_FLAGS_SQL
+
+        cursor = conn.cursor()
+        try:
+            cursor.execute(BACKFILL_TAB_FLAGS_SQL)
+            conn.commit()
+        except Exception as exc:
+            if "no such column" in str(exc).lower() or "does not exist" in str(exc).lower():
+                logger.warning("Tab flag columns unavailable; skipping backfill.")
+                return
+            raise

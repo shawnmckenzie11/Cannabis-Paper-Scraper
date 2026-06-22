@@ -1227,6 +1227,40 @@ def api_calibration_dashboard_metrics():
         return jsonify({"error": str(e)}), 500
 
 
+@app.route("/api/calibration/lock-status", methods=["GET"])
+def api_calibration_lock_status():
+    """Returns the production calibration coordination lock snapshot."""
+    import calibration_coordinator
+
+    db = DatabaseManager()
+    config = classifier.load_rules_config()
+    return jsonify(calibration_coordinator.get_lock_status(db=db, rules_config=config))
+
+
+@app.route("/api/calibration/lock", methods=["POST"])
+@admin_required
+def api_calibration_lock():
+    """Acquires or releases the calibration coordination lock (admin only)."""
+    import calibration_coordinator
+
+    payload = request.get_json(silent=True) or {}
+    action = (payload.get("action") or "").strip().lower()
+    db = DatabaseManager()
+    if action == "release":
+        return jsonify(calibration_coordinator.release_lock(db=db))
+    if action == "acquire":
+        state = payload.get("state") or "running_batch"
+        owner = payload.get("owner") or session.get("email") or "admin"
+        subnode = payload.get("subnode")
+        try:
+            return jsonify(
+                calibration_coordinator.acquire_lock(state, owner, subnode=subnode, db=db)
+            )
+        except calibration_coordinator.CalibrationLockError as exc:
+            return jsonify({"error": str(exc)}), 409
+    return jsonify({"error": "action must be acquire or release"}), 400
+
+
 @app.route("/api/calibration/resolve-disagreement", methods=["POST"])
 @admin_required
 def api_calibration_resolve_disagreement():

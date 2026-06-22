@@ -11,6 +11,8 @@ from db_manager import DatabaseManager
 import classifier
 import maude_classifier
 import classification_schema
+import calibration_coordinator
+import subnode_field_scopes
 
 
 REVIEW_PUBLICATION_TYPES = {"review", "case study"}
@@ -200,6 +202,40 @@ def select_candidates(
                 OR publication_type = 'original research'
                 OR publication_type IS NULL
                 OR publication_type = ''
+            )"""
+        )
+    elif mode == "node2a_clinical":
+        where_clauses.append("publication_type = 'original research'")
+        where_clauses.append(
+            """(
+                study_type LIKE '%Clinical%'
+                OR study_type LIKE '%RCT%'
+                OR study_type LIKE '%prospective%'
+                OR study_type LIKE '%retrospective%'
+                OR study_type LIKE '%observational%'
+                OR study_type LIKE '%case study%'
+            )"""
+        )
+    elif mode == "node2b_in_vivo":
+        where_clauses.append("publication_type = 'original research'")
+        where_clauses.append(
+            """(
+                study_type LIKE '%Animal%'
+                OR study_type LIKE '%Mouse%'
+                OR study_type LIKE '%Rat%'
+                OR study_type LIKE '%Rodent%'
+                OR study_type LIKE '%Primates%'
+                OR study_type LIKE '%in vivo%'
+            )"""
+        )
+    elif mode == "node2c_in_vitro":
+        where_clauses.append("publication_type = 'original research'")
+        where_clauses.append(
+            """(
+                study_type LIKE '%Cell%'
+                OR study_type LIKE '%vitro%'
+                OR study_type LIKE '%Organoid%'
+                OR study_type LIKE '%PCLS%'
             )"""
         )
     elif mode != "mixed":
@@ -486,6 +522,16 @@ def apply_classification_update(
             db.log_llm_call(paper_id=paper_id, metrics=metrics, batch_id=batch_id, cursor=cursor)
 
         conn.commit()
+        try:
+            db.sync_tab_flags_for_paper(
+                paper_id,
+                conn=conn,
+                publication_type=update_data.get("publication_type"),
+                study_type=update_data.get("study_type"),
+                ingestion_status=update_data.get("ingestion_status"),
+            )
+        except Exception:
+            pass
         return 1
     except Exception:
         conn.rollback()
@@ -511,6 +557,13 @@ def resolve_calibration_output_dir(explicit: Optional[str] = None) -> Path:
     return Path(explicit or "scratch/calibration_runs")
 
 
+def _routing_mode_for_inference(mode: str) -> str:
+    """Returns classification_schema routing mode for sub-node calibration batches."""
+    if mode in subnode_field_scopes.MODE_TO_TARGET_SUBNODE:
+        return "node1_routing"
+    return mode
+
+
 def run_calibration(args: argparse.Namespace) -> Tuple[Path, Path]:
     """Runs a bounded calibration cycle and writes JSON plus Markdown walkthrough artifacts."""
     if args.max_calls < 1 or args.max_calls > 100:
@@ -518,14 +571,32 @@ def run_calibration(args: argparse.Namespace) -> Tuple[Path, Path]:
     if not args.dry_run and not os.getenv("ANTHROPIC_API_KEY"):
         raise RuntimeError("ANTHROPIC_API_KEY is required unless --dry-run is set.")
 
+    target_subnode = subnode_field_scopes.mode_to_target_subnode(
+        args.mode,
+        getattr(args, "target_subnode", None),
+    )
     variants = [variant.strip() for variant in args.variants.split(",") if variant.strip()]
     if not variants:
         variants = ["control"]
 
-    calibration_label = getattr(args, "calibration_label", None) or (
-        "node1-calibration" if args.mode == "node1_routing" else "calibration"
+    calibration_label = getattr(args, "calibration_label", None) or subnode_field_scopes.calibration_label_for_subnode(
+        target_subnode,
+        args.mode,
     )
-    batch_prefix = "node1_calibration" if args.mode == "node1_routing" else "calibration"
+    batch_prefix = subnode_field_scopes.batch_prefix_for_subnode(target_subnode, args.mode)
+
+    db = DatabaseManager()
+    lock_owner = getattr(args, "lock_owner", None) or batch_prefix
+    lock_acquired = False
+    if not args.dry_run and not getattr(args, "skip_lock", False):
+        calibration_coordinator.check_lock_available(db)
+        calibration_coordinator.acquire_lock(
+            "running_batch",
+            lock_owner,
+            subnode=target_subnode,
+            db=db,
+        )
+        lock_acquired = True
 
     fetch_limit = max(args.fetch_limit, args.max_calls * max(2, len(variants)))
     candidates = select_candidates(
@@ -546,12 +617,17 @@ def run_calibration(args: argparse.Namespace) -> Tuple[Path, Path]:
     json_path = output_dir / f"{batch_id}.json"
     walkthrough_path = output_dir / f"{batch_id}_walkthrough.md"
 
-    db = DatabaseManager()
     results: List[Dict[str, Any]] = []
     original_variant = os.environ.get("CLASSIFIER_PROMPT_VARIANT")
     calls_attempted = 0
     planned_candidates = 0
     updates_applied = 0
+    routing_mode = _routing_mode_for_inference(args.mode)
+    fields_in_scope = (
+        subnode_field_scopes.fields_in_scope(target_subnode)
+        if target_subnode
+        else None
+    )
 
     try:
         for candidate in candidates:
@@ -627,7 +703,49 @@ def run_calibration(args: argparse.Namespace) -> Tuple[Path, Path]:
             )
             updates_applied += applied
 
-            routing_subnode = infer_routing_subnode(args.mode, extracted)
+            routing_subnode = infer_routing_subnode(routing_mode, extracted)
+            llm_block = {
+                "publication_type": extracted.get("publication_type"),
+                "study_type": extracted.get("study_type"),
+                "exposure_method": extracted.get("exposure_method"),
+                "cannabis_type": extracted.get("cannabis_type"),
+                "outcome_domain": extracted.get("outcome_domain"),
+                "ingestion_status": extracted.get("ingestion_status"),
+                "species": extracted.get("species"),
+                "classification_confidence": extracted.get("classification_confidence"),
+                "classifier_version": f"llm-{calibration_label}-{variant}-{rules_version}",
+                "sample_size": extracted.get("sample_size"),
+                "duration_days": extracted.get("duration_days"),
+                "dose_mg": extracted.get("dose_mg"),
+                "strain_reported": extracted.get("strain_reported"),
+                "strain_normalized": extracted.get("strain_normalized"),
+                "thc_pct": extracted.get("thc_pct"),
+                "cbd_pct": extracted.get("cbd_pct"),
+                "administration_frequency": extracted.get("administration_frequency"),
+                "inhaled_exposure_duration": extracted.get("inhaled_exposure_duration"),
+                "puff_count": extracted.get("puff_count"),
+                "treatment_duration": extracted.get("treatment_duration"),
+                "thc_mg_ml": extracted.get("thc_mg_ml"),
+                "cbd_mg_ml": extracted.get("cbd_mg_ml"),
+                "thc_mg_kg": extracted.get("thc_mg_kg"),
+                "cbd_mg_kg": extracted.get("cbd_mg_kg"),
+                "thc_mg_g": extracted.get("thc_mg_g"),
+                "cbd_mg_g": extracted.get("cbd_mg_g"),
+                "thc_uM": extracted.get("thc_uM"),
+                "cbd_uM": extracted.get("cbd_uM"),
+                "repeat_exposure_count": extracted.get("repeat_exposure_count"),
+                "exposure_regimen_bin": extracted.get("exposure_regimen_bin"),
+                "multiple_doses": extracted.get("multiple_doses"),
+                "multiple_time_intervals": extracted.get("multiple_time_intervals"),
+            }
+            scoped_disagreement = None
+            if target_subnode:
+                scoped_disagreement = subnode_field_scopes.compare_scoped_fields(
+                    maude_output_to_compare_block(maude_out, rules_version),
+                    llm_block,
+                    target_subnode,
+                    calibration_field_equal,
+                )
             record.update({
                 "status": "updated" if applied else "no_update",
                 "after_confidence": extracted.get("classification_confidence"),
@@ -637,17 +755,7 @@ def run_calibration(args: argparse.Namespace) -> Tuple[Path, Path]:
                 "routing_subnode": routing_subnode,
                 "changes": changes,
                 "llm_metrics": extracted.get("_llm_call_metrics", {}),
-                "llm": {
-                    "publication_type": extracted.get("publication_type"),
-                    "study_type": extracted.get("study_type"),
-                    "exposure_method": extracted.get("exposure_method"),
-                    "cannabis_type": extracted.get("cannabis_type"),
-                    "outcome_domain": extracted.get("outcome_domain"),
-                    "ingestion_status": extracted.get("ingestion_status"),
-                    "species": extracted.get("species"),
-                    "classification_confidence": extracted.get("classification_confidence"),
-                    "classifier_version": f"llm-{calibration_label}-{variant}-{rules_version}",
-                },
+                "llm": llm_block,
                 "maude": {
                     "publication_type": maude_out.get("publication_type"),
                     "study_type": maude_out.get("study_type"),
@@ -659,8 +767,35 @@ def run_calibration(args: argparse.Namespace) -> Tuple[Path, Path]:
                     "classification_confidence": maude_out.get("classification_confidence"),
                     "classifier_version": f"maude-{rules_version}",
                     "nodes_visited": (maude_out.get("_maude_meta") or {}).get("nodes_visited"),
+                    "sample_size": maude_out.get("sample_size"),
+                    "duration_days": maude_out.get("duration_days"),
+                    "dose_mg": maude_out.get("dose_mg"),
+                    "strain_reported": maude_out.get("strain_reported"),
+                    "strain_normalized": maude_out.get("strain_normalized"),
+                    "thc_pct": maude_out.get("thc_pct"),
+                    "cbd_pct": maude_out.get("cbd_pct"),
+                    "administration_frequency": maude_out.get("administration_frequency"),
+                    "inhaled_exposure_duration": maude_out.get("inhaled_exposure_duration"),
+                    "puff_count": maude_out.get("puff_count"),
+                    "treatment_duration": maude_out.get("treatment_duration"),
+                    "thc_mg_ml": maude_out.get("thc_mg_ml"),
+                    "cbd_mg_ml": maude_out.get("cbd_mg_ml"),
+                    "thc_mg_kg": maude_out.get("thc_mg_kg"),
+                    "cbd_mg_kg": maude_out.get("cbd_mg_kg"),
+                    "thc_mg_g": maude_out.get("thc_mg_g"),
+                    "cbd_mg_g": maude_out.get("cbd_mg_g"),
+                    "thc_uM": maude_out.get("thc_uM"),
+                    "cbd_uM": maude_out.get("cbd_uM"),
+                    "repeat_exposure_count": maude_out.get("repeat_exposure_count"),
+                    "exposure_regimen_bin": maude_out.get("exposure_regimen_bin"),
+                    "multiple_doses": maude_out.get("multiple_doses"),
+                    "multiple_time_intervals": maude_out.get("multiple_time_intervals"),
                 },
                 "disagreement": disagreement,
+                "scoped_disagreement": scoped_disagreement,
+                "node7_path": (
+                    scoped_disagreement.get("scope_key") if scoped_disagreement else None
+                ),
                 "flagged_for_review": disagreement.get("flagged_for_review", False),
             })
             results.append(record)
@@ -669,13 +804,18 @@ def run_calibration(args: argparse.Namespace) -> Tuple[Path, Path]:
             os.environ.pop("CLASSIFIER_PROMPT_VARIANT", None)
         else:
             os.environ["CLASSIFIER_PROMPT_VARIANT"] = original_variant
+        if lock_acquired:
+            calibration_coordinator.release_lock(db)
 
+    automation_node = target_subnode or ("node1" if args.mode == "node1_routing" else None)
     payload = {
         "batch_id": batch_id,
         "created_at": datetime.now().isoformat(),
         "rules_version": rules_version,
         "mode": args.mode,
-        "automation_node": "node1" if args.mode == "node1_routing" else None,
+        "automation_node": automation_node,
+        "target_subnode": target_subnode,
+        "fields_in_scope": fields_in_scope,
         "calibration_label": calibration_label,
         "variants": variants,
         "max_calls": args.max_calls,
@@ -1213,7 +1353,25 @@ def build_arg_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description="Run a bounded Claude calibration cycle.")
     parser.add_argument("--max-calls", type=int, default=50, help="Maximum Claude classification attempts, capped at 100.")
     parser.add_argument("--fetch-limit", type=int, default=100, help="Candidate rows to inspect before applying the call cap.")
-    parser.add_argument("--mode", choices=["preclinical_original", "low_confidence", "unclassified", "mixed", "node1_routing"], default="preclinical_original")
+    parser.add_argument("--mode", choices=[
+        "preclinical_original", "low_confidence", "unclassified", "mixed", "node1_routing",
+        "node2a_clinical", "node2b_in_vivo", "node2c_in_vitro",
+    ], default="preclinical_original")
+    parser.add_argument(
+        "--target-subnode",
+        default=None,
+        help="Dashboard sub-node id (node2a, node2b, node2c) for RL batches; inferred from --mode when omitted.",
+    )
+    parser.add_argument(
+        "--skip-lock",
+        action="store_true",
+        help="Skip calibration coordination lock (orchestrator manages lock externally).",
+    )
+    parser.add_argument(
+        "--lock-owner",
+        default=None,
+        help="Owner id recorded in calibration_lock_owner when acquiring the lock.",
+    )
     parser.add_argument("--confidence-max", type=float, default=0.6, help="Confidence ceiling for low_confidence mode.")
     parser.add_argument("--variants", default="control,decision_checklist", help="Comma-separated prompt variants.")
     parser.add_argument("--runs", type=int, default=1, help="Self-consistency runs per classification.")

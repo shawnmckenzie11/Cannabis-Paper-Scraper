@@ -12,6 +12,8 @@ from typing import Any, Dict, List, Optional, Sequence, Tuple
 
 import classification_schema
 import maude_feedback
+import subnode_field_scopes
+import calibration_coordinator
 
 HIGH_LEVEL_FIELDS = (
     "study_type",
@@ -311,11 +313,18 @@ def discover_calibration_batches(output_dir: Path = DEFAULT_OUTPUT_DIR) -> List[
     """Returns calibration JSON artifacts sorted by batch timestamp."""
     if not output_dir.exists():
         return []
-    batches = sorted(
-        list(output_dir.glob("calibration_*.json"))
-        + list(output_dir.glob("node1_calibration_*.json"))
-        + list(output_dir.glob("llm_pdf_maude_ab_*.json"))
+    patterns = (
+        "calibration_*.json",
+        "node1_calibration_*.json",
+        "node2a_calibration_*.json",
+        "node2b_calibration_*.json",
+        "node2c_calibration_*.json",
+        "llm_pdf_maude_ab_*.json",
     )
+    batches: List[Path] = []
+    for pattern in patterns:
+        batches.extend(output_dir.glob(pattern))
+    batches = sorted(batches)
     return [path for path in batches if not path.name.endswith("_data.json")]
 
 
@@ -342,6 +351,9 @@ REVIEW_PUBLICATION_TYPES = {"review", "case study"}
 
 MODE_TO_BATCH_NODE = {
     "node1_routing": "node1",
+    "node2a_clinical": "node2a",
+    "node2b_in_vivo": "node2b",
+    "node2c_in_vitro": "node2c",
     "llm_pdf_maude_ab": "node1",
     "preclinical_original": "legacy_preclinical",
     "low_confidence": "crosscut",
@@ -432,6 +444,317 @@ NODE_CHARACTERISTICS: Dict[str, List[str]] = {
     "crosscut": list(classification_schema.HIGH_LEVEL_COMPARE_FIELDS),
     "legacy_preclinical": ["study_type", "exposure_method", "cannabis_type", "outcome_domain", "species"],
 }
+
+SUBNODE_FIELD_SCOPES = subnode_field_scopes.SUBNODE_FIELD_SCOPES
+
+RL_NODE_LABELS: Dict[str, str] = {
+    "node0": "Node 0 · Ingestion",
+    "node1a": "Node 1A · Original Papers",
+    "node1b": "Node 1B · Reviews",
+    "node1c": "Node 1C · Case Report",
+    "node2a": "Node 2A · Clinical",
+    "node2b": "Node 2B · In Vivo",
+    "node2c": "Node 2C · In Vitro",
+    "node2d": "Node 2D · Mixed",
+    "node3a": "Node 3A · Systematic Review",
+    "node3b": "Node 3B · Meta-analysis",
+    "node3c": "Node 3C · Narrative / Editorial",
+}
+
+RL_PREREQUISITE_NODES = ("node0", "node1a")
+
+
+def field_is_populated(value: Any) -> bool:
+    """Returns True when a classification field has a non-empty extracted value."""
+    if value is None:
+        return False
+    if value == "":
+        return False
+    if value == []:
+        return False
+    if value == {}:
+        return False
+    return True
+
+
+def score_paper_rl_metrics(
+    result: Dict[str, Any],
+    subnode: str,
+) -> Optional[Dict[str, float]]:
+    """Computes alignment and extraction-fill rates for one paired paper result."""
+    llm = result.get("llm") or {}
+    maude = result.get("maude") or {}
+    if not llm or not maude:
+        return None
+
+    scope_fields = subnode_field_scopes.fields_in_scope(subnode, llm)
+    if not scope_fields:
+        return None
+
+    scoped = result.get("scoped_disagreement")
+    if scoped is None:
+        scoped = subnode_field_scopes.compare_scoped_fields(
+            maude,
+            llm,
+            subnode,
+            classification_schema.compare_field_values,
+        )
+
+    populated = sum(1 for field in scope_fields if field_is_populated(llm.get(field)))
+    fill_rate = round(populated / len(scope_fields), 4)
+    alignment_rate = scoped.get("agreement_rate")
+    if alignment_rate is None and scoped.get("scoped_field_count"):
+        disagreements = len((scoped.get("fields") or {}))
+        total = int(scoped.get("scoped_field_count") or len(scope_fields))
+        alignment_rate = round((total - disagreements) / total, 4) if total else None
+
+    return {
+        "alignment_rate": float(alignment_rate) if alignment_rate is not None else None,
+        "extraction_fill_rate": fill_rate,
+        "fields_in_scope": len(scope_fields),
+        "fields_populated": populated,
+    }
+
+
+def _average_metric(values: Sequence[Optional[float]]) -> Optional[float]:
+    """Returns the mean of numeric values, ignoring None."""
+    numeric = [float(value) for value in values if value is not None]
+    if not numeric:
+        return None
+    return round(sum(numeric) / len(numeric), 4)
+
+
+def build_rl_node_progress(
+    batch_payloads: Sequence[Dict[str, Any]],
+    rules_config: Optional[Dict[str, Any]] = None,
+) -> Dict[str, Any]:
+    """Builds cross-node RL progress timelines for alignment and extraction fill rates."""
+    rules_config = rules_config or load_rules_config()
+    rl_cfg = (rules_config.get("agent_automation") or {}).get("calibration_rl") or {}
+    threshold_pct = float(rl_cfg.get("agreement_threshold_pct") or 90)
+    threshold = threshold_pct / 100.0
+    min_consecutive = int(rl_cfg.get("min_consecutive_pass_batches") or 2)
+    active_queue = list(rl_cfg.get("subnode_queue") or calibration_coordinator.DEFAULT_SUBNODE_QUEUE)
+    deferred = list(rl_cfg.get("subnode_reevaluate_later") or calibration_coordinator.DEFAULT_REEVALUATE_LATER)
+    prerequisites = list(rl_cfg.get("prerequisites_passed") or RL_PREREQUISITE_NODES)
+
+    ordered_nodes: List[str] = []
+    for node_id in prerequisites:
+        if node_id not in ordered_nodes:
+            ordered_nodes.append(node_id)
+    for node_id in active_queue:
+        if node_id not in ordered_nodes:
+            ordered_nodes.append(node_id)
+    for node_id in deferred:
+        if node_id not in ordered_nodes:
+            ordered_nodes.append(node_id)
+
+    batches_by_node: Dict[str, List[Dict[str, Any]]] = {node_id: [] for node_id in ordered_nodes}
+    for payload in batch_payloads:
+        subnode = payload.get("target_subnode") or payload.get("automation_node")
+        if subnode in batches_by_node:
+            batches_by_node[subnode].append(payload)
+
+    nodes: Dict[str, Any] = {}
+    combined_runs: List[Dict[str, Any]] = []
+
+    for node_id in ordered_nodes:
+        if node_id in prerequisites:
+            phase = "prerequisite_passed"
+            status = "passed"
+        elif node_id in active_queue:
+            phase = "active"
+            status = "pending"
+        else:
+            phase = "deferred"
+            status = "deferred"
+
+        runs: List[Dict[str, Any]] = []
+        consecutive_pass = 0
+        for payload in sorted(batches_by_node.get(node_id) or [], key=lambda row: row.get("created_at") or ""):
+            paper_metrics: List[Dict[str, float]] = []
+            for result in payload.get("results") or []:
+                scored = score_paper_rl_metrics(result, node_id)
+                if scored:
+                    paper_metrics.append(scored)
+
+            alignment_rate = _average_metric([row.get("alignment_rate") for row in paper_metrics])
+            extraction_fill_rate = _average_metric([row.get("extraction_fill_rate") for row in paper_metrics])
+            passed = alignment_rate is not None and alignment_rate >= threshold
+            if passed:
+                consecutive_pass += 1
+            else:
+                consecutive_pass = 0
+
+            run_index = len(runs) + 1
+            run_row = {
+                "run_index": run_index,
+                "batch_id": payload.get("batch_id"),
+                "created_at": payload.get("created_at"),
+                "paper_count": len(paper_metrics),
+                "alignment_rate": alignment_rate,
+                "alignment_pct": round(alignment_rate * 100, 1) if alignment_rate is not None else None,
+                "extraction_fill_rate": extraction_fill_rate,
+                "extraction_fill_pct": round(extraction_fill_rate * 100, 1) if extraction_fill_rate is not None else None,
+                "passed": passed,
+                "mode": payload.get("mode"),
+            }
+            runs.append(run_row)
+            combined_runs.append({
+                **run_row,
+                "node_id": node_id,
+                "node_label": RL_NODE_LABELS.get(node_id, node_id),
+                "series_label": f"{node_id} run {run_index}",
+            })
+
+        if phase == "active" and runs:
+            status = "passed" if consecutive_pass >= min_consecutive else "in_progress"
+        elif phase == "active" and not runs:
+            status = "pending"
+
+        latest = runs[-1] if runs else {}
+        nodes[node_id] = {
+            "node_id": node_id,
+            "label": RL_NODE_LABELS.get(node_id, node_id),
+            "phase": phase,
+            "status": status,
+            "threshold_pct": threshold_pct,
+            "min_consecutive_pass_batches": min_consecutive,
+            "consecutive_pass_batches": consecutive_pass,
+            "promotion_ready": consecutive_pass >= min_consecutive if phase == "active" else phase == "prerequisite_passed",
+            "fields_in_scope": subnode_field_scopes.fields_in_scope(node_id),
+            "runs": runs,
+            "run_count": len(runs),
+            "latest_alignment_rate": latest.get("alignment_rate"),
+            "latest_alignment_pct": latest.get("alignment_pct"),
+            "latest_extraction_fill_rate": latest.get("extraction_fill_rate"),
+            "latest_extraction_fill_pct": latest.get("extraction_fill_pct"),
+        }
+
+    combined_runs.sort(key=lambda row: row.get("created_at") or "")
+
+    return {
+        "threshold_pct": threshold_pct,
+        "min_consecutive_pass_batches": min_consecutive,
+        "prerequisites_passed": prerequisites,
+        "active_queue": active_queue,
+        "deferred_queue": deferred,
+        "ordered_nodes": ordered_nodes,
+        "nodes": nodes,
+        "combined_runs": combined_runs,
+        "reset_at": None,
+    }
+
+
+def build_subnode_promotion_readiness(
+    batch_payloads: Sequence[Dict[str, Any]],
+    rules_config: Optional[Dict[str, Any]] = None,
+    target_subnode: Optional[str] = None,
+    threshold: float = 0.90,
+    min_consecutive: int = 2,
+) -> Dict[str, Any]:
+    """Computes per-sub-node Maude vs Claude agreement and promotion gate status."""
+    rules_config = rules_config or load_rules_config()
+    rl_cfg = (rules_config.get("agent_automation") or {}).get("calibration_rl") or {}
+    threshold_pct = float(rl_cfg.get("agreement_threshold_pct") or threshold * 100)
+    threshold = threshold_pct / 100.0
+    min_consecutive = int(rl_cfg.get("min_consecutive_pass_batches") or min_consecutive)
+    queue = rl_cfg.get("subnode_queue") or calibration_coordinator.DEFAULT_SUBNODE_QUEUE
+    subnodes = [target_subnode] if target_subnode else list(queue)
+
+    subnode_batches: Dict[str, List[Dict[str, Any]]] = {sid: [] for sid in subnodes}
+    for payload in batch_payloads:
+        subnode = payload.get("target_subnode") or payload.get("automation_node")
+        if subnode not in subnode_batches:
+            continue
+        subnode_batches[subnode].append(payload)
+
+    results: Dict[str, Any] = {}
+    for subnode in subnodes:
+        batch_timeline: List[Dict[str, Any]] = []
+        consecutive_pass = 0
+        promotion_ready = False
+
+        for payload in sorted(subnode_batches.get(subnode) or [], key=lambda row: row.get("created_at") or ""):
+            paper_scores: List[float] = []
+            for result in payload.get("results") or []:
+                llm = result.get("llm") or {}
+                maude = result.get("maude") or {}
+                if not llm or not maude:
+                    continue
+                scoped = result.get("scoped_disagreement")
+                if scoped is None:
+                    scoped = subnode_field_scopes.compare_scoped_fields(
+                        maude,
+                        llm,
+                        subnode,
+                        classification_schema.compare_field_values,
+                    )
+                rate = scoped.get("agreement_rate")
+                if rate is not None:
+                    paper_scores.append(float(rate))
+
+            batch_rate = round(sum(paper_scores) / len(paper_scores), 4) if paper_scores else None
+            fill_scores: List[float] = []
+            for result in payload.get("results") or []:
+                scored = score_paper_rl_metrics(result, subnode)
+                if scored and scored.get("extraction_fill_rate") is not None:
+                    fill_scores.append(float(scored["extraction_fill_rate"]))
+            extraction_fill_rate = _average_metric(fill_scores)
+            passed = batch_rate is not None and batch_rate >= threshold
+            if passed:
+                consecutive_pass += 1
+            else:
+                consecutive_pass = 0
+            batch_timeline.append({
+                "batch_id": payload.get("batch_id"),
+                "created_at": payload.get("created_at"),
+                "paper_count": len(paper_scores),
+                "agreement_rate": batch_rate,
+                "alignment_rate": batch_rate,
+                "alignment_pct": round(batch_rate * 100, 1) if batch_rate is not None else None,
+                "extraction_fill_rate": extraction_fill_rate,
+                "extraction_fill_pct": round(extraction_fill_rate * 100, 1) if extraction_fill_rate is not None else None,
+                "passed": passed,
+            })
+
+        if consecutive_pass >= min_consecutive:
+            promotion_ready = True
+
+        latest_rate = batch_timeline[-1]["agreement_rate"] if batch_timeline else None
+        results[subnode] = {
+            "target_subnode": subnode,
+            "threshold_pct": threshold_pct,
+            "min_consecutive_pass_batches": min_consecutive,
+            "consecutive_pass_batches": consecutive_pass,
+            "promotion_ready": promotion_ready,
+            "latest_agreement_rate": latest_rate,
+            "batch_timeline": batch_timeline,
+            "fields_in_scope": subnode_field_scopes.fields_in_scope(subnode),
+        }
+
+    return {
+        "threshold_pct": threshold_pct,
+        "subnodes": results,
+        "subnode_queue": queue,
+    }
+
+
+def load_staged_patches(output_dir: Path) -> List[Dict[str, Any]]:
+    """Loads staged code/rules patch proposals from the calibration output directory."""
+    staged_dir = output_dir / "staged_patches"
+    if not staged_dir.exists():
+        return []
+    patches: List[Dict[str, Any]] = []
+    for path in sorted(staged_dir.glob("*.json"), reverse=True):
+        try:
+            with open(path, encoding="utf-8") as handle:
+                payload = json.load(handle)
+            payload["artifact_path"] = str(path)
+            patches.append(payload)
+        except Exception:
+            continue
+    return patches[:20]
 
 
 def _normalize_publication_type(result: Dict[str, Any]) -> Optional[str]:
@@ -1385,7 +1708,7 @@ def build_dashboard_metrics(
     overview_summary["queue_overlap_total"] = queue_overlap_total
     overview_summary["expert_notes_count"] = len(expert_notes)
 
-    return {
+    metrics = {
         "generated_at": datetime.now().isoformat(),
         "rules_version": rules_version,
         "confidence_threshold": confidence_threshold,
@@ -1405,7 +1728,24 @@ def build_dashboard_metrics(
         "automation_layers": build_automation_layers(batch_payloads, rules_config),
         "maude_comparison": build_maude_comparison(maude_ab_payloads, rules_config),
         "maude_feedback": _build_maude_feedback_metrics(maude_ab_payloads, output_dir),
+        "calibration_lock": calibration_coordinator.get_lock_status(db=_get_database_manager(), rules_config=rules_config),
+        "subnode_promotion": build_subnode_promotion_readiness(maude_ab_payloads, rules_config),
+        "rl_node_progress": build_rl_node_progress(maude_ab_payloads, rules_config),
+        "staged_patches": load_staged_patches(output_dir),
+        "subnode_field_scopes": SUBNODE_FIELD_SCOPES,
     }
+
+    session_path = output_dir / "rl_session.json"
+    if session_path.exists():
+        try:
+            with open(session_path, encoding="utf-8") as handle:
+                session = json.load(handle)
+            metrics["rl_node_progress"]["reset_at"] = session.get("reset_at")
+            metrics["rl_node_progress"]["session"] = session
+        except Exception:
+            pass
+
+    return metrics
 
 
 def _build_maude_feedback_metrics(
@@ -1826,6 +2166,7 @@ def write_dashboard_html(metrics: Dict[str, Any], output_path: Path) -> Path:
   </header>
   <div id="serve-mode-banner" class="serve-banner" style="display:none"></div>
   <div id="auth-banner" class="serve-banner" style="display:none"></div>
+  <div id="calibration-lock-banner" class="serve-banner" style="display:none"></div>
   <div class="wrap">
     <div class="layout-main">
       <aside class="card node-tree">
@@ -1840,6 +2181,45 @@ def write_dashboard_html(metrics: Dict[str, Any], output_path: Path) -> Path:
           <div class="mono muted" id="node-subtitle"></div>
         </div>
         <div class="grid grid-4" id="summary-cards"></div>
+
+        <div class="card" id="rl-progress-section">
+          <h2>RL Progress by Node <span class="muted" style="font-size:0.82rem;font-weight:400">· alignment + extraction fill · 90% gate</span></h2>
+          <div class="muted" style="font-size:0.82rem;margin-bottom:12px" id="rl-progress-summary">
+            Track Maude vs Claude field alignment and Claude extraction completeness per sub-node run.
+          </div>
+          <div style="overflow-x:auto;margin-bottom:16px">
+            <table id="rl-node-progress-table">
+              <thead>
+                <tr>
+                  <th>Node</th>
+                  <th>Phase</th>
+                  <th>Status</th>
+                  <th>Runs</th>
+                  <th>Latest alignment</th>
+                  <th>Latest extraction fill</th>
+                  <th>Consecutive pass</th>
+                </tr>
+              </thead>
+              <tbody id="rl-node-progress-body">
+                <tr><td colspan="7" class="muted">No RL runs yet — execute a sub-node batch to populate this table.</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="grid grid-2" style="margin-bottom:12px">
+            <div>
+              <h3 style="font-size:0.9rem;margin:0 0 8px">Field Alignment Over Runs (Maude vs Claude)</h3>
+              <div class="muted" style="font-size:0.78rem;margin-bottom:8px">Percent of in-scope fields where Maude matches Claude ground truth.</div>
+              <div class="chart-box-sm"><canvas id="chart-rl-alignment"></canvas></div>
+            </div>
+            <div>
+              <h3 style="font-size:0.9rem;margin:0 0 8px">Expected Field Extraction Fill (Claude)</h3>
+              <div class="muted" style="font-size:0.78rem;margin-bottom:8px">Percent of in-scope fields populated by Claude in each batch.</div>
+              <div class="chart-box-sm"><canvas id="chart-rl-extraction-fill"></canvas></div>
+            </div>
+          </div>
+          <div id="subnode-promotion-panel" class="muted"></div>
+          <div id="staged-patches-panel" style="margin-top:12px"></div>
+        </div>
 
         <div class="card">
           <details class="collapse-panel" id="automation-layers-section">
@@ -1986,6 +2366,8 @@ def write_dashboard_html(metrics: Dict[str, Any], output_path: Path) -> Path:
     let chartMaudeConfidence = null;
     let chartMaudeFieldAgreement = null;
     let chartBm25 = null;
+    let chartRlAlignment = null;
+    let chartRlExtraction = null;
     let authStatus = {{ logged_in: false, is_admin: false, login_url: '/login?next=/calibration/dashboard' }};
     let selectedAgreementField = null;
 
@@ -2969,9 +3351,191 @@ def write_dashboard_html(metrics: Dict[str, Any], output_path: Path) -> Path:
       }}
     }}
 
+    function renderCalibrationLockBanner() {{
+      const el = document.getElementById('calibration-lock-banner');
+      if (!el) return;
+      const lock = METRICS.calibration_lock || {{}};
+      if (!lock.is_blocked) {{
+        el.style.display = 'none';
+        return;
+      }}
+      el.style.display = 'block';
+      el.innerHTML = `<strong>Calibration lock active:</strong> ${{
+        lock.state
+      }} · owner ${{
+        lock.owner || 'n/a'
+      }} · since ${{
+        lock.since || 'n/a'
+      }} · sub-node ${{
+        lock.active_subnode || 'n/a'
+      }}`;
+    }}
+
+    function rlStatusBadge(status) {{
+      if (status === 'passed') return 'badge badge-pass';
+      if (status === 'in_progress') return 'badge badge-progress';
+      if (status === 'deferred') return 'badge';
+      return 'badge badge-progress';
+    }}
+
+    function pctOrDash(value) {{
+      return value != null ? (Number(value).toFixed(1) + '%') : '—';
+    }}
+
+    function renderRlNodeProgress() {{
+      const progress = METRICS.rl_node_progress || {{}};
+      const nodes = progress.nodes || {{}};
+      const ordered = progress.ordered_nodes || Object.keys(nodes);
+      const tbody = document.getElementById('rl-node-progress-body');
+      const summary = document.getElementById('rl-progress-summary');
+      const threshold = progress.threshold_pct != null ? progress.threshold_pct : 90;
+
+      if (summary) {{
+        const runCount = (progress.combined_runs || []).length;
+        const resetNote = progress.reset_at ? ` · session reset ${{progress.reset_at}}` : '';
+        summary.textContent = runCount
+          ? `${{runCount}} RL batch run(s) tracked · ${{threshold}}% alignment gate · prerequisites: ${{(progress.prerequisites_passed || []).join(', ') || 'none'}}${{resetNote}}`
+          : 'No RL batch runs yet — dashboard reset complete. Execute sub-node batches to populate alignment and extraction-fill timelines.' + resetNote;
+      }}
+
+      if (tbody) {{
+        if (!ordered.length) {{
+          tbody.innerHTML = '<tr><td colspan="7" class="muted">No RL node registry configured.</td></tr>';
+        }} else {{
+          tbody.innerHTML = ordered.map(nodeId => {{
+            const row = nodes[nodeId] || {{}};
+            return `<tr>
+              <td><strong>${{row.label || nodeId}}</strong><div class="mono muted">${{nodeId}}</div></td>
+              <td>${{row.phase || '—'}}</td>
+              <td><span class="${{rlStatusBadge(row.status)}}">${{row.status || 'pending'}}</span></td>
+              <td>${{row.run_count || 0}}</td>
+              <td>${{pctOrDash(row.latest_alignment_pct)}}</td>
+              <td>${{pctOrDash(row.latest_extraction_fill_pct)}}</td>
+              <td>${{row.consecutive_pass_batches || 0}} / ${{row.min_consecutive_pass_batches || 2}}</td>
+            </tr>`;
+          }}).join('');
+        }}
+      }}
+
+      const activeNodes = ordered.filter(nodeId => (nodes[nodeId] || {{}}).phase === 'active');
+      const palette = ['#34d399', '#22d3ee', '#a78bfa', '#fbbf24', '#fb7185', '#60a5fa'];
+      const alignmentDatasets = activeNodes.map((nodeId, index) => {{
+        const row = nodes[nodeId] || {{}};
+        const runs = row.runs || [];
+        return {{
+          label: row.label || nodeId,
+          data: runs.map(run => run.alignment_pct),
+          borderColor: palette[index % palette.length],
+          backgroundColor: palette[index % palette.length] + '33',
+          tension: 0.25,
+          spanGaps: true,
+        }};
+      }}).filter(dataset => dataset.data.length);
+
+      const extractionDatasets = activeNodes.map((nodeId, index) => {{
+        const row = nodes[nodeId] || {{}};
+        const runs = row.runs || [];
+        return {{
+          label: row.label || nodeId,
+          data: runs.map(run => run.extraction_fill_pct),
+          borderColor: palette[index % palette.length],
+          backgroundColor: palette[index % palette.length] + '33',
+          tension: 0.25,
+          spanGaps: true,
+        }};
+      }}).filter(dataset => dataset.data.length);
+
+      const maxRuns = Math.max(0, ...activeNodes.map(nodeId => ((nodes[nodeId] || {{}}).runs || []).length));
+      const runLabels = Array.from({{ length: maxRuns }}, (_, idx) => 'Run ' + (idx + 1));
+
+      const chartOptions = {{
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: {{
+          y: {{
+            beginAtZero: true,
+            max: 100,
+            ticks: {{ callback: value => value + '%' }},
+          }},
+        }},
+        plugins: {{
+          legend: {{ position: 'bottom' }},
+        }},
+      }};
+
+      const alignmentCanvas = document.getElementById('chart-rl-alignment');
+      if (alignmentCanvas) {{
+        if (chartRlAlignment) chartRlAlignment.destroy();
+        chartRlAlignment = new Chart(alignmentCanvas, {{
+          type: 'line',
+          data: {{
+            labels: runLabels,
+            datasets: alignmentDatasets.length ? alignmentDatasets : [{{
+              label: 'Awaiting runs',
+              data: [],
+            }}],
+          }},
+          options: chartOptions,
+        }});
+      }}
+
+      const extractionCanvas = document.getElementById('chart-rl-extraction-fill');
+      if (extractionCanvas) {{
+        if (chartRlExtraction) chartRlExtraction.destroy();
+        chartRlExtraction = new Chart(extractionCanvas, {{
+          type: 'line',
+          data: {{
+            labels: runLabels,
+            datasets: extractionDatasets.length ? extractionDatasets : [{{
+              label: 'Awaiting runs',
+              data: [],
+            }}],
+          }},
+          options: chartOptions,
+        }});
+      }}
+
+      const panel = document.getElementById('subnode-promotion-panel');
+      const staged = document.getElementById('staged-patches-panel');
+      const promo = METRICS.subnode_promotion || {{}};
+      const subnodes = promo.subnodes || {{}};
+      const rows = Object.values(subnodes);
+      if (panel) {{
+        panel.innerHTML = rows.length
+          ? '<h3 style="font-size:0.9rem;margin:16px 0 8px">Active Queue Gate Detail</h3>'
+            + rows.map(row => {{
+              const pct = row.latest_agreement_rate != null ? (row.latest_agreement_rate * 100).toFixed(1) + '%' : 'n/a';
+              const badge = row.promotion_ready ? 'badge badge-pass' : 'badge badge-progress';
+              return `<div style="margin-bottom:8px"><span class="${{badge}}">${{row.target_subnode}}</span> `
+                + `latest alignment ${{pct}} · threshold ${{row.threshold_pct}}% · `
+                + `consecutive pass batches ${{row.consecutive_pass_batches}}/${{row.min_consecutive_pass_batches}}</div>`;
+            }}).join('')
+          : '';
+      }}
+      if (staged) {{
+        const patches = METRICS.staged_patches || [];
+        staged.innerHTML = patches.length
+          ? `<h3 style="font-size:0.9rem;margin:0 0 8px">Staged Code Proposals</h3>`
+            + patches.slice(0, 5).map(row => `<div class="mono muted" style="margin-bottom:6px">${{
+              row.target_subnode || 'unknown'
+            }} · ${{
+              (row.proposed_rules_changes || []).length
+            }} proposal(s) · ${{
+              row.created_at || ''
+            }}</div>`).join('')
+          : '';
+      }}
+    }}
+
+    function renderSubnodePromotion() {{
+      renderRlNodeProgress();
+    }}
+
     function renderDashboard() {{
       renderServeModeBanner();
       renderAuthBanner();
+      renderCalibrationLockBanner();
+      renderSubnodePromotion();
       renderNodeTree();
       renderBreadcrumb();
       renderSummary();
@@ -3026,6 +3590,7 @@ def build_arg_parser() -> argparse.ArgumentParser:
     parser.add_argument("--rules-path", default=str(DEFAULT_RULES_PATH))
     parser.add_argument("--confidence-threshold", type=float, default=0.72)
     parser.add_argument("--build-dashboard", action="store_true", help="Write JSON + HTML dashboard artifacts.")
+    parser.add_argument("--reset-dashboard", action="store_true", help="Archive calibration batches and rebuild an empty RL dashboard.")
     parser.add_argument("--print-json", action="store_true", help="Print aggregated metrics JSON to stdout.")
     return parser
 
@@ -3035,6 +3600,13 @@ def main() -> None:
     parser = build_arg_parser()
     args = parser.parse_args()
     output_dir = resolve_calibration_output_dir(Path(args.output_dir) if args.output_dir else None)
+
+    if args.reset_dashboard:
+        import calibration_reset
+
+        result = calibration_reset.reset_calibration_dashboard(output_dir)
+        print(json.dumps(result, indent=2))
+        return
 
     if args.build_dashboard:
         data_path, html_path = build_dashboard(
