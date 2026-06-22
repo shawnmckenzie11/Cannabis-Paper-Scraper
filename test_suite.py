@@ -137,14 +137,6 @@ class TestHeuristicExtractor(unittest.TestCase):
         text_history = "Cannabis has been cultivated in the region for 5000 years."
         self.assertEqual(extractor.extract_duration_days(text_history), None)
 
-    def test_repeat_exposure_and_regimen_bin(self):
-        """Repeat exposure count and in vivo smoke regimen bins follow expert appendix rules."""
-        self.assertEqual(extractor.extract_repeat_exposure_count("single exposure to smoke"), 1)
-        self.assertEqual(extractor.extract_repeat_exposure_count("exposed on 3 separate occasions"), 3)
-        self.assertEqual(extractor.infer_exposure_regimen_bin(None, 2), "acute")
-        self.assertEqual(extractor.infer_exposure_regimen_bin(10, None), "subchronic")
-        self.assertEqual(extractor.infer_exposure_regimen_bin(21, None), "chronic")
-
         # Python duration formatting checks
         self.assertEqual(extractor.format_study_duration(None), "N/A")
         self.assertEqual(extractor.format_study_duration(365.0), "1 year")

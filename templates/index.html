@@ -2877,13 +2877,10 @@
         }
 
         let searchTimeout = null;
-        let searchAbortController = null;
         let harvestPollInterval = null;
         let currentPage = 1;
         const pageSize = 50;
         let currentTab = 'preclinical';
-        let lastTotalCount = 0;
-        const tabCountCache = {};
         let currentSortCol = "year";
         let currentSortDir = "desc";
 
@@ -2964,36 +2961,7 @@
                 recentsSelect.style.display = tab === 'recent' ? "inline-block" : "none";
             }
             updateColumnVisibility();
-            if (tabCountCache[tab] !== undefined) {
-                lastTotalCount = tabCountCache[tab];
-                updatePagination(lastTotalCount, 1, pageSize);
-            }
             triggerSearch(true);
-        }
-
-        function prefetchTabCounts() {
-            fetch("/api/tab-counts")
-                .then(res => res.ok ? res.json() : Promise.reject(new Error("Tab counts unavailable")))
-                .then(data => {
-                    const counts = data.counts || {};
-                    Object.assign(tabCountCache, counts);
-                    if (tabCountCache[currentTab] !== undefined && lastTotalCount === 0) {
-                        lastTotalCount = tabCountCache[currentTab];
-                        updatePagination(lastTotalCount, currentPage, pageSize);
-                    }
-                })
-                .catch(err => console.warn("Tab count prefetch failed:", err));
-        }
-
-        function setSearchLoading(isLoading) {
-            const rangeEl = document.getElementById("pagination-range");
-            const tbody = document.getElementById("papers-table-body");
-            if (rangeEl && isLoading) {
-                rangeEl.innerText = "Loading...";
-            }
-            if (tbody) {
-                tbody.style.opacity = isLoading ? "0.55" : "1";
-            }
         }
 
         // Update ranges text descriptors on slide inputs
@@ -3007,7 +2975,6 @@
         // On document load, fetch full catalog listing
         document.addEventListener("DOMContentLoaded", () => {
             updateSliderValues();
-            prefetchTabCounts();
             triggerSearch(true);
             updateSchedulerStatus();
             setInterval(updateSchedulerStatus, 60000);
@@ -3111,50 +3078,17 @@
             // Append page and limit
             params.push(`page=${currentPage}`);
             params.push(`limit=${pageSize}`);
-            if (!resetPage && lastTotalCount > 0) {
-                params.push(`skip_count=1`);
-                params.push(`known_total=${lastTotalCount}`);
-            }
 
             url += params.join("&");
 
-            if (searchAbortController) {
-                searchAbortController.abort();
-            }
-            searchAbortController = new AbortController();
-            setSearchLoading(true);
-
-            fetch(url, { signal: searchAbortController.signal })
-                .then(res => {
-                    if (!res.ok) {
-                        return res.json().then(body => {
-                            throw new Error(body.error || `Search failed (${res.status})`);
-                        });
-                    }
-                    return res.json();
-                })
+            fetch(url)
+                .then(res => res.json())
                 .then(data => {
-                    const total = data.total_count || 0;
-                    lastTotalCount = total;
-                    if (currentTab && tabCountCache[currentTab] !== total) {
-                        tabCountCache[currentTab] = total;
-                    }
-                    populateTable(data.papers || []);
-                    updatePagination(total, data.page || currentPage, data.limit || pageSize);
-                    setSearchLoading(false);
+                    populateTable(data.papers);
+                    updatePagination(data.total_count, data.page, data.limit);
                 })
                 .catch(err => {
-                    if (err.name === "AbortError") {
-                        return;
-                    }
                     console.error("AJAX Search Failed: ", err);
-                    populateTable([]);
-                    updatePagination(0, 1, pageSize);
-                    setSearchLoading(false);
-                    const rangeEl = document.getElementById("pagination-range");
-                    if (rangeEl) {
-                        rangeEl.innerText = `Search error: ${err.message}`;
-                    }
                 });
         }
 

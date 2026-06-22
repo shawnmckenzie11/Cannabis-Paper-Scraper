@@ -4,7 +4,6 @@
 from __future__ import annotations
 
 import json
-import os
 import re
 from copy import deepcopy
 from datetime import datetime
@@ -13,14 +12,13 @@ from typing import Any, Dict, List, Optional, Sequence, Tuple
 
 import maude_classifier
 import classification_schema
+import maude_cues
 
 BASE_DIR = Path(__file__).resolve().parent
 RULES_CONFIG_FILE = BASE_DIR / "rules_config.json"
-DEFAULT_OUTPUT_DIR = Path(
-    os.getenv("CALIBRATION_OUTPUT_DIR")
-    or ("/data/calibration_runs" if Path("/data/calibration_runs").exists() else "scratch/calibration_runs")
-)
-LEARNED_CUES_FILENAME = "maude_learned_cues.json"
+DEFAULT_OUTPUT_DIR = maude_cues.resolve_calibration_output_dir()
+LEARNED_CUES_FILENAME = maude_cues.MAUDE_CUES_FILENAME
+LEGACY_LEARNED_CUES_FILENAME = maude_cues.LEGACY_LEARNED_CUES_FILENAME
 
 FIELD_TO_NODE: Dict[str, str] = {
     "ingestion_status": "node0_ingestion",
@@ -34,26 +32,20 @@ FIELD_TO_NODE: Dict[str, str] = {
 
 
 def resolve_learned_cues_path(output_dir: Optional[Path] = None) -> Path:
-    """Returns the path for persisted Maude learned cues and resolutions."""
-    return (output_dir or DEFAULT_OUTPUT_DIR) / LEARNED_CUES_FILENAME
+    """Returns the path for persisted Maude cues and expert resolutions."""
+    return maude_cues.resolve_runtime_cues_path(output_dir or DEFAULT_OUTPUT_DIR)
 
 
 def load_learned_cues_store(path: Optional[Path] = None) -> Dict[str, Any]:
-    """Loads learned cue updates and expert resolutions from disk."""
-    store_path = path or resolve_learned_cues_path()
-    if not store_path.exists():
-        return {"version": 1, "cue_updates": [], "resolutions": []}
-    with open(store_path, encoding="utf-8") as handle:
-        return json.load(handle)
+    """Loads learned cue updates and expert resolutions (legacy dashboard shape)."""
+    output_dir = path.parent if path else None
+    return maude_cues.load_learned_cues_store(path)
 
 
 def save_learned_cues_store(store: Dict[str, Any], path: Optional[Path] = None) -> Path:
-    """Persists learned cue updates and expert resolutions to disk."""
-    store_path = path or resolve_learned_cues_path()
-    store_path.parent.mkdir(parents=True, exist_ok=True)
-    with open(store_path, "w", encoding="utf-8") as handle:
-        json.dump(store, handle, indent=2)
-    return store_path
+    """Persists learned cue updates and expert resolutions to the runtime overlay."""
+    output_dir = path.parent if path else None
+    return maude_cues.save_learned_cues_store(store, path)
 
 
 def load_rules_config() -> Dict[str, Any]:
@@ -63,18 +55,19 @@ def load_rules_config() -> Dict[str, Any]:
 
 
 def merged_decision_nodes(rules_config: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
-    """Returns decision_nodes merged with learned positive cues."""
+    """Returns decision_nodes merged with unified Maude cue store (base + learned)."""
     rules_config = rules_config or load_rules_config()
     nodes = deepcopy(rules_config.get("decision_nodes") or {})
-    store = load_learned_cues_store()
-    for update in store.get("cue_updates") or []:
-        node_id = update.get("node_id")
-        cue = update.get("cue")
-        if not node_id or not cue or node_id not in nodes:
+    cue_store = maude_cues.load_cue_store()
+    for node_id, node_cfg in (cue_store.get("nodes") or {}).items():
+        if node_id not in nodes:
             continue
         positive = nodes[node_id].setdefault("positive_cues", [])
-        if cue not in positive:
-            positive.append(cue)
+        seen = {str(item).lower() for item in positive}
+        for phrase in maude_cues.get_positive_phrases(node_id, cue_store):
+            if phrase.lower() not in seen:
+                positive.append(phrase)
+                seen.add(phrase.lower())
     return nodes
 
 
@@ -165,7 +158,11 @@ def load_calibration_batches(output_dir: Path) -> List[Dict[str, Any]]:
     if not output_dir.exists():
         return batches
     for path in sorted(output_dir.glob("*.json")):
-        if path.name.endswith("_data.json") or path.name == LEARNED_CUES_FILENAME:
+        if path.name.endswith("_data.json") or path.name in {
+            LEARNED_CUES_FILENAME,
+            LEGACY_LEARNED_CUES_FILENAME,
+            "calibration_dashboard_data.json",
+        }:
             continue
         try:
             with open(path, encoding="utf-8") as handle:
@@ -194,27 +191,22 @@ def apply_cue_update(
     paper_id: int,
     explanation: str,
     store: Optional[Dict[str, Any]] = None,
+    output_dir: Optional[Path] = None,
 ) -> Dict[str, Any]:
     """Appends a learned cue update if it is not already recorded."""
-    store = store if store is not None else load_learned_cues_store()
-    cue = cue.strip().lower()
-    if not cue:
-        return store
-    existing = {
-        (row.get("node_id"), row.get("cue"))
-        for row in (store.get("cue_updates") or [])
-    }
-    if (node_id, cue) in existing:
-        return store
-    store.setdefault("cue_updates", []).append({
-        "node_id": node_id,
-        "field": field,
-        "cue": cue,
-        "source_paper_id": paper_id,
-        "explanation": explanation,
-        "added_at": datetime.now().isoformat(),
-    })
-    return store
+    full_store = (store or {}).get("_full_store") or maude_cues.load_cue_store(output_dir)
+    updated = maude_cues.apply_learned_cue(
+        node_id,
+        cue,
+        field,
+        paper_id,
+        explanation,
+        full_store,
+        output_dir=output_dir,
+    )
+    legacy = maude_cues.load_learned_cues_store(maude_cues.resolve_runtime_cues_path(output_dir))
+    legacy["_full_store"] = updated
+    return legacy
 
 
 def resolve_disagreement(
@@ -250,7 +242,9 @@ def resolve_disagreement(
     rules_version = rules_config.get("version") or "unknown"
     now_str = datetime.now().isoformat()
 
-    store = load_learned_cues_store(resolve_learned_cues_path(output_dir))
+    cue_store = maude_cues.load_cue_store(output_dir)
+    store = maude_cues.load_learned_cues_store()
+    store["_full_store"] = cue_store
     applied_fields: List[Dict[str, Any]] = []
     cue_updates: List[Dict[str, Any]] = []
 
@@ -277,7 +271,9 @@ def resolve_disagreement(
                 paper_id,
                 explanation,
                 store,
+                output_dir=output_dir,
             )
+            cue_store = store.get("_full_store") or cue_store
             cue_updates.append({
                 "node_id": infer_node_for_field(field, resolved_value, routing_subnode),
                 "field": field,
@@ -336,12 +332,11 @@ def resolve_disagreement(
             "nodes_visited": (maude_after.get("_maude_meta") or {}).get("nodes_visited"),
         },
     }
-    store.setdefault("resolutions", []).append({
+    maude_cues.append_resolution({
         **resolution_record,
         "fields": applied_fields,
         "partial": bool(disagreement_field_names - resolved_fields),
-    })
-    save_learned_cues_store(store, resolve_learned_cues_path(output_dir))
+    }, cue_store, output_dir=output_dir)
 
     result["expert_resolution"] = resolution_record
     result["maude_after_resolution"] = {

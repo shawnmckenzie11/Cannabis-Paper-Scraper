@@ -5,6 +5,7 @@ import time
 from Bio import Entrez
 import xml.etree.ElementTree as ET
 from db_manager import DatabaseManager
+from pubmed_metadata import build_publication_type_prefix
 
 logging.basicConfig(
     level=logging.INFO,
@@ -72,17 +73,9 @@ def enrich_reviews_in_catalog():
                     pub_types = []
                     for pub_type in article.findall(".//PublicationTypeList/PublicationType"):
                         if pub_type.text:
-                            pub_types.append(pub_type.text.strip().lower())
-                            
-                    is_review = any("review" in pt for pt in pub_types)
-                    is_meta = any("meta-analysis" in pt for pt in pub_types)
-                    
-                    prefix = ""
-                    if is_meta:
-                        prefix += "Publication Type: Meta-Analysis. "
-                    if is_review:
-                        if "Meta-Analysis" not in prefix:
-                            prefix += "Publication Type: Review. "
+                            pub_types.append(pub_type.text.strip())
+
+                    prefix = build_publication_type_prefix(pub_types)
                             
                     if prefix:
                         old_abstract = paper["abstract"] or ""

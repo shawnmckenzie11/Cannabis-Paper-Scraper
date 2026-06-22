@@ -1,7 +1,10 @@
 # extractor.py
 import re
 import json
-from typing import Dict, Any, List, Optional
+from typing import Dict, Any, List, Optional, TYPE_CHECKING
+
+if TYPE_CHECKING:
+    import classification_schema
 
 # --- Chemotype Lookup Maps ---
 CHEMOTYPE_MAP = {
@@ -383,52 +386,6 @@ def extract_administration_frequency(text: str) -> Optional[str]:
             if raw_lower == "daily":
                 return "once daily"
             return raw
-    return None
-
-
-def extract_repeat_exposure_count(text: str) -> Optional[int]:
-    """Extracts the total number of repeat exposures when explicitly reported."""
-    if not text:
-        return None
-    single_patterns = (
-        r"(?i)\b(?:single|one[- ]time|once)\s+(?:exposure|administration|dose|treatment)\b",
-        r"(?i)\bacute\s+(?:single|one[- ]time)\b",
-    )
-    for pattern in single_patterns:
-        if re.search(pattern, text):
-            return 1
-    twice_match = re.search(r"(?i)\b(?:twice|two)\s+(?:exposures|times)\b", text)
-    if twice_match:
-        return 2
-    repeat_match = re.search(
-        r"(?i)\b(?:for|over|during)\s+(\d+)\s+(?:consecutive\s+)?(?:days?|weeks?)\s+(?:of\s+)?(?:exposure|administration|treatment)\b",
-        text,
-    )
-    if repeat_match:
-        return int(repeat_match.group(1))
-    count_match = re.search(
-        r"(?i)\b(\d+)\s+(?:separate\s+)?(?:repeat(?:ed)?\s+)?(?:exposures|times)\b",
-        text,
-    )
-    if count_match:
-        return int(count_match.group(1))
-    return None
-
-
-def infer_exposure_regimen_bin(
-    duration_days: Optional[float],
-    repeat_exposure_count: Optional[int],
-) -> Optional[str]:
-    """Bins in vivo smoke/vapor exposure regimens into acute, subchronic, or chronic."""
-    if repeat_exposure_count is not None and repeat_exposure_count <= 2:
-        return "acute"
-    if duration_days is not None:
-        if duration_days >= 14:
-            return "chronic"
-        if duration_days >= 4:
-            return "subchronic"
-    if repeat_exposure_count is not None and repeat_exposure_count > 2:
-        return "subchronic"
     return None
 
 
@@ -1154,24 +1111,6 @@ def generate_heuristic_summary(data: Dict[str, Any]) -> str:
         
     return summary
 
-def resolve_invitro_duration_route(exposures: List[str]) -> Optional[str]:
-    """Returns the in vitro duration routing bucket for the primary exposure method."""
-    normalized = {str(item).strip().lower() for item in exposures if item}
-    if "exposure of cells to smoke/vapor" in normalized:
-        return "direct_smoke"
-    if "smoke/vapor conditioned media" in normalized:
-        return "conditioned_media"
-    if "cannabinoids dissolved in media" in normalized:
-        return "dissolved"
-    if any("conditioned media" in item or "cse" in item for item in normalized):
-        return "conditioned_media"
-    if any("dissolved" in item for item in normalized):
-        return "dissolved"
-    if any("smoke" in item or "vapor" in item for item in normalized):
-        return "direct_smoke"
-    return None
-
-
 def extract_all_heuristics(title: str, abstract: str) -> Dict[str, Any]:
     """Convenience pipeline to run all heuristic extractions on a paper.
     
@@ -1206,42 +1145,28 @@ def extract_all_heuristics(title: str, abstract: str) -> Dict[str, Any]:
     combined_text = title + " " + (abstract or "")
 
     study_set = set(study_type) if isinstance(study_type, list) else {study_type} if isinstance(study_type, str) else set()
-    exposure_list = exposure_method if isinstance(exposure_method, list) else [exposure_method] if exposure_method else []
-    exposure_blob = " ".join(str(item).lower() for item in exposure_list)
 
     is_clinical = any(s.startswith("Clinical (") for s in study_set)
     is_invivo = any(s.startswith("Animal Models (") for s in study_set)
     is_invitro = any(s.startswith("Cell Culture (") for s in study_set)
 
-    duration_days = None
-    inhaled_exposure_duration = None
-    administration_frequency = None
-    treatment_duration = None
-    repeat_exposure_count = None
-
     if is_clinical or is_invivo:
         duration_days = extract_duration_days(abstract)
         if duration_days is None:
             duration_days = extract_duration_days(title)
-        administration_frequency = extract_administration_frequency(combined_text)
-        is_inhaled = any(
-            token in exposure_blob
-            for token in (
-                "inhaled", "smok", "vapor", "nose only", "whole body",
-                "intratracheal",
-            )
-        )
+        exposure_list = exposure_method if isinstance(exposure_method, list) else [exposure_method]
+        is_inhaled = any("inhaled" in e or "smok" in e or "vapor" in e or "nose" in e or "whole body" in e for e in exposure_list)
         inhaled_exposure_duration = extract_inhaled_exposure_duration(combined_text) if is_inhaled else None
-        if is_invivo and is_inhaled:
-            repeat_exposure_count = extract_repeat_exposure_count(combined_text)
+        administration_frequency = extract_administration_frequency(combined_text)
+    else:
+        duration_days = None
+        inhaled_exposure_duration = None
+        administration_frequency = None
 
     if is_invitro:
-        route = resolve_invitro_duration_route(exposure_list)
-        if route == "direct_smoke":
-            inhaled_exposure_duration = extract_inhaled_exposure_duration(combined_text)
-            repeat_exposure_count = extract_repeat_exposure_count(combined_text)
-        else:
-            treatment_duration = extract_treatment_duration(combined_text)
+        treatment_duration = extract_treatment_duration(combined_text)
+    else:
+        treatment_duration = None
 
     multiple_doses = detect_multiple_doses(title, abstract)
     multiple_time_intervals = detect_multiple_time_intervals(title, abstract)
@@ -1267,16 +1192,6 @@ def extract_all_heuristics(title: str, abstract: str) -> Dict[str, Any]:
         "inhaled_exposure_duration": inhaled_exposure_duration,
         "administration_frequency": administration_frequency,
         "treatment_duration": treatment_duration,
-        "repeat_exposure_count": repeat_exposure_count,
-        "exposure_regimen_bin": (
-            infer_exposure_regimen_bin(duration_days, repeat_exposure_count)
-            if is_invivo
-            and any(
-                item in {"nose only smoke/vapor", "whole body. smoke/vapor"}
-                for item in exposure_list
-            )
-            else None
-        ),
         "sample_size": sample_size,
         "outcome_domain": outcome_domain,
         "multiple_doses": multiple_doses,

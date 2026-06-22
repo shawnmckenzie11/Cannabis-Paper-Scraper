@@ -24,19 +24,15 @@ class TestMaudeFeedback(unittest.TestCase):
         """Learned overview-paper cue routes Maude to review publication_type."""
         with tempfile.TemporaryDirectory() as tmpdir:
             output_dir = Path(tmpdir)
-            store = {
-                "version": 1,
-                "cue_updates": [{
-                    "node_id": "node1b_reviews",
-                    "field": "publication_type",
-                    "cue": "overview paper",
-                    "source_paper_id": 17330,
-                    "explanation": "overview paper in abstract",
-                    "added_at": "2026-06-19T00:00:00",
-                }],
-                "resolutions": [],
-            }
-            maude_feedback.save_learned_cues_store(store, output_dir / "maude_learned_cues.json")
+            maude_cues = __import__("maude_cues")
+            maude_cues.apply_learned_cue(
+                "node1b_reviews",
+                "overview paper",
+                "publication_type",
+                17330,
+                "overview paper in abstract",
+                output_dir=output_dir,
+            )
 
             old_env = __import__("os").environ.get("CALIBRATION_OUTPUT_DIR")
             __import__("os").environ["CALIBRATION_OUTPUT_DIR"] = str(output_dir)

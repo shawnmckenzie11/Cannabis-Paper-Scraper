@@ -1976,7 +1976,7 @@ def write_dashboard_html(metrics: Dict[str, Any], output_path: Path) -> Path:
     </div>
   </div>
   <footer>
-    API: <code>/api/calibration/dashboard-metrics</code> · Resolve via <code>/calibration/dashboard</code> (admin session required)
+    API: <code>/api/calibration/dashboard-metrics</code> · Open from the catalog <strong>Learning Dashboard</strong> when signed in as admin
   </footer>
   <script>
     const METRICS = {payload};

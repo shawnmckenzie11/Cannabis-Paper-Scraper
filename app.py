@@ -75,6 +75,20 @@ def _safe_next_url(next_url):
         return None
     return next_url
 
+
+def _get_session_user(db=None):
+    """Return the logged-in user row, or None if the session is missing/stale."""
+    user_id = session.get("user_id")
+    if not user_id or not session.get("logged_in"):
+        return None
+    if db is None:
+        db = DatabaseManager()
+    user = db.get_user_by_id(int(user_id))
+    if not user:
+        session.clear()
+        return None
+    return user
+
 def _get_unique_username(base_name):
     db = DatabaseManager()
     username = base_name
@@ -1432,46 +1446,54 @@ def api_analyze():
     name = data.get("name", f"Analysis {datetime.now().strftime('%b %d %Y %H:%M')}")
 
     db = DatabaseManager()
+    db.init_analyses_table()
 
-    # Fetch ALL matching papers (no pagination limit)
-    filters["limit"] = 100000
-    filters["offset"] = 0
-    papers = db.search_papers(filters)
+    try:
+        filters = dict(filters)
+        filters["limit"] = 100000
+        filters["offset"] = 0
+        papers = db.search_papers_for_analysis(filters)
 
-    chart_data = _compute_analysis_chart_data(papers)
-    chart_data["paper_ids"] = [p["id"] for p in papers]
+        chart_data = _compute_analysis_chart_data(papers)
+        chart_data["paper_ids"] = [p["id"] for p in papers]
 
-    user_id = session.get("user_id")
-    if user_id:
+        user = _get_session_user(db)
+        if not user:
+            return jsonify({
+                "error": "Your session has expired. Please log in again to save analyses.",
+                "login_required": True,
+            }), 401
+
         analysis_id = db.create_analysis(
             name=name,
             filter_settings=json.dumps(filters, default=str),
             paper_count=chart_data["paper_count"],
             chart_data=json.dumps(chart_data, default=str),
-            user_id=user_id
+            user_id=user["id"],
         )
-    else:
-        analysis_id = None
 
-    return jsonify({
-        "id": analysis_id,
-        "name": name,
-        "paper_count": chart_data["paper_count"],
-        "filter_settings": filters,
-        "chart_data": chart_data,
-        "created_at": datetime.now().isoformat()
-    })
+        return jsonify({
+            "id": analysis_id,
+            "name": name,
+            "paper_count": chart_data["paper_count"],
+            "filter_settings": filters,
+            "chart_data": chart_data,
+            "created_at": datetime.now().isoformat(),
+        })
+    except Exception as e:
+        app.logger.error(f"Analysis failed: {e}")
+        return jsonify({"error": str(e)}), 500
 
 
 @app.route("/api/analyses", methods=["GET"])
 def api_list_analyses():
     """Returns all saved analyses for the logged-in user, or empty list if logged out."""
-    user_id = session.get("user_id")
-    if not user_id:
+    user = _get_session_user()
+    if not user:
         return jsonify([]), 200
 
     db = DatabaseManager()
-    analyses = db.list_analyses(user_id=user_id)
+    analyses = db.list_analyses(user_id=user["id"])
     # Parse JSON fields for the frontend
     for a in analyses:
         try:
@@ -1484,16 +1506,16 @@ def api_list_analyses():
 @app.route("/api/analyses/<int:analysis_id>", methods=["GET"])
 def api_get_analysis(analysis_id):
     """Returns full analysis data including chart_data if owned by user."""
-    user_id = session.get("user_id")
-    if not user_id:
-        return jsonify({"error": "Unauthorized"}), 401
+    user = _get_session_user()
+    if not user:
+        return jsonify({"error": "Unauthorized", "login_required": True}), 401
 
     db = DatabaseManager()
     analysis = db.get_analysis(analysis_id)
     if not analysis:
         return jsonify({"error": "Analysis not found"}), 404
 
-    if analysis.get("user_id") != user_id:
+    if analysis.get("user_id") != user["id"]:
         return jsonify({"error": "Forbidden"}), 403
 
     try:
@@ -1510,16 +1532,16 @@ def api_get_analysis(analysis_id):
 @app.route("/api/analyses/<int:analysis_id>", methods=["PUT"])
 def api_update_analysis(analysis_id):
     """Updates an analysis (e.g. rename) if owned by user."""
-    user_id = session.get("user_id")
-    if not user_id:
-        return jsonify({"error": "Unauthorized"}), 401
+    user = _get_session_user()
+    if not user:
+        return jsonify({"error": "Unauthorized", "login_required": True}), 401
 
     db = DatabaseManager()
     analysis = db.get_analysis(analysis_id)
     if not analysis:
         return jsonify({"error": "Analysis not found"}), 404
 
-    if analysis.get("user_id") != user_id:
+    if analysis.get("user_id") != user["id"]:
         return jsonify({"error": "Forbidden"}), 403
 
     data = request.get_json(silent=True) or {}
@@ -1536,16 +1558,16 @@ def api_update_analysis(analysis_id):
 @app.route("/api/analyses/<int:analysis_id>", methods=["DELETE"])
 def api_delete_analysis(analysis_id):
     """Deletes an analysis if owned by user."""
-    user_id = session.get("user_id")
-    if not user_id:
-        return jsonify({"error": "Unauthorized"}), 401
+    user = _get_session_user()
+    if not user:
+        return jsonify({"error": "Unauthorized", "login_required": True}), 401
 
     db = DatabaseManager()
     analysis = db.get_analysis(analysis_id)
     if not analysis:
         return jsonify({"error": "Analysis not found"}), 404
 
-    if analysis.get("user_id") != user_id:
+    if analysis.get("user_id") != user["id"]:
         return jsonify({"error": "Forbidden"}), 403
 
     if db.delete_analysis(analysis_id):
@@ -1556,16 +1578,16 @@ def api_delete_analysis(analysis_id):
 @app.route("/api/analyses/<int:analysis_id>/export-csv", methods=["GET"])
 def api_export_analysis_csv(analysis_id):
     """Generates and downloads a CSV export of all papers associated with a saved analysis if owned by user."""
-    user_id = session.get("user_id")
-    if not user_id:
-        return jsonify({"error": "Unauthorized"}), 401
+    user = _get_session_user()
+    if not user:
+        return jsonify({"error": "Unauthorized", "login_required": True}), 401
 
     db = DatabaseManager()
     analysis = db.get_analysis(analysis_id)
     if not analysis:
         return jsonify({"error": "Analysis not found"}), 404
 
-    if analysis.get("user_id") != user_id:
+    if analysis.get("user_id") != user["id"]:
         return jsonify({"error": "Forbidden"}), 403
 
     try:

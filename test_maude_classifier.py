@@ -41,19 +41,6 @@ class TestMaudeClassifier(unittest.TestCase):
         self.assertEqual(result["study_type"], ["review"])
         self.assertIn("node1b_reviews", result["_maude_meta"]["nodes_visited"])
 
-    def test_invivo_smoke_duration_profile(self):
-        """Whole-body smoke routes populate exposure-aware duration fields and subchronic bin."""
-        result = maude_classifier.classify_paper(
-            "Chronic whole-body cannabis smoke in mice",
-            "Mice were exposed in a whole body chamber for 30 minutes twice daily for 7 days.",
-            full_text="Methods: Mice were exposed in a whole body chamber for 30 minutes twice daily for 7 days.",
-            rules_version="2.5.0",
-        )
-        self.assertIn("whole body. smoke/vapor", result.get("exposure_method") or [])
-        self.assertEqual(result.get("duration_days"), 7.0)
-        self.assertEqual(result.get("inhaled_exposure_duration"), "30 minutes")
-        self.assertEqual(result.get("exposure_regimen_bin"), "subchronic")
-
     def test_sparse_extraction_fallback_not_cannabis_related(self):
         """Cannabis mention without administration cues and sparse downstream detail → not_cannabis_related."""
         result = maude_classifier.classify_paper(
