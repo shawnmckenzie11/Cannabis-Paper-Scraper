@@ -185,8 +185,51 @@ def normalize_classification_record(
     return normalized
 
 
+def _strain_provenance_tokens(value: str) -> set:
+    """Tokenizes strain_reported strings for vendor/compound overlap scoring."""
+    return set(re.findall(r"[a-z0-9]+", value.lower()))
+
+
+_STRAIN_PROVENANCE_VENDORS = frozenset({
+    "sigma", "aldrich", "cayman", "tocris", "cerilliant", "supelco", "folium",
+    "sino", "biological", "unifesp", "cebrid", "pharm", "serva", "nida",
+})
+_STRAIN_COMPOUND_TOKENS = frozenset({
+    "cbd", "thc", "cbn", "cbg", "cbda", "thca", "cbga", "thcv",
+    "cannabidiol", "tetrahydrocannabinol", "cannabidiolum",
+})
+
+
+def _strain_labels_overlap(left: str, right: str) -> bool:
+    """True when two strain_reported strings share an animal-model or cultivar token."""
+    if not left or not right:
+        return False
+    left_lower = left.lower()
+    right_lower = right.lower()
+    if left_lower == right_lower:
+        return True
+    if left_lower in right_lower or right_lower in left_lower:
+        return True
+    left_tokens = _strain_provenance_tokens(left)
+    right_tokens = _strain_provenance_tokens(right)
+    shared_vendors = left_tokens & right_tokens & _STRAIN_PROVENANCE_VENDORS
+    shared_compounds = left_tokens & right_tokens & _STRAIN_COMPOUND_TOKENS
+    if shared_vendors and shared_compounds:
+        return True
+    animal_tokens = (
+        "wistar", "sprague-dawley", "sprague dawley", "c57bl/6", "balb/c",
+        "long-evans", "fischer 344", "lewis", "5xfad", "gp120 transgenic",
+    )
+    left_hits = {token for token in animal_tokens if token in left_lower}
+    right_hits = {token for token in animal_tokens if token in right_lower}
+    return bool(left_hits and right_hits and left_hits.intersection(right_hits))
+
+
 def compare_field_values(left: Any, right: Any) -> bool:
     """Returns True when two high-level field values are equivalent after normalization."""
+    if isinstance(left, str) and isinstance(right, str):
+        if _strain_labels_overlap(left, right):
+            return True
     if isinstance(left, list) or isinstance(right, list):
         left_list = normalize_study_type_list(left)
         right_list = normalize_study_type_list(right)

@@ -1,0 +1,984 @@
+{
+  "batch_id": "node1_calibration_20260618_181046_513",
+  "created_at": "2026-06-18T18:12:33.097262",
+  "rules_version": "2.3.0",
+  "mode": "node1_routing",
+  "automation_node": "node1",
+  "calibration_label": "node1-calibration",
+  "variants": [
+    "control",
+    "decision_checklist"
+  ],
+  "max_calls": 20,
+  "calls_attempted": 20,
+  "planned_candidates": 0,
+  "updates_applied": 20,
+  "dry_run": false,
+  "abstract_only": true,
+  "candidate_count": 80,
+  "results": [
+    {
+      "paper_id": 29310,
+      "pmid": "26408156",
+      "title": "Endocannabinoids and Their Pharmacological Actions",
+      "variant": "control",
+      "dry_run": false,
+      "locked_fields": [],
+      "before_confidence": null,
+      "before_classifier_version": "heuristic-reclassify-1.0.0",
+      "status": "updated",
+      "after_confidence": 0.8099999999999999,
+      "after_classifier_version": "llm-node1-calibration-control-2.3.0",
+      "after_publication_type": "review",
+      "after_study_type": [
+        "review"
+      ],
+      "routing_subnode": "node1b",
+      "changes": {
+        "exposure_method": {
+          "old": "[\"injection cannabinoids\"]",
+          "new": [
+            "unknown"
+          ]
+        },
+        "cannabis_type": {
+          "old": "[\"CB receptor antagonist\"]",
+          "new": [
+            "unknown"
+          ]
+        }
+      },
+      "llm_metrics": {
+        "model": "claude-sonnet-4-6",
+        "input_tokens": 1095,
+        "cache_read_tokens": 0,
+        "cache_write_tokens": 4983,
+        "output_tokens": 276,
+        "cost": 0.02611125,
+        "few_shot_similarity": 0.7,
+        "few_shot_count": 1,
+        "bm25_retrieval_used": 1,
+        "classification_confidence": 0.8099999999999999,
+        "classifier_version": "2.3.0"
+      }
+    },
+    {
+      "paper_id": 29855,
+      "pmid": "25409697",
+      "title": "Programming of neural cells by (endo)cannabinoids: from physiological rules to emerging therapies",
+      "variant": "decision_checklist",
+      "dry_run": false,
+      "locked_fields": [],
+      "before_confidence": null,
+      "before_classifier_version": "heuristic-reclassify-1.0.0",
+      "status": "updated",
+      "after_confidence": 0.8,
+      "after_classifier_version": "llm-node1-calibration-decision_checklist-2.3.0",
+      "after_publication_type": "review",
+      "after_study_type": [
+        "review"
+      ],
+      "routing_subnode": "node1b",
+      "changes": {
+        "exposure_method": {
+          "old": "[\"injection cannabinoids\"]",
+          "new": [
+            "unknown"
+          ]
+        },
+        "outcome_domain": {
+          "old": "[\"other\"]",
+          "new": [
+            "neuroprotection"
+          ]
+        }
+      },
+      "llm_metrics": {
+        "model": "claude-sonnet-4-6",
+        "input_tokens": 893,
+        "cache_read_tokens": 0,
+        "cache_write_tokens": 5132,
+        "output_tokens": 279,
+        "cost": 0.026109,
+        "few_shot_similarity": 0.5,
+        "few_shot_count": 1,
+        "bm25_retrieval_used": 1,
+        "classification_confidence": 0.8,
+        "classifier_version": "2.3.0"
+      }
+    },
+    {
+      "paper_id": 17113,
+      "pmid": "30298064",
+      "title": "Translational Investigation of the Therapeutic Potential of Cannabidiol (CBD): Toward a New Age",
+      "variant": "control",
+      "dry_run": false,
+      "locked_fields": [],
+      "before_confidence": null,
+      "before_classifier_version": "heuristic-reclassify-1.0.0",
+      "status": "updated",
+      "after_confidence": 0.9,
+      "after_classifier_version": "llm-node1-calibration-control-2.3.0",
+      "after_publication_type": "review",
+      "after_study_type": [
+        "review"
+      ],
+      "routing_subnode": "node1b",
+      "changes": {
+        "exposure_method": {
+          "old": "[\"injection cannabinoids\"]",
+          "new": [
+            "unknown"
+          ]
+        },
+        "cannabis_type": {
+          "old": "[\"unknown\"]",
+          "new": [
+            "pure cannabinoid"
+          ]
+        },
+        "outcome_domain": {
+          "old": "[\"other\"]",
+          "new": [
+            "anxiety",
+            "neuroprotection",
+            "addiction",
+            "sleep"
+          ]
+        }
+      },
+      "llm_metrics": {
+        "model": "claude-sonnet-4-6",
+        "input_tokens": 770,
+        "cache_read_tokens": 4983,
+        "cache_write_tokens": 0,
+        "output_tokens": 291,
+        "cost": 0.008169899999999999,
+        "few_shot_similarity": 1.0,
+        "few_shot_count": 1,
+        "bm25_retrieval_used": 1,
+        "classification_confidence": 0.9,
+        "classifier_version": "2.3.0"
+      }
+    },
+    {
+      "paper_id": 16634,
+      "pmid": "31288397",
+      "title": "Potential Adverse Drug Events and Drug-Drug Interactions with Medical and Consumer Cannabidiol (CBD) Use",
+      "variant": "decision_checklist",
+      "dry_run": false,
+      "locked_fields": [],
+      "before_confidence": null,
+      "before_classifier_version": "heuristic-reclassify-1.0.0",
+      "status": "updated",
+      "after_confidence": 0.9,
+      "after_classifier_version": "llm-node1-calibration-decision_checklist-2.3.0",
+      "after_publication_type": "review",
+      "after_study_type": [
+        "review"
+      ],
+      "routing_subnode": "node1b",
+      "changes": {
+        "exposure_method": {
+          "old": "[\"injection cannabinoids\"]",
+          "new": [
+            "unknown"
+          ]
+        },
+        "cannabis_type": {
+          "old": "[\"unknown\"]",
+          "new": [
+            "pure cannabinoid"
+          ]
+        }
+      },
+      "llm_metrics": {
+        "model": "claude-sonnet-4-6",
+        "input_tokens": 834,
+        "cache_read_tokens": 5132,
+        "cache_write_tokens": 0,
+        "output_tokens": 279,
+        "cost": 0.0082266,
+        "few_shot_similarity": 1.0,
+        "few_shot_count": 1,
+        "bm25_retrieval_used": 1,
+        "classification_confidence": 0.9,
+        "classifier_version": "2.3.0"
+      }
+    },
+    {
+      "paper_id": 29685,
+      "pmid": "25667194",
+      "title": "A systematic review of the antipsychotic properties of cannabidiol in humans",
+      "variant": "control",
+      "dry_run": false,
+      "locked_fields": [],
+      "before_confidence": null,
+      "before_classifier_version": "heuristic-reclassify-1.0.0",
+      "status": "updated",
+      "after_confidence": 0.8200000120000001,
+      "after_classifier_version": "llm-node1-calibration-control-2.3.0",
+      "after_publication_type": "review",
+      "after_study_type": [
+        "review"
+      ],
+      "routing_subnode": "node1b",
+      "changes": {
+        "exposure_method": {
+          "old": "[\"injection cannabinoids\"]",
+          "new": [
+            "unknown"
+          ]
+        },
+        "cannabis_type": {
+          "old": "[\"unknown\"]",
+          "new": [
+            "pure cannabinoid"
+          ]
+        },
+        "publication_type": {
+          "old": "systematic review",
+          "new": "review"
+        }
+      },
+      "llm_metrics": {
+        "model": "claude-sonnet-4-6",
+        "input_tokens": 870,
+        "cache_read_tokens": 4983,
+        "cache_write_tokens": 0,
+        "output_tokens": 280,
+        "cost": 0.0083049,
+        "few_shot_similarity": 0.90000004,
+        "few_shot_count": 1,
+        "bm25_retrieval_used": 1,
+        "classification_confidence": 0.8200000120000001,
+        "classifier_version": "2.3.0"
+      }
+    },
+    {
+      "paper_id": 15996,
+      "pmid": "32322673",
+      "title": "Immune Responses Regulated by Cannabidiol",
+      "variant": "decision_checklist",
+      "dry_run": false,
+      "locked_fields": [],
+      "before_confidence": null,
+      "before_classifier_version": "heuristic-reclassify-1.0.0",
+      "status": "updated",
+      "after_confidence": 0.84,
+      "after_classifier_version": "llm-node1-calibration-decision_checklist-2.3.0",
+      "after_publication_type": "review",
+      "after_study_type": [
+        "review"
+      ],
+      "routing_subnode": "node1b",
+      "changes": {
+        "exposure_method": {
+          "old": "[\"injection cannabinoids\"]",
+          "new": [
+            "unknown"
+          ]
+        },
+        "cannabis_type": {
+          "old": "[\"unknown\"]",
+          "new": [
+            "pure cannabinoid"
+          ]
+        },
+        "outcome_domain": {
+          "old": "[\"inflammation\", \"neuroprotection\"]",
+          "new": [
+            "inflammation"
+          ]
+        }
+      },
+      "llm_metrics": {
+        "model": "claude-sonnet-4-6",
+        "input_tokens": 799,
+        "cache_read_tokens": 5132,
+        "cache_write_tokens": 0,
+        "output_tokens": 279,
+        "cost": 0.0081216,
+        "few_shot_similarity": 0.8,
+        "few_shot_count": 1,
+        "bm25_retrieval_used": 1,
+        "classification_confidence": 0.84,
+        "classifier_version": "2.3.0"
+      }
+    },
+    {
+      "paper_id": 16016,
+      "pmid": "32268347",
+      "title": "Adverse effects of cannabidiol: a systematic review and meta-analysis of randomized clinical trials",
+      "variant": "control",
+      "dry_run": false,
+      "locked_fields": [],
+      "before_confidence": null,
+      "before_classifier_version": "heuristic-reclassify-1.0.0",
+      "status": "updated",
+      "after_confidence": 0.875,
+      "after_classifier_version": "llm-node1-calibration-control-2.3.0",
+      "after_publication_type": "meta-analysis",
+      "after_study_type": [
+        "systematic review",
+        "meta-analysis"
+      ],
+      "routing_subnode": "node3b",
+      "changes": {
+        "study_type": {
+          "old": "[\"meta-analysis\"]",
+          "new": [
+            "systematic review",
+            "meta-analysis"
+          ]
+        },
+        "exposure_method": {
+          "old": "[\"injection cannabinoids\"]",
+          "new": [
+            "unknown"
+          ]
+        },
+        "cannabis_type": {
+          "old": "[\"unknown\"]",
+          "new": [
+            "pure cannabinoid"
+          ]
+        },
+        "outcome_domain": {
+          "old": "[\"addiction\"]",
+          "new": [
+            "neuroprotection",
+            "other"
+          ]
+        }
+      },
+      "llm_metrics": {
+        "model": "claude-sonnet-4-6",
+        "input_tokens": 1055,
+        "cache_read_tokens": 4983,
+        "cache_write_tokens": 0,
+        "output_tokens": 297,
+        "cost": 0.0091149,
+        "few_shot_similarity": 1.0,
+        "few_shot_count": 1,
+        "bm25_retrieval_used": 1,
+        "classification_confidence": 0.875,
+        "classifier_version": "2.3.0"
+      }
+    },
+    {
+      "paper_id": 28185,
+      "pmid": "28625720",
+      "title": "The cannabinoid system and pain",
+      "variant": "decision_checklist",
+      "dry_run": false,
+      "locked_fields": [],
+      "before_confidence": null,
+      "before_classifier_version": "heuristic-reclassify-1.0.0",
+      "status": "updated",
+      "after_confidence": 0.89,
+      "after_classifier_version": "llm-node1-calibration-decision_checklist-2.3.0",
+      "after_publication_type": "review",
+      "after_study_type": [
+        "review"
+      ],
+      "routing_subnode": "node1b",
+      "changes": {
+        "exposure_method": {
+          "old": "[\"injection cannabinoids\"]",
+          "new": [
+            "unknown"
+          ]
+        },
+        "outcome_domain": {
+          "old": "[\"pain\", \"cognition\", \"addiction\"]",
+          "new": [
+            "pain"
+          ]
+        }
+      },
+      "llm_metrics": {
+        "model": "claude-sonnet-4-6",
+        "input_tokens": 888,
+        "cache_read_tokens": 5132,
+        "cache_write_tokens": 0,
+        "output_tokens": 276,
+        "cost": 0.0083436,
+        "few_shot_similarity": 0.8,
+        "few_shot_count": 1,
+        "bm25_retrieval_used": 1,
+        "classification_confidence": 0.89,
+        "classifier_version": "2.3.0"
+      }
+    },
+    {
+      "paper_id": 18567,
+      "pmid": "32394566",
+      "title": "Assessing the public health impacts of legalizing recreational cannabis use: the US experience",
+      "variant": "control",
+      "dry_run": false,
+      "locked_fields": [],
+      "before_confidence": null,
+      "before_classifier_version": "heuristic-reclassify-1.0.0",
+      "status": "updated",
+      "after_confidence": 0.9500000000000001,
+      "after_classifier_version": "llm-node1-calibration-control-2.3.0",
+      "after_publication_type": "review",
+      "after_study_type": [
+        "review"
+      ],
+      "routing_subnode": "node1b",
+      "changes": {
+        "exposure_method": {
+          "old": "[\"injection cannabinoids\"]",
+          "new": [
+            "unknown"
+          ]
+        },
+        "outcome_domain": {
+          "old": "[\"other\"]",
+          "new": [
+            "addiction",
+            "other"
+          ]
+        }
+      },
+      "llm_metrics": {
+        "model": "claude-sonnet-4-6",
+        "input_tokens": 946,
+        "cache_read_tokens": 4983,
+        "cache_write_tokens": 0,
+        "output_tokens": 279,
+        "cost": 0.0085179,
+        "few_shot_similarity": 1.0,
+        "few_shot_count": 1,
+        "bm25_retrieval_used": 1,
+        "classification_confidence": 0.9500000000000001,
+        "classifier_version": "2.3.0"
+      }
+    },
+    {
+      "paper_id": 18561,
+      "pmid": "34497047",
+      "title": "Medical cannabis or cannabinoids for chronic non-cancer and cancer related pain: a systematic review and meta-analysis of randomised clinical trials",
+      "variant": "decision_checklist",
+      "dry_run": false,
+      "locked_fields": [],
+      "before_confidence": null,
+      "before_classifier_version": "heuristic-reclassify-1.0.0",
+      "status": "updated",
+      "after_confidence": 0.875,
+      "after_classifier_version": "llm-node1-calibration-decision_checklist-2.3.0",
+      "after_publication_type": "meta-analysis",
+      "after_study_type": [
+        "systematic review",
+        "meta-analysis"
+      ],
+      "routing_subnode": "node3b",
+      "changes": {
+        "study_type": {
+          "old": "[\"meta-analysis\"]",
+          "new": [
+            "systematic review",
+            "meta-analysis"
+          ]
+        },
+        "exposure_method": {
+          "old": "[\"injection cannabinoids\"]",
+          "new": [
+            "oral"
+          ]
+        },
+        "cannabis_type": {
+          "old": "[\"unknown\"]",
+          "new": [
+            "pure cannabinoid",
+            "edibles"
+          ]
+        },
+        "outcome_domain": {
+          "old": "[\"pain\", \"oncology\"]",
+          "new": [
+            "pain",
+            "sleep",
+            "cognition"
+          ]
+        },
+        "duration_days": {
+          "old": 30.0,
+          "new": null
+        },
+        "sample_size": {
+          "old": 30,
+          "new": 5174
+        }
+      },
+      "llm_metrics": {
+        "model": "claude-sonnet-4-6",
+        "input_tokens": 1445,
+        "cache_read_tokens": 5132,
+        "cache_write_tokens": 0,
+        "output_tokens": 300,
+        "cost": 0.010374600000000001,
+        "few_shot_similarity": 1.0,
+        "few_shot_count": 1,
+        "bm25_retrieval_used": 1,
+        "classification_confidence": 0.875,
+        "classifier_version": "2.3.0"
+      }
+    },
+    {
+      "paper_id": 31045,
+      "pmid": "23108541",
+      "title": "Why do cannabinoid receptors have more than one endogenous ligand?",
+      "variant": "control",
+      "dry_run": false,
+      "locked_fields": [],
+      "before_confidence": null,
+      "before_classifier_version": "heuristic-reclassify-1.0.0",
+      "status": "updated",
+      "after_confidence": 0.86,
+      "after_classifier_version": "llm-node1-calibration-control-2.3.0",
+      "after_publication_type": "review",
+      "after_study_type": [
+        "review"
+      ],
+      "routing_subnode": "node1b",
+      "changes": {
+        "exposure_method": {
+          "old": "[\"injection cannabinoids\"]",
+          "new": [
+            "unknown"
+          ]
+        }
+      },
+      "llm_metrics": {
+        "model": "claude-sonnet-4-6",
+        "input_tokens": 1009,
+        "cache_read_tokens": 4983,
+        "cache_write_tokens": 0,
+        "output_tokens": 276,
+        "cost": 0.0086619,
+        "few_shot_similarity": 0.7,
+        "few_shot_count": 1,
+        "bm25_retrieval_used": 1,
+        "classification_confidence": 0.86,
+        "classifier_version": "2.3.0"
+      }
+    },
+    {
+      "paper_id": 25245,
+      "pmid": "34502379",
+      "title": "The Endocannabinoid System: A Potential Target for the Treatment of Various Diseases",
+      "variant": "decision_checklist",
+      "dry_run": false,
+      "locked_fields": [],
+      "before_confidence": null,
+      "before_classifier_version": "heuristic-reclassify-1.0.0",
+      "status": "updated",
+      "after_confidence": 0.77,
+      "after_classifier_version": "llm-node1-calibration-decision_checklist-2.3.0",
+      "after_publication_type": "review",
+      "after_study_type": [
+        "review"
+      ],
+      "routing_subnode": "node1b",
+      "changes": {
+        "exposure_method": {
+          "old": "[\"injection cannabinoids\"]",
+          "new": [
+            "unknown"
+          ]
+        },
+        "outcome_domain": {
+          "old": "[\"pain\", \"anxiety\", \"cognition\", \"oncology\", \"neuroprotection\"]",
+          "new": [
+            "pain",
+            "anxiety",
+            "cognition",
+            "inflammation",
+            "neuroprotection",
+            "oncology",
+            "addiction"
+          ]
+        }
+      },
+      "llm_metrics": {
+        "model": "claude-sonnet-4-6",
+        "input_tokens": 976,
+        "cache_read_tokens": 5132,
+        "cache_write_tokens": 0,
+        "output_tokens": 299,
+        "cost": 0.0089526,
+        "few_shot_similarity": 0.4,
+        "few_shot_count": 1,
+        "bm25_retrieval_used": 1,
+        "classification_confidence": 0.77,
+        "classifier_version": "2.3.0"
+      }
+    },
+    {
+      "paper_id": 30516,
+      "pmid": "24102242",
+      "title": "Parsing the players: 2-arachidonoylglycerol synthesis and degradation in the CNS",
+      "variant": "control",
+      "dry_run": false,
+      "locked_fields": [],
+      "before_confidence": null,
+      "before_classifier_version": "heuristic-reclassify-1.0.0",
+      "status": "updated",
+      "after_confidence": 0.74,
+      "after_classifier_version": "llm-node1-calibration-control-2.3.0",
+      "after_publication_type": "review",
+      "after_study_type": [
+        "review"
+      ],
+      "routing_subnode": "node1b",
+      "changes": {
+        "exposure_method": {
+          "old": "[\"injection cannabinoids\"]",
+          "new": [
+            "unknown"
+          ]
+        }
+      },
+      "llm_metrics": {
+        "model": "claude-sonnet-4-6",
+        "input_tokens": 972,
+        "cache_read_tokens": 4983,
+        "cache_write_tokens": 0,
+        "output_tokens": 276,
+        "cost": 0.0085509,
+        "few_shot_similarity": 0.3,
+        "few_shot_count": 1,
+        "bm25_retrieval_used": 1,
+        "classification_confidence": 0.74,
+        "classifier_version": "2.3.0"
+      }
+    },
+    {
+      "paper_id": 17064,
+      "pmid": "30426073",
+      "title": "Cannabis Systematics at the Levels of Family, Genus, and Species",
+      "variant": "decision_checklist",
+      "dry_run": false,
+      "locked_fields": [],
+      "before_confidence": null,
+      "before_classifier_version": "heuristic-reclassify-1.0.0",
+      "status": "updated",
+      "after_confidence": 0.9500000000000001,
+      "after_classifier_version": "llm-node1-calibration-decision_checklist-2.3.0",
+      "after_publication_type": "review",
+      "after_study_type": [
+        "review"
+      ],
+      "routing_subnode": "node1b",
+      "changes": {
+        "exposure_method": {
+          "old": "[\"injection cannabinoids\"]",
+          "new": [
+            "unknown"
+          ]
+        },
+        "sample_size": {
+          "old": 3,
+          "new": null
+        }
+      },
+      "llm_metrics": {
+        "model": "claude-sonnet-4-6",
+        "input_tokens": 1039,
+        "cache_read_tokens": 5132,
+        "cache_write_tokens": 0,
+        "output_tokens": 276,
+        "cost": 0.0087966,
+        "few_shot_similarity": 1.0,
+        "few_shot_count": 1,
+        "bm25_retrieval_used": 1,
+        "classification_confidence": 0.9500000000000001,
+        "classifier_version": "2.3.0"
+      }
+    },
+    {
+      "paper_id": 30960,
+      "pmid": "23261685",
+      "title": "Endocannabinoid system and mood disorders: priming a target for new therapies",
+      "variant": "control",
+      "dry_run": false,
+      "locked_fields": [],
+      "before_confidence": null,
+      "before_classifier_version": "heuristic-reclassify-1.0.0",
+      "status": "updated",
+      "after_confidence": 0.7100000000000001,
+      "after_classifier_version": "llm-node1-calibration-control-2.3.0",
+      "after_publication_type": "review",
+      "after_study_type": [
+        "review"
+      ],
+      "routing_subnode": "node1b",
+      "changes": {
+        "exposure_method": {
+          "old": "[\"injection cannabinoids\"]",
+          "new": [
+            "unknown"
+          ]
+        },
+        "outcome_domain": {
+          "old": "[\"other\"]",
+          "new": [
+            "anxiety"
+          ]
+        }
+      },
+      "llm_metrics": {
+        "model": "claude-sonnet-4-6",
+        "input_tokens": 1054,
+        "cache_read_tokens": 4983,
+        "cache_write_tokens": 0,
+        "output_tokens": 276,
+        "cost": 0.0087969,
+        "few_shot_similarity": 0.2,
+        "few_shot_count": 1,
+        "bm25_retrieval_used": 1,
+        "classification_confidence": 0.7100000000000001,
+        "classifier_version": "2.3.0"
+      }
+    },
+    {
+      "paper_id": 30242,
+      "pmid": "24634659",
+      "title": "Cannabinoids for treatment of Alzheimer's disease: moving toward the clinic",
+      "variant": "decision_checklist",
+      "dry_run": false,
+      "locked_fields": [],
+      "before_confidence": null,
+      "before_classifier_version": "heuristic-reclassify-1.0.0",
+      "status": "updated",
+      "after_confidence": 0.77,
+      "after_classifier_version": "llm-node1-calibration-decision_checklist-2.3.0",
+      "after_publication_type": "review",
+      "after_study_type": [
+        "review"
+      ],
+      "routing_subnode": "node1b",
+      "changes": {
+        "exposure_method": {
+          "old": "[\"injection cannabinoids\"]",
+          "new": [
+            "unknown"
+          ]
+        },
+        "outcome_domain": {
+          "old": "[\"cognition\"]",
+          "new": [
+            "neuroprotection",
+            "cognition",
+            "inflammation"
+          ]
+        }
+      },
+      "llm_metrics": {
+        "model": "claude-sonnet-4-6",
+        "input_tokens": 1053,
+        "cache_read_tokens": 5132,
+        "cache_write_tokens": 0,
+        "output_tokens": 286,
+        "cost": 0.008988600000000001,
+        "few_shot_similarity": 0.4,
+        "few_shot_count": 1,
+        "bm25_retrieval_used": 1,
+        "classification_confidence": 0.77,
+        "classifier_version": "2.3.0"
+      }
+    },
+    {
+      "paper_id": 18602,
+      "pmid": "30703255",
+      "title": "Positive and Negative Effects of Cannabis and Cannabinoids on Health",
+      "variant": "control",
+      "dry_run": false,
+      "locked_fields": [],
+      "before_confidence": null,
+      "before_classifier_version": "heuristic-reclassify-1.0.0",
+      "status": "updated",
+      "after_confidence": 0.9500000000000001,
+      "after_classifier_version": "llm-node1-calibration-control-2.3.0",
+      "after_publication_type": "review",
+      "after_study_type": [
+        "review"
+      ],
+      "routing_subnode": "node1b",
+      "changes": {
+        "exposure_method": {
+          "old": "[\"injection cannabinoids\"]",
+          "new": [
+            "unknown"
+          ]
+        },
+        "outcome_domain": {
+          "old": "[\"cognition\"]",
+          "new": [
+            "anxiety",
+            "cognition",
+            "inflammation",
+            "addiction",
+            "neuroprotection"
+          ]
+        }
+      },
+      "llm_metrics": {
+        "model": "claude-sonnet-4-6",
+        "input_tokens": 762,
+        "cache_read_tokens": 4983,
+        "cache_write_tokens": 0,
+        "output_tokens": 292,
+        "cost": 0.0081609,
+        "few_shot_similarity": 1.0,
+        "few_shot_count": 1,
+        "bm25_retrieval_used": 1,
+        "classification_confidence": 0.9500000000000001,
+        "classifier_version": "2.3.0"
+      }
+    },
+    {
+      "paper_id": 15645,
+      "pmid": "32906622",
+      "title": "Industrial Hemp (Cannabis sativa subsp. sativa) as an Emerging Source for Value-Added Functional Food Ingredients and Nutraceuticals",
+      "variant": "decision_checklist",
+      "dry_run": false,
+      "locked_fields": [],
+      "before_confidence": null,
+      "before_classifier_version": "heuristic-reclassify-1.0.0",
+      "status": "updated",
+      "after_confidence": 0.920000012,
+      "after_classifier_version": "llm-node1-calibration-decision_checklist-2.3.0",
+      "after_publication_type": "review",
+      "after_study_type": [
+        "review"
+      ],
+      "routing_subnode": "node1b",
+      "changes": {
+        "exposure_method": {
+          "old": "[\"injection cannabinoids\"]",
+          "new": [
+            "unknown"
+          ]
+        },
+        "outcome_domain": {
+          "old": "[\"cognition\"]",
+          "new": [
+            "other"
+          ]
+        }
+      },
+      "llm_metrics": {
+        "model": "claude-sonnet-4-6",
+        "input_tokens": 824,
+        "cache_read_tokens": 5132,
+        "cache_write_tokens": 0,
+        "output_tokens": 276,
+        "cost": 0.0081516,
+        "few_shot_similarity": 0.90000004,
+        "few_shot_count": 1,
+        "bm25_retrieval_used": 1,
+        "classification_confidence": 0.920000012,
+        "classifier_version": "2.3.0"
+      }
+    },
+    {
+      "paper_id": 28914,
+      "pmid": "27133395",
+      "title": "The Role of the Endocannabinoid System in the Brain-Gut Axis",
+      "variant": "control",
+      "dry_run": false,
+      "locked_fields": [],
+      "before_confidence": null,
+      "before_classifier_version": "heuristic-reclassify-1.0.0",
+      "status": "updated",
+      "after_confidence": 0.83,
+      "after_classifier_version": "llm-node1-calibration-control-2.3.0",
+      "after_publication_type": "review",
+      "after_study_type": [
+        "review"
+      ],
+      "routing_subnode": "node1b",
+      "changes": {
+        "exposure_method": {
+          "old": "[\"injection cannabinoids\"]",
+          "new": [
+            "unknown"
+          ]
+        },
+        "outcome_domain": {
+          "old": "[\"other\"]",
+          "new": [
+            "inflammation",
+            "pain",
+            "other"
+          ]
+        }
+      },
+      "llm_metrics": {
+        "model": "claude-sonnet-4-6",
+        "input_tokens": 989,
+        "cache_read_tokens": 4983,
+        "cache_write_tokens": 0,
+        "output_tokens": 282,
+        "cost": 0.008691899999999999,
+        "few_shot_similarity": 0.6,
+        "few_shot_count": 1,
+        "bm25_retrieval_used": 1,
+        "classification_confidence": 0.83,
+        "classifier_version": "2.3.0"
+      }
+    },
+    {
+      "paper_id": 29635,
+      "pmid": "25777363",
+      "title": "Cannabis in cancer care",
+      "variant": "decision_checklist",
+      "dry_run": false,
+      "locked_fields": [],
+      "before_confidence": null,
+      "before_classifier_version": "heuristic-reclassify-1.0.0",
+      "status": "updated",
+      "after_confidence": 0.9500000000000001,
+      "after_classifier_version": "llm-node1-calibration-decision_checklist-2.3.0",
+      "after_publication_type": "review",
+      "after_study_type": [
+        "review"
+      ],
+      "routing_subnode": "node1b",
+      "changes": {
+        "exposure_method": {
+          "old": "[\"injection cannabinoids\"]",
+          "new": [
+            "unknown"
+          ]
+        },
+        "outcome_domain": {
+          "old": "[\"oncology\"]",
+          "new": [
+            "pain",
+            "nausea",
+            "neuroprotection",
+            "oncology"
+          ]
+        }
+      },
+      "llm_metrics": {
+        "model": "claude-sonnet-4-6",
+        "input_tokens": 827,
+        "cache_read_tokens": 5132,
+        "cache_write_tokens": 0,
+        "output_tokens": 291,
+        "cost": 0.0083856,
+        "few_shot_similarity": 1.0,
+        "few_shot_count": 1,
+        "bm25_retrieval_used": 1,
+        "classification_confidence": 0.9500000000000001,
+        "classifier_version": "2.3.0"
+      }
+    }
+  ]
+}

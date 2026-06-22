@@ -1,0 +1,18 @@
+{
+  "target_subnode": "node2a",
+  "created_at": "2026-06-22T19:50:00",
+  "source_batch_id": "node2a_calibration_20260622_193649_079",
+  "baseline_alignment_pct": 79.4,
+  "baseline_maude_recall_pct": 51.6,
+  "post_patch_alignment_pct": 80.6,
+  "post_patch_maude_recall_pct": 54.7,
+  "pattern_summary": "Dominant errors: sample_size from validation-scale or population N (7/10); outcome_domain missing anxiety on youth mental-health apps; dissolved-in-media exposure on human biomarker PDFs; weekly app reporting as administration_frequency; lifecourse follow-up as duration_days.",
+  "implementation_notes": [
+    "Reject prior-publication validation sample N and population totals; prefer included-for-extraction cohort counts.",
+    "Strip dissolved-in-media exposure when clinical human subjects dominate.",
+    "Map youth mental-health assessment apps to anxiety outcome domain.",
+    "Skip administration_frequency for mobile-app weekly reporting schedules.",
+    "Skip duration_days for birth-cohort / adolescence-to-adulthood lifecourse spans.",
+    "RL feedback: local-only staged patch by default; refresh holdout after code deploy (no in-cycle PDF re-run)."
+  ]
+}

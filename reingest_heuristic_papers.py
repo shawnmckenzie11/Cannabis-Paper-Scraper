@@ -1,4 +1,4 @@
-"""Re-run full heuristic classification on all non-LLM papers in the catalog."""
+"""Re-run Maude classification on legacy heuristic papers (PDF → full text → abstract)."""
 
 import argparse
 import json
@@ -7,13 +7,15 @@ import sqlite3
 import time
 from collections import Counter
 from datetime import datetime
+from typing import Optional
 
 import classifier
+import maude_confidence
 from db_manager import DatabaseManager
 
 logging.basicConfig(
-    level=logging.WARNING,
-    format="\033[94m%(asctime)s\033[0m - \033[92m%(levelname)s\033[0m - %(message)s",
+    level=logging.INFO,
+    format="%(asctime)s - %(levelname)s - %(message)s",
 )
 logger = logging.getLogger(__name__)
 
@@ -33,6 +35,8 @@ UPDATE_COLUMNS = [
     "strain_reported",
     "strain_normalized",
     "publication_type",
+    "ingestion_status",
+    "species",
     "summary",
     "classification_confidence",
     "classification_timestamp",
@@ -40,11 +44,12 @@ UPDATE_COLUMNS = [
 ]
 
 TRACK_FIELDS = [
+    "publication_type",
+    "study_type",
     "exposure_method",
     "cannabis_type",
     "outcome_domain",
-    "duration_days",
-    "classification_confidence",
+    "classifier_version",
 ]
 
 
@@ -82,15 +87,17 @@ def serialize(field, val):
 
 def reingest_heuristic_papers(
     dry_run: bool = False,
-    batch_size: int = 100,
-    only_pending: bool = False,
+    batch_size: int = 25,
+    limit: Optional[int] = None,
+    only_heuristic: bool = True,
 ) -> dict:
-    """Re-run heuristic classification for all non-LLM, non-Maude papers.
+    """Re-classify legacy heuristic papers with the current Maude pipeline.
 
     Args:
         dry_run: When True, compute changes without writing to the database.
         batch_size: Commit interval for database writes.
-        only_pending: When True, only reprocess legacy heuristic-reclassify records.
+        limit: Optional maximum number of papers to process.
+        only_heuristic: When True, target heuristic-1.0.0 papers only.
 
     Returns:
         Summary statistics for the run.
@@ -100,8 +107,8 @@ def reingest_heuristic_papers(
     conn.row_factory = sqlite3.Row
     cur = conn.cursor()
 
-    if only_pending:
-        where_clause = "classifier_version LIKE 'heuristic-reclassify%'"
+    if only_heuristic:
+        where_clause = "classifier_version = 'heuristic-1.0.0'"
     else:
         where_clause = (
             "classifier_version IS NULL "
@@ -109,31 +116,33 @@ def reingest_heuristic_papers(
             "OR classifier_version LIKE 'heuristic-reclassify%'"
         )
 
+    limit_sql = f" LIMIT {int(limit)}" if limit else ""
     cur.execute(
         f"""
-        SELECT id, title, abstract, expert_locked_fields,
+        SELECT id, pmid, doi, title, abstract, full_text_link, expert_locked_fields,
                study_type, exposure_method, cannabis_type, outcome_domain,
-               duration_days, classification_confidence, classifier_version
+               publication_type, duration_days, classification_confidence, classifier_version
         FROM papers
         WHERE {where_clause}
         ORDER BY id
+        {limit_sql}
         """
     )
     papers = cur.fetchall()
     total = len(papers)
     print(
-        f"Starting heuristic re-ingestion for {total} papers "
-        f"(dry_run={dry_run}, only_pending={only_pending}) at {datetime.now().isoformat()}"
+        f"Starting Maude re-ingestion for {total} papers "
+        f"(dry_run={dry_run}, limit={limit}) at {datetime.now().isoformat()}"
     )
 
     field_change_counts = Counter()
+    source_counts = Counter()
     papers_changed = 0
-    confidence_before_high = 0
-    confidence_after_high = 0
+    pdf_cache = {}
     start = time.time()
 
     for idx, row in enumerate(papers, 1):
-        if not dry_run and idx % 500 == 1 and idx > 1:
+        if not dry_run and idx % batch_size == 1 and idx > 1:
             conn.commit()
             conn.close()
             conn = db.get_connection()
@@ -149,12 +158,19 @@ def reingest_heuristic_papers(
             paper.get("title") or "",
             paper.get("abstract") or "",
             run_llm=False,
+            full_text_link=paper.get("full_text_link"),
+            pmid=paper.get("pmid"),
+            doi=paper.get("doi"),
+            pdf_cache=pdf_cache,
         )
 
-        if (paper.get("classification_confidence") or 0) >= 0.85:
-            confidence_before_high += 1
-        if (extracted.get("classification_confidence") or 0) >= 0.85:
-            confidence_after_high += 1
+        version = str(extracted.get("classifier_version") or "")
+        if version.startswith("maude-pdf-"):
+            source_counts["pdf"] += 1
+        elif version.startswith("maude-fulltext-"):
+            source_counts["fulltext"] += 1
+        else:
+            source_counts["abstract"] += 1
 
         paper_changed = False
         for field in TRACK_FIELDS:
@@ -176,15 +192,21 @@ def reingest_heuristic_papers(
                 params.append(serialize(col, extracted.get(col)))
             params.append(paper["id"])
             cur.execute(f"UPDATE papers SET {', '.join(set_parts)} WHERE id = ?", params)
+            db.sync_tab_flags_for_paper(paper["id"], conn=conn)
 
             if idx % batch_size == 0:
                 conn.commit()
                 elapsed = time.time() - start
                 rate = idx / elapsed if elapsed else 0
                 eta = (total - idx) / rate / 60 if rate else 0
-                print(
-                    f"  [{idx}/{total}] changed={papers_changed} "
-                    f"elapsed={elapsed:.0f}s eta={eta:.1f}m"
+                logger.info(
+                    "Progress %s/%s changed=%s sources=%s elapsed=%.0fs eta=%.1fm",
+                    idx,
+                    total,
+                    papers_changed,
+                    dict(source_counts),
+                    elapsed,
+                    eta,
                 )
 
     if not dry_run:
@@ -196,20 +218,64 @@ def reingest_heuristic_papers(
         "papers_processed": total,
         "papers_changed": papers_changed,
         "elapsed_minutes": round(elapsed / 60, 1),
-        "auto_accept_before": confidence_before_high,
-        "auto_accept_after": confidence_after_high,
+        "source_counts": dict(source_counts),
         "field_change_counts": dict(field_change_counts),
         "dry_run": dry_run,
     }
 
-    print(f"Heuristic re-ingestion complete: {summary}")
+    print(f"Maude re-ingestion complete: {summary}")
+    return summary
+
+
+def refresh_maude_confidence_scores(
+    batch_size: int = 100,
+    limit: Optional[int] = None,
+) -> dict:
+    """Recomputes classification_confidence for all maude-* papers from node alignment %."""
+    db = DatabaseManager()
+    conn = db.get_connection()
+    conn.row_factory = sqlite3.Row
+    cur = conn.cursor()
+    limit_sql = f" LIMIT {int(limit)}" if limit else ""
+    cur.execute(
+        f"""
+        SELECT id, title, abstract, publication_type, study_type, ingestion_status,
+               classifier_version, classification_confidence
+        FROM papers
+        WHERE classifier_version LIKE 'maude-%'
+        ORDER BY id
+        {limit_sql}
+        """
+    )
+    papers = cur.fetchall()
+    updated = 0
+    for idx, row in enumerate(papers, 1):
+        paper = dict(row)
+        block = {
+            "publication_type": paper.get("publication_type"),
+            "study_type": parse_json_field(paper.get("study_type")) or [],
+            "ingestion_status": paper.get("ingestion_status"),
+        }
+        confidence = maude_confidence.confidence_for_classification(block)
+        if paper.get("classification_confidence") != confidence:
+            cur.execute(
+                "UPDATE papers SET classification_confidence = ? WHERE id = ?",
+                (confidence, paper["id"]),
+            )
+            updated += 1
+        if idx % batch_size == 0:
+            conn.commit()
+    conn.commit()
+    conn.close()
+    summary = {"papers_scanned": len(papers), "papers_updated": updated}
+    print(f"Maude confidence refresh complete: {summary}")
     return summary
 
 
 def main():
-    """CLI entry point for heuristic paper re-ingestion."""
+    """CLI entry point for Maude re-ingestion of heuristic papers."""
     parser = argparse.ArgumentParser(
-        description="Re-run heuristic classification for all non-LLM papers."
+        description="Re-classify heuristic papers with Maude (PDF → full text → abstract)."
     )
     parser.add_argument(
         "--dry-run",
@@ -219,20 +285,42 @@ def main():
     parser.add_argument(
         "--batch-size",
         type=int,
-        default=100,
+        default=25,
         help="Commit interval for database writes.",
     )
     parser.add_argument(
-        "--only-pending",
+        "--limit",
+        type=int,
+        default=None,
+        help="Maximum number of papers to re-classify.",
+    )
+    parser.add_argument(
+        "--all-native",
         action="store_true",
-        help="Only reprocess legacy heuristic-reclassify records.",
+        help="Include NULL/heuristic-reclassify native papers, not only heuristic-1.0.0.",
+    )
+    parser.add_argument(
+        "--refresh-maude-confidence",
+        action="store_true",
+        help="After re-ingestion, refresh classification_confidence on all maude-* papers.",
+    )
+    parser.add_argument(
+        "--confidence-only",
+        action="store_true",
+        help="Only refresh maude-* classification_confidence from node alignment (no re-ingest).",
     )
     args = parser.parse_args()
-    reingest_heuristic_papers(
+    if args.confidence_only:
+        refresh_maude_confidence_scores(batch_size=args.batch_size, limit=args.limit)
+        return
+    summary = reingest_heuristic_papers(
         dry_run=args.dry_run,
         batch_size=args.batch_size,
-        only_pending=args.only_pending,
+        limit=args.limit,
+        only_heuristic=not args.all_native,
     )
+    if args.refresh_maude_confidence or summary.get("papers_processed", 0) > 0:
+        refresh_maude_confidence_scores(batch_size=args.batch_size)
 
 
 if __name__ == "__main__":

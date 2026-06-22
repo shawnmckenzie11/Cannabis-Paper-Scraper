@@ -113,66 +113,71 @@ harvest_state = {
 }
 
 def daily_harvest_scheduler():
-    """Daily background task scheduler that runs the harvest pipeline for standard terms once a day."""
+    """Background scheduler for one-shot jobs and the daily harvest pipeline."""
     import time
-    
+
+    import scheduled_jobs
+
     sched_logger = logging.getLogger("scheduler")
     sched_logger.info("Daily background scheduler thread starting...")
     db = DatabaseManager()
-    
+
     # Store initial info
     db.set_metadata("scheduler_active", "true")
     if not db.get_metadata("last_daily_harvest_status"):
         db.set_metadata("last_daily_harvest_status", "Never run")
-        
+
     query = "cannabis OR cannabinoid OR marijuana"
     max_results = 200
-    
+    last_harvest_check_hour = None
+
     while True:
         try:
-            classify = os.getenv("AUTO_HARVEST_CLASSIFY", "false").lower() == "true"
-            today_str = date.today().isoformat()  # YYYY-MM-DD
-            last_run_date = db.get_metadata("last_daily_harvest_date")
-            
-            if last_run_date != today_str:
-                sched_logger.info(f"Daily scheduler: starting automated harvest for query '{query}' (today: {today_str}, last run: {last_run_date})")
-                db.set_metadata("last_daily_harvest_status", f"Running automated harvest since {datetime.now().strftime('%H:%M:%S')}...")
-                
-                # Call the unified pipeline
-                success_count, skipped_count, filter_skipped = harvest.run_harvest_pipeline(
-                    query=query,
-                    max_results=max_results,
-                    update=True,
-                    classify=classify
-                )
-                
-                # Run the purger to clean up any accidentally added unrelated papers
-                sched_logger.info("Daily scheduler: Running purge_unrelated to clean up acronym-collision outliers...")
-                try:
-                    import purge_unrelated
-                    purge_unrelated.run_purger(dry_run=False)
-                    sched_logger.info("Daily scheduler: Cleanse completed successfully.")
-                except Exception as purge_err:
-                    sched_logger.error(f"Daily scheduler: Purge process failed: {purge_err}")
-                
-                # Mark as successful
-                date_str = datetime.now().isoformat()
-                status_msg = f"Success! Harvest complete. Ingested {success_count} papers (skipped {skipped_count} pre-existing, filtered {filter_skipped} unrelated) at {datetime.now().strftime('%H:%M:%S')}."
-                sched_logger.info(f"Daily scheduler status: {status_msg}")
-                db.set_metadata("last_daily_harvest_date", today_str)
-                db.set_metadata("last_daily_harvest_timestamp", date_str)
-                db.set_metadata("last_daily_harvest_status", status_msg)
-            else:
-                # Already run today
-                pass
-                
+            scheduled_jobs.run_due_jobs(db)
+
+            current_hour = datetime.now().hour
+            if last_harvest_check_hour != current_hour:
+                last_harvest_check_hour = current_hour
+                classify = os.getenv("AUTO_HARVEST_CLASSIFY", "false").lower() == "true"
+                today_str = date.today().isoformat()  # YYYY-MM-DD
+                last_run_date = db.get_metadata("last_daily_harvest_date")
+
+                if last_run_date != today_str:
+                    sched_logger.info(f"Daily scheduler: starting automated harvest for query '{query}' (today: {today_str}, last run: {last_run_date})")
+                    db.set_metadata("last_daily_harvest_status", f"Running automated harvest since {datetime.now().strftime('%H:%M:%S')}...")
+
+                    # Call the unified pipeline
+                    success_count, skipped_count, filter_skipped = harvest.run_harvest_pipeline(
+                        query=query,
+                        max_results=max_results,
+                        update=True,
+                        classify=classify
+                    )
+
+                    # Run the purger to clean up any accidentally added unrelated papers
+                    sched_logger.info("Daily scheduler: Running purge_unrelated to clean up acronym-collision outliers...")
+                    try:
+                        import purge_unrelated
+                        purge_unrelated.run_purger(dry_run=False)
+                        sched_logger.info("Daily scheduler: Cleanse completed successfully.")
+                    except Exception as purge_err:
+                        sched_logger.error(f"Daily scheduler: Purge process failed: {purge_err}")
+
+                    # Mark as successful
+                    date_str = datetime.now().isoformat()
+                    status_msg = f"Success! Harvest complete. Ingested {success_count} papers (skipped {skipped_count} pre-existing, filtered {filter_skipped} unrelated) at {datetime.now().strftime('%H:%M:%S')}."
+                    sched_logger.info(f"Daily scheduler status: {status_msg}")
+                    db.set_metadata("last_daily_harvest_date", today_str)
+                    db.set_metadata("last_daily_harvest_timestamp", date_str)
+                    db.set_metadata("last_daily_harvest_status", status_msg)
+
         except Exception as e:
-            err_msg = f"Automated harvest failed: {e}"
+            err_msg = f"Background scheduler failed: {e}"
             sched_logger.error(err_msg)
             db.set_metadata("last_daily_harvest_status", f"Error at {datetime.now().strftime('%H:%M:%S')}: {e}")
-            
-        # Check every hour
-        time.sleep(3600)
+
+        # Poll frequently enough for one-shot scheduled jobs (e.g. 11pm re-ingest).
+        time.sleep(60)
 
 def bg_harvest_worker(query: str, max_results: int, update: bool, classify: bool):
     """Asynchronous background worker that runs the harvest pipeline and updates progress state."""

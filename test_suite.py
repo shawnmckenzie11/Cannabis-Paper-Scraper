@@ -162,13 +162,14 @@ class TestHeuristicExtractor(unittest.TestCase):
         )
         self.assertIn("addiction", extractor.extract_outcomes(title_addiction, abstract_addiction))
 
-    def test_heuristic_fallback_confidence(self):
-        """Heuristic-only classifications must stay below auto-accept threshold."""
+    def test_maude_default_classification(self):
+        """Native ingest/harvest path uses Maude, not legacy heuristic-1.0.0."""
         title = "Mobile intervention for emerging adults with regular cannabis use"
         abstract = "OBJECTIVE: Reduce cannabis use. METHODS: Smartphone prompts over 30-day MRT."
         metadata = classifier.process_paper_metadata(title, abstract, run_llm=False)
-        self.assertEqual(metadata["classifier_version"], "heuristic-1.0.0")
-        self.assertLess(metadata["classification_confidence"], 0.85)
+        self.assertTrue(str(metadata["classifier_version"]).startswith("maude-"))
+        self.assertIn("study_type", metadata)
+        self.assertIsNotNone(metadata.get("classification_confidence"))
 
     def test_sample_size(self):
         text = "A sample size of 84 patients was recruited (n = 84)."

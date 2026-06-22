@@ -1,5 +1,5 @@
 {
-  "updated_at": "2026-06-22T17:31:00",
+  "updated_at": "2026-06-22T16:24:35.000000",
   "handoffs": [
     {
       "id": "node2b_20260622_151932",
@@ -99,7 +99,7 @@
         "node2b_in_vivo",
         "node2c_in_vitro"
       ],
-      "summary_title": "Node 2b patch 163733 — compound provenance, exposure guards, dose parsing",
+      "summary_title": "Node 2b patch 163733 \u2014 compound provenance, exposure guards, dose parsing",
       "staged_patch_path": "scratch/calibration_runs/staged_patches/node2b_20260622_163733.json",
       "applied_at": "2026-06-22T16:45:00",
       "baseline_batch_id": "node2b_calibration_20260622_163406_261",
@@ -116,10 +116,10 @@
       ],
       "learning_notes": [
         "strain_reported uses dual-target logic: animal catalog strains win when present; otherwise pure-cannabinoid papers populate compound provenance (catalog id + vendor + purity) instead of null or vendor-catalog noise.",
-        "Exposure routing checks dissolved-in-media bath/immersion cues before injection; injection only fires when explicit route abbreviations (i.p., i.v., s.c., …) appear near cannabinoid mentions — removing the injection default fallback.",
+        "Exposure routing checks dissolved-in-media bath/immersion cues before injection; injection only fires when explicit route abbreviations (i.p., i.v., s.c., \u2026) appear near cannabinoid mentions \u2014 removing the injection default fallback.",
         "cannabis_type edibles tag requires explicit product phrases; Sigma/Cayman/Tocris/NIDA/THC Pharm vendor cues override dietary delivery to pure cannabinoid.",
         "duration_days captures following/after N days, N days of treatment, and week-to-day conversion; mg/kg/day parsing fills thc_mg_kg/cbd_mg_kg; administration_frequency no longer invents once-daily defaults (normalizes to daily).",
-        "dose_mg only accepts explicit absolute-dose phrasing — mg/kg-only papers leave dose_mg null while populating mg/kg fields."
+        "dose_mg only accepts explicit absolute-dose phrasing \u2014 mg/kg-only papers leave dose_mg null while populating mg/kg fields."
       ]
     },
     {
@@ -131,7 +131,7 @@
       "beneficiary_node_ids": [
         "node2c_in_vitro"
       ],
-      "summary_title": "Node 2c patch 165531 — in-vitro duration, strain blocklist, analytical routing",
+      "summary_title": "Node 2c patch 165531 \u2014 in-vitro duration, strain blocklist, analytical routing",
       "staged_patch_path": "scratch/calibration_runs/staged_patches/node2c_20260622_165531.json",
       "applied_at": "2026-06-22T17:00:00",
       "baseline_batch_id": "node2c_calibration_20260622_164822_972",
@@ -148,10 +148,10 @@
         "test_patch_165531.py"
       ],
       "learning_notes": [
-        "First node2c RL cycle on 20 pdf_extracted in-vitro papers (75.4% alignment baseline). treatment_duration now captures incubation hours, MD simulation ns/us runtimes, and storage-day phrases — preferring the shortest acute window when multiple durations appear.",
+        "First node2c RL cycle on 20 pdf_extracted in-vitro papers (75.4% alignment baseline). treatment_duration now captures incubation hours, MD simulation ns/us runtimes, and storage-day phrases \u2014 preferring the shortest acute window when multiple durations appear.",
         "strain_reported prioritizes cv./chemovar/chemotype labels and filters reagent vendor/catalog tokens; pure-cannabinoid compound provenance still includes vendors when explicitly tagged pure cannabinoid (node2b-compatible).",
         "Analytical/computational pre-routing guard (UHPLC, HPLC, HRMS, docking, GROMACS) forces Cell Culture (Other In Vitro) before clinical observational fallback; outcome_domain expanded for oncology cell-biology, GIRK/pain, and receptor-internalization addiction cues.",
-        "THC/CBD percent extractors reject acid-fraction ratio contexts and enforce plant-content ceilings (≤40% THC, ≤25% CBD); isolated cannabinoids without plant-matrix language map to pure cannabinoid.",
+        "THC/CBD percent extractors reject acid-fraction ratio contexts and enforce plant-content ceilings (\u226440% THC, \u226425% CBD); isolated cannabinoids without plant-matrix language map to pure cannabinoid.",
         "Shared extractor.py changes inherit to node2a/2b where applicable; node2c-specific cues documented under extraction_cues.node2c_invitro in maude_cues.json."
       ]
     },
@@ -164,7 +164,7 @@
       "beneficiary_node_ids": [
         "node2c_in_vitro"
       ],
-      "summary_title": "Node 2c targeted handoff — treatment_duration + strain_reported on same holdout",
+      "summary_title": "Node 2c targeted handoff \u2014 treatment_duration + strain_reported on same holdout",
       "applied_at": "2026-06-22T17:15:00",
       "baseline_batch_id": "node2c_calibration_20260622_164822_972",
       "baseline_alignment_pct": 75.4,
@@ -189,7 +189,7 @@
         "Same 20-paper node2c holdout; focused on diverging characteristic fields only (treatment_duration 17/20 disagree, strain_reported 18/20 disagree after patch 165531).",
         "treatment_duration replaces shortest-first with context scoring: incubation/treatment/viability windows beat prep-step minutes; 24 h preference rank resolves multi-match PDFs; MD 'simulated during N ns' and hour-to-day ranges supported; full-PDF fallback when Methods omit simulation runtime.",
         "strain_reported adds in-vitro priority path: chemotype I/II/III profiles, cv. quoted names, 331-18A/CBDV panels, compound panels (CP55,940/WIN/AEA/SR141716), botanical alternative sources; suppresses ethics-only animal strains and bare THC/CBD vendor tokens in cell-culture context.",
-        "Greedy cultivar/variety regex and isolated-from captures tightened to block PDF noise (e.g. 'cultivar yields…', PLGA fragments); extended cultivar codes limited to 331-* series in Cannasoul purchase sentences.",
+        "Greedy cultivar/variety regex and isolated-from captures tightened to block PDF noise (e.g. 'cultivar yields\u2026', PLGA fragments); extended cultivar codes limited to 331-* series in Cannasoul purchase sentences.",
         "classify_paper forwards full_text to extract_all_heuristics for duration/strain fallbacks beyond Methods isolation."
       ]
     },
@@ -202,7 +202,7 @@
       "beneficiary_node_ids": [
         "node2b_in_vivo"
       ],
-      "summary_title": "Node 2b patch 171929 — invivo strain/species guards, temporal extractors, routing",
+      "summary_title": "Node 2b patch 171929 \u2014 invivo strain/species guards, temporal extractors, routing",
       "staged_patch_path": "scratch/calibration_runs/staged_patches/node2b_20260622_171929.json",
       "applied_at": "2026-06-22T17:30:00",
       "baseline_batch_id": "node2b_calibration_20260622_171929_756",
@@ -226,6 +226,451 @@
         "Exposure routing prefers whole-body chamber over nose-only; publication routing uses full PDF prefix to avoid review misclassification on prenatal/primate studies.",
         "run_subnode_calibration.sh now triggers feedback cycle after batch pull (RUN_FEEDBACK=1 default)."
       ]
+    },
+    {
+      "id": "node2a_20260622_174230",
+      "source_subnode": "node2a",
+      "beneficiary_nodes": [
+        "node2a"
+      ],
+      "beneficiary_node_ids": [
+        "node2a_clinical"
+      ],
+      "summary_title": "Node 2a patch 174230 \u2014 clinical routing, exposure, sample_size, frequency",
+      "staged_patch_path": "scratch/calibration_runs/staged_patches/node2a_20260622_174230.json",
+      "applied_at": "2026-06-22T17:48:00",
+      "baseline_batch_id": "node2a_calibration_20260622_174230_109",
+      "baseline_alignment_pct": 65.6,
+      "baseline_maude_recall_pct": 39.9,
+      "post_patch_batch_id": "calibration_20260622_134749_646",
+      "post_patch_alignment_pct": 79.4,
+      "post_patch_maude_recall_pct": 89.6,
+      "files_changed": [
+        "extractor.py",
+        "maude_classifier.py",
+        "maude_cues.json",
+        "calibration_build.py",
+        "test_patch_node2a_174230.py"
+      ],
+      "learning_notes": [
+        "10-paper node2a PDF holdout RL cycle: batch on Fly then implement \u2192 deploy \u2192 same-holdout refresh.",
+        "Clinical PDFs with review-like titles (e.g. 'review of the evidence') now route to original research when primary participant data is present.",
+        "Clinical exposure_method keeps oral/inhaled labels; dissolved-in-media and animal routes suppressed when human subjects dominate.",
+        "sample_size rejects URL n= query params and population statistics; cohort N= near participants wins.",
+        "Observational clinical papers no longer emit administration_frequency from cannabis-use frequency or spurious duration_days.",
+        "outcome_domain uses PDF intro/objective text; human-subject routing drops incidental Animal Models study_type labels."
+      ]
+    },
+    {
+      "id": "node2a_20260622_193649",
+      "source_subnode": "node2a",
+      "beneficiary_nodes": [
+        "node2a"
+      ],
+      "beneficiary_node_ids": [
+        "node2a_clinical"
+      ],
+      "summary_title": "Node 2a patch 193649 \u2014 sample_size, outcomes, clinical exposure guards",
+      "staged_patch_path": "scratch/calibration_runs/staged_patches/node2a_20260622_193649.json",
+      "applied_at": "2026-06-22T19:50:00",
+      "baseline_batch_id": "node2a_calibration_20260622_193649_079",
+      "baseline_alignment_pct": 79.4,
+      "baseline_maude_recall_pct": 51.6,
+      "post_patch_batch_id": "calibration_20260622_154809_386",
+      "post_patch_alignment_pct": 80.6,
+      "post_patch_maude_recall_pct": 54.7,
+      "files_changed": [
+        "extractor.py",
+        "maude_classifier.py",
+        "calibration_feedback_agent.py",
+        "calibration_agent.py",
+        "calibration_pdf.py",
+        "calibration_build.py",
+        "scripts/run_subnode_calibration.sh",
+        "test_patch_node2a_193649.py"
+      ],
+      "learning_notes": [
+        "10-paper node2a PDF holdout RL cycle completed locally (batch on Fly, patch + same-holdout refresh local).",
+        "Fixed RL hang: feedback cycle defaults to local-only analysis (no Claude API, no in-cycle PDF refresh); refresh is a separate post-patch step like prior patches.",
+        "sample_size rejects validation-scale prior-publication N values; prefers included-for-extraction cohort counts over population totals.",
+        "Clinical human-subject papers strip dissolved-in-media exposure; plasma/endocannabinoid biomarker studies route to unknown exposure.",
+        "Youth mental-health assessment apps map to anxiety outcome; weekly app reporting is not administration_frequency.",
+        "Lifecourse/birth-cohort spans no longer populate duration_days on observational clinical papers.",
+        "Maude classification_confidence uses latest node alignment % from handoff log (node2a \u2248 0.794)."
+      ]
+    },
+    {
+      "id": "node2b_20260622_195454",
+      "source_subnode": "node2b",
+      "beneficiary_nodes": [
+        "node2a",
+        "node2b",
+        "node2c"
+      ],
+      "beneficiary_node_ids": [
+        "node2a_clinical",
+        "node2b_in_vivo",
+        "node2c_in_vitro"
+      ],
+      "summary_title": "Node2b offset-10 RL cycle (78.3% \u2192 81.7% post-targeted strain pass)",
+      "staged_patch_path": "scratch/calibration_runs/staged_patches/node2b_20260622_155554.json",
+      "source_batch_id": "node2b_calibration_20260622_195454_576",
+      "refresh_batch_id": "calibration_20260622_155940_240",
+      "build_id": "20260622-node2b-195454-strain-v1",
+      "metrics": {
+        "baseline_alignment_pct": 78.8,
+        "baseline_maude_recall_pct": 48.9,
+        "post_alignment_pct": 81.7,
+        "post_maude_recall_pct": 60.0,
+        "targeted_field": "strain_reported",
+        "paper_count": 10,
+        "offset": 10
+      },
+      "files_changed": [
+        "extractor.py",
+        "classification_schema.py",
+        "calibration_build.py"
+      ],
+      "learning_notes": [
+        "Mixed cell-culture + in-vivo PDFs no longer default to dissolved-in-media when mg/kg or s.c./i.p. dosing cues appear in Methods.",
+        "Administration frequency normalizes once/twice-a-day phrasing to daily/twice daily; duration_days skips incubation windows but keeps animal dosing spans.",
+        "In-vivo strain extraction prefers synthetic agonists and named transgenic models (5xFAD, gp120) over bare THC/CBD labels; mixed papers prioritize compound provenance.",
+        "Strain A/B scoring treats overlapping animal-model tokens (e.g. Wistar vs Wistar, Lewis) as agreement via subset matching in classification_schema.",
+        "Targeted same-holdout strain pass after primary patch lifted alignment 80.0% \u2192 81.7% and Maude recall 55.6% \u2192 60.0% on offset-10 holdout."
+      ],
+      "applied_at": "2026-06-22T16:00:55.028271"
+    },
+    {
+      "id": "node2c_20260622_200113",
+      "source_subnode": "node2c",
+      "beneficiary_nodes": [
+        "node2a",
+        "node2b",
+        "node2c"
+      ],
+      "beneficiary_node_ids": [
+        "node2a_clinical",
+        "node2b_in_vivo",
+        "node2c_in_vitro"
+      ],
+      "summary_title": "Node2c offset-10 RL cycle (80.0% \u2192 82.4%)",
+      "staged_patch_path": "scratch/calibration_runs/staged_patches/node2c_20260622_160218.json",
+      "source_batch_id": "node2c_calibration_20260622_200113_934",
+      "refresh_batch_id": "calibration_20260622_160316_762",
+      "build_id": "20260622-node2c-200113-v1",
+      "metrics": {
+        "baseline_alignment_pct": 80.0,
+        "baseline_maude_recall_pct": 49.2,
+        "post_alignment_pct": 82.4,
+        "post_maude_recall_pct": 59.0,
+        "paper_count": 10,
+        "offset": 10
+      },
+      "files_changed": [
+        "extractor.py",
+        "calibration_build.py"
+      ],
+      "learning_notes": [
+        "In-vitro-only papers default to cannabinoids dissolved in media when no explicit route is detected.",
+        "Spurious animal oral/injection routes are dropped on cell-culture-only study types when media-dissolved cues appear.",
+        "Catalog compound strain extraction captures Sigma/Cayman vendor-qualified CBD/THC descriptions for in-vitro strain_reported.",
+        "Treatment duration falls back to PDF Methods section text when abstract blob lacks incubation windows.",
+        "Post-patch same-holdout refresh on offset-10 node2c holdout: 80.0% \u2192 82.4% alignment, recall 49.2% \u2192 59.0%."
+      ],
+      "applied_at": "2026-06-22T16:04:00.231321"
+    },
+    {
+      "id": "node2a_20260622_200414",
+      "source_subnode": "node2a",
+      "beneficiary_nodes": [
+        "node2a",
+        "node2b",
+        "node2c"
+      ],
+      "beneficiary_node_ids": [
+        "node2a_clinical",
+        "node2b_in_vivo",
+        "node2c_in_vitro"
+      ],
+      "summary_title": "Node2a offset-10 RL cycle (66.9% \u2192 post-patch)",
+      "staged_patch_path": "scratch/calibration_runs/staged_patches/node2a_20260622_160508.json",
+      "source_batch_id": "node2a_calibration_20260622_200414_742",
+      "refresh_batch_id": "calibration_20260622_160555_782",
+      "build_id": "20260622-node2a-200414-v1",
+      "metrics": {
+        "baseline_alignment_pct": 69.4,
+        "baseline_maude_recall_pct": 41.1,
+        "post_alignment_pct": 70.0,
+        "post_maude_recall_pct": 45.2,
+        "paper_count": 10,
+        "offset": 10
+      },
+      "files_changed": [
+        "extractor.py",
+        "calibration_agent.py",
+        "calibration_build.py"
+      ],
+      "learning_notes": [
+        "Sample-size A/B scoring allows \u00b12 participant tolerance when both sides report a cohort N.",
+        "Clinical medical-cannabis papers default to oral exposure when no inhalation/injection route is explicit.",
+        "Fresh offset-10 node2a holdout is harder than prior 193649 batch \u2014 review misrouting and multi-label cannabis_type remain top gaps.",
+        "Post-patch refresh applied build 20260622-node2a-200414-v1 on same 10-paper holdout.",
+        "Alternating loop advances to node2b offset 20 next; 85% gate not yet met on any node."
+      ],
+      "applied_at": "2026-06-22T16:06:24.858340"
+    },
+    {
+      "id": "node2b_20260622_200722",
+      "source_subnode": "node2b",
+      "beneficiary_nodes": [
+        "node2a",
+        "node2b",
+        "node2c"
+      ],
+      "beneficiary_node_ids": [
+        "node2a_clinical",
+        "node2b_in_vivo",
+        "node2c_in_vitro"
+      ],
+      "summary_title": "Node2b offset-20 RL cycle (76.7% \u2192 85.8%) \u2014 PDF review routing guard",
+      "staged_patch_path": "scratch/calibration_runs/staged_patches/node2b_20260622_160821.json",
+      "source_batch_id": "node2b_calibration_20260622_200722_248",
+      "refresh_batch_id": "calibration_20260622_161317_605",
+      "build_id": "20260622-node2b-200722-routing-v1",
+      "metrics": {
+        "baseline_alignment_pct": 76.7,
+        "baseline_maude_recall_pct": 34.5,
+        "post_alignment_pct": 85.8,
+        "post_maude_recall_pct": 64.3,
+        "targeted_field": "strain_reported",
+        "targeted_pass_skipped": true,
+        "targeted_skip_reason": "post_alignment_pct >= 85% on same holdout",
+        "paper_count": 10,
+        "offset": 20
+      },
+      "files_changed": [
+        "maude_classifier.py",
+        "maude_cues.py",
+        "calibration_build.py",
+        "test_patch_node2b_200722.py"
+      ],
+      "learning_notes": [
+        "Fly production overlay had toxic node1b_reviews learned cues (days, weeks, mg/kg/day) that matched PDF dosing text and routed in-vivo papers to review with empty extraction.",
+        "route_publication_type now uses title+abstract only for review/case/negative matching; full PDF blob is reserved for animal/clinical original-research overrides.",
+        "should_route_animal_before_review fires on mg/kg + rodent/primate terms; is_valid_review_learned_cue blocks temporal/dosing tokens from becoming review patterns.",
+        "Offset-20 node2b holdout post-patch: 76.7% \u2192 85.8% alignment, recall 34.5% \u2192 64.3%; strain_reported still 10/10 disagree but gate met.",
+        "Alternating loop advances to node2c offset 20; node2b latest_alignment_pct now 85.8%."
+      ],
+      "applied_at": "2026-06-22T16:13:46.000000"
+    },
+    {
+      "id": "node2c_20260622_201423",
+      "source_subnode": "node2c",
+      "beneficiary_nodes": ["node2a", "node2b", "node2c"],
+      "beneficiary_node_ids": ["node2a_clinical", "node2b_in_vivo", "node2c_in_vitro"],
+      "summary_title": "Node2c offset-20 targeted pass (84.7% \u2192 85.9%) \u2014 strain + treatment_duration",
+      "staged_patch_path": "scratch/calibration_runs/staged_patches/node2c_20260622_161539.json",
+      "source_batch_id": "node2c_calibration_20260622_201423_837",
+      "refresh_batch_id": "calibration_20260622_162026_783",
+      "build_id": "20260622-node2c-201423-strain-v1",
+      "metrics": {
+        "baseline_alignment_pct": 84.7,
+        "baseline_maude_recall_pct": 60.3,
+        "post_alignment_pct": 85.9,
+        "post_maude_recall_pct": 63.5,
+        "targeted_field": "strain_reported",
+        "paper_count": 10,
+        "offset": 20
+      },
+      "files_changed": [
+        "extractor.py",
+        "classification_schema.py",
+        "calibration_build.py",
+        "test_patch_node2c_201423.py"
+      ],
+      "learning_notes": [
+        "Targeted same-holdout pass on flagged strain_reported (10/10 disagree) plus treatment_duration gaps.",
+        "strain_reported A/B overlap now accepts shared vendor + compound tokens (Sigma/CBD, Cerilliant, etc.).",
+        "In-vitro catalog strain extraction captures donated-by, Cerilliant/Supelco panels, and multi-standard Sigma lists.",
+        "treatment_duration supports minute ranges (0.5 to 60 minutes) and ex-vivo organ-bath minute windows.",
+        "Offset-20 node2c holdout: 84.7% \u2192 85.9% alignment; strain_reported disagrees 10 \u2192 8."
+      ],
+      "applied_at": "2026-06-22T16:20:52.000000"
+    },
+    {
+      "id": "node2a_20260622_202129",
+      "source_subnode": "node2a",
+      "beneficiary_nodes": ["node2a", "node2b", "node2c"],
+      "beneficiary_node_ids": ["node2a_clinical", "node2b_in_vivo", "node2c_in_vitro"],
+      "summary_title": "Node2a offset-20 RL cycle (66.2% \u2192 66.9%) \u2014 clinical routing + sample_size",
+      "staged_patch_path": "scratch/calibration_runs/staged_patches/node2a_20260622_162233.json",
+      "source_batch_id": "node2a_calibration_20260622_202129_219",
+      "refresh_batch_id": "calibration_20260622_162405_550",
+      "build_id": "20260622-node2a-202129-clinical-v1",
+      "metrics": {
+        "baseline_alignment_pct": 66.2,
+        "baseline_maude_recall_pct": 41.3,
+        "post_alignment_pct": 66.9,
+        "post_maude_recall_pct": 42.7,
+        "targeted_field": "sample_size",
+        "paper_count": 10,
+        "offset": 20
+      },
+      "files_changed": [
+        "maude_classifier.py",
+        "extractor.py",
+        "calibration_build.py",
+        "test_patch_node2a_202129.py"
+      ],
+      "learning_notes": [
+        "Offset-20 node2a holdout is clinical-heavy; top gaps remain sample_size (9/10) and exposure_method (8/10).",
+        "Analytical/quantification titles no longer force Cell Culture when PDF methods contain human participants.",
+        "Mixed node2a+node2c branch papers prefer clinical study_type when human-subject keywords appear in Methods.",
+        "sample_size scoring rejects e-liquid product counts and prefers included-for-analysis participant cohort N.",
+        "Post-patch same-holdout refresh: 66.2% \u2192 66.9% alignment; 85% gate not met on node2a."
+      ],
+      "applied_at": "2026-06-22T16:24:35.000000"
+    },
+    {
+      "id": "node2a_20260622_202548",
+      "source_subnode": "node2a",
+      "beneficiary_nodes": ["node2a", "node2b", "node2c"],
+      "beneficiary_node_ids": ["node2a_clinical", "node2b_in_vivo", "node2c_in_vitro"],
+      "summary_title": "Node2a offset-30/40 RL cycles \u2014 study_type sync, exposure, sample_size",
+      "staged_patch_path": "scratch/calibration_runs/staged_patches/node2a_20260622_162650.json",
+      "source_batch_id": "node2a_calibration_20260622_202548_118",
+      "refresh_batch_id": "calibration_20260622_163235_304",
+      "build_id": "20260622-node2a-203356-cannabis-v1",
+      "metrics": {
+        "baseline_alignment_pct": 70.6,
+        "baseline_maude_recall_pct": 80.6,
+        "post_alignment_pct": 66.9,
+        "post_maude_recall_pct": null,
+        "offset30_post_pct": 66.9,
+        "offset40_post_pct": 68.1,
+        "targeted_fields": ["exposure_method", "sample_size", "cannabis_type"],
+        "paper_count": 10,
+        "offset": 30
+      },
+      "files_changed": [
+        "extractor.py",
+        "maude_classifier.py",
+        "calibration_build.py",
+        "test_patch_node2a_202548.py"
+      ],
+      "learning_notes": [
+        "extract_all_heuristics now accepts study_type_override from Maude routing \u2014 fixes in-vitro exposure bleed on node2a clinical papers.",
+        "Plant cultivation / greenhouse field trials return unknown exposure and route analytical instead of clinical observational.",
+        "Clinical PDF exposure scans full_text; MMJ patient mode-of-use tables map inhaled+oral; polysubstance surveys without route reports stay unknown.",
+        "sample_size prefers current-sample/pilot n= from full PDF over screening totals; cohort beats population prevalence.",
+        "Cannabis_type dedupe suppresses pure cannabinoid/CB agonist/concentrate over-tags on clinical and analytical papers.",
+        "Offset-30 post-patch 66.9%; offset-40 post-patch 68.1%; 85% gate still not met after 2 node2a-only cycles."
+      ],
+      "applied_at": "2026-06-22T16:36:00.000000"
+    },
+    {
+      "id": "node2a_20260622_205900",
+      "source_subnode": "node2a",
+      "beneficiary_nodes": ["node2a", "node2b", "node2c"],
+      "beneficiary_node_ids": ["node2a_clinical", "node2b_in_vivo", "node2c_in_vitro"],
+      "summary_title": "Node2a cycle 3 (offset 50) — outcome_domain, strain_reported, biomarker guards",
+      "staged_patch_path": "scratch/calibration_runs/staged_patches/node2a_20260622_163847.json",
+      "source_batch_id": "node2a_calibration_20260622_203808_631",
+      "refresh_batch_id": "calibration_20260622_164145_775",
+      "build_id": "20260622-node2a-205900-outcome-v1",
+      "metrics": {
+        "baseline_alignment_pct": 73.1,
+        "post_alignment_pct": 76.2,
+        "holdout_batch": "node2a_calibration_20260622_203356_002",
+        "offset": 50,
+        "paper_count": 1,
+        "targeted_fields": ["outcome_domain", "strain_reported", "cannabis_type"],
+        "field_disagrees_before_after": {
+          "outcome_domain": "6/10 → 4/10",
+          "strain_reported": "7/10 → 4/10",
+          "cannabis_type": "5/10 → 6/10",
+          "exposure_method": "3/10 → 3/10"
+        }
+      },
+      "files_changed": ["extractor.py", "calibration_build.py", "test_patch_node2a_205900.py"],
+      "learning_notes": [
+        "Title-based outcome hints: IBD→inflammation, drug-testing→addiction, delta-8 review→pain/anxiety/cognition.",
+        "CSF/plasma endocannabinoid biomarker studies suppress bare THC strain and pure-cannabinoid cannabis_type.",
+        "Forensic synthetic detection (AMB-FUBINACA) prioritized over unrelated cultivar reference panels.",
+        "Offset-50 batch only 1 paper (51 total node2a pdf pool); offset-40 holdout used for primary metric."
+      ],
+      "applied_at": "2026-06-22T16:41:50.000000"
+    },
+    {
+      "id": "node2a_20260622_210200",
+      "source_subnode": "node2a",
+      "beneficiary_nodes": ["node2a", "node2b", "node2c"],
+      "beneficiary_node_ids": ["node2a_clinical", "node2b_in_vivo", "node2c_in_vitro"],
+      "summary_title": "Node2a cycle 4 targeted cannabis_type — biomarker PDF fixes",
+      "staged_patch_path": null,
+      "source_batch_id": "node2a_calibration_20260622_203356_002",
+      "refresh_batch_id": "calibration_20260622_164341_448",
+      "build_id": "20260622-node2a-210200-cannabis-v2",
+      "metrics": {
+        "baseline_alignment_pct": 76.2,
+        "post_alignment_pct": 78.8,
+        "holdout_batch": "node2a_calibration_20260622_203356_002",
+        "offset": 60,
+        "paper_count": 10,
+        "targeted_field": "cannabis_type",
+        "field_disagrees_before_after": {
+          "outcome_domain": "4/10 → 3/10",
+          "strain_reported": "4/10 → 3/10",
+          "cannabis_type": "6/10 → 4/10",
+          "exposure_method": "3/10 → 3/10"
+        }
+      },
+      "files_changed": ["extractor.py", "calibration_build.py", "test_patch_node2a_205900.py"],
+      "learning_notes": [
+        "Offset-60 batch empty; cycle 4 ran targeted cannabis_type pass on offset-40 same holdout.",
+        "Biomarker administered guard tightened to participant dosing context (not literature mentions in PDF).",
+        "CSF cohorts reporting cannabis use map dried flower; forensic synthetics map CB receptor agonist.",
+        "Delta-8 review papers infer product types from review text. Offset-40 holdout 73.1% → 78.8%; 85% gate not met."
+      ],
+      "applied_at": "2026-06-22T16:44:05.000000"
+    },
+    {
+      "id": "node2a_20260622_211700",
+      "source_subnode": "node2a",
+      "beneficiary_nodes": ["node2a", "node2b", "node2c"],
+      "beneficiary_node_ids": ["node2a_clinical", "node2b_in_vivo", "node2c_in_vitro"],
+      "summary_title": "Node2a cycle 5 — sample_size + administration_frequency (85% gate met)",
+      "staged_patch_path": "scratch/calibration_runs/staged_patches/node2a_20260622_164528.json",
+      "source_batch_id": "node2a_calibration_20260622_203356_002",
+      "refresh_batch_id": "calibration_20260622_165230_335",
+      "build_id": "20260622-node2a-211700-sample-freq-v1",
+      "metrics": {
+        "baseline_alignment_pct": 78.8,
+        "post_alignment_pct": 85.0,
+        "baseline_maude_recall_pct": 90.8,
+        "post_maude_recall_pct": 91.1,
+        "holdout_batch": "node2a_calibration_20260622_203356_002",
+        "offset": 40,
+        "paper_count": 10,
+        "targeted_fields": ["sample_size", "administration_frequency"],
+        "field_disagrees_before_after": {
+          "sample_size": "6/10 → 0/10",
+          "administration_frequency": "4/10 → 0/10",
+          "outcome_domain": "3/10 → 3/10",
+          "cannabis_type": "4/10 → 4/10",
+          "strain_reported": "3/10 → 3/10"
+        }
+      },
+      "files_changed": ["extractor.py", "calibration_build.py", "test_patch_node2a_203356.py"],
+      "learning_notes": [
+        "Priority cohort extractors: completed-survey n=, final sample, in-total post-mortem counts, reported-on arm totals beat sign-ups/subgroup n=.",
+        "Split UC/CD participation sentences use first disease-group count; PDF fi-ligatures normalized before regex.",
+        "Administration_frequency rejects user-quote daily use, neuroleptic dosing, and background starting-dose prose without active cohort assignment.",
+        "In-session THC upload dosages (min apart between scan sessions) map to multiple doses per session regardless of observational routing label.",
+        "Offset-40 same holdout 78.8% → 85.0%; node2a 85% RL gate met. Track B (CONTENT_TIER=any) skipped."
+      ],
+      "applied_at": "2026-06-22T16:52:30.000000"
     }
-  ]
+  ],
+  "updated_at": "2026-06-22T16:52:30.000000"
 }

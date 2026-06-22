@@ -16,6 +16,8 @@ from dotenv import load_dotenv
 # Import extractor as fallback
 import extractor
 import classification_schema
+import maude_classifier
+import maude_confidence
 
 # Set up logging
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
@@ -656,31 +658,120 @@ def classify_with_llm(title: str, abstract: str, runs: Optional[int] = None, ful
         logger.error(f"Anthropic LLM classification failed: {e}. Falling back to heuristics.")
         return None
 
-def process_paper_metadata(title: str, abstract: str, run_llm: bool = False, runs: Optional[int] = None, full_text: Optional[str] = None) -> Dict[str, Any]:
-    """Extracts metadata from paper, running LLM if requested/available, else falling back to heuristics.
-    
+
+def get_rules_version() -> str:
+    """Returns the active rules configuration version string."""
+    return load_rules_config().get("version", "1.0.0")
+
+
+def classify_with_maude(
+    title: str,
+    abstract: str,
+    *,
+    full_text: Optional[str] = None,
+    full_text_link: Optional[str] = None,
+    pmid: Optional[str] = None,
+    doi: Optional[str] = None,
+    cache: Optional[Dict[str, Optional[str]]] = None,
+) -> Dict[str, Any]:
+    """Runs the RL-tuned Maude classifier using PDF, article full text, or abstract."""
+    import calibration_pdf
+
+    rules_version = get_rules_version()
+    source = calibration_pdf.CLASSIFICATION_SOURCE_ABSTRACT
+    resolved_text = full_text
+    if resolved_text is None:
+        resolved_text, source = calibration_pdf.resolve_classification_full_text(
+            full_text_link=full_text_link,
+            pmid=pmid,
+            doi=doi,
+            cache=cache,
+        )
+
+    result = maude_classifier.classify_paper(
+        title,
+        abstract,
+        full_text=resolved_text,
+        rules_version=rules_version,
+        abstract_only_extraction=resolved_text is None,
+    )
+    result.pop("_maude_meta", None)
+    if not result.get("summary"):
+        result["summary"] = extractor.generate_heuristic_summary(result)
+    result["classification_timestamp"] = datetime.now().isoformat()
+    result["classifier_version"] = calibration_pdf.maude_classifier_version(source, rules_version)
+    maude_confidence.apply_maude_confidence(result)
+    return result
+
+
+def _legacy_heuristic_metadata(title: str, abstract: str) -> Dict[str, Any]:
+    """Last-resort abstract heuristics when Maude classification raises unexpectedly."""
+    metadata = extractor.extract_all_heuristics(title, abstract)
+    metadata["classification_confidence"] = 0.6
+    metadata["classification_timestamp"] = datetime.now().isoformat()
+    metadata["classifier_version"] = "heuristic-1.0.0"
+    return metadata
+
+
+def process_paper_metadata(
+    title: str,
+    abstract: str,
+    run_llm: bool = False,
+    runs: Optional[int] = None,
+    full_text: Optional[str] = None,
+    full_text_link: Optional[str] = None,
+    pmid: Optional[str] = None,
+    doi: Optional[str] = None,
+    pdf_cache: Optional[Dict[str, Optional[str]]] = None,
+) -> Dict[str, Any]:
+    """Extracts metadata from paper via Claude LLM or the Maude rule/cue classifier.
+
+    Harvest and daily ingest use Maude by default (``run_llm=False``). Maude resolves text in
+    priority order: PDF link → article full text (PMC/HTML) → abstract.
+
     Args:
         title: Title of the paper
         abstract: Abstract text of the paper
         run_llm: Whether to attempt LLM classification
         runs: Optional count of self-consistency runs override
-        full_text: Optional full PDF text of the paper
-        
+        full_text: Optional pre-resolved full text (skips PDF/PMC fetch)
+        full_text_link: Optional PDF or publisher URL for text resolution
+        pmid: Optional PubMed ID for Europe PMC full-text lookup
+        doi: Optional DOI for Europe PMC full-text lookup
+        pdf_cache: Optional per-run cache for PDF/PMC/HTML fetches
+
     Returns:
         Dict containing all extracted metadata.
     """
     metadata = None
-    
+
     if run_llm:
+        if full_text is None and full_text_link and not pdf_cache:
+            import calibration_pdf
+            full_text, _ = calibration_pdf.resolve_classification_full_text(
+                full_text_link=full_text_link,
+                pmid=pmid,
+                doi=doi,
+            )
         metadata = classify_with_llm(title, abstract, runs=runs, full_text=full_text)
         if metadata and not metadata.get("summary"):
             metadata["summary"] = extractor.generate_heuristic_summary(metadata)
-        
+
     if not metadata:
-        logger.info("Running standard regex and keyword heuristics extractor.")
-        metadata = extractor.extract_all_heuristics(title, abstract)
-        metadata["classification_confidence"] = 0.6
-        metadata["classification_timestamp"] = datetime.now().isoformat()
-        metadata["classifier_version"] = "heuristic-1.0.0"
-        
+        rules_version = get_rules_version()
+        logger.info("Running Maude rule/cue classifier (rules v%s).", rules_version)
+        try:
+            metadata = classify_with_maude(
+                title,
+                abstract,
+                full_text=full_text,
+                full_text_link=full_text_link,
+                pmid=pmid,
+                doi=doi,
+                cache=pdf_cache,
+            )
+        except Exception as exc:
+            logger.error("Maude classification failed: %s. Falling back to legacy heuristics.", exc)
+            metadata = _legacy_heuristic_metadata(title, abstract)
+
     return classification_schema.normalize_classification_record(metadata, title, abstract)

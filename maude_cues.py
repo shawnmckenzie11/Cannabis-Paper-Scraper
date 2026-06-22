@@ -52,6 +52,12 @@ BLOCKED_REVIEW_LEARNED_CUES = frozenset({
     "cannabinoids",
     "cbd",
     "thc",
+    "days",
+    "day",
+    "weeks",
+    "week",
+    "mg/kg",
+    "mg/kg/day",
     "in the present study",
     "we conducted",
     "we conducted a randomised controlled trial",
@@ -59,6 +65,11 @@ BLOCKED_REVIEW_LEARNED_CUES = frozenset({
     "we revisit",
     "ed to examine caps",
 })
+
+_REVIEW_LEARNED_DOSING_PATTERN = re.compile(
+    r"\b(?:days?|weeks?|mg/kg|intraperitoneal|subcutaneous|gavage|injection)\b",
+    re.IGNORECASE,
+)
 
 
 def is_valid_review_learned_cue(cue: str) -> bool:
@@ -69,6 +80,8 @@ def is_valid_review_learned_cue(cue: str) -> bool:
     if normalized in WEAK_REVIEW_PHRASES:
         return True
     if len(normalized) < 4:
+        return False
+    if _REVIEW_LEARNED_DOSING_PATTERN.search(normalized):
         return False
     return True
 
@@ -315,9 +328,16 @@ def get_positive_phrases(node_id: str, store: Optional[Dict[str, Any]] = None) -
     node = get_node_config(node_id, store)
     phrases: List[str] = []
     seen: set = set()
-    for source in (node.get("positive_cues") or []) + [
-        row.get("cue") for row in (node.get("learned_cues") or []) if row.get("cue")
-    ]:
+    learned_rows = node.get("learned_cues") or []
+    learned_cues = []
+    for row in learned_rows:
+        cue = row.get("cue")
+        if not cue:
+            continue
+        if node_id == "node1b_reviews" and not is_valid_review_learned_cue(cue):
+            continue
+        learned_cues.append(cue)
+    for source in (node.get("positive_cues") or []) + learned_cues:
         normalized = str(source).strip()
         key = normalized.lower()
         if normalized and key not in seen:

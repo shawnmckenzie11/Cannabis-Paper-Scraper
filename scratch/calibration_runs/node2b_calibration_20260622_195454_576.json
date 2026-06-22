@@ -1,0 +1,2810 @@
+{
+  "batch_id": "node2b_calibration_20260622_195454_576",
+  "created_at": "2026-06-22T19:55:23.615605",
+  "rules_version": "2.6.0",
+  "mode": "node2b_in_vivo",
+  "automation_node": "node2b",
+  "target_subnode": "node2b",
+  "fields_in_scope": [
+    "study_type",
+    "species",
+    "exposure_method",
+    "cannabis_type",
+    "outcome_domain",
+    "sample_size",
+    "multiple_doses",
+    "multiple_time_intervals",
+    "puff_count",
+    "inhaled_exposure_duration",
+    "thc_pct",
+    "cbd_pct",
+    "strain_reported",
+    "thc_mg_ml",
+    "cbd_mg_ml",
+    "duration_days",
+    "administration_frequency",
+    "repeat_exposure_count",
+    "exposure_regimen_bin",
+    "thc_mg_kg",
+    "cbd_mg_kg",
+    "thc_mg_g",
+    "cbd_mg_g",
+    "dose_mg"
+  ],
+  "calibration_label": "node2b-calibration",
+  "variants": [
+    "llm-pdf-reclassify"
+  ],
+  "max_calls": 10,
+  "offset": 10,
+  "calls_attempted": 0,
+  "planned_candidates": 10,
+  "updates_applied": 0,
+  "dry_run": true,
+  "abstract_only": false,
+  "pdf_text_used_count": 9,
+  "content_tier": "pdf_extracted",
+  "content_tier_counts": {
+    "pdf_extracted": 10,
+    "abstract_reclassify": 0,
+    "pdf_link": 0,
+    "abstract_only": 0
+  },
+  "full_fields_compare": true,
+  "compare_fields": [
+    "ingestion_status",
+    "study_type",
+    "exposure_method",
+    "cannabis_type",
+    "publication_type",
+    "outcome_domain",
+    "thc_pct",
+    "cbd_pct",
+    "dose_mg",
+    "strain_reported",
+    "strain_normalized",
+    "duration_days",
+    "inhaled_exposure_duration",
+    "administration_frequency",
+    "treatment_duration",
+    "sample_size",
+    "puff_count",
+    "thc_mg_ml",
+    "thc_mg_g",
+    "thc_mg_kg",
+    "cbd_mg_ml",
+    "cbd_mg_g",
+    "cbd_mg_kg",
+    "thc_uM",
+    "cbd_uM",
+    "species"
+  ],
+  "maude_only": true,
+  "maude_from_stored_claude": true,
+  "maude_from_llm_pdf": true,
+  "candidate_count": 30,
+  "paired_count": 10,
+  "flagged_for_review_count": 10,
+  "results": [
+    {
+      "paper_id": 9006,
+      "pmid": "37880248",
+      "title": "Microglial cannabinoid receptor type 1 mediates social memory deficits in mice produced by adolescent THC exposure and 16p11.2 duplication",
+      "full_text_link": "https://www.nature.com/articles/s41467-023-42276-5.pdf",
+      "pdf_text_used": true,
+      "variant": "llm-pdf-reclassify",
+      "dry_run": true,
+      "locked_fields": [],
+      "before_confidence": 0.925,
+      "before_classifier_version": "llm-pdf-reclassify-1.1.0",
+      "status": "maude_paired",
+      "content_tier": "pdf_extracted",
+      "after_confidence": 0.925,
+      "after_classifier_version": "llm-pdf-reclassify-1.1.0",
+      "after_publication_type": "original research",
+      "after_study_type": [
+        "Animal Models (Mouse)",
+        "Cell Culture (Primary Cells)"
+      ],
+      "routing_subnode": "node2b",
+      "changes": {},
+      "llm": {
+        "ingestion_status": "relevant",
+        "study_type": [
+          "Animal Models (Mouse)",
+          "Cell Culture (Primary Cells)"
+        ],
+        "exposure_method": [
+          "injection cannabinoids"
+        ],
+        "cannabis_type": [
+          "pure cannabinoid"
+        ],
+        "publication_type": "original research",
+        "outcome_domain": [
+          "cognition",
+          "inflammation"
+        ],
+        "thc_pct": null,
+        "cbd_pct": null,
+        "dose_mg": null,
+        "strain_reported": "Delta-9-tetrahydrocannabinol (THC), 5 \u00b5M in vitro; 8 mg/kg s.c. in vivo",
+        "strain_normalized": null,
+        "duration_days": 22.0,
+        "inhaled_exposure_duration": null,
+        "administration_frequency": "daily",
+        "treatment_duration": "6 hours",
+        "sample_size": 6,
+        "puff_count": null,
+        "thc_mg_ml": null,
+        "thc_mg_g": null,
+        "thc_mg_kg": 8.0,
+        "cbd_mg_ml": null,
+        "cbd_mg_g": null,
+        "cbd_mg_kg": null,
+        "thc_uM": null,
+        "cbd_uM": null,
+        "species": null,
+        "classification_confidence": 0.925,
+        "classifier_version": "llm-pdf-reclassify-1.1.0"
+      },
+      "maude": {
+        "ingestion_status": "relevant",
+        "study_type": [
+          "Clinical (observational)",
+          "Cell Culture (Primary Cells)"
+        ],
+        "exposure_method": [
+          "unknown"
+        ],
+        "cannabis_type": [
+          "pure cannabinoid",
+          "concentrates"
+        ],
+        "publication_type": "original research",
+        "outcome_domain": [
+          "cognition",
+          "addiction"
+        ],
+        "thc_pct": null,
+        "cbd_pct": null,
+        "dose_mg": null,
+        "strain_reported": "THC; Sigma-Aldrich; Cayman Chemical; NIDA Drug Supply Program",
+        "strain_normalized": null,
+        "duration_days": null,
+        "inhaled_exposure_duration": null,
+        "administration_frequency": "once a day",
+        "treatment_duration": "6 hours",
+        "sample_size": 50,
+        "puff_count": null,
+        "thc_mg_ml": null,
+        "thc_mg_g": null,
+        "thc_mg_kg": 8.0,
+        "cbd_mg_ml": null,
+        "cbd_mg_g": null,
+        "cbd_mg_kg": null,
+        "thc_uM": null,
+        "cbd_uM": null,
+        "species": null,
+        "classification_confidence": 0.806,
+        "classifier_version": "maude-2.6.0",
+        "nodes_visited": [
+          "node0_ingestion",
+          "node1a_original",
+          "node2a_clinical",
+          "node2b_in_vivo",
+          "node2c_in_vitro",
+          "node2d_mixed"
+        ]
+      },
+      "disagreement": {
+        "fields": {
+          "study_type": {
+            "maude": [
+              "Clinical (observational)",
+              "Cell Culture (Primary Cells)"
+            ],
+            "llm": [
+              "Animal Models (Mouse)",
+              "Cell Culture (Primary Cells)"
+            ]
+          },
+          "exposure_method": {
+            "maude": [
+              "unknown"
+            ],
+            "llm": [
+              "injection cannabinoids"
+            ]
+          },
+          "outcome_domain": {
+            "maude": [
+              "cognition",
+              "addiction"
+            ],
+            "llm": [
+              "cognition",
+              "inflammation"
+            ]
+          },
+          "strain_reported": {
+            "maude": "THC; Sigma-Aldrich; Cayman Chemical; NIDA Drug Supply Program",
+            "llm": "Delta-9-tetrahydrocannabinol (THC), 5 \u00b5M in vitro; 8 mg/kg s.c. in vivo"
+          },
+          "duration_days": {
+            "maude": null,
+            "llm": 22.0
+          },
+          "administration_frequency": {
+            "maude": "once a day",
+            "llm": "daily"
+          },
+          "sample_size": {
+            "maude": 50,
+            "llm": 6
+          }
+        },
+        "agreed_fields": {
+          "ingestion_status": "relevant",
+          "cannabis_type": [
+            "pure cannabinoid",
+            "concentrates"
+          ],
+          "publication_type": "original research",
+          "thc_pct": null,
+          "cbd_pct": null,
+          "dose_mg": null,
+          "strain_normalized": null,
+          "inhaled_exposure_duration": null,
+          "treatment_duration": "6 hours",
+          "puff_count": null,
+          "thc_mg_ml": null,
+          "thc_mg_g": null,
+          "thc_mg_kg": 8.0,
+          "cbd_mg_ml": null,
+          "cbd_mg_g": null,
+          "cbd_mg_kg": null,
+          "thc_uM": null,
+          "cbd_uM": null,
+          "species": null
+        },
+        "high_level_count": 7,
+        "promotion_field_count": 1,
+        "flagged_for_review": true,
+        "promotion_fields": [
+          "study_type"
+        ],
+        "compare_fields": [
+          "ingestion_status",
+          "study_type",
+          "exposure_method",
+          "cannabis_type",
+          "publication_type",
+          "outcome_domain",
+          "thc_pct",
+          "cbd_pct",
+          "dose_mg",
+          "strain_reported",
+          "strain_normalized",
+          "duration_days",
+          "inhaled_exposure_duration",
+          "administration_frequency",
+          "treatment_duration",
+          "sample_size",
+          "puff_count",
+          "thc_mg_ml",
+          "thc_mg_g",
+          "thc_mg_kg",
+          "cbd_mg_ml",
+          "cbd_mg_g",
+          "cbd_mg_kg",
+          "thc_uM",
+          "cbd_uM",
+          "species"
+        ]
+      },
+      "scoped_disagreement": {
+        "fields": {
+          "exposure_method": {
+            "maude": [
+              "unknown"
+            ],
+            "llm": [
+              "injection cannabinoids"
+            ]
+          },
+          "duration_days": {
+            "maude": null,
+            "llm": 22.0
+          },
+          "administration_frequency": {
+            "maude": "once a day",
+            "llm": "daily"
+          },
+          "strain_reported": {
+            "maude": "THC; Sigma-Aldrich; Cayman Chemical; NIDA Drug Supply Program",
+            "llm": "Delta-9-tetrahydrocannabinol (THC), 5 \u00b5M in vitro; 8 mg/kg s.c. in vivo"
+          }
+        },
+        "agreed_fields": {
+          "cannabis_type": [
+            "pure cannabinoid",
+            "concentrates"
+          ],
+          "thc_mg_kg": 8.0,
+          "cbd_mg_kg": null,
+          "thc_mg_g": null,
+          "cbd_mg_g": null,
+          "thc_pct": null,
+          "cbd_pct": null,
+          "dose_mg": null,
+          "repeat_exposure_count": null,
+          "exposure_regimen_bin": null
+        },
+        "scoped_field_count": 14,
+        "disagreement_count": 4,
+        "agreement_rate": 0.7143,
+        "scope_key": "node7_in_vivo.7c",
+        "fields_in_scope": [
+          "exposure_method",
+          "cannabis_type",
+          "thc_mg_kg",
+          "cbd_mg_kg",
+          "thc_mg_g",
+          "cbd_mg_g",
+          "thc_pct",
+          "cbd_pct",
+          "dose_mg",
+          "duration_days",
+          "administration_frequency",
+          "strain_reported",
+          "repeat_exposure_count",
+          "exposure_regimen_bin"
+        ]
+      },
+      "node7_path": "node7_in_vivo.7c",
+      "flagged_for_review": true
+    },
+    {
+      "paper_id": 9044,
+      "pmid": "37862567",
+      "title": "Effects of Chronic, Low-Dose Cannabinoids, Cannabidiol, Delta-9-Tetrahydrocannabinol and a Combination of Both, on Amyloid Pathology in the 5xFAD Mouse Model of Alzheimer's Disease",
+      "full_text_link": "http://ddfv.ufv.es/bitstream/10641/3582/1/CAN-2023-0101-Arnanz_1P_JR.pdf",
+      "pdf_text_used": true,
+      "variant": "llm-pdf-reclassify",
+      "dry_run": true,
+      "locked_fields": [],
+      "before_confidence": 0.95,
+      "before_classifier_version": "llm-pdf-reclassify-1.1.0",
+      "status": "maude_paired",
+      "content_tier": "pdf_extracted",
+      "after_confidence": 0.95,
+      "after_classifier_version": "llm-pdf-reclassify-1.1.0",
+      "after_publication_type": "original research",
+      "after_study_type": [
+        "Animal Models (Mouse)"
+      ],
+      "routing_subnode": "node2b",
+      "changes": {},
+      "llm": {
+        "ingestion_status": "relevant",
+        "study_type": [
+          "Animal Models (Mouse)"
+        ],
+        "exposure_method": [
+          "injection cannabinoids"
+        ],
+        "cannabis_type": [
+          "pure cannabinoid"
+        ],
+        "publication_type": "original research",
+        "outcome_domain": [
+          "cognition",
+          "anxiety",
+          "neuroprotection",
+          "inflammation"
+        ],
+        "thc_pct": null,
+        "cbd_pct": null,
+        "dose_mg": null,
+        "strain_reported": "5xFAD",
+        "strain_normalized": null,
+        "duration_days": 28.0,
+        "inhaled_exposure_duration": null,
+        "administration_frequency": "daily",
+        "treatment_duration": null,
+        "sample_size": 16,
+        "puff_count": null,
+        "thc_mg_ml": null,
+        "thc_mg_g": null,
+        "thc_mg_kg": 0.205,
+        "cbd_mg_ml": null,
+        "cbd_mg_g": null,
+        "cbd_mg_kg": 0.273,
+        "thc_uM": null,
+        "cbd_uM": null,
+        "species": null,
+        "classification_confidence": 0.95,
+        "classifier_version": "llm-pdf-reclassify-1.1.0"
+      },
+      "maude": {
+        "ingestion_status": "relevant",
+        "study_type": [
+          "Clinical (RCT)"
+        ],
+        "exposure_method": [
+          "oral",
+          "injected"
+        ],
+        "cannabis_type": [
+          "concentrates",
+          "pure cannabinoid"
+        ],
+        "publication_type": "original research",
+        "outcome_domain": [
+          "cognition"
+        ],
+        "thc_pct": 10.0,
+        "cbd_pct": 10.0,
+        "dose_mg": 12.0,
+        "strain_reported": "\u03949-THC, CBD",
+        "strain_normalized": null,
+        "duration_days": 360.0,
+        "inhaled_exposure_duration": null,
+        "administration_frequency": "twice a day",
+        "treatment_duration": null,
+        "sample_size": null,
+        "puff_count": null,
+        "thc_mg_ml": null,
+        "thc_mg_g": null,
+        "thc_mg_kg": 0.205,
+        "cbd_mg_ml": null,
+        "cbd_mg_g": null,
+        "cbd_mg_kg": 0.273,
+        "thc_uM": null,
+        "cbd_uM": null,
+        "species": null,
+        "classification_confidence": 0.806,
+        "classifier_version": "maude-2.6.0",
+        "nodes_visited": [
+          "node0_ingestion",
+          "node1a_original",
+          "node2a_clinical",
+          "node2b_in_vivo",
+          "node2c_in_vitro",
+          "node2d_mixed"
+        ]
+      },
+      "disagreement": {
+        "fields": {
+          "study_type": {
+            "maude": [
+              "Clinical (RCT)"
+            ],
+            "llm": [
+              "Animal Models (Mouse)"
+            ]
+          },
+          "exposure_method": {
+            "maude": [
+              "oral",
+              "injected"
+            ],
+            "llm": [
+              "injection cannabinoids"
+            ]
+          },
+          "thc_pct": {
+            "maude": 10.0,
+            "llm": null
+          },
+          "cbd_pct": {
+            "maude": 10.0,
+            "llm": null
+          },
+          "dose_mg": {
+            "maude": 12.0,
+            "llm": null
+          },
+          "strain_reported": {
+            "maude": "\u03949-THC, CBD",
+            "llm": "5xFAD"
+          },
+          "duration_days": {
+            "maude": 360.0,
+            "llm": 28.0
+          },
+          "administration_frequency": {
+            "maude": "twice a day",
+            "llm": "daily"
+          },
+          "sample_size": {
+            "maude": null,
+            "llm": 16
+          }
+        },
+        "agreed_fields": {
+          "ingestion_status": "relevant",
+          "cannabis_type": [
+            "concentrates",
+            "pure cannabinoid"
+          ],
+          "publication_type": "original research",
+          "outcome_domain": [
+            "cognition"
+          ],
+          "strain_normalized": null,
+          "inhaled_exposure_duration": null,
+          "treatment_duration": null,
+          "puff_count": null,
+          "thc_mg_ml": null,
+          "thc_mg_g": null,
+          "thc_mg_kg": 0.205,
+          "cbd_mg_ml": null,
+          "cbd_mg_g": null,
+          "cbd_mg_kg": 0.273,
+          "thc_uM": null,
+          "cbd_uM": null,
+          "species": null
+        },
+        "high_level_count": 9,
+        "promotion_field_count": 1,
+        "flagged_for_review": true,
+        "promotion_fields": [
+          "study_type"
+        ],
+        "compare_fields": [
+          "ingestion_status",
+          "study_type",
+          "exposure_method",
+          "cannabis_type",
+          "publication_type",
+          "outcome_domain",
+          "thc_pct",
+          "cbd_pct",
+          "dose_mg",
+          "strain_reported",
+          "strain_normalized",
+          "duration_days",
+          "inhaled_exposure_duration",
+          "administration_frequency",
+          "treatment_duration",
+          "sample_size",
+          "puff_count",
+          "thc_mg_ml",
+          "thc_mg_g",
+          "thc_mg_kg",
+          "cbd_mg_ml",
+          "cbd_mg_g",
+          "cbd_mg_kg",
+          "thc_uM",
+          "cbd_uM",
+          "species"
+        ]
+      },
+      "scoped_disagreement": {
+        "fields": {
+          "exposure_method": {
+            "maude": [
+              "oral",
+              "injected"
+            ],
+            "llm": [
+              "injection cannabinoids"
+            ]
+          },
+          "thc_pct": {
+            "maude": 10.0,
+            "llm": null
+          },
+          "cbd_pct": {
+            "maude": 10.0,
+            "llm": null
+          },
+          "dose_mg": {
+            "maude": 12.0,
+            "llm": null
+          },
+          "duration_days": {
+            "maude": 360.0,
+            "llm": 28.0
+          },
+          "administration_frequency": {
+            "maude": "twice a day",
+            "llm": "daily"
+          },
+          "strain_reported": {
+            "maude": "\u03949-THC, CBD",
+            "llm": "5xFAD"
+          }
+        },
+        "agreed_fields": {
+          "cannabis_type": [
+            "concentrates",
+            "pure cannabinoid"
+          ],
+          "thc_mg_kg": 0.205,
+          "cbd_mg_kg": 0.273,
+          "thc_mg_g": null,
+          "cbd_mg_g": null,
+          "repeat_exposure_count": null,
+          "exposure_regimen_bin": null
+        },
+        "scoped_field_count": 14,
+        "disagreement_count": 7,
+        "agreement_rate": 0.5,
+        "scope_key": "node7_in_vivo.7c",
+        "fields_in_scope": [
+          "exposure_method",
+          "cannabis_type",
+          "thc_mg_kg",
+          "cbd_mg_kg",
+          "thc_mg_g",
+          "cbd_mg_g",
+          "thc_pct",
+          "cbd_pct",
+          "dose_mg",
+          "duration_days",
+          "administration_frequency",
+          "strain_reported",
+          "repeat_exposure_count",
+          "exposure_regimen_bin"
+        ]
+      },
+      "node7_path": "node7_in_vivo.7c",
+      "flagged_for_review": true
+    },
+    {
+      "paper_id": 9125,
+      "pmid": "37822828",
+      "title": "Effect of \u03b2-Caryophyllene on oxidative stress, glucose metabolism in the skeletal muscle of high fat diet and fructose-induced type-2 diabetic adult male rats",
+      "full_text_link": "https://www.bioinformation.net/019/97320630019417.pdf",
+      "pdf_text_used": false,
+      "variant": "llm-pdf-reclassify",
+      "dry_run": true,
+      "locked_fields": [],
+      "before_confidence": 0.925,
+      "before_classifier_version": "llm-pdf-reclassify-1.1.0",
+      "status": "maude_paired",
+      "content_tier": "pdf_extracted",
+      "after_confidence": 0.925,
+      "after_classifier_version": "llm-pdf-reclassify-1.1.0",
+      "after_publication_type": "original research",
+      "after_study_type": [
+        "Animal Models (Rat)"
+      ],
+      "routing_subnode": "node2b",
+      "changes": {},
+      "llm": {
+        "ingestion_status": "relevant",
+        "study_type": [
+          "Animal Models (Rat)"
+        ],
+        "exposure_method": [
+          "oral administration"
+        ],
+        "cannabis_type": [
+          "pure cannabinoid"
+        ],
+        "publication_type": "original research",
+        "outcome_domain": [
+          "inflammation",
+          "other"
+        ],
+        "thc_pct": null,
+        "cbd_pct": null,
+        "dose_mg": null,
+        "strain_reported": "\u03b2-Caryophyllene (Tokyo Chemicals Industry Co., LTD)",
+        "strain_normalized": null,
+        "duration_days": 30.0,
+        "inhaled_exposure_duration": null,
+        "administration_frequency": "daily",
+        "treatment_duration": null,
+        "sample_size": 6,
+        "puff_count": null,
+        "thc_mg_ml": null,
+        "thc_mg_g": null,
+        "thc_mg_kg": null,
+        "cbd_mg_ml": null,
+        "cbd_mg_g": null,
+        "cbd_mg_kg": null,
+        "thc_uM": null,
+        "cbd_uM": null,
+        "species": null,
+        "classification_confidence": 0.925,
+        "classifier_version": "llm-pdf-reclassify-1.1.0"
+      },
+      "maude": {
+        "ingestion_status": "relevant",
+        "study_type": [
+          "review"
+        ],
+        "exposure_method": [],
+        "cannabis_type": [],
+        "publication_type": "review",
+        "outcome_domain": [],
+        "thc_pct": null,
+        "cbd_pct": null,
+        "dose_mg": null,
+        "strain_reported": null,
+        "strain_normalized": null,
+        "duration_days": null,
+        "inhaled_exposure_duration": null,
+        "administration_frequency": null,
+        "treatment_duration": null,
+        "sample_size": null,
+        "puff_count": null,
+        "thc_mg_ml": null,
+        "thc_mg_g": null,
+        "thc_mg_kg": null,
+        "cbd_mg_ml": null,
+        "cbd_mg_g": null,
+        "cbd_mg_kg": null,
+        "thc_uM": null,
+        "cbd_uM": null,
+        "species": null,
+        "classification_confidence": 0.7,
+        "classifier_version": "maude-2.6.0",
+        "nodes_visited": [
+          "node0_ingestion",
+          "node1b_reviews"
+        ]
+      },
+      "disagreement": {
+        "fields": {
+          "study_type": {
+            "maude": [
+              "review"
+            ],
+            "llm": [
+              "Animal Models (Rat)"
+            ]
+          },
+          "exposure_method": {
+            "maude": [],
+            "llm": [
+              "oral administration"
+            ]
+          },
+          "cannabis_type": {
+            "maude": [],
+            "llm": [
+              "pure cannabinoid"
+            ]
+          },
+          "publication_type": {
+            "maude": "review",
+            "llm": "original research"
+          },
+          "outcome_domain": {
+            "maude": [],
+            "llm": [
+              "inflammation",
+              "other"
+            ]
+          },
+          "strain_reported": {
+            "maude": null,
+            "llm": "\u03b2-Caryophyllene (Tokyo Chemicals Industry Co., LTD)"
+          },
+          "duration_days": {
+            "maude": null,
+            "llm": 30.0
+          },
+          "administration_frequency": {
+            "maude": null,
+            "llm": "daily"
+          },
+          "sample_size": {
+            "maude": null,
+            "llm": 6
+          }
+        },
+        "agreed_fields": {
+          "ingestion_status": "relevant",
+          "thc_pct": null,
+          "cbd_pct": null,
+          "dose_mg": null,
+          "strain_normalized": null,
+          "inhaled_exposure_duration": null,
+          "treatment_duration": null,
+          "puff_count": null,
+          "thc_mg_ml": null,
+          "thc_mg_g": null,
+          "thc_mg_kg": null,
+          "cbd_mg_ml": null,
+          "cbd_mg_g": null,
+          "cbd_mg_kg": null,
+          "thc_uM": null,
+          "cbd_uM": null,
+          "species": null
+        },
+        "high_level_count": 9,
+        "promotion_field_count": 2,
+        "flagged_for_review": true,
+        "promotion_fields": [
+          "study_type",
+          "publication_type"
+        ],
+        "compare_fields": [
+          "ingestion_status",
+          "study_type",
+          "exposure_method",
+          "cannabis_type",
+          "publication_type",
+          "outcome_domain",
+          "thc_pct",
+          "cbd_pct",
+          "dose_mg",
+          "strain_reported",
+          "strain_normalized",
+          "duration_days",
+          "inhaled_exposure_duration",
+          "administration_frequency",
+          "treatment_duration",
+          "sample_size",
+          "puff_count",
+          "thc_mg_ml",
+          "thc_mg_g",
+          "thc_mg_kg",
+          "cbd_mg_ml",
+          "cbd_mg_g",
+          "cbd_mg_kg",
+          "thc_uM",
+          "cbd_uM",
+          "species"
+        ]
+      },
+      "scoped_disagreement": {
+        "fields": {
+          "exposure_method": {
+            "maude": [],
+            "llm": [
+              "oral administration"
+            ]
+          },
+          "cannabis_type": {
+            "maude": [],
+            "llm": [
+              "pure cannabinoid"
+            ]
+          },
+          "duration_days": {
+            "maude": null,
+            "llm": 30.0
+          },
+          "administration_frequency": {
+            "maude": null,
+            "llm": "daily"
+          },
+          "strain_reported": {
+            "maude": null,
+            "llm": "\u03b2-Caryophyllene (Tokyo Chemicals Industry Co., LTD)"
+          }
+        },
+        "agreed_fields": {
+          "thc_mg_kg": null,
+          "cbd_mg_kg": null,
+          "thc_mg_g": null,
+          "cbd_mg_g": null,
+          "thc_pct": null,
+          "cbd_pct": null,
+          "dose_mg": null,
+          "repeat_exposure_count": null,
+          "exposure_regimen_bin": null
+        },
+        "scoped_field_count": 14,
+        "disagreement_count": 5,
+        "agreement_rate": 0.6429,
+        "scope_key": "node7_in_vivo.7d",
+        "fields_in_scope": [
+          "exposure_method",
+          "cannabis_type",
+          "thc_mg_kg",
+          "cbd_mg_kg",
+          "thc_mg_g",
+          "cbd_mg_g",
+          "thc_pct",
+          "cbd_pct",
+          "dose_mg",
+          "duration_days",
+          "administration_frequency",
+          "strain_reported",
+          "repeat_exposure_count",
+          "exposure_regimen_bin"
+        ]
+      },
+      "node7_path": "node7_in_vivo.7d",
+      "flagged_for_review": true
+    },
+    {
+      "paper_id": 9166,
+      "pmid": "37801175",
+      "title": "GP120 and tenofovir alafenamide alter cannabinoid receptor 1 expression in hippocampus of mice",
+      "full_text_link": "https://link.springer.com/content/pdf/10.1007/s13365-023-01155-x.pdf",
+      "pdf_text_used": true,
+      "variant": "llm-pdf-reclassify",
+      "dry_run": true,
+      "locked_fields": [],
+      "before_confidence": 0.95,
+      "before_classifier_version": "llm-pdf-reclassify-1.1.0",
+      "status": "maude_paired",
+      "content_tier": "pdf_extracted",
+      "after_confidence": 0.95,
+      "after_classifier_version": "llm-pdf-reclassify-1.1.0",
+      "after_publication_type": "original research",
+      "after_study_type": [
+        "Animal Models (Mouse)"
+      ],
+      "routing_subnode": "node2b",
+      "changes": {},
+      "llm": {
+        "ingestion_status": "relevant",
+        "study_type": [
+          "Animal Models (Mouse)"
+        ],
+        "exposure_method": [
+          "injection cannabinoids"
+        ],
+        "cannabis_type": [
+          "pure cannabinoid"
+        ],
+        "publication_type": "original research",
+        "outcome_domain": [
+          "inflammation",
+          "neuroprotection",
+          "cognition"
+        ],
+        "thc_pct": null,
+        "cbd_pct": null,
+        "dose_mg": null,
+        "strain_reported": "gp120 transgenic mouse model (GFAP promoter); TAF (tenofovir alafenamide, MedChemExpress cat. no. HY-15232)",
+        "strain_normalized": null,
+        "duration_days": 28.0,
+        "inhaled_exposure_duration": null,
+        "administration_frequency": "daily",
+        "treatment_duration": null,
+        "sample_size": 10,
+        "puff_count": null,
+        "thc_mg_ml": null,
+        "thc_mg_g": null,
+        "thc_mg_kg": null,
+        "cbd_mg_ml": null,
+        "cbd_mg_g": null,
+        "cbd_mg_kg": null,
+        "thc_uM": null,
+        "cbd_uM": null,
+        "species": null,
+        "classification_confidence": 0.95,
+        "classifier_version": "llm-pdf-reclassify-1.1.0"
+      },
+      "maude": {
+        "ingestion_status": "relevant",
+        "study_type": [
+          "review"
+        ],
+        "exposure_method": [],
+        "cannabis_type": [],
+        "publication_type": "review",
+        "outcome_domain": [],
+        "thc_pct": null,
+        "cbd_pct": null,
+        "dose_mg": null,
+        "strain_reported": null,
+        "strain_normalized": null,
+        "duration_days": null,
+        "inhaled_exposure_duration": null,
+        "administration_frequency": null,
+        "treatment_duration": null,
+        "sample_size": null,
+        "puff_count": null,
+        "thc_mg_ml": null,
+        "thc_mg_g": null,
+        "thc_mg_kg": null,
+        "cbd_mg_ml": null,
+        "cbd_mg_g": null,
+        "cbd_mg_kg": null,
+        "thc_uM": null,
+        "cbd_uM": null,
+        "species": null,
+        "classification_confidence": 0.7,
+        "classifier_version": "maude-2.6.0",
+        "nodes_visited": [
+          "node0_ingestion",
+          "node1b_reviews"
+        ]
+      },
+      "disagreement": {
+        "fields": {
+          "study_type": {
+            "maude": [
+              "review"
+            ],
+            "llm": [
+              "Animal Models (Mouse)"
+            ]
+          },
+          "exposure_method": {
+            "maude": [],
+            "llm": [
+              "injection cannabinoids"
+            ]
+          },
+          "cannabis_type": {
+            "maude": [],
+            "llm": [
+              "pure cannabinoid"
+            ]
+          },
+          "publication_type": {
+            "maude": "review",
+            "llm": "original research"
+          },
+          "outcome_domain": {
+            "maude": [],
+            "llm": [
+              "inflammation",
+              "neuroprotection",
+              "cognition"
+            ]
+          },
+          "strain_reported": {
+            "maude": null,
+            "llm": "gp120 transgenic mouse model (GFAP promoter); TAF (tenofovir alafenamide, MedChemExpress cat. no. HY-15232)"
+          },
+          "duration_days": {
+            "maude": null,
+            "llm": 28.0
+          },
+          "administration_frequency": {
+            "maude": null,
+            "llm": "daily"
+          },
+          "sample_size": {
+            "maude": null,
+            "llm": 10
+          }
+        },
+        "agreed_fields": {
+          "ingestion_status": "relevant",
+          "thc_pct": null,
+          "cbd_pct": null,
+          "dose_mg": null,
+          "strain_normalized": null,
+          "inhaled_exposure_duration": null,
+          "treatment_duration": null,
+          "puff_count": null,
+          "thc_mg_ml": null,
+          "thc_mg_g": null,
+          "thc_mg_kg": null,
+          "cbd_mg_ml": null,
+          "cbd_mg_g": null,
+          "cbd_mg_kg": null,
+          "thc_uM": null,
+          "cbd_uM": null,
+          "species": null
+        },
+        "high_level_count": 9,
+        "promotion_field_count": 2,
+        "flagged_for_review": true,
+        "promotion_fields": [
+          "study_type",
+          "publication_type"
+        ],
+        "compare_fields": [
+          "ingestion_status",
+          "study_type",
+          "exposure_method",
+          "cannabis_type",
+          "publication_type",
+          "outcome_domain",
+          "thc_pct",
+          "cbd_pct",
+          "dose_mg",
+          "strain_reported",
+          "strain_normalized",
+          "duration_days",
+          "inhaled_exposure_duration",
+          "administration_frequency",
+          "treatment_duration",
+          "sample_size",
+          "puff_count",
+          "thc_mg_ml",
+          "thc_mg_g",
+          "thc_mg_kg",
+          "cbd_mg_ml",
+          "cbd_mg_g",
+          "cbd_mg_kg",
+          "thc_uM",
+          "cbd_uM",
+          "species"
+        ]
+      },
+      "scoped_disagreement": {
+        "fields": {
+          "exposure_method": {
+            "maude": [],
+            "llm": [
+              "injection cannabinoids"
+            ]
+          },
+          "cannabis_type": {
+            "maude": [],
+            "llm": [
+              "pure cannabinoid"
+            ]
+          },
+          "duration_days": {
+            "maude": null,
+            "llm": 28.0
+          },
+          "administration_frequency": {
+            "maude": null,
+            "llm": "daily"
+          },
+          "strain_reported": {
+            "maude": null,
+            "llm": "gp120 transgenic mouse model (GFAP promoter); TAF (tenofovir alafenamide, MedChemExpress cat. no. HY-15232)"
+          }
+        },
+        "agreed_fields": {
+          "thc_mg_kg": null,
+          "cbd_mg_kg": null,
+          "thc_mg_g": null,
+          "cbd_mg_g": null,
+          "thc_pct": null,
+          "cbd_pct": null,
+          "dose_mg": null,
+          "repeat_exposure_count": null,
+          "exposure_regimen_bin": null
+        },
+        "scoped_field_count": 14,
+        "disagreement_count": 5,
+        "agreement_rate": 0.6429,
+        "scope_key": "node7_in_vivo.7c",
+        "fields_in_scope": [
+          "exposure_method",
+          "cannabis_type",
+          "thc_mg_kg",
+          "cbd_mg_kg",
+          "thc_mg_g",
+          "cbd_mg_g",
+          "thc_pct",
+          "cbd_pct",
+          "dose_mg",
+          "duration_days",
+          "administration_frequency",
+          "strain_reported",
+          "repeat_exposure_count",
+          "exposure_regimen_bin"
+        ]
+      },
+      "node7_path": "node7_in_vivo.7c",
+      "flagged_for_review": true
+    },
+    {
+      "paper_id": 9877,
+      "pmid": "37434213",
+      "title": "Cannabis sativa demonstrates anti-hepatocellular carcinoma potentials in animal model: in silico and in vivo studies of the involvement of Akt",
+      "full_text_link": "https://jcannabisresearch.biomedcentral.com/counter/pdf/10.1186/s42238-023-00190-z",
+      "pdf_text_used": true,
+      "variant": "llm-pdf-reclassify",
+      "dry_run": true,
+      "locked_fields": [],
+      "before_confidence": 0.85,
+      "before_classifier_version": "llm-pdf-reclassify-1.2.1",
+      "status": "maude_paired",
+      "content_tier": "pdf_extracted",
+      "after_confidence": 0.85,
+      "after_classifier_version": "llm-pdf-reclassify-1.2.1",
+      "after_publication_type": "original research",
+      "after_study_type": [
+        "Animal Models (Rat)"
+      ],
+      "routing_subnode": "node2b",
+      "changes": {},
+      "llm": {
+        "ingestion_status": "relevant",
+        "study_type": [
+          "Animal Models (Rat)"
+        ],
+        "exposure_method": [
+          "oral administration"
+        ],
+        "cannabis_type": [
+          "pure cannabinoid"
+        ],
+        "publication_type": "original research",
+        "outcome_domain": [
+          "oncology",
+          "inflammation"
+        ],
+        "thc_pct": 16.26,
+        "cbd_pct": 14.98,
+        "dose_mg": null,
+        "strain_reported": "Wistar",
+        "strain_normalized": "Chemotype I",
+        "duration_days": 105.0,
+        "inhaled_exposure_duration": null,
+        "administration_frequency": "daily",
+        "treatment_duration": null,
+        "sample_size": 6,
+        "puff_count": null,
+        "thc_mg_ml": null,
+        "thc_mg_g": null,
+        "thc_mg_kg": 30.0,
+        "cbd_mg_ml": null,
+        "cbd_mg_g": null,
+        "cbd_mg_kg": null,
+        "thc_uM": null,
+        "cbd_uM": null,
+        "species": null,
+        "classification_confidence": 0.85,
+        "classifier_version": "llm-pdf-reclassify-1.2.1"
+      },
+      "maude": {
+        "ingestion_status": "relevant",
+        "study_type": [
+          "Cell Culture (Other In Vitro)"
+        ],
+        "exposure_method": [
+          "cannabinoids dissolved in media"
+        ],
+        "cannabis_type": [
+          "pure cannabinoid",
+          "concentrates"
+        ],
+        "publication_type": "original research",
+        "outcome_domain": [
+          "oncology"
+        ],
+        "thc_pct": null,
+        "cbd_pct": null,
+        "dose_mg": null,
+        "strain_reported": "Wistar, Lewis",
+        "strain_normalized": null,
+        "duration_days": null,
+        "inhaled_exposure_duration": null,
+        "administration_frequency": null,
+        "treatment_duration": "24 hours",
+        "sample_size": null,
+        "puff_count": null,
+        "thc_mg_ml": null,
+        "thc_mg_g": null,
+        "thc_mg_kg": null,
+        "cbd_mg_ml": null,
+        "cbd_mg_g": null,
+        "cbd_mg_kg": null,
+        "thc_uM": null,
+        "cbd_uM": null,
+        "species": null,
+        "classification_confidence": 0.799,
+        "classifier_version": "maude-2.6.0",
+        "nodes_visited": [
+          "node0_ingestion",
+          "node1a_original",
+          "node2a_clinical",
+          "node2b_in_vivo",
+          "node2c_in_vitro",
+          "node2d_mixed"
+        ]
+      },
+      "disagreement": {
+        "fields": {
+          "study_type": {
+            "maude": [
+              "Cell Culture (Other In Vitro)"
+            ],
+            "llm": [
+              "Animal Models (Rat)"
+            ]
+          },
+          "exposure_method": {
+            "maude": [
+              "cannabinoids dissolved in media"
+            ],
+            "llm": [
+              "oral administration"
+            ]
+          },
+          "thc_pct": {
+            "maude": null,
+            "llm": 16.26
+          },
+          "cbd_pct": {
+            "maude": null,
+            "llm": 14.98
+          },
+          "strain_reported": {
+            "maude": "Wistar, Lewis",
+            "llm": "Wistar"
+          },
+          "strain_normalized": {
+            "maude": null,
+            "llm": "Chemotype I"
+          },
+          "duration_days": {
+            "maude": null,
+            "llm": 105.0
+          },
+          "administration_frequency": {
+            "maude": null,
+            "llm": "daily"
+          },
+          "treatment_duration": {
+            "maude": "24 hours",
+            "llm": null
+          },
+          "sample_size": {
+            "maude": null,
+            "llm": 6
+          },
+          "thc_mg_kg": {
+            "maude": null,
+            "llm": 30.0
+          }
+        },
+        "agreed_fields": {
+          "ingestion_status": "relevant",
+          "cannabis_type": [
+            "pure cannabinoid",
+            "concentrates"
+          ],
+          "publication_type": "original research",
+          "outcome_domain": [
+            "oncology"
+          ],
+          "dose_mg": null,
+          "inhaled_exposure_duration": null,
+          "puff_count": null,
+          "thc_mg_ml": null,
+          "thc_mg_g": null,
+          "cbd_mg_ml": null,
+          "cbd_mg_g": null,
+          "cbd_mg_kg": null,
+          "thc_uM": null,
+          "cbd_uM": null,
+          "species": null
+        },
+        "high_level_count": 11,
+        "promotion_field_count": 1,
+        "flagged_for_review": true,
+        "promotion_fields": [
+          "study_type"
+        ],
+        "compare_fields": [
+          "ingestion_status",
+          "study_type",
+          "exposure_method",
+          "cannabis_type",
+          "publication_type",
+          "outcome_domain",
+          "thc_pct",
+          "cbd_pct",
+          "dose_mg",
+          "strain_reported",
+          "strain_normalized",
+          "duration_days",
+          "inhaled_exposure_duration",
+          "administration_frequency",
+          "treatment_duration",
+          "sample_size",
+          "puff_count",
+          "thc_mg_ml",
+          "thc_mg_g",
+          "thc_mg_kg",
+          "cbd_mg_ml",
+          "cbd_mg_g",
+          "cbd_mg_kg",
+          "thc_uM",
+          "cbd_uM",
+          "species"
+        ]
+      },
+      "scoped_disagreement": {
+        "fields": {
+          "exposure_method": {
+            "maude": [
+              "cannabinoids dissolved in media"
+            ],
+            "llm": [
+              "oral administration"
+            ]
+          },
+          "thc_mg_kg": {
+            "maude": null,
+            "llm": 30.0
+          },
+          "thc_pct": {
+            "maude": null,
+            "llm": 16.26
+          },
+          "cbd_pct": {
+            "maude": null,
+            "llm": 14.98
+          },
+          "duration_days": {
+            "maude": null,
+            "llm": 105.0
+          },
+          "administration_frequency": {
+            "maude": null,
+            "llm": "daily"
+          },
+          "strain_reported": {
+            "maude": "Wistar, Lewis",
+            "llm": "Wistar"
+          }
+        },
+        "agreed_fields": {
+          "cannabis_type": [
+            "pure cannabinoid",
+            "concentrates"
+          ],
+          "cbd_mg_kg": null,
+          "thc_mg_g": null,
+          "cbd_mg_g": null,
+          "dose_mg": null,
+          "repeat_exposure_count": null,
+          "exposure_regimen_bin": null
+        },
+        "scoped_field_count": 14,
+        "disagreement_count": 7,
+        "agreement_rate": 0.5,
+        "scope_key": "node7_in_vivo.7d",
+        "fields_in_scope": [
+          "exposure_method",
+          "cannabis_type",
+          "thc_mg_kg",
+          "cbd_mg_kg",
+          "thc_mg_g",
+          "cbd_mg_g",
+          "thc_pct",
+          "cbd_pct",
+          "dose_mg",
+          "duration_days",
+          "administration_frequency",
+          "strain_reported",
+          "repeat_exposure_count",
+          "exposure_regimen_bin"
+        ]
+      },
+      "node7_path": "node7_in_vivo.7d",
+      "flagged_for_review": true
+    },
+    {
+      "paper_id": 10047,
+      "pmid": "37341881",
+      "title": "Poly(ethylene glycol)-b-poly(epsilon-caprolactone) nanoparticles as a platform for the improved oral delivery of cannabidiol",
+      "full_text_link": "https://www.researchsquare.com/article/rs-2962018/latest.pdf",
+      "pdf_text_used": true,
+      "variant": "llm-pdf-reclassify",
+      "dry_run": true,
+      "locked_fields": [],
+      "before_confidence": 0.925,
+      "before_classifier_version": "llm-pdf-reclassify-1.2.1",
+      "status": "maude_paired",
+      "content_tier": "pdf_extracted",
+      "after_confidence": 0.925,
+      "after_classifier_version": "llm-pdf-reclassify-1.2.1",
+      "after_publication_type": "original research",
+      "after_study_type": [
+        "Animal Models (Rat)",
+        "Cell Culture (Other In Vitro)"
+      ],
+      "routing_subnode": "node2b",
+      "changes": {},
+      "llm": {
+        "ingestion_status": "relevant",
+        "study_type": [
+          "Animal Models (Rat)",
+          "Cell Culture (Other In Vitro)"
+        ],
+        "exposure_method": [
+          "oral administration"
+        ],
+        "cannabis_type": [
+          "pure cannabinoid"
+        ],
+        "publication_type": "original research",
+        "outcome_domain": [
+          "other"
+        ],
+        "thc_pct": null,
+        "cbd_pct": null,
+        "dose_mg": null,
+        "strain_reported": "Sprague-Dawley",
+        "strain_normalized": null,
+        "duration_days": 1.0,
+        "inhaled_exposure_duration": null,
+        "administration_frequency": "single dose",
+        "treatment_duration": null,
+        "sample_size": 5,
+        "puff_count": null,
+        "thc_mg_ml": null,
+        "thc_mg_g": null,
+        "thc_mg_kg": null,
+        "cbd_mg_ml": 0.12,
+        "cbd_mg_g": null,
+        "cbd_mg_kg": 14.5,
+        "thc_uM": null,
+        "cbd_uM": null,
+        "species": null,
+        "classification_confidence": 0.925,
+        "classifier_version": "llm-pdf-reclassify-1.2.1"
+      },
+      "maude": {
+        "ingestion_status": "relevant",
+        "study_type": [
+          "Animal Models (Rat)"
+        ],
+        "exposure_method": [
+          "unknown"
+        ],
+        "cannabis_type": [
+          "pure cannabinoid"
+        ],
+        "publication_type": "original research",
+        "outcome_domain": [
+          "neuroprotection"
+        ],
+        "thc_pct": null,
+        "cbd_pct": null,
+        "dose_mg": null,
+        "strain_reported": "cannabidiol",
+        "strain_normalized": null,
+        "duration_days": null,
+        "inhaled_exposure_duration": null,
+        "administration_frequency": null,
+        "treatment_duration": null,
+        "sample_size": 5,
+        "puff_count": null,
+        "thc_mg_ml": null,
+        "thc_mg_g": null,
+        "thc_mg_kg": null,
+        "cbd_mg_ml": null,
+        "cbd_mg_g": null,
+        "cbd_mg_kg": 14.5,
+        "thc_uM": null,
+        "cbd_uM": null,
+        "species": null,
+        "classification_confidence": 0.763,
+        "classifier_version": "maude-2.6.0",
+        "nodes_visited": [
+          "node0_ingestion",
+          "node1a_original",
+          "node2c_in_vitro"
+        ]
+      },
+      "disagreement": {
+        "fields": {
+          "exposure_method": {
+            "maude": [
+              "unknown"
+            ],
+            "llm": [
+              "oral administration"
+            ]
+          },
+          "outcome_domain": {
+            "maude": [
+              "neuroprotection"
+            ],
+            "llm": [
+              "other"
+            ]
+          },
+          "strain_reported": {
+            "maude": "cannabidiol",
+            "llm": "Sprague-Dawley"
+          },
+          "duration_days": {
+            "maude": null,
+            "llm": 1.0
+          },
+          "administration_frequency": {
+            "maude": null,
+            "llm": "single dose"
+          },
+          "cbd_mg_ml": {
+            "maude": null,
+            "llm": 0.12
+          }
+        },
+        "agreed_fields": {
+          "ingestion_status": "relevant",
+          "study_type": [
+            "Animal Models (Rat)"
+          ],
+          "cannabis_type": [
+            "pure cannabinoid"
+          ],
+          "publication_type": "original research",
+          "thc_pct": null,
+          "cbd_pct": null,
+          "dose_mg": null,
+          "strain_normalized": null,
+          "inhaled_exposure_duration": null,
+          "treatment_duration": null,
+          "sample_size": 5,
+          "puff_count": null,
+          "thc_mg_ml": null,
+          "thc_mg_g": null,
+          "thc_mg_kg": null,
+          "cbd_mg_g": null,
+          "cbd_mg_kg": 14.5,
+          "thc_uM": null,
+          "cbd_uM": null,
+          "species": null
+        },
+        "high_level_count": 6,
+        "promotion_field_count": 0,
+        "flagged_for_review": true,
+        "promotion_fields": [],
+        "compare_fields": [
+          "ingestion_status",
+          "study_type",
+          "exposure_method",
+          "cannabis_type",
+          "publication_type",
+          "outcome_domain",
+          "thc_pct",
+          "cbd_pct",
+          "dose_mg",
+          "strain_reported",
+          "strain_normalized",
+          "duration_days",
+          "inhaled_exposure_duration",
+          "administration_frequency",
+          "treatment_duration",
+          "sample_size",
+          "puff_count",
+          "thc_mg_ml",
+          "thc_mg_g",
+          "thc_mg_kg",
+          "cbd_mg_ml",
+          "cbd_mg_g",
+          "cbd_mg_kg",
+          "thc_uM",
+          "cbd_uM",
+          "species"
+        ]
+      },
+      "scoped_disagreement": {
+        "fields": {
+          "exposure_method": {
+            "maude": [
+              "unknown"
+            ],
+            "llm": [
+              "oral administration"
+            ]
+          },
+          "duration_days": {
+            "maude": null,
+            "llm": 1.0
+          },
+          "administration_frequency": {
+            "maude": null,
+            "llm": "single dose"
+          },
+          "strain_reported": {
+            "maude": "cannabidiol",
+            "llm": "Sprague-Dawley"
+          }
+        },
+        "agreed_fields": {
+          "cannabis_type": [
+            "pure cannabinoid"
+          ],
+          "thc_mg_kg": null,
+          "cbd_mg_kg": 14.5,
+          "thc_mg_g": null,
+          "cbd_mg_g": null,
+          "thc_pct": null,
+          "cbd_pct": null,
+          "dose_mg": null,
+          "repeat_exposure_count": null,
+          "exposure_regimen_bin": null
+        },
+        "scoped_field_count": 14,
+        "disagreement_count": 4,
+        "agreement_rate": 0.7143,
+        "scope_key": "node7_in_vivo.7d",
+        "fields_in_scope": [
+          "exposure_method",
+          "cannabis_type",
+          "thc_mg_kg",
+          "cbd_mg_kg",
+          "thc_mg_g",
+          "cbd_mg_g",
+          "thc_pct",
+          "cbd_pct",
+          "dose_mg",
+          "duration_days",
+          "administration_frequency",
+          "strain_reported",
+          "repeat_exposure_count",
+          "exposure_regimen_bin"
+        ]
+      },
+      "node7_path": "node7_in_vivo.7d",
+      "flagged_for_review": true
+    },
+    {
+      "paper_id": 10050,
+      "pmid": "37340498",
+      "title": "Propylene glycol and Kolliphor as solvents for systemic delivery of cannabinoids via intraperitoneal and subcutaneous routes in preclinical studies: a comparative technical note",
+      "full_text_link": "https://jcannabisresearch.biomedcentral.com/counter/pdf/10.1186/s42238-023-00194-9",
+      "pdf_text_used": true,
+      "variant": "llm-pdf-reclassify",
+      "dry_run": true,
+      "locked_fields": [],
+      "before_confidence": 0.95,
+      "before_classifier_version": "llm-pdf-reclassify-1.2.1",
+      "status": "maude_paired",
+      "content_tier": "pdf_extracted",
+      "after_confidence": 0.95,
+      "after_classifier_version": "llm-pdf-reclassify-1.2.1",
+      "after_publication_type": "original research",
+      "after_study_type": [
+        "Animal Models (Rat)"
+      ],
+      "routing_subnode": "node2b",
+      "changes": {},
+      "llm": {
+        "ingestion_status": "relevant",
+        "study_type": [
+          "Animal Models (Rat)"
+        ],
+        "exposure_method": [
+          "injection cannabinoids"
+        ],
+        "cannabis_type": [
+          "pure cannabinoid"
+        ],
+        "publication_type": "original research",
+        "outcome_domain": [
+          "other"
+        ],
+        "thc_pct": null,
+        "cbd_pct": null,
+        "dose_mg": null,
+        "strain_reported": "Sprague Dawley",
+        "strain_normalized": null,
+        "duration_days": 56.0,
+        "inhaled_exposure_duration": null,
+        "administration_frequency": "daily",
+        "treatment_duration": null,
+        "sample_size": 12,
+        "puff_count": null,
+        "thc_mg_ml": null,
+        "thc_mg_g": null,
+        "thc_mg_kg": 5.0,
+        "cbd_mg_ml": null,
+        "cbd_mg_g": null,
+        "cbd_mg_kg": 5.0,
+        "thc_uM": null,
+        "cbd_uM": null,
+        "species": null,
+        "classification_confidence": 0.95,
+        "classifier_version": "llm-pdf-reclassify-1.2.1"
+      },
+      "maude": {
+        "ingestion_status": "relevant",
+        "study_type": [
+          "review"
+        ],
+        "exposure_method": [],
+        "cannabis_type": [],
+        "publication_type": "review",
+        "outcome_domain": [],
+        "thc_pct": null,
+        "cbd_pct": null,
+        "dose_mg": null,
+        "strain_reported": null,
+        "strain_normalized": null,
+        "duration_days": null,
+        "inhaled_exposure_duration": null,
+        "administration_frequency": null,
+        "treatment_duration": null,
+        "sample_size": null,
+        "puff_count": null,
+        "thc_mg_ml": null,
+        "thc_mg_g": null,
+        "thc_mg_kg": null,
+        "cbd_mg_ml": null,
+        "cbd_mg_g": null,
+        "cbd_mg_kg": null,
+        "thc_uM": null,
+        "cbd_uM": null,
+        "species": null,
+        "classification_confidence": 0.7,
+        "classifier_version": "maude-2.6.0",
+        "nodes_visited": [
+          "node0_ingestion",
+          "node1b_reviews"
+        ]
+      },
+      "disagreement": {
+        "fields": {
+          "study_type": {
+            "maude": [
+              "review"
+            ],
+            "llm": [
+              "Animal Models (Rat)"
+            ]
+          },
+          "exposure_method": {
+            "maude": [],
+            "llm": [
+              "injection cannabinoids"
+            ]
+          },
+          "cannabis_type": {
+            "maude": [],
+            "llm": [
+              "pure cannabinoid"
+            ]
+          },
+          "publication_type": {
+            "maude": "review",
+            "llm": "original research"
+          },
+          "outcome_domain": {
+            "maude": [],
+            "llm": [
+              "other"
+            ]
+          },
+          "strain_reported": {
+            "maude": null,
+            "llm": "Sprague Dawley"
+          },
+          "duration_days": {
+            "maude": null,
+            "llm": 56.0
+          },
+          "administration_frequency": {
+            "maude": null,
+            "llm": "daily"
+          },
+          "sample_size": {
+            "maude": null,
+            "llm": 12
+          },
+          "thc_mg_kg": {
+            "maude": null,
+            "llm": 5.0
+          },
+          "cbd_mg_kg": {
+            "maude": null,
+            "llm": 5.0
+          }
+        },
+        "agreed_fields": {
+          "ingestion_status": "relevant",
+          "thc_pct": null,
+          "cbd_pct": null,
+          "dose_mg": null,
+          "strain_normalized": null,
+          "inhaled_exposure_duration": null,
+          "treatment_duration": null,
+          "puff_count": null,
+          "thc_mg_ml": null,
+          "thc_mg_g": null,
+          "cbd_mg_ml": null,
+          "cbd_mg_g": null,
+          "thc_uM": null,
+          "cbd_uM": null,
+          "species": null
+        },
+        "high_level_count": 11,
+        "promotion_field_count": 2,
+        "flagged_for_review": true,
+        "promotion_fields": [
+          "study_type",
+          "publication_type"
+        ],
+        "compare_fields": [
+          "ingestion_status",
+          "study_type",
+          "exposure_method",
+          "cannabis_type",
+          "publication_type",
+          "outcome_domain",
+          "thc_pct",
+          "cbd_pct",
+          "dose_mg",
+          "strain_reported",
+          "strain_normalized",
+          "duration_days",
+          "inhaled_exposure_duration",
+          "administration_frequency",
+          "treatment_duration",
+          "sample_size",
+          "puff_count",
+          "thc_mg_ml",
+          "thc_mg_g",
+          "thc_mg_kg",
+          "cbd_mg_ml",
+          "cbd_mg_g",
+          "cbd_mg_kg",
+          "thc_uM",
+          "cbd_uM",
+          "species"
+        ]
+      },
+      "scoped_disagreement": {
+        "fields": {
+          "exposure_method": {
+            "maude": [],
+            "llm": [
+              "injection cannabinoids"
+            ]
+          },
+          "cannabis_type": {
+            "maude": [],
+            "llm": [
+              "pure cannabinoid"
+            ]
+          },
+          "thc_mg_kg": {
+            "maude": null,
+            "llm": 5.0
+          },
+          "cbd_mg_kg": {
+            "maude": null,
+            "llm": 5.0
+          },
+          "duration_days": {
+            "maude": null,
+            "llm": 56.0
+          },
+          "administration_frequency": {
+            "maude": null,
+            "llm": "daily"
+          },
+          "strain_reported": {
+            "maude": null,
+            "llm": "Sprague Dawley"
+          }
+        },
+        "agreed_fields": {
+          "thc_mg_g": null,
+          "cbd_mg_g": null,
+          "thc_pct": null,
+          "cbd_pct": null,
+          "dose_mg": null,
+          "repeat_exposure_count": null,
+          "exposure_regimen_bin": null
+        },
+        "scoped_field_count": 14,
+        "disagreement_count": 7,
+        "agreement_rate": 0.5,
+        "scope_key": "node7_in_vivo.7c",
+        "fields_in_scope": [
+          "exposure_method",
+          "cannabis_type",
+          "thc_mg_kg",
+          "cbd_mg_kg",
+          "thc_mg_g",
+          "cbd_mg_g",
+          "thc_pct",
+          "cbd_pct",
+          "dose_mg",
+          "duration_days",
+          "administration_frequency",
+          "strain_reported",
+          "repeat_exposure_count",
+          "exposure_regimen_bin"
+        ]
+      },
+      "node7_path": "node7_in_vivo.7c",
+      "flagged_for_review": true
+    },
+    {
+      "paper_id": 10070,
+      "pmid": "37330587",
+      "title": "Cannabis sativa-based oils against aluminum-induced neurotoxicity",
+      "full_text_link": "https://www.nature.com/articles/s41598-023-36966-9.pdf",
+      "pdf_text_used": true,
+      "variant": "llm-pdf-reclassify",
+      "dry_run": true,
+      "locked_fields": [],
+      "before_confidence": 0.9,
+      "before_classifier_version": "llm-pdf-reclassify-1.2.1",
+      "status": "maude_paired",
+      "content_tier": "pdf_extracted",
+      "after_confidence": 0.9,
+      "after_classifier_version": "llm-pdf-reclassify-1.2.1",
+      "after_publication_type": "original research",
+      "after_study_type": [
+        "Animal Models (Other)"
+      ],
+      "routing_subnode": "node2b",
+      "changes": {},
+      "llm": {
+        "ingestion_status": "relevant",
+        "study_type": [
+          "Animal Models (Other)"
+        ],
+        "exposure_method": [
+          "oral administration"
+        ],
+        "cannabis_type": [
+          "concentrates",
+          "pure cannabinoid"
+        ],
+        "publication_type": "original research",
+        "outcome_domain": [
+          "neuroprotection",
+          "anxiety",
+          "cognition",
+          "inflammation"
+        ],
+        "thc_pct": null,
+        "cbd_pct": null,
+        "dose_mg": null,
+        "strain_reported": "APEPI (transgenic Cannabis sativa strain, THC-rich oil and CBD-rich oil donated by APEPI-RJ)",
+        "strain_normalized": null,
+        "duration_days": 15.0,
+        "inhaled_exposure_duration": null,
+        "administration_frequency": null,
+        "treatment_duration": null,
+        "sample_size": 24,
+        "puff_count": null,
+        "thc_mg_ml": null,
+        "thc_mg_g": null,
+        "thc_mg_kg": null,
+        "cbd_mg_ml": null,
+        "cbd_mg_g": null,
+        "cbd_mg_kg": null,
+        "thc_uM": null,
+        "cbd_uM": null,
+        "species": null,
+        "classification_confidence": 0.9,
+        "classifier_version": "llm-pdf-reclassify-1.2.1"
+      },
+      "maude": {
+        "ingestion_status": "relevant",
+        "study_type": [],
+        "exposure_method": [
+          "cannabinoids dissolved in media"
+        ],
+        "cannabis_type": [
+          "pure cannabinoid"
+        ],
+        "publication_type": "original research",
+        "outcome_domain": [
+          "other"
+        ],
+        "thc_pct": null,
+        "cbd_pct": null,
+        "dose_mg": 5.5,
+        "strain_reported": "CBD, THC",
+        "strain_normalized": null,
+        "duration_days": null,
+        "inhaled_exposure_duration": null,
+        "administration_frequency": null,
+        "treatment_duration": "5 minutes",
+        "sample_size": 24,
+        "puff_count": null,
+        "thc_mg_ml": null,
+        "thc_mg_g": null,
+        "thc_mg_kg": null,
+        "cbd_mg_ml": null,
+        "cbd_mg_g": null,
+        "cbd_mg_kg": null,
+        "thc_uM": null,
+        "cbd_uM": null,
+        "species": null,
+        "classification_confidence": 0.789,
+        "classifier_version": "maude-2.6.0",
+        "nodes_visited": [
+          "node0_ingestion",
+          "node1a_original",
+          "node2a_clinical",
+          "node2c_in_vitro",
+          "node2d_mixed"
+        ]
+      },
+      "disagreement": {
+        "fields": {
+          "study_type": {
+            "maude": [],
+            "llm": [
+              "Animal Models (Other)"
+            ]
+          },
+          "exposure_method": {
+            "maude": [
+              "cannabinoids dissolved in media"
+            ],
+            "llm": [
+              "oral administration"
+            ]
+          },
+          "outcome_domain": {
+            "maude": [
+              "other"
+            ],
+            "llm": [
+              "neuroprotection",
+              "anxiety",
+              "cognition",
+              "inflammation"
+            ]
+          },
+          "dose_mg": {
+            "maude": 5.5,
+            "llm": null
+          },
+          "strain_reported": {
+            "maude": "CBD, THC",
+            "llm": "APEPI (transgenic Cannabis sativa strain, THC-rich oil and CBD-rich oil donated by APEPI-RJ)"
+          },
+          "duration_days": {
+            "maude": null,
+            "llm": 15.0
+          },
+          "treatment_duration": {
+            "maude": "5 minutes",
+            "llm": null
+          }
+        },
+        "agreed_fields": {
+          "ingestion_status": "relevant",
+          "cannabis_type": [
+            "pure cannabinoid"
+          ],
+          "publication_type": "original research",
+          "thc_pct": null,
+          "cbd_pct": null,
+          "strain_normalized": null,
+          "inhaled_exposure_duration": null,
+          "administration_frequency": null,
+          "sample_size": 24,
+          "puff_count": null,
+          "thc_mg_ml": null,
+          "thc_mg_g": null,
+          "thc_mg_kg": null,
+          "cbd_mg_ml": null,
+          "cbd_mg_g": null,
+          "cbd_mg_kg": null,
+          "thc_uM": null,
+          "cbd_uM": null,
+          "species": null
+        },
+        "high_level_count": 7,
+        "promotion_field_count": 1,
+        "flagged_for_review": true,
+        "promotion_fields": [
+          "study_type"
+        ],
+        "compare_fields": [
+          "ingestion_status",
+          "study_type",
+          "exposure_method",
+          "cannabis_type",
+          "publication_type",
+          "outcome_domain",
+          "thc_pct",
+          "cbd_pct",
+          "dose_mg",
+          "strain_reported",
+          "strain_normalized",
+          "duration_days",
+          "inhaled_exposure_duration",
+          "administration_frequency",
+          "treatment_duration",
+          "sample_size",
+          "puff_count",
+          "thc_mg_ml",
+          "thc_mg_g",
+          "thc_mg_kg",
+          "cbd_mg_ml",
+          "cbd_mg_g",
+          "cbd_mg_kg",
+          "thc_uM",
+          "cbd_uM",
+          "species"
+        ]
+      },
+      "scoped_disagreement": {
+        "fields": {
+          "exposure_method": {
+            "maude": [
+              "cannabinoids dissolved in media"
+            ],
+            "llm": [
+              "oral administration"
+            ]
+          },
+          "dose_mg": {
+            "maude": 5.5,
+            "llm": null
+          },
+          "duration_days": {
+            "maude": null,
+            "llm": 15.0
+          },
+          "strain_reported": {
+            "maude": "CBD, THC",
+            "llm": "APEPI (transgenic Cannabis sativa strain, THC-rich oil and CBD-rich oil donated by APEPI-RJ)"
+          }
+        },
+        "agreed_fields": {
+          "cannabis_type": [
+            "pure cannabinoid"
+          ],
+          "thc_mg_kg": null,
+          "cbd_mg_kg": null,
+          "thc_mg_g": null,
+          "cbd_mg_g": null,
+          "thc_pct": null,
+          "cbd_pct": null,
+          "administration_frequency": null,
+          "repeat_exposure_count": null,
+          "exposure_regimen_bin": null
+        },
+        "scoped_field_count": 14,
+        "disagreement_count": 4,
+        "agreement_rate": 0.7143,
+        "scope_key": "node7_in_vivo.7d",
+        "fields_in_scope": [
+          "exposure_method",
+          "cannabis_type",
+          "thc_mg_kg",
+          "cbd_mg_kg",
+          "thc_mg_g",
+          "cbd_mg_g",
+          "thc_pct",
+          "cbd_pct",
+          "dose_mg",
+          "duration_days",
+          "administration_frequency",
+          "strain_reported",
+          "repeat_exposure_count",
+          "exposure_regimen_bin"
+        ]
+      },
+      "node7_path": "node7_in_vivo.7d",
+      "flagged_for_review": true
+    },
+    {
+      "paper_id": 11539,
+      "pmid": "39122786",
+      "title": "Dental pulp stem cells-derived cannabidiol-treated organoid-like microspheroids show robust osteogenic potential via upregulation of WNT6",
+      "full_text_link": "https://www.nature.com/articles/s42003-024-06655-y.pdf",
+      "pdf_text_used": true,
+      "variant": "llm-pdf-reclassify",
+      "dry_run": true,
+      "locked_fields": [],
+      "before_confidence": 0.90833336,
+      "before_classifier_version": "llm-pdf-reclassify-1.2.1",
+      "status": "maude_paired",
+      "content_tier": "pdf_extracted",
+      "after_confidence": 0.90833336,
+      "after_classifier_version": "llm-pdf-reclassify-1.2.1",
+      "after_publication_type": "original research",
+      "after_study_type": [
+        "Cell Culture (Primary Cells)",
+        "Cell Culture (Organoids)",
+        "Animal Models (Mouse)"
+      ],
+      "routing_subnode": "node2b",
+      "changes": {},
+      "llm": {
+        "ingestion_status": "relevant",
+        "study_type": [
+          "Cell Culture (Primary Cells)",
+          "Cell Culture (Organoids)",
+          "Animal Models (Mouse)"
+        ],
+        "exposure_method": [
+          "cannabinoids dissolved in media",
+          "injection cannabinoids"
+        ],
+        "cannabis_type": [
+          "pure cannabinoid"
+        ],
+        "publication_type": "original research",
+        "outcome_domain": [
+          "inflammation",
+          "other"
+        ],
+        "thc_pct": null,
+        "cbd_pct": null,
+        "dose_mg": null,
+        "strain_reported": "Cannabidiol (CBD), Sigma, USA; 2.5 \u00b5M optimal concentration; DKK1 (Wnt inhibitor, 100 ng/mL, Sino biological, China)",
+        "strain_normalized": null,
+        "duration_days": 56.0,
+        "inhaled_exposure_duration": null,
+        "administration_frequency": "medium replaced every 48 hours",
+        "treatment_duration": "14 days",
+        "sample_size": 8,
+        "puff_count": null,
+        "thc_mg_ml": null,
+        "thc_mg_g": null,
+        "thc_mg_kg": null,
+        "cbd_mg_ml": 0.000795,
+        "cbd_mg_g": null,
+        "cbd_mg_kg": null,
+        "thc_uM": null,
+        "cbd_uM": null,
+        "species": null,
+        "classification_confidence": 0.90833336,
+        "classifier_version": "llm-pdf-reclassify-1.2.1"
+      },
+      "maude": {
+        "ingestion_status": "relevant",
+        "study_type": [
+          "Cell Culture (Organoids)"
+        ],
+        "exposure_method": [
+          "cannabinoids dissolved in media"
+        ],
+        "cannabis_type": [
+          "pure cannabinoid"
+        ],
+        "publication_type": "original research",
+        "outcome_domain": [
+          "other"
+        ],
+        "thc_pct": null,
+        "cbd_pct": null,
+        "dose_mg": 50.0,
+        "strain_reported": "CBD 2; CBD; Sigma-Aldrich",
+        "strain_normalized": null,
+        "duration_days": null,
+        "inhaled_exposure_duration": null,
+        "administration_frequency": null,
+        "treatment_duration": "24 hours",
+        "sample_size": 20,
+        "puff_count": null,
+        "thc_mg_ml": null,
+        "thc_mg_g": null,
+        "thc_mg_kg": null,
+        "cbd_mg_ml": null,
+        "cbd_mg_g": null,
+        "cbd_mg_kg": null,
+        "thc_uM": null,
+        "cbd_uM": null,
+        "species": null,
+        "classification_confidence": 0.799,
+        "classifier_version": "maude-2.6.0",
+        "nodes_visited": [
+          "node0_ingestion",
+          "node1a_original",
+          "node2a_clinical",
+          "node2b_in_vivo",
+          "node2c_in_vitro",
+          "node2d_mixed"
+        ]
+      },
+      "disagreement": {
+        "fields": {
+          "dose_mg": {
+            "maude": 50.0,
+            "llm": null
+          },
+          "strain_reported": {
+            "maude": "CBD 2; CBD; Sigma-Aldrich",
+            "llm": "Cannabidiol (CBD), Sigma, USA; 2.5 \u00b5M optimal concentration; DKK1 (Wnt inhibitor, 100 ng/mL, Sino biological, China)"
+          },
+          "duration_days": {
+            "maude": null,
+            "llm": 56.0
+          },
+          "administration_frequency": {
+            "maude": null,
+            "llm": "medium replaced every 48 hours"
+          },
+          "treatment_duration": {
+            "maude": "24 hours",
+            "llm": "14 days"
+          },
+          "sample_size": {
+            "maude": 20,
+            "llm": 8
+          },
+          "cbd_mg_ml": {
+            "maude": null,
+            "llm": 0.000795
+          }
+        },
+        "agreed_fields": {
+          "ingestion_status": "relevant",
+          "study_type": [
+            "Cell Culture (Organoids)"
+          ],
+          "exposure_method": [
+            "cannabinoids dissolved in media"
+          ],
+          "cannabis_type": [
+            "pure cannabinoid"
+          ],
+          "publication_type": "original research",
+          "outcome_domain": [
+            "other"
+          ],
+          "thc_pct": null,
+          "cbd_pct": null,
+          "strain_normalized": null,
+          "inhaled_exposure_duration": null,
+          "puff_count": null,
+          "thc_mg_ml": null,
+          "thc_mg_g": null,
+          "thc_mg_kg": null,
+          "cbd_mg_g": null,
+          "cbd_mg_kg": null,
+          "thc_uM": null,
+          "cbd_uM": null,
+          "species": null
+        },
+        "high_level_count": 7,
+        "promotion_field_count": 0,
+        "flagged_for_review": true,
+        "promotion_fields": [],
+        "compare_fields": [
+          "ingestion_status",
+          "study_type",
+          "exposure_method",
+          "cannabis_type",
+          "publication_type",
+          "outcome_domain",
+          "thc_pct",
+          "cbd_pct",
+          "dose_mg",
+          "strain_reported",
+          "strain_normalized",
+          "duration_days",
+          "inhaled_exposure_duration",
+          "administration_frequency",
+          "treatment_duration",
+          "sample_size",
+          "puff_count",
+          "thc_mg_ml",
+          "thc_mg_g",
+          "thc_mg_kg",
+          "cbd_mg_ml",
+          "cbd_mg_g",
+          "cbd_mg_kg",
+          "thc_uM",
+          "cbd_uM",
+          "species"
+        ]
+      },
+      "scoped_disagreement": {
+        "fields": {
+          "dose_mg": {
+            "maude": 50.0,
+            "llm": null
+          },
+          "duration_days": {
+            "maude": null,
+            "llm": 56.0
+          },
+          "administration_frequency": {
+            "maude": null,
+            "llm": "medium replaced every 48 hours"
+          },
+          "strain_reported": {
+            "maude": "CBD 2; CBD; Sigma-Aldrich",
+            "llm": "Cannabidiol (CBD), Sigma, USA; 2.5 \u00b5M optimal concentration; DKK1 (Wnt inhibitor, 100 ng/mL, Sino biological, China)"
+          }
+        },
+        "agreed_fields": {
+          "exposure_method": [
+            "cannabinoids dissolved in media"
+          ],
+          "cannabis_type": [
+            "pure cannabinoid"
+          ],
+          "thc_mg_kg": null,
+          "cbd_mg_kg": null,
+          "thc_mg_g": null,
+          "cbd_mg_g": null,
+          "thc_pct": null,
+          "cbd_pct": null,
+          "repeat_exposure_count": null,
+          "exposure_regimen_bin": null
+        },
+        "scoped_field_count": 14,
+        "disagreement_count": 4,
+        "agreement_rate": 0.7143,
+        "scope_key": "node7_in_vivo.7c",
+        "fields_in_scope": [
+          "exposure_method",
+          "cannabis_type",
+          "thc_mg_kg",
+          "cbd_mg_kg",
+          "thc_mg_g",
+          "cbd_mg_g",
+          "thc_pct",
+          "cbd_pct",
+          "dose_mg",
+          "duration_days",
+          "administration_frequency",
+          "strain_reported",
+          "repeat_exposure_count",
+          "exposure_regimen_bin"
+        ]
+      },
+      "node7_path": "node7_in_vivo.7c",
+      "flagged_for_review": true
+    },
+    {
+      "paper_id": 11701,
+      "pmid": "38797491",
+      "title": "Cannabidiol in the dorsal hippocampus attenuates emotional and cognitive impairments related to neuropathic pain: The role of prelimbic neocortex-hippocampal connections",
+      "full_text_link": "https://www.researchsquare.com/article/rs-2781595/latest.pdf",
+      "pdf_text_used": true,
+      "variant": "llm-pdf-reclassify",
+      "dry_run": true,
+      "locked_fields": [],
+      "before_confidence": 0.95,
+      "before_classifier_version": "llm-pdf-reclassify-1.2.1",
+      "status": "maude_paired",
+      "content_tier": "pdf_extracted",
+      "after_confidence": 0.95,
+      "after_classifier_version": "llm-pdf-reclassify-1.2.1",
+      "after_publication_type": "original research",
+      "after_study_type": [
+        "Animal Models (Rat)"
+      ],
+      "routing_subnode": "node2b",
+      "changes": {},
+      "llm": {
+        "ingestion_status": "relevant",
+        "study_type": [
+          "Animal Models (Rat)"
+        ],
+        "exposure_method": [
+          "injection cannabinoids"
+        ],
+        "cannabis_type": [
+          "pure cannabinoid"
+        ],
+        "publication_type": "original research",
+        "outcome_domain": [
+          "pain",
+          "anxiety",
+          "cognition",
+          "neuroprotection"
+        ],
+        "thc_pct": null,
+        "cbd_pct": null,
+        "dose_mg": null,
+        "strain_reported": "Wistar (Rattus norvegicus); CBD ~99.9% pure, FarmaUSA; AM251, Tocris Bioscience; WAY-100635, Sigma-Aldrich",
+        "strain_normalized": null,
+        "duration_days": 28.0,
+        "inhaled_exposure_duration": null,
+        "administration_frequency": "single acute injection",
+        "treatment_duration": null,
+        "sample_size": 9,
+        "puff_count": null,
+        "thc_mg_ml": null,
+        "thc_mg_g": null,
+        "thc_mg_kg": null,
+        "cbd_mg_ml": null,
+        "cbd_mg_g": null,
+        "cbd_mg_kg": null,
+        "thc_uM": null,
+        "cbd_uM": null,
+        "species": null,
+        "classification_confidence": 0.95,
+        "classifier_version": "llm-pdf-reclassify-1.2.1"
+      },
+      "maude": {
+        "ingestion_status": "relevant",
+        "study_type": [
+          "review",
+          "perspectives paper"
+        ],
+        "exposure_method": [],
+        "cannabis_type": [],
+        "publication_type": "review",
+        "outcome_domain": [],
+        "thc_pct": null,
+        "cbd_pct": null,
+        "dose_mg": null,
+        "strain_reported": null,
+        "strain_normalized": null,
+        "duration_days": null,
+        "inhaled_exposure_duration": null,
+        "administration_frequency": null,
+        "treatment_duration": null,
+        "sample_size": null,
+        "puff_count": null,
+        "thc_mg_ml": null,
+        "thc_mg_g": null,
+        "thc_mg_kg": null,
+        "cbd_mg_ml": null,
+        "cbd_mg_g": null,
+        "cbd_mg_kg": null,
+        "thc_uM": null,
+        "cbd_uM": null,
+        "species": null,
+        "classification_confidence": 0.7,
+        "classifier_version": "maude-2.6.0",
+        "nodes_visited": [
+          "node0_ingestion",
+          "node1b_reviews",
+          "node3c"
+        ]
+      },
+      "disagreement": {
+        "fields": {
+          "study_type": {
+            "maude": [
+              "review",
+              "perspectives paper"
+            ],
+            "llm": [
+              "Animal Models (Rat)"
+            ]
+          },
+          "exposure_method": {
+            "maude": [],
+            "llm": [
+              "injection cannabinoids"
+            ]
+          },
+          "cannabis_type": {
+            "maude": [],
+            "llm": [
+              "pure cannabinoid"
+            ]
+          },
+          "publication_type": {
+            "maude": "review",
+            "llm": "original research"
+          },
+          "outcome_domain": {
+            "maude": [],
+            "llm": [
+              "pain",
+              "anxiety",
+              "cognition",
+              "neuroprotection"
+            ]
+          },
+          "strain_reported": {
+            "maude": null,
+            "llm": "Wistar (Rattus norvegicus); CBD ~99.9% pure, FarmaUSA; AM251, Tocris Bioscience; WAY-100635, Sigma-Aldrich"
+          },
+          "duration_days": {
+            "maude": null,
+            "llm": 28.0
+          },
+          "administration_frequency": {
+            "maude": null,
+            "llm": "single acute injection"
+          },
+          "sample_size": {
+            "maude": null,
+            "llm": 9
+          }
+        },
+        "agreed_fields": {
+          "ingestion_status": "relevant",
+          "thc_pct": null,
+          "cbd_pct": null,
+          "dose_mg": null,
+          "strain_normalized": null,
+          "inhaled_exposure_duration": null,
+          "treatment_duration": null,
+          "puff_count": null,
+          "thc_mg_ml": null,
+          "thc_mg_g": null,
+          "thc_mg_kg": null,
+          "cbd_mg_ml": null,
+          "cbd_mg_g": null,
+          "cbd_mg_kg": null,
+          "thc_uM": null,
+          "cbd_uM": null,
+          "species": null
+        },
+        "high_level_count": 9,
+        "promotion_field_count": 2,
+        "flagged_for_review": true,
+        "promotion_fields": [
+          "study_type",
+          "publication_type"
+        ],
+        "compare_fields": [
+          "ingestion_status",
+          "study_type",
+          "exposure_method",
+          "cannabis_type",
+          "publication_type",
+          "outcome_domain",
+          "thc_pct",
+          "cbd_pct",
+          "dose_mg",
+          "strain_reported",
+          "strain_normalized",
+          "duration_days",
+          "inhaled_exposure_duration",
+          "administration_frequency",
+          "treatment_duration",
+          "sample_size",
+          "puff_count",
+          "thc_mg_ml",
+          "thc_mg_g",
+          "thc_mg_kg",
+          "cbd_mg_ml",
+          "cbd_mg_g",
+          "cbd_mg_kg",
+          "thc_uM",
+          "cbd_uM",
+          "species"
+        ]
+      },
+      "scoped_disagreement": {
+        "fields": {
+          "exposure_method": {
+            "maude": [],
+            "llm": [
+              "injection cannabinoids"
+            ]
+          },
+          "cannabis_type": {
+            "maude": [],
+            "llm": [
+              "pure cannabinoid"
+            ]
+          },
+          "duration_days": {
+            "maude": null,
+            "llm": 28.0
+          },
+          "administration_frequency": {
+            "maude": null,
+            "llm": "single acute injection"
+          },
+          "strain_reported": {
+            "maude": null,
+            "llm": "Wistar (Rattus norvegicus); CBD ~99.9% pure, FarmaUSA; AM251, Tocris Bioscience; WAY-100635, Sigma-Aldrich"
+          }
+        },
+        "agreed_fields": {
+          "thc_mg_kg": null,
+          "cbd_mg_kg": null,
+          "thc_mg_g": null,
+          "cbd_mg_g": null,
+          "thc_pct": null,
+          "cbd_pct": null,
+          "dose_mg": null,
+          "repeat_exposure_count": null,
+          "exposure_regimen_bin": null
+        },
+        "scoped_field_count": 14,
+        "disagreement_count": 5,
+        "agreement_rate": 0.6429,
+        "scope_key": "node7_in_vivo.7c",
+        "fields_in_scope": [
+          "exposure_method",
+          "cannabis_type",
+          "thc_mg_kg",
+          "cbd_mg_kg",
+          "thc_mg_g",
+          "cbd_mg_g",
+          "thc_pct",
+          "cbd_pct",
+          "dose_mg",
+          "duration_days",
+          "administration_frequency",
+          "strain_reported",
+          "repeat_exposure_count",
+          "exposure_regimen_bin"
+        ]
+      },
+      "node7_path": "node7_in_vivo.7c",
+      "flagged_for_review": true
+    }
+  ]
+}

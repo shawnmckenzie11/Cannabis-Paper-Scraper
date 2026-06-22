@@ -508,14 +508,14 @@ def run_harvest_pipeline(
     progress_callback=None
 ) -> tuple[int, int, int]:
     """Runs the full harvesting pipeline (PubMed + Semantic Scholar),
-    performs acronym relevance pre-filtering, LLM/heuristic classification,
+    performs acronym relevance pre-filtering, Maude classification (or optional LLM pass),
     and stores records in the SQLite database.
-    
+
     Args:
         query: Search query
         max_results: Max papers to harvest
         update: Skip existing cataloged PMIDs
-        classify: True to run LLM pass, False for heuristics fallback
+        classify: True to run Claude LLM pass instead of Maude; False uses Maude (default)
         progress_callback: Optional callable for live progress text updates
         
     Returns:
@@ -607,14 +607,17 @@ def run_harvest_pipeline(
         abstract = paper.get("abstract") or ""
         logger.info(f"[{idx+1}/{total_to_process}] Extracting fields for: '{title[:60]}...'")
         if progress_callback:
-            progress_callback(f"Ingesting ({idx+1}/{total_to_process}): '{title[:45]}...' [Score & Classification]")
+            progress_callback(f"Ingesting ({idx+1}/{total_to_process}): '{title[:45]}...' [Maude Classification]")
         
         try:
-            # Extract parameters via Heuristics or LLM
+            # Classify via Maude (default) or Claude when --classify / AUTO_HARVEST_CLASSIFY is set
             extracted = classifier.process_paper_metadata(
                 title=title,
                 abstract=abstract,
-                run_llm=classify
+                run_llm=classify,
+                full_text_link=paper.get("full_text_link"),
+                pmid=paper.get("pmid"),
+                doi=paper.get("doi"),
             )
             
             # Merge extracted data back into our main paper record

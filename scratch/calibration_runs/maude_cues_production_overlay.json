@@ -1,0 +1,702 @@
+{
+  "version": 2,
+  "updated_at": "2026-06-20T14:22:11.316640",
+  "description": "Maude routing cues: base phrases, PubMed metadata rules, and dashboard-learned cues.",
+  "metadata_routing": [
+    {
+      "id": "pubmed_meta_analysis_prefix",
+      "match": "publication type: meta-analysis",
+      "match_field": "abstract",
+      "node_id": "node1b_reviews",
+      "publication_type": "review",
+      "study_type": "meta-analysis",
+      "extra_nodes": [
+        "node3b"
+      ],
+      "score": 0.55,
+      "source": "harvest.py PubMed PublicationTypeList",
+      "priority": 100
+    },
+    {
+      "id": "pubmed_review_prefix",
+      "match": "publication type: review",
+      "match_field": "abstract",
+      "node_id": "node1b_reviews",
+      "publication_type": "review",
+      "study_type": "review",
+      "extra_nodes": [],
+      "score": 0.5,
+      "source": "harvest.py PubMed PublicationTypeList",
+      "priority": 90
+    }
+  ],
+  "nodes": {
+    "node0_ingestion": {
+      "tree_label": "Node 0 \u00b7 Ingestion",
+      "purpose": "Decide whether title/abstract warrant full classification (relevant vs tangential vs irrelevant).",
+      "positive_cues": [
+        "cannabis",
+        "marijuana",
+        "cannabinoid",
+        "cannabinoids",
+        "tetrahydrocannabinol",
+        "cannabidiol",
+        "THC",
+        "CBD",
+        "endocannabinoid",
+        "endocannabinoids",
+        "cb1",
+        "cb2",
+        "hemp",
+        "administration",
+        "pharmacology",
+        "clinical outcome",
+        "medicinal cannabis",
+        "medical cannabis"
+      ],
+      "negative_cues": [
+        "hemp fiber",
+        "hemp seed oil only",
+        "agricultural yield",
+        "textile",
+        "taxonomy-only",
+        "legal/policy-only",
+        "unrelated acronym collisions",
+        "common bile duct",
+        "corticobasal degeneration",
+        "gpr55 background only",
+        "lpi orphan receptor"
+      ],
+      "learned_cues": [
+        {
+          "cue": "tetrahydrocannabinol",
+          "field": "ingestion_status",
+          "source": "dashboard",
+          "source_paper_id": 3653,
+          "explanation": "has many cannabis terms in abstract: Cannabis sativa tetrahydrocannabivarin, \u0394-9- tetrahydrocannabinol,  cannabinoids",
+          "added_at": "2026-06-20T13:44:10.352085",
+          "migrated_from": "maude_learned_cues.json"
+        },
+        {
+          "cue": "cannabis",
+          "field": "ingestion_status",
+          "source": "dashboard",
+          "source_paper_id": 16469,
+          "explanation": "says \"cannabis\" and \"cbd\" in abstract",
+          "added_at": "2026-06-20T13:45:55.708043",
+          "migrated_from": "maude_learned_cues.json"
+        },
+        {
+          "cue": "cannabinoid",
+          "field": "ingestion_status",
+          "source": "dashboard",
+          "source_paper_id": 26360,
+          "explanation": "says \"cannabinoid\" and \"cannabis\" in title",
+          "added_at": "2026-06-20T13:46:37.418704",
+          "migrated_from": "maude_learned_cues.json"
+        }
+      ]
+    },
+    "node1b_reviews": {
+      "tree_label": "Node 1B \u00b7 Reviews / Secondary Literature",
+      "purpose": "Route reviews, systematic reviews, meta-analyses, editorials, comments, letters, and perspectives BEFORE original-research extraction.",
+      "positive_cues": [
+        "overview paper",
+        "systematic review",
+        "meta-analysis",
+        "meta analysis",
+        "narrative synthesis",
+        "narrative review",
+        "scoping review",
+        "progress report",
+        "state of the art",
+        "mini-review",
+        "minireview",
+        "literature review",
+        "studies reviewed here",
+        "editorial",
+        "commentary",
+        "letter to the editor",
+        "perspectives paper"
+      ],
+      "title_only_cues": [
+        "review",
+        "perspective",
+        "perspectives"
+      ],
+      "negative_cues": [
+        "chart review",
+        "retrospective review",
+        "record review",
+        "review of patient records",
+        "review of medical records",
+        "epidemiological overview",
+        "overview and survey",
+        "we conducted",
+        "participants were randomized",
+        "n=",
+        "Methods section with new experiments"
+      ],
+      "learned_cues": [
+        {
+          "cue": "pooled the evidence",
+          "field": "publication_type",
+          "source": "dashboard",
+          "source_paper_id": 6716,
+          "explanation": "in abstract is says \"pooled the evidence\"",
+          "added_at": "2026-06-19T21:15:21.803837",
+          "migrated_from": "maude_learned_cues.json"
+        },
+        {
+          "cue": "we will summarize",
+          "field": "publication_type",
+          "source": "dashboard",
+          "source_paper_id": 31049,
+          "explanation": "says in abstract \"we will summarize\"",
+          "added_at": "2026-06-20T13:39:47.292459",
+          "migrated_from": "maude_learned_cues.json"
+        }
+      ]
+    },
+    "node1c_case_report": {
+      "tree_label": "Node 1C \u00b7 Case Report",
+      "purpose": "Detailed report of one or a few cases.",
+      "positive_cues": [
+        "case report",
+        "case series",
+        "we report a case",
+        "we present a case",
+        "single patient",
+        "series of patients",
+        "present a series of",
+        "a case of",
+        "case of a patient"
+      ],
+      "negative_cues": [
+        "randomized",
+        "cohort of",
+        "n=",
+        "systematic search"
+      ],
+      "learned_cues": []
+    },
+    "node1a_original": {
+      "tree_label": "Node 1A \u00b7 Original Papers",
+      "purpose": "Papers with primary data, new results, or experimental/clinical observations.",
+      "positive_cues": [
+        "Methods",
+        "Results",
+        "in vivo",
+        "in vitro",
+        "exposure",
+        "participants",
+        "cohort",
+        "sample size",
+        "case-control",
+        "animal experiment",
+        "cell line assay",
+        "intervention arm",
+        "dose"
+      ],
+      "negative_cues": [
+        "we review",
+        "literature suggests",
+        "previous studies have shown",
+        "summarize evidence",
+        "studies reviewed here",
+        "progress report"
+      ],
+      "learned_cues": []
+    },
+    "node2a_clinical": {
+      "tree_label": "Node 2A \u00b7 Clinical",
+      "purpose": "Human subjects: interventional and observational designs.",
+      "positive_cues": [
+        "participants",
+        "patients",
+        "randomized",
+        "placebo",
+        "trial",
+        "cohort",
+        "adverse events",
+        "dose",
+        "product form",
+        "route of administration"
+      ],
+      "negative_cues": [
+        "cell culture",
+        "primary neurons",
+        "mouse",
+        "rat",
+        "organoid",
+        "assay plate"
+      ],
+      "learned_cues": []
+    },
+    "node2b_in_vivo": {
+      "tree_label": "Node 2B \u00b7 In Vivo",
+      "purpose": "Animal whole-organism experiments.",
+      "positive_cues": [
+        "mouse",
+        "mice",
+        "rat",
+        "hamster",
+        "oral gavage",
+        "intraperitoneal",
+        "behavior test",
+        "tissue analysis",
+        "sacrificed animals"
+      ],
+      "negative_cues": [
+        "human participant",
+        "clinical trial",
+        "patient-reported outcome",
+        "chart review"
+      ],
+      "learned_cues": []
+    },
+    "node2c_in_vitro": {
+      "tree_label": "Node 2C \u00b7 In Vitro",
+      "purpose": "Cell-based, biochemical, receptor, and assay studies.",
+      "positive_cues": [
+        "cell line",
+        "primary cells",
+        "immortalized cells",
+        "cultured",
+        "incubated",
+        "concentration",
+        "receptor binding",
+        "assay",
+        "ELISA",
+        "microglia",
+        "THP-1",
+        "A549"
+      ],
+      "negative_cues": [
+        "patient",
+        "participant",
+        "trial",
+        "animal dosing",
+        "behavioral endpoint"
+      ],
+      "learned_cues": []
+    },
+    "node2d_mixed": {
+      "tree_label": "Node 2D \u00b7 Mixed / Unclear",
+      "purpose": "Papers combining multiple study types.",
+      "positive_cues": [],
+      "negative_cues": [],
+      "learned_cues": []
+    },
+    "node3a_systematic_review": {
+      "tree_label": "Node 3A \u00b7 Systematic Review",
+      "purpose": "Structured, replicable literature reviews.",
+      "positive_cues": [
+        "systematic review",
+        "structured search",
+        "PRISMA",
+        "included studies"
+      ],
+      "negative_cues": [],
+      "learned_cues": []
+    },
+    "node3b_meta_analysis": {
+      "tree_label": "Node 3B \u00b7 Meta-analysis",
+      "purpose": "Statistical pooling of multiple studies.",
+      "positive_cues": [
+        "meta-analysis",
+        "pooled estimate",
+        "forest plot"
+      ],
+      "negative_cues": [],
+      "learned_cues": []
+    },
+    "node3c_narrative_editorial": {
+      "tree_label": "Node 3C \u00b7 Narrative / Editorial / Comment",
+      "purpose": "Narrative reviews, editorials, commentary, letters, perspectives.",
+      "positive_cues": [
+        "narrative review",
+        "editorial",
+        "commentary",
+        "perspective"
+      ],
+      "negative_cues": [],
+      "learned_cues": []
+    }
+  },
+  "resolutions": [
+    {
+      "paper_id": 9196,
+      "batch_id": "llm_pdf_maude_ab_20260619_191055_171",
+      "title": "Effect of Cannabidiol in LPS-Induced Toxicity in Astrocytes: Possible Role for Cannabinoid Type-1 Receptors",
+      "resolved_at": "2026-06-19T20:22:24.495304",
+      "fields": [
+        {
+          "field": "publication_type",
+          "resolved_value": "original research",
+          "source": "expert",
+          "explanation": "in abstract it says \"In the present study, we investigated the neuroprotective effects of cannabidiol (CBD), a non-psychoactive component derived from marijuana (Cannabis sativa L.), on astrocytic bioenergetic balance in a primary cell culture model\"",
+          "maude_before": "review",
+          "llm_value": "original research",
+          "cue_added": "in the present study"
+        }
+      ],
+      "cue_updates": [
+        {
+          "node_id": "node1b_reviews",
+          "field": "publication_type",
+          "cue": "in the present study"
+        }
+      ],
+      "maude_reclassified": {
+        "publication_type": "review",
+        "study_type": [
+          "review"
+        ],
+        "classification_confidence": 0.59,
+        "nodes_visited": [
+          "node0_ingestion",
+          "node1b_reviews"
+        ]
+      },
+      "partial": true,
+      "migrated_from": "maude_learned_cues.json"
+    },
+    {
+      "paper_id": 6716,
+      "batch_id": "llm_pdf_maude_ab_20260619_191055_171",
+      "title": "Assessing rates and predictors of cannabis-associated psychotic symptoms across observational, experimental and medical research",
+      "resolved_at": "2026-06-19T20:27:00.303867",
+      "fields": [
+        {
+          "field": "publication_type",
+          "resolved_value": "review",
+          "source": "expert",
+          "explanation": "in adstract it says \"While distinct study designs have been used to examine CAPS, an overarching synthesis of the existing findings has not yet been carried forward. To that end, we quantitatively pooled the evidence\"",
+          "maude_before": "original research",
+          "llm_value": "review",
+          "cue_added": "ed to examine caps"
+        }
+      ],
+      "cue_updates": [
+        {
+          "node_id": "node1b_reviews",
+          "field": "publication_type",
+          "cue": "ed to examine caps"
+        }
+      ],
+      "maude_reclassified": {
+        "publication_type": "original research",
+        "study_type": [
+          "Clinical (observational)"
+        ],
+        "classification_confidence": 0.83,
+        "nodes_visited": [
+          "node0_ingestion",
+          "node1a_original",
+          "node2b_in_vivo"
+        ]
+      },
+      "partial": true,
+      "migrated_from": "maude_learned_cues.json"
+    },
+    {
+      "paper_id": 6716,
+      "batch_id": "llm_pdf_maude_ab_20260619_191734_924",
+      "title": "Assessing rates and predictors of cannabis-associated psychotic symptoms across observational, experimental and medical research",
+      "resolved_at": "2026-06-19T21:15:21.803666",
+      "fields": [
+        {
+          "field": "publication_type",
+          "resolved_value": "review",
+          "source": "expert",
+          "explanation": "in abstract is says \"pooled the evidence\"",
+          "maude_before": "original research",
+          "llm_value": "review",
+          "cue_added": "pooled the evidence"
+        }
+      ],
+      "cue_updates": [
+        {
+          "node_id": "node1b_reviews",
+          "field": "publication_type",
+          "cue": "pooled the evidence"
+        }
+      ],
+      "maude_reclassified": {
+        "publication_type": "original research",
+        "study_type": [
+          "Clinical (observational)"
+        ],
+        "classification_confidence": 0.83,
+        "nodes_visited": [
+          "node0_ingestion",
+          "node1a_original",
+          "node2b_in_vivo"
+        ]
+      },
+      "partial": true,
+      "migrated_from": "maude_learned_cues.json"
+    },
+    {
+      "paper_id": 29,
+      "batch_id": "llm_pdf_maude_ab_20260619_191055_171",
+      "title": "A mobile phone application for the assessment and management of youth mental health problems in primary care: a randomised controlled trial",
+      "resolved_at": "2026-06-20T13:13:21.119987",
+      "fields": [
+        {
+          "field": "publication_type",
+          "resolved_value": "original research",
+          "source": "expert",
+          "explanation": "abstract says explicitly \"We conducted a randomised controlled trial\"",
+          "maude_before": "review",
+          "llm_value": "original research",
+          "cue_added": "we conducted a randomised controlled trial"
+        }
+      ],
+      "cue_updates": [
+        {
+          "node_id": "node1b_reviews",
+          "field": "publication_type",
+          "cue": "we conducted a randomised controlled trial"
+        }
+      ],
+      "maude_reclassified": {
+        "publication_type": "review",
+        "study_type": [
+          "review"
+        ],
+        "classification_confidence": 0.84,
+        "nodes_visited": [
+          "node0_ingestion",
+          "node1b_reviews"
+        ]
+      },
+      "partial": true,
+      "migrated_from": "maude_learned_cues.json"
+    },
+    {
+      "paper_id": 29273,
+      "batch_id": "llm_pdf_maude_ab_20260619_191734_924",
+      "title": "Polypharmacology Shakes Hands with Complex Aetiopathology",
+      "resolved_at": "2026-06-20T13:37:26.925826",
+      "fields": [
+        {
+          "field": "study_type",
+          "resolved_value": [
+            "perspectives paper",
+            "review"
+          ],
+          "source": "expert",
+          "explanation": "in abstract it says \"we revisit\"",
+          "maude_before": [
+            "Clinical (observational)"
+          ],
+          "llm_value": [
+            "perspectives paper",
+            "review"
+          ],
+          "cue_added": "we revisit"
+        }
+      ],
+      "cue_updates": [
+        {
+          "node_id": "node1b_reviews",
+          "field": "study_type",
+          "cue": "we revisit"
+        }
+      ],
+      "maude_reclassified": {
+        "publication_type": "original research",
+        "study_type": [
+          "Clinical (observational)"
+        ],
+        "classification_confidence": 0.64,
+        "nodes_visited": [
+          "node0_ingestion",
+          "node1a_original"
+        ]
+      },
+      "partial": true,
+      "migrated_from": "maude_learned_cues.json"
+    },
+    {
+      "paper_id": 31049,
+      "batch_id": "llm_pdf_maude_ab_20260619_191734_924",
+      "title": "Cannabinoid modulation of mother-infant interaction: is it just about milk?",
+      "resolved_at": "2026-06-20T13:39:47.292309",
+      "fields": [
+        {
+          "field": "publication_type",
+          "resolved_value": "review",
+          "source": "expert",
+          "explanation": "says in abstract \"we will summarize\"",
+          "maude_before": "original research",
+          "llm_value": "review",
+          "cue_added": "we will summarize"
+        }
+      ],
+      "cue_updates": [
+        {
+          "node_id": "node1b_reviews",
+          "field": "publication_type",
+          "cue": "we will summarize"
+        }
+      ],
+      "maude_reclassified": {
+        "publication_type": "original research",
+        "study_type": [
+          "Rodents"
+        ],
+        "classification_confidence": 0.83,
+        "nodes_visited": [
+          "node0_ingestion",
+          "node1a_original",
+          "node2b_in_vivo"
+        ]
+      },
+      "partial": true,
+      "migrated_from": "maude_learned_cues.json"
+    },
+    {
+      "paper_id": 3653,
+      "batch_id": "llm_pdf_maude_ab_20260619_191055_171",
+      "title": "Exploring Cannabis sativa L for Anti-Alzheimer Potential: An Extensive Computational Study including Molecular Docking, Molecular Dynamics, and ADMET Assessments",
+      "resolved_at": "2026-06-20T13:44:10.351745",
+      "fields": [
+        {
+          "field": "ingestion_status",
+          "resolved_value": "relevant",
+          "source": "expert",
+          "explanation": "has many cannabis terms in abstract: Cannabis sativa tetrahydrocannabivarin, \u0394-9- tetrahydrocannabinol,  cannabinoids",
+          "maude_before": "not_cannabis_related",
+          "llm_value": "relevant",
+          "cue_added": "tetrahydrocannabinol"
+        }
+      ],
+      "cue_updates": [
+        {
+          "node_id": "node0_ingestion",
+          "field": "ingestion_status",
+          "cue": "tetrahydrocannabinol"
+        }
+      ],
+      "maude_reclassified": {
+        "publication_type": null,
+        "study_type": [],
+        "classification_confidence": 0.85,
+        "nodes_visited": [
+          "node0_ingestion",
+          "node1a_original"
+        ]
+      },
+      "partial": true,
+      "migrated_from": "maude_learned_cues.json"
+    },
+    {
+      "paper_id": 16469,
+      "batch_id": "llm_pdf_maude_ab_20260619_191055_171",
+      "title": "Cannabidiol Is a Novel Modulator of Bacterial Membrane Vesicles",
+      "resolved_at": "2026-06-20T13:45:55.707854",
+      "fields": [
+        {
+          "field": "ingestion_status",
+          "resolved_value": "relevant",
+          "source": "expert",
+          "explanation": "says \"cannabis\" and \"cbd\" in abstract",
+          "maude_before": "not_cannabis_related",
+          "llm_value": "relevant",
+          "cue_added": "cannabis"
+        }
+      ],
+      "cue_updates": [
+        {
+          "node_id": "node0_ingestion",
+          "field": "ingestion_status",
+          "cue": "cannabis"
+        }
+      ],
+      "maude_reclassified": {
+        "publication_type": null,
+        "study_type": [],
+        "classification_confidence": 0.85,
+        "nodes_visited": [
+          "node0_ingestion",
+          "node1a_original"
+        ]
+      },
+      "partial": true,
+      "migrated_from": "maude_learned_cues.json"
+    },
+    {
+      "paper_id": 26360,
+      "batch_id": "llm_pdf_maude_ab_20260619_191055_171",
+      "title": "Terpenoids From Cannabis Do Not Mediate an Entourage Effect by Acting at Cannabinoid Receptors",
+      "resolved_at": "2026-06-20T13:46:37.418488",
+      "fields": [
+        {
+          "field": "ingestion_status",
+          "resolved_value": "relevant",
+          "source": "expert",
+          "explanation": "says \"cannabinoid\" and \"cannabis\" in title",
+          "maude_before": "not_cannabis_related",
+          "llm_value": "relevant",
+          "cue_added": "cannabinoid"
+        }
+      ],
+      "cue_updates": [
+        {
+          "node_id": "node0_ingestion",
+          "field": "ingestion_status",
+          "cue": "cannabinoid"
+        }
+      ],
+      "maude_reclassified": {
+        "publication_type": null,
+        "study_type": [],
+        "classification_confidence": 0.85,
+        "nodes_visited": [
+          "node0_ingestion",
+          "node1a_original"
+        ]
+      },
+      "partial": true,
+      "migrated_from": "maude_learned_cues.json"
+    },
+    {
+      "paper_id": 3653,
+      "batch_id": "llm_pdf_maude_ab_20260619_191055_171",
+      "title": "Exploring Cannabis sativa L for Anti-Alzheimer Potential: An Extensive Computational Study including Molecular Docking, Molecular Dynamics, and ADMET Assessments",
+      "resolved_at": "2026-06-20T13:49:23.239122",
+      "fields": [
+        {
+          "field": "publication_type",
+          "resolved_value": "original research",
+          "source": "expert",
+          "explanation": "says \"cannabis\" and \"sativa\" in title",
+          "maude_before": null,
+          "llm_value": "original research",
+          "cue_added": "cannabis"
+        }
+      ],
+      "cue_updates": [
+        {
+          "node_id": "node1b_reviews",
+          "field": "publication_type",
+          "cue": "cannabis"
+        }
+      ],
+      "maude_reclassified": {
+        "publication_type": null,
+        "study_type": [],
+        "classification_confidence": 0.85,
+        "nodes_visited": [
+          "node0_ingestion",
+          "node1a_original"
+        ]
+      },
+      "partial": true,
+      "migrated_from": "maude_learned_cues.json"
+    }
+  ]
+}

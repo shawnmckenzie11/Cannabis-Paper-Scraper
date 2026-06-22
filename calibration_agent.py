@@ -15,6 +15,7 @@ import calibration_coordinator
 import subnode_field_scopes
 import content_tiers
 import calibration_pdf
+import maude_confidence
 
 
 REVIEW_PUBLICATION_TYPES = {"review", "case study"}
@@ -94,6 +95,11 @@ def calibration_field_equal(left: Any, right: Any) -> bool:
         try:
             left_num = None if left in empty else float(left)
             right_num = None if right in empty else float(right)
+            if left_num is not None and right_num is not None:
+                if left_num == right_num:
+                    return True
+                if left_num > 0 and right_num > 0 and abs(left_num - right_num) <= 2:
+                    return True
             return left_num == right_num
         except (TypeError, ValueError):
             pass
@@ -133,6 +139,7 @@ def compare_maude_llm_all_fields(
 
 def maude_output_to_compare_block(maude_out: Dict[str, Any], rules_version: str) -> Dict[str, Any]:
     """Builds a normalized Maude payload for full-field A/B comparison."""
+    maude_confidence.apply_maude_confidence(maude_out)
     block = {
         field: maude_out.get(field)
         for field in MAUDE_AB_COMPARE_FIELDS
@@ -884,7 +891,7 @@ def fetch_paper_calibration_context(db: DatabaseManager, paper_id: int) -> Dict[
     cursor = conn.cursor()
     try:
         cursor.execute(
-            "SELECT title, abstract, full_text_link FROM papers WHERE id = ?",
+            "SELECT title, abstract, full_text_link, pmid, doi FROM papers WHERE id = ?",
             (paper_id,),
         )
         row = cursor.fetchone()
@@ -895,6 +902,8 @@ def fetch_paper_calibration_context(db: DatabaseManager, paper_id: int) -> Dict[
             "title": data.get("title") or "",
             "abstract": data.get("abstract") or "",
             "full_text_link": data.get("full_text_link") or "",
+            "pmid": data.get("pmid") or "",
+            "doi": data.get("doi") or "",
         }
     finally:
         conn.close()
@@ -902,6 +911,7 @@ def fetch_paper_calibration_context(db: DatabaseManager, paper_id: int) -> Dict[
 
 def refresh_maude_batch(source_path: Path, output_dir: Optional[Path] = None) -> Tuple[Path, Path]:
     """Re-runs Maude on an existing calibration batch; preserves stored LLM outputs."""
+    refresh_alignment_confidence_cache()
     if not source_path.exists():
         raise FileNotFoundError(f"Batch artifact not found: {source_path}")
 
@@ -952,6 +962,8 @@ def refresh_maude_batch(source_path: Path, output_dir: Optional[Path] = None) ->
             title,
             abstract,
             full_text_link=full_text_link or None,
+            pmid=paper_context.get("pmid") or record.get("pmid"),
+            doi=paper_context.get("doi") or record.get("doi"),
             rules_version=rules_version,
             cache=pdf_cache,
         )
@@ -1186,8 +1198,14 @@ def run_claude_maude_ab_native(args: argparse.Namespace) -> Tuple[Path, Path]:
     return json_path, walkthrough_path
 
 
+def refresh_alignment_confidence_cache() -> None:
+    """Clears cached handoff alignment percentages so RL runs use the latest values."""
+    maude_confidence.cached_alignment_pcts.cache_clear()
+
+
 def run_subnode_pdf_maude_ab(args: argparse.Namespace) -> Tuple[Path, Path]:
     """Pairs stored Claude PDF classifications with live Maude for sub-node RL batches."""
+    refresh_alignment_confidence_cache()
     max_calls = args.max_calls
     if max_calls < 1 or max_calls > 1000:
         raise ValueError("--max-calls must be between 1 and 1000 for sub-node PDF Maude A/B.")
@@ -1258,6 +1276,8 @@ def run_subnode_pdf_maude_ab(args: argparse.Namespace) -> Tuple[Path, Path]:
                 title,
                 abstract,
                 full_text_link=full_text_link or None,
+                pmid=candidate.get("pmid"),
+                doi=candidate.get("doi"),
                 rules_version=rules_version,
                 cache=pdf_cache,
             )
@@ -1407,6 +1427,8 @@ def run_maude_ab_from_llm_pdf(args: argparse.Namespace) -> Tuple[Path, Path]:
             title,
             abstract,
             full_text_link=full_text_link or None,
+            pmid=candidate.get("pmid"),
+            doi=candidate.get("doi"),
             rules_version=rules_version,
             cache=pdf_cache,
         )

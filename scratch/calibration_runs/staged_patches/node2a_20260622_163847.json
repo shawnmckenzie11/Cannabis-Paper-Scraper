@@ -1,0 +1,133 @@
+{
+  "target_subnode": "node2a",
+  "created_at": "2026-06-22T16:38:47.577898",
+  "pattern_summary": "Top scoped disagreement fields on node2a: exposure_method, sample_size, dose_mg, strain_normalized. Batch alignment 75.0% \u00b7 Maude recall 90.0%. exposure_method: 1/1 papers disagree (100.0%). sample_size: 1/1 papers disagree (100.0%). dose_mg: 1/1 papers disagree (100.0%). strain_normalized: 1/1 papers disagree (100.0%). Examples: paper 31197: exposure_method, sample_size, dose_mg, strain_normalized",
+  "gap_summary": {
+    "target_subnode": "node2a",
+    "scored_paper_count": 1,
+    "papers_with_disagreements": 1,
+    "batch_alignment_rate": 0.75,
+    "batch_alignment_pct": 75.0,
+    "batch_maude_recall_rate": 0.9,
+    "batch_maude_recall_pct": 90.0,
+    "batch_extraction_fill_rate": 0.9,
+    "batch_extraction_fill_pct": 90.0,
+    "field_disagreement_stats": [
+      {
+        "field": "exposure_method",
+        "compared_count": 1,
+        "disagree_count": 1,
+        "disagree_pct": 100.0
+      },
+      {
+        "field": "sample_size",
+        "compared_count": 1,
+        "disagree_count": 1,
+        "disagree_pct": 100.0
+      },
+      {
+        "field": "dose_mg",
+        "compared_count": 1,
+        "disagree_count": 1,
+        "disagree_pct": 100.0
+      },
+      {
+        "field": "strain_normalized",
+        "compared_count": 1,
+        "disagree_count": 1,
+        "disagree_pct": 100.0
+      },
+      {
+        "field": "study_type",
+        "compared_count": 1,
+        "disagree_count": 0,
+        "disagree_pct": 0.0
+      },
+      {
+        "field": "cannabis_type",
+        "compared_count": 1,
+        "disagree_count": 0,
+        "disagree_pct": 0.0
+      },
+      {
+        "field": "outcome_domain",
+        "compared_count": 1,
+        "disagree_count": 0,
+        "disagree_pct": 0.0
+      },
+      {
+        "field": "duration_days",
+        "compared_count": 1,
+        "disagree_count": 0,
+        "disagree_pct": 0.0
+      },
+      {
+        "field": "strain_reported",
+        "compared_count": 1,
+        "disagree_count": 0,
+        "disagree_pct": 0.0
+      },
+      {
+        "field": "thc_pct",
+        "compared_count": 1,
+        "disagree_count": 0,
+        "disagree_pct": 0.0
+      },
+      {
+        "field": "cbd_pct",
+        "compared_count": 1,
+        "disagree_count": 0,
+        "disagree_pct": 0.0
+      },
+      {
+        "field": "administration_frequency",
+        "compared_count": 1,
+        "disagree_count": 0,
+        "disagree_pct": 0.0
+      },
+      {
+        "field": "multiple_doses",
+        "compared_count": 1,
+        "disagree_count": 0,
+        "disagree_pct": 0.0
+      },
+      {
+        "field": "multiple_time_intervals",
+        "compared_count": 1,
+        "disagree_count": 0,
+        "disagree_pct": 0.0
+      },
+      {
+        "field": "inhaled_exposure_duration",
+        "compared_count": 1,
+        "disagree_count": 0,
+        "disagree_pct": 0.0
+      },
+      {
+        "field": "puff_count",
+        "compared_count": 1,
+        "disagree_count": 0,
+        "disagree_pct": 0.0
+      }
+    ],
+    "top_disagreement_fields": [
+      "exposure_method",
+      "sample_size",
+      "dose_mg",
+      "strain_normalized"
+    ]
+  },
+  "proposed_rules_changes": [],
+  "proposed_cues": [],
+  "maude_improvement_brief": {
+    "agent_handoff_prompt": "Implement minimal patches for node2a holdout disagreements on: exposure_method, sample_size, dose_mg, strain_normalized. Edit extractor.py / maude_classifier.py / maude_cues.json and add test_patch_* regressions. Then bump calibration_build.py, deploy, and refresh the same batch with calibration_agent.py --refresh-maude-from-batch.",
+    "priority_fields": [
+      "exposure_method",
+      "sample_size",
+      "dose_mg",
+      "strain_normalized"
+    ]
+  },
+  "agent_handoff_prompt": "Implement minimal patches for node2a holdout disagreements on: exposure_method, sample_size, dose_mg, strain_normalized. Edit extractor.py / maude_classifier.py / maude_cues.json and add test_patch_* regressions. Then bump calibration_build.py, deploy, and refresh the same batch with calibration_agent.py --refresh-maude-from-batch.",
+  "llm_call_metrics": null
+}

@@ -99,6 +99,7 @@ def run_orchestrator(args: argparse.Namespace) -> Dict[str, Any]:
             cal_args = cal_parser.parse_args([
                 "--subnode-pdf-maude-ab",
                 "--max-calls", str(args.max_calls),
+                "--offset", str(getattr(args, "offset", 0) or 0),
                 "--mode", mode,
                 "--target-subnode", subnode,
                 "--content-tier", getattr(args, "content_tier", None) or content_tiers.CONTENT_TIER_PDF_EXTRACTED,
@@ -166,6 +167,8 @@ def run_orchestrator(args: argparse.Namespace) -> Dict[str, Any]:
                     json_path,
                     output_dir=output_dir,
                     skip_lock=False,
+                    local_only=True,
+                    skip_refresh=True,
                 )
                 cycle_report["feedback"] = feedback_report
                 calibration_metrics.build_dashboard(
@@ -202,6 +205,7 @@ def build_orchestrator_arg_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description="Run sub-node Maude RL calibration orchestrator.")
     parser.add_argument("--subnode", required=True, choices=["node2a", "node2b", "node2c"])
     parser.add_argument("--max-calls", type=int, default=20)
+    parser.add_argument("--offset", type=int, default=0, help="Candidate row offset for fresh papers.")
     parser.add_argument("--max-cycles", type=int, default=5)
     parser.add_argument("--variants", default="control")
     parser.add_argument("--output-dir", default=None)

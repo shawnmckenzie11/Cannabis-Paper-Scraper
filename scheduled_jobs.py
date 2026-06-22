@@ -1,0 +1,240 @@
+"""One-shot background jobs persisted in DB metadata and executed by the app scheduler."""
+
+from __future__ import annotations
+
+import argparse
+import json
+import logging
+import os
+import uuid
+from datetime import date, datetime
+from typing import Any, Dict, List, Optional
+
+from zoneinfo import ZoneInfo
+
+from db_manager import DatabaseManager
+
+logger = logging.getLogger("scheduler.jobs")
+JOB_METADATA_KEY = "scheduled_jobs"
+DEFAULT_TIMEZONE = os.getenv("SCHEDULER_TIMEZONE", "America/Toronto")
+
+
+def _now_iso() -> str:
+    """Returns the current UTC timestamp as an ISO string."""
+    return datetime.now(tz=ZoneInfo("UTC")).isoformat()
+
+
+def load_jobs(db: Optional[DatabaseManager] = None) -> List[Dict[str, Any]]:
+    """Loads scheduled job records from metadata."""
+    db = db or DatabaseManager()
+    raw = db.get_metadata(JOB_METADATA_KEY, "[]")
+    try:
+        jobs = json.loads(raw)
+    except json.JSONDecodeError:
+        return []
+    return jobs if isinstance(jobs, list) else []
+
+
+def save_jobs(jobs: List[Dict[str, Any]], db: Optional[DatabaseManager] = None) -> None:
+    """Persists scheduled job records to metadata."""
+    db = db or DatabaseManager()
+    db.set_metadata(JOB_METADATA_KEY, json.dumps(jobs))
+
+
+def parse_local_run_at(
+    at_time: str,
+    run_date: Optional[str] = None,
+    timezone_name: str = DEFAULT_TIMEZONE,
+) -> datetime:
+    """Parses a local date/time string into a timezone-aware datetime."""
+    tz = ZoneInfo(timezone_name)
+    day = date.fromisoformat(run_date) if run_date else datetime.now(tz).date()
+    if " " in at_time.strip():
+        local_dt = datetime.strptime(at_time.strip(), "%Y-%m-%d %H:%M")
+    elif ":" in at_time:
+        hour, minute = at_time.strip().split(":", 1)
+        local_dt = datetime(day.year, day.month, day.day, int(hour), int(minute))
+    else:
+        raise ValueError(f"Unsupported time format: {at_time!r}")
+    return local_dt.replace(tzinfo=tz)
+
+
+def schedule_maude_reingest(
+    at_time: str,
+    run_date: Optional[str] = None,
+    timezone_name: str = DEFAULT_TIMEZONE,
+    batch_size: int = 25,
+    refresh_maude_confidence: bool = True,
+    job_id: Optional[str] = None,
+    db: Optional[DatabaseManager] = None,
+) -> Dict[str, Any]:
+    """Registers a one-shot Maude re-ingest job for heuristic-1.0.0 papers."""
+    db = db or DatabaseManager()
+    run_at = parse_local_run_at(at_time, run_date=run_date, timezone_name=timezone_name)
+    if run_at <= datetime.now(tz=run_at.tzinfo):
+        raise ValueError(
+            f"Scheduled time {run_at.isoformat()} is in the past; choose a future run time."
+        )
+
+    jobs = load_jobs(db)
+    for job in jobs:
+        if job.get("type") == "maude_reingest" and job.get("status") == "pending":
+            raise ValueError(
+                f"A pending Maude re-ingest is already scheduled for {job.get('run_at')}."
+            )
+
+    record = {
+        "id": job_id or f"maude_reingest_{run_at.strftime('%Y%m%d_%H%M')}_{uuid.uuid4().hex[:8]}",
+        "type": "maude_reingest",
+        "run_at": run_at.isoformat(),
+        "timezone": timezone_name,
+        "status": "pending",
+        "created_at": _now_iso(),
+        "payload": {
+            "batch_size": batch_size,
+            "refresh_maude_confidence": refresh_maude_confidence,
+        },
+    }
+    jobs.append(record)
+    save_jobs(jobs, db)
+    return record
+
+
+def cancel_job(job_id: str, db: Optional[DatabaseManager] = None) -> bool:
+    """Marks a pending job as cancelled."""
+    db = db or DatabaseManager()
+    jobs = load_jobs(db)
+    updated = False
+    for job in jobs:
+        if job.get("id") == job_id and job.get("status") == "pending":
+            job["status"] = "cancelled"
+            job["cancelled_at"] = _now_iso()
+            updated = True
+    if updated:
+        save_jobs(jobs, db)
+    return updated
+
+
+def _execute_maude_reingest(payload: Dict[str, Any]) -> Dict[str, Any]:
+    """Runs the heuristic → Maude re-ingest pipeline."""
+    import reingest_heuristic_papers
+
+    batch_size = int(payload.get("batch_size") or 25)
+    summary = reingest_heuristic_papers.reingest_heuristic_papers(
+        dry_run=False,
+        batch_size=batch_size,
+        only_heuristic=True,
+    )
+    if payload.get("refresh_maude_confidence") or summary.get("papers_processed", 0) > 0:
+        summary["confidence_refresh"] = reingest_heuristic_papers.refresh_maude_confidence_scores(
+            batch_size=batch_size
+        )
+    return summary
+
+
+def run_due_jobs(db: Optional[DatabaseManager] = None) -> List[Dict[str, Any]]:
+    """Executes pending jobs whose scheduled time has passed."""
+    db = db or DatabaseManager()
+    jobs = load_jobs(db)
+    completed: List[Dict[str, Any]] = []
+    now_utc = datetime.now(tz=ZoneInfo("UTC"))
+
+    for job in jobs:
+        if job.get("status") != "pending":
+            continue
+        run_at_raw = job.get("run_at")
+        if not run_at_raw:
+            continue
+        run_at = datetime.fromisoformat(run_at_raw)
+        if run_at.tzinfo is None:
+            run_at = run_at.replace(tzinfo=ZoneInfo(job.get("timezone") or DEFAULT_TIMEZONE))
+        if run_at.astimezone(ZoneInfo("UTC")) > now_utc:
+            continue
+
+        job["status"] = "running"
+        job["started_at"] = _now_iso()
+        save_jobs(jobs, db)
+        logger.info("Starting scheduled job %s (%s)", job.get("id"), job.get("type"))
+
+        try:
+            if job.get("type") == "maude_reingest":
+                result = _execute_maude_reingest(job.get("payload") or {})
+            else:
+                raise ValueError(f"Unknown scheduled job type: {job.get('type')}")
+            job["status"] = "completed"
+            job["completed_at"] = _now_iso()
+            job["result"] = result
+            logger.info("Scheduled job %s completed: %s", job.get("id"), result)
+        except Exception as exc:
+            job["status"] = "failed"
+            job["failed_at"] = _now_iso()
+            job["error"] = str(exc)
+            logger.exception("Scheduled job %s failed", job.get("id"))
+
+        completed.append(job)
+        save_jobs(jobs, db)
+
+    return completed
+
+
+def main() -> None:
+    """CLI for scheduling and inspecting one-shot background jobs."""
+    parser = argparse.ArgumentParser(description="Schedule one-shot background jobs.")
+    sub = parser.add_subparsers(dest="command")
+
+    schedule_parser = sub.add_parser(
+        "schedule-maude-reingest",
+        help="Schedule heuristic-1.0.0 → Maude re-ingest.",
+    )
+    schedule_parser.add_argument(
+        "--at",
+        default="23:00",
+        help="Local run time (HH:MM or YYYY-MM-DD HH:MM). Default: 23:00.",
+    )
+    schedule_parser.add_argument(
+        "--date",
+        default=None,
+        help="Local run date (YYYY-MM-DD). Default: today in scheduler timezone.",
+    )
+    schedule_parser.add_argument(
+        "--timezone",
+        default=DEFAULT_TIMEZONE,
+        help=f"IANA timezone for --at/--date (default: {DEFAULT_TIMEZONE}).",
+    )
+    schedule_parser.add_argument("--batch-size", type=int, default=25)
+    schedule_parser.add_argument(
+        "--no-confidence-refresh",
+        action="store_true",
+        help="Skip post-run maude-* confidence refresh.",
+    )
+
+    sub.add_parser("list", help="List scheduled jobs.")
+    cancel_parser = sub.add_parser("cancel", help="Cancel a pending job by id.")
+    cancel_parser.add_argument("job_id")
+
+    args = parser.parse_args()
+    if args.command == "schedule-maude-reingest":
+        record = schedule_maude_reingest(
+            at_time=args.at,
+            run_date=args.date,
+            timezone_name=args.timezone,
+            batch_size=args.batch_size,
+            refresh_maude_confidence=not args.no_confidence_refresh,
+        )
+        print(json.dumps(record, indent=2))
+        return
+
+    if args.command == "list":
+        print(json.dumps(load_jobs(), indent=2))
+        return
+
+    if args.command == "cancel":
+        ok = cancel_job(args.job_id)
+        print("cancelled" if ok else "not_found_or_not_pending")
+        return
+
+    parser.print_help()
+
+
+if __name__ == "__main__":
+    main()

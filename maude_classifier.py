@@ -193,6 +193,53 @@ def should_route_in_vivo_before_review(title: str, abstract: str) -> bool:
     return any(re.search(rf"\b{re.escape(term)}\b", text) for term in IN_VIVO_ANIMAL_TERMS)
 
 
+ANIMAL_DOSING_ROUTE_PATTERNS: Tuple[str, ...] = (
+    r"\b(?:rat|rats|mouse|mice|rodent|rodents|zebrafish|rabbit|rabbits|primate|primates|canine|dog|dogs)\b"
+    r".{0,120}\b\d+(?:\.\d+)?\s*mg/kg\b",
+    r"\b\d+(?:\.\d+)?\s*mg/kg\b.{0,80}\b(?:i\.p\.|i\.v\.|s\.c\.|i\.m\.|intraperitoneal|subcutaneous|intravenous|oral gavage)\b",
+    r"\b(?:received|administered|injected|treated with|dosed with)\b.{0,80}"
+    r"\b(?:thc|cbd|cannabidiol|tetrahydrocannabinol|cannabinoid|cannabinoids)\b.{0,80}\b\d+(?:\.\d+)?\s*mg/kg\b",
+)
+
+
+def should_route_animal_before_review(title: str, text: str) -> bool:
+    """Returns True when PDF/abstract signals primary animal dosing despite review-like PDF noise."""
+    blob = f"{title} {text}".lower()
+    if not any(re.search(rf"\b{re.escape(term)}\b", blob) for term in IN_VIVO_ANIMAL_TERMS):
+        return False
+    if should_route_in_vivo_before_review(title, text):
+        return True
+    return any(re.search(pattern, blob, re.IGNORECASE | re.DOTALL) for pattern in ANIMAL_DOSING_ROUTE_PATTERNS)
+
+
+CLINICAL_PRIMARY_DATA_PATTERNS: Tuple[str, ...] = (
+    r"\bparticipants (?:were|completed|recruited|enrolled|surveyed)\b",
+    r"\bpatients (?:were|completed|recruited|enrolled)\b",
+    r"\bwe (?:surveyed|recruited|enrolled|conducted a (?:prospective|cross-sectional|cohort))\b",
+    r"\bn\s*=\s*\d+\s+(?:participants|patients|respondents|subjects|adults)\b",
+    r"\bexploratory study\b",
+    r"\bcross-sectional (?:study|survey)\b",
+    r"\bquestionnaire (?:was|were) (?:administered|completed|distributed)\b",
+    r"\brandomized (?:controlled )?trial\b",
+    r"\bplacebo[- ]controlled\b",
+    r"\bclinical trial\b",
+)
+
+
+def should_route_clinical_before_review(title: str, text: str) -> bool:
+    """Returns True when full text signals primary human-subjects data despite review-like cues."""
+    blob = f"{title} {text}".lower()
+    if not extractor.keyword_match(blob, list(extractor.HUMAN_SUBJECT_KEYWORDS)):
+        return False
+    if any(re.search(pattern, blob, re.IGNORECASE) for pattern in CLINICAL_PRIMARY_DATA_PATTERNS):
+        return True
+    if re.search(r"\b(?:methods|results)\b", blob, re.IGNORECASE) and re.search(
+        r"\b(?:survey|questionnaire|interviews?|participants)\b", blob, re.IGNORECASE
+    ):
+        return True
+    return False
+
+
 def matches_review_route(title: str, abstract: str) -> bool:
     """True when title/abstract cues justify Node 1B review routing."""
     text = f"{title} {abstract}"
@@ -397,20 +444,48 @@ def resolve_study_type_for_routing(
     publication_type: Optional[str],
     review_subtype: Optional[str],
     node2_branches: Sequence[str],
+    methods_text: str = "",
 ) -> List[str]:
     """Resolves study_type using Node 1 publication route plus Node 2 branch fallbacks."""
+    routing_blob = f"{title} {abstract} {methods_text}"
     full_blob = f"{title} {abstract}"
-    if publication_type == "original research" and extractor.is_analytical_or_computational(full_blob):
+    has_human_subjects = extractor.keyword_match(
+        routing_blob.lower(),
+        list(extractor.HUMAN_SUBJECT_KEYWORDS),
+    )
+    if extractor.is_plant_cultivation_study(routing_blob) and not has_human_subjects:
         return ["Cell Culture (Other In Vitro)"]
+    if publication_type == "original research" and extractor.is_analytical_or_computational(full_blob):
+        if extractor.is_plant_cultivation_study(routing_blob):
+            return ["Cell Culture (Other In Vitro)"]
+        if not (
+            has_human_subjects
+            and (
+                should_route_clinical_before_review(title, routing_blob)
+                or re.search(r"\b(?:participants|patients|subjects|volunteers|survey)\b", routing_blob, re.I)
+            )
+        ):
+            return ["Cell Culture (Other In Vitro)"]
 
     study_type = extractor.infer_study_type_for_publication(title, abstract, publication_type)
     if publication_type == "review" and review_subtype and review_subtype not in study_type:
         return [review_subtype]
     if study_type:
-        full_blob = f"{title} {abstract}".lower()
-        for label in extractor._collect_study_type_hits(full_blob):
+        routing_blob = f"{title} {abstract} {methods_text}".lower()
+        for label in extractor._collect_study_type_hits(routing_blob):
             if label not in study_type:
                 study_type.append(label)
+        study_type = extractor._refine_study_type_list(
+            study_type,
+            routing_blob,
+            title,
+            abstract,
+        )
+        branch_set = set(node2_branches)
+        if "node2a_clinical" in branch_set and extractor.keyword_match(
+            routing_blob, list(extractor.HUMAN_SUBJECT_KEYWORDS)
+        ):
+            study_type = [item for item in study_type if not item.startswith("Animal Models")]
         return study_type
     if publication_type != "original research":
         return study_type
@@ -421,6 +496,11 @@ def resolve_study_type_for_routing(
 
     full_blob = f"{title} {abstract}".lower()
     branch_set = set(node2_branches)
+    if "node2a_clinical" in branch_set and "node2c_in_vitro" in branch_set and has_human_subjects:
+        clinical = extractor.infer_study_type_for_publication(title, abstract, publication_type)
+        if clinical:
+            return clinical
+        return ["Clinical (observational)"]
     if "node2c_in_vitro" in branch_set and "node2a_clinical" not in branch_set:
         return ["Cell Culture (Other In Vitro)"]
     if "node2b_in_vivo" in branch_set and "node2a_clinical" not in branch_set:
@@ -446,6 +526,9 @@ def resolve_study_type_for_routing(
         if re.search(r"\brats\b|\brat\b", blob, re.IGNORECASE):
             return ["Animal Models (Rat)"]
         return ["Animal Models (Other)"]
+    human_blob = f"{title} {abstract} {methods_text}".lower()
+    if extractor.keyword_match(human_blob, list(extractor.HUMAN_SUBJECT_KEYWORDS)):
+        return ["Clinical (observational)"]
     return ["Clinical (observational)"]
 
 
@@ -634,26 +717,40 @@ def route_from_metadata(title: str, abstract: str) -> Optional[Tuple[str, Option
     return None
 
 
-def route_publication_type(title: str, abstract: str) -> Tuple[str, Optional[str], List[str], float]:
+def route_publication_type(
+    title: str,
+    abstract: str,
+    *,
+    routing_blob: Optional[str] = None,
+) -> Tuple[str, Optional[str], List[str], float]:
     """Routes Node 1B/1C/1A and returns coarse publication_type, review subtype, nodes, cue score."""
     metadata_route = route_from_metadata(title, abstract)
     if metadata_route is not None:
         return metadata_route
 
-    text = f"{title} {abstract}"
+    title_abstract = f"{title} {abstract}"
+    text = routing_blob or title_abstract
     nodes: List[str] = []
     score = 0.2
     case_patterns = get_case_routing_patterns()
     original_negative_patterns = get_original_negative_patterns()
 
-    if should_route_in_vivo_before_review(title, abstract):
+    if should_route_in_vivo_before_review(title, text):
+        nodes.append("node1a_original")
+        return "original research", None, nodes, score + 0.25
+
+    if should_route_animal_before_review(title, text):
+        nodes.append("node1a_original")
+        return "original research", None, nodes, score + 0.25
+
+    if should_route_clinical_before_review(title, text):
         nodes.append("node1a_original")
         return "original research", None, nodes, score + 0.25
 
     if matches_review_route(title, abstract):
         nodes.append("node1b_reviews")
         score += 0.35
-        subtype = _detect_review_subtype(text)
+        subtype = _detect_review_subtype(title_abstract)
         if subtype == "systematic review":
             return "review", subtype, nodes + ["node3a"], score + 0.15
         if subtype == "meta-analysis":
@@ -663,11 +760,11 @@ def route_publication_type(title: str, abstract: str) -> Tuple[str, Optional[str
         return "review", "review", nodes, score + 0.1
 
     for pattern in case_patterns:
-        if re.search(pattern, text, re.IGNORECASE):
+        if re.search(pattern, title_abstract, re.IGNORECASE):
             nodes.append("node1c_case_report")
             return "case study", "case study", nodes, score + 0.35
 
-    if any(re.search(p, text, re.IGNORECASE) for p in original_negative_patterns):
+    if any(re.search(p, title_abstract, re.IGNORECASE) for p in original_negative_patterns):
         nodes.append("node1b_reviews")
         return "review", "review", nodes, score + 0.2
 
@@ -737,7 +834,8 @@ def classify_paper(
 
     publication_type, review_subtype, route_nodes, route_score = route_publication_type(
         title,
-        publication_routing_text,
+        abstract,
+        routing_blob=publication_routing_text if full_text else None,
     )
     nodes = _dedupe_nodes(nodes + route_nodes)
     cue_score += route_score
@@ -759,9 +857,15 @@ def classify_paper(
             publication_type,
             review_subtype,
             node2_branches,
+            methods_text or "",
         )
         if extract_downstream:
-            heuristics = extractor.extract_all_heuristics(title, extraction_text, full_text=full_text)
+            heuristics = extractor.extract_all_heuristics(
+                title,
+                extraction_text,
+                full_text=full_text,
+                study_type_override=study_type,
+            )
             species = infer_species(extraction_text)
             exposure_method = heuristics.get("exposure_method") or []
             cannabis_type = heuristics.get("cannabis_type") or []
@@ -780,6 +884,7 @@ def classify_paper(
             publication_type,
             review_subtype,
             route_nodes,
+            methods_text or "",
         )
         exposure_method = []
         cannabis_type = []

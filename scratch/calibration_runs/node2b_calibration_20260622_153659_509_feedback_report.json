@@ -1,0 +1,457 @@
+{
+  "batch_id": "node2b_calibration_20260622_153659_509",
+  "target_subnode": "node2b",
+  "created_at": "2026-06-22T15:46:33.177109",
+  "disagreement_count": 27,
+  "gap_summary": {
+    "target_subnode": "node2b",
+    "scored_paper_count": 27,
+    "papers_with_disagreements": 27,
+    "batch_alignment_rate": 0.6669,
+    "batch_alignment_pct": 66.7,
+    "batch_extraction_fill_rate": 0.3999,
+    "batch_extraction_fill_pct": 40.0,
+    "field_disagreement_stats": [
+      {
+        "field": "strain_reported",
+        "compared_count": 27,
+        "disagree_count": 25,
+        "disagree_pct": 92.6
+      },
+      {
+        "field": "cannabis_type",
+        "compared_count": 27,
+        "disagree_count": 24,
+        "disagree_pct": 88.9
+      },
+      {
+        "field": "administration_frequency",
+        "compared_count": 27,
+        "disagree_count": 21,
+        "disagree_pct": 77.8
+      },
+      {
+        "field": "duration_days",
+        "compared_count": 27,
+        "disagree_count": 16,
+        "disagree_pct": 59.3
+      },
+      {
+        "field": "exposure_method",
+        "compared_count": 27,
+        "disagree_count": 9,
+        "disagree_pct": 33.3
+      },
+      {
+        "field": "cbd_mg_kg",
+        "compared_count": 23,
+        "disagree_count": 8,
+        "disagree_pct": 34.8
+      },
+      {
+        "field": "thc_mg_kg",
+        "compared_count": 23,
+        "disagree_count": 7,
+        "disagree_pct": 30.4
+      },
+      {
+        "field": "inhaled_exposure_duration",
+        "compared_count": 4,
+        "disagree_count": 4,
+        "disagree_pct": 100.0
+      },
+      {
+        "field": "thc_pct",
+        "compared_count": 27,
+        "disagree_count": 3,
+        "disagree_pct": 11.1
+      },
+      {
+        "field": "cbd_pct",
+        "compared_count": 27,
+        "disagree_count": 3,
+        "disagree_pct": 11.1
+      },
+      {
+        "field": "dose_mg",
+        "compared_count": 23,
+        "disagree_count": 2,
+        "disagree_pct": 8.7
+      },
+      {
+        "field": "puff_count",
+        "compared_count": 4,
+        "disagree_count": 1,
+        "disagree_pct": 25.0
+      },
+      {
+        "field": "thc_mg_ml",
+        "compared_count": 4,
+        "disagree_count": 1,
+        "disagree_pct": 25.0
+      },
+      {
+        "field": "repeat_exposure_count",
+        "compared_count": 27,
+        "disagree_count": 0,
+        "disagree_pct": 0.0
+      },
+      {
+        "field": "exposure_regimen_bin",
+        "compared_count": 27,
+        "disagree_count": 0,
+        "disagree_pct": 0.0
+      },
+      {
+        "field": "thc_mg_g",
+        "compared_count": 23,
+        "disagree_count": 0,
+        "disagree_pct": 0.0
+      },
+      {
+        "field": "cbd_mg_g",
+        "compared_count": 23,
+        "disagree_count": 0,
+        "disagree_pct": 0.0
+      },
+      {
+        "field": "cbd_mg_ml",
+        "compared_count": 4,
+        "disagree_count": 0,
+        "disagree_pct": 0.0
+      }
+    ],
+    "top_disagreement_fields": [
+      "strain_reported",
+      "cannabis_type",
+      "administration_frequency",
+      "duration_days",
+      "exposure_method",
+      "cbd_mg_kg",
+      "thc_mg_kg",
+      "inhaled_exposure_duration",
+      "thc_pct",
+      "cbd_pct"
+    ]
+  },
+  "pattern_summary": "Maude fails to extract administration_frequency, duration_days, and strain_reported in nearly all papers (77-93% disagreement), leaving fields null despite clear abstract mentions. cannabis_type is misclassified in 89% of cases, with Maude defaulting to 'vape pen', 'concentrates', or 'unknown' instead of 'pure cannabinoid' or 'CB receptor agonist'. exposure_method errors (33%) include confusing whole-body vs nose-only vapor and injection vs oral. inhaled_exposure_duration is never extracted by Maude (100% miss rate). The root cause is a combination of missing extraction rules for temporal/frequency patterns and overly broad cannabis_type keyword triggers.",
+  "llm_call_metrics": {
+    "model": "claude-sonnet-4-6",
+    "input_tokens": 7180,
+    "output_tokens": 3503,
+    "total_tokens": 10683,
+    "estimated_cost_usd": 0.074085,
+    "prompt_chars": 22074,
+    "disagreement_rows_sent": 27
+  },
+  "apply_result": {
+    "applied_count": 8,
+    "error_count": 0
+  },
+  "cue_apply_result": {
+    "applied_cue_count": 10,
+    "skipped_cue_count": 0,
+    "applied_cues": [
+      {
+        "node_id": "node2b_in_vivo",
+        "field": "cannabis_type",
+        "cue": "pure cannabinoid",
+        "store_path": "/data/calibration_runs/maude_cues.json"
+      },
+      {
+        "node_id": "node2b_in_vivo",
+        "field": "cannabis_type",
+        "cue": "CB receptor agonist",
+        "store_path": "/data/calibration_runs/maude_cues.json"
+      },
+      {
+        "node_id": "node2b_in_vivo",
+        "field": "cannabis_type",
+        "cue": "vaporized cannabis plant matter",
+        "store_path": "/data/calibration_runs/maude_cues.json"
+      },
+      {
+        "node_id": "node2b_in_vivo",
+        "field": "exposure_method",
+        "cue": "THC edible",
+        "store_path": "/data/calibration_runs/maude_cues.json"
+      },
+      {
+        "node_id": "node2b_in_vivo",
+        "field": "exposure_method",
+        "cue": "30-min sessions of vapor inhalation",
+        "store_path": "/data/calibration_runs/maude_cues.json"
+      },
+      {
+        "node_id": "node2b_in_vivo",
+        "field": "inhaled_exposure_duration",
+        "cue": "\\d+-min(ute)? (vapor|smoke|inhalation) session",
+        "store_path": "/data/calibration_runs/maude_cues.json"
+      },
+      {
+        "node_id": "node2b_in_vivo",
+        "field": "administration_frequency",
+        "cue": "daily|twice daily|once daily|alternating days|every other day|5 days.*2 days off",
+        "store_path": "/data/calibration_runs/maude_cues.json"
+      },
+      {
+        "node_id": "node2b_in_vivo",
+        "field": "duration_days",
+        "cue": "for \\d+ days|over \\d+ days|from PND \\d+ to PND \\d+",
+        "store_path": "/data/calibration_runs/maude_cues.json"
+      },
+      {
+        "node_id": "node2b_in_vivo",
+        "field": "strain_reported",
+        "cue": "cultivar|chemovar|CN\\d+|Sprague-Dawley|C57Bl/6|CP-55,940|WIN 55,212-2",
+        "store_path": "/data/calibration_runs/maude_cues.json"
+      },
+      {
+        "node_id": "node2b_in_vivo",
+        "field": "thc_mg_ml",
+        "cue": "\\d+\\s*mg/mL.*THC|THC.*\\d+\\s*mg/mL",
+        "store_path": "/data/calibration_runs/maude_cues.json"
+      }
+    ],
+    "skipped_cues": []
+  },
+  "refresh_batch_path": "/data/calibration_runs/calibration_20260622_154631_729.json",
+  "staged_patch_path": "/data/calibration_runs/staged_patches/node2b_20260622_154633.json",
+  "agent_handoff_prompt": "Cannabis Paper Scraper - Node2b Implementation Brief\n\nOVERVIEW\n\nThis brief covers eight targeted changes across extractor.py, maude_classifier.py, and maude_cues.json for the node2b sub-pipeline. The changes address four critical gap patterns: missing temporal extractors, cannabis_type misclassification, inactive strain extraction, and zero inhaled exposure duration capture. Work should be completed in roughly the order presented, since the high-priority extractor additions unblock classifier fixes that depend on richer field data.\n\nAlignment is currently 66.7%. Expected alignment target post-implementation is 88-92% based on gap pattern frequency weights.\n\n\nPART 1 - extractor.py CHANGES\n\n1a. extract_administration_frequency()\n\nAdd a new standalone function. It should accept a text string (concatenated abstract and methods sections, lowercased). Apply re.search with the following patterns in priority order. Return the first match normalized to a short canonical string. If no match is found, return None.\n\nPattern list (compile once at module level as FREQ_PATTERNS):\n  - r'twice daily' -> \"twice daily\"\n  - r'once daily' -> \"once daily\"\n  - r'\\bdaily\\b' -> \"daily\"\n  - r'every other day' -> \"every other day\"\n  - r'alternating days?' -> \"alternating days\"\n  - r'(\\d+)\\s*days?\\s*on[,/\\s]+(\\d+)\\s*days?\\s*off' -> \"Xd on / Yd off\" (format with captured groups)\n  - r'twice weekly' -> \"twice weekly\"\n  - r'\\bweekly\\b' -> \"weekly\"\n\nThe patterns must be checked in the order listed. \"twice daily\" must be checked before \"daily\" to prevent the shorter pattern swallowing the longer phrase. Return the normalized string, not the raw match.\n\nCall site: inside the node2b field assembly block, run this against abstract_text + \" \" + methods_text and assign result to record[\"administration_frequency\"].\n\n1b. extract_duration_days()\n\nAdd a function accepting the same combined text string. Apply the following regex patterns in order, converting all results to integer days. Return an integer or None.\n\nPattern A: r'for\\s+(\\d+)\\s*days?' -> return int(group 1)\nPattern B: r'over\\s+(\\d+)\\s*weeks?' -> return int(group 1) * 7\nPattern C: r'from\\s+(?:PND|postnatal day)\\s*(\\d+)\\s+to\\s+(?:PND|postnatal day)\\s*(\\d+)' -> return int(group 2) - int(group 1)\nPattern D: r'gestational\\s+days?\\s+(\\d+)\\s+(?:to|-)\\s+(\\d+)' -> return int(group 2) - int(group 1)\nPattern E: r'for\\s+(\\d+)\\s*months?' -> return int(group 1) * 30 (approximate; flag with a comment that this is approximate)\n\nIf multiple patterns match, use the first match found. If the arithmetic result would be zero or negative (e.g., malformed text), return None rather than a nonsensical value. Assign to record[\"duration_days\"].\n\n1c. extract_inhaled_exposure_duration()\n\nAdd a function that returns a string like \"30 minutes\" or None. Regex pattern:\nr'(\\d+)[- ]min(?:ute)?s?\\s+(?:vapor|smoke|inhalation|session)'\n\nCapture group 1 is the number. Return \"{N} minutes\". This function should only be called when the exposure_method field already contains \"smoke\", \"vapor\", \"vaporization\", or \"inhalation\" (case-insensitive check on the classified value). Assign to record[\"inhaled_exposure_duration\"].\n\nNote for the developer: some papers state \"four 30-min sessions\" so the number immediately before \"min\" may be preceded by a hyphen or space. The current regex handles both. Do not parse the session count here; that is a separate field if needed later.\n\n1d. extract_thc_mg_ml()\n\nAdd a function returning a float or None. Two regex patterns to try in sequence:\n\nPattern A: r'(\\d+(?:\\.\\d+)?)\\s*mg/m[Ll][^\\n]{0,40}THC'\nPattern B: r'THC[^\\n]{0,40}?(\\d+(?:\\.\\d+)?)\\s*mg/m[Ll]'\n\nBoth patterns look within 40 characters of the THC mention to avoid false positives from unrelated concentration values in the same sentence. Return float(group 1) from whichever pattern matches first. Only call this function when exposure_method is smoke or vapor. Assign to record[\"thc_mg_ml\"].\n\n1e. strain_reported - split into sub-extractors\n\nReplace the existing (non-functional) strain_reported extractor with two sub-functions, then merge results.\n\nextract_animal_strain(text):\nBuild a list ANIMAL_STRAIN_PATTERNS at module level. Include at minimum:\n  r'\\bSprague[- ]Dawley\\b'\n  r'\\bWistar\\b'\n  r'\\bLong[- ]Evans\\b'\n  r'\\bC57BL/6[A-Z]?\\b'\n  r'\\bBALB/c\\b'\n  r'\\bCD-1\\b'\n  r'\\bFischer 344\\b'\n  r'\\bLewis\\b' (with word boundary to avoid false matches)\nReturn a list of unique matched strings from re.findall across the text.\n\nextract_cannabis_strain_or_compound(text):\nBuild CANNABIS_STRAIN_PATTERNS including:\n  r'\\bCN\\d+\\b' (cultivar codes like CN2, CN6)\n  r'\\b\\d{3}-\\d+[A-Z]?\\b' (codes like 331-18A)\n  r'\\bCP-55[\\s,]?940\\b'\n  r'\\bWIN\\s?55[\\s,]?212\\b'\n  r'\\bHU-210\\b'\n  r'\\bJWH-\\d+\\b'\n  r'\\bAM-\\d+\\b'\nAlso capture vendor-context phrases: if \"Sigma\" or \"Cayman\" appears within 60 characters of \"THC\" or \"CBD\", record \"isolated THC (Sigma)\" or \"isolated CBD (Cayman)\" as appropriate using a proximity check rather than a single giant regex.\n\nMerge step: strain_reported = extract_animal_strain(text) + extract_cannabis_strain_or_compound(text). Deduplicate. If the merged list is empty, assign None rather than an empty list to keep downstream null checks consistent.\n\n\nPART 2 - maude_classifier.py CHANGES\n\n2a. Fix cannabis_type classification\n\nAt the top of the node2b handler, define:\n\nSYNTHETIC_CB_AGONISTS = {\"cp-55940\", \"cp55940\", \"win55212\", \"win 55212-2\", \"hu-210\", \"hu210\", \"jwh-018\", \"am-2201\"}\n\nClassification priority order (enforce with if/elif chain, NOT a flat keyword scan):\n\nStep 1: Lowercase the full text. If any token in SYNTHETIC_CB_AGONISTS appears, set cannabis_type = \"CB receptor agonist\". Break.\n\nStep 2: If (\"sigma\" in text or \"cayman\" in text or \"thc isolate\" in text or \"cbd isolate\" in text) and (\"delta-9-thc\" in text or \"cannabidiol\" in text or isolated compound language), set cannabis_type = \"pure cannabinoid\". Break.\n\nStep 3: If \"nabiximols\" in text or \"sativex\" in text, set cannabis_type = \"nabiximols\". Break.\n\nStep 4: If \"cannabis extract\" in text or \"bho\" in text or \"butane hash oil\" in text, set cannabis_type = \"cannabis extract\". Break.\n\nStep 5: If \"dried flower\" in text or \"cannabis flower\" in text or \"herbal cannabis\" in text, set cannabis_type = \"dried flower\". Break.\n\nStep 6: If delivery context includes smoke/vapor, do NOT automatically assign \"vape pen\". Only assign \"vape pen\" if the text explicitly mentions \"vape pen\", \"vaping device\", \"e-cigarette\", or \"cartridge\". Otherwise assign \"cannabis smoke\" for combustion or \"cannabis vapor\" for vaporization. The key fix is removing the existing fallback that defaults to \"vape pen\" from inhalation context alone.\n\nStep 7: Fallback -> \"unknown\".\n\n2b. Fix exposure_method classification\n\nDefine at module level:\nORAL_KEYWORDS = {\"edible\", \"food treat\", \"oral gavage\", \"by mouth\", \"gavage\", \"per os\", \"p.o.\", \"oral administration\", \"intragastric\", \"chow\", \"drinking water\", \"in food\"}\n\nIn the exposure_method classifier block, check ORAL_KEYWORDS before checking inhalation keywords. The current classifier appears to reach inhalation checks first and can misclassify gavage papers that mention vaporization in the discussion. Fix by ordering: oral check -> inhalation check -> injection check -> topical check -> unknown.\n\nFor inhalation papers in small rodents (species is rat or mouse), add a default rule: if \"whole-body chamber\" or \"whole body exposure\" is NOT present in the text, default inhalation subtype to \"nose-only\". Expose this as exposure_method_detail field rather than overwriting exposure_method.\n\n2c. Routing fix - node1b gate override\n\nIn the node1b routing block (before the paper is stamped as a review), add a pre-check:\n\nIf abstract contains any of (\"in vivo\", \"in-vivo\") AND any animal species term from a short list (rat, mouse, mice, rodent, rabbit, monkey, primate, zebrafish, canine) -> override route to node2b.\n\nThis check must run before the review classifier keyword check (which catches \"systematic review\", \"meta-analysis\", \"review of\" etc.). The current bug is that paper 7209 matched a review keyword before the in vivo override had a chance to fire. Moving the override earlier in the decision tree fixes it.\n\nLog a warning when this override fires so reviewers can audit the affected papers: \"node1b override: paper {paper_id} redirected to node2b due to in vivo signal in abstract.\"\n\n\nPART 3 - maude_cues.json CHANGES\n\nAdd or update the following cue groups. Keep existing cues intact; these are additions.\n\nUnder \"temporal_cues\" (create this group if absent):\n  - administration_frequency_terms: [\"daily\", \"twice daily\", \"once daily\", \"every other day\", \"alternating days\", \"weekly\", \"twice weekly\"]\n  - duration_markers: [\"for N days\", \"over N weeks\", \"PND\", \"postnatal day\", \"gestational day\", \"GD\"]\n  - session_duration_markers: [\"min session\", \"minute session\", \"min vapor\", \"minute inhalation\"]\n\nUnder \"cannabis_type_cues\":\n  - synthetic_cb_agonists: [\"CP-55940\", \"WIN55212\", \"HU-210\", \"JWH-018\", \"AM-2201\"]\n  - pure_cannabinoid_vendors: [\"Sigma-Aldrich\", \"Cayman Chemical\", \"THC isolate\", \"CBD isolate\", \"delta-9-THC (Sigma)\", \"delta-9-THC (Cayman)\"]\n  - do_not_infer_vape: true (boolean flag read by classifier to enforce the no-fallback rule)\n\nUnder \"strain_cues\":\n  - animal_strains: [\"Sprague-Dawley\", \"Wistar\", \"Long-Evans\", \"C57BL/6J\", \"BALB/c\", \"Fischer 344\", \"CD-1\", \"Lewis\"]\n  - cannabis_cultivar_pattern: \"CN\\\\d+|\\\\d{3}-\\\\d+[A-Z]?\"\n  - synthetic_compound_pattern: \"CP-55940|WIN\\\\s?55212|HU-210|JWH-\\\\d+|AM-\\\\d+\"\n\nUnder \"routing_cues\":\n  - in_vivo_override_terms: [\"in vivo\", \"in-vivo\"]\n  - animal_species_terms: [\"rat\", \"mouse\", \"mice\", \"rodent\", \"rabbit\", \"monkey\", \"primate\", \"zebrafish\", \"canine\", \"dog\"]\n\nNote: the JSON cues serve as documentation and as source-of-truth for the MAUDE scoring model. If any cue list is updated in maude_cues.json, the corresponding Python constant in maude_classifier.py must also be updated. Consider adding a startup assertion that compares the two sources if drift has been a problem.\n\n\nPART 4 - TEST IDEAS\n\nUnit tests for extractor.py:\n\nTest extract_administration_frequency with input \"Animals were dosed twice daily for 14 days.\" -> expect \"twice daily\", not \"daily\".\nTest with input \"daily injections were given\" -> expect \"daily\".\nTest with input \"doses on alternating days\" -> expect \"alternating days\".\nTest with no matching phrase -> expect None.\n\nTest extract_duration_days with \"for 28 days\" -> 28.\nTest with \"over 3 weeks\" -> 21.\nTest with \"from PND 4 to PND 21\" -> 17.\nTest with \"gestational days 5 to 18\" -> 13.\nTest with \"for 2 months\" -> 60 (approximate flag).\nTest with ambiguous or no duration phrase -> None.\n\nTest extract_inhaled_exposure_duration with \"four 30-min vapor sessions\" -> \"30 minutes\".\nTest with \"60 minute inhalation sessions\" -> \"60 minutes\".\nTest that function returns None when exposure_method is \"oral gavage\".\n\nTest extract_thc_mg_ml with \"THC at 5 mg/mL was vaporized\" -> 5.0.\nTest with \"vaporized 2.5 mg/ml THC\" -> 2.5.\nTest with no concentration -> None.\n\nTest strain_reported with \"Sprague-Dawley rats received CP-55940\" -> list contains both \"Sprague-Dawley\" and \"CP-55940\".\nTest with \"C57BL/6J mice\" -> list contains \"C57BL/6J\".\nTest with \"CN2 cannabis cultivar\" -> list contains \"CN2\".\n\nIntegration tests for maude_classifier.py:\n\nTest cannabis_type on abstract mentioning \"CP-55940 (Sigma-Aldrich)\" -> \"CB receptor agonist\", not \"pure cannabinoid\" and not \"vape pen\".\nTest with abstract mentioning \"delta-9-THC obtained from Cayman Chemical\" and no inhalation context -> \"pure cannabinoid\".\nTest inhalation abstract with no \"vape pen\" mention -> must NOT return \"vape pen\".\nTest abstract with \"whole-body vapor chamber\" -> exposure_method_detail should NOT be \"nose-only\".\nTest abstract with \"vapor inhalation\" in rats with no chamber type specified -> exposure_method_detail = \"nose-only\".\nTest oral: abstract with \"oral gavage\" and unrelated vaporization mention in discussion -> exposure_method = \"oral gavage\".\n\nRouting test:\n\nTest paper 7209 case: abstract contains \"in vivo\" and \"rats\" but also \"systematic\" somewhere in title -> must route to node2b.\nTest clean review paper (no in vivo, no animal species) -> routes to node1b_reviews as before.\n\nRegression guard:\nAfter all changes, run the existing alignment suite. If alignment drops below 66.7% on any previously-passing field, the change introduced a regression and must be reverted before merging.\n\n\nIMPLEMENTATION NOTES\n\nThe eight changes are independent enough to be developed in parallel, but should be merged in two batches: (1) all extractor.py additions first, tested in isolation, then (2) maude_classifier.py and maude_cues.json updates together since the classifier reads the cue file at import time.\n\nThe inhaled_exposure_duration and thc_mg_ml functions are conditional on exposure_method, so they must be called after exposure_method is classified. Ensure the node2b handler calls classify_exposure_method before calling these two extractors.\n\nFor the strain_reported vendor proximity check, set a tolerance of 60 characters as noted. If performance is a concern on large texts, restrict the search to the first 800 characters of the methods section where vendor sourcing is typically stated.",
+  "salvaged_response": false,
+  "feedback": {
+    "pattern_summary": "Maude fails to extract administration_frequency, duration_days, and strain_reported in nearly all papers (77-93% disagreement), leaving fields null despite clear abstract mentions. cannabis_type is misclassified in 89% of cases, with Maude defaulting to 'vape pen', 'concentrates', or 'unknown' instead of 'pure cannabinoid' or 'CB receptor agonist'. exposure_method errors (33%) include confusing whole-body vs nose-only vapor and injection vs oral. inhaled_exposure_duration is never extracted by Maude (100% miss rate). The root cause is a combination of missing extraction rules for temporal/frequency patterns and overly broad cannabis_type keyword triggers.",
+    "field_resolutions": [
+      {
+        "paper_id": 7558,
+        "field": "cannabis_type",
+        "source": "llm",
+        "resolved_value": [
+          "CB receptor agonist"
+        ],
+        "explanation": "CP-55,940 is a synthetic CB receptor agonist, not a vape pen product. Maude triggered on inhalation context incorrectly."
+      },
+      {
+        "paper_id": 8442,
+        "field": "cannabis_type",
+        "source": "llm",
+        "resolved_value": [
+          "dried flower",
+          "CB receptor agonist"
+        ],
+        "explanation": "Abstract describes vaporized cannabis plant matter (dried flower) plus WIN 55,212-2 (CB agonist). Not a vape pen product."
+      },
+      {
+        "paper_id": 8584,
+        "field": "cannabis_type",
+        "source": "llm",
+        "resolved_value": [
+          "pure cannabinoid"
+        ],
+        "explanation": "Isolated THC compound from Sigma-Aldrich is pure cannabinoid, not unknown."
+      },
+      {
+        "paper_id": 7832,
+        "field": "exposure_method",
+        "source": "llm",
+        "resolved_value": [
+          "oral administration"
+        ],
+        "explanation": "Abstract explicitly states 'daily THC edible'; Maude incorrectly assigned injection."
+      },
+      {
+        "paper_id": 8182,
+        "field": "exposure_method",
+        "source": "llm",
+        "resolved_value": [
+          "nose only smoke/vapor",
+          "injection cannabinoids"
+        ],
+        "explanation": "30-min vapor sessions in rats with PG vehicle implies nose-only chamber, not whole body."
+      },
+      {
+        "paper_id": 5988,
+        "field": "cannabis_type",
+        "source": "llm",
+        "resolved_value": [
+          "pure cannabinoid"
+        ],
+        "explanation": "NED contains isolated THC and CBD as active components; nanoemulsion vehicle does not make it a concentrate."
+      },
+      {
+        "paper_id": 6192,
+        "field": "strain_reported",
+        "source": "llm",
+        "resolved_value": "331-18A, CBDV, CBD",
+        "explanation": "Abstract names three isolated cannabinoids from a chemovar; these are chemotype identifiers Maude missed entirely."
+      },
+      {
+        "paper_id": 7209,
+        "field": "strain_reported",
+        "source": "llm",
+        "resolved_value": "CN2, CN4, CN6",
+        "explanation": "Cultivar codes CN2, CN4, CN6 are stated explicitly in abstract; Maude returned null."
+      },
+      {
+        "paper_id": 8182,
+        "field": "inhaled_exposure_duration",
+        "source": "llm",
+        "resolved_value": "30 minutes",
+        "explanation": "Abstract states '30-min sessions'; Maude has no extractor for session duration text."
+      },
+      {
+        "paper_id": 8442,
+        "field": "inhaled_exposure_duration",
+        "source": "llm",
+        "resolved_value": "10 minutes",
+        "explanation": "Abstract describes 10-minute vapor exposure paradigm; Maude returned null."
+      },
+      {
+        "paper_id": 7832,
+        "field": "administration_frequency",
+        "source": "llm",
+        "resolved_value": "daily",
+        "explanation": "Abstract states 'received a daily THC edible'; trivial pattern Maude failed to parse."
+      },
+      {
+        "paper_id": 7209,
+        "field": "duration_days",
+        "source": "llm",
+        "resolved_value": 15.0,
+        "explanation": "15-day treatment period inferable from EAE model protocol; Maude returned null."
+      }
+    ],
+    "proposed_cues": [
+      {
+        "node_id": "node2b_in_vivo",
+        "field": "cannabis_type",
+        "cue": "pure cannabinoid",
+        "explanation": "Trigger pure cannabinoid when isolated THC/CBD/CBDV or vendor-sourced compound (e.g., Sigma-Aldrich) is the test article."
+      },
+      {
+        "node_id": "node2b_in_vivo",
+        "field": "cannabis_type",
+        "cue": "CB receptor agonist",
+        "explanation": "Synthetic agonists (CP-55940, WIN 55212-2, HU-210) must map to CB receptor agonist, not vape pen or unknown."
+      },
+      {
+        "node_id": "node2b_in_vivo",
+        "field": "cannabis_type",
+        "cue": "vaporized cannabis plant matter",
+        "explanation": "Distinguish dried flower vapor from vape pen products; 'plant matter' phrase signals dried flower category."
+      },
+      {
+        "node_id": "node2b_in_vivo",
+        "field": "exposure_method",
+        "cue": "THC edible",
+        "explanation": "Edible administration maps to oral administration, not injection. Prevents misclassification seen in paper 7832."
+      },
+      {
+        "node_id": "node2b_in_vivo",
+        "field": "exposure_method",
+        "cue": "30-min sessions of vapor inhalation",
+        "explanation": "Timed inhalation sessions in small rodents default to nose-only unless 'whole body' or 'chamber' stated."
+      },
+      {
+        "node_id": "node2b_in_vivo",
+        "field": "inhaled_exposure_duration",
+        "cue": "\\d+-min(ute)? (vapor|smoke|inhalation) session",
+        "explanation": "Regex on session duration fills inhaled_exposure_duration which Maude never extracts currently."
+      },
+      {
+        "node_id": "node2b_in_vivo",
+        "field": "administration_frequency",
+        "cue": "daily|twice daily|once daily|alternating days|every other day|5 days.*2 days off",
+        "explanation": "Frequency phrases appear in almost every abstract; adding these patterns closes the 78% gap."
+      },
+      {
+        "node_id": "node2b_in_vivo",
+        "field": "duration_days",
+        "cue": "for \\d+ days|over \\d+ days|from PND \\d+ to PND \\d+",
+        "explanation": "Arithmetic on PND ranges (e.g., PND31-40 = 10 days) and explicit day counts resolve 59% disagreement."
+      },
+      {
+        "node_id": "node2b_in_vivo",
+        "field": "strain_reported",
+        "cue": "cultivar|chemovar|CN\\d+|Sprague-Dawley|C57Bl/6|CP-55,940|WIN 55,212-2",
+        "explanation": "Strain field should capture both animal strains and cannabis cultivar/compound names used as test articles."
+      },
+      {
+        "node_id": "node2b_in_vivo",
+        "field": "thc_mg_ml",
+        "cue": "\\d+\\s*mg/mL.*THC|THC.*\\d+\\s*mg/mL",
+        "explanation": "Concentration in vehicle (e.g., 100 mg/mL in PG) is stated explicitly; regex captures it for inhalation papers."
+      }
+    ],
+    "proposed_rules_changes": [
+      {
+        "type": "extractor_logic",
+        "description": "Add administration_frequency extractor using regex list: ['daily', 'twice daily', 'once daily', 'every other day', 'alternating days', '\\d+ days? (on|off)', 'weekly', 'twice weekly']. Return first match normalized.",
+        "patch_hint": "extractor.py: add extract_administration_frequency() with re.search over abstract+methods text; call from node2b handler.",
+        "priority": "high"
+      },
+      {
+        "type": "extractor_logic",
+        "description": "Add duration_days extractor: parse 'for N days', 'over N weeks' (*7), 'from PND X to PND Y' (Y-X), 'gestational day X to Y' (Y-X).",
+        "patch_hint": "extractor.py: add extract_duration_days() with multiple regex patterns and unit conversion; fallback to null if ambiguous.",
+        "priority": "high"
+      },
+      {
+        "type": "extractor_logic",
+        "description": "Add inhaled_exposure_duration extractor: regex '(\\d+)[- ]min(ute)?s? (vapor|smoke|inhalation|session)' -> return '{N} minutes'.",
+        "patch_hint": "extractor.py: add extract_inhaled_exposure_duration(); called when exposure_method includes smoke/vapor.",
+        "priority": "high"
+      },
+      {
+        "type": "classifier_logic",
+        "description": "Fix cannabis_type: add priority-ordered checks. If compound name matches known synthetic CB agonists (CP-55940, WIN55212, HU-210) -> 'CB receptor agonist'. If Sigma/Cayman/vendor sourced isolated THC/CBD -> 'pure cannabinoid'. Do NOT default to 'vape pen' from inhalation context alone.",
+        "patch_hint": "classifier.py node2b handler: build SYNTHETIC_CB_AGONISTS set; check before generic vape/smoke keyword match.",
+        "priority": "high"
+      },
+      {
+        "type": "extractor_logic",
+        "description": "Expand strain_reported to capture both animal strain (Sprague-Dawley, C57BL/6J, etc.) AND cannabis cultivar codes (CN2, CN6, 331-18A) and compound names used as test articles.",
+        "patch_hint": "extractor.py: split strain_reported into two sub-extractors (animal_strain, cannabis_strain_or_compound); merge into strain_reported list.",
+        "priority": "medium"
+      },
+      {
+        "type": "classifier_logic",
+        "description": "Fix exposure_method: 'edible', 'food treat', 'oral gavage', 'by mouth' -> oral administration. 'vapor inhalation session' in small rodents default to nose-only unless 'whole-body chamber' is stated.",
+        "patch_hint": "classifier.py: add ORAL_KEYWORDS set including 'edible'; add nose-only default rule for vapor papers.",
+        "priority": "medium"
+      },
+      {
+        "type": "extractor_logic",
+        "description": "Add thc_mg_ml extractor for inhalation papers: regex '(\\d+(?:\\.\\d+)?)\\s*mg/m[Ll].*THC|THC.*?(\\d+(?:\\.\\d+)?)\\s*mg/m[Ll]'.",
+        "patch_hint": "extractor.py: add extract_thc_mg_ml(); call when exposure_method is smoke/vapor.",
+        "priority": "medium"
+      },
+      {
+        "type": "routing_logic",
+        "description": "Paper 7209 was routed to node1b_reviews instead of node2b_in_vivo despite containing explicit in vivo animal data. Add in vivo detection check before review routing.",
+        "patch_hint": "classifier.py node1b gate: if abstract contains 'in vivo' AND animal species terms, override to node2b.",
+        "priority": "medium"
+      }
+    ],
+    "maude_improvement_brief": {
+      "summary": "Maude's node2b performance is severely limited by three systemic gaps: (1) near-total absence of temporal/frequency extractors means administration_frequency and duration_days are null in ~75-80% of papers despite trivial phrase matches in abstracts; (2) cannabis_type classification uses surface-level keyword triggers that confuse delivery device context (vapor -> vape pen) with product type, and fails to distinguish synthetic CB agonists and pure isolated cannabinoids from plant-derived products; (3) strain_reported extraction is inactive, missing both animal strains and cannabis cultivar/compound identifiers that appear explicitly in abstracts. Fixing these three areas with targeted regex extractors and priority-ordered classifier rules would close the majority of the 33% batch alignment gap.",
+      "top_gap_patterns": [
+        "Missing temporal extractors: administration_frequency (78% miss) and duration_days (59% miss) are never populated despite clear abstract phrases like 'daily', 'twice daily', 'from PND X to PND Y'.",
+        "cannabis_type misclassification: Maude defaults to 'vape pen' or 'unknown' from delivery context cues, failing to identify pure cannabinoids, CB receptor agonists, and dried flower products (89% disagreement).",
+        "strain_reported entirely inactive: 93% miss rate; extractor does not scan for cultivar codes, synthetic compound names, or animal strain identifiers.",
+        "inhaled_exposure_duration never extracted: 100% miss rate for vapor papers despite explicit session durations (e.g., '30-min sessions') in abstracts."
+      ],
+      "agent_handoff_prompt": "Cannabis Paper Scraper - Node2b Implementation Brief\n\nOVERVIEW\n\nThis brief covers eight targeted changes across extractor.py, maude_classifier.py, and maude_cues.json for the node2b sub-pipeline. The changes address four critical gap patterns: missing temporal extractors, cannabis_type misclassification, inactive strain extraction, and zero inhaled exposure duration capture. Work should be completed in roughly the order presented, since the high-priority extractor additions unblock classifier fixes that depend on richer field data.\n\nAlignment is currently 66.7%. Expected alignment target post-implementation is 88-92% based on gap pattern frequency weights.\n\n\nPART 1 - extractor.py CHANGES\n\n1a. extract_administration_frequency()\n\nAdd a new standalone function. It should accept a text string (concatenated abstract and methods sections, lowercased). Apply re.search with the following patterns in priority order. Return the first match normalized to a short canonical string. If no match is found, return None.\n\nPattern list (compile once at module level as FREQ_PATTERNS):\n  - r'twice daily' -> \"twice daily\"\n  - r'once daily' -> \"once daily\"\n  - r'\\bdaily\\b' -> \"daily\"\n  - r'every other day' -> \"every other day\"\n  - r'alternating days?' -> \"alternating days\"\n  - r'(\\d+)\\s*days?\\s*on[,/\\s]+(\\d+)\\s*days?\\s*off' -> \"Xd on / Yd off\" (format with captured groups)\n  - r'twice weekly' -> \"twice weekly\"\n  - r'\\bweekly\\b' -> \"weekly\"\n\nThe patterns must be checked in the order listed. \"twice daily\" must be checked before \"daily\" to prevent the shorter pattern swallowing the longer phrase. Return the normalized string, not the raw match.\n\nCall site: inside the node2b field assembly block, run this against abstract_text + \" \" + methods_text and assign result to record[\"administration_frequency\"].\n\n1b. extract_duration_days()\n\nAdd a function accepting the same combined text string. Apply the following regex patterns in order, converting all results to integer days. Return an integer or None.\n\nPattern A: r'for\\s+(\\d+)\\s*days?' -> return int(group 1)\nPattern B: r'over\\s+(\\d+)\\s*weeks?' -> return int(group 1) * 7\nPattern C: r'from\\s+(?:PND|postnatal day)\\s*(\\d+)\\s+to\\s+(?:PND|postnatal day)\\s*(\\d+)' -> return int(group 2) - int(group 1)\nPattern D: r'gestational\\s+days?\\s+(\\d+)\\s+(?:to|-)\\s+(\\d+)' -> return int(group 2) - int(group 1)\nPattern E: r'for\\s+(\\d+)\\s*months?' -> return int(group 1) * 30 (approximate; flag with a comment that this is approximate)\n\nIf multiple patterns match, use the first match found. If the arithmetic result would be zero or negative (e.g., malformed text), return None rather than a nonsensical value. Assign to record[\"duration_days\"].\n\n1c. extract_inhaled_exposure_duration()\n\nAdd a function that returns a string like \"30 minutes\" or None. Regex pattern:\nr'(\\d+)[- ]min(?:ute)?s?\\s+(?:vapor|smoke|inhalation|session)'\n\nCapture group 1 is the number. Return \"{N} minutes\". This function should only be called when the exposure_method field already contains \"smoke\", \"vapor\", \"vaporization\", or \"inhalation\" (case-insensitive check on the classified value). Assign to record[\"inhaled_exposure_duration\"].\n\nNote for the developer: some papers state \"four 30-min sessions\" so the number immediately before \"min\" may be preceded by a hyphen or space. The current regex handles both. Do not parse the session count here; that is a separate field if needed later.\n\n1d. extract_thc_mg_ml()\n\nAdd a function returning a float or None. Two regex patterns to try in sequence:\n\nPattern A: r'(\\d+(?:\\.\\d+)?)\\s*mg/m[Ll][^\\n]{0,40}THC'\nPattern B: r'THC[^\\n]{0,40}?(\\d+(?:\\.\\d+)?)\\s*mg/m[Ll]'\n\nBoth patterns look within 40 characters of the THC mention to avoid false positives from unrelated concentration values in the same sentence. Return float(group 1) from whichever pattern matches first. Only call this function when exposure_method is smoke or vapor. Assign to record[\"thc_mg_ml\"].\n\n1e. strain_reported - split into sub-extractors\n\nReplace the existing (non-functional) strain_reported extractor with two sub-functions, then merge results.\n\nextract_animal_strain(text):\nBuild a list ANIMAL_STRAIN_PATTERNS at module level. Include at minimum:\n  r'\\bSprague[- ]Dawley\\b'\n  r'\\bWistar\\b'\n  r'\\bLong[- ]Evans\\b'\n  r'\\bC57BL/6[A-Z]?\\b'\n  r'\\bBALB/c\\b'\n  r'\\bCD-1\\b'\n  r'\\bFischer 344\\b'\n  r'\\bLewis\\b' (with word boundary to avoid false matches)\nReturn a list of unique matched strings from re.findall across the text.\n\nextract_cannabis_strain_or_compound(text):\nBuild CANNABIS_STRAIN_PATTERNS including:\n  r'\\bCN\\d+\\b' (cultivar codes like CN2, CN6)\n  r'\\b\\d{3}-\\d+[A-Z]?\\b' (codes like 331-18A)\n  r'\\bCP-55[\\s,]?940\\b'\n  r'\\bWIN\\s?55[\\s,]?212\\b'\n  r'\\bHU-210\\b'\n  r'\\bJWH-\\d+\\b'\n  r'\\bAM-\\d+\\b'\nAlso capture vendor-context phrases: if \"Sigma\" or \"Cayman\" appears within 60 characters of \"THC\" or \"CBD\", record \"isolated THC (Sigma)\" or \"isolated CBD (Cayman)\" as appropriate using a proximity check rather than a single giant regex.\n\nMerge step: strain_reported = extract_animal_strain(text) + extract_cannabis_strain_or_compound(text). Deduplicate. If the merged list is empty, assign None rather than an empty list to keep downstream null checks consistent.\n\n\nPART 2 - maude_classifier.py CHANGES\n\n2a. Fix cannabis_type classification\n\nAt the top of the node2b handler, define:\n\nSYNTHETIC_CB_AGONISTS = {\"cp-55940\", \"cp55940\", \"win55212\", \"win 55212-2\", \"hu-210\", \"hu210\", \"jwh-018\", \"am-2201\"}\n\nClassification priority order (enforce with if/elif chain, NOT a flat keyword scan):\n\nStep 1: Lowercase the full text. If any token in SYNTHETIC_CB_AGONISTS appears, set cannabis_type = \"CB receptor agonist\". Break.\n\nStep 2: If (\"sigma\" in text or \"cayman\" in text or \"thc isolate\" in text or \"cbd isolate\" in text) and (\"delta-9-thc\" in text or \"cannabidiol\" in text or isolated compound language), set cannabis_type = \"pure cannabinoid\". Break.\n\nStep 3: If \"nabiximols\" in text or \"sativex\" in text, set cannabis_type = \"nabiximols\". Break.\n\nStep 4: If \"cannabis extract\" in text or \"bho\" in text or \"butane hash oil\" in text, set cannabis_type = \"cannabis extract\". Break.\n\nStep 5: If \"dried flower\" in text or \"cannabis flower\" in text or \"herbal cannabis\" in text, set cannabis_type = \"dried flower\". Break.\n\nStep 6: If delivery context includes smoke/vapor, do NOT automatically assign \"vape pen\". Only assign \"vape pen\" if the text explicitly mentions \"vape pen\", \"vaping device\", \"e-cigarette\", or \"cartridge\". Otherwise assign \"cannabis smoke\" for combustion or \"cannabis vapor\" for vaporization. The key fix is removing the existing fallback that defaults to \"vape pen\" from inhalation context alone.\n\nStep 7: Fallback -> \"unknown\".\n\n2b. Fix exposure_method classification\n\nDefine at module level:\nORAL_KEYWORDS = {\"edible\", \"food treat\", \"oral gavage\", \"by mouth\", \"gavage\", \"per os\", \"p.o.\", \"oral administration\", \"intragastric\", \"chow\", \"drinking water\", \"in food\"}\n\nIn the exposure_method classifier block, check ORAL_KEYWORDS before checking inhalation keywords. The current classifier appears to reach inhalation checks first and can misclassify gavage papers that mention vaporization in the discussion. Fix by ordering: oral check -> inhalation check -> injection check -> topical check -> unknown.\n\nFor inhalation papers in small rodents (species is rat or mouse), add a default rule: if \"whole-body chamber\" or \"whole body exposure\" is NOT present in the text, default inhalation subtype to \"nose-only\". Expose this as exposure_method_detail field rather than overwriting exposure_method.\n\n2c. Routing fix - node1b gate override\n\nIn the node1b routing block (before the paper is stamped as a review), add a pre-check:\n\nIf abstract contains any of (\"in vivo\", \"in-vivo\") AND any animal species term from a short list (rat, mouse, mice, rodent, rabbit, monkey, primate, zebrafish, canine) -> override route to node2b.\n\nThis check must run before the review classifier keyword check (which catches \"systematic review\", \"meta-analysis\", \"review of\" etc.). The current bug is that paper 7209 matched a review keyword before the in vivo override had a chance to fire. Moving the override earlier in the decision tree fixes it.\n\nLog a warning when this override fires so reviewers can audit the affected papers: \"node1b override: paper {paper_id} redirected to node2b due to in vivo signal in abstract.\"\n\n\nPART 3 - maude_cues.json CHANGES\n\nAdd or update the following cue groups. Keep existing cues intact; these are additions.\n\nUnder \"temporal_cues\" (create this group if absent):\n  - administration_frequency_terms: [\"daily\", \"twice daily\", \"once daily\", \"every other day\", \"alternating days\", \"weekly\", \"twice weekly\"]\n  - duration_markers: [\"for N days\", \"over N weeks\", \"PND\", \"postnatal day\", \"gestational day\", \"GD\"]\n  - session_duration_markers: [\"min session\", \"minute session\", \"min vapor\", \"minute inhalation\"]\n\nUnder \"cannabis_type_cues\":\n  - synthetic_cb_agonists: [\"CP-55940\", \"WIN55212\", \"HU-210\", \"JWH-018\", \"AM-2201\"]\n  - pure_cannabinoid_vendors: [\"Sigma-Aldrich\", \"Cayman Chemical\", \"THC isolate\", \"CBD isolate\", \"delta-9-THC (Sigma)\", \"delta-9-THC (Cayman)\"]\n  - do_not_infer_vape: true (boolean flag read by classifier to enforce the no-fallback rule)\n\nUnder \"strain_cues\":\n  - animal_strains: [\"Sprague-Dawley\", \"Wistar\", \"Long-Evans\", \"C57BL/6J\", \"BALB/c\", \"Fischer 344\", \"CD-1\", \"Lewis\"]\n  - cannabis_cultivar_pattern: \"CN\\\\d+|\\\\d{3}-\\\\d+[A-Z]?\"\n  - synthetic_compound_pattern: \"CP-55940|WIN\\\\s?55212|HU-210|JWH-\\\\d+|AM-\\\\d+\"\n\nUnder \"routing_cues\":\n  - in_vivo_override_terms: [\"in vivo\", \"in-vivo\"]\n  - animal_species_terms: [\"rat\", \"mouse\", \"mice\", \"rodent\", \"rabbit\", \"monkey\", \"primate\", \"zebrafish\", \"canine\", \"dog\"]\n\nNote: the JSON cues serve as documentation and as source-of-truth for the MAUDE scoring model. If any cue list is updated in maude_cues.json, the corresponding Python constant in maude_classifier.py must also be updated. Consider adding a startup assertion that compares the two sources if drift has been a problem.\n\n\nPART 4 - TEST IDEAS\n\nUnit tests for extractor.py:\n\nTest extract_administration_frequency with input \"Animals were dosed twice daily for 14 days.\" -> expect \"twice daily\", not \"daily\".\nTest with input \"daily injections were given\" -> expect \"daily\".\nTest with input \"doses on alternating days\" -> expect \"alternating days\".\nTest with no matching phrase -> expect None.\n\nTest extract_duration_days with \"for 28 days\" -> 28.\nTest with \"over 3 weeks\" -> 21.\nTest with \"from PND 4 to PND 21\" -> 17.\nTest with \"gestational days 5 to 18\" -> 13.\nTest with \"for 2 months\" -> 60 (approximate flag).\nTest with ambiguous or no duration phrase -> None.\n\nTest extract_inhaled_exposure_duration with \"four 30-min vapor sessions\" -> \"30 minutes\".\nTest with \"60 minute inhalation sessions\" -> \"60 minutes\".\nTest that function returns None when exposure_method is \"oral gavage\".\n\nTest extract_thc_mg_ml with \"THC at 5 mg/mL was vaporized\" -> 5.0.\nTest with \"vaporized 2.5 mg/ml THC\" -> 2.5.\nTest with no concentration -> None.\n\nTest strain_reported with \"Sprague-Dawley rats received CP-55940\" -> list contains both \"Sprague-Dawley\" and \"CP-55940\".\nTest with \"C57BL/6J mice\" -> list contains \"C57BL/6J\".\nTest with \"CN2 cannabis cultivar\" -> list contains \"CN2\".\n\nIntegration tests for maude_classifier.py:\n\nTest cannabis_type on abstract mentioning \"CP-55940 (Sigma-Aldrich)\" -> \"CB receptor agonist\", not \"pure cannabinoid\" and not \"vape pen\".\nTest with abstract mentioning \"delta-9-THC obtained from Cayman Chemical\" and no inhalation context -> \"pure cannabinoid\".\nTest inhalation abstract with no \"vape pen\" mention -> must NOT return \"vape pen\".\nTest abstract with \"whole-body vapor chamber\" -> exposure_method_detail should NOT be \"nose-only\".\nTest abstract with \"vapor inhalation\" in rats with no chamber type specified -> exposure_method_detail = \"nose-only\".\nTest oral: abstract with \"oral gavage\" and unrelated vaporization mention in discussion -> exposure_method = \"oral gavage\".\n\nRouting test:\n\nTest paper 7209 case: abstract contains \"in vivo\" and \"rats\" but also \"systematic\" somewhere in title -> must route to node2b.\nTest clean review paper (no in vivo, no animal species) -> routes to node1b_reviews as before.\n\nRegression guard:\nAfter all changes, run the existing alignment suite. If alignment drops below 66.7% on any previously-passing field, the change introduced a regression and must be reverted before merging.\n\n\nIMPLEMENTATION NOTES\n\nThe eight changes are independent enough to be developed in parallel, but should be merged in two batches: (1) all extractor.py additions first, tested in isolation, then (2) maude_classifier.py and maude_cues.json updates together since the classifier reads the cue file at import time.\n\nThe inhaled_exposure_duration and thc_mg_ml functions are conditional on exposure_method, so they must be called after exposure_method is classified. Ensure the node2b handler calls classify_exposure_method before calling these two extractors.\n\nFor the strain_reported vendor proximity check, set a tolerance of 60 characters as noted. If performance is a concern on large texts, restrict the search to the first 800 characters of the methods section where vendor sourcing is typically stated."
+    },
+    "agent_handoff_prompt": "Cannabis Paper Scraper - Node2b Implementation Brief\n\nOVERVIEW\n\nThis brief covers eight targeted changes across extractor.py, maude_classifier.py, and maude_cues.json for the node2b sub-pipeline. The changes address four critical gap patterns: missing temporal extractors, cannabis_type misclassification, inactive strain extraction, and zero inhaled exposure duration capture. Work should be completed in roughly the order presented, since the high-priority extractor additions unblock classifier fixes that depend on richer field data.\n\nAlignment is currently 66.7%. Expected alignment target post-implementation is 88-92% based on gap pattern frequency weights.\n\n\nPART 1 - extractor.py CHANGES\n\n1a. extract_administration_frequency()\n\nAdd a new standalone function. It should accept a text string (concatenated abstract and methods sections, lowercased). Apply re.search with the following patterns in priority order. Return the first match normalized to a short canonical string. If no match is found, return None.\n\nPattern list (compile once at module level as FREQ_PATTERNS):\n  - r'twice daily' -> \"twice daily\"\n  - r'once daily' -> \"once daily\"\n  - r'\\bdaily\\b' -> \"daily\"\n  - r'every other day' -> \"every other day\"\n  - r'alternating days?' -> \"alternating days\"\n  - r'(\\d+)\\s*days?\\s*on[,/\\s]+(\\d+)\\s*days?\\s*off' -> \"Xd on / Yd off\" (format with captured groups)\n  - r'twice weekly' -> \"twice weekly\"\n  - r'\\bweekly\\b' -> \"weekly\"\n\nThe patterns must be checked in the order listed. \"twice daily\" must be checked before \"daily\" to prevent the shorter pattern swallowing the longer phrase. Return the normalized string, not the raw match.\n\nCall site: inside the node2b field assembly block, run this against abstract_text + \" \" + methods_text and assign result to record[\"administration_frequency\"].\n\n1b. extract_duration_days()\n\nAdd a function accepting the same combined text string. Apply the following regex patterns in order, converting all results to integer days. Return an integer or None.\n\nPattern A: r'for\\s+(\\d+)\\s*days?' -> return int(group 1)\nPattern B: r'over\\s+(\\d+)\\s*weeks?' -> return int(group 1) * 7\nPattern C: r'from\\s+(?:PND|postnatal day)\\s*(\\d+)\\s+to\\s+(?:PND|postnatal day)\\s*(\\d+)' -> return int(group 2) - int(group 1)\nPattern D: r'gestational\\s+days?\\s+(\\d+)\\s+(?:to|-)\\s+(\\d+)' -> return int(group 2) - int(group 1)\nPattern E: r'for\\s+(\\d+)\\s*months?' -> return int(group 1) * 30 (approximate; flag with a comment that this is approximate)\n\nIf multiple patterns match, use the first match found. If the arithmetic result would be zero or negative (e.g., malformed text), return None rather than a nonsensical value. Assign to record[\"duration_days\"].\n\n1c. extract_inhaled_exposure_duration()\n\nAdd a function that returns a string like \"30 minutes\" or None. Regex pattern:\nr'(\\d+)[- ]min(?:ute)?s?\\s+(?:vapor|smoke|inhalation|session)'\n\nCapture group 1 is the number. Return \"{N} minutes\". This function should only be called when the exposure_method field already contains \"smoke\", \"vapor\", \"vaporization\", or \"inhalation\" (case-insensitive check on the classified value). Assign to record[\"inhaled_exposure_duration\"].\n\nNote for the developer: some papers state \"four 30-min sessions\" so the number immediately before \"min\" may be preceded by a hyphen or space. The current regex handles both. Do not parse the session count here; that is a separate field if needed later.\n\n1d. extract_thc_mg_ml()\n\nAdd a function returning a float or None. Two regex patterns to try in sequence:\n\nPattern A: r'(\\d+(?:\\.\\d+)?)\\s*mg/m[Ll][^\\n]{0,40}THC'\nPattern B: r'THC[^\\n]{0,40}?(\\d+(?:\\.\\d+)?)\\s*mg/m[Ll]'\n\nBoth patterns look within 40 characters of the THC mention to avoid false positives from unrelated concentration values in the same sentence. Return float(group 1) from whichever pattern matches first. Only call this function when exposure_method is smoke or vapor. Assign to record[\"thc_mg_ml\"].\n\n1e. strain_reported - split into sub-extractors\n\nReplace the existing (non-functional) strain_reported extractor with two sub-functions, then merge results.\n\nextract_animal_strain(text):\nBuild a list ANIMAL_STRAIN_PATTERNS at module level. Include at minimum:\n  r'\\bSprague[- ]Dawley\\b'\n  r'\\bWistar\\b'\n  r'\\bLong[- ]Evans\\b'\n  r'\\bC57BL/6[A-Z]?\\b'\n  r'\\bBALB/c\\b'\n  r'\\bCD-1\\b'\n  r'\\bFischer 344\\b'\n  r'\\bLewis\\b' (with word boundary to avoid false matches)\nReturn a list of unique matched strings from re.findall across the text.\n\nextract_cannabis_strain_or_compound(text):\nBuild CANNABIS_STRAIN_PATTERNS including:\n  r'\\bCN\\d+\\b' (cultivar codes like CN2, CN6)\n  r'\\b\\d{3}-\\d+[A-Z]?\\b' (codes like 331-18A)\n  r'\\bCP-55[\\s,]?940\\b'\n  r'\\bWIN\\s?55[\\s,]?212\\b'\n  r'\\bHU-210\\b'\n  r'\\bJWH-\\d+\\b'\n  r'\\bAM-\\d+\\b'\nAlso capture vendor-context phrases: if \"Sigma\" or \"Cayman\" appears within 60 characters of \"THC\" or \"CBD\", record \"isolated THC (Sigma)\" or \"isolated CBD (Cayman)\" as appropriate using a proximity check rather than a single giant regex.\n\nMerge step: strain_reported = extract_animal_strain(text) + extract_cannabis_strain_or_compound(text). Deduplicate. If the merged list is empty, assign None rather than an empty list to keep downstream null checks consistent.\n\n\nPART 2 - maude_classifier.py CHANGES\n\n2a. Fix cannabis_type classification\n\nAt the top of the node2b handler, define:\n\nSYNTHETIC_CB_AGONISTS = {\"cp-55940\", \"cp55940\", \"win55212\", \"win 55212-2\", \"hu-210\", \"hu210\", \"jwh-018\", \"am-2201\"}\n\nClassification priority order (enforce with if/elif chain, NOT a flat keyword scan):\n\nStep 1: Lowercase the full text. If any token in SYNTHETIC_CB_AGONISTS appears, set cannabis_type = \"CB receptor agonist\". Break.\n\nStep 2: If (\"sigma\" in text or \"cayman\" in text or \"thc isolate\" in text or \"cbd isolate\" in text) and (\"delta-9-thc\" in text or \"cannabidiol\" in text or isolated compound language), set cannabis_type = \"pure cannabinoid\". Break.\n\nStep 3: If \"nabiximols\" in text or \"sativex\" in text, set cannabis_type = \"nabiximols\". Break.\n\nStep 4: If \"cannabis extract\" in text or \"bho\" in text or \"butane hash oil\" in text, set cannabis_type = \"cannabis extract\". Break.\n\nStep 5: If \"dried flower\" in text or \"cannabis flower\" in text or \"herbal cannabis\" in text, set cannabis_type = \"dried flower\". Break.\n\nStep 6: If delivery context includes smoke/vapor, do NOT automatically assign \"vape pen\". Only assign \"vape pen\" if the text explicitly mentions \"vape pen\", \"vaping device\", \"e-cigarette\", or \"cartridge\". Otherwise assign \"cannabis smoke\" for combustion or \"cannabis vapor\" for vaporization. The key fix is removing the existing fallback that defaults to \"vape pen\" from inhalation context alone.\n\nStep 7: Fallback -> \"unknown\".\n\n2b. Fix exposure_method classification\n\nDefine at module level:\nORAL_KEYWORDS = {\"edible\", \"food treat\", \"oral gavage\", \"by mouth\", \"gavage\", \"per os\", \"p.o.\", \"oral administration\", \"intragastric\", \"chow\", \"drinking water\", \"in food\"}\n\nIn the exposure_method classifier block, check ORAL_KEYWORDS before checking inhalation keywords. The current classifier appears to reach inhalation checks first and can misclassify gavage papers that mention vaporization in the discussion. Fix by ordering: oral check -> inhalation check -> injection check -> topical check -> unknown.\n\nFor inhalation papers in small rodents (species is rat or mouse), add a default rule: if \"whole-body chamber\" or \"whole body exposure\" is NOT present in the text, default inhalation subtype to \"nose-only\". Expose this as exposure_method_detail field rather than overwriting exposure_method.\n\n2c. Routing fix - node1b gate override\n\nIn the node1b routing block (before the paper is stamped as a review), add a pre-check:\n\nIf abstract contains any of (\"in vivo\", \"in-vivo\") AND any animal species term from a short list (rat, mouse, mice, rodent, rabbit, monkey, primate, zebrafish, canine) -> override route to node2b.\n\nThis check must run before the review classifier keyword check (which catches \"systematic review\", \"meta-analysis\", \"review of\" etc.). The current bug is that paper 7209 matched a review keyword before the in vivo override had a chance to fire. Moving the override earlier in the decision tree fixes it.\n\nLog a warning when this override fires so reviewers can audit the affected papers: \"node1b override: paper {paper_id} redirected to node2b due to in vivo signal in abstract.\"\n\n\nPART 3 - maude_cues.json CHANGES\n\nAdd or update the following cue groups. Keep existing cues intact; these are additions.\n\nUnder \"temporal_cues\" (create this group if absent):\n  - administration_frequency_terms: [\"daily\", \"twice daily\", \"once daily\", \"every other day\", \"alternating days\", \"weekly\", \"twice weekly\"]\n  - duration_markers: [\"for N days\", \"over N weeks\", \"PND\", \"postnatal day\", \"gestational day\", \"GD\"]\n  - session_duration_markers: [\"min session\", \"minute session\", \"min vapor\", \"minute inhalation\"]\n\nUnder \"cannabis_type_cues\":\n  - synthetic_cb_agonists: [\"CP-55940\", \"WIN55212\", \"HU-210\", \"JWH-018\", \"AM-2201\"]\n  - pure_cannabinoid_vendors: [\"Sigma-Aldrich\", \"Cayman Chemical\", \"THC isolate\", \"CBD isolate\", \"delta-9-THC (Sigma)\", \"delta-9-THC (Cayman)\"]\n  - do_not_infer_vape: true (boolean flag read by classifier to enforce the no-fallback rule)\n\nUnder \"strain_cues\":\n  - animal_strains: [\"Sprague-Dawley\", \"Wistar\", \"Long-Evans\", \"C57BL/6J\", \"BALB/c\", \"Fischer 344\", \"CD-1\", \"Lewis\"]\n  - cannabis_cultivar_pattern: \"CN\\\\d+|\\\\d{3}-\\\\d+[A-Z]?\"\n  - synthetic_compound_pattern: \"CP-55940|WIN\\\\s?55212|HU-210|JWH-\\\\d+|AM-\\\\d+\"\n\nUnder \"routing_cues\":\n  - in_vivo_override_terms: [\"in vivo\", \"in-vivo\"]\n  - animal_species_terms: [\"rat\", \"mouse\", \"mice\", \"rodent\", \"rabbit\", \"monkey\", \"primate\", \"zebrafish\", \"canine\", \"dog\"]\n\nNote: the JSON cues serve as documentation and as source-of-truth for the MAUDE scoring model. If any cue list is updated in maude_cues.json, the corresponding Python constant in maude_classifier.py must also be updated. Consider adding a startup assertion that compares the two sources if drift has been a problem.\n\n\nPART 4 - TEST IDEAS\n\nUnit tests for extractor.py:\n\nTest extract_administration_frequency with input \"Animals were dosed twice daily for 14 days.\" -> expect \"twice daily\", not \"daily\".\nTest with input \"daily injections were given\" -> expect \"daily\".\nTest with input \"doses on alternating days\" -> expect \"alternating days\".\nTest with no matching phrase -> expect None.\n\nTest extract_duration_days with \"for 28 days\" -> 28.\nTest with \"over 3 weeks\" -> 21.\nTest with \"from PND 4 to PND 21\" -> 17.\nTest with \"gestational days 5 to 18\" -> 13.\nTest with \"for 2 months\" -> 60 (approximate flag).\nTest with ambiguous or no duration phrase -> None.\n\nTest extract_inhaled_exposure_duration with \"four 30-min vapor sessions\" -> \"30 minutes\".\nTest with \"60 minute inhalation sessions\" -> \"60 minutes\".\nTest that function returns None when exposure_method is \"oral gavage\".\n\nTest extract_thc_mg_ml with \"THC at 5 mg/mL was vaporized\" -> 5.0.\nTest with \"vaporized 2.5 mg/ml THC\" -> 2.5.\nTest with no concentration -> None.\n\nTest strain_reported with \"Sprague-Dawley rats received CP-55940\" -> list contains both \"Sprague-Dawley\" and \"CP-55940\".\nTest with \"C57BL/6J mice\" -> list contains \"C57BL/6J\".\nTest with \"CN2 cannabis cultivar\" -> list contains \"CN2\".\n\nIntegration tests for maude_classifier.py:\n\nTest cannabis_type on abstract mentioning \"CP-55940 (Sigma-Aldrich)\" -> \"CB receptor agonist\", not \"pure cannabinoid\" and not \"vape pen\".\nTest with abstract mentioning \"delta-9-THC obtained from Cayman Chemical\" and no inhalation context -> \"pure cannabinoid\".\nTest inhalation abstract with no \"vape pen\" mention -> must NOT return \"vape pen\".\nTest abstract with \"whole-body vapor chamber\" -> exposure_method_detail should NOT be \"nose-only\".\nTest abstract with \"vapor inhalation\" in rats with no chamber type specified -> exposure_method_detail = \"nose-only\".\nTest oral: abstract with \"oral gavage\" and unrelated vaporization mention in discussion -> exposure_method = \"oral gavage\".\n\nRouting test:\n\nTest paper 7209 case: abstract contains \"in vivo\" and \"rats\" but also \"systematic\" somewhere in title -> must route to node2b.\nTest clean review paper (no in vivo, no animal species) -> routes to node1b_reviews as before.\n\nRegression guard:\nAfter all changes, run the existing alignment suite. If alignment drops below 66.7% on any previously-passing field, the change introduced a regression and must be reverted before merging.\n\n\nIMPLEMENTATION NOTES\n\nThe eight changes are independent enough to be developed in parallel, but should be merged in two batches: (1) all extractor.py additions first, tested in isolation, then (2) maude_classifier.py and maude_cues.json updates together since the classifier reads the cue file at import time.\n\nThe inhaled_exposure_duration and thc_mg_ml functions are conditional on exposure_method, so they must be called after exposure_method is classified. Ensure the node2b handler calls classify_exposure_method before calling these two extractors.\n\nFor the strain_reported vendor proximity check, set a tolerance of 60 characters as noted. If performance is a concern on large texts, restrict the search to the first 800 characters of the methods section where vendor sourcing is typically stated.",
+    "_llm_call_metrics": {
+      "model": "claude-sonnet-4-6",
+      "input_tokens": 7180,
+      "output_tokens": 3503,
+      "total_tokens": 10683,
+      "estimated_cost_usd": 0.074085,
+      "prompt_chars": 22074,
+      "disagreement_rows_sent": 27
+    }
+  }
+}

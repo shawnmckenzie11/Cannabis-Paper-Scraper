@@ -1,0 +1,4675 @@
+{
+  "batch_id": "node1_calibration_20260619_134130_098",
+  "created_at": "2026-06-19T13:41:30.624952",
+  "rules_version": "2.4.0",
+  "mode": "node1_routing",
+  "automation_node": "node1",
+  "calibration_label": "node1-calibration",
+  "variants": [
+    "control"
+  ],
+  "max_calls": 40,
+  "calls_attempted": 0,
+  "planned_candidates": 0,
+  "updates_applied": 0,
+  "dry_run": true,
+  "abstract_only": true,
+  "candidate_count": 100,
+  "results": [
+    {
+      "paper_id": 27424,
+      "pmid": "30172249",
+      "title": "Cannabinoids in cancer treatment: Therapeutic potential and legislation",
+      "variant": "control",
+      "dry_run": false,
+      "locked_fields": [],
+      "before_confidence": null,
+      "before_classifier_version": "heuristic-reclassify-1.0.0",
+      "status": "updated",
+      "after_confidence": 0.775,
+      "after_classifier_version": "llm-node1-calibration-control-2.4.0",
+      "after_publication_type": "review",
+      "after_study_type": [
+        "review"
+      ],
+      "routing_subnode": "node1b",
+      "changes": {
+        "exposure_method": {
+          "old": "[\"injection cannabinoids\"]",
+          "new": [
+            "unknown"
+          ]
+        },
+        "cannabis_type": {
+          "old": "[\"pure cannabinoid\"]",
+          "new": [
+            "pure cannabinoid",
+            "CB receptor agonist"
+          ]
+        }
+      },
+      "llm_metrics": {
+        "model": "claude-sonnet-4-6",
+        "input_tokens": 973,
+        "cache_read_tokens": 0,
+        "cache_write_tokens": 5464,
+        "output_tokens": 290,
+        "cost": 0.027759,
+        "few_shot_similarity": 0.5,
+        "few_shot_count": 1,
+        "bm25_retrieval_used": 1,
+        "classification_confidence": 0.775,
+        "classifier_version": "2.4.0"
+      },
+      "llm": {
+        "publication_type": "review",
+        "study_type": [
+          "review"
+        ],
+        "exposure_method": [
+          "unknown"
+        ],
+        "cannabis_type": [
+          "pure cannabinoid",
+          "CB receptor agonist"
+        ],
+        "outcome_domain": [
+          "oncology",
+          "pain"
+        ],
+        "ingestion_status": null,
+        "species": null,
+        "classification_confidence": 0.775,
+        "classifier_version": "llm-node1-calibration-control-2.4.0"
+      },
+      "maude": {
+        "publication_type": "review",
+        "study_type": [
+          "review"
+        ],
+        "exposure_method": [],
+        "cannabis_type": [],
+        "outcome_domain": [
+          "pain",
+          "oncology"
+        ],
+        "ingestion_status": "tangential",
+        "species": null,
+        "classification_confidence": 0.84,
+        "classifier_version": "maude-2.4.0",
+        "nodes_visited": [
+          "node0_ingestion",
+          "node1b_reviews"
+        ]
+      },
+      "disagreement": {
+        "fields": {
+          "ingestion_status": {
+            "maude": "tangential",
+            "llm": null
+          },
+          "exposure_method": {
+            "maude": [],
+            "llm": [
+              "unknown"
+            ]
+          },
+          "cannabis_type": {
+            "maude": [],
+            "llm": [
+              "pure cannabinoid",
+              "CB receptor agonist"
+            ]
+          }
+        },
+        "high_level_count": 3,
+        "promotion_field_count": 0,
+        "flagged_for_review": true,
+        "promotion_fields": []
+      },
+      "flagged_for_review": true
+    },
+    {
+      "paper_id": 27054,
+      "pmid": "30910443",
+      "title": "Safety, efficacy, and mechanisms of action of cannabinoids in neurological disorders",
+      "variant": "control",
+      "dry_run": false,
+      "locked_fields": [],
+      "before_confidence": null,
+      "before_classifier_version": "heuristic-reclassify-1.0.0",
+      "status": "updated",
+      "after_confidence": 0.72,
+      "after_classifier_version": "llm-node1-calibration-control-2.4.0",
+      "after_publication_type": "review",
+      "after_study_type": [
+        "review"
+      ],
+      "routing_subnode": "node1b",
+      "changes": {
+        "exposure_method": {
+          "old": "[\"injection cannabinoids\"]",
+          "new": [
+            "unknown"
+          ]
+        },
+        "cannabis_type": {
+          "old": "[\"unknown\"]",
+          "new": [
+            "pure cannabinoid"
+          ]
+        },
+        "outcome_domain": {
+          "old": "[\"pain\", \"cognition\", \"neuroprotection\"]",
+          "new": [
+            "neuroprotection",
+            "pain"
+          ]
+        }
+      },
+      "llm_metrics": {
+        "model": "claude-sonnet-4-6",
+        "input_tokens": 1003,
+        "cache_read_tokens": 5464,
+        "cache_write_tokens": 0,
+        "output_tokens": 285,
+        "cost": 0.008923200000000001,
+        "few_shot_similarity": 0.4,
+        "few_shot_count": 1,
+        "bm25_retrieval_used": 1,
+        "classification_confidence": 0.72,
+        "classifier_version": "2.4.0"
+      },
+      "llm": {
+        "publication_type": "review",
+        "study_type": [
+          "review"
+        ],
+        "exposure_method": [
+          "unknown"
+        ],
+        "cannabis_type": [
+          "pure cannabinoid"
+        ],
+        "outcome_domain": [
+          "neuroprotection",
+          "pain"
+        ],
+        "ingestion_status": null,
+        "species": null,
+        "classification_confidence": 0.72,
+        "classifier_version": "llm-node1-calibration-control-2.4.0"
+      },
+      "maude": {
+        "publication_type": "review",
+        "study_type": [
+          "review"
+        ],
+        "exposure_method": [],
+        "cannabis_type": [],
+        "outcome_domain": [
+          "pain",
+          "cognition",
+          "neuroprotection"
+        ],
+        "ingestion_status": "relevant",
+        "species": null,
+        "classification_confidence": 0.84,
+        "classifier_version": "maude-2.4.0",
+        "nodes_visited": [
+          "node0_ingestion",
+          "node1b_reviews"
+        ]
+      },
+      "disagreement": {
+        "fields": {
+          "ingestion_status": {
+            "maude": "relevant",
+            "llm": null
+          },
+          "exposure_method": {
+            "maude": [],
+            "llm": [
+              "unknown"
+            ]
+          },
+          "cannabis_type": {
+            "maude": [],
+            "llm": [
+              "pure cannabinoid"
+            ]
+          },
+          "outcome_domain": {
+            "maude": [
+              "pain",
+              "cognition",
+              "neuroprotection"
+            ],
+            "llm": [
+              "neuroprotection",
+              "pain"
+            ]
+          }
+        },
+        "high_level_count": 4,
+        "promotion_field_count": 0,
+        "flagged_for_review": true,
+        "promotion_fields": []
+      },
+      "flagged_for_review": true
+    },
+    {
+      "paper_id": 28686,
+      "pmid": "27554802",
+      "title": "Targeting the endocannabinoid system: future therapeutic strategies",
+      "variant": "control",
+      "dry_run": false,
+      "locked_fields": [],
+      "before_confidence": null,
+      "before_classifier_version": "heuristic-reclassify-1.0.0",
+      "status": "updated",
+      "after_confidence": 0.89,
+      "after_classifier_version": "llm-node1-calibration-control-2.4.0",
+      "after_publication_type": "review",
+      "after_study_type": [
+        "review"
+      ],
+      "routing_subnode": "node1b",
+      "changes": {
+        "exposure_method": {
+          "old": "[\"injection cannabinoids\"]",
+          "new": [
+            "unknown"
+          ]
+        }
+      },
+      "llm_metrics": {
+        "model": "claude-sonnet-4-6",
+        "input_tokens": 719,
+        "cache_read_tokens": 5464,
+        "cache_write_tokens": 0,
+        "output_tokens": 276,
+        "cost": 0.0079362,
+        "few_shot_similarity": 0.8,
+        "few_shot_count": 1,
+        "bm25_retrieval_used": 1,
+        "classification_confidence": 0.89,
+        "classifier_version": "2.4.0"
+      },
+      "llm": {
+        "publication_type": "review",
+        "study_type": [
+          "review"
+        ],
+        "exposure_method": [
+          "unknown"
+        ],
+        "cannabis_type": [
+          "unknown"
+        ],
+        "outcome_domain": [
+          "other"
+        ],
+        "ingestion_status": null,
+        "species": null,
+        "classification_confidence": 0.89,
+        "classifier_version": "llm-node1-calibration-control-2.4.0"
+      },
+      "maude": {
+        "publication_type": "review",
+        "study_type": [
+          "review"
+        ],
+        "exposure_method": [],
+        "cannabis_type": [],
+        "outcome_domain": [
+          "other"
+        ],
+        "ingestion_status": "relevant",
+        "species": null,
+        "classification_confidence": 0.84,
+        "classifier_version": "maude-2.4.0",
+        "nodes_visited": [
+          "node0_ingestion",
+          "node1b_reviews"
+        ]
+      },
+      "disagreement": {
+        "fields": {
+          "ingestion_status": {
+            "maude": "relevant",
+            "llm": null
+          },
+          "exposure_method": {
+            "maude": [],
+            "llm": [
+              "unknown"
+            ]
+          },
+          "cannabis_type": {
+            "maude": [],
+            "llm": [
+              "unknown"
+            ]
+          }
+        },
+        "high_level_count": 3,
+        "promotion_field_count": 0,
+        "flagged_for_review": true,
+        "promotion_fields": []
+      },
+      "flagged_for_review": true
+    },
+    {
+      "paper_id": 26119,
+      "pmid": "32709050",
+      "title": "Targeting Cannabinoid Receptors: Current Status and Prospects of Natural Products",
+      "variant": "control",
+      "dry_run": false,
+      "locked_fields": [],
+      "before_confidence": null,
+      "before_classifier_version": "heuristic-reclassify-1.0.0",
+      "status": "updated",
+      "after_confidence": 0.69,
+      "after_classifier_version": "llm-node1-calibration-control-2.4.0",
+      "after_publication_type": "review",
+      "after_study_type": [
+        "review"
+      ],
+      "routing_subnode": "node1b",
+      "changes": {
+        "exposure_method": {
+          "old": "[\"injection cannabinoids\"]",
+          "new": [
+            "unknown"
+          ]
+        },
+        "cannabis_type": {
+          "old": "[\"pure cannabinoid\"]",
+          "new": [
+            "unknown"
+          ]
+        }
+      },
+      "llm_metrics": {
+        "model": "claude-sonnet-4-6",
+        "input_tokens": 1064,
+        "cache_read_tokens": 5464,
+        "cache_write_tokens": 0,
+        "output_tokens": 276,
+        "cost": 0.0089712,
+        "few_shot_similarity": 0.3,
+        "few_shot_count": 1,
+        "bm25_retrieval_used": 1,
+        "classification_confidence": 0.69,
+        "classifier_version": "2.4.0"
+      },
+      "llm": {
+        "publication_type": "review",
+        "study_type": [
+          "review"
+        ],
+        "exposure_method": [
+          "unknown"
+        ],
+        "cannabis_type": [
+          "unknown"
+        ],
+        "outcome_domain": [
+          "other"
+        ],
+        "ingestion_status": null,
+        "species": null,
+        "classification_confidence": 0.69,
+        "classifier_version": "llm-node1-calibration-control-2.4.0"
+      },
+      "maude": {
+        "publication_type": "review",
+        "study_type": [
+          "review"
+        ],
+        "exposure_method": [],
+        "cannabis_type": [],
+        "outcome_domain": [
+          "other"
+        ],
+        "ingestion_status": "relevant",
+        "species": null,
+        "classification_confidence": 0.88,
+        "classifier_version": "maude-2.4.0",
+        "nodes_visited": [
+          "node0_ingestion",
+          "node1b_reviews",
+          "node3c"
+        ]
+      },
+      "disagreement": {
+        "fields": {
+          "ingestion_status": {
+            "maude": "relevant",
+            "llm": null
+          },
+          "exposure_method": {
+            "maude": [],
+            "llm": [
+              "unknown"
+            ]
+          },
+          "cannabis_type": {
+            "maude": [],
+            "llm": [
+              "unknown"
+            ]
+          }
+        },
+        "high_level_count": 3,
+        "promotion_field_count": 0,
+        "flagged_for_review": true,
+        "promotion_fields": []
+      },
+      "flagged_for_review": true
+    },
+    {
+      "paper_id": 16059,
+      "pmid": "32197092",
+      "title": "Psychiatric symptoms caused by cannabis constituents: a systematic review and meta-analysis",
+      "variant": "control",
+      "dry_run": false,
+      "locked_fields": [],
+      "before_confidence": null,
+      "before_classifier_version": "heuristic-reclassify-1.0.0",
+      "status": "updated",
+      "after_confidence": 0.875,
+      "after_classifier_version": "llm-node1-calibration-control-2.4.0",
+      "after_publication_type": "meta-analysis",
+      "after_study_type": [
+        "meta-analysis",
+        "review"
+      ],
+      "routing_subnode": "node3b",
+      "changes": {
+        "study_type": {
+          "old": "[\"meta-analysis\"]",
+          "new": [
+            "meta-analysis",
+            "review"
+          ]
+        },
+        "exposure_method": {
+          "old": "[\"injection cannabinoids\"]",
+          "new": [
+            "injected",
+            "oral",
+            "intranasal"
+          ]
+        },
+        "cannabis_type": {
+          "old": "[\"unknown\"]",
+          "new": [
+            "pure cannabinoid"
+          ]
+        },
+        "outcome_domain": {
+          "old": "[\"other\"]",
+          "new": [
+            "anxiety",
+            "addiction"
+          ]
+        },
+        "administration_frequency": {
+          "old": "acute administration",
+          "new": null
+        },
+        "sample_size": {
+          "old": 196,
+          "new": 324
+        }
+      },
+      "llm_metrics": {
+        "model": "claude-sonnet-4-6",
+        "input_tokens": 1311,
+        "cache_read_tokens": 5464,
+        "cache_write_tokens": 0,
+        "output_tokens": 299,
+        "cost": 0.0100572,
+        "few_shot_similarity": 1.0,
+        "few_shot_count": 1,
+        "bm25_retrieval_used": 1,
+        "classification_confidence": 0.875,
+        "classifier_version": "2.4.0"
+      },
+      "llm": {
+        "publication_type": "meta-analysis",
+        "study_type": [
+          "meta-analysis",
+          "review"
+        ],
+        "exposure_method": [
+          "injected",
+          "oral",
+          "intranasal"
+        ],
+        "cannabis_type": [
+          "pure cannabinoid"
+        ],
+        "outcome_domain": [
+          "anxiety",
+          "addiction"
+        ],
+        "ingestion_status": null,
+        "species": null,
+        "classification_confidence": 0.875,
+        "classifier_version": "llm-node1-calibration-control-2.4.0"
+      },
+      "maude": {
+        "publication_type": "systematic review",
+        "study_type": [
+          "review"
+        ],
+        "exposure_method": [],
+        "cannabis_type": [],
+        "outcome_domain": [
+          "addiction"
+        ],
+        "ingestion_status": "tangential",
+        "species": null,
+        "classification_confidence": 0.93,
+        "classifier_version": "maude-2.4.0",
+        "nodes_visited": [
+          "node0_ingestion",
+          "node1b_reviews",
+          "node3a"
+        ]
+      },
+      "disagreement": {
+        "fields": {
+          "ingestion_status": {
+            "maude": "tangential",
+            "llm": null
+          },
+          "publication_type": {
+            "maude": "systematic review",
+            "llm": "meta-analysis"
+          },
+          "study_type": {
+            "maude": [
+              "review"
+            ],
+            "llm": [
+              "meta-analysis",
+              "review"
+            ]
+          },
+          "exposure_method": {
+            "maude": [],
+            "llm": [
+              "injected",
+              "oral",
+              "intranasal"
+            ]
+          },
+          "cannabis_type": {
+            "maude": [],
+            "llm": [
+              "pure cannabinoid"
+            ]
+          },
+          "outcome_domain": {
+            "maude": [
+              "addiction"
+            ],
+            "llm": [
+              "anxiety",
+              "addiction"
+            ]
+          }
+        },
+        "high_level_count": 6,
+        "promotion_field_count": 2,
+        "flagged_for_review": true,
+        "promotion_fields": [
+          "publication_type",
+          "study_type"
+        ]
+      },
+      "flagged_for_review": true
+    },
+    {
+      "paper_id": 8973,
+      "pmid": "37895122",
+      "title": "Plant Extracts as Skin Care and Therapeutic Agents",
+      "variant": "control",
+      "dry_run": false,
+      "locked_fields": [],
+      "before_confidence": null,
+      "before_classifier_version": "heuristic-reclassify-1.0.0",
+      "status": "updated",
+      "after_confidence": 0.72,
+      "after_classifier_version": "llm-node1-calibration-control-2.4.0",
+      "after_publication_type": "review",
+      "after_study_type": [
+        "review"
+      ],
+      "routing_subnode": "node1b",
+      "changes": {
+        "exposure_method": {
+          "old": "[\"injection cannabinoids\"]",
+          "new": [
+            "unknown"
+          ]
+        },
+        "cannabis_type": {
+          "old": "[\"concentrates\"]",
+          "new": [
+            "unknown"
+          ]
+        },
+        "outcome_domain": {
+          "old": "[\"other\"]",
+          "new": [
+            "inflammation"
+          ]
+        }
+      },
+      "llm_metrics": {
+        "model": "claude-sonnet-4-6",
+        "input_tokens": 1149,
+        "cache_read_tokens": 5464,
+        "cache_write_tokens": 0,
+        "output_tokens": 276,
+        "cost": 0.0092262,
+        "few_shot_similarity": 0.4,
+        "few_shot_count": 1,
+        "bm25_retrieval_used": 1,
+        "classification_confidence": 0.72,
+        "classifier_version": "2.4.0"
+      },
+      "llm": {
+        "publication_type": "review",
+        "study_type": [
+          "review"
+        ],
+        "exposure_method": [
+          "unknown"
+        ],
+        "cannabis_type": [
+          "unknown"
+        ],
+        "outcome_domain": [
+          "inflammation"
+        ],
+        "ingestion_status": null,
+        "species": null,
+        "classification_confidence": 0.72,
+        "classifier_version": "llm-node1-calibration-control-2.4.0"
+      },
+      "maude": {
+        "publication_type": "review",
+        "study_type": [
+          "review"
+        ],
+        "exposure_method": [],
+        "cannabis_type": [],
+        "outcome_domain": [
+          "other"
+        ],
+        "ingestion_status": "relevant",
+        "species": null,
+        "classification_confidence": 0.84,
+        "classifier_version": "maude-2.4.0",
+        "nodes_visited": [
+          "node0_ingestion",
+          "node1b_reviews"
+        ]
+      },
+      "disagreement": {
+        "fields": {
+          "ingestion_status": {
+            "maude": "relevant",
+            "llm": null
+          },
+          "exposure_method": {
+            "maude": [],
+            "llm": [
+              "unknown"
+            ]
+          },
+          "cannabis_type": {
+            "maude": [],
+            "llm": [
+              "unknown"
+            ]
+          },
+          "outcome_domain": {
+            "maude": [
+              "other"
+            ],
+            "llm": [
+              "inflammation"
+            ]
+          }
+        },
+        "high_level_count": 4,
+        "promotion_field_count": 0,
+        "flagged_for_review": true,
+        "promotion_fields": []
+      },
+      "flagged_for_review": true
+    },
+    {
+      "paper_id": 27298,
+      "pmid": "30417354",
+      "title": "Medical Cannabis: A plurimillennial history of an evergreen",
+      "variant": "control",
+      "dry_run": false,
+      "locked_fields": [],
+      "before_confidence": null,
+      "before_classifier_version": "heuristic-reclassify-1.0.0",
+      "status": "updated",
+      "after_confidence": 0.9500000000000001,
+      "after_classifier_version": "llm-node1-calibration-control-2.4.0",
+      "after_publication_type": "review",
+      "after_study_type": [
+        "review"
+      ],
+      "routing_subnode": "node1b",
+      "changes": {
+        "exposure_method": {
+          "old": "[\"injection cannabinoids\"]",
+          "new": [
+            "unknown"
+          ]
+        },
+        "outcome_domain": {
+          "old": "[\"other\"]",
+          "new": [
+            "inflammation",
+            "neuroprotection"
+          ]
+        }
+      },
+      "llm_metrics": {
+        "model": "claude-sonnet-4-6",
+        "input_tokens": 803,
+        "cache_read_tokens": 5464,
+        "cache_write_tokens": 0,
+        "output_tokens": 282,
+        "cost": 0.008278200000000001,
+        "few_shot_similarity": 1.0,
+        "few_shot_count": 1,
+        "bm25_retrieval_used": 1,
+        "classification_confidence": 0.9500000000000001,
+        "classifier_version": "2.4.0"
+      },
+      "llm": {
+        "publication_type": "review",
+        "study_type": [
+          "review"
+        ],
+        "exposure_method": [
+          "unknown"
+        ],
+        "cannabis_type": [
+          "unknown"
+        ],
+        "outcome_domain": [
+          "inflammation",
+          "neuroprotection"
+        ],
+        "ingestion_status": null,
+        "species": null,
+        "classification_confidence": 0.9500000000000001,
+        "classifier_version": "llm-node1-calibration-control-2.4.0"
+      },
+      "maude": {
+        "publication_type": "review",
+        "study_type": [
+          "review"
+        ],
+        "exposure_method": [],
+        "cannabis_type": [],
+        "outcome_domain": [
+          "other"
+        ],
+        "ingestion_status": "relevant",
+        "species": null,
+        "classification_confidence": 0.84,
+        "classifier_version": "maude-2.4.0",
+        "nodes_visited": [
+          "node0_ingestion",
+          "node1b_reviews"
+        ]
+      },
+      "disagreement": {
+        "fields": {
+          "ingestion_status": {
+            "maude": "relevant",
+            "llm": null
+          },
+          "exposure_method": {
+            "maude": [],
+            "llm": [
+              "unknown"
+            ]
+          },
+          "cannabis_type": {
+            "maude": [],
+            "llm": [
+              "unknown"
+            ]
+          },
+          "outcome_domain": {
+            "maude": [
+              "other"
+            ],
+            "llm": [
+              "inflammation",
+              "neuroprotection"
+            ]
+          }
+        },
+        "high_level_count": 4,
+        "promotion_field_count": 0,
+        "flagged_for_review": true,
+        "promotion_fields": []
+      },
+      "flagged_for_review": true
+    },
+    {
+      "paper_id": 16786,
+      "pmid": "31013866",
+      "title": "Use of Cannabidiol in the Treatment of Epilepsy: Efficacy and Security in Clinical Trials",
+      "variant": "control",
+      "dry_run": false,
+      "locked_fields": [],
+      "before_confidence": null,
+      "before_classifier_version": "heuristic-reclassify-1.0.0",
+      "status": "updated",
+      "after_confidence": 0.9,
+      "after_classifier_version": "llm-node1-calibration-control-2.4.0",
+      "after_publication_type": "review",
+      "after_study_type": [
+        "review"
+      ],
+      "routing_subnode": "node1b",
+      "changes": {
+        "exposure_method": {
+          "old": "[\"injection cannabinoids\"]",
+          "new": [
+            "oral"
+          ]
+        },
+        "cannabis_type": {
+          "old": "[\"unknown\"]",
+          "new": [
+            "pure cannabinoid"
+          ]
+        },
+        "outcome_domain": {
+          "old": "[\"anxiety\", \"inflammation\", \"neuroprotection\"]",
+          "new": [
+            "neuroprotection"
+          ]
+        }
+      },
+      "llm_metrics": {
+        "model": "claude-sonnet-4-6",
+        "input_tokens": 723,
+        "cache_read_tokens": 5464,
+        "cache_write_tokens": 0,
+        "output_tokens": 282,
+        "cost": 0.0080382,
+        "few_shot_similarity": 1.0,
+        "few_shot_count": 1,
+        "bm25_retrieval_used": 1,
+        "classification_confidence": 0.9,
+        "classifier_version": "2.4.0"
+      },
+      "llm": {
+        "publication_type": "review",
+        "study_type": [
+          "review"
+        ],
+        "exposure_method": [
+          "oral"
+        ],
+        "cannabis_type": [
+          "pure cannabinoid"
+        ],
+        "outcome_domain": [
+          "neuroprotection"
+        ],
+        "ingestion_status": null,
+        "species": null,
+        "classification_confidence": 0.9,
+        "classifier_version": "llm-node1-calibration-control-2.4.0"
+      },
+      "maude": {
+        "publication_type": "review",
+        "study_type": [
+          "review"
+        ],
+        "exposure_method": [],
+        "cannabis_type": [],
+        "outcome_domain": [
+          "anxiety",
+          "inflammation",
+          "neuroprotection"
+        ],
+        "ingestion_status": "relevant",
+        "species": null,
+        "classification_confidence": 0.84,
+        "classifier_version": "maude-2.4.0",
+        "nodes_visited": [
+          "node0_ingestion",
+          "node1b_reviews"
+        ]
+      },
+      "disagreement": {
+        "fields": {
+          "ingestion_status": {
+            "maude": "relevant",
+            "llm": null
+          },
+          "exposure_method": {
+            "maude": [],
+            "llm": [
+              "oral"
+            ]
+          },
+          "cannabis_type": {
+            "maude": [],
+            "llm": [
+              "pure cannabinoid"
+            ]
+          },
+          "outcome_domain": {
+            "maude": [
+              "anxiety",
+              "inflammation",
+              "neuroprotection"
+            ],
+            "llm": [
+              "neuroprotection"
+            ]
+          }
+        },
+        "high_level_count": 4,
+        "promotion_field_count": 0,
+        "flagged_for_review": true,
+        "promotion_fields": []
+      },
+      "flagged_for_review": true
+    },
+    {
+      "paper_id": 18588,
+      "pmid": "32026735",
+      "title": "Cannabis use among U.S. adolescents in the Era of Marijuana Legalization: a review of changing use patterns, comorbidity, and health correlates",
+      "variant": "control",
+      "dry_run": false,
+      "locked_fields": [],
+      "before_confidence": null,
+      "before_classifier_version": "heuristic-reclassify-1.0.0",
+      "status": "updated",
+      "after_confidence": 0.9500000000000001,
+      "after_classifier_version": "llm-node1-calibration-control-2.4.0",
+      "after_publication_type": "review",
+      "after_study_type": [
+        "review"
+      ],
+      "routing_subnode": "node1b",
+      "changes": {
+        "exposure_method": {
+          "old": "[\"injection cannabinoids\"]",
+          "new": [
+            "unknown"
+          ]
+        },
+        "outcome_domain": {
+          "old": "[\"addiction\"]",
+          "new": [
+            "cognition",
+            "addiction"
+          ]
+        },
+        "duration_days": {
+          "old": 9125.0,
+          "new": null
+        }
+      },
+      "llm_metrics": {
+        "model": "claude-sonnet-4-6",
+        "input_tokens": 922,
+        "cache_read_tokens": 5464,
+        "cache_write_tokens": 0,
+        "output_tokens": 280,
+        "cost": 0.0086052,
+        "few_shot_similarity": 1.0,
+        "few_shot_count": 1,
+        "bm25_retrieval_used": 1,
+        "classification_confidence": 0.9500000000000001,
+        "classifier_version": "2.4.0"
+      },
+      "llm": {
+        "publication_type": "review",
+        "study_type": [
+          "review"
+        ],
+        "exposure_method": [
+          "unknown"
+        ],
+        "cannabis_type": [
+          "unknown"
+        ],
+        "outcome_domain": [
+          "cognition",
+          "addiction"
+        ],
+        "ingestion_status": null,
+        "species": null,
+        "classification_confidence": 0.9500000000000001,
+        "classifier_version": "llm-node1-calibration-control-2.4.0"
+      },
+      "maude": {
+        "publication_type": "review",
+        "study_type": [
+          "review"
+        ],
+        "exposure_method": [],
+        "cannabis_type": [],
+        "outcome_domain": [
+          "addiction"
+        ],
+        "ingestion_status": "tangential",
+        "species": null,
+        "classification_confidence": 0.84,
+        "classifier_version": "maude-2.4.0",
+        "nodes_visited": [
+          "node0_ingestion",
+          "node1b_reviews"
+        ]
+      },
+      "disagreement": {
+        "fields": {
+          "ingestion_status": {
+            "maude": "tangential",
+            "llm": null
+          },
+          "exposure_method": {
+            "maude": [],
+            "llm": [
+              "unknown"
+            ]
+          },
+          "cannabis_type": {
+            "maude": [],
+            "llm": [
+              "unknown"
+            ]
+          },
+          "outcome_domain": {
+            "maude": [
+              "addiction"
+            ],
+            "llm": [
+              "cognition",
+              "addiction"
+            ]
+          }
+        },
+        "high_level_count": 4,
+        "promotion_field_count": 0,
+        "flagged_for_review": true,
+        "promotion_fields": []
+      },
+      "flagged_for_review": true
+    },
+    {
+      "paper_id": 29881,
+      "pmid": "25347455",
+      "title": "Endocannabinoids, related compounds and their metabolic routes",
+      "variant": "control",
+      "dry_run": false,
+      "locked_fields": [],
+      "before_confidence": null,
+      "before_classifier_version": "heuristic-reclassify-1.0.0",
+      "status": "updated",
+      "after_confidence": 0.83,
+      "after_classifier_version": "llm-node1-calibration-control-2.4.0",
+      "after_publication_type": "review",
+      "after_study_type": [
+        "review"
+      ],
+      "routing_subnode": "node1b",
+      "changes": {
+        "exposure_method": {
+          "old": "[\"injection cannabinoids\"]",
+          "new": [
+            "unknown"
+          ]
+        }
+      },
+      "llm_metrics": {
+        "model": "claude-sonnet-4-6",
+        "input_tokens": 786,
+        "cache_read_tokens": 5464,
+        "cache_write_tokens": 0,
+        "output_tokens": 276,
+        "cost": 0.0081372,
+        "few_shot_similarity": 0.6,
+        "few_shot_count": 1,
+        "bm25_retrieval_used": 1,
+        "classification_confidence": 0.83,
+        "classifier_version": "2.4.0"
+      },
+      "llm": {
+        "publication_type": "review",
+        "study_type": [
+          "review"
+        ],
+        "exposure_method": [
+          "unknown"
+        ],
+        "cannabis_type": [
+          "unknown"
+        ],
+        "outcome_domain": [
+          "other"
+        ],
+        "ingestion_status": null,
+        "species": null,
+        "classification_confidence": 0.83,
+        "classifier_version": "llm-node1-calibration-control-2.4.0"
+      },
+      "maude": {
+        "publication_type": "review",
+        "study_type": [
+          "review"
+        ],
+        "exposure_method": [],
+        "cannabis_type": [],
+        "outcome_domain": [
+          "other"
+        ],
+        "ingestion_status": "relevant",
+        "species": null,
+        "classification_confidence": 0.84,
+        "classifier_version": "maude-2.4.0",
+        "nodes_visited": [
+          "node0_ingestion",
+          "node1b_reviews"
+        ]
+      },
+      "disagreement": {
+        "fields": {
+          "ingestion_status": {
+            "maude": "relevant",
+            "llm": null
+          },
+          "exposure_method": {
+            "maude": [],
+            "llm": [
+              "unknown"
+            ]
+          },
+          "cannabis_type": {
+            "maude": [],
+            "llm": [
+              "unknown"
+            ]
+          }
+        },
+        "high_level_count": 3,
+        "promotion_field_count": 0,
+        "flagged_for_review": true,
+        "promotion_fields": []
+      },
+      "flagged_for_review": true
+    },
+    {
+      "paper_id": 28190,
+      "pmid": "28611591",
+      "title": "Metabolism of the Endocannabinoid Anandamide: Open Questions after 25 Years",
+      "variant": "control",
+      "dry_run": false,
+      "locked_fields": [],
+      "before_confidence": null,
+      "before_classifier_version": "heuristic-reclassify-1.0.0",
+      "status": "updated",
+      "after_confidence": 0.72,
+      "after_classifier_version": "llm-node1-calibration-control-2.4.0",
+      "after_publication_type": "review",
+      "after_study_type": [
+        "review"
+      ],
+      "routing_subnode": "node1b",
+      "changes": {
+        "exposure_method": {
+          "old": "[\"injection cannabinoids\"]",
+          "new": [
+            "unknown"
+          ]
+        },
+        "cannabis_type": {
+          "old": "[\"concentrates\"]",
+          "new": [
+            "unknown"
+          ]
+        },
+        "duration_days": {
+          "old": 9125.0,
+          "new": null
+        }
+      },
+      "llm_metrics": {
+        "model": "claude-sonnet-4-6",
+        "input_tokens": 783,
+        "cache_read_tokens": 5464,
+        "cache_write_tokens": 0,
+        "output_tokens": 276,
+        "cost": 0.0081282,
+        "few_shot_similarity": 0.4,
+        "few_shot_count": 1,
+        "bm25_retrieval_used": 1,
+        "classification_confidence": 0.72,
+        "classifier_version": "2.4.0"
+      },
+      "llm": {
+        "publication_type": "review",
+        "study_type": [
+          "review"
+        ],
+        "exposure_method": [
+          "unknown"
+        ],
+        "cannabis_type": [
+          "unknown"
+        ],
+        "outcome_domain": [
+          "other"
+        ],
+        "ingestion_status": null,
+        "species": null,
+        "classification_confidence": 0.72,
+        "classifier_version": "llm-node1-calibration-control-2.4.0"
+      },
+      "maude": {
+        "publication_type": "review",
+        "study_type": [
+          "review"
+        ],
+        "exposure_method": [],
+        "cannabis_type": [],
+        "outcome_domain": [
+          "other"
+        ],
+        "ingestion_status": "relevant",
+        "species": null,
+        "classification_confidence": 0.84,
+        "classifier_version": "maude-2.4.0",
+        "nodes_visited": [
+          "node0_ingestion",
+          "node1b_reviews"
+        ]
+      },
+      "disagreement": {
+        "fields": {
+          "ingestion_status": {
+            "maude": "relevant",
+            "llm": null
+          },
+          "exposure_method": {
+            "maude": [],
+            "llm": [
+              "unknown"
+            ]
+          },
+          "cannabis_type": {
+            "maude": [],
+            "llm": [
+              "unknown"
+            ]
+          }
+        },
+        "high_level_count": 3,
+        "promotion_field_count": 0,
+        "flagged_for_review": true,
+        "promotion_fields": []
+      },
+      "flagged_for_review": true
+    },
+    {
+      "paper_id": 18574,
+      "pmid": "34021274",
+      "title": "Cannabis and synaptic reprogramming of the developing brain",
+      "variant": "control",
+      "dry_run": false,
+      "locked_fields": [],
+      "before_confidence": null,
+      "before_classifier_version": "heuristic-reclassify-1.0.0",
+      "status": "updated",
+      "after_confidence": 0.9500000000000001,
+      "after_classifier_version": "llm-node1-calibration-control-2.4.0",
+      "after_publication_type": "review",
+      "after_study_type": [
+        "review"
+      ],
+      "routing_subnode": "node1b",
+      "changes": {
+        "exposure_method": {
+          "old": "[\"injection cannabinoids\"]",
+          "new": [
+            "unknown"
+          ]
+        },
+        "outcome_domain": {
+          "old": "[\"other\"]",
+          "new": [
+            "neuroprotection"
+          ]
+        }
+      },
+      "llm_metrics": {
+        "model": "claude-sonnet-4-6",
+        "input_tokens": 588,
+        "cache_read_tokens": 5464,
+        "cache_write_tokens": 0,
+        "output_tokens": 279,
+        "cost": 0.0075882,
+        "few_shot_similarity": 1.0,
+        "few_shot_count": 1,
+        "bm25_retrieval_used": 1,
+        "classification_confidence": 0.9500000000000001,
+        "classifier_version": "2.4.0"
+      },
+      "llm": {
+        "publication_type": "review",
+        "study_type": [
+          "review"
+        ],
+        "exposure_method": [
+          "unknown"
+        ],
+        "cannabis_type": [
+          "unknown"
+        ],
+        "outcome_domain": [
+          "neuroprotection"
+        ],
+        "ingestion_status": null,
+        "species": null,
+        "classification_confidence": 0.9500000000000001,
+        "classifier_version": "llm-node1-calibration-control-2.4.0"
+      },
+      "maude": {
+        "publication_type": "review",
+        "study_type": [
+          "review"
+        ],
+        "exposure_method": [],
+        "cannabis_type": [],
+        "outcome_domain": [
+          "other"
+        ],
+        "ingestion_status": "relevant",
+        "species": null,
+        "classification_confidence": 0.84,
+        "classifier_version": "maude-2.4.0",
+        "nodes_visited": [
+          "node0_ingestion",
+          "node1b_reviews"
+        ]
+      },
+      "disagreement": {
+        "fields": {
+          "ingestion_status": {
+            "maude": "relevant",
+            "llm": null
+          },
+          "exposure_method": {
+            "maude": [],
+            "llm": [
+              "unknown"
+            ]
+          },
+          "cannabis_type": {
+            "maude": [],
+            "llm": [
+              "unknown"
+            ]
+          },
+          "outcome_domain": {
+            "maude": [
+              "other"
+            ],
+            "llm": [
+              "neuroprotection"
+            ]
+          }
+        },
+        "high_level_count": 4,
+        "promotion_field_count": 0,
+        "flagged_for_review": true,
+        "promotion_fields": []
+      },
+      "flagged_for_review": true
+    },
+    {
+      "paper_id": 18590,
+      "pmid": "32752884",
+      "title": "Medical Marijuana, Recreational Cannabis, and Cardiovascular Health: A Scientific Statement From the American Heart Association.",
+      "variant": "control",
+      "dry_run": false,
+      "locked_fields": [],
+      "before_confidence": null,
+      "before_classifier_version": "heuristic-reclassify-1.0.0",
+      "status": "updated",
+      "after_confidence": 0.9500000000000001,
+      "after_classifier_version": "llm-node1-calibration-control-2.4.0",
+      "after_publication_type": "review",
+      "after_study_type": [
+        "review"
+      ],
+      "routing_subnode": "node1b",
+      "changes": {
+        "exposure_method": {
+          "old": "[\"injection cannabinoids\"]",
+          "new": [
+            "unknown"
+          ]
+        },
+        "duration_days": {
+          "old": 9125.0,
+          "new": null
+        }
+      },
+      "llm_metrics": {
+        "model": "claude-sonnet-4-6",
+        "input_tokens": 840,
+        "cache_read_tokens": 5464,
+        "cache_write_tokens": 0,
+        "output_tokens": 276,
+        "cost": 0.008299200000000001,
+        "few_shot_similarity": 1.0,
+        "few_shot_count": 1,
+        "bm25_retrieval_used": 1,
+        "classification_confidence": 0.9500000000000001,
+        "classifier_version": "2.4.0"
+      },
+      "llm": {
+        "publication_type": "review",
+        "study_type": [
+          "review"
+        ],
+        "exposure_method": [
+          "unknown"
+        ],
+        "cannabis_type": [
+          "unknown"
+        ],
+        "outcome_domain": [
+          "other"
+        ],
+        "ingestion_status": null,
+        "species": null,
+        "classification_confidence": 0.9500000000000001,
+        "classifier_version": "llm-node1-calibration-control-2.4.0"
+      },
+      "maude": {
+        "publication_type": "review",
+        "study_type": [
+          "review"
+        ],
+        "exposure_method": [],
+        "cannabis_type": [],
+        "outcome_domain": [
+          "other"
+        ],
+        "ingestion_status": "tangential",
+        "species": null,
+        "classification_confidence": 0.88,
+        "classifier_version": "maude-2.4.0",
+        "nodes_visited": [
+          "node0_ingestion",
+          "node1b_reviews",
+          "node3c"
+        ]
+      },
+      "disagreement": {
+        "fields": {
+          "ingestion_status": {
+            "maude": "tangential",
+            "llm": null
+          },
+          "exposure_method": {
+            "maude": [],
+            "llm": [
+              "unknown"
+            ]
+          },
+          "cannabis_type": {
+            "maude": [],
+            "llm": [
+              "unknown"
+            ]
+          }
+        },
+        "high_level_count": 3,
+        "promotion_field_count": 0,
+        "flagged_for_review": true,
+        "promotion_fields": []
+      },
+      "flagged_for_review": true
+    },
+    {
+      "paper_id": 17330,
+      "pmid": "34676324",
+      "title": "The Trouble with CBD Oil",
+      "variant": "control",
+      "dry_run": false,
+      "locked_fields": [],
+      "before_confidence": null,
+      "before_classifier_version": "llm-reclassify-1.0.0",
+      "status": "updated",
+      "after_confidence": 0.76,
+      "after_classifier_version": "llm-node1-calibration-control-2.4.0",
+      "after_publication_type": "review",
+      "after_study_type": [
+        "review"
+      ],
+      "routing_subnode": "node1b",
+      "changes": {},
+      "llm_metrics": {
+        "model": "claude-sonnet-4-6",
+        "input_tokens": 853,
+        "cache_read_tokens": 5464,
+        "cache_write_tokens": 0,
+        "output_tokens": 279,
+        "cost": 0.0083832,
+        "few_shot_similarity": 0.7,
+        "few_shot_count": 1,
+        "bm25_retrieval_used": 1,
+        "classification_confidence": 0.76,
+        "classifier_version": "2.4.0"
+      },
+      "llm": {
+        "publication_type": "review",
+        "study_type": [
+          "review"
+        ],
+        "exposure_method": [
+          "unknown"
+        ],
+        "cannabis_type": [
+          "pure cannabinoid"
+        ],
+        "outcome_domain": [
+          "other"
+        ],
+        "ingestion_status": null,
+        "species": null,
+        "classification_confidence": 0.76,
+        "classifier_version": "llm-node1-calibration-control-2.4.0"
+      },
+      "maude": {
+        "publication_type": "review",
+        "study_type": [
+          "review"
+        ],
+        "exposure_method": [],
+        "cannabis_type": [],
+        "outcome_domain": [
+          "other"
+        ],
+        "ingestion_status": "tangential",
+        "species": null,
+        "classification_confidence": 0.84,
+        "classifier_version": "maude-2.4.0",
+        "nodes_visited": [
+          "node0_ingestion",
+          "node1b_reviews"
+        ]
+      },
+      "disagreement": {
+        "fields": {
+          "ingestion_status": {
+            "maude": "tangential",
+            "llm": null
+          },
+          "exposure_method": {
+            "maude": [],
+            "llm": [
+              "unknown"
+            ]
+          },
+          "cannabis_type": {
+            "maude": [],
+            "llm": [
+              "pure cannabinoid"
+            ]
+          }
+        },
+        "high_level_count": 3,
+        "promotion_field_count": 0,
+        "flagged_for_review": true,
+        "promotion_fields": []
+      },
+      "flagged_for_review": true
+    },
+    {
+      "paper_id": 30453,
+      "pmid": "24228165",
+      "title": "The endocannabinoid system, cannabinoids, and pain",
+      "variant": "control",
+      "dry_run": false,
+      "locked_fields": [],
+      "before_confidence": null,
+      "before_classifier_version": "heuristic-reclassify-1.0.0",
+      "status": "updated",
+      "after_confidence": 0.83,
+      "after_classifier_version": "llm-node1-calibration-control-2.4.0",
+      "after_publication_type": "review",
+      "after_study_type": [
+        "review"
+      ],
+      "routing_subnode": "node1b",
+      "changes": {
+        "exposure_method": {
+          "old": "[\"injection cannabinoids\"]",
+          "new": [
+            "unknown"
+          ]
+        }
+      },
+      "llm_metrics": {
+        "model": "claude-sonnet-4-6",
+        "input_tokens": 818,
+        "cache_read_tokens": 5464,
+        "cache_write_tokens": 0,
+        "output_tokens": 279,
+        "cost": 0.008278200000000001,
+        "few_shot_similarity": 0.6,
+        "few_shot_count": 1,
+        "bm25_retrieval_used": 1,
+        "classification_confidence": 0.83,
+        "classifier_version": "2.4.0"
+      },
+      "llm": {
+        "publication_type": "review",
+        "study_type": [
+          "review"
+        ],
+        "exposure_method": [
+          "unknown"
+        ],
+        "cannabis_type": [
+          "unknown"
+        ],
+        "outcome_domain": [
+          "pain",
+          "inflammation"
+        ],
+        "ingestion_status": null,
+        "species": null,
+        "classification_confidence": 0.83,
+        "classifier_version": "llm-node1-calibration-control-2.4.0"
+      },
+      "maude": {
+        "publication_type": "review",
+        "study_type": [
+          "review"
+        ],
+        "exposure_method": [],
+        "cannabis_type": [],
+        "outcome_domain": [
+          "pain",
+          "inflammation"
+        ],
+        "ingestion_status": "tangential",
+        "species": null,
+        "classification_confidence": 0.84,
+        "classifier_version": "maude-2.4.0",
+        "nodes_visited": [
+          "node0_ingestion",
+          "node1b_reviews"
+        ]
+      },
+      "disagreement": {
+        "fields": {
+          "ingestion_status": {
+            "maude": "tangential",
+            "llm": null
+          },
+          "exposure_method": {
+            "maude": [],
+            "llm": [
+              "unknown"
+            ]
+          },
+          "cannabis_type": {
+            "maude": [],
+            "llm": [
+              "unknown"
+            ]
+          }
+        },
+        "high_level_count": 3,
+        "promotion_field_count": 0,
+        "flagged_for_review": true,
+        "promotion_fields": []
+      },
+      "flagged_for_review": true
+    },
+    {
+      "paper_id": 28788,
+      "pmid": "28861491",
+      "title": "Clinical Endocannabinoid Deficiency Reconsidered: Current Research Supports the Theory in Migraine, Fibromyalgia, Irritable Bowel, and Other Treatment-Resistant Syndromes",
+      "variant": "control",
+      "dry_run": false,
+      "locked_fields": [],
+      "before_confidence": null,
+      "before_classifier_version": "heuristic-reclassify-1.0.0",
+      "status": "updated",
+      "after_confidence": 0.74,
+      "after_classifier_version": "llm-node1-calibration-control-2.4.0",
+      "after_publication_type": "review",
+      "after_study_type": [
+        "review"
+      ],
+      "routing_subnode": "node1b",
+      "changes": {
+        "exposure_method": {
+          "old": "[\"injection cannabinoids\"]",
+          "new": [
+            "unknown"
+          ]
+        },
+        "outcome_domain": {
+          "old": "[\"pain\"]",
+          "new": [
+            "pain",
+            "anxiety",
+            "sleep"
+          ]
+        }
+      },
+      "llm_metrics": {
+        "model": "claude-sonnet-4-6",
+        "input_tokens": 974,
+        "cache_read_tokens": 5464,
+        "cache_write_tokens": 0,
+        "output_tokens": 282,
+        "cost": 0.0087912,
+        "few_shot_similarity": 0.3,
+        "few_shot_count": 1,
+        "bm25_retrieval_used": 1,
+        "classification_confidence": 0.74,
+        "classifier_version": "2.4.0"
+      },
+      "llm": {
+        "publication_type": "review",
+        "study_type": [
+          "review"
+        ],
+        "exposure_method": [
+          "unknown"
+        ],
+        "cannabis_type": [
+          "unknown"
+        ],
+        "outcome_domain": [
+          "pain",
+          "anxiety",
+          "sleep"
+        ],
+        "ingestion_status": null,
+        "species": null,
+        "classification_confidence": 0.74,
+        "classifier_version": "llm-node1-calibration-control-2.4.0"
+      },
+      "maude": {
+        "publication_type": "review",
+        "study_type": [
+          "review"
+        ],
+        "exposure_method": [],
+        "cannabis_type": [],
+        "outcome_domain": [
+          "pain"
+        ],
+        "ingestion_status": "relevant",
+        "species": null,
+        "classification_confidence": 0.84,
+        "classifier_version": "maude-2.4.0",
+        "nodes_visited": [
+          "node0_ingestion",
+          "node1b_reviews"
+        ]
+      },
+      "disagreement": {
+        "fields": {
+          "ingestion_status": {
+            "maude": "relevant",
+            "llm": null
+          },
+          "exposure_method": {
+            "maude": [],
+            "llm": [
+              "unknown"
+            ]
+          },
+          "cannabis_type": {
+            "maude": [],
+            "llm": [
+              "unknown"
+            ]
+          },
+          "outcome_domain": {
+            "maude": [
+              "pain"
+            ],
+            "llm": [
+              "pain",
+              "anxiety",
+              "sleep"
+            ]
+          }
+        },
+        "high_level_count": 4,
+        "promotion_field_count": 0,
+        "flagged_for_review": true,
+        "promotion_fields": []
+      },
+      "flagged_for_review": true
+    },
+    {
+      "paper_id": 15881,
+      "pmid": "32504461",
+      "title": "Critical Aspects Affecting Cannabidiol Oral Bioavailability and Metabolic Elimination, and Related Clinical Implications",
+      "variant": "control",
+      "dry_run": false,
+      "locked_fields": [],
+      "before_confidence": null,
+      "before_classifier_version": "heuristic-reclassify-1.0.0",
+      "status": "updated",
+      "after_confidence": 0.870000012,
+      "after_classifier_version": "llm-node1-calibration-control-2.4.0",
+      "after_publication_type": "review",
+      "after_study_type": [
+        "review"
+      ],
+      "routing_subnode": "node1b",
+      "changes": {
+        "exposure_method": {
+          "old": "[\"injection cannabinoids\"]",
+          "new": [
+            "oral"
+          ]
+        },
+        "cannabis_type": {
+          "old": "[\"unknown\"]",
+          "new": [
+            "pure cannabinoid"
+          ]
+        },
+        "dose_mg": {
+          "old": null,
+          "new": 20.0
+        },
+        "sample_size": {
+          "old": null,
+          "new": 5
+        }
+      },
+      "llm_metrics": {
+        "model": "claude-sonnet-4-6",
+        "input_tokens": 999,
+        "cache_read_tokens": 5464,
+        "cache_write_tokens": 0,
+        "output_tokens": 283,
+        "cost": 0.0088812,
+        "few_shot_similarity": 0.90000004,
+        "few_shot_count": 1,
+        "bm25_retrieval_used": 1,
+        "classification_confidence": 0.870000012,
+        "classifier_version": "2.4.0"
+      },
+      "llm": {
+        "publication_type": "review",
+        "study_type": [
+          "review"
+        ],
+        "exposure_method": [
+          "oral"
+        ],
+        "cannabis_type": [
+          "pure cannabinoid"
+        ],
+        "outcome_domain": [
+          "other"
+        ],
+        "ingestion_status": null,
+        "species": null,
+        "classification_confidence": 0.870000012,
+        "classifier_version": "llm-node1-calibration-control-2.4.0"
+      },
+      "maude": {
+        "publication_type": "review",
+        "study_type": [
+          "review"
+        ],
+        "exposure_method": [],
+        "cannabis_type": [],
+        "outcome_domain": [
+          "other"
+        ],
+        "ingestion_status": "relevant",
+        "species": null,
+        "classification_confidence": 0.84,
+        "classifier_version": "maude-2.4.0",
+        "nodes_visited": [
+          "node0_ingestion",
+          "node1b_reviews"
+        ]
+      },
+      "disagreement": {
+        "fields": {
+          "ingestion_status": {
+            "maude": "relevant",
+            "llm": null
+          },
+          "exposure_method": {
+            "maude": [],
+            "llm": [
+              "oral"
+            ]
+          },
+          "cannabis_type": {
+            "maude": [],
+            "llm": [
+              "pure cannabinoid"
+            ]
+          }
+        },
+        "high_level_count": 3,
+        "promotion_field_count": 0,
+        "flagged_for_review": true,
+        "promotion_fields": []
+      },
+      "flagged_for_review": true
+    },
+    {
+      "paper_id": 30855,
+      "pmid": "23474290",
+      "title": "Endogenous cannabinoids revisited: a biochemistry perspective",
+      "variant": "control",
+      "dry_run": false,
+      "locked_fields": [],
+      "before_confidence": null,
+      "before_classifier_version": "heuristic-reclassify-1.0.0",
+      "status": "updated",
+      "after_confidence": 0.83,
+      "after_classifier_version": "llm-node1-calibration-control-2.4.0",
+      "after_publication_type": "review",
+      "after_study_type": [
+        "review"
+      ],
+      "routing_subnode": "node1b",
+      "changes": {
+        "exposure_method": {
+          "old": "[\"injection cannabinoids\"]",
+          "new": [
+            "unknown"
+          ]
+        }
+      },
+      "llm_metrics": {
+        "model": "claude-sonnet-4-6",
+        "input_tokens": 816,
+        "cache_read_tokens": 5464,
+        "cache_write_tokens": 0,
+        "output_tokens": 276,
+        "cost": 0.0082272,
+        "few_shot_similarity": 0.6,
+        "few_shot_count": 1,
+        "bm25_retrieval_used": 1,
+        "classification_confidence": 0.83,
+        "classifier_version": "2.4.0"
+      },
+      "llm": {
+        "publication_type": "review",
+        "study_type": [
+          "review"
+        ],
+        "exposure_method": [
+          "unknown"
+        ],
+        "cannabis_type": [
+          "unknown"
+        ],
+        "outcome_domain": [
+          "other"
+        ],
+        "ingestion_status": null,
+        "species": null,
+        "classification_confidence": 0.83,
+        "classifier_version": "llm-node1-calibration-control-2.4.0"
+      },
+      "maude": {
+        "publication_type": "review",
+        "study_type": [
+          "review"
+        ],
+        "exposure_method": [],
+        "cannabis_type": [],
+        "outcome_domain": [
+          "other"
+        ],
+        "ingestion_status": "tangential",
+        "species": null,
+        "classification_confidence": 0.88,
+        "classifier_version": "maude-2.4.0",
+        "nodes_visited": [
+          "node0_ingestion",
+          "node1b_reviews",
+          "node3c"
+        ]
+      },
+      "disagreement": {
+        "fields": {
+          "ingestion_status": {
+            "maude": "tangential",
+            "llm": null
+          },
+          "exposure_method": {
+            "maude": [],
+            "llm": [
+              "unknown"
+            ]
+          },
+          "cannabis_type": {
+            "maude": [],
+            "llm": [
+              "unknown"
+            ]
+          }
+        },
+        "high_level_count": 3,
+        "promotion_field_count": 0,
+        "flagged_for_review": true,
+        "promotion_fields": []
+      },
+      "flagged_for_review": true
+    },
+    {
+      "paper_id": 26213,
+      "pmid": "32530350",
+      "title": "The synthetic cannabinoids phenomenon: from structure to toxicological properties. A review",
+      "variant": "control",
+      "dry_run": false,
+      "locked_fields": [],
+      "before_confidence": null,
+      "before_classifier_version": "heuristic-reclassify-1.0.0",
+      "status": "updated",
+      "after_confidence": 0.7325,
+      "after_classifier_version": "llm-node1-calibration-control-2.4.0",
+      "after_publication_type": "review",
+      "after_study_type": [
+        "review"
+      ],
+      "routing_subnode": "node1b",
+      "changes": {
+        "exposure_method": {
+          "old": "[\"injection cannabinoids\"]",
+          "new": [
+            "unknown"
+          ]
+        },
+        "cannabis_type": {
+          "old": "[\"dried flower\", \"pure cannabinoid\"]",
+          "new": [
+            "CB receptor agonist",
+            "vape pen",
+            "dried flower"
+          ]
+        },
+        "outcome_domain": {
+          "old": "[\"other\"]",
+          "new": [
+            "addiction",
+            "other"
+          ]
+        }
+      },
+      "llm_metrics": {
+        "model": "claude-sonnet-4-6",
+        "input_tokens": 1048,
+        "cache_read_tokens": 5464,
+        "cache_write_tokens": 0,
+        "output_tokens": 292,
+        "cost": 0.009163200000000002,
+        "few_shot_similarity": 0.4,
+        "few_shot_count": 1,
+        "bm25_retrieval_used": 1,
+        "classification_confidence": 0.7325,
+        "classifier_version": "2.4.0"
+      },
+      "llm": {
+        "publication_type": "review",
+        "study_type": [
+          "review"
+        ],
+        "exposure_method": [
+          "unknown"
+        ],
+        "cannabis_type": [
+          "CB receptor agonist",
+          "vape pen",
+          "dried flower"
+        ],
+        "outcome_domain": [
+          "addiction",
+          "other"
+        ],
+        "ingestion_status": null,
+        "species": null,
+        "classification_confidence": 0.7325,
+        "classifier_version": "llm-node1-calibration-control-2.4.0"
+      },
+      "maude": {
+        "publication_type": "review",
+        "study_type": [
+          "review"
+        ],
+        "exposure_method": [],
+        "cannabis_type": [],
+        "outcome_domain": [
+          "other"
+        ],
+        "ingestion_status": "tangential",
+        "species": null,
+        "classification_confidence": 0.84,
+        "classifier_version": "maude-2.4.0",
+        "nodes_visited": [
+          "node0_ingestion",
+          "node1b_reviews"
+        ]
+      },
+      "disagreement": {
+        "fields": {
+          "ingestion_status": {
+            "maude": "tangential",
+            "llm": null
+          },
+          "exposure_method": {
+            "maude": [],
+            "llm": [
+              "unknown"
+            ]
+          },
+          "cannabis_type": {
+            "maude": [],
+            "llm": [
+              "CB receptor agonist",
+              "vape pen",
+              "dried flower"
+            ]
+          },
+          "outcome_domain": {
+            "maude": [
+              "other"
+            ],
+            "llm": [
+              "addiction",
+              "other"
+            ]
+          }
+        },
+        "high_level_count": 4,
+        "promotion_field_count": 0,
+        "flagged_for_review": true,
+        "promotion_fields": []
+      },
+      "flagged_for_review": true
+    },
+    {
+      "paper_id": 28271,
+      "pmid": "28450060",
+      "title": "Endocannabinoid modulation of dopamine neurotransmission",
+      "variant": "control",
+      "dry_run": false,
+      "locked_fields": [],
+      "before_confidence": null,
+      "before_classifier_version": "heuristic-reclassify-1.0.0",
+      "status": "updated",
+      "after_confidence": 0.83,
+      "after_classifier_version": "llm-node1-calibration-control-2.4.0",
+      "after_publication_type": "review",
+      "after_study_type": [
+        "review"
+      ],
+      "routing_subnode": "node1b",
+      "changes": {
+        "exposure_method": {
+          "old": "[\"injection cannabinoids\"]",
+          "new": [
+            "unknown"
+          ]
+        },
+        "outcome_domain": {
+          "old": "[\"cognition\"]",
+          "new": [
+            "other"
+          ]
+        }
+      },
+      "llm_metrics": {
+        "model": "claude-sonnet-4-6",
+        "input_tokens": 928,
+        "cache_read_tokens": 5464,
+        "cache_write_tokens": 0,
+        "output_tokens": 276,
+        "cost": 0.0085632,
+        "few_shot_similarity": 0.6,
+        "few_shot_count": 1,
+        "bm25_retrieval_used": 1,
+        "classification_confidence": 0.83,
+        "classifier_version": "2.4.0"
+      },
+      "llm": {
+        "publication_type": "review",
+        "study_type": [
+          "review"
+        ],
+        "exposure_method": [
+          "unknown"
+        ],
+        "cannabis_type": [
+          "unknown"
+        ],
+        "outcome_domain": [
+          "other"
+        ],
+        "ingestion_status": null,
+        "species": null,
+        "classification_confidence": 0.83,
+        "classifier_version": "llm-node1-calibration-control-2.4.0"
+      },
+      "maude": {
+        "publication_type": "review",
+        "study_type": [
+          "review"
+        ],
+        "exposure_method": [],
+        "cannabis_type": [],
+        "outcome_domain": [
+          "cognition"
+        ],
+        "ingestion_status": "relevant",
+        "species": null,
+        "classification_confidence": 0.84,
+        "classifier_version": "maude-2.4.0",
+        "nodes_visited": [
+          "node0_ingestion",
+          "node1b_reviews"
+        ]
+      },
+      "disagreement": {
+        "fields": {
+          "ingestion_status": {
+            "maude": "relevant",
+            "llm": null
+          },
+          "exposure_method": {
+            "maude": [],
+            "llm": [
+              "unknown"
+            ]
+          },
+          "cannabis_type": {
+            "maude": [],
+            "llm": [
+              "unknown"
+            ]
+          },
+          "outcome_domain": {
+            "maude": [
+              "cognition"
+            ],
+            "llm": [
+              "other"
+            ]
+          }
+        },
+        "high_level_count": 4,
+        "promotion_field_count": 0,
+        "flagged_for_review": true,
+        "promotion_fields": []
+      },
+      "flagged_for_review": true
+    },
+    {
+      "paper_id": 18559,
+      "pmid": "35901795",
+      "title": "Association of cannabis potency with mental ill health and addiction: a systematic review.",
+      "variant": "control",
+      "dry_run": false,
+      "locked_fields": [],
+      "before_confidence": null,
+      "before_classifier_version": "heuristic-reclassify-1.0.0",
+      "status": "updated",
+      "after_confidence": 0.920000012,
+      "after_classifier_version": "llm-node1-calibration-control-2.4.0",
+      "after_publication_type": "systematic review",
+      "after_study_type": [
+        "review"
+      ],
+      "routing_subnode": "node3a",
+      "changes": {
+        "exposure_method": {
+          "old": "[\"injection cannabinoids\"]",
+          "new": [
+            "unknown"
+          ]
+        },
+        "outcome_domain": {
+          "old": "[\"addiction\"]",
+          "new": [
+            "anxiety",
+            "addiction"
+          ]
+        }
+      },
+      "llm_metrics": {
+        "model": "claude-sonnet-4-6",
+        "input_tokens": 896,
+        "cache_read_tokens": 5464,
+        "cache_write_tokens": 0,
+        "output_tokens": 280,
+        "cost": 0.0085272,
+        "few_shot_similarity": 0.90000004,
+        "few_shot_count": 1,
+        "bm25_retrieval_used": 1,
+        "classification_confidence": 0.920000012,
+        "classifier_version": "2.4.0"
+      },
+      "llm": {
+        "publication_type": "systematic review",
+        "study_type": [
+          "review"
+        ],
+        "exposure_method": [
+          "unknown"
+        ],
+        "cannabis_type": [
+          "unknown"
+        ],
+        "outcome_domain": [
+          "anxiety",
+          "addiction"
+        ],
+        "ingestion_status": null,
+        "species": null,
+        "classification_confidence": 0.920000012,
+        "classifier_version": "llm-node1-calibration-control-2.4.0"
+      },
+      "maude": {
+        "publication_type": "systematic review",
+        "study_type": [
+          "review"
+        ],
+        "exposure_method": [],
+        "cannabis_type": [],
+        "outcome_domain": [
+          "addiction"
+        ],
+        "ingestion_status": "relevant",
+        "species": null,
+        "classification_confidence": 0.93,
+        "classifier_version": "maude-2.4.0",
+        "nodes_visited": [
+          "node0_ingestion",
+          "node1b_reviews",
+          "node3a"
+        ]
+      },
+      "disagreement": {
+        "fields": {
+          "ingestion_status": {
+            "maude": "relevant",
+            "llm": null
+          },
+          "exposure_method": {
+            "maude": [],
+            "llm": [
+              "unknown"
+            ]
+          },
+          "cannabis_type": {
+            "maude": [],
+            "llm": [
+              "unknown"
+            ]
+          },
+          "outcome_domain": {
+            "maude": [
+              "addiction"
+            ],
+            "llm": [
+              "anxiety",
+              "addiction"
+            ]
+          }
+        },
+        "high_level_count": 4,
+        "promotion_field_count": 0,
+        "flagged_for_review": true,
+        "promotion_fields": []
+      },
+      "flagged_for_review": true
+    },
+    {
+      "paper_id": 29899,
+      "pmid": "25282526",
+      "title": "Cannabis, cannabidiol, and epilepsy--from receptors to clinical response",
+      "variant": "control",
+      "dry_run": false,
+      "locked_fields": [],
+      "before_confidence": null,
+      "before_classifier_version": "heuristic-reclassify-1.0.0",
+      "status": "updated",
+      "after_confidence": 0.9500000000000001,
+      "after_classifier_version": "llm-node1-calibration-control-2.4.0",
+      "after_publication_type": "review",
+      "after_study_type": [
+        "review"
+      ],
+      "routing_subnode": "node1b",
+      "changes": {
+        "exposure_method": {
+          "old": "[\"injection cannabinoids\"]",
+          "new": [
+            "unknown"
+          ]
+        },
+        "strain_reported": {
+          "old": "high-CBD",
+          "new": null
+        },
+        "strain_normalized": {
+          "old": "Chemotype III",
+          "new": null
+        }
+      },
+      "llm_metrics": {
+        "model": "claude-sonnet-4-6",
+        "input_tokens": 862,
+        "cache_read_tokens": 5464,
+        "cache_write_tokens": 0,
+        "output_tokens": 279,
+        "cost": 0.008410200000000001,
+        "few_shot_similarity": 1.0,
+        "few_shot_count": 1,
+        "bm25_retrieval_used": 1,
+        "classification_confidence": 0.9500000000000001,
+        "classifier_version": "2.4.0"
+      },
+      "llm": {
+        "publication_type": "review",
+        "study_type": [
+          "review"
+        ],
+        "exposure_method": [
+          "unknown"
+        ],
+        "cannabis_type": [
+          "unknown"
+        ],
+        "outcome_domain": [
+          "neuroprotection"
+        ],
+        "ingestion_status": null,
+        "species": null,
+        "classification_confidence": 0.9500000000000001,
+        "classifier_version": "llm-node1-calibration-control-2.4.0"
+      },
+      "maude": {
+        "publication_type": "review",
+        "study_type": [
+          "review"
+        ],
+        "exposure_method": [],
+        "cannabis_type": [],
+        "outcome_domain": [
+          "addiction",
+          "neuroprotection"
+        ],
+        "ingestion_status": "tangential",
+        "species": null,
+        "classification_confidence": 0.84,
+        "classifier_version": "maude-2.4.0",
+        "nodes_visited": [
+          "node0_ingestion",
+          "node1b_reviews"
+        ]
+      },
+      "disagreement": {
+        "fields": {
+          "ingestion_status": {
+            "maude": "tangential",
+            "llm": null
+          },
+          "exposure_method": {
+            "maude": [],
+            "llm": [
+              "unknown"
+            ]
+          },
+          "cannabis_type": {
+            "maude": [],
+            "llm": [
+              "unknown"
+            ]
+          },
+          "outcome_domain": {
+            "maude": [
+              "addiction",
+              "neuroprotection"
+            ],
+            "llm": [
+              "neuroprotection"
+            ]
+          }
+        },
+        "high_level_count": 4,
+        "promotion_field_count": 0,
+        "flagged_for_review": true,
+        "promotion_fields": []
+      },
+      "flagged_for_review": true
+    },
+    {
+      "paper_id": 27880,
+      "pmid": "29218644",
+      "title": "Cardiovascular Complications of Marijuana and Related Substances: A Review",
+      "variant": "control",
+      "dry_run": false,
+      "locked_fields": [],
+      "before_confidence": null,
+      "before_classifier_version": "heuristic-reclassify-1.0.0",
+      "status": "updated",
+      "after_confidence": 0.7666666666666667,
+      "after_classifier_version": "llm-node1-calibration-control-2.4.0",
+      "after_publication_type": "review",
+      "after_study_type": [
+        "review"
+      ],
+      "routing_subnode": "node1b",
+      "changes": {
+        "exposure_method": {
+          "old": "[\"injection cannabinoids\"]",
+          "new": [
+            "unknown"
+          ]
+        },
+        "cannabis_type": {
+          "old": "[\"pure cannabinoid\"]",
+          "new": [
+            "dried flower",
+            "pure cannabinoid",
+            "CB receptor agonist"
+          ]
+        }
+      },
+      "llm_metrics": {
+        "model": "claude-sonnet-4-6",
+        "input_tokens": 975,
+        "cache_read_tokens": 5464,
+        "cache_write_tokens": 0,
+        "output_tokens": 290,
+        "cost": 0.0089142,
+        "few_shot_similarity": 0.5,
+        "few_shot_count": 1,
+        "bm25_retrieval_used": 1,
+        "classification_confidence": 0.7666666666666667,
+        "classifier_version": "2.4.0"
+      },
+      "llm": {
+        "publication_type": "review",
+        "study_type": [
+          "review"
+        ],
+        "exposure_method": [
+          "unknown"
+        ],
+        "cannabis_type": [
+          "dried flower",
+          "pure cannabinoid",
+          "CB receptor agonist"
+        ],
+        "outcome_domain": [
+          "other"
+        ],
+        "ingestion_status": null,
+        "species": null,
+        "classification_confidence": 0.7666666666666667,
+        "classifier_version": "llm-node1-calibration-control-2.4.0"
+      },
+      "maude": {
+        "publication_type": "review",
+        "study_type": [
+          "review"
+        ],
+        "exposure_method": [],
+        "cannabis_type": [],
+        "outcome_domain": [
+          "addiction"
+        ],
+        "ingestion_status": "tangential",
+        "species": null,
+        "classification_confidence": 0.84,
+        "classifier_version": "maude-2.4.0",
+        "nodes_visited": [
+          "node0_ingestion",
+          "node1b_reviews"
+        ]
+      },
+      "disagreement": {
+        "fields": {
+          "ingestion_status": {
+            "maude": "tangential",
+            "llm": null
+          },
+          "exposure_method": {
+            "maude": [],
+            "llm": [
+              "unknown"
+            ]
+          },
+          "cannabis_type": {
+            "maude": [],
+            "llm": [
+              "dried flower",
+              "pure cannabinoid",
+              "CB receptor agonist"
+            ]
+          },
+          "outcome_domain": {
+            "maude": [
+              "addiction"
+            ],
+            "llm": [
+              "other"
+            ]
+          }
+        },
+        "high_level_count": 4,
+        "promotion_field_count": 0,
+        "flagged_for_review": true,
+        "promotion_fields": []
+      },
+      "flagged_for_review": true
+    },
+    {
+      "paper_id": 31152,
+      "pmid": "22908200",
+      "title": "A brain on cannabinoids: the role of dopamine release in reward seeking",
+      "variant": "control",
+      "dry_run": false,
+      "locked_fields": [],
+      "before_confidence": null,
+      "before_classifier_version": "heuristic-reclassify-1.0.0",
+      "status": "updated",
+      "after_confidence": 0.9500000000000001,
+      "after_classifier_version": "llm-node1-calibration-control-2.4.0",
+      "after_publication_type": "review",
+      "after_study_type": [
+        "review"
+      ],
+      "routing_subnode": "node1b",
+      "changes": {
+        "exposure_method": {
+          "old": "[\"injection cannabinoids\"]",
+          "new": [
+            "unknown"
+          ]
+        }
+      },
+      "llm_metrics": {
+        "model": "claude-sonnet-4-6",
+        "input_tokens": 939,
+        "cache_read_tokens": 5464,
+        "cache_write_tokens": 0,
+        "output_tokens": 276,
+        "cost": 0.0085962,
+        "few_shot_similarity": 1.0,
+        "few_shot_count": 1,
+        "bm25_retrieval_used": 1,
+        "classification_confidence": 0.9500000000000001,
+        "classifier_version": "2.4.0"
+      },
+      "llm": {
+        "publication_type": "review",
+        "study_type": [
+          "review"
+        ],
+        "exposure_method": [
+          "unknown"
+        ],
+        "cannabis_type": [
+          "unknown"
+        ],
+        "outcome_domain": [
+          "addiction"
+        ],
+        "ingestion_status": null,
+        "species": null,
+        "classification_confidence": 0.9500000000000001,
+        "classifier_version": "llm-node1-calibration-control-2.4.0"
+      },
+      "maude": {
+        "publication_type": "review",
+        "study_type": [
+          "review"
+        ],
+        "exposure_method": [],
+        "cannabis_type": [],
+        "outcome_domain": [
+          "addiction"
+        ],
+        "ingestion_status": "relevant",
+        "species": null,
+        "classification_confidence": 0.84,
+        "classifier_version": "maude-2.4.0",
+        "nodes_visited": [
+          "node0_ingestion",
+          "node1b_reviews"
+        ]
+      },
+      "disagreement": {
+        "fields": {
+          "ingestion_status": {
+            "maude": "relevant",
+            "llm": null
+          },
+          "exposure_method": {
+            "maude": [],
+            "llm": [
+              "unknown"
+            ]
+          },
+          "cannabis_type": {
+            "maude": [],
+            "llm": [
+              "unknown"
+            ]
+          }
+        },
+        "high_level_count": 3,
+        "promotion_field_count": 0,
+        "flagged_for_review": true,
+        "promotion_fields": []
+      },
+      "flagged_for_review": true
+    },
+    {
+      "paper_id": 30251,
+      "pmid": "24622769",
+      "title": "Care and feeding of the endocannabinoid system: a systematic review of potential clinical interventions that upregulate the endocannabinoid system",
+      "variant": "control",
+      "dry_run": false,
+      "locked_fields": [],
+      "before_confidence": null,
+      "before_classifier_version": "heuristic-reclassify-1.0.0",
+      "status": "updated",
+      "after_confidence": 0.77,
+      "after_classifier_version": "llm-node1-calibration-control-2.4.0",
+      "after_publication_type": "systematic review",
+      "after_study_type": [
+        "review"
+      ],
+      "routing_subnode": "node3a",
+      "changes": {
+        "exposure_method": {
+          "old": "[\"injection cannabinoids\"]",
+          "new": [
+            "unknown"
+          ]
+        },
+        "outcome_domain": {
+          "old": "[\"other\"]",
+          "new": [
+            "pain",
+            "anxiety",
+            "inflammation"
+          ]
+        }
+      },
+      "llm_metrics": {
+        "model": "claude-sonnet-4-6",
+        "input_tokens": 1022,
+        "cache_read_tokens": 5464,
+        "cache_write_tokens": 0,
+        "output_tokens": 283,
+        "cost": 0.0089502,
+        "few_shot_similarity": 0.4,
+        "few_shot_count": 1,
+        "bm25_retrieval_used": 1,
+        "classification_confidence": 0.77,
+        "classifier_version": "2.4.0"
+      },
+      "llm": {
+        "publication_type": "systematic review",
+        "study_type": [
+          "review"
+        ],
+        "exposure_method": [
+          "unknown"
+        ],
+        "cannabis_type": [
+          "unknown"
+        ],
+        "outcome_domain": [
+          "pain",
+          "anxiety",
+          "inflammation"
+        ],
+        "ingestion_status": null,
+        "species": null,
+        "classification_confidence": 0.77,
+        "classifier_version": "llm-node1-calibration-control-2.4.0"
+      },
+      "maude": {
+        "publication_type": "systematic review",
+        "study_type": [
+          "review"
+        ],
+        "exposure_method": [],
+        "cannabis_type": [],
+        "outcome_domain": [
+          "other"
+        ],
+        "ingestion_status": "relevant",
+        "species": null,
+        "classification_confidence": 0.93,
+        "classifier_version": "maude-2.4.0",
+        "nodes_visited": [
+          "node0_ingestion",
+          "node1b_reviews",
+          "node3a"
+        ]
+      },
+      "disagreement": {
+        "fields": {
+          "ingestion_status": {
+            "maude": "relevant",
+            "llm": null
+          },
+          "exposure_method": {
+            "maude": [],
+            "llm": [
+              "unknown"
+            ]
+          },
+          "cannabis_type": {
+            "maude": [],
+            "llm": [
+              "unknown"
+            ]
+          },
+          "outcome_domain": {
+            "maude": [
+              "other"
+            ],
+            "llm": [
+              "pain",
+              "anxiety",
+              "inflammation"
+            ]
+          }
+        },
+        "high_level_count": 4,
+        "promotion_field_count": 0,
+        "flagged_for_review": true,
+        "promotion_fields": []
+      },
+      "flagged_for_review": true
+    },
+    {
+      "paper_id": 26304,
+      "pmid": "32357565",
+      "title": "Cannabidiol and Other Non-Psychoactive Cannabinoids for Prevention and Treatment of Gastrointestinal Disorders: Useful Nutraceuticals?",
+      "variant": "control",
+      "dry_run": false,
+      "locked_fields": [],
+      "before_confidence": null,
+      "before_classifier_version": "heuristic-reclassify-1.0.0",
+      "status": "updated",
+      "after_confidence": 0.9,
+      "after_classifier_version": "llm-node1-calibration-control-2.4.0",
+      "after_publication_type": "review",
+      "after_study_type": [
+        "review"
+      ],
+      "routing_subnode": "node1b",
+      "changes": {
+        "exposure_method": {
+          "old": "[\"injection cannabinoids\"]",
+          "new": [
+            "unknown"
+          ]
+        },
+        "cannabis_type": {
+          "old": "[\"unknown\"]",
+          "new": [
+            "pure cannabinoid"
+          ]
+        }
+      },
+      "llm_metrics": {
+        "model": "claude-sonnet-4-6",
+        "input_tokens": 894,
+        "cache_read_tokens": 5464,
+        "cache_write_tokens": 0,
+        "output_tokens": 279,
+        "cost": 0.0085062,
+        "few_shot_similarity": 1.0,
+        "few_shot_count": 1,
+        "bm25_retrieval_used": 1,
+        "classification_confidence": 0.9,
+        "classifier_version": "2.4.0"
+      },
+      "llm": {
+        "publication_type": "review",
+        "study_type": [
+          "review"
+        ],
+        "exposure_method": [
+          "unknown"
+        ],
+        "cannabis_type": [
+          "pure cannabinoid"
+        ],
+        "outcome_domain": [
+          "inflammation"
+        ],
+        "ingestion_status": null,
+        "species": null,
+        "classification_confidence": 0.9,
+        "classifier_version": "llm-node1-calibration-control-2.4.0"
+      },
+      "maude": {
+        "publication_type": "review",
+        "study_type": [
+          "review"
+        ],
+        "exposure_method": [],
+        "cannabis_type": [],
+        "outcome_domain": [
+          "other"
+        ],
+        "ingestion_status": "relevant",
+        "species": null,
+        "classification_confidence": 0.84,
+        "classifier_version": "maude-2.4.0",
+        "nodes_visited": [
+          "node0_ingestion",
+          "node1b_reviews"
+        ]
+      },
+      "disagreement": {
+        "fields": {
+          "ingestion_status": {
+            "maude": "relevant",
+            "llm": null
+          },
+          "exposure_method": {
+            "maude": [],
+            "llm": [
+              "unknown"
+            ]
+          },
+          "cannabis_type": {
+            "maude": [],
+            "llm": [
+              "pure cannabinoid"
+            ]
+          },
+          "outcome_domain": {
+            "maude": [
+              "other"
+            ],
+            "llm": [
+              "inflammation"
+            ]
+          }
+        },
+        "high_level_count": 4,
+        "promotion_field_count": 0,
+        "flagged_for_review": true,
+        "promotion_fields": []
+      },
+      "flagged_for_review": true
+    },
+    {
+      "paper_id": 29486,
+      "pmid": "26071989",
+      "title": "The use of cannabinoids as anticancer agents",
+      "variant": "control",
+      "dry_run": false,
+      "locked_fields": [],
+      "before_confidence": null,
+      "before_classifier_version": "heuristic-reclassify-1.0.0",
+      "status": "updated",
+      "after_confidence": 0.920000012,
+      "after_classifier_version": "llm-node1-calibration-control-2.4.0",
+      "after_publication_type": "review",
+      "after_study_type": [
+        "review"
+      ],
+      "routing_subnode": "node1b",
+      "changes": {
+        "exposure_method": {
+          "old": "[\"injection cannabinoids\"]",
+          "new": [
+            "unknown"
+          ]
+        }
+      },
+      "llm_metrics": {
+        "model": "claude-sonnet-4-6",
+        "input_tokens": 778,
+        "cache_read_tokens": 5464,
+        "cache_write_tokens": 0,
+        "output_tokens": 277,
+        "cost": 0.0081282,
+        "few_shot_similarity": 0.90000004,
+        "few_shot_count": 1,
+        "bm25_retrieval_used": 1,
+        "classification_confidence": 0.920000012,
+        "classifier_version": "2.4.0"
+      },
+      "llm": {
+        "publication_type": "review",
+        "study_type": [
+          "review"
+        ],
+        "exposure_method": [
+          "unknown"
+        ],
+        "cannabis_type": [
+          "unknown"
+        ],
+        "outcome_domain": [
+          "oncology"
+        ],
+        "ingestion_status": null,
+        "species": null,
+        "classification_confidence": 0.920000012,
+        "classifier_version": "llm-node1-calibration-control-2.4.0"
+      },
+      "maude": {
+        "publication_type": "review",
+        "study_type": [
+          "review"
+        ],
+        "exposure_method": [],
+        "cannabis_type": [],
+        "outcome_domain": [
+          "oncology"
+        ],
+        "ingestion_status": "relevant",
+        "species": null,
+        "classification_confidence": 0.84,
+        "classifier_version": "maude-2.4.0",
+        "nodes_visited": [
+          "node0_ingestion",
+          "node1b_reviews"
+        ]
+      },
+      "disagreement": {
+        "fields": {
+          "ingestion_status": {
+            "maude": "relevant",
+            "llm": null
+          },
+          "exposure_method": {
+            "maude": [],
+            "llm": [
+              "unknown"
+            ]
+          },
+          "cannabis_type": {
+            "maude": [],
+            "llm": [
+              "unknown"
+            ]
+          }
+        },
+        "high_level_count": 3,
+        "promotion_field_count": 0,
+        "flagged_for_review": true,
+        "promotion_fields": []
+      },
+      "flagged_for_review": true
+    },
+    {
+      "paper_id": 23785,
+      "pmid": "34757514",
+      "title": "European clinical guidelines for Tourette syndrome and other tic disorders-version 2.0. Part III: pharmacological treatment",
+      "variant": "control",
+      "dry_run": false,
+      "locked_fields": [],
+      "before_confidence": null,
+      "before_classifier_version": "heuristic-reclassify-1.0.0",
+      "status": "updated",
+      "after_confidence": 0.6100000000000001,
+      "after_classifier_version": "llm-node1-calibration-control-2.4.0",
+      "after_publication_type": "review",
+      "after_study_type": [
+        "review"
+      ],
+      "routing_subnode": "node1b",
+      "changes": {
+        "study_type": {
+          "old": "[\"meta-analysis\"]",
+          "new": [
+            "review"
+          ]
+        },
+        "exposure_method": {
+          "old": "[\"injection cannabinoids\"]",
+          "new": [
+            "unknown"
+          ]
+        },
+        "publication_type": {
+          "old": "meta-analysis",
+          "new": "review"
+        },
+        "outcome_domain": {
+          "old": "[\"cognition\"]",
+          "new": [
+            "other"
+          ]
+        }
+      },
+      "llm_metrics": {
+        "model": "claude-sonnet-4-6",
+        "input_tokens": 937,
+        "cache_read_tokens": 5464,
+        "cache_write_tokens": 0,
+        "output_tokens": 276,
+        "cost": 0.008590200000000001,
+        "few_shot_similarity": 0.2,
+        "few_shot_count": 1,
+        "bm25_retrieval_used": 1,
+        "classification_confidence": 0.6100000000000001,
+        "classifier_version": "2.4.0"
+      },
+      "llm": {
+        "publication_type": "review",
+        "study_type": [
+          "review"
+        ],
+        "exposure_method": [
+          "unknown"
+        ],
+        "cannabis_type": [
+          "unknown"
+        ],
+        "outcome_domain": [
+          "other"
+        ],
+        "ingestion_status": null,
+        "species": null,
+        "classification_confidence": 0.6100000000000001,
+        "classifier_version": "llm-node1-calibration-control-2.4.0"
+      },
+      "maude": {
+        "publication_type": "review",
+        "study_type": [
+          "review"
+        ],
+        "exposure_method": [],
+        "cannabis_type": [],
+        "outcome_domain": [
+          "cognition"
+        ],
+        "ingestion_status": "relevant",
+        "species": null,
+        "classification_confidence": 0.84,
+        "classifier_version": "maude-2.4.0",
+        "nodes_visited": [
+          "node0_ingestion",
+          "node1b_reviews"
+        ]
+      },
+      "disagreement": {
+        "fields": {
+          "ingestion_status": {
+            "maude": "relevant",
+            "llm": null
+          },
+          "exposure_method": {
+            "maude": [],
+            "llm": [
+              "unknown"
+            ]
+          },
+          "cannabis_type": {
+            "maude": [],
+            "llm": [
+              "unknown"
+            ]
+          },
+          "outcome_domain": {
+            "maude": [
+              "cognition"
+            ],
+            "llm": [
+              "other"
+            ]
+          }
+        },
+        "high_level_count": 4,
+        "promotion_field_count": 0,
+        "flagged_for_review": true,
+        "promotion_fields": []
+      },
+      "flagged_for_review": true
+    },
+    {
+      "paper_id": 8522,
+      "pmid": "38111585",
+      "title": "Potential of dietary hemp and cannabinoids to modulate immune response to enhance health and performance in animals: opportunities and challenges",
+      "variant": "control",
+      "dry_run": false,
+      "locked_fields": [],
+      "before_confidence": null,
+      "before_classifier_version": "heuristic-reclassify-1.0.0",
+      "status": "updated",
+      "after_confidence": 0.925,
+      "after_classifier_version": "llm-node1-calibration-control-2.4.0",
+      "after_publication_type": "review",
+      "after_study_type": [
+        "review"
+      ],
+      "routing_subnode": "node1b",
+      "changes": {
+        "exposure_method": {
+          "old": "[\"injection cannabinoids\"]",
+          "new": [
+            "unknown"
+          ]
+        },
+        "cannabis_type": {
+          "old": "[\"pure cannabinoid\"]",
+          "new": [
+            "pure cannabinoid",
+            "edibles"
+          ]
+        },
+        "outcome_domain": {
+          "old": "[\"other\"]",
+          "new": [
+            "inflammation",
+            "pain",
+            "other"
+          ]
+        }
+      },
+      "llm_metrics": {
+        "model": "claude-sonnet-4-6",
+        "input_tokens": 1232,
+        "cache_read_tokens": 5464,
+        "cache_write_tokens": 0,
+        "output_tokens": 289,
+        "cost": 0.0096702,
+        "few_shot_similarity": 1.0,
+        "few_shot_count": 1,
+        "bm25_retrieval_used": 1,
+        "classification_confidence": 0.925,
+        "classifier_version": "2.4.0"
+      },
+      "llm": {
+        "publication_type": "review",
+        "study_type": [
+          "review"
+        ],
+        "exposure_method": [
+          "unknown"
+        ],
+        "cannabis_type": [
+          "pure cannabinoid",
+          "edibles"
+        ],
+        "outcome_domain": [
+          "inflammation",
+          "pain",
+          "other"
+        ],
+        "ingestion_status": null,
+        "species": null,
+        "classification_confidence": 0.925,
+        "classifier_version": "llm-node1-calibration-control-2.4.0"
+      },
+      "maude": {
+        "publication_type": "review",
+        "study_type": [
+          "review"
+        ],
+        "exposure_method": [],
+        "cannabis_type": [],
+        "outcome_domain": [
+          "other"
+        ],
+        "ingestion_status": "relevant",
+        "species": null,
+        "classification_confidence": 0.84,
+        "classifier_version": "maude-2.4.0",
+        "nodes_visited": [
+          "node0_ingestion",
+          "node1b_reviews"
+        ]
+      },
+      "disagreement": {
+        "fields": {
+          "ingestion_status": {
+            "maude": "relevant",
+            "llm": null
+          },
+          "exposure_method": {
+            "maude": [],
+            "llm": [
+              "unknown"
+            ]
+          },
+          "cannabis_type": {
+            "maude": [],
+            "llm": [
+              "pure cannabinoid",
+              "edibles"
+            ]
+          },
+          "outcome_domain": {
+            "maude": [
+              "other"
+            ],
+            "llm": [
+              "inflammation",
+              "pain",
+              "other"
+            ]
+          }
+        },
+        "high_level_count": 4,
+        "promotion_field_count": 0,
+        "flagged_for_review": true,
+        "promotion_fields": []
+      },
+      "flagged_for_review": true
+    },
+    {
+      "paper_id": 18577,
+      "pmid": "33873044",
+      "title": "Trends over time in adult cannabis use: A review of recent findings",
+      "variant": "control",
+      "dry_run": false,
+      "locked_fields": [],
+      "before_confidence": null,
+      "before_classifier_version": "heuristic-reclassify-1.0.0",
+      "status": "updated",
+      "after_confidence": 0.9500000000000001,
+      "after_classifier_version": "llm-node1-calibration-control-2.4.0",
+      "after_publication_type": "review",
+      "after_study_type": [
+        "review"
+      ],
+      "routing_subnode": "node1b",
+      "changes": {
+        "exposure_method": {
+          "old": "[\"injection cannabinoids\"]",
+          "new": [
+            "unknown"
+          ]
+        },
+        "outcome_domain": {
+          "old": "[\"other\"]",
+          "new": [
+            "addiction"
+          ]
+        }
+      },
+      "llm_metrics": {
+        "model": "claude-sonnet-4-6",
+        "input_tokens": 776,
+        "cache_read_tokens": 5464,
+        "cache_write_tokens": 0,
+        "output_tokens": 276,
+        "cost": 0.0081072,
+        "few_shot_similarity": 1.0,
+        "few_shot_count": 1,
+        "bm25_retrieval_used": 1,
+        "classification_confidence": 0.9500000000000001,
+        "classifier_version": "2.4.0"
+      },
+      "llm": {
+        "publication_type": "review",
+        "study_type": [
+          "review"
+        ],
+        "exposure_method": [
+          "unknown"
+        ],
+        "cannabis_type": [
+          "unknown"
+        ],
+        "outcome_domain": [
+          "addiction"
+        ],
+        "ingestion_status": null,
+        "species": null,
+        "classification_confidence": 0.9500000000000001,
+        "classifier_version": "llm-node1-calibration-control-2.4.0"
+      },
+      "maude": {
+        "publication_type": "review",
+        "study_type": [
+          "review"
+        ],
+        "exposure_method": [],
+        "cannabis_type": [],
+        "outcome_domain": [
+          "addiction"
+        ],
+        "ingestion_status": "tangential",
+        "species": null,
+        "classification_confidence": 0.84,
+        "classifier_version": "maude-2.4.0",
+        "nodes_visited": [
+          "node0_ingestion",
+          "node1b_reviews"
+        ]
+      },
+      "disagreement": {
+        "fields": {
+          "ingestion_status": {
+            "maude": "tangential",
+            "llm": null
+          },
+          "exposure_method": {
+            "maude": [],
+            "llm": [
+              "unknown"
+            ]
+          },
+          "cannabis_type": {
+            "maude": [],
+            "llm": [
+              "unknown"
+            ]
+          }
+        },
+        "high_level_count": 3,
+        "promotion_field_count": 0,
+        "flagged_for_review": true,
+        "promotion_fields": []
+      },
+      "flagged_for_review": true
+    },
+    {
+      "paper_id": 28781,
+      "pmid": "27373505",
+      "title": "Microglia activation states and cannabinoid system: Therapeutic implications",
+      "variant": "control",
+      "dry_run": false,
+      "locked_fields": [],
+      "before_confidence": null,
+      "before_classifier_version": "heuristic-reclassify-1.0.0",
+      "status": "updated",
+      "after_confidence": 0.8,
+      "after_classifier_version": "llm-node1-calibration-control-2.4.0",
+      "after_publication_type": "review",
+      "after_study_type": [
+        "review"
+      ],
+      "routing_subnode": "node1b",
+      "changes": {
+        "exposure_method": {
+          "old": "[\"injection cannabinoids\"]",
+          "new": [
+            "unknown"
+          ]
+        },
+        "outcome_domain": {
+          "old": "[\"inflammation\"]",
+          "new": [
+            "inflammation",
+            "neuroprotection"
+          ]
+        }
+      },
+      "llm_metrics": {
+        "model": "claude-sonnet-4-6",
+        "input_tokens": 910,
+        "cache_read_tokens": 5464,
+        "cache_write_tokens": 0,
+        "output_tokens": 282,
+        "cost": 0.008599200000000001,
+        "few_shot_similarity": 0.5,
+        "few_shot_count": 1,
+        "bm25_retrieval_used": 1,
+        "classification_confidence": 0.8,
+        "classifier_version": "2.4.0"
+      },
+      "llm": {
+        "publication_type": "review",
+        "study_type": [
+          "review"
+        ],
+        "exposure_method": [
+          "unknown"
+        ],
+        "cannabis_type": [
+          "unknown"
+        ],
+        "outcome_domain": [
+          "inflammation",
+          "neuroprotection"
+        ],
+        "ingestion_status": null,
+        "species": null,
+        "classification_confidence": 0.8,
+        "classifier_version": "llm-node1-calibration-control-2.4.0"
+      },
+      "maude": {
+        "publication_type": "review",
+        "study_type": [
+          "review"
+        ],
+        "exposure_method": [],
+        "cannabis_type": [],
+        "outcome_domain": [
+          "inflammation"
+        ],
+        "ingestion_status": "relevant",
+        "species": null,
+        "classification_confidence": 0.84,
+        "classifier_version": "maude-2.4.0",
+        "nodes_visited": [
+          "node0_ingestion",
+          "node1b_reviews"
+        ]
+      },
+      "disagreement": {
+        "fields": {
+          "ingestion_status": {
+            "maude": "relevant",
+            "llm": null
+          },
+          "exposure_method": {
+            "maude": [],
+            "llm": [
+              "unknown"
+            ]
+          },
+          "cannabis_type": {
+            "maude": [],
+            "llm": [
+              "unknown"
+            ]
+          },
+          "outcome_domain": {
+            "maude": [
+              "inflammation"
+            ],
+            "llm": [
+              "inflammation",
+              "neuroprotection"
+            ]
+          }
+        },
+        "high_level_count": 4,
+        "promotion_field_count": 0,
+        "flagged_for_review": true,
+        "promotion_fields": []
+      },
+      "flagged_for_review": true
+    },
+    {
+      "paper_id": 18552,
+      "pmid": "37187466",
+      "title": "The Impact of Recreational Cannabis Legalization on Cannabis Use and Associated Outcomes: A Systematic Review",
+      "variant": "control",
+      "dry_run": false,
+      "locked_fields": [],
+      "before_confidence": null,
+      "before_classifier_version": "heuristic-reclassify-1.0.0",
+      "status": "updated",
+      "after_confidence": 0.9500000000000001,
+      "after_classifier_version": "llm-node1-calibration-control-2.4.0",
+      "after_publication_type": "systematic review",
+      "after_study_type": [
+        "review"
+      ],
+      "routing_subnode": "node3a",
+      "changes": {
+        "exposure_method": {
+          "old": "[\"injection cannabinoids\"]",
+          "new": [
+            "unknown"
+          ]
+        },
+        "outcome_domain": {
+          "old": "[\"other\"]",
+          "new": [
+            "addiction",
+            "other"
+          ]
+        }
+      },
+      "llm_metrics": {
+        "model": "claude-sonnet-4-6",
+        "input_tokens": 932,
+        "cache_read_tokens": 5464,
+        "cache_write_tokens": 0,
+        "output_tokens": 280,
+        "cost": 0.0086352,
+        "few_shot_similarity": 1.0,
+        "few_shot_count": 1,
+        "bm25_retrieval_used": 1,
+        "classification_confidence": 0.9500000000000001,
+        "classifier_version": "2.4.0"
+      },
+      "llm": {
+        "publication_type": "systematic review",
+        "study_type": [
+          "review"
+        ],
+        "exposure_method": [
+          "unknown"
+        ],
+        "cannabis_type": [
+          "unknown"
+        ],
+        "outcome_domain": [
+          "addiction",
+          "other"
+        ],
+        "ingestion_status": null,
+        "species": null,
+        "classification_confidence": 0.9500000000000001,
+        "classifier_version": "llm-node1-calibration-control-2.4.0"
+      },
+      "maude": {
+        "publication_type": "systematic review",
+        "study_type": [
+          "review"
+        ],
+        "exposure_method": [],
+        "cannabis_type": [],
+        "outcome_domain": [
+          "addiction"
+        ],
+        "ingestion_status": "tangential",
+        "species": null,
+        "classification_confidence": 0.93,
+        "classifier_version": "maude-2.4.0",
+        "nodes_visited": [
+          "node0_ingestion",
+          "node1b_reviews",
+          "node3a"
+        ]
+      },
+      "disagreement": {
+        "fields": {
+          "ingestion_status": {
+            "maude": "tangential",
+            "llm": null
+          },
+          "exposure_method": {
+            "maude": [],
+            "llm": [
+              "unknown"
+            ]
+          },
+          "cannabis_type": {
+            "maude": [],
+            "llm": [
+              "unknown"
+            ]
+          },
+          "outcome_domain": {
+            "maude": [
+              "addiction"
+            ],
+            "llm": [
+              "addiction",
+              "other"
+            ]
+          }
+        },
+        "high_level_count": 4,
+        "promotion_field_count": 0,
+        "flagged_for_review": true,
+        "promotion_fields": []
+      },
+      "flagged_for_review": true
+    },
+    {
+      "paper_id": 29376,
+      "pmid": "26277482",
+      "title": "Marijuana, phytocannabinoids, the endocannabinoid system, and male fertility",
+      "variant": "control",
+      "dry_run": false,
+      "locked_fields": [],
+      "before_confidence": null,
+      "before_classifier_version": "heuristic-reclassify-1.0.0",
+      "status": "updated",
+      "after_confidence": 0.8,
+      "after_classifier_version": "llm-node1-calibration-control-2.4.0",
+      "after_publication_type": "review",
+      "after_study_type": [
+        "review"
+      ],
+      "routing_subnode": "node1b",
+      "changes": {
+        "exposure_method": {
+          "old": "[\"injection cannabinoids\"]",
+          "new": [
+            "unknown"
+          ]
+        }
+      },
+      "llm_metrics": {
+        "model": "claude-sonnet-4-6",
+        "input_tokens": 829,
+        "cache_read_tokens": 5464,
+        "cache_write_tokens": 0,
+        "output_tokens": 276,
+        "cost": 0.008266200000000001,
+        "few_shot_similarity": 0.5,
+        "few_shot_count": 1,
+        "bm25_retrieval_used": 1,
+        "classification_confidence": 0.8,
+        "classifier_version": "2.4.0"
+      },
+      "llm": {
+        "publication_type": "review",
+        "study_type": [
+          "review"
+        ],
+        "exposure_method": [
+          "unknown"
+        ],
+        "cannabis_type": [
+          "unknown"
+        ],
+        "outcome_domain": [
+          "other"
+        ],
+        "ingestion_status": null,
+        "species": null,
+        "classification_confidence": 0.8,
+        "classifier_version": "llm-node1-calibration-control-2.4.0"
+      },
+      "maude": {
+        "publication_type": "review",
+        "study_type": [
+          "review"
+        ],
+        "exposure_method": [],
+        "cannabis_type": [],
+        "outcome_domain": [
+          "other"
+        ],
+        "ingestion_status": "relevant",
+        "species": null,
+        "classification_confidence": 0.84,
+        "classifier_version": "maude-2.4.0",
+        "nodes_visited": [
+          "node0_ingestion",
+          "node1b_reviews"
+        ]
+      },
+      "disagreement": {
+        "fields": {
+          "ingestion_status": {
+            "maude": "relevant",
+            "llm": null
+          },
+          "exposure_method": {
+            "maude": [],
+            "llm": [
+              "unknown"
+            ]
+          },
+          "cannabis_type": {
+            "maude": [],
+            "llm": [
+              "unknown"
+            ]
+          }
+        },
+        "high_level_count": 3,
+        "promotion_field_count": 0,
+        "flagged_for_review": true,
+        "promotion_fields": []
+      },
+      "flagged_for_review": true
+    },
+    {
+      "paper_id": 15341,
+      "pmid": "33335413",
+      "title": "Therapeutic Potential of Cannabidiol (CBD) for Skin Health and Disorders",
+      "variant": "control",
+      "dry_run": false,
+      "locked_fields": [],
+      "before_confidence": null,
+      "before_classifier_version": "heuristic-reclassify-1.0.0",
+      "status": "updated",
+      "after_confidence": 0.9500000000000001,
+      "after_classifier_version": "llm-node1-calibration-control-2.4.0",
+      "after_publication_type": "review",
+      "after_study_type": [
+        "review"
+      ],
+      "routing_subnode": "node1b",
+      "changes": {
+        "exposure_method": {
+          "old": "[\"injection cannabinoids\"]",
+          "new": [
+            "unknown"
+          ]
+        },
+        "outcome_domain": {
+          "old": "[\"cognition\", \"addiction\"]",
+          "new": [
+            "inflammation",
+            "pain"
+          ]
+        }
+      },
+      "llm_metrics": {
+        "model": "claude-sonnet-4-6",
+        "input_tokens": 750,
+        "cache_read_tokens": 5464,
+        "cache_write_tokens": 0,
+        "output_tokens": 282,
+        "cost": 0.0081192,
+        "few_shot_similarity": 1.0,
+        "few_shot_count": 1,
+        "bm25_retrieval_used": 1,
+        "classification_confidence": 0.9500000000000001,
+        "classifier_version": "2.4.0"
+      },
+      "llm": {
+        "publication_type": "review",
+        "study_type": [
+          "review"
+        ],
+        "exposure_method": [
+          "unknown"
+        ],
+        "cannabis_type": [
+          "pure cannabinoid"
+        ],
+        "outcome_domain": [
+          "inflammation",
+          "pain"
+        ],
+        "ingestion_status": null,
+        "species": null,
+        "classification_confidence": 0.9500000000000001,
+        "classifier_version": "llm-node1-calibration-control-2.4.0"
+      },
+      "maude": {
+        "publication_type": "review",
+        "study_type": [
+          "review"
+        ],
+        "exposure_method": [],
+        "cannabis_type": [],
+        "outcome_domain": [
+          "cognition",
+          "addiction"
+        ],
+        "ingestion_status": "relevant",
+        "species": null,
+        "classification_confidence": 0.84,
+        "classifier_version": "maude-2.4.0",
+        "nodes_visited": [
+          "node0_ingestion",
+          "node1b_reviews"
+        ]
+      },
+      "disagreement": {
+        "fields": {
+          "ingestion_status": {
+            "maude": "relevant",
+            "llm": null
+          },
+          "exposure_method": {
+            "maude": [],
+            "llm": [
+              "unknown"
+            ]
+          },
+          "cannabis_type": {
+            "maude": [],
+            "llm": [
+              "pure cannabinoid"
+            ]
+          },
+          "outcome_domain": {
+            "maude": [
+              "cognition",
+              "addiction"
+            ],
+            "llm": [
+              "inflammation",
+              "pain"
+            ]
+          }
+        },
+        "high_level_count": 4,
+        "promotion_field_count": 0,
+        "flagged_for_review": true,
+        "promotion_fields": []
+      },
+      "flagged_for_review": true
+    },
+    {
+      "paper_id": 8589,
+      "pmid": "38086109",
+      "title": "The schizophrenia syndrome, circa 2024: What we know and how that informs its nature",
+      "variant": "control",
+      "dry_run": false,
+      "locked_fields": [],
+      "before_confidence": null,
+      "before_classifier_version": "heuristic-reclassify-1.0.0",
+      "status": "updated",
+      "after_confidence": 0.68,
+      "after_classifier_version": "llm-node1-calibration-control-2.4.0",
+      "after_publication_type": "review",
+      "after_study_type": [
+        "review"
+      ],
+      "routing_subnode": "node1b",
+      "changes": {
+        "exposure_method": {
+          "old": "[\"injection cannabinoids\"]",
+          "new": [
+            "unknown"
+          ]
+        }
+      },
+      "llm_metrics": {
+        "model": "claude-sonnet-4-6",
+        "input_tokens": 1089,
+        "cache_read_tokens": 5464,
+        "cache_write_tokens": 0,
+        "output_tokens": 276,
+        "cost": 0.0090462,
+        "few_shot_similarity": 0.1,
+        "few_shot_count": 1,
+        "bm25_retrieval_used": 1,
+        "classification_confidence": 0.68,
+        "classifier_version": "2.4.0"
+      },
+      "llm": {
+        "publication_type": "review",
+        "study_type": [
+          "review"
+        ],
+        "exposure_method": [
+          "unknown"
+        ],
+        "cannabis_type": [
+          "unknown"
+        ],
+        "outcome_domain": [
+          "other"
+        ],
+        "ingestion_status": null,
+        "species": null,
+        "classification_confidence": 0.68,
+        "classifier_version": "llm-node1-calibration-control-2.4.0"
+      },
+      "maude": {
+        "publication_type": "review",
+        "study_type": [
+          "review"
+        ],
+        "exposure_method": [],
+        "cannabis_type": [],
+        "outcome_domain": [
+          "other"
+        ],
+        "ingestion_status": "relevant",
+        "species": null,
+        "classification_confidence": 0.84,
+        "classifier_version": "maude-2.4.0",
+        "nodes_visited": [
+          "node0_ingestion",
+          "node1b_reviews"
+        ]
+      },
+      "disagreement": {
+        "fields": {
+          "ingestion_status": {
+            "maude": "relevant",
+            "llm": null
+          },
+          "exposure_method": {
+            "maude": [],
+            "llm": [
+              "unknown"
+            ]
+          },
+          "cannabis_type": {
+            "maude": [],
+            "llm": [
+              "unknown"
+            ]
+          }
+        },
+        "high_level_count": 3,
+        "promotion_field_count": 0,
+        "flagged_for_review": true,
+        "promotion_fields": []
+      },
+      "flagged_for_review": true
+    },
+    {
+      "paper_id": 22131,
+      "pmid": "36379120",
+      "title": "Disorders of cancer metabolism: The therapeutic potential of cannabinoids",
+      "variant": "control",
+      "dry_run": false,
+      "locked_fields": [],
+      "before_confidence": null,
+      "before_classifier_version": "heuristic-reclassify-1.0.0",
+      "status": "updated",
+      "after_confidence": 0.75,
+      "after_classifier_version": "llm-node1-calibration-control-2.4.0",
+      "after_publication_type": "review",
+      "after_study_type": [
+        "review"
+      ],
+      "routing_subnode": "node1b",
+      "changes": {
+        "exposure_method": {
+          "old": "[\"injection cannabinoids\"]",
+          "new": [
+            "unknown"
+          ]
+        },
+        "cannabis_type": {
+          "old": "[\"unknown\"]",
+          "new": [
+            "pure cannabinoid"
+          ]
+        }
+      },
+      "llm_metrics": {
+        "model": "claude-sonnet-4-6",
+        "input_tokens": 775,
+        "cache_read_tokens": 5464,
+        "cache_write_tokens": 0,
+        "output_tokens": 280,
+        "cost": 0.0081642,
+        "few_shot_similarity": 0.5,
+        "few_shot_count": 1,
+        "bm25_retrieval_used": 1,
+        "classification_confidence": 0.75,
+        "classifier_version": "2.4.0"
+      },
+      "llm": {
+        "publication_type": "review",
+        "study_type": [
+          "review"
+        ],
+        "exposure_method": [
+          "unknown"
+        ],
+        "cannabis_type": [
+          "pure cannabinoid"
+        ],
+        "outcome_domain": [
+          "oncology"
+        ],
+        "ingestion_status": null,
+        "species": null,
+        "classification_confidence": 0.75,
+        "classifier_version": "llm-node1-calibration-control-2.4.0"
+      },
+      "maude": {
+        "publication_type": "review",
+        "study_type": [
+          "review"
+        ],
+        "exposure_method": [],
+        "cannabis_type": [],
+        "outcome_domain": [
+          "oncology"
+        ],
+        "ingestion_status": "relevant",
+        "species": null,
+        "classification_confidence": 0.84,
+        "classifier_version": "maude-2.4.0",
+        "nodes_visited": [
+          "node0_ingestion",
+          "node1b_reviews"
+        ]
+      },
+      "disagreement": {
+        "fields": {
+          "ingestion_status": {
+            "maude": "relevant",
+            "llm": null
+          },
+          "exposure_method": {
+            "maude": [],
+            "llm": [
+              "unknown"
+            ]
+          },
+          "cannabis_type": {
+            "maude": [],
+            "llm": [
+              "pure cannabinoid"
+            ]
+          }
+        },
+        "high_level_count": 3,
+        "promotion_field_count": 0,
+        "flagged_for_review": true,
+        "promotion_fields": []
+      },
+      "flagged_for_review": true
+    },
+    {
+      "paper_id": 29047,
+      "pmid": "26876387",
+      "title": "Cannabinoids and autoimmune diseases: A systematic review",
+      "variant": "control",
+      "dry_run": false,
+      "locked_fields": [],
+      "before_confidence": null,
+      "before_classifier_version": "heuristic-reclassify-1.0.0",
+      "status": "updated",
+      "after_confidence": 0.83,
+      "after_classifier_version": "llm-node1-calibration-control-2.4.0",
+      "after_publication_type": "systematic review",
+      "after_study_type": [
+        "review"
+      ],
+      "routing_subnode": "node3a",
+      "changes": {
+        "exposure_method": {
+          "old": "[\"injection cannabinoids\"]",
+          "new": [
+            "unknown"
+          ]
+        }
+      },
+      "llm_metrics": {
+        "model": "claude-sonnet-4-6",
+        "input_tokens": 810,
+        "cache_read_tokens": 5464,
+        "cache_write_tokens": 0,
+        "output_tokens": 286,
+        "cost": 0.0083592,
+        "few_shot_similarity": 0.6,
+        "few_shot_count": 1,
+        "bm25_retrieval_used": 1,
+        "classification_confidence": 0.83,
+        "classifier_version": "2.4.0"
+      },
+      "llm": {
+        "publication_type": "systematic review",
+        "study_type": [
+          "review"
+        ],
+        "exposure_method": [
+          "unknown"
+        ],
+        "cannabis_type": [
+          "unknown"
+        ],
+        "outcome_domain": [
+          "inflammation",
+          "pain",
+          "neuroprotection"
+        ],
+        "ingestion_status": null,
+        "species": null,
+        "classification_confidence": 0.83,
+        "classifier_version": "llm-node1-calibration-control-2.4.0"
+      },
+      "maude": {
+        "publication_type": "systematic review",
+        "study_type": [
+          "review"
+        ],
+        "exposure_method": [],
+        "cannabis_type": [],
+        "outcome_domain": [
+          "pain",
+          "inflammation",
+          "neuroprotection"
+        ],
+        "ingestion_status": "relevant",
+        "species": "mouse",
+        "classification_confidence": 0.93,
+        "classifier_version": "maude-2.4.0",
+        "nodes_visited": [
+          "node0_ingestion",
+          "node1b_reviews",
+          "node3a"
+        ]
+      },
+      "disagreement": {
+        "fields": {
+          "ingestion_status": {
+            "maude": "relevant",
+            "llm": null
+          },
+          "exposure_method": {
+            "maude": [],
+            "llm": [
+              "unknown"
+            ]
+          },
+          "cannabis_type": {
+            "maude": [],
+            "llm": [
+              "unknown"
+            ]
+          },
+          "species": {
+            "maude": "mouse",
+            "llm": null
+          }
+        },
+        "high_level_count": 4,
+        "promotion_field_count": 0,
+        "flagged_for_review": true,
+        "promotion_fields": []
+      },
+      "flagged_for_review": true
+    },
+    {
+      "paper_id": 31036,
+      "pmid": "23108550",
+      "title": "The endocannabinoid system in normal and pathological brain ageing",
+      "variant": "control",
+      "dry_run": false,
+      "locked_fields": [],
+      "before_confidence": null,
+      "before_classifier_version": "heuristic-reclassify-1.0.0",
+      "status": "updated",
+      "after_confidence": 0.8,
+      "after_classifier_version": "llm-node1-calibration-control-2.4.0",
+      "after_publication_type": "review",
+      "after_study_type": [
+        "review"
+      ],
+      "routing_subnode": "node1b",
+      "changes": {
+        "exposure_method": {
+          "old": "[\"injection cannabinoids\"]",
+          "new": [
+            "unknown"
+          ]
+        },
+        "outcome_domain": {
+          "old": "[\"neuroprotection\"]",
+          "new": [
+            "neuroprotection",
+            "cognition",
+            "inflammation"
+          ]
+        }
+      },
+      "llm_metrics": {
+        "model": "claude-sonnet-4-6",
+        "input_tokens": 936,
+        "cache_read_tokens": 5464,
+        "cache_write_tokens": 0,
+        "output_tokens": 286,
+        "cost": 0.0087372,
+        "few_shot_similarity": 0.5,
+        "few_shot_count": 1,
+        "bm25_retrieval_used": 1,
+        "classification_confidence": 0.8,
+        "classifier_version": "2.4.0"
+      },
+      "llm": {
+        "publication_type": "review",
+        "study_type": [
+          "review"
+        ],
+        "exposure_method": [
+          "unknown"
+        ],
+        "cannabis_type": [
+          "unknown"
+        ],
+        "outcome_domain": [
+          "neuroprotection",
+          "cognition",
+          "inflammation"
+        ],
+        "ingestion_status": null,
+        "species": null,
+        "classification_confidence": 0.8,
+        "classifier_version": "llm-node1-calibration-control-2.4.0"
+      },
+      "maude": {
+        "publication_type": "review",
+        "study_type": [
+          "review"
+        ],
+        "exposure_method": [],
+        "cannabis_type": [],
+        "outcome_domain": [
+          "neuroprotection"
+        ],
+        "ingestion_status": "relevant",
+        "species": null,
+        "classification_confidence": 0.84,
+        "classifier_version": "maude-2.4.0",
+        "nodes_visited": [
+          "node0_ingestion",
+          "node1b_reviews"
+        ]
+      },
+      "disagreement": {
+        "fields": {
+          "ingestion_status": {
+            "maude": "relevant",
+            "llm": null
+          },
+          "exposure_method": {
+            "maude": [],
+            "llm": [
+              "unknown"
+            ]
+          },
+          "cannabis_type": {
+            "maude": [],
+            "llm": [
+              "unknown"
+            ]
+          },
+          "outcome_domain": {
+            "maude": [
+              "neuroprotection"
+            ],
+            "llm": [
+              "neuroprotection",
+              "cognition",
+              "inflammation"
+            ]
+          }
+        },
+        "high_level_count": 4,
+        "promotion_field_count": 0,
+        "flagged_for_review": true,
+        "promotion_fields": []
+      },
+      "flagged_for_review": true
+    },
+    {
+      "paper_id": 30809,
+      "pmid": "23567085",
+      "title": "Cannabinoid signaling and liver therapeutics",
+      "variant": "control",
+      "dry_run": false,
+      "locked_fields": [],
+      "before_confidence": null,
+      "before_classifier_version": "heuristic-reclassify-1.0.0",
+      "status": "updated",
+      "after_confidence": 0.86,
+      "after_classifier_version": "llm-node1-calibration-control-2.4.0",
+      "after_publication_type": "review",
+      "after_study_type": [
+        "review"
+      ],
+      "routing_subnode": "node1b",
+      "changes": {
+        "exposure_method": {
+          "old": "[\"injection cannabinoids\"]",
+          "new": [
+            "unknown"
+          ]
+        },
+        "outcome_domain": {
+          "old": "[\"other\"]",
+          "new": [
+            "inflammation"
+          ]
+        }
+      },
+      "llm_metrics": {
+        "model": "claude-sonnet-4-6",
+        "input_tokens": 860,
+        "cache_read_tokens": 5464,
+        "cache_write_tokens": 0,
+        "output_tokens": 286,
+        "cost": 0.008509200000000001,
+        "few_shot_similarity": 0.7,
+        "few_shot_count": 1,
+        "bm25_retrieval_used": 1,
+        "classification_confidence": 0.86,
+        "classifier_version": "2.4.0"
+      },
+      "llm": {
+        "publication_type": "review",
+        "study_type": [
+          "review"
+        ],
+        "exposure_method": [
+          "unknown"
+        ],
+        "cannabis_type": [
+          "CB receptor antagonist",
+          "CB receptor agonist"
+        ],
+        "outcome_domain": [
+          "inflammation"
+        ],
+        "ingestion_status": null,
+        "species": null,
+        "classification_confidence": 0.86,
+        "classifier_version": "llm-node1-calibration-control-2.4.0"
+      },
+      "maude": {
+        "publication_type": "review",
+        "study_type": [
+          "review"
+        ],
+        "exposure_method": [],
+        "cannabis_type": [],
+        "outcome_domain": [
+          "other"
+        ],
+        "ingestion_status": "relevant",
+        "species": null,
+        "classification_confidence": 0.84,
+        "classifier_version": "maude-2.4.0",
+        "nodes_visited": [
+          "node0_ingestion",
+          "node1b_reviews"
+        ]
+      },
+      "disagreement": {
+        "fields": {
+          "ingestion_status": {
+            "maude": "relevant",
+            "llm": null
+          },
+          "exposure_method": {
+            "maude": [],
+            "llm": [
+              "unknown"
+            ]
+          },
+          "cannabis_type": {
+            "maude": [],
+            "llm": [
+              "CB receptor antagonist",
+              "CB receptor agonist"
+            ]
+          },
+          "outcome_domain": {
+            "maude": [
+              "other"
+            ],
+            "llm": [
+              "inflammation"
+            ]
+          }
+        },
+        "high_level_count": 4,
+        "promotion_field_count": 0,
+        "flagged_for_review": true,
+        "promotion_fields": []
+      },
+      "flagged_for_review": true
+    },
+    {
+      "paper_id": 18233,
+      "pmid": "27285147",
+      "title": "Current Status and Prospects for Cannabidiol Preparations as New Therapeutic Agents",
+      "variant": "control",
+      "dry_run": false,
+      "locked_fields": [],
+      "before_confidence": null,
+      "before_classifier_version": "heuristic-reclassify-1.0.0",
+      "status": "updated",
+      "after_confidence": 0.870000012,
+      "after_classifier_version": "llm-node1-calibration-control-2.4.0",
+      "after_publication_type": "review",
+      "after_study_type": [
+        "review"
+      ],
+      "routing_subnode": "node1b",
+      "changes": {
+        "exposure_method": {
+          "old": "[\"injection cannabinoids\"]",
+          "new": [
+            "unknown"
+          ]
+        },
+        "cannabis_type": {
+          "old": "[\"unknown\"]",
+          "new": [
+            "pure cannabinoid"
+          ]
+        },
+        "outcome_domain": {
+          "old": "[\"other\"]",
+          "new": [
+            "neuroprotection",
+            "anxiety",
+            "inflammation"
+          ]
+        }
+      },
+      "llm_metrics": {
+        "model": "claude-sonnet-4-6",
+        "input_tokens": 965,
+        "cache_read_tokens": 5464,
+        "cache_write_tokens": 0,
+        "output_tokens": 288,
+        "cost": 0.008854200000000001,
+        "few_shot_similarity": 0.90000004,
+        "few_shot_count": 1,
+        "bm25_retrieval_used": 1,
+        "classification_confidence": 0.870000012,
+        "classifier_version": "2.4.0"
+      },
+      "llm": {
+        "publication_type": "review",
+        "study_type": [
+          "review"
+        ],
+        "exposure_method": [
+          "unknown"
+        ],
+        "cannabis_type": [
+          "pure cannabinoid"
+        ],
+        "outcome_domain": [
+          "neuroprotection",
+          "anxiety",
+          "inflammation"
+        ],
+        "ingestion_status": null,
+        "species": null,
+        "classification_confidence": 0.870000012,
+        "classifier_version": "llm-node1-calibration-control-2.4.0"
+      },
+      "maude": {
+        "publication_type": "review",
+        "study_type": [
+          "review"
+        ],
+        "exposure_method": [],
+        "cannabis_type": [],
+        "outcome_domain": [
+          "other"
+        ],
+        "ingestion_status": "tangential",
+        "species": null,
+        "classification_confidence": 0.84,
+        "classifier_version": "maude-2.4.0",
+        "nodes_visited": [
+          "node0_ingestion",
+          "node1b_reviews"
+        ]
+      },
+      "disagreement": {
+        "fields": {
+          "ingestion_status": {
+            "maude": "tangential",
+            "llm": null
+          },
+          "exposure_method": {
+            "maude": [],
+            "llm": [
+              "unknown"
+            ]
+          },
+          "cannabis_type": {
+            "maude": [],
+            "llm": [
+              "pure cannabinoid"
+            ]
+          },
+          "outcome_domain": {
+            "maude": [
+              "other"
+            ],
+            "llm": [
+              "neuroprotection",
+              "anxiety",
+              "inflammation"
+            ]
+          }
+        },
+        "high_level_count": 4,
+        "promotion_field_count": 0,
+        "flagged_for_review": true,
+        "promotion_fields": []
+      },
+      "flagged_for_review": true
+    }
+  ],
+  "maude_refresh_source_batch": "node1_calibration_20260619_133853_884",
+  "maude_refresh_only": true
+}

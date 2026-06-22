@@ -1,0 +1,80 @@
+{
+  "batch_id": "node2b_calibration_20260622_103023_481",
+  "created_at": "2026-06-22T10:30:23.481726",
+  "rules_version": "2.6.0",
+  "mode": "node2b_in_vivo",
+  "automation_node": "node2b",
+  "target_subnode": "node2b",
+  "fields_in_scope": [
+    "study_type",
+    "species",
+    "exposure_method",
+    "cannabis_type",
+    "outcome_domain",
+    "sample_size",
+    "multiple_doses",
+    "multiple_time_intervals",
+    "puff_count",
+    "inhaled_exposure_duration",
+    "thc_pct",
+    "cbd_pct",
+    "strain_reported",
+    "thc_mg_ml",
+    "cbd_mg_ml",
+    "duration_days",
+    "administration_frequency",
+    "repeat_exposure_count",
+    "exposure_regimen_bin",
+    "thc_mg_kg",
+    "cbd_mg_kg",
+    "thc_mg_g",
+    "cbd_mg_g",
+    "dose_mg"
+  ],
+  "calibration_label": "node2b-calibration",
+  "variants": [
+    "control"
+  ],
+  "max_calls": 3,
+  "calls_attempted": 0,
+  "planned_candidates": 3,
+  "updates_applied": 0,
+  "dry_run": true,
+  "abstract_only": true,
+  "candidate_count": 100,
+  "results": [
+    {
+      "paper_id": 31314,
+      "pmid": "22623656",
+      "title": "Bimodal control of fear-coping strategies by CB\u2081 cannabinoid receptors",
+      "variant": "control",
+      "dry_run": true,
+      "locked_fields": [],
+      "before_confidence": 0.6,
+      "before_classifier_version": "heuristic-1.0.0",
+      "status": "candidate_only"
+    },
+    {
+      "paper_id": 16995,
+      "pmid": "30596146",
+      "title": "The Anti-Inflammatory Properties of Terpenoids from Cannabis",
+      "variant": "control",
+      "dry_run": true,
+      "locked_fields": [],
+      "before_confidence": 0.6,
+      "before_classifier_version": "heuristic-1.0.0",
+      "status": "candidate_only"
+    },
+    {
+      "paper_id": 18317,
+      "pmid": "27010632",
+      "title": "Prohedonic Effect of Cannabidiol in a Rat Model of Depression",
+      "variant": "control",
+      "dry_run": true,
+      "locked_fields": [],
+      "before_confidence": 0.6,
+      "before_classifier_version": "heuristic-1.0.0",
+      "status": "candidate_only"
+    }
+  ]
+}

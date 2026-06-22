@@ -1,0 +1,2379 @@
+{
+  "batch_id": "calibration_20260616_222616",
+  "created_at": "2026-06-16T22:31:25.740023",
+  "rules_version": "2.2.0",
+  "mode": "preclinical_original",
+  "variants": [
+    "control",
+    "decision_checklist"
+  ],
+  "max_calls": 50,
+  "calls_attempted": 50,
+  "planned_candidates": 0,
+  "updates_applied": 50,
+  "dry_run": false,
+  "abstract_only": true,
+  "candidate_count": 100,
+  "results": [
+    {
+      "paper_id": 29687,
+      "pmid": "25666611",
+      "title": "Fatty acid-binding proteins (FABPs) are intracellular carriers for \u03949-tetrahydrocannabinol (THC) and cannabidiol (CBD)",
+      "variant": "control",
+      "dry_run": false,
+      "locked_fields": [],
+      "before_confidence": null,
+      "before_classifier_version": "heuristic-reclassify-2.1.0",
+      "status": "updated",
+      "after_confidence": 0.7015455471572768,
+      "after_classifier_version": "llm-calibration-control-2.2.0",
+      "changes": {
+        "study_type": {
+          "old": "[\"Animal Models (Other)\"]",
+          "new": [
+            "Cell Culture (Cell Lines)",
+            "Cell Culture (Primary Cells)"
+          ]
+        },
+        "exposure_method": {
+          "old": "[\"injection cannabinoids\"]",
+          "new": [
+            "cannabinoids dissolved in media"
+          ]
+        },
+        "strain_reported": {
+          "old": null,
+          "new": "Sigma-Aldrich"
+        },
+        "thc_uM": {
+          "old": null,
+          "new": 1.0
+        },
+        "cbd_uM": {
+          "old": null,
+          "new": 1.0
+        }
+      },
+      "llm_metrics": {
+        "model": "claude-sonnet-4-6",
+        "input_tokens": 1098,
+        "cache_read_tokens": 0,
+        "cache_write_tokens": 4486,
+        "output_tokens": 343,
+        "cost": 0.0252615,
+        "few_shot_similarity": 0.33848515719092254,
+        "few_shot_count": 1,
+        "classification_confidence": 0.7015455471572768,
+        "classifier_version": "2.2.0"
+      }
+    },
+    {
+      "paper_id": 28251,
+      "pmid": "28481360",
+      "title": "A chronic low dose of \u03949-tetrahydrocannabinol (THC) restores cognitive function in old mice",
+      "variant": "decision_checklist",
+      "dry_run": false,
+      "locked_fields": [],
+      "before_confidence": null,
+      "before_classifier_version": "heuristic-reclassify-2.1.0",
+      "status": "updated",
+      "after_confidence": 0.7516939577083155,
+      "after_classifier_version": "llm-calibration-decision_checklist-2.2.0",
+      "changes": {
+        "cannabis_type": {
+          "old": "[\"unknown\"]",
+          "new": [
+            "pure cannabinoid"
+          ]
+        },
+        "strain_reported": {
+          "old": null,
+          "new": "THC (Sigma-Aldrich)"
+        }
+      },
+      "llm_metrics": {
+        "model": "claude-sonnet-4-6",
+        "input_tokens": 1261,
+        "cache_read_tokens": 0,
+        "cache_write_tokens": 4606,
+        "output_tokens": 309,
+        "cost": 0.0256905,
+        "few_shot_similarity": 0.3389798590277182,
+        "few_shot_count": 1,
+        "classification_confidence": 0.7516939577083155,
+        "classifier_version": "2.2.0"
+      }
+    },
+    {
+      "paper_id": 17228,
+      "pmid": "30083539",
+      "title": "Pharmacokinetics, Safety, and Clinical Efficacy of Cannabidiol Treatment in Osteoarthritic Dogs",
+      "variant": "control",
+      "dry_run": false,
+      "locked_fields": [],
+      "before_confidence": null,
+      "before_classifier_version": "heuristic-reclassify-2.1.0",
+      "status": "updated",
+      "after_confidence": 0.6744135646138167,
+      "after_classifier_version": "llm-calibration-control-2.2.0",
+      "changes": {
+        "study_type": {
+          "old": "[\"Clinical (RCT)\", \"Animal Models (Other)\"]",
+          "new": [
+            "Animal Models (Other)"
+          ]
+        },
+        "exposure_method": {
+          "old": "[\"inhaled\"]",
+          "new": [
+            "oral administration"
+          ]
+        },
+        "cannabis_type": {
+          "old": "[\"dried flower\"]",
+          "new": [
+            "pure cannabinoid",
+            "concentrates"
+          ]
+        },
+        "strain_normalized": {
+          "old": null,
+          "new": "Chemotype III"
+        },
+        "administration_frequency": {
+          "old": "twice daily (every 12 hours)",
+          "new": "twice daily"
+        }
+      },
+      "llm_metrics": {
+        "model": "claude-sonnet-4-6",
+        "input_tokens": 1143,
+        "cache_read_tokens": 4486,
+        "cache_write_tokens": 0,
+        "output_tokens": 301,
+        "cost": 0.009289799999999999,
+        "few_shot_similarity": 0.3313785487127227,
+        "few_shot_count": 1,
+        "classification_confidence": 0.6744135646138167,
+        "classifier_version": "2.2.0"
+      }
+    },
+    {
+      "paper_id": 29912,
+      "pmid": "25269802",
+      "title": "Colon carcinogenesis is inhibited by the TRPM8 antagonist cannabigerol, a Cannabis-derived non-psychotropic cannabinoid",
+      "variant": "decision_checklist",
+      "dry_run": false,
+      "locked_fields": [],
+      "before_confidence": null,
+      "before_classifier_version": "heuristic-reclassify-2.1.0",
+      "status": "updated",
+      "after_confidence": 0.6859966829166612,
+      "after_classifier_version": "llm-calibration-decision_checklist-2.2.0",
+      "changes": {
+        "study_type": {
+          "old": "[\"Animal Models (Mouse)\"]",
+          "new": [
+            "Cell Culture (Cell Lines)",
+            "Animal Models (Mouse)"
+          ]
+        },
+        "exposure_method": {
+          "old": "[\"injection cannabinoids\"]",
+          "new": [
+            "cannabinoids dissolved in media",
+            "injection cannabinoids"
+          ]
+        },
+        "cannabis_type": {
+          "old": "[\"unknown\"]",
+          "new": [
+            "pure cannabinoid"
+          ]
+        },
+        "strain_reported": {
+          "old": null,
+          "new": "cannabigerol (CBG)"
+        }
+      },
+      "llm_metrics": {
+        "model": "claude-sonnet-4-6",
+        "input_tokens": 643,
+        "cache_read_tokens": 4606,
+        "cache_write_tokens": 649,
+        "output_tokens": 337,
+        "cost": 0.01079955,
+        "few_shot_similarity": 0.28665560972220394,
+        "few_shot_count": 1,
+        "classification_confidence": 0.6859966829166612,
+        "classifier_version": "2.2.0"
+      }
+    },
+    {
+      "paper_id": 29272,
+      "pmid": "26438875",
+      "title": "A runner's high depends on cannabinoid receptors in mice",
+      "variant": "control",
+      "dry_run": false,
+      "locked_fields": [],
+      "before_confidence": null,
+      "before_classifier_version": "heuristic-reclassify-2.1.0",
+      "status": "updated",
+      "after_confidence": 0.7406392353258408,
+      "after_classifier_version": "llm-calibration-control-2.2.0",
+      "changes": {
+        "cannabis_type": {
+          "old": "[\"unknown\"]",
+          "new": [
+            "CB receptor antagonist"
+          ]
+        },
+        "strain_reported": {
+          "old": null,
+          "new": "CB1 receptor antagonist (AM251), CB2 receptor antagonist (AM630)"
+        }
+      },
+      "llm_metrics": {
+        "model": "claude-sonnet-4-6",
+        "input_tokens": 253,
+        "cache_read_tokens": 4486,
+        "cache_write_tokens": 649,
+        "output_tokens": 309,
+        "cost": 0.009173549999999999,
+        "few_shot_similarity": 0.302130784419469,
+        "few_shot_count": 1,
+        "classification_confidence": 0.7406392353258408,
+        "classifier_version": "2.2.0"
+      }
+    },
+    {
+      "paper_id": 29244,
+      "pmid": "26504214",
+      "title": "Endocannabinoid signaling mediates oxytocin-driven social reward",
+      "variant": "decision_checklist",
+      "dry_run": false,
+      "locked_fields": [],
+      "before_confidence": null,
+      "before_classifier_version": "heuristic-reclassify-2.1.0",
+      "status": "updated",
+      "after_confidence": 0.7737337980925197,
+      "after_classifier_version": "llm-calibration-decision_checklist-2.2.0",
+      "changes": {
+        "cannabis_type": {
+          "old": "[\"unknown\"]",
+          "new": [
+            "CB receptor antagonist",
+            "pure cannabinoid"
+          ]
+        },
+        "strain_reported": {
+          "old": null,
+          "new": "AM251, URB597, JZL184, PF-3845"
+        }
+      },
+      "llm_metrics": {
+        "model": "claude-sonnet-4-6",
+        "input_tokens": 343,
+        "cache_read_tokens": 4606,
+        "cache_write_tokens": 649,
+        "output_tokens": 313,
+        "cost": 0.009539549999999999,
+        "few_shot_similarity": 0.41244599364173234,
+        "few_shot_count": 1,
+        "classification_confidence": 0.7737337980925197,
+        "classifier_version": "2.2.0"
+      }
+    },
+    {
+      "paper_id": 28696,
+      "pmid": "27531971",
+      "title": "Cannabinoid Type 2 (CB2) Receptors Activation Protects against Oxidative Stress and Neuroinflammation Associated Dopaminergic Neurodegeneration in Rotenone Model of Parkinson's Disease",
+      "variant": "control",
+      "dry_run": false,
+      "locked_fields": [],
+      "before_confidence": null,
+      "before_classifier_version": "heuristic-reclassify-2.1.0",
+      "status": "updated",
+      "after_confidence": 0.7707609782350525,
+      "after_classifier_version": "llm-calibration-control-2.2.0",
+      "changes": {
+        "cannabis_type": {
+          "old": "[\"CB receptor antagonist\"]",
+          "new": [
+            "CB receptor agonist",
+            "CB receptor antagonist"
+          ]
+        },
+        "strain_reported": {
+          "old": null,
+          "new": "\u03b2-caryophyllene (BCP), AM630"
+        }
+      },
+      "llm_metrics": {
+        "model": "claude-sonnet-4-6",
+        "input_tokens": 636,
+        "cache_read_tokens": 4486,
+        "cache_write_tokens": 649,
+        "output_tokens": 316,
+        "cost": 0.010427549999999999,
+        "few_shot_similarity": 0.3192032607835082,
+        "few_shot_count": 1,
+        "classification_confidence": 0.7707609782350525,
+        "classifier_version": "2.2.0"
+      }
+    },
+    {
+      "paper_id": 31533,
+      "pmid": "22229018",
+      "title": "Lasting impacts of prenatal cannabis exposure and the role of endogenous cannabinoids in the developing brain",
+      "variant": "decision_checklist",
+      "dry_run": false,
+      "locked_fields": [],
+      "before_confidence": null,
+      "before_classifier_version": "heuristic-reclassify-2.1.0",
+      "status": "updated",
+      "after_confidence": 0.607634734061274,
+      "after_classifier_version": "llm-calibration-decision_checklist-2.2.0",
+      "changes": {
+        "study_type": {
+          "old": "[\"Clinical (observational)\", \"Animal Models (Other)\"]",
+          "new": [
+            "review"
+          ]
+        },
+        "exposure_method": {
+          "old": "[\"inhaled\"]",
+          "new": [
+            "unknown"
+          ]
+        },
+        "cannabis_type": {
+          "old": "[\"pure cannabinoid\"]",
+          "new": [
+            "unknown"
+          ]
+        },
+        "publication_type": {
+          "old": "original research",
+          "new": "review"
+        }
+      },
+      "llm_metrics": {
+        "model": "claude-sonnet-4-6",
+        "input_tokens": 1001,
+        "cache_read_tokens": 4606,
+        "cache_write_tokens": 0,
+        "output_tokens": 283,
+        "cost": 0.0086298,
+        "few_shot_similarity": 0.35878244687091326,
+        "few_shot_count": 1,
+        "classification_confidence": 0.607634734061274,
+        "classifier_version": "2.2.0"
+      }
+    },
+    {
+      "paper_id": 29902,
+      "pmid": "25281318",
+      "title": "Adolescent exposure to THC in female rats disrupts developmental changes in the prefrontal cortex",
+      "variant": "control",
+      "dry_run": false,
+      "locked_fields": [],
+      "before_confidence": null,
+      "before_classifier_version": "heuristic-reclassify-2.1.0",
+      "status": "updated",
+      "after_confidence": 0.7398166679359782,
+      "after_classifier_version": "llm-calibration-control-2.2.0",
+      "changes": {
+        "cannabis_type": {
+          "old": "[\"unknown\"]",
+          "new": [
+            "pure cannabinoid",
+            "CB receptor antagonist"
+          ]
+        },
+        "thc_mg_kg": {
+          "old": null,
+          "new": 5.0
+        }
+      },
+      "llm_metrics": {
+        "model": "claude-sonnet-4-6",
+        "input_tokens": 384,
+        "cache_read_tokens": 4486,
+        "cache_write_tokens": 892,
+        "output_tokens": 304,
+        "cost": 0.010402799999999999,
+        "few_shot_similarity": 0.29938889311992717,
+        "few_shot_count": 1,
+        "classification_confidence": 0.7398166679359782,
+        "classifier_version": "2.2.0"
+      }
+    },
+    {
+      "paper_id": 17346,
+      "pmid": "29869197",
+      "title": "Cannabidiol Induces Rapid and Sustained Antidepressant-Like Effects Through Increased BDNF Signaling and Synaptogenesis in the Prefrontal Cortex",
+      "variant": "decision_checklist",
+      "dry_run": false,
+      "locked_fields": [],
+      "before_confidence": null,
+      "before_classifier_version": "heuristic-reclassify-2.1.0",
+      "status": "updated",
+      "after_confidence": 0.768031269184923,
+      "after_classifier_version": "llm-calibration-decision_checklist-2.2.0",
+      "changes": {
+        "cannabis_type": {
+          "old": "[\"unknown\"]",
+          "new": [
+            "pure cannabinoid"
+          ]
+        },
+        "outcome_domain": {
+          "old": "[\"neuroprotection\", \"other\"]",
+          "new": [
+            "anxiety",
+            "neuroprotection"
+          ]
+        },
+        "strain_normalized": {
+          "old": null,
+          "new": "Chemotype III"
+        },
+        "cbd_mg_kg": {
+          "old": 30.0,
+          "new": 7.0
+        }
+      },
+      "llm_metrics": {
+        "model": "claude-sonnet-4-6",
+        "input_tokens": 542,
+        "cache_read_tokens": 4606,
+        "cache_write_tokens": 632,
+        "output_tokens": 339,
+        "cost": 0.0104628,
+        "few_shot_similarity": 0.3934375639497432,
+        "few_shot_count": 1,
+        "classification_confidence": 0.768031269184923,
+        "classifier_version": "2.2.0"
+      }
+    },
+    {
+      "paper_id": 29944,
+      "pmid": "25205418",
+      "title": "Palmitoylethanolamide, a naturally occurring lipid, is an orally effective intestinal anti-inflammatory agent",
+      "variant": "control",
+      "dry_run": false,
+      "locked_fields": [],
+      "before_confidence": null,
+      "before_classifier_version": "heuristic-reclassify-2.1.0",
+      "status": "updated",
+      "after_confidence": 0.7062964741651767,
+      "after_classifier_version": "llm-calibration-control-2.2.0",
+      "changes": {
+        "exposure_method": {
+          "old": "[\"injection cannabinoids\"]",
+          "new": [
+            "injection cannabinoids",
+            "oral administration"
+          ]
+        },
+        "cannabis_type": {
+          "old": "[\"unknown\"]",
+          "new": [
+            "pure cannabinoid"
+          ]
+        },
+        "strain_reported": {
+          "old": null,
+          "new": "Palmitoylethanolamide (PEA)"
+        },
+        "thc_mg_kg": {
+          "old": 1.0,
+          "new": null
+        }
+      },
+      "llm_metrics": {
+        "model": "claude-sonnet-4-6",
+        "input_tokens": 498,
+        "cache_read_tokens": 4486,
+        "cache_write_tokens": 719,
+        "output_tokens": 304,
+        "cost": 0.010096049999999999,
+        "few_shot_similarity": 0.2709882472172559,
+        "few_shot_count": 1,
+        "classification_confidence": 0.7062964741651767,
+        "classifier_version": "2.2.0"
+      }
+    },
+    {
+      "paper_id": 30886,
+      "pmid": "23412396",
+      "title": "Repeated low-dose administration of the monoacylglycerol lipase inhibitor JZL184 retains cannabinoid receptor type 1-mediated antinociceptive and gastroprotective effects",
+      "variant": "decision_checklist",
+      "dry_run": false,
+      "locked_fields": [],
+      "before_confidence": null,
+      "before_classifier_version": "heuristic-reclassify-2.1.0",
+      "status": "updated",
+      "after_confidence": 0.7562569455309077,
+      "after_classifier_version": "llm-calibration-decision_checklist-2.2.0",
+      "changes": {
+        "exposure_method": {
+          "old": "[\"injection cannabinoids\"]",
+          "new": [
+            "injection cannabinoids",
+            "oral administration"
+          ]
+        },
+        "cannabis_type": {
+          "old": "[\"CB receptor antagonist\", \"CB receptor agonist\"]",
+          "new": [
+            "pure cannabinoid",
+            "CB receptor agonist",
+            "CB receptor antagonist"
+          ]
+        },
+        "strain_reported": {
+          "old": null,
+          "new": "JZL184, CP55940, SR141716A (rimonabant), delta-9-THC"
+        }
+      },
+      "llm_metrics": {
+        "model": "claude-sonnet-4-6",
+        "input_tokens": 3,
+        "cache_read_tokens": 4821,
+        "cache_write_tokens": 1130,
+        "output_tokens": 339,
+        "cost": 0.010777799999999999,
+        "few_shot_similarity": 0.3264120406585813,
+        "few_shot_count": 1,
+        "classification_confidence": 0.7562569455309077,
+        "classifier_version": "2.2.0"
+      }
+    },
+    {
+      "paper_id": 30123,
+      "pmid": "24843137",
+      "title": "A restricted population of CB1 cannabinoid receptors with neuroprotective activity",
+      "variant": "control",
+      "dry_run": false,
+      "locked_fields": [],
+      "before_confidence": null,
+      "before_classifier_version": "heuristic-reclassify-2.1.0",
+      "status": "updated",
+      "after_confidence": 0.7236140017070407,
+      "after_classifier_version": "llm-calibration-control-2.2.0",
+      "changes": {
+        "study_type": {
+          "old": "[\"Animal Models (Mouse)\"]",
+          "new": [
+            "Animal Models (Mouse)",
+            "Cell Culture (Other In Vitro)"
+          ]
+        },
+        "cannabis_type": {
+          "old": "[\"unknown\"]",
+          "new": [
+            "CB receptor agonist",
+            "pure cannabinoid"
+          ]
+        },
+        "strain_reported": {
+          "old": "R6/2",
+          "new": "WIN 55,212-2"
+        }
+      },
+      "llm_metrics": {
+        "model": "claude-sonnet-4-6",
+        "input_tokens": 408,
+        "cache_read_tokens": 4486,
+        "cache_write_tokens": 719,
+        "output_tokens": 314,
+        "cost": 0.009976049999999998,
+        "few_shot_similarity": 0.32871333902346905,
+        "few_shot_count": 1,
+        "classification_confidence": 0.7236140017070407,
+        "classifier_version": "2.2.0"
+      }
+    },
+    {
+      "paper_id": 30911,
+      "pmid": "23373571",
+      "title": "The cannabinoid TRPA1 agonist cannabichromene inhibits nitric oxide production in macrophages and ameliorates murine colitis",
+      "variant": "decision_checklist",
+      "dry_run": false,
+      "locked_fields": [],
+      "before_confidence": null,
+      "before_classifier_version": "heuristic-reclassify-2.1.0",
+      "status": "updated",
+      "after_confidence": 0.6732018876760968,
+      "after_classifier_version": "llm-calibration-decision_checklist-2.2.0",
+      "changes": {
+        "study_type": {
+          "old": "[\"Animal Models (Mouse)\", \"Cell Culture (Other In Vitro)\"]",
+          "new": [
+            "Animal Models (Mouse)",
+            "Cell Culture (Primary Cells)"
+          ]
+        },
+        "exposure_method": {
+          "old": "[\"cannabinoids dissolved in media\"]",
+          "new": [
+            "cannabinoids dissolved in media",
+            "injection cannabinoids"
+          ]
+        },
+        "cannabis_type": {
+          "old": "[\"unknown\"]",
+          "new": [
+            "pure cannabinoid",
+            "CB receptor agonist",
+            "CB receptor antagonist"
+          ]
+        },
+        "strain_reported": {
+          "old": null,
+          "new": "cannabichromene (CBC), carvacrol, cinnamaldehyde, CB1 receptor antagonists"
+        }
+      },
+      "llm_metrics": {
+        "model": "claude-sonnet-4-6",
+        "input_tokens": 1362,
+        "cache_read_tokens": 4606,
+        "cache_write_tokens": 0,
+        "output_tokens": 371,
+        "cost": 0.011032799999999999,
+        "few_shot_similarity": 0.2717840700314338,
+        "few_shot_count": 1,
+        "classification_confidence": 0.6732018876760968,
+        "classifier_version": "2.2.0"
+      }
+    },
+    {
+      "paper_id": 29519,
+      "pmid": "25981172",
+      "title": "Anxiety, Stress, and Fear Response in Mice With Reduced Endocannabinoid Levels",
+      "variant": "control",
+      "dry_run": false,
+      "locked_fields": [],
+      "before_confidence": null,
+      "before_classifier_version": "heuristic-reclassify-2.1.0",
+      "status": "updated",
+      "after_confidence": 0.7411906115856256,
+      "after_classifier_version": "llm-calibration-control-2.2.0",
+      "changes": {
+        "exposure_method": {
+          "old": "[\"injection cannabinoids\"]",
+          "new": [
+            "unknown"
+          ]
+        }
+      },
+      "llm_metrics": {
+        "model": "claude-sonnet-4-6",
+        "input_tokens": 454,
+        "cache_read_tokens": 4486,
+        "cache_write_tokens": 632,
+        "output_tokens": 281,
+        "cost": 0.009292799999999999,
+        "few_shot_similarity": 0.30396870528541875,
+        "few_shot_count": 1,
+        "classification_confidence": 0.7411906115856256,
+        "classifier_version": "2.2.0"
+      }
+    },
+    {
+      "paper_id": 15976,
+      "pmid": "32345916",
+      "title": "A randomized, double-blind, placebo-controlled study of daily cannabidiol for the treatment of canine osteoarthritis pain",
+      "variant": "decision_checklist",
+      "dry_run": false,
+      "locked_fields": [],
+      "before_confidence": null,
+      "before_classifier_version": "heuristic-reclassify-2.1.0",
+      "status": "updated",
+      "after_confidence": 0.6933300230901911,
+      "after_classifier_version": "llm-calibration-decision_checklist-2.2.0",
+      "changes": {
+        "study_type": {
+          "old": "[\"Animal Models (Mouse)\", \"Clinical (RCT)\"]",
+          "new": [
+            "Clinical (RCT)",
+            "Animal Models (Mouse)",
+            "Cell Culture (Cell Lines)"
+          ]
+        },
+        "exposure_method": {
+          "old": "[\"inhaled\"]",
+          "new": [
+            "oral administration",
+            "cannabinoids dissolved in media"
+          ]
+        },
+        "cannabis_type": {
+          "old": "[\"dried flower\"]",
+          "new": [
+            "pure cannabinoid"
+          ]
+        },
+        "strain_normalized": {
+          "old": null,
+          "new": "Chemotype III"
+        }
+      },
+      "llm_metrics": {
+        "model": "claude-sonnet-4-6",
+        "input_tokens": 408,
+        "cache_read_tokens": 4606,
+        "cache_write_tokens": 720,
+        "output_tokens": 352,
+        "cost": 0.0105858,
+        "few_shot_similarity": 0.36665563252285904,
+        "few_shot_count": 1,
+        "classification_confidence": 0.6933300230901911,
+        "classifier_version": "2.2.0"
+      }
+    },
+    {
+      "paper_id": 31491,
+      "pmid": "22300105",
+      "title": "Inhibitory effect of cannabichromene, a major non-psychotropic cannabinoid extracted from Cannabis sativa, on inflammation-induced hypermotility in mice",
+      "variant": "control",
+      "dry_run": false,
+      "locked_fields": [],
+      "before_confidence": null,
+      "before_classifier_version": "heuristic-reclassify-2.1.0",
+      "status": "updated",
+      "after_confidence": 0.7061735997908877,
+      "after_classifier_version": "llm-calibration-control-2.2.0",
+      "changes": {
+        "exposure_method": {
+          "old": "[\"cannabinoids dissolved in media\"]",
+          "new": [
+            "injection cannabinoids",
+            "cannabinoids dissolved in media"
+          ]
+        },
+        "cannabis_type": {
+          "old": "[\"unknown\"]",
+          "new": [
+            "pure cannabinoid",
+            "CB receptor antagonist"
+          ]
+        },
+        "outcome_domain": {
+          "old": "[\"inflammation\"]",
+          "new": [
+            "inflammation",
+            "other"
+          ]
+        },
+        "strain_reported": {
+          "old": null,
+          "new": "Cannabis sativa extract (CBC)"
+        }
+      },
+      "llm_metrics": {
+        "model": "claude-sonnet-4-6",
+        "input_tokens": 1212,
+        "cache_read_tokens": 4486,
+        "cache_write_tokens": 0,
+        "output_tokens": 320,
+        "cost": 0.009781799999999998,
+        "few_shot_similarity": 0.2705786659696256,
+        "few_shot_count": 1,
+        "classification_confidence": 0.7061735997908877,
+        "classifier_version": "2.2.0"
+      }
+    },
+    {
+      "paper_id": 16492,
+      "pmid": "31518892",
+      "title": "Cannabidiol induces antioxidant pathways in keratinocytes by targeting BACH1",
+      "variant": "decision_checklist",
+      "dry_run": false,
+      "locked_fields": [],
+      "before_confidence": null,
+      "before_classifier_version": "heuristic-reclassify-2.1.0",
+      "status": "updated",
+      "after_confidence": 0.707813863344253,
+      "after_classifier_version": "llm-calibration-decision_checklist-2.2.0",
+      "changes": {
+        "study_type": {
+          "old": "[\"Animal Models (Mouse)\"]",
+          "new": [
+            "Cell Culture (Primary Cells)",
+            "Animal Models (Mouse)"
+          ]
+        },
+        "exposure_method": {
+          "old": "[\"injection cannabinoids\"]",
+          "new": [
+            "cannabinoids dissolved in media",
+            "injection cannabinoids"
+          ]
+        },
+        "cannabis_type": {
+          "old": "[\"unknown\"]",
+          "new": [
+            "pure cannabinoid"
+          ]
+        },
+        "strain_reported": {
+          "old": null,
+          "new": "Sigma-Aldrich"
+        },
+        "treatment_duration": {
+          "old": null,
+          "new": "24 hours"
+        },
+        "cbd_uM": {
+          "old": null,
+          "new": 5.0
+        }
+      },
+      "llm_metrics": {
+        "model": "claude-sonnet-4-6",
+        "input_tokens": 424,
+        "cache_read_tokens": 4606,
+        "cache_write_tokens": 632,
+        "output_tokens": 347,
+        "cost": 0.0102288,
+        "few_shot_similarity": 0.3593795444808436,
+        "few_shot_count": 1,
+        "classification_confidence": 0.707813863344253,
+        "classifier_version": "2.2.0"
+      }
+    },
+    {
+      "paper_id": 28277,
+      "pmid": "28439004",
+      "title": "Endocannabinoid system acts as a regulator of immune homeostasis in the gut",
+      "variant": "control",
+      "dry_run": false,
+      "locked_fields": [],
+      "before_confidence": null,
+      "before_classifier_version": "heuristic-reclassify-2.1.0",
+      "status": "updated",
+      "after_confidence": 0.6755875290194042,
+      "after_classifier_version": "llm-calibration-control-2.2.0",
+      "changes": {
+        "study_type": {
+          "old": "[\"Animal Models (Mouse)\", \"Cell Culture (Other In Vitro)\"]",
+          "new": [
+            "Animal Models (Mouse)",
+            "Cell Culture (Primary Cells)"
+          ]
+        },
+        "exposure_method": {
+          "old": "[\"oral administration\"]",
+          "new": [
+            "oral administration",
+            "injection cannabinoids",
+            "cannabinoids dissolved in media"
+          ]
+        },
+        "cannabis_type": {
+          "old": "[\"edibles\"]",
+          "new": [
+            "pure cannabinoid"
+          ]
+        },
+        "strain_reported": {
+          "old": null,
+          "new": "AEA (anandamide), CB2 receptor, TRPV1"
+        }
+      },
+      "llm_metrics": {
+        "model": "claude-sonnet-4-6",
+        "input_tokens": 468,
+        "cache_read_tokens": 4486,
+        "cache_write_tokens": 770,
+        "output_tokens": 355,
+        "cost": 0.0109623,
+        "few_shot_similarity": 0.307513985620236,
+        "few_shot_count": 1,
+        "classification_confidence": 0.6755875290194042,
+        "classifier_version": "2.2.0"
+      }
+    },
+    {
+      "paper_id": 16761,
+      "pmid": "31052254",
+      "title": "Hepatotoxicity of a Cannabidiol-Rich Cannabis Extract in the Mouse Model",
+      "variant": "decision_checklist",
+      "dry_run": false,
+      "locked_fields": [],
+      "before_confidence": null,
+      "before_classifier_version": "heuristic-reclassify-2.1.0",
+      "status": "updated",
+      "after_confidence": 0.7040026296086342,
+      "after_classifier_version": "llm-calibration-decision_checklist-2.2.0",
+      "changes": {
+        "exposure_method": {
+          "old": "[\"injection cannabinoids\"]",
+          "new": [
+            "oral administration"
+          ]
+        },
+        "cannabis_type": {
+          "old": "[\"concentrates\"]",
+          "new": [
+            "pure cannabinoid"
+          ]
+        },
+        "strain_reported": {
+          "old": "B6C3F1",
+          "new": "EPIDIOLEX\u00ae"
+        },
+        "strain_normalized": {
+          "old": null,
+          "new": "Chemotype III"
+        }
+      },
+      "llm_metrics": {
+        "model": "claude-sonnet-4-6",
+        "input_tokens": 3,
+        "cache_read_tokens": 4821,
+        "cache_write_tokens": 798,
+        "output_tokens": 304,
+        "cost": 0.0090078,
+        "few_shot_similarity": 0.346675432028781,
+        "few_shot_count": 1,
+        "classification_confidence": 0.7040026296086342,
+        "classifier_version": "2.2.0"
+      }
+    },
+    {
+      "paper_id": 17004,
+      "pmid": "30588604",
+      "title": "Cannabidiol reduces seizures and associated behavioral comorbidities in a range of animal seizure and epilepsy models",
+      "variant": "control",
+      "dry_run": false,
+      "locked_fields": [],
+      "before_confidence": null,
+      "before_classifier_version": "heuristic-reclassify-2.1.0",
+      "status": "updated",
+      "after_confidence": 0.7255317761139548,
+      "after_classifier_version": "llm-calibration-control-2.2.0",
+      "changes": {
+        "exposure_method": {
+          "old": "[\"injection cannabinoids\"]",
+          "new": [
+            "injection cannabinoids",
+            "oral administration"
+          ]
+        },
+        "cannabis_type": {
+          "old": "[\"unknown\"]",
+          "new": [
+            "pure cannabinoid"
+          ]
+        }
+      },
+      "llm_metrics": {
+        "model": "claude-sonnet-4-6",
+        "input_tokens": 3,
+        "cache_read_tokens": 4701,
+        "cache_write_tokens": 959,
+        "output_tokens": 337,
+        "cost": 0.01007055,
+        "few_shot_similarity": 0.3351059203798495,
+        "few_shot_count": 1,
+        "classification_confidence": 0.7255317761139548,
+        "classifier_version": "2.2.0"
+      }
+    },
+    {
+      "paper_id": 31012,
+      "pmid": "23151067",
+      "title": "Selective inhibition of alpha/beta-hydrolase domain 6 attenuates neurodegeneration, alleviates blood brain barrier breakdown, and improves functional recovery in a mouse model of traumatic brain injury",
+      "variant": "decision_checklist",
+      "dry_run": false,
+      "locked_fields": [],
+      "before_confidence": null,
+      "before_classifier_version": "heuristic-reclassify-2.1.0",
+      "status": "updated",
+      "after_confidence": 0.7351384957233006,
+      "after_classifier_version": "llm-calibration-decision_checklist-2.2.0",
+      "changes": {
+        "cannabis_type": {
+          "old": "[\"unknown\"]",
+          "new": [
+            "pure cannabinoid"
+          ]
+        },
+        "strain_reported": {
+          "old": null,
+          "new": "WWL70"
+        }
+      },
+      "llm_metrics": {
+        "model": "claude-sonnet-4-6",
+        "input_tokens": 521,
+        "cache_read_tokens": 4606,
+        "cache_write_tokens": 719,
+        "output_tokens": 302,
+        "cost": 0.01017105,
+        "few_shot_similarity": 0.28379498574433526,
+        "few_shot_count": 1,
+        "classification_confidence": 0.7351384957233006,
+        "classifier_version": "2.2.0"
+      }
+    },
+    {
+      "paper_id": 18273,
+      "pmid": "27147666",
+      "title": "Cannabidiol Counteracts Amphetamine-Induced Neuronal and Behavioral Sensitization of the Mesolimbic Dopamine Pathway through a Novel mTOR/p70S6 Kinase Signaling Pathway",
+      "variant": "control",
+      "dry_run": false,
+      "locked_fields": [],
+      "before_confidence": null,
+      "before_classifier_version": "heuristic-reclassify-2.1.0",
+      "status": "updated",
+      "after_confidence": 0.7530684755502695,
+      "after_classifier_version": "llm-calibration-control-2.2.0",
+      "changes": {
+        "cannabis_type": {
+          "old": "[\"unknown\"]",
+          "new": [
+            "pure cannabinoid"
+          ]
+        },
+        "strain_reported": {
+          "old": null,
+          "new": "CBD (cannabidiol), intra-NASh microinfusion"
+        },
+        "strain_normalized": {
+          "old": null,
+          "new": "Chemotype III"
+        }
+      },
+      "llm_metrics": {
+        "model": "claude-sonnet-4-6",
+        "input_tokens": 661,
+        "cache_read_tokens": 4486,
+        "cache_write_tokens": 892,
+        "output_tokens": 313,
+        "cost": 0.0113688,
+        "few_shot_similarity": 0.34356158516756485,
+        "few_shot_count": 1,
+        "classification_confidence": 0.7530684755502695,
+        "classifier_version": "2.2.0"
+      }
+    },
+    {
+      "paper_id": 23523,
+      "pmid": "35007072",
+      "title": "Cannabinoids Block Cellular Entry of SARS-CoV-2 and the Emerging Variants",
+      "variant": "decision_checklist",
+      "dry_run": false,
+      "locked_fields": [],
+      "before_confidence": null,
+      "before_classifier_version": "heuristic-reclassify-2.1.0",
+      "status": "updated",
+      "after_confidence": 0.6905024322364989,
+      "after_classifier_version": "llm-calibration-decision_checklist-2.2.0",
+      "changes": {
+        "study_type": {
+          "old": "[\"Cell Culture (Other In Vitro)\"]",
+          "new": [
+            "Cell Culture (Cell Lines)"
+          ]
+        },
+        "cannabis_type": {
+          "old": "[\"concentrates\"]",
+          "new": [
+            "pure cannabinoid"
+          ]
+        },
+        "outcome_domain": {
+          "old": "[\"inflammation\", \"other\"]",
+          "new": [
+            "inflammation"
+          ]
+        },
+        "strain_reported": {
+          "old": null,
+          "new": "cannabigerolic acid (CBGA), cannabidiolic acid (CBDA), Cannabis sativa hemp extract"
+        },
+        "strain_normalized": {
+          "old": null,
+          "new": "Chemotype III"
+        }
+      },
+      "llm_metrics": {
+        "model": "claude-sonnet-4-6",
+        "input_tokens": 1007,
+        "cache_read_tokens": 4606,
+        "cache_write_tokens": 0,
+        "output_tokens": 318,
+        "cost": 0.0091728,
+        "few_shot_similarity": 0.30167477412166305,
+        "few_shot_count": 1,
+        "classification_confidence": 0.6905024322364989,
+        "classifier_version": "2.2.0"
+      }
+    },
+    {
+      "paper_id": 27405,
+      "pmid": "30201092",
+      "title": "Sex-dependent effects of in utero cannabinoid exposure on cortical function",
+      "variant": "control",
+      "dry_run": false,
+      "locked_fields": [],
+      "before_confidence": null,
+      "before_classifier_version": "heuristic-reclassify-2.1.0",
+      "status": "updated",
+      "after_confidence": 0.7335030305214763,
+      "after_classifier_version": "llm-calibration-control-2.2.0",
+      "changes": {
+        "study_type": {
+          "old": "[\"Animal Models (Rat)\"]",
+          "new": [
+            "Animal Models (Rat)",
+            "Cell Culture (Primary Cells)"
+          ]
+        },
+        "cannabis_type": {
+          "old": "[\"unknown\"]",
+          "new": [
+            "pure cannabinoid"
+          ]
+        },
+        "strain_reported": {
+          "old": null,
+          "new": "WIN 55,212-2"
+        }
+      },
+      "llm_metrics": {
+        "model": "claude-sonnet-4-6",
+        "input_tokens": 3,
+        "cache_read_tokens": 4701,
+        "cache_write_tokens": 714,
+        "output_tokens": 314,
+        "cost": 0.0088068,
+        "few_shot_similarity": 0.3616767684049208,
+        "few_shot_count": 1,
+        "classification_confidence": 0.7335030305214763,
+        "classifier_version": "2.2.0"
+      }
+    },
+    {
+      "paper_id": 17338,
+      "pmid": "29885468",
+      "title": "Antidepressant-like effect induced by Cannabidiol is dependent on brain serotonin levels",
+      "variant": "decision_checklist",
+      "dry_run": false,
+      "locked_fields": [],
+      "before_confidence": null,
+      "before_classifier_version": "heuristic-reclassify-2.1.0",
+      "status": "updated",
+      "after_confidence": 0.7494562448613457,
+      "after_classifier_version": "llm-calibration-decision_checklist-2.2.0",
+      "changes": {
+        "cannabis_type": {
+          "old": "[\"unknown\"]",
+          "new": [
+            "pure cannabinoid"
+          ]
+        },
+        "dose_mg": {
+          "old": 10.0,
+          "new": null
+        }
+      },
+      "llm_metrics": {
+        "model": "claude-sonnet-4-6",
+        "input_tokens": 3,
+        "cache_read_tokens": 4821,
+        "cache_write_tokens": 949,
+        "output_tokens": 296,
+        "cost": 0.009454049999999999,
+        "few_shot_similarity": 0.33152081620448526,
+        "few_shot_count": 1,
+        "classification_confidence": 0.7494562448613457,
+        "classifier_version": "2.2.0"
+      }
+    },
+    {
+      "paper_id": 16543,
+      "pmid": "31437494",
+      "title": "Cannabidiol differentially regulates basal and LPS-induced inflammatory responses in macrophages, lung epithelial cells, and fibroblasts",
+      "variant": "control",
+      "dry_run": false,
+      "locked_fields": [],
+      "before_confidence": null,
+      "before_classifier_version": "heuristic-reclassify-2.1.0",
+      "status": "updated",
+      "after_confidence": 0.6737927961115247,
+      "after_classifier_version": "llm-calibration-control-2.2.0",
+      "changes": {
+        "study_type": {
+          "old": "[\"Cell Culture (Other In Vitro)\"]",
+          "new": [
+            "Cell Culture (Cell Lines)"
+          ]
+        },
+        "exposure_method": {
+          "old": "[\"cannabinoids dissolved in media\"]",
+          "new": [
+            "cannabinoids dissolved in media",
+            "exposure of cells to smoke/vapor"
+          ]
+        },
+        "cannabis_type": {
+          "old": "[\"vape pen\"]",
+          "new": [
+            "pure cannabinoid"
+          ]
+        },
+        "strain_reported": {
+          "old": null,
+          "new": "CBD (pure cannabidiol)"
+        }
+      },
+      "llm_metrics": {
+        "model": "claude-sonnet-4-6",
+        "input_tokens": 1153,
+        "cache_read_tokens": 4486,
+        "cache_write_tokens": 0,
+        "output_tokens": 305,
+        "cost": 0.009379799999999999,
+        "few_shot_similarity": 0.32930932037174887,
+        "few_shot_count": 1,
+        "classification_confidence": 0.6737927961115247,
+        "classifier_version": "2.2.0"
+      }
+    },
+    {
+      "paper_id": 31530,
+      "pmid": "22231426",
+      "title": "SK channel modulation rescues striatal plasticity and control over habit in cannabinoid tolerance",
+      "variant": "decision_checklist",
+      "dry_run": false,
+      "locked_fields": [],
+      "before_confidence": null,
+      "before_classifier_version": "heuristic-reclassify-2.1.0",
+      "status": "updated",
+      "after_confidence": 0.7163110447977794,
+      "after_classifier_version": "llm-calibration-decision_checklist-2.2.0",
+      "changes": {
+        "study_type": {
+          "old": "[\"Animal Models (Mouse)\"]",
+          "new": [
+            "Animal Models (Mouse)",
+            "Cell Culture (Primary Cells)"
+          ]
+        },
+        "cannabis_type": {
+          "old": "[\"unknown\"]",
+          "new": [
+            "CB receptor agonist",
+            "pure cannabinoid"
+          ]
+        },
+        "strain_reported": {
+          "old": null,
+          "new": "WIN 55,212-2"
+        },
+        "duration_days": {
+          "old": null,
+          "new": 7.0
+        },
+        "administration_frequency": {
+          "old": null,
+          "new": "daily"
+        }
+      },
+      "llm_metrics": {
+        "model": "claude-sonnet-4-6",
+        "input_tokens": 291,
+        "cache_read_tokens": 4606,
+        "cache_write_tokens": 892,
+        "output_tokens": 317,
+        "cost": 0.010354799999999999,
+        "few_shot_similarity": 0.30437014932593126,
+        "few_shot_count": 1,
+        "classification_confidence": 0.7163110447977794,
+        "classifier_version": "2.2.0"
+      }
+    },
+    {
+      "paper_id": 31154,
+      "pmid": "22903455",
+      "title": "A cannabinoid type 2 receptor agonist attenuates blood-brain barrier damage and neurodegeneration in a murine model of traumatic brain injury",
+      "variant": "control",
+      "dry_run": false,
+      "locked_fields": [],
+      "before_confidence": null,
+      "before_classifier_version": "heuristic-reclassify-2.1.0",
+      "status": "updated",
+      "after_confidence": 0.7335351968935107,
+      "after_classifier_version": "llm-calibration-control-2.2.0",
+      "changes": {
+        "cannabis_type": {
+          "old": "[\"unknown\"]",
+          "new": [
+            "CB receptor agonist"
+          ]
+        },
+        "strain_reported": {
+          "old": "C57BL/6",
+          "new": "0-1966"
+        },
+        "administration_frequency": {
+          "old": "repeated",
+          "new": null
+        }
+      },
+      "llm_metrics": {
+        "model": "claude-sonnet-4-6",
+        "input_tokens": 3,
+        "cache_read_tokens": 4701,
+        "cache_write_tokens": 984,
+        "output_tokens": 301,
+        "cost": 0.009624299999999999,
+        "few_shot_similarity": 0.2784506563117022,
+        "few_shot_count": 1,
+        "classification_confidence": 0.7335351968935107,
+        "classifier_version": "2.2.0"
+      }
+    },
+    {
+      "paper_id": 31089,
+      "pmid": "23035099",
+      "title": "Interleukin-1\u03b2 causes anxiety by interacting with the endocannabinoid system",
+      "variant": "decision_checklist",
+      "dry_run": false,
+      "locked_fields": [],
+      "before_confidence": null,
+      "before_classifier_version": "heuristic-reclassify-2.1.0",
+      "status": "updated",
+      "after_confidence": 0.7172327426467445,
+      "after_classifier_version": "llm-calibration-decision_checklist-2.2.0",
+      "changes": {
+        "study_type": {
+          "old": "[\"Animal Models (Mouse)\"]",
+          "new": [
+            "Animal Models (Mouse)",
+            "Cell Culture (Primary Cells)"
+          ]
+        },
+        "cannabis_type": {
+          "old": "[\"unknown\"]",
+          "new": [
+            "CB receptor antagonist"
+          ]
+        },
+        "strain_reported": {
+          "old": null,
+          "new": "SR141716A (CB1R antagonist), capsazepine (TRPV1 antagonist)"
+        }
+      },
+      "llm_metrics": {
+        "model": "claude-sonnet-4-6",
+        "input_tokens": 3,
+        "cache_read_tokens": 4821,
+        "cache_write_tokens": 872,
+        "output_tokens": 322,
+        "cost": 0.0095553,
+        "few_shot_similarity": 0.30744247548914827,
+        "few_shot_count": 1,
+        "classification_confidence": 0.7172327426467445,
+        "classifier_version": "2.2.0"
+      }
+    },
+    {
+      "paper_id": 30077,
+      "pmid": "24937045",
+      "title": "The fatty acid amide hydrolase inhibitor PF-3845 promotes neuronal survival, attenuates inflammation and improves functional recovery in mice with traumatic brain injury",
+      "variant": "control",
+      "dry_run": false,
+      "locked_fields": [],
+      "before_confidence": null,
+      "before_classifier_version": "heuristic-reclassify-2.1.0",
+      "status": "updated",
+      "after_confidence": 0.7338919402186931,
+      "after_classifier_version": "llm-calibration-control-2.2.0",
+      "changes": {
+        "cannabis_type": {
+          "old": "[\"unknown\"]",
+          "new": [
+            "pure cannabinoid"
+          ]
+        },
+        "strain_reported": {
+          "old": null,
+          "new": "PF-3845 (FAAH inhibitor), Sigma-Aldrich"
+        }
+      },
+      "llm_metrics": {
+        "model": "claude-sonnet-4-6",
+        "input_tokens": 3,
+        "cache_read_tokens": 4701,
+        "cache_write_tokens": 1180,
+        "output_tokens": 319,
+        "cost": 0.0106293,
+        "few_shot_similarity": 0.27963980072897693,
+        "few_shot_count": 1,
+        "classification_confidence": 0.7338919402186931,
+        "classifier_version": "2.2.0"
+      }
+    },
+    {
+      "paper_id": 28278,
+      "pmid": "28438413",
+      "title": "Functional Redundancy Between Canonical Endocannabinoid Signaling Systems in the Modulation of Anxiety",
+      "variant": "decision_checklist",
+      "dry_run": false,
+      "locked_fields": [],
+      "before_confidence": null,
+      "before_classifier_version": "heuristic-reclassify-2.1.0",
+      "status": "updated",
+      "after_confidence": 0.7156613196636287,
+      "after_classifier_version": "llm-calibration-decision_checklist-2.2.0",
+      "changes": {
+        "study_type": {
+          "old": "[\"Animal Models (Mouse)\"]",
+          "new": [
+            "Animal Models (Mouse)",
+            "Cell Culture (Primary Cells)"
+          ]
+        },
+        "cannabis_type": {
+          "old": "[\"unknown\"]",
+          "new": [
+            "pure cannabinoid",
+            "CB receptor agonist"
+          ]
+        },
+        "strain_reported": {
+          "old": null,
+          "new": "\u03949-tetrahydrocannabinol (THC), AEA, 2-AG, JZL184, URB597, DO34"
+        }
+      },
+      "llm_metrics": {
+        "model": "claude-sonnet-4-6",
+        "input_tokens": 3,
+        "cache_read_tokens": 4821,
+        "cache_write_tokens": 1142,
+        "output_tokens": 339,
+        "cost": 0.010822799999999999,
+        "few_shot_similarity": 0.3022043988787622,
+        "few_shot_count": 1,
+        "classification_confidence": 0.7156613196636287,
+        "classifier_version": "2.2.0"
+      }
+    },
+    {
+      "paper_id": 28934,
+      "pmid": "27092087",
+      "title": "Examination of the Addictive and Behavioral Properties of Fatty Acid-Binding Protein Inhibitor SBFI26",
+      "variant": "control",
+      "dry_run": false,
+      "locked_fields": [],
+      "before_confidence": null,
+      "before_classifier_version": "heuristic-reclassify-2.1.0",
+      "status": "updated",
+      "after_confidence": 0.7691750690329153,
+      "after_classifier_version": "llm-calibration-control-2.2.0",
+      "changes": {
+        "cannabis_type": {
+          "old": "[\"unknown\"]",
+          "new": [
+            "pure cannabinoid"
+          ]
+        },
+        "strain_reported": {
+          "old": "C57BL",
+          "new": "SBFI26"
+        }
+      },
+      "llm_metrics": {
+        "model": "claude-sonnet-4-6",
+        "input_tokens": 3,
+        "cache_read_tokens": 4701,
+        "cache_write_tokens": 907,
+        "output_tokens": 301,
+        "cost": 0.00933555,
+        "few_shot_similarity": 0.39725023010971755,
+        "few_shot_count": 1,
+        "classification_confidence": 0.7691750690329153,
+        "classifier_version": "2.2.0"
+      }
+    },
+    {
+      "paper_id": 26275,
+      "pmid": "32428929",
+      "title": "Perinatal THC exposure via lactation induces lasting alterations to social behavior and prefrontal cortex function in rats at adulthood",
+      "variant": "decision_checklist",
+      "dry_run": false,
+      "locked_fields": [],
+      "before_confidence": null,
+      "before_classifier_version": "heuristic-reclassify-2.1.0",
+      "status": "updated",
+      "after_confidence": 0.6985081287581463,
+      "after_classifier_version": "llm-calibration-decision_checklist-2.2.0",
+      "changes": {
+        "exposure_method": {
+          "old": "[\"injection cannabinoids\"]",
+          "new": [
+            "oral administration"
+          ]
+        },
+        "cannabis_type": {
+          "old": "[\"unknown\"]",
+          "new": [
+            "pure cannabinoid"
+          ]
+        },
+        "strain_normalized": {
+          "old": null,
+          "new": "Chemotype I"
+        },
+        "administration_frequency": {
+          "old": null,
+          "new": "daily"
+        }
+      },
+      "llm_metrics": {
+        "model": "claude-sonnet-4-6",
+        "input_tokens": 3,
+        "cache_read_tokens": 4821,
+        "cache_write_tokens": 1016,
+        "output_tokens": 298,
+        "cost": 0.009735299999999999,
+        "few_shot_similarity": 0.3283604291938209,
+        "few_shot_count": 1,
+        "classification_confidence": 0.6985081287581463,
+        "classifier_version": "2.2.0"
+      }
+    },
+    {
+      "paper_id": 12483,
+      "pmid": "37147420",
+      "title": "Anti-inflammatory effects of CBD in human microglial cell line infected with HIV-1",
+      "variant": "control",
+      "dry_run": false,
+      "locked_fields": [],
+      "before_confidence": null,
+      "before_classifier_version": "heuristic-reclassify-2.1.0",
+      "status": "updated",
+      "after_confidence": 0.7369830114132759,
+      "after_classifier_version": "llm-calibration-control-2.2.0",
+      "changes": {
+        "cannabis_type": {
+          "old": "[\"unknown\"]",
+          "new": [
+            "pure cannabinoid"
+          ]
+        },
+        "strain_reported": {
+          "old": null,
+          "new": "Sigma-Aldrich"
+        },
+        "treatment_duration": {
+          "old": null,
+          "new": "24 hours"
+        },
+        "thc_uM": {
+          "old": null,
+          "new": 10.0
+        },
+        "cbd_uM": {
+          "old": null,
+          "new": 10.0
+        }
+      },
+      "llm_metrics": {
+        "model": "claude-sonnet-4-6",
+        "input_tokens": 3,
+        "cache_read_tokens": 4486,
+        "cache_write_tokens": 876,
+        "output_tokens": 305,
+        "cost": 0.009214799999999999,
+        "few_shot_similarity": 0.2899433713775866,
+        "few_shot_count": 1,
+        "classification_confidence": 0.7369830114132759,
+        "classifier_version": "2.2.0"
+      }
+    },
+    {
+      "paper_id": 8709,
+      "pmid": "38030657",
+      "title": "Characterization of cannabinoid plasma concentration, maternal health, and cytokine levels in a rat model of prenatal Cannabis smoke exposure",
+      "variant": "decision_checklist",
+      "dry_run": false,
+      "locked_fields": [],
+      "before_confidence": null,
+      "before_classifier_version": "heuristic-reclassify-2.1.0",
+      "status": "updated",
+      "after_confidence": 0.774508963906398,
+      "after_classifier_version": "llm-calibration-decision_checklist-2.2.0",
+      "changes": {
+        "cannabis_type": {
+          "old": "[\"dried flower\"]",
+          "new": [
+            "dried flower",
+            "pure cannabinoid"
+          ]
+        },
+        "cbd_pct": {
+          "old": 0.7,
+          "new": 13.0
+        },
+        "strain_reported": {
+          "old": "high-THC",
+          "new": null
+        },
+        "strain_normalized": {
+          "old": "Chemotype I",
+          "new": null
+        },
+        "duration_days": {
+          "old": null,
+          "new": 15.0
+        },
+        "administration_frequency": {
+          "old": "once daily",
+          "new": "daily"
+        },
+        "thc_mg_kg": {
+          "old": null,
+          "new": 3.0
+        },
+        "cbd_mg_kg": {
+          "old": null,
+          "new": 10.0
+        }
+      },
+      "llm_metrics": {
+        "model": "claude-sonnet-4-6",
+        "input_tokens": 3,
+        "cache_read_tokens": 4821,
+        "cache_write_tokens": 881,
+        "output_tokens": 316,
+        "cost": 0.009499049999999998,
+        "few_shot_similarity": 0.33169654635466,
+        "few_shot_count": 1,
+        "classification_confidence": 0.774508963906398,
+        "classifier_version": "2.2.0"
+      }
+    },
+    {
+      "paper_id": 13666,
+      "pmid": "35644678",
+      "title": "THC and CBD affect metabolic syndrome parameters including microbiome in mice fed high fat-cholesterol diet",
+      "variant": "control",
+      "dry_run": false,
+      "locked_fields": [],
+      "before_confidence": null,
+      "before_classifier_version": "heuristic-reclassify-2.1.0",
+      "status": "updated",
+      "after_confidence": 0.7508144015217747,
+      "after_classifier_version": "llm-calibration-control-2.2.0",
+      "changes": {
+        "cannabis_type": {
+          "old": "[\"edibles\"]",
+          "new": [
+            "pure cannabinoid"
+          ]
+        },
+        "outcome_domain": {
+          "old": "[\"other\"]",
+          "new": [
+            "inflammation",
+            "other"
+          ]
+        },
+        "strain_reported": {
+          "old": null,
+          "new": "pure cannabinoid (THC and CBD)"
+        },
+        "administration_frequency": {
+          "old": null,
+          "new": "daily"
+        },
+        "thc_mg_kg": {
+          "old": null,
+          "new": 2.5
+        },
+        "cbd_mg_kg": {
+          "old": null,
+          "new": 2.39
+        }
+      },
+      "llm_metrics": {
+        "model": "claude-sonnet-4-6",
+        "input_tokens": 3,
+        "cache_read_tokens": 4701,
+        "cache_write_tokens": 899,
+        "output_tokens": 307,
+        "cost": 0.009395549999999999,
+        "few_shot_similarity": 0.33604800507258215,
+        "few_shot_count": 1,
+        "classification_confidence": 0.7508144015217747,
+        "classifier_version": "2.2.0"
+      }
+    },
+    {
+      "paper_id": 13570,
+      "pmid": "35789177",
+      "title": "Effects of chronic cannabidiol in a mouse model of naturally occurring neuroinflammation, neurodegeneration, and spontaneous seizures",
+      "variant": "decision_checklist",
+      "dry_run": false,
+      "locked_fields": [],
+      "before_confidence": null,
+      "before_classifier_version": "heuristic-reclassify-2.1.0",
+      "status": "updated",
+      "after_confidence": 0.7768098547872838,
+      "after_classifier_version": "llm-calibration-decision_checklist-2.2.0",
+      "changes": {
+        "cannabis_type": {
+          "old": "[\"edibles\"]",
+          "new": [
+            "pure cannabinoid"
+          ]
+        },
+        "outcome_domain": {
+          "old": "[\"cognition\", \"neuroprotection\"]",
+          "new": [
+            "inflammation",
+            "neuroprotection"
+          ]
+        },
+        "duration_days": {
+          "old": null,
+          "new": 180.0
+        },
+        "administration_frequency": {
+          "old": null,
+          "new": "daily"
+        },
+        "cbd_mg_kg": {
+          "old": null,
+          "new": 100.0
+        }
+      },
+      "llm_metrics": {
+        "model": "claude-sonnet-4-6",
+        "input_tokens": 3,
+        "cache_read_tokens": 4821,
+        "cache_write_tokens": 703,
+        "output_tokens": 298,
+        "cost": 0.00856155,
+        "few_shot_similarity": 0.42269951595761285,
+        "few_shot_count": 1,
+        "classification_confidence": 0.7768098547872838,
+        "classifier_version": "2.2.0"
+      }
+    },
+    {
+      "paper_id": 12689,
+      "pmid": "36879113",
+      "title": "Cannabidiol improves muscular lipid profile by affecting the expression of fatty acid transporters and inhibiting de novo lipogenesis",
+      "variant": "control",
+      "dry_run": false,
+      "locked_fields": [],
+      "before_confidence": null,
+      "before_classifier_version": "heuristic-reclassify-2.1.0",
+      "status": "updated",
+      "after_confidence": 0.7280514711745288,
+      "after_classifier_version": "llm-calibration-control-2.2.0",
+      "changes": {
+        "exposure_method": {
+          "old": "[\"injection cannabinoids\", \"oral administration\"]",
+          "new": [
+            "injection cannabinoids"
+          ]
+        },
+        "cannabis_type": {
+          "old": "[\"edibles\"]",
+          "new": [
+            "pure cannabinoid"
+          ]
+        },
+        "administration_frequency": {
+          "old": null,
+          "new": "daily"
+        },
+        "cbd_mg_kg": {
+          "old": null,
+          "new": 10.0
+        }
+      },
+      "llm_metrics": {
+        "model": "claude-sonnet-4-6",
+        "input_tokens": 3,
+        "cache_read_tokens": 4701,
+        "cache_write_tokens": 930,
+        "output_tokens": 295,
+        "cost": 0.0093318,
+        "few_shot_similarity": 0.3435049039150962,
+        "few_shot_count": 1,
+        "classification_confidence": 0.7280514711745288,
+        "classifier_version": "2.2.0"
+      }
+    },
+    {
+      "paper_id": 11539,
+      "pmid": "39122786",
+      "title": "Dental pulp stem cells-derived cannabidiol-treated organoid-like microspheroids show robust osteogenic potential via upregulation of WNT6",
+      "variant": "decision_checklist",
+      "dry_run": false,
+      "locked_fields": [],
+      "before_confidence": null,
+      "before_classifier_version": "heuristic-reclassify-2.1.0",
+      "status": "updated",
+      "after_confidence": 0.6988285284557787,
+      "after_classifier_version": "llm-calibration-decision_checklist-2.2.0",
+      "changes": {
+        "study_type": {
+          "old": "[\"Cell Culture (Organoids)\", \"Animal Models (Mouse)\"]",
+          "new": [
+            "Cell Culture (Organoids)",
+            "Cell Culture (Primary Cells)",
+            "Animal Models (Mouse)"
+          ]
+        },
+        "exposure_method": {
+          "old": "[\"cannabinoids dissolved in media\"]",
+          "new": [
+            "cannabinoids dissolved in media",
+            "injection cannabinoids"
+          ]
+        },
+        "cannabis_type": {
+          "old": "[\"unknown\"]",
+          "new": [
+            "pure cannabinoid"
+          ]
+        },
+        "strain_reported": {
+          "old": null,
+          "new": "cannabidiol (CBD)"
+        }
+      },
+      "llm_metrics": {
+        "model": "claude-sonnet-4-6",
+        "input_tokens": 442,
+        "cache_read_tokens": 4606,
+        "cache_write_tokens": 683,
+        "output_tokens": 345,
+        "cost": 0.01044405,
+        "few_shot_similarity": 0.301650650408151,
+        "few_shot_count": 1,
+        "classification_confidence": 0.6988285284557787,
+        "classifier_version": "2.2.0"
+      }
+    },
+    {
+      "paper_id": 9006,
+      "pmid": "37880248",
+      "title": "Microglial cannabinoid receptor type 1 mediates social memory deficits in mice produced by adolescent THC exposure and 16p11.2 duplication",
+      "variant": "control",
+      "dry_run": false,
+      "locked_fields": [],
+      "before_confidence": null,
+      "before_classifier_version": "heuristic-reclassify-2.1.0",
+      "status": "updated",
+      "after_confidence": 0.7433375906060374,
+      "after_classifier_version": "llm-calibration-control-2.2.0",
+      "changes": {
+        "cannabis_type": {
+          "old": "[\"unknown\"]",
+          "new": [
+            "pure cannabinoid"
+          ]
+        },
+        "outcome_domain": {
+          "old": "[\"cognition\"]",
+          "new": [
+            "cognition",
+            "neuroprotection"
+          ]
+        },
+        "strain_reported": {
+          "old": null,
+          "new": "THC (delta-9-tetrahydrocannabinol)"
+        },
+        "strain_normalized": {
+          "old": null,
+          "new": "Chemotype I"
+        }
+      },
+      "llm_metrics": {
+        "model": "claude-sonnet-4-6",
+        "input_tokens": 3,
+        "cache_read_tokens": 4701,
+        "cache_write_tokens": 793,
+        "output_tokens": 313,
+        "cost": 0.009088049999999999,
+        "few_shot_similarity": 0.31112530202012456,
+        "few_shot_count": 1,
+        "classification_confidence": 0.7433375906060374,
+        "classifier_version": "2.2.0"
+      }
+    },
+    {
+      "paper_id": 11701,
+      "pmid": "38797491",
+      "title": "Cannabidiol in the dorsal hippocampus attenuates emotional and cognitive impairments related to neuropathic pain: The role of prelimbic neocortex-hippocampal connections",
+      "variant": "decision_checklist",
+      "dry_run": false,
+      "locked_fields": [],
+      "before_confidence": null,
+      "before_classifier_version": "heuristic-reclassify-2.1.0",
+      "status": "updated",
+      "after_confidence": 0.7505778460137915,
+      "after_classifier_version": "llm-calibration-decision_checklist-2.2.0",
+      "changes": {
+        "cannabis_type": {
+          "old": "[\"CB receptor antagonist\"]",
+          "new": [
+            "pure cannabinoid"
+          ]
+        },
+        "outcome_domain": {
+          "old": "[\"pain\", \"cognition\"]",
+          "new": [
+            "pain",
+            "cognition",
+            "anxiety",
+            "neuroprotection"
+          ]
+        },
+        "strain_reported": {
+          "old": null,
+          "new": "Sigma-Aldrich"
+        },
+        "administration_frequency": {
+          "old": "acute treatment",
+          "new": null
+        }
+      },
+      "llm_metrics": {
+        "model": "claude-sonnet-4-6",
+        "input_tokens": 3,
+        "cache_read_tokens": 4821,
+        "cache_write_tokens": 927,
+        "output_tokens": 307,
+        "cost": 0.00953655,
+        "few_shot_similarity": 0.3352594867126382,
+        "few_shot_count": 1,
+        "classification_confidence": 0.7505778460137915,
+        "classifier_version": "2.2.0"
+      }
+    },
+    {
+      "paper_id": 13048,
+      "pmid": "36424484",
+      "title": "Cannabinoid receptor 2 (Cb2r) mediates cannabinol (CBN) induced developmental defects in zebrafish",
+      "variant": "control",
+      "dry_run": false,
+      "locked_fields": [],
+      "before_confidence": null,
+      "before_classifier_version": "heuristic-reclassify-2.1.0",
+      "status": "updated",
+      "after_confidence": 0.7497734248085143,
+      "after_classifier_version": "llm-calibration-control-2.2.0",
+      "changes": {
+        "cannabis_type": {
+          "old": "[\"unknown\"]",
+          "new": [
+            "pure cannabinoid",
+            "CB receptor antagonist"
+          ]
+        },
+        "outcome_domain": {
+          "old": "[\"other\"]",
+          "new": [
+            "neuroprotection",
+            "other"
+          ]
+        },
+        "strain_reported": {
+          "old": null,
+          "new": "AM 630, JTE 907, AM 251, CP 945598"
+        }
+      },
+      "llm_metrics": {
+        "model": "claude-sonnet-4-6",
+        "input_tokens": 3,
+        "cache_read_tokens": 4701,
+        "cache_write_tokens": 992,
+        "output_tokens": 316,
+        "cost": 0.009879299999999999,
+        "few_shot_similarity": 0.33257808269504757,
+        "few_shot_count": 1,
+        "classification_confidence": 0.7497734248085143,
+        "classifier_version": "2.2.0"
+      }
+    },
+    {
+      "paper_id": 9044,
+      "pmid": "37862567",
+      "title": "Effects of Chronic, Low-Dose Cannabinoids, Cannabidiol, Delta-9-Tetrahydrocannabinol and a Combination of Both, on Amyloid Pathology in the 5xFAD Mouse Model of Alzheimer's Disease",
+      "variant": "decision_checklist",
+      "dry_run": false,
+      "locked_fields": [],
+      "before_confidence": null,
+      "before_classifier_version": "heuristic-reclassify-2.1.0",
+      "status": "updated",
+      "after_confidence": 0.7552048596739456,
+      "after_classifier_version": "llm-calibration-decision_checklist-2.2.0",
+      "changes": {
+        "cannabis_type": {
+          "old": "[\"unknown\"]",
+          "new": [
+            "pure cannabinoid"
+          ]
+        },
+        "outcome_domain": {
+          "old": "[\"cognition\", \"inflammation\"]",
+          "new": [
+            "cognition",
+            "anxiety",
+            "inflammation",
+            "neuroprotection"
+          ]
+        },
+        "administration_frequency": {
+          "old": null,
+          "new": "daily"
+        },
+        "thc_mg_kg": {
+          "old": null,
+          "new": 0.205
+        },
+        "cbd_mg_kg": {
+          "old": null,
+          "new": 0.273
+        }
+      },
+      "llm_metrics": {
+        "model": "claude-sonnet-4-6",
+        "input_tokens": 3,
+        "cache_read_tokens": 4821,
+        "cache_write_tokens": 803,
+        "output_tokens": 310,
+        "cost": 0.00911655,
+        "few_shot_similarity": 0.3506828655798185,
+        "few_shot_count": 1,
+        "classification_confidence": 0.7552048596739456,
+        "classifier_version": "2.2.0"
+      }
+    },
+    {
+      "paper_id": 10072,
+      "pmid": "37330445",
+      "title": "Characterization of cannabis strain-plant-derived extracellular vesicles as potential biomarkers",
+      "variant": "control",
+      "dry_run": false,
+      "locked_fields": [],
+      "before_confidence": null,
+      "before_classifier_version": "heuristic-reclassify-2.1.0",
+      "status": "updated",
+      "after_confidence": 0.646178170049944,
+      "after_classifier_version": "llm-calibration-control-2.2.0",
+      "changes": {
+        "study_type": {
+          "old": "[\"Animal Models (Other)\"]",
+          "new": [
+            "Cell Culture (Other In Vitro)"
+          ]
+        },
+        "exposure_method": {
+          "old": "[\"injection cannabinoids\"]",
+          "new": [
+            "unknown"
+          ]
+        },
+        "cannabis_type": {
+          "old": "[\"unknown\"]",
+          "new": [
+            "dried flower"
+          ]
+        },
+        "strain_reported": {
+          "old": null,
+          "new": "Citrus (C), Henola (HA), Bialobrezenski (BZ), Southern-Sunset (SS), Cat-Daddy (CAD)"
+        },
+        "sample_size": {
+          "old": null,
+          "new": 5
+        }
+      },
+      "llm_metrics": {
+        "model": "claude-sonnet-4-6",
+        "input_tokens": 3,
+        "cache_read_tokens": 4701,
+        "cache_write_tokens": 910,
+        "output_tokens": 324,
+        "cost": 0.009691799999999999,
+        "few_shot_similarity": 0.3205939001664798,
+        "few_shot_count": 1,
+        "classification_confidence": 0.646178170049944,
+        "classifier_version": "2.2.0"
+      }
+    },
+    {
+      "paper_id": 10047,
+      "pmid": "37341881",
+      "title": "Poly(ethylene glycol)-b-poly(epsilon-caprolactone) nanoparticles as a platform for the improved oral delivery of cannabidiol",
+      "variant": "decision_checklist",
+      "dry_run": false,
+      "locked_fields": [],
+      "before_confidence": null,
+      "before_classifier_version": "heuristic-reclassify-2.1.0",
+      "status": "updated",
+      "after_confidence": 0.7263526011776932,
+      "after_classifier_version": "llm-calibration-decision_checklist-2.2.0",
+      "changes": {
+        "study_type": {
+          "old": "[\"Animal Models (Rat)\"]",
+          "new": [
+            "Animal Models (Rat)",
+            "Cell Culture (Other In Vitro)"
+          ]
+        },
+        "cannabis_type": {
+          "old": "[\"edibles\"]",
+          "new": [
+            "pure cannabinoid"
+          ]
+        },
+        "strain_reported": {
+          "old": null,
+          "new": "poly(ethylene glycol)-b-poly(epsilon-caprolactone) nanoparticles, CBD (pure cannabidiol)"
+        },
+        "strain_normalized": {
+          "old": null,
+          "new": "Chemotype III"
+        }
+      },
+      "llm_metrics": {
+        "model": "claude-sonnet-4-6",
+        "input_tokens": 3,
+        "cache_read_tokens": 4821,
+        "cache_write_tokens": 955,
+        "output_tokens": 336,
+        "cost": 0.01007655,
+        "few_shot_similarity": 0.33784200392564406,
+        "few_shot_count": 1,
+        "classification_confidence": 0.7263526011776932,
+        "classifier_version": "2.2.0"
+      }
+    },
+    {
+      "paper_id": 6192,
+      "pmid": "39258755",
+      "title": "Cannabinoid combination targets NOTCH1-mutated T-cell acute lymphoblastic leukemia through the integrated stress response pathway",
+      "variant": "control",
+      "dry_run": false,
+      "locked_fields": [],
+      "before_confidence": null,
+      "before_classifier_version": "heuristic-reclassify-2.1.0",
+      "status": "updated",
+      "after_confidence": 0.7167480176778077,
+      "after_classifier_version": "llm-calibration-control-2.2.0",
+      "changes": {
+        "study_type": {
+          "old": "[\"Animal Models (Mouse)\"]",
+          "new": [
+            "Cell Culture (Cell Lines)",
+            "Animal Models (Mouse)"
+          ]
+        },
+        "exposure_method": {
+          "old": "[\"injection cannabinoids\"]",
+          "new": [
+            "cannabinoids dissolved in media",
+            "injection cannabinoids"
+          ]
+        },
+        "cannabis_type": {
+          "old": "[\"concentrates\"]",
+          "new": [
+            "pure cannabinoid",
+            "concentrates"
+          ]
+        },
+        "outcome_domain": {
+          "old": "[\"other\"]",
+          "new": [
+            "oncology"
+          ]
+        },
+        "strain_reported": {
+          "old": null,
+          "new": "331-18A, CBD, CBDV (isolated from specific chemovar)"
+        },
+        "treatment_duration": {
+          "old": null,
+          "new": "72 hours"
+        }
+      },
+      "llm_metrics": {
+        "model": "claude-sonnet-4-6",
+        "input_tokens": 3,
+        "cache_read_tokens": 4701,
+        "cache_write_tokens": 822,
+        "output_tokens": 357,
+        "cost": 0.009856799999999999,
+        "few_shot_similarity": 0.30582672559269247,
+        "few_shot_count": 1,
+        "classification_confidence": 0.7167480176778077,
+        "classifier_version": "2.2.0"
+      }
+    },
+    {
+      "paper_id": 13089,
+      "pmid": "36385633",
+      "title": "Effects of cannabidiol on vacuous chewing movements, plasma glucose and oxidative stress indices in rats administered high dose risperidone",
+      "variant": "decision_checklist",
+      "dry_run": false,
+      "locked_fields": [],
+      "before_confidence": null,
+      "before_classifier_version": "heuristic-reclassify-2.1.0",
+      "status": "updated",
+      "after_confidence": 0.7199282427268107,
+      "after_classifier_version": "llm-calibration-decision_checklist-2.2.0",
+      "changes": {
+        "study_type": {
+          "old": "[\"Animal Models (Rat)\", \"Animal Models (Other)\"]",
+          "new": [
+            "Animal Models (Rat)"
+          ]
+        },
+        "cannabis_type": {
+          "old": "[\"edibles\"]",
+          "new": [
+            "pure cannabinoid"
+          ]
+        },
+        "outcome_domain": {
+          "old": "[\"other\"]",
+          "new": [
+            "inflammation",
+            "cognition",
+            "other"
+          ]
+        },
+        "administration_frequency": {
+          "old": null,
+          "new": "daily"
+        },
+        "cbd_mg_kg": {
+          "old": null,
+          "new": 5.0
+        }
+      },
+      "llm_metrics": {
+        "model": "claude-sonnet-4-6",
+        "input_tokens": 3,
+        "cache_read_tokens": 4821,
+        "cache_write_tokens": 913,
+        "output_tokens": 300,
+        "cost": 0.00937905,
+        "few_shot_similarity": 0.31642747575603547,
+        "few_shot_count": 1,
+        "classification_confidence": 0.7199282427268107,
+        "classifier_version": "2.2.0"
+      }
+    },
+    {
+      "paper_id": 12681,
+      "pmid": "36894805",
+      "title": "Efficient controlled release of cannabinoids loaded in \u03b3-CD-MOFs and DPPC liposomes as novel delivery systems in oral health",
+      "variant": "control",
+      "dry_run": false,
+      "locked_fields": [],
+      "before_confidence": null,
+      "before_classifier_version": "heuristic-reclassify-2.1.0",
+      "status": "updated",
+      "after_confidence": 0.7363343055305338,
+      "after_classifier_version": "llm-calibration-control-2.2.0",
+      "changes": {
+        "cannabis_type": {
+          "old": "[\"unknown\"]",
+          "new": [
+            "pure cannabinoid"
+          ]
+        },
+        "strain_reported": {
+          "old": null,
+          "new": "Olivetol (OLV), cannabidiol (CBD) analog; \u03b3-cyclodextrin metal-organic frameworks (\u03b3-CD-MOFs); DPPC liposomes"
+        }
+      },
+      "llm_metrics": {
+        "model": "claude-sonnet-4-6",
+        "input_tokens": 302,
+        "cache_read_tokens": 4486,
+        "cache_write_tokens": 628,
+        "output_tokens": 336,
+        "cost": 0.009646799999999999,
+        "few_shot_similarity": 0.2877810184351128,
+        "few_shot_count": 1,
+        "classification_confidence": 0.7363343055305338,
+        "classifier_version": "2.2.0"
+      }
+    },
+    {
+      "paper_id": 11817,
+      "pmid": "38546067",
+      "title": "A Comparative Analysis on the Potential Anticancer Properties of Tetrahydrocannabinol, Cannabidiol, and Tetrahydrocannabivarin Compounds Through In Silico Approach",
+      "variant": "decision_checklist",
+      "dry_run": false,
+      "locked_fields": [],
+      "before_confidence": null,
+      "before_classifier_version": "heuristic-reclassify-2.1.0",
+      "status": "updated",
+      "after_confidence": 0.6470246798426575,
+      "after_classifier_version": "llm-calibration-decision_checklist-2.2.0",
+      "changes": {
+        "study_type": {
+          "old": "[\"Animal Models (Rat)\"]",
+          "new": [
+            "Cell Culture (Other In Vitro)"
+          ]
+        },
+        "exposure_method": {
+          "old": "[\"injection cannabinoids\"]",
+          "new": [
+            "unknown"
+          ]
+        },
+        "cannabis_type": {
+          "old": "[\"unknown\"]",
+          "new": [
+            "pure cannabinoid"
+          ]
+        },
+        "outcome_domain": {
+          "old": "[\"other\"]",
+          "new": [
+            "oncology"
+          ]
+        },
+        "strain_reported": {
+          "old": null,
+          "new": "SwissADME, pkCSM, Protox-II, Way2Drug Predictive Server (in silico)"
+        }
+      },
+      "llm_metrics": {
+        "model": "claude-sonnet-4-6",
+        "input_tokens": 3,
+        "cache_read_tokens": 4821,
+        "cache_write_tokens": 938,
+        "output_tokens": 317,
+        "cost": 0.0097278,
+        "few_shot_similarity": 0.32341559947552506,
+        "few_shot_count": 1,
+        "classification_confidence": 0.6470246798426575,
+        "classifier_version": "2.2.0"
+      }
+    }
+  ]
+}

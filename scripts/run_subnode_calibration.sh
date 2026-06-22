@@ -8,6 +8,7 @@ MAX_CALLS="${MAX_CALLS:-20}"
 VARIANTS="${VARIANTS:-control}"
 PULL_LOCAL="${PULL_LOCAL:-1}"
 CONTENT_TIER="${CONTENT_TIER:-pdf_extracted}"
+OFFSET="${OFFSET:-0}"
 DEPLOY_FIRST="${DEPLOY_FIRST:-1}"
 
 if [[ "${DEPLOY_FIRST}" == "1" ]]; then
@@ -40,7 +41,7 @@ echo "==> Pre-flight: ${APP}"
 fly ssh console -a "${APP}" -C "sh -c 'cd /app && python3 fly_db_check.py'"
 
 if [[ "${USE_PDF_MAUDE_AB}" == "1" ]]; then
-  echo "==> Running sub-node PDF Maude A/B: ${SUBNODE} · ${MAX_CALLS} papers · tier=${CONTENT_TIER} · mode=${MODE}"
+  echo "==> Running sub-node PDF Maude A/B: ${SUBNODE} · ${MAX_CALLS} papers · offset=${OFFSET} · tier=${CONTENT_TIER} · mode=${MODE}"
   fly ssh console -a "${APP}" -C \
     "sh -c 'cd /app && python3 - <<\"PY\"
 from calibration_agent import build_arg_parser, run_subnode_pdf_maude_ab
@@ -48,11 +49,12 @@ parser = build_arg_parser()
 args = parser.parse_args([
     \"--subnode-pdf-maude-ab\",
     \"--max-calls\", \"${MAX_CALLS}\",
+    \"--offset\", \"${OFFSET}\",
     \"--mode\", \"${MODE}\",
     \"--target-subnode\", \"${SUBNODE}\",
     \"--content-tier\", \"${CONTENT_TIER}\",
     \"--full-extraction\",
-    \"--lock-owner\", \"subnode-${SUBNODE}-pdf\",
+    \"--lock-owner\", \"subnode-${SUBNODE}-pdf-o${OFFSET}\",
 ])
 paths = run_subnode_pdf_maude_ab(args)
 print(\"JSON:\", paths[0])
@@ -101,13 +103,14 @@ echo "==> Done. Dashboard: https://${APP}.fly.dev/calibration/dashboard"
 
 if [[ -n "${LATEST:-}" && "${RUN_FEEDBACK:-1}" == "1" ]]; then
   LOCAL_BATCH="scratch/calibration_runs/${BASENAME}"
-  echo "==> RL feedback cycle on ${BASENAME} (set RUN_FEEDBACK=0 to skip)"
+  echo "==> RL feedback on ${BASENAME} (LOCAL_FEEDBACK=${LOCAL_FEEDBACK:-1}, no in-cycle PDF refresh)"
   python3 - <<PY || true
 from pathlib import Path
 import calibration_feedback_agent as cfa
 batch = Path("${LOCAL_BATCH}")
+local_only = "${LOCAL_FEEDBACK:-1}" == "1"
 if batch.exists():
-    result = cfa.run_feedback_cycle(batch, skip_lock=True)
+    result = cfa.run_feedback_cycle(batch, skip_lock=True, local_only=local_only, skip_refresh=True)
     print("Feedback status:", result.get("status"))
     if result.get("staged_patch_path"):
         print("Staged patch:", result.get("staged_patch_path"))

@@ -1530,7 +1530,7 @@
                     <label for="filter-classification-level" style="font-size: 0.8rem; font-weight: 600; margin-bottom: 6px; display: block; color: var(--text-secondary);">Classification Model</label>
                     <select id="filter-classification-level" onchange="triggerSearch()" style="width: 100%; padding: 8px 12px; border-radius: 8px; background: rgba(15,23,42,0.6); border: 1px solid rgba(255,255,255,0.08); color: var(--text-primary); font-family: 'Outfit', sans-serif; font-size: 0.85rem; cursor: pointer; outline: none; transition: border-color 0.2s;">
                         <option value="ALL">All Papers (No Model Filter)</option>
-                        <option value="native">Native Abstract Classifications (no Claude)</option>
+                        <option value="maude">Maude Classifications (maude-*)</option>
                         <option value="claude_abstract">Claude Abstract Classifications (llm-reclassify)</option>
                         <option value="claude_pdf">Claude PDF Classifications (llm-pdf-reclassify)</option>
                         <option value="manual">Manual Edit Classifications (expert locked)</option>
@@ -3723,6 +3723,8 @@
             if (reclassifyBtn) {
                 if (paper.classifier_version && paper.classifier_version.startsWith('llm-')) {
                     reclassifyBtn.style.display = "none";
+                } else if (paper.classifier_version && paper.classifier_version.startsWith('maude-')) {
+                    reclassifyBtn.style.display = "inline-flex";
                 } else {
                     reclassifyBtn.style.display = "inline-flex";
                 }
@@ -3747,6 +3749,9 @@
                 const verVal = paper.classifier_version || "N/A";
                 if (paper.classifier_version && paper.classifier_version.startsWith('llm-')) {
                     const badgeHtml = `<span class="badge badge-claude" style="margin-left: 8px; font-size: 0.65rem; font-weight: 700; letter-spacing: 0.5px; padding: 2px 6px; border-radius: 4px; display: inline-block; vertical-align: middle;" title="Classified by Claude LLM"><svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor" style="vertical-align: middle; margin-top: -2px; margin-right: 3px; display: inline-block;"><path d="M12 2l2.4 7.2 7.2 2.4-7.2 2.4-2.4 7.2-2.4-7.2-7.2-2.4 7.2-2.4z"/></svg>Claude</span>`;
+                    verEl.innerHTML = `${verVal} ${badgeHtml}`;
+                } else if (paper.classifier_version && paper.classifier_version.startsWith('maude-')) {
+                    const badgeHtml = `<span class="badge badge-maude" style="margin-left: 8px; font-size: 0.65rem; font-weight: 700; letter-spacing: 0.5px; padding: 2px 6px; border-radius: 4px; display: inline-block; vertical-align: middle; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.35);" title="Classified by Maude rule/cue engine">Maude</span>`;
                     verEl.innerHTML = `${verVal} ${badgeHtml}`;
                 } else {
                     verEl.innerText = verVal;

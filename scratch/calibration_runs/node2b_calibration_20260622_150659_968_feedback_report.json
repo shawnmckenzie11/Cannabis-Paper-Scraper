@@ -1,0 +1,19 @@
+{
+  "batch_id": "node2b_calibration_20260622_150659_968",
+  "target_subnode": "node2b",
+  "created_at": "2026-06-22T15:07:16.132519",
+  "disagreement_count": 0,
+  "pattern_summary": "No disagreements to resolve in this batch. All fields in scope are in agreement between Claude and Maude for node2b.",
+  "apply_result": {
+    "applied_count": 0,
+    "error_count": 0
+  },
+  "refresh_batch_path": "/data/calibration_runs/calibration_20260622_150714_252.json",
+  "staged_patch_path": null,
+  "feedback": {
+    "pattern_summary": "No disagreements to resolve in this batch. All fields in scope are in agreement between Claude and Maude for node2b.",
+    "field_resolutions": [],
+    "proposed_cues": [],
+    "proposed_rules_changes": []
+  }
+}

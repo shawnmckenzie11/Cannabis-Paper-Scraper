@@ -175,6 +175,11 @@ def _paper_has_cannabis_content(title: str, abstract: str) -> bool:
 
 # Administration frequency patterns (ordered — first match wins)
 FREQUENCY_PATTERNS = [
+    re.compile(r'(?i)\bmultiple doses per session\b'),
+    re.compile(
+        r'(?i)\b(?:dosages?|doses?).{0,50}(?:\d+\s*min(?:utes?)?\s+apart|\d+\s*-\s*\d+\s*min(?:utes?)?)'
+        r'.{0,90}(?:scan )?sessions?\b'
+    ),
     re.compile(r'(?i)\btwice\s+daily\b'),
     re.compile(r'(?i)\bonce\s+daily\b'),
     re.compile(r'(?i)\bevery\s+other\s+day\b'),
@@ -262,6 +267,21 @@ ANALYTICAL_COMPUTATIONAL_CUES = (
     "dft", "density functional", "in silico", "docking score", "binding affinity",
     "pharmacophore model", "admet prediction",
 )
+PLANT_CULTIVATION_CUES = (
+    "planting density", "plants per", "plants/m2", "greenhouse", "field trial",
+    "cultivation", "cultivar", "chemovar", "harvest", "flowering", "yield per",
+    "yield/area", "dry weight", "biomass", "pots were", "containers were",
+    "growing season", "crop", "horticultural",
+)
+CLINICAL_SELF_REPORT_EXPOSURE_CUES = (
+    "smoked", "smoking", "vaped", "vaping", "inhaled", "joint", "joints",
+    "edible", "edibles", "capsule", "capsules", "oil", "tincture", "flower",
+    "concentrate", "concentrates", "dried cannabis", "marijuana use",
+)
+OBSERVATIONAL_ROUTE_BACKGROUND_MARKERS = (
+    "literature", "previous stud", "prior stud", "review", "meta-analysis",
+    "systematic review", "has been shown", "reported that", "discussed in",
+)
 PLANT_MATRIX_CUES = (
     "extract", "oil", "flower", "plant material", "crude", "tincture",
 )
@@ -278,9 +298,15 @@ INVITRO_TREATMENT_EXTRA_PATTERNS = [
     re.compile(r'(?i)stored?\s+for\s+([\d]+)\s*days?'),
     re.compile(r'(?i)([\d]+)[- ]day\s+(?:storage|stability|shelf)'),
     re.compile(r'(?i)stabilized\s+for\s+([\d.]+)\s*(hrs?|hours?|days?)'),
+    re.compile(r'(?i)(?:ex\s+vivo|tissue bath|organ bath)[^.]{0,80}?for\s+([\d.]+)\s*(min(?:utes?)?)'),
+    re.compile(r'(?i)(?:motility|colon|ileum|jejunum)[^.]{0,80}?([\d.]+)\s*(min(?:utes?)?)\b'),
 ]
 TREATMENT_DURATION_RANGE_PATTERN = re.compile(
-    r'(?i)(\d+(?:\.\d+)?)\s*(?:hrs?|hours?)\s+to\s+(\d+(?:\.\d+)?)\s*(days?)'
+    r'(?i)(\d+(?:\.\d+)?)\s*(hrs?|hours?|min(?:utes?)?)?\s+to\s+(\d+(?:\.\d+)?)\s*(days?|hours?|min(?:utes?)?)'
+)
+CATALOG_COMPOUND_STRAIN_PATTERN = re.compile(
+    r'(?i)((?:delta-9-tetrahydrocannabinol|delta9-tetrahydrocannabinol|cannabidiol|cbd|thc)'
+    r'[^.\n]{0,120}?(?:sigma|cayman|tocris|serva|catalog|cat\.?\s*no|cas\s+\d))'
 )
 INVITRO_CONTEXT_CUES = (
     "in vitro", "cell line", "cells were", "well plate", "incubated", "culture medium",
@@ -361,6 +387,8 @@ ANIMAL_STRAIN_PATTERNS = [
     (re.compile(r'(?i)\bCD-1\b'), "CD-1"),
     (re.compile(r'(?i)\bFischer 344\b'), "Fischer 344"),
     (re.compile(r'(?i)\bLewis\b'), "Lewis"),
+    (re.compile(r'(?i)\b5xFAD\b'), "5xFAD"),
+    (re.compile(r'(?i)\bgp120\s+transgenic\b'), "gp120 transgenic mouse model (GFAP promoter)"),
 ]
 THC_MG_ML_PATTERN_A = re.compile(
     r'(?i)(\d+(?:\.\d+)?)\s*mg/m[lL][^\n]{0,40}THC'
@@ -385,10 +413,41 @@ TREATMENT_DURATION_PATTERNS = [
 ]
 
 # Sample Size
+SAMPLE_SIZE_REPORTED_ON_PATTERN = re.compile(
+    r'(?i)results are (?:therefore )?reported on (\d+) \w+(?:\s*\([^)]*\))?\s+and (\d+) \w+'
+)
+SAMPLE_SIZE_TOTAL_USED_PATTERN = re.compile(
+    r'(?i)in total,\s*(\d+)\b'
+)
+SAMPLE_SIZE_FINAL_SAMPLE_PATTERN = re.compile(
+    r'(?i)f[i\uFB01]nal sample\s*\(\s*n\s*=\s*(\d+)\s*\)'
+)
+SAMPLE_SIZE_COMPLETED_COHORT_PATTERN = re.compile(
+    r'(?i)(?:data from|in the current study, data from)\s+(\d+)\s+participants\s*\(\s*n\s*=\s*(\d+)\s*\)'
+)
+SAMPLE_SIZE_COMPLETED_SUBSET_PATTERN = re.compile(
+    r'(?i)(?:\(?n\s*=\s*(\d+)\)?[^.]{0,40}completed all|'
+    r'(\d+)\s+of them have completed(?: all)?|'
+    r'(\d+)\s+participants have completed(?: all)?)'
+)
+SAMPLE_SIZE_SPLIT_DISEASE_PATTERN = re.compile(
+    r'(?i)\b(\d+|one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve|thirteen|'
+    r'fourteen|fifteen|sixteen|seventeen|eighteen|nineteen|twenty|thirty|forty|fifty)\s+'
+    r'patients with \w+ and (\d+|one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve|'
+    r'thirteen|fourteen|fifteen|sixteen|seventeen|eighteen|nineteen|twenty|thirty|forty|fifty)\s+'
+    r'patients with \w+ participated'
+)
+SAMPLE_SIZE_WORD_TO_INT = {
+    "one": 1, "two": 2, "three": 3, "four": 4, "five": 5, "six": 6, "seven": 7, "eight": 8,
+    "nine": 9, "ten": 10, "eleven": 11, "twelve": 12, "thirteen": 13, "fourteen": 14,
+    "fifteen": 15, "sixteen": 16, "seventeen": 17, "eighteen": 18, "nineteen": 19,
+    "twenty": 20, "thirty": 30, "forty": 40, "fifty": 50,
+}
 SAMPLE_SIZE_PATTERNS = [
     re.compile(r'(?i)\bn\s*=\s*(\d+)\b'),
     re.compile(r'(?i)\bN\s*=\s*(\d+)\b'),
     re.compile(r'(?i)\bsample\s+size\s+(?:of|is)\s+(\d+)\b'),
+    re.compile(r'(?i)\b(?:tested in|analyzed in|included)\s+(\d+)\s+volunteers\b'),
     re.compile(r'(?i)\b(\d+)\s+(?:patients|subjects|participants|healthy volunteers|mice|rats|rats/group|mice/group)\b')
 ]
 
@@ -516,6 +575,13 @@ def extract_duration_days(text: str) -> Optional[float]:
     if not text:
         return None
 
+    if re.search(
+        r"(?i)\b(?:from early adolescence|from adolescence|birth cohort|followed (?:from|through)|"
+        r"early adulthood to|mid-twenties|lifespan|life course)\b",
+        text,
+    ):
+        return None
+
     def convert_to_days(val: float, unit: str) -> float:
         unit = unit.lower()
         if "day" in unit:
@@ -551,9 +617,17 @@ def extract_duration_days(text: str) -> Optional[float]:
     )
     if days_of and not _duration_in_cell_culture_context(text, days_of.start(), days_of.end()):
         return float(days_of.group(1))
-    for_weeks = re.search(r'(?i)\b(?:for|following)\s+(\d+)\s*weeks?\b', text)
-    if for_weeks:
+    for_weeks = re.search(r'(?i)\b(?:for|following|over)\s+(\d+)\s*weeks?\b', text)
+    if for_weeks and not _duration_in_cell_culture_context(text, for_weeks.start(), for_weeks.end()):
         return float(int(for_weeks.group(1)) * 7)
+    received_weeks = re.search(
+        r'(?i)(?:received|treated|injected|administered|exposed)[^.]{0,80}?\bfor\s+(\d+)\s*weeks?\b',
+        text,
+    )
+    if received_weeks and not _duration_in_cell_culture_context(
+        text, received_weeks.start(), received_weeks.end(),
+    ):
+        return float(int(received_weeks.group(1)) * 7)
     week_protocol = re.search(
         r'(?i)(\d+)[- ]week\s+(?:treatment|exposure|protocol)',
         text,
@@ -665,23 +739,194 @@ def extract_inhaled_exposure_duration(text: str) -> Optional[str]:
     return None
 
 
-def extract_administration_frequency(text: str) -> Optional[str]:
+def _frequency_is_use_not_administration(text: str, start: int, end: int) -> bool:
+    """True when a frequency hit reflects consumption/use rather than a treatment schedule."""
+    window = text[max(0, start - 70): min(len(text), end + 70)].lower()
+    use_patterns = (
+        r"\b(?:cannabis|marijuana|tobacco|drug|substance|alcohol)\s+use\b",
+        r"\bdaily\s+(?:users?|use|consumption|intake|smokers?|drinkers?)\b",
+        r"\b(?:used|using|use)\s+(?:cannabis|marijuana|tobacco)\b",
+        r"\bfollow[- ]?up\b",
+        r"\b(?:visits?|assessments?|surveys?|questionnaires?)\s+(?:weekly|monthly|daily)\b",
+        r"\b(?:mobile phone|smartphone|app|application)\b.*\b(?:weekly|monthly)\b",
+        r"\b(?:weekly|monthly)\b.*\b(?:app|application|reports?)\b",
+        r"\bgreater than three times\s+daily\b",
+        r"\b(?:i love|i do not need|what i dislike|testimonial|open[- ]ended)\b",
+        r"\btake it daily\b",
+        r"\b(?:neuroleptic|chlorpromazine|antipsychotic|psychotropic)\b",
+        r"\baverage daily (?:neuroleptic|dose)\b",
+    )
+    return any(re.search(pattern, window) for pattern in use_patterns)
+
+
+def _frequency_requires_interventional_context(study_type: Any) -> bool:
+    """True when study design is observational and frequency should require dosing context."""
+    if not study_type:
+        return False
+    types = study_type if isinstance(study_type, list) else [study_type]
+    clinical = [item for item in types if isinstance(item, str) and item.startswith("Clinical (")]
+    if not clinical:
+        return False
+    if any("RCT" in item for item in clinical):
+        return False
+    return True
+
+
+def _is_endocannabinoid_biomarker_study(text: str, study_type: Any) -> bool:
+    """True when a clinical study measures endogenous cannabinoid levels without administering product."""
+    if not text:
+        return False
+    types = study_type if isinstance(study_type, list) else [study_type] if study_type else []
+    if not any(str(item).startswith("Clinical (") for item in types):
+        return False
+    lowered = text.lower()
+    biomarker_cues = re.search(
+        r"(?i)\b(?:cerebrospinal fluid|\bcsf\b|plasma|serum|saliva|"
+        r"endocannabinoid(?:\s+levels?)?|anandamide(?:\s+levels?)?|"
+        r"2-ag|ae[aA]\s+levels?|endogenous cannabinoid)\b",
+        lowered,
+    )
+    if not biomarker_cues:
+        return False
+    administered = re.search(
+        r"(?i)\b(?:participants?\s+(?:were\s+)?(?:received|given|administered)|"
+        r"patients?\s+(?:were\s+)?(?:received|given|administered)|"
+        r"volunteers?\s+(?:were\s+)?(?:received|given|administered)|"
+        r"subjects?\s+(?:were\s+)?(?:received|given|administered)|"
+        r"were randomized to receive|intervention arm|"
+        r"(?:received|given)\s+(?:a\s+)?(?:dose|daily\s+dose)\s+of|"
+        r"treated with\s+(?:\d|cbd|thc|nabilone|dronabinol))\b",
+        lowered,
+    )
+    if administered and any("RCT" in str(item) for item in types):
+        return False
+    if administered:
+        return False
+    if re.search(
+        r"(?i)\b(?:cerebrospinal fluid|\bcsf\b).{0,80}endocannabinoid|"
+        r"endocannabinoid.{0,80}(?:cerebrospinal fluid|\bcsf\b)",
+        lowered,
+    ):
+        return True
+    return True
+
+
+def _extract_detected_substance_strain(text: str) -> Optional[str]:
+    """For toxicology/drug-testing papers, return the detected synthetic cannabinoid name."""
+    if not text:
+        return None
+    if not re.search(
+        r"(?i)\b(?:substances? detected|detected in|toxicology|forensic|"
+        r"illicit drug|designer drug|new psychoactive)\b",
+        text,
+    ):
+        return None
+    for pattern in (
+        r"(?i)\bAMB-FUBINACA\b",
+        r"(?i)\bAB-FUBINACA\b",
+        r"(?i)\b5F-ADB\b",
+        r"(?i)\bADB-FUBINACA\b",
+        r"(?i)\bJWH-\d+\b",
+        r"(?i)\bUR-144\b",
+        r"(?i)\bXLR-11\b",
+    ):
+        match = re.search(pattern, text)
+        if match:
+            return match.group(0)
+    return None
+
+
+def _title_outcome_hints(title: str) -> List[str]:
+    """Maps title condition phrases to outcome domains before intro/abstract scanning."""
+    if not title:
+        return []
+    title_lower = title.lower()
+    hints: List[str] = []
+
+    def add(domain: str) -> None:
+        if domain not in hints:
+            hints.append(domain)
+
+    if re.search(r"ulcerative colitis|crohn|inflammatory bowel|\bibd\b", title_lower):
+        add("inflammation")
+    if re.search(r"schizophrenia|psychotic|psychosis", title_lower):
+        add("cognition")
+    if re.search(r"substances detected|drug testing|toxicology|illicit drug", title_lower):
+        add("addiction")
+    if re.search(r"delta-8|delta 8|\bΔ8\b", title_lower):
+        for domain in ("pain", "anxiety", "cognition"):
+            add(domain)
+    if re.search(r"psychedelic|hallucinogen", title_lower) and re.search(
+        r"cannabis|marijuana|thc|cbd", title_lower,
+    ):
+        add("anxiety")
+        add("cognition")
+    if re.search(r"pain|analges", title_lower):
+        add("pain")
+    if re.search(r"anxiety|anxiolytic", title_lower):
+        add("anxiety")
+    if re.search(r"gilles de la tourette|tourette syndrome", title_lower):
+        return []
+    return hints
+
+
+def _has_interventional_administration_context(text: str, start: int, end: int) -> bool:
+    """True when nearby text describes a cannabinoid dosing or intervention schedule."""
+    window = text[max(0, start - 120): min(len(text), end + 120)].lower()
+    if not re.search(
+        r"\b(?:administered|dose|dosing|intervention|randomized|placebo|protocol|"
+        r"treatment(?: group)?|mg(?:/kg)?|capsule|oil|nabilone|dronabinol|cbd|thc)\b",
+        window,
+    ):
+        return False
+    if re.search(r"\bstarting dose was\b", window) and not re.search(
+        r"\b(?:participants|subjects|patients)\s+(?:were|received|randomized|assigned)\b",
+        window,
+    ):
+        return False
+    return True
+
+
+def extract_administration_frequency(
+    text: str,
+    *,
+    study_type: Any = None,
+) -> Optional[str]:
     """Extracts administration frequency (e.g. 'once daily', 'twice daily') from text."""
     if not text:
         return None
-    text = re.sub(r'\s+', ' ', text)
+    text = _normalize_extraction_text(re.sub(r'\s+', ' ', text))
+    interventional_required = _frequency_requires_interventional_context(study_type)
     for pattern in FREQUENCY_PATTERNS:
         match = pattern.search(text)
         if not match:
             continue
+        if _frequency_is_use_not_administration(text, match.start(), match.end()):
+            continue
         raw = match.group(0).strip()
         raw_lower = raw.lower()
+        if "multiple doses per session" in raw_lower or re.search(
+            r'(?i)dosages?.{0,50}\d+\s*min(?:utes?)?\s+apart', raw_lower,
+        ):
+            return "multiple doses per session"
+        if interventional_required and not _has_interventional_administration_context(
+            text, match.start(), match.end()
+        ):
+            continue
+        if interventional_required and not re.search(
+            r"\b(?:participants|subjects|patients|volunteers)\s+(?:were|received|randomized|assigned|included)\b",
+            text[max(0, match.start() - 120): min(len(text), match.end() + 120)],
+            re.IGNORECASE,
+        ):
+            continue
         if raw_lower == "daily":
             return "daily"
         if "twice daily" in raw_lower:
             return "twice daily"
-        if "once daily" in raw_lower or "once per day" in raw_lower:
+        if "once daily" in raw_lower or "once per day" in raw_lower or "once a day" in raw_lower:
             return "daily"
+        if "twice a day" in raw_lower or "twice per day" in raw_lower:
+            return "twice daily"
         if "every other day" in raw_lower:
             return "every other day"
         if "alternating days" in raw_lower or "alternating day" in raw_lower:
@@ -838,8 +1083,9 @@ def extract_treatment_duration(text: str) -> Optional[str]:
 
     range_match = TREATMENT_DURATION_RANGE_PATTERN.search(text)
     if range_match:
-        low = _format_treatment_duration_value(range_match.group(1), "hours")
-        high = _format_treatment_duration_value(range_match.group(2), range_match.group(3))
+        low_unit = range_match.group(2) or range_match.group(4)
+        low = _format_treatment_duration_value(range_match.group(1), low_unit)
+        high = _format_treatment_duration_value(range_match.group(3), range_match.group(4))
         if low and high:
             return f"{low} to {high}"
 
@@ -905,19 +1151,190 @@ def format_study_duration(days: Any) -> str:
     d_int = int(d) if d.is_integer() else d
     return f"{d_int} day{'s' if d_int != 1 else ''}"
 
-def extract_sample_size(text: str) -> Optional[int]:
-    """Extracts sample size N from text, preferring the largest cohort N when multiple appear."""
+def _parse_sample_size_token(token: str) -> Optional[int]:
+    """Parses an integer or spelled-out count token for cohort-size extraction."""
+    token = token.strip().lower()
+    if token.isdigit():
+        return int(token)
+    return SAMPLE_SIZE_WORD_TO_INT.get(token)
+
+
+def _sample_size_match_invalid(text: str, start: int, end: int) -> bool:
+    """True when an N= hit sits in a URL, reference link, or population-statistics context."""
+    window = text[max(0, start - 50): min(len(text), end + 50)]
+    wide_window = text[max(0, start - 90): min(len(text), end + 90)]
+    if re.search(r"https?://|www\.|doi\.org|\.pdf|lang=|indicadors|accessed\s+\d", window, re.IGNORECASE):
+        return True
+    if re.search(r"\b(?:prior publication|validating the|validation sample|sample population numbers)\b", window, re.IGNORECASE):
+        return True
+    pre = text[max(0, start - 25): start].lower()
+    if re.search(r"\b(?:population|prevalence|census|residents|inhabitants|households)\b", pre):
+        return True
+    post = text[end: min(len(text), end + 40)].lower()
+    if re.search(r"\b(?:population|prevalence|residents|inhabitants)\b", post):
+        return True
+    if re.search(r"\bn\s*=\s*\d+/\d+\b", window, re.IGNORECASE):
+        return True
+    if re.search(r"\b(?:heavy|light)\s+(?:use )?condition\b", window, re.IGNORECASE):
+        return True
+    if re.search(
+        r"\b(?:e-liquid|e liquid|vape liquid|commercially available|products were|brands tested|samples analyzed)\b",
+        wide_window,
+        re.IGNORECASE,
+    ) and not re.search(r"\b(?:participants|patients|subjects|volunteers|respondents)\b", wide_window, re.IGNORECASE):
+        return True
+    if re.search(r"\b(?:signed up|registered for the survey)\b", wide_window, re.IGNORECASE) and not re.search(
+        r"\b(?:completed|included for analys|final sample|data from)\b", wide_window, re.IGNORECASE
+    ):
+        return True
+    if re.search(r"\b(?:subjects included in the \w+ group)\b", wide_window, re.IGNORECASE) and re.search(
+        r"\bresults are (?:therefore )?reported on\b", text, re.IGNORECASE
+    ):
+        return True
+    return False
+
+
+def _score_sample_size_match(text: str, start: int, end: int, val: int) -> int:
+    """Scores an N= match so study cohort sizes beat incidental population counts."""
+    if _sample_size_match_invalid(text, start, end):
+        return -100
+    window = text[max(0, start - 90): min(len(text), end + 90)].lower()
+    wide_window = text[max(0, start - 140): min(len(text), end + 140)].lower()
+    score = 0
+    if re.search(
+        r"\b(?:participants|patients|subjects|volunteers|respondents|enrolled|recruited|surveyed)\b",
+        window,
+    ):
+        score += 12
+    if re.search(
+        r"\b(?:sample size|cohort|randomized|trial|included|completed|analytical sample|included in analysis)\b",
+        window,
+    ):
+        score += 6
+    if re.search(r"\b(?:completed the|completed survey|final sample|analyzed sample|included for data|were included)\b", window):
+        score += 14
+    if val > 1500 and score < 15:
+        score -= 25
+    if re.search(r"\b(?:total|overall)\b", window):
+        score += 8
+    if re.search(r"\b(?:mice|rats|animals|wells|replicates)\b", window):
+        score += 4 if re.search(r"\btotal\b", window) else -2
+    if re.search(r"\b(?:e-liquid|e liquid|commercial product|brands?|formulations?)\b", window):
+        score -= 18
+    if re.search(r"\b(?:included in (?:the )?analysis|final sample|analyzed sample|eligible participants)\b", window):
+        score += 16
+    if re.search(r"\b(?:pilot|completed (?:the )?study|completed assessment|assessed)\b", window):
+        score += 10
+    if re.search(r"\b(?:current sample|enrolled in (?:the )?current study|demographic variable)\b", window):
+        score += 18
+    if re.search(r"\bcurrent sample\s*\(\s*n\s*=", window, re.IGNORECASE):
+        score += 22
+    if re.search(r"demographic variable\s*\(\s*n\s*=", window, re.IGNORECASE):
+        score += 20
+    if re.search(r"\bof\s+11\s+participants\b", window, re.IGNORECASE):
+        score += 16
+    if re.search(r"\b(?:completed screening|screening procedures)\b", window) and not re.search(
+        r"\b(?:current sample|included in|final analysis)\b", window
+    ):
+        score -= 15
+    if re.search(r"\b(?:per condition|per session|per arm|per visit|each condition)\b", window):
+        score -= 20
+    if re.search(r"\b(?:screened|eligible|enrolled)\b", window) and not re.search(
+        r"\b(?:included|completed|analyzed|final|current sample)\b", window
+    ):
+        score -= 12
+    if re.search(r"\b(?:birth cohort|longitudinal cohort|followed from)\b", window):
+        score += 12
+    if re.search(r"\b(?:signed up|registered for the survey)\b", window) and not re.search(
+        r"\b(?:completed|included for analys|final sample|data from)\b", window
+    ):
+        score -= 40
+    if re.search(r"\b(?:completed all|have completed all|included for analys|data from \d+ participants)\b", window):
+        score += 22
+    if re.search(r"\b(?:of them have completed|completion rate)\b", wide_window):
+        score += 18
+    if re.search(r"\bfinal sample\b", wide_window):
+        score += 24
+    if re.search(r"\b(?:due to scheduling|technical issues|partial scan)\b", window):
+        score -= 18
+    if re.search(r"\bin total,\s*\d+\b", wide_window):
+        score += 26
+    if re.search(r"\bcohort consists of\b", window) and not re.search(r"\bin total,\s*\d+\b", wide_window):
+        score -= 16
+    if re.search(r"\b(?:tested in|analyzed in|included)\s+\d+\s+volunteers\b", wide_window):
+        score += 20
+    if re.search(r"\bresults are (?:therefore )?reported on\b", wide_window):
+        score += 24
+    return score
+
+
+def _extract_priority_sample_size(text: str) -> Optional[int]:
+    """Returns high-confidence cohort totals before generic N= scoring."""
     if not text:
         return None
-    candidates: List[int] = []
+    match = SAMPLE_SIZE_REPORTED_ON_PATTERN.search(text)
+    if match:
+        return int(match.group(1)) + int(match.group(2))
+    match = SAMPLE_SIZE_COMPLETED_COHORT_PATTERN.search(text)
+    if match:
+        return int(match.group(2) or match.group(1))
+    match = SAMPLE_SIZE_COMPLETED_SUBSET_PATTERN.search(text)
+    if match:
+        for group in match.groups():
+            if group:
+                return int(group)
+    match = SAMPLE_SIZE_FINAL_SAMPLE_PATTERN.search(text)
+    if match:
+        return int(match.group(1))
+    match = SAMPLE_SIZE_TOTAL_USED_PATTERN.search(text)
+    if match:
+        return int(match.group(1))
+    match = SAMPLE_SIZE_SPLIT_DISEASE_PATTERN.search(text)
+    if match:
+        left = _parse_sample_size_token(match.group(1))
+        right = _parse_sample_size_token(match.group(2))
+        if left and left > 2:
+            return left
+        if left and right and left > 2 and right > 2:
+            return left + right
+    return None
+
+
+def _normalize_extraction_text(text: str) -> str:
+    """Normalizes PDF ligatures and whitespace for regex extraction."""
+    if not text:
+        return text
+    return (
+        text.replace("\ufb01", "fi")
+        .replace("\ufb02", "fl")
+        .replace("\u2019", "'")
+    )
+
+
+def extract_sample_size(text: str) -> Optional[int]:
+    """Extracts sample size N from text, preferring cohort-scoped matches over stray counts."""
+    if not text:
+        return None
+    text = _normalize_extraction_text(text)
+    priority = _extract_priority_sample_size(text)
+    if priority is not None:
+        return priority
+    best_val: Optional[int] = None
+    best_score = -101
     for pattern in SAMPLE_SIZE_PATTERNS:
         for match in pattern.finditer(text):
             val = int(match.group(1))
-            if val > 2:
-                candidates.append(val)
-    if not candidates:
-        return None
-    return max(candidates)
+            if val <= 2:
+                continue
+            score = _score_sample_size_match(text, match.start(), match.end(), val)
+            if score < 0:
+                continue
+            if score > best_score:
+                best_score = score
+                best_val = val
+            elif score == best_score and best_val is not None and val > best_val:
+                best_val = val
+    return best_val
 
 def extract_thc_cbd_mg_kg(text: str) -> tuple[Optional[float], Optional[float], bool]:
     """Extracts THC/CBD mg/kg doses from text; converts µg/kg to mg/kg.
@@ -1058,6 +1475,76 @@ def is_analytical_or_computational(text: str) -> bool:
     return keyword_match(text.lower(), list(ANALYTICAL_COMPUTATIONAL_CUES))
 
 
+def is_plant_cultivation_study(text: str) -> bool:
+    """True when text describes greenhouse/field cannabis cultivation rather than dosing."""
+    if not text:
+        return False
+    lowered = text.lower()
+    if not keyword_match(lowered, list(PLANT_CULTIVATION_CUES)):
+        return False
+    if keyword_match(lowered, list(HUMAN_SUBJECT_KEYWORDS)):
+        return False
+    return True
+
+
+def _route_cue_in_active_use_context(text: str, cue: str) -> bool:
+    """True when a route cue appears in participant-use prose, not background literature."""
+    lowered = text.lower()
+    for match in re.finditer(re.escape(cue.lower()), lowered):
+        window = lowered[max(0, match.start() - 100): min(len(lowered), match.end() + 100)]
+        if any(marker in window for marker in OBSERVATIONAL_ROUTE_BACKGROUND_MARKERS):
+            continue
+        if re.search(
+            r"\b(?:participants?|patients?|subjects?|volunteers?|users?|respondents?|"
+            r"reported|self-reported|used|using|consumption|administered)\b",
+            window,
+        ):
+            return True
+    return False
+
+
+def _has_cannabis_proximity(text: str, start: int, end: int, radius: int = 80) -> bool:
+    """True when a text window also mentions cannabis/cannabinoid terms."""
+    window = text[max(0, start - radius): min(len(text), end + radius)].lower()
+    if re.search(r"\b(?:smoking|smoked|smoke)\s+tobacco\b|\btobacco\s+(?:smok|use|cigarette)", window):
+        if not re.search(r"\b(?:cannabis|marijuana|thc|cbd|cannabinoid|mmj)\b", window):
+            return False
+    return bool(re.search(
+        r"\b(?:cannabis|marijuana|cannabinoid|thc|cbd|mmj|medical marijuana|medical cannabis|"
+        r"flower product|mmj treatment)\b",
+        window,
+    ))
+
+
+def _infer_clinical_patient_reported_exposure(text: str) -> List[str]:
+    """Infers inhaled/oral routes from medical-cannabis patient self-report prose."""
+    if not text:
+        return []
+    lowered = text.lower()
+    if not keyword_match(
+        lowered,
+        [
+            "medical marijuana", "medical cannabis", "mmj", "mode of use",
+            "reported use", "cannabis use", "marijuana use", "product(s) used",
+            "flower product", "medible",
+        ],
+    ):
+        return []
+    methods: List[str] = []
+    inhaled_cues = ("smoked", "smoking", "vaped", "vaping", "inhaled", "joint", "combustion")
+    oral_cues = ("edible", "edibles", "capsule", "capsules", "oil", "tincture", "ingested", "oral")
+    if any(_route_cue_in_active_use_context(text, cue) for cue in inhaled_cues):
+        methods.append("inhaled")
+    if any(_route_cue_in_active_use_context(text, cue) for cue in oral_cues):
+        methods.append("oral")
+    if not methods and keyword_match(lowered, ["medical marijuana", "medical cannabis", "mcacc", "dispensary"]):
+        if keyword_match(lowered, ["flower", "bud", "joint", "smoke", "combust"]):
+            methods.append("inhaled")
+        if keyword_match(lowered, ["edible", "capsule", "oil", "tincture"]):
+            methods.append("oral")
+    return list(dict.fromkeys(methods))
+
+
 def _is_vendor_strain_label(label: str) -> bool:
     """True when a strain candidate is a reagent vendor or catalog string."""
     if not label:
@@ -1141,6 +1628,22 @@ def _is_garbage_strain_fragment(fragment: str) -> bool:
     if lowered.startswith(("of ", "the ", "a ")):
         return True
     if len(fragment.split()) > 5:
+        return True
+    return False
+
+
+def _is_bare_compound_strain_label(label: str) -> bool:
+    """True when a strain candidate is only a cannabinoid name, not a cultivar or animal model."""
+    if not label:
+        return True
+    lowered = label.strip().lower().strip(".,;:")
+    bare_compounds = {
+        "thc", "cbd", "cbg", "cbdv", "thcv", "cannabidiol", "cannabigerol",
+        "tetrahydrocannabinol", "delta-9-thc", "delta9-thc", "δ9-thc",
+    }
+    if lowered in bare_compounds:
+        return True
+    if lowered in {"cbd, thc", "thc, cbd", "Δ9-THC, CBD".lower()}:
         return True
     return False
 
@@ -1243,10 +1746,55 @@ def _extract_compound_panel(text: str) -> Optional[str]:
     return None
 
 
+def _extract_catalog_compound_strain(text: str) -> Optional[str]:
+    """Captures vendor-qualified compound descriptions for in-vitro strain_reported."""
+    if not text:
+        return None
+    match = CATALOG_COMPOUND_STRAIN_PATTERN.search(text)
+    if match:
+        return re.sub(r'\s+', ' ', match.group(1).strip().strip('.,;:'))
+    cayman = re.search(
+        r'(?i)(Cayman Chemical[^.\n]{0,80}?Catalog\s*#\s*\d+[^.\n]{0,40})',
+        text,
+    )
+    if cayman:
+        return re.sub(r'\s+', ' ', cayman.group(1).strip().strip('.,;:'))
+    sigma_code = re.search(
+        r'(?i)((?:Cannabidiol|CBD|THC)[^.\n]{0,40}?Sigma[^.\n]{0,40})',
+        text,
+    )
+    if sigma_code:
+        return re.sub(r'\s+', ' ', sigma_code.group(1).strip().strip('.,;:'))
+    cerilliant = re.search(
+        r'(?i)((?:CBD|THC|CBN|CBG)[^.\n]{0,60}?(?:Cerilliant|Supelco)[^.\n]{0,60})',
+        text,
+    )
+    if cerilliant:
+        return re.sub(r'\s+', ' ', cerilliant.group(1).strip().strip('.,;:'))
+    donated = re.search(
+        r'(?i)((?:CBD|THC|cannabidiol)[^.\n]{0,40}?donated by[^.\n]{0,80})',
+        text,
+    )
+    if donated:
+        return re.sub(r'\s+', ' ', donated.group(1).strip().strip('.,;:'))
+    standards_panel = re.search(
+        r'(?i)((?:CBD|Δ9-THC|THC|CBN|CBG|CBDA|THCA|CBGA)[^.\n]{0,30}(?:,\s*(?:CBD|Δ9-THC|THC|CBN|CBG|CBDA|THCA|CBGA)[^.\n]{0,30}){1,4}'
+        r'[^.\n]{0,40}?(?:Sigma-Aldrich|Cerilliant|Supelco))',
+        text,
+    )
+    if standards_panel:
+        return re.sub(r'\s+', ' ', standards_panel.group(1).strip().strip('.,;:'))
+    return None
+
+
 def _extract_invitro_strain_reported(text: str) -> Optional[str]:
     """Targeted in-vitro strain/compound extraction before generic vendor scanning."""
     if not text:
         return None
+
+    catalog = _extract_catalog_compound_strain(text)
+    if catalog:
+        return catalog
 
     chemotypes = _extract_chemotype_profiles(text)
     if chemotypes:
@@ -1305,6 +1853,9 @@ def _extract_compound_provenance_strain(text: str) -> Optional[str]:
         seen.add(key)
         parts.append(cleaned)
 
+    for pattern, label in COMPOUND_PANEL_NORMALIZERS[:6]:
+        if pattern.search(text):
+            return label
     catalog_match = re.search(
         r'(?i)\b((?:THC|CBD|CBG|CBDV|HU|JWH|AM|CP|WIN)[- ]?\d[\w\-]*)',
         text,
@@ -1373,13 +1924,17 @@ def _extract_invivo_strain_reported(
     if cultivars:
         return cultivars
 
-    compound_panel = _extract_compound_panel(text)
-    if compound_panel:
-        return compound_panel
-
     for pattern, label in COMPOUND_PANEL_NORMALIZERS[:6]:
         if pattern.search(text):
             return label
+
+    animal_labels = _extract_animal_strain_labels(text)
+    if animal_labels:
+        return animal_labels[0]
+
+    compound_panel = _extract_compound_panel(text)
+    if compound_panel:
+        return compound_panel
 
     if cannabis_type and any(
         tag in cannabis_type for tag in ("CB receptor agonist", "CB receptor antagonist", "pure cannabinoid")
@@ -1394,6 +1949,12 @@ def _extract_invivo_strain_reported(
 def _duration_in_cell_culture_context(text: str, start: int, end: int) -> bool:
     """True when a duration match sits in an in-vitro incubation window."""
     window = text[max(0, start - 55):min(len(text), end + 55)].lower()
+    animal_dosing = any(
+        token in window
+        for token in ("mg/kg", "µg/kg", "ug/kg", "gavage", "mice", "rats", "subcutaneous", "intraperitoneal")
+    )
+    if animal_dosing:
+        return False
     return any(
         token in window
         for token in ("incubat", "in vitro", "cells were", "cell line", "well plate", "culture medium")
@@ -1420,8 +1981,29 @@ def extract_strain_info(
     invitro_ctx = _looks_like_invitro_text(text) or is_invitro_study
     invivo_primary = _looks_like_invivo_primary(text)
 
+    detected_substance = _extract_detected_substance_strain(text)
+    if detected_substance:
+        return detected_substance, None
+
+    if _is_endocannabinoid_biomarker_study(text, study_type):
+        cultivar = _extract_priority_cultivar_strain(text) or _extract_named_cultivar_profiles(text)
+        if cultivar and not _is_vendor_strain_label(cultivar):
+            return cultivar, CHEMOTYPE_MAP.get(cultivar.lower())
+        for pattern, label in COMPOUND_PANEL_NORMALIZERS[:6]:
+            if pattern.search(text):
+                return label, None
+        return None, None
+
     if is_invitro_study and is_invivo_study and not invivo_primary:
         return None, None
+
+    if is_invitro_study and is_invivo_study and invivo_primary:
+        compound = _extract_compound_provenance_strain(text)
+        if compound:
+            return compound, None
+        invitro_strain = _extract_invitro_strain_reported(text)
+        if invitro_strain:
+            return invitro_strain, CHEMOTYPE_MAP.get(invitro_strain.lower())
 
     animal_labels = _extract_animal_strain_labels(text)
     if invitro_ctx and not invivo_primary:
@@ -1475,6 +2057,8 @@ def extract_strain_info(
     def add_reported(label: str) -> None:
         cleaned = label.strip().strip('.,;:')
         if not cleaned or _is_vendor_strain_label(cleaned) or _is_garbage_strain_fragment(cleaned):
+            return
+        if is_invivo_study and invivo_primary and _is_bare_compound_strain_label(cleaned):
             return
         if invitro_ctx and not invivo_primary and cleaned.upper() in {"THC", "CBD", "CBDV", "CBG", "THCV"}:
             return
@@ -1930,36 +2514,109 @@ def _cannabinoid_edible_context(text: str) -> bool:
     return False
 
 
-def infer_exposure_method(title: str, abstract: str, study_type: Any) -> List[str]:
+def infer_exposure_method(
+    title: str,
+    abstract: str,
+    study_type: Any,
+    full_text: Optional[str] = None,
+) -> List[str]:
     """Extracts exposure method from text keywords, focusing on Methods section if available."""
     if not _paper_has_cannabis_content(title, abstract):
         return ["unknown"]
 
     methods_text = get_methods_text(title, abstract)
+    if full_text:
+        from maude_classifier import extract_methods_section
+        pdf_methods = extract_methods_section(full_text)
+        if pdf_methods:
+            methods_text = f"{methods_text}\n\n{pdf_methods}" if methods_text else pdf_methods
     combined = methods_text.lower()
+    exposure_scan = methods_text
+    if full_text:
+        exposure_scan = f"{methods_text}\n\n{full_text[:25000]}"
+    routing_blob = f"{title} {abstract or ''} {exposure_scan}"
 
-    if _has_dissolved_in_media_cue(methods_text):
-        return ["cannabinoids dissolved in media"]
-    
-    # Normalize inputs to sets/lists
+    if is_plant_cultivation_study(routing_blob):
+        return ["unknown"]
+
     if isinstance(study_type, str):
         study_types = {study_type}
     else:
         study_types = set(study_type or [])
-        
+    is_clinical = study_types.intersection({"RCT", "observational"}) or any(
+        s.startswith("Clinical (") for s in study_types
+    )
+    has_human_subjects = keyword_match(
+        f"{title} {abstract} {methods_text}".lower(),
+        list(HUMAN_SUBJECT_KEYWORDS),
+    )
+    is_observational = is_clinical and not any("RCT" in item for item in study_types)
+
+    is_animal_study = "animal" in study_types or any(
+        s.startswith("Animal Models (") for s in study_types
+    )
+    invivo_primary = _looks_like_invivo_primary(methods_text)
+
+    if _has_dissolved_in_media_cue(methods_text):
+        is_invitro = "in vitro" in study_types or any(
+            s.startswith("Cell Culture (") for s in study_types
+        )
+        biomarker_only = has_human_subjects and re.search(
+            r"(?i)\b(?:plasma|serum|blood|saliva|endocannabinoid|2-ag|anandamide|ae[aA])\b",
+            methods_text,
+        ) and not re.search(
+            r"(?i)\b(?:administered|treatment|dose|dosing|exposed to|incubated with)\b",
+            methods_text,
+        )
+        if biomarker_only:
+            pass
+        elif is_animal_study and (invivo_primary or _has_injection_route_guard(combined)):
+            pass
+        elif is_invitro and not (is_clinical and has_human_subjects):
+            return ["cannabinoids dissolved in media"]
+        elif not is_clinical and not is_animal_study and not is_plant_cultivation_study(routing_blob):
+            return ["cannabinoids dissolved in media"]
+    
     methods = []
     
     # Group A: Clinical exposure (human/clinical setting)
-    if study_types.intersection({"RCT", "observational"}) or any(s.startswith("Clinical (") for s in study_types):
-        if keyword_match(combined, ["smoke", "smoked", "smoking", "joint", "combustion", "cigarette", "cigarettes", "vaporized", "vaporised", "inhaled", "inhalation"]):
-            methods.append("inhaled")
-        if keyword_match(combined, list(EDIBLE_ORAL_CUES) + ["oral", "ingested", "oil ingestion", "gavage"]):
-            methods.append("oral")
+    if is_clinical:
+        scan_lower = exposure_scan.lower()
+        inhaled_cues = ["smoke", "smoked", "smoking", "joint", "combustion", "cigarette", "cigarettes",
+                        "vaporized", "vaporised", "inhaled", "inhalation", "vaporize", "vaporise"]
+        for cue in inhaled_cues:
+            if cue not in scan_lower:
+                continue
+            if is_observational:
+                for match in re.finditer(re.escape(cue), scan_lower):
+                    if _has_cannabis_proximity(scan_lower, match.start(), match.end()):
+                        methods.append("inhaled")
+                        break
+            else:
+                methods.append("inhaled")
+                break
+        oral_cues = list(EDIBLE_ORAL_CUES) + ["oral", "ingested", "oil ingestion", "gavage", "medible", "tincture"]
+        for cue in oral_cues:
+            if cue in scan_lower and (not is_observational or _route_cue_in_active_use_context(exposure_scan, cue)):
+                methods.append("oral")
+                break
         if keyword_match(combined, ["sublingual", "under the tongue", "drops", "tincture", "tinctures"]):
-            methods.append("sublingual")
+            if not is_observational or _route_cue_in_active_use_context(exposure_scan, "sublingual") or _route_cue_in_active_use_context(exposure_scan, "tincture"):
+                methods.append("sublingual")
         if keyword_match(combined, ["injection", "intravenous", "intraperitoneal", "ip", "subcutaneous", "intramuscular", "injected"]):
             if _has_injection_route_guard(combined) and not _cannabinoid_edible_context(combined):
                 methods.append("injected")
+        if not methods and keyword_match(
+            scan_lower,
+            ["medical cannabis", "medical marijuana", "cannabis oil", "cannabis-based medicine", "prescription cannabis",
+             "dispensary", "plant-based medicine", "mcacc", "nabiximols", "sativex", "mmj"],
+        ):
+            methods.append("oral")
+        if not methods or methods == ["unknown"]:
+            patient_routes = _infer_clinical_patient_reported_exposure(routing_blob)
+            for route in patient_routes:
+                if route not in methods:
+                    methods.append(route)
  
     # Group B: In vitro exposure (cells/tissue setting)
     if "in vitro" in study_types or any(s.startswith("Cell Culture (") for s in study_types):
@@ -1968,8 +2625,11 @@ def infer_exposure_method(title: str, abstract: str, study_type: Any) -> List[st
         if keyword_match(combined, ["cell exposure to smoke", "cells exposed to vapor", "chamber exposure of cells", "smoke stream", "direct vapor exposure", "exposure of cells to smoke", "exposure of cells to vapor", "air-liquid interface", "air liquid interface", "ali exposure", "ali", "aerosol exposure", "exposed directly to vapor", "exposed directly to smoke"]):
             methods.append("exposure of cells to smoke/vapor")
  
-    # Group C: In vivo exposure (animal models)
-    if "animal" in study_types or any(s.startswith("Animal Models (") for s in study_types):
+    # Group C: In vivo exposure (animal models) — skip when clinical human subjects dominate
+    if (
+        ("animal" in study_types or any(s.startswith("Animal Models (") for s in study_types))
+        and not (is_clinical and has_human_subjects)
+    ):
         if keyword_match(combined, list(EDIBLE_ORAL_CUES) + ["oral administration", "fed", "diet", "ingested", "oral"]):
             methods.append("oral administration")
         if keyword_match(combined, ["oral gavage", "gavage"]):
@@ -1994,24 +2654,81 @@ def infer_exposure_method(title: str, abstract: str, study_type: Any) -> List[st
             methods.append("intratracheal")
             
     if not methods:
-        if "in vitro" in study_types or any(s.startswith("Cell Culture (") for s in study_types):
+        if (
+            ("in vitro" in study_types or any(s.startswith("Cell Culture (") for s in study_types))
+            and not (is_clinical and has_human_subjects)
+        ):
             methods.append("cannabinoids dissolved in media")
         else:
             methods.append("unknown")
 
     if "whole body. smoke/vapor" in methods and "nose only smoke/vapor" in methods:
         methods = [item for item in methods if item != "nose only smoke/vapor"]
-    methods = [item for item in methods if item not in {"inhaled", "oral"}]
+
+    animal_specific = {
+        "oral administration", "oral gavage", "injection cannabinoids",
+        "whole body. smoke/vapor", "nose only smoke/vapor", "sub-lingual",
+        "intranasal", "intratracheal", "cannabinoids dissolved in media",
+        "smoke/vapor conditioned media", "exposure of cells to smoke/vapor",
+    }
+    if any(item in animal_specific for item in methods):
+        methods = [item for item in methods if item not in {"inhaled", "oral"}]
+
+    if is_clinical and has_human_subjects:
+        methods = [item for item in methods if item != "cannabinoids dissolved in media"]
+        if not methods or methods == ["unknown"]:
+            patient_routes = _infer_clinical_patient_reported_exposure(routing_blob)
+            if patient_routes:
+                methods = patient_routes
+            else:
+                methods = ["unknown"]
+
+    is_invitro_only = any(s.startswith("Cell Culture (") for s in study_types) and not any(
+        s.startswith("Animal Models (") for s in study_types
+    )
+    if is_invitro_only and not is_plant_cultivation_study(routing_blob):
+        if not methods or methods == ["unknown"]:
+            methods = ["cannabinoids dissolved in media"]
+        else:
+            animal_routes = {
+                "oral administration", "oral gavage", "injection cannabinoids",
+                "whole body. smoke/vapor", "nose only smoke/vapor",
+            }
+            if set(methods).intersection(animal_routes) and _has_dissolved_in_media_cue(methods_text):
+                methods = ["cannabinoids dissolved in media"]
+
+    if is_observational and methods and methods != ["unknown"]:
+        if not keyword_match(
+            routing_blob.lower(),
+            [
+                "mode of use", "medical marijuana", "medical cannabis", "mmj",
+                "smoked cannabis", "smoking cannabis", "vaped cannabis", "cannabis cigarette",
+                "oral thc", "oral cbd", "received cannabidiol", "received thc",
+                "flower product", "reported use of",
+            ],
+        ):
+            methods = ["unknown"]
 
     return list(dict.fromkeys(methods))
     
-def infer_cannabis_type(title: str, abstract: str, study_type: Any, exposure_method: Any) -> List[str]:
+def infer_cannabis_type(
+    title: str,
+    abstract: str,
+    study_type: Any,
+    exposure_method: Any,
+    full_text: Optional[str] = None,
+) -> List[str]:
     """Infers cannabis product type using a priority-ordered multi-label decision tree."""
+    scan_early = f"{title} {abstract or ''} {full_text[:20000] if full_text else ''}"
+    if _extract_detected_substance_strain(scan_early):
+        return ["CB receptor agonist"]
+
     if not _paper_has_cannabis_content(title, abstract):
         return ["unknown"]
 
     methods_text = get_methods_text(title, abstract)
     combined = methods_text.lower()
+    scan_blob = f"{combined}\n{full_text[:20000]}" if full_text else combined
 
     if isinstance(exposure_method, str):
         exposure_methods = {exposure_method}
@@ -2054,6 +2771,10 @@ def infer_cannabis_type(title: str, abstract: str, study_type: Any, exposure_met
     # Priority 6: pure cannabinoid (isolated compound + mg/kg or pharma supplier)
     if _has_isolated_cannabinoid_without_plant_matrix(methods_text):
         add_type("pure cannabinoid")
+    elif re.search(r'(?i)\b(?:mg/kg|µg/kg|ug/kg|gavage|intraperitoneal|subcutaneous)\b', combined) and keyword_match(
+        combined, list(PURE_CANNABINOID_COMPOUND_CUES),
+    ):
+        add_type("pure cannabinoid")
     elif keyword_match(combined, [
         "pure thc", "pure cbd", "pure cannabinoid", "pure cannabinoids",
         "cannabidiol isolate", "dronabinol", "nabilone", "marinol", "isolate", "isolates",
@@ -2068,8 +2789,10 @@ def infer_cannabis_type(title: str, abstract: str, study_type: Any, exposure_met
         add_type("hashish/kief")
     if keyword_match(combined, [
         "shatter", "tincture", "tinctures", "resin", "concentrate", "concentrates",
-        "extract", "extracts", "hash oil", "honey oil", "bho", "rosin", "wax",
+        "hash oil", "honey oil", "bho", "rosin", "wax",
     ]):
+        add_type("concentrates")
+    elif keyword_match(combined, ["extract", "extracts"]) and not is_analytical_or_computational(scan_blob):
         add_type("concentrates")
     if keyword_match(combined, [
         "flower", "bud", "buds", "dried cannabis", "joint", "joints",
@@ -2092,6 +2815,61 @@ def infer_cannabis_type(title: str, abstract: str, study_type: Any, exposure_met
                 add_type("dried flower")
             elif exp_lower in ("oral/edible", "oral", "oral administration"):
                 add_type("edibles")
+
+    is_clinical = any(str(s).startswith("Clinical (") for s in (study_type or []))
+    if is_clinical and (not types or types == ["unknown"]):
+        patient_blob = scan_blob
+        if keyword_match(patient_blob, ["flower", "bud", "joint", "smoked", "combust", "flower product"]):
+            add_type("dried flower")
+        if keyword_match(patient_blob, ["edible", "edibles", "brownie", "cookie", "gummy", "medible"]):
+            add_type("edibles")
+        if keyword_match(patient_blob, [
+            "concentrate", "concentrates", "wax", "shatter", "resin", "oil/concentrate",
+            "concentrates and oils",
+        ]):
+            add_type("concentrates")
+
+    if "concentrates" in types and is_analytical_or_computational(scan_blob):
+        if not keyword_match(scan_blob, ["shatter", "wax", "bho", "rosin", "hash oil", "concentrate product", "concentrates and oils"]):
+            types.remove("concentrates")
+    if is_clinical and "dried flower" in types and "pure cannabinoid" in types:
+        if not _has_pure_cannabinoid_vendor_override(scan_blob) and not _text_suggests_pure_cannabinoid(scan_blob):
+            types.remove("pure cannabinoid")
+    if "CB receptor agonist" in types and is_clinical:
+        if not keyword_match(scan_blob, list(SYNTHETIC_AGONIST_CUES) + ["synthetic cannabinoid", "cb1 agonist", "cb2 agonist"]):
+            types.remove("CB receptor agonist")
+    if is_clinical and "edibles" in types:
+        if keyword_match(scan_blob, ["prevalence", "population survey", "catchment"]) and not keyword_match(
+            scan_blob, ["medible", "edible product", "reported use", "mode of use"]
+        ):
+            types.remove("edibles")
+    if is_clinical and _is_endocannabinoid_biomarker_study(scan_blob, study_type):
+        if keyword_match(scan_blob, [
+            "cannabis use", "marijuana use", "used cannabis", "cannabis users",
+            "cannabis consumption", "reported cannabis", "current cannabis",
+        ]):
+            return ["dried flower"]
+        return ["unknown"]
+    if _extract_detected_substance_strain(scan_blob):
+        return ["CB receptor agonist"]
+    if re.search(r"(?i)delta-8|delta 8|\bΔ8\b", title) and keyword_match(
+        scan_blob, ["review", "narrative review", "systematic review"],
+    ):
+        review_types: List[str] = []
+        if keyword_match(scan_blob, list(VAPE_PEN_DEVICE_CUES)):
+            review_types.append("vape pen")
+        if keyword_match(scan_blob, list(EDIBLES_PRODUCT_PHRASES) + ["edible", "edibles", "gummy"]):
+            review_types.append("edibles")
+        if keyword_match(scan_blob, ["concentrate", "concentrates", "distillate", "wax"]):
+            review_types.append("concentrates")
+        if keyword_match(scan_blob, ["pure cannabinoid", "isolate", "delta-8-thc", "delta-8 thc"]):
+            review_types.append("pure cannabinoid")
+        if review_types:
+            return review_types
+    if is_clinical and types:
+        if all(tag in ("pure cannabinoid", "CB receptor agonist", "concentrates") for tag in types):
+            if not keyword_match(scan_blob, ["administered", "treated with", "received", "dose", "intervention"]):
+                return ["unknown"]
 
     if not types:
         types.append("unknown")
@@ -2142,10 +2920,24 @@ def get_intro_objective_text(title: str, abstract: str) -> str:
     return title + "\n\n" + combined_abstract
 
 
-def extract_outcomes(title: str, abstract: str) -> List[str]:
-    """Identifies multi-label outcome domains from the introduction/objective sections only."""
+def extract_outcomes(
+    title: str,
+    abstract: str,
+    full_text: Optional[str] = None,
+    study_type: Any = None,
+) -> List[str]:
+    """Identifies multi-label outcome domains from intro/objective sections (abstract or PDF)."""
     combined = get_intro_objective_text(title, abstract).lower()
-    outcomes = []
+    if full_text:
+        pdf_intro = get_intro_objective_text(title, full_text[:12000]).lower()
+        combined = f"{combined}\n{pdf_intro}"
+    title_lower = (title or "").lower()
+    combined = f"{title_lower}\n{combined}"
+    title_anxiety_app = bool(
+        re.search(r"\b(?:anxiety|mental health)\b", title_lower)
+        and re.search(r"\b(?:assessment|management|intervention|app)\b", title_lower)
+    )
+    outcomes = list(_title_outcome_hints(title))
     
     mapping = {
         "pain": [
@@ -2180,7 +2972,22 @@ def extract_outcomes(title: str, abstract: str) -> List[str]:
             
     if not outcomes:
         outcomes.append("other")
-        
+    if title_anxiety_app and "anxiety" not in outcomes:
+        outcomes = [item for item in outcomes if item != "other"]
+        outcomes.append("anxiety")
+        if not outcomes:
+            outcomes = ["anxiety"]
+    biomarker_ctx = _is_endocannabinoid_biomarker_study(
+        f"{title} {abstract or ''} {full_text[:8000] if full_text else ''}",
+        study_type or ["Clinical (observational)"],
+    )
+    if biomarker_ctx and not _title_outcome_hints(title):
+        spurious = {"anxiety", "cognition", "addiction"} & set(outcomes)
+        if spurious and "other" not in outcomes:
+            outcomes = [item for item in outcomes if item not in spurious]
+            if not outcomes:
+                outcomes = ["other"]
+
     return outcomes
 
 
@@ -2256,15 +3063,28 @@ def generate_heuristic_summary(data: Dict[str, Any]) -> str:
         
     return summary
 
-def extract_all_heuristics(title: str, abstract: str, full_text: Optional[str] = None) -> Dict[str, Any]:
+def extract_all_heuristics(
+    title: str,
+    abstract: str,
+    full_text: Optional[str] = None,
+    study_type_override: Optional[List[str]] = None,
+) -> Dict[str, Any]:
     """Convenience pipeline to run all heuristic extractions on a paper.
 
     Uses Methods-isolated text when available so node2a/2b/2c share the same
     extraction logic for dose, duration, strain, and product-type fields.
     """
     publication_type = infer_publication_type(title, abstract)
-    study_type = infer_study_type(title, abstract)
-    exposure_method = infer_exposure_method(title, abstract, study_type)
+    if study_type_override:
+        study_type = list(study_type_override)
+    else:
+        study_type = _refine_study_type_list(
+            infer_study_type(title, abstract),
+            f"{title} {abstract}".lower(),
+            title,
+            abstract,
+        )
+    exposure_method = infer_exposure_method(title, abstract, study_type, full_text=full_text)
 
     methods_text = get_methods_text(title, abstract)
     extraction_blob = methods_text if methods_text.strip() else f"{title}\n\n{abstract or ''}"
@@ -2279,9 +3099,11 @@ def extract_all_heuristics(title: str, abstract: str, full_text: Optional[str] =
         cbd_pct = extract_cbd_pct(title)
 
     dose_mg = extract_dose_mg(extraction_blob)
-    sample_size = extract_sample_size(extraction_blob)
-    outcome_domain = extract_outcomes(title, abstract)
-    cannabis_type = infer_cannabis_type(title, abstract, study_type, exposure_method)
+    sample_size = extract_sample_size(full_text) if full_text else None
+    if sample_size is None:
+        sample_size = extract_sample_size(extraction_blob)
+    outcome_domain = extract_outcomes(title, abstract, full_text=full_text, study_type=study_type)
+    cannabis_type = infer_cannabis_type(title, abstract, study_type, exposure_method, full_text=full_text)
 
     strain_reported, strain_normalized = extract_strain_info(
         extraction_blob, cannabis_type=cannabis_type, study_type=study_type,
@@ -2316,10 +3138,11 @@ def extract_all_heuristics(title: str, abstract: str, full_text: Optional[str] =
     administration_frequency = None
     treatment_duration = None
 
+    observational_clinical = is_clinical and not any("RCT" in item for item in study_set)
     if is_clinical or is_invivo:
         invivo_primary = _looks_like_invivo_primary(extraction_blob)
         mixed_invitro_primary = is_invivo and is_invitro and not invivo_primary
-        if not mixed_invitro_primary:
+        if (not mixed_invitro_primary or invivo_primary) and not observational_clinical:
             duration_days = extract_duration_days(extraction_blob)
             if duration_days is None:
                 duration_days = extract_duration_days(combined_text)
@@ -2336,14 +3159,21 @@ def extract_all_heuristics(title: str, abstract: str, full_text: Optional[str] =
             inhaled_exposure_duration = extract_inhaled_exposure_duration(extraction_blob)
             if inhaled_exposure_duration is None:
                 inhaled_exposure_duration = extract_inhaled_exposure_duration(combined_text)
-        administration_frequency = extract_administration_frequency(extraction_blob)
+        administration_frequency = extract_administration_frequency(
+            extraction_blob, study_type=study_type,
+        )
         if administration_frequency is None:
-            administration_frequency = extract_administration_frequency(combined_text)
+            administration_frequency = extract_administration_frequency(
+                combined_text, study_type=study_type,
+            )
         if administration_frequency is None and full_text:
-            administration_frequency = extract_administration_frequency(full_text)
-
-    if sample_size is None and full_text:
-        sample_size = extract_sample_size(full_text)
+            administration_frequency = extract_administration_frequency(
+                full_text, study_type=study_type,
+            )
+        if administration_frequency and _is_endocannabinoid_biomarker_study(
+            f"{combined_text} {full_text or ''}", study_type,
+        ):
+            administration_frequency = None
 
     thc_mg_ml = None
     if is_clinical or is_invivo:
@@ -2365,6 +3195,11 @@ def extract_all_heuristics(title: str, abstract: str, full_text: Optional[str] =
             treatment_duration = extract_treatment_duration(combined_text)
         if treatment_duration is None and full_text:
             treatment_duration = extract_treatment_duration(full_text)
+        if treatment_duration is None and full_text:
+            from maude_classifier import extract_methods_section
+            treatment_duration = extract_treatment_duration(
+                extract_methods_section(full_text) or full_text,
+            )
 
     multiple_doses = detect_multiple_doses(title, abstract) or mgkg_multiple
     multiple_time_intervals = detect_multiple_time_intervals(title, abstract)

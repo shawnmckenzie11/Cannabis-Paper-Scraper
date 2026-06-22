@@ -40,11 +40,23 @@ def main() -> None:
         ("llm-reclassify-%",),
     )
     llm_abstract = _scalar(cursor.fetchone())
+    cursor.execute(
+        "SELECT COUNT(*) FROM papers WHERE classifier_version LIKE ?",
+        ("heuristic-1.0.0",),
+    )
+    heuristic = _scalar(cursor.fetchone())
+    cursor.execute(
+        "SELECT COUNT(*) FROM papers WHERE classifier_version LIKE ?",
+        ("maude-%",),
+    )
+    maude_total = _scalar(cursor.fetchone())
     conn.close()
     print("total_papers:", total)
     print("node1_calibrated:", node1)
     print("llm_pdf_reclassify:", llm_pdf)
     print("llm_reclassify:", llm_abstract)
+    print("maude_classified:", maude_total)
+    print("heuristic_1_0_0:", heuristic)
     for key, value in maude_build_info().items():
         print(f"{key}:", value)
 

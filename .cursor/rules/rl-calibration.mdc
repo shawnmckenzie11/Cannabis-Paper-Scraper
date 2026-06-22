@@ -1,0 +1,48 @@
+---
+description: Maude RL calibration cycle — batch, feedback, implement, deploy, re-measure same holdout
+alwaysApply: true
+---
+
+# RL calibration cycle (node2a / node2b / node2c)
+
+When the user asks to run a batch, patch, handoff, or RL cycle on a sub-node, execute the **full cycle** in one turn. Do not stop after batch-only or Maude-only refresh.
+
+## Cycle definition (complete only when code ships)
+
+1. **Batch** — PDF Maude A/B on Fly: `SUBNODE=node2{b|c} MAX_CALLS={N} ./scripts/run_subnode_calibration.sh`
+2. **Feedback** — `run_feedback_cycle` on the batch JSON (auto-runs from script when `RUN_FEEDBACK=1`); read `scratch/calibration_runs/staged_patches/`
+3. **Implement** — `extractor.py`, `maude_classifier.py`, `maude_cues.json` (+ `test_patch_*.py`)
+4. **Bump** — `calibration_build.py` → new `MAUDE_CLASSIFIER_BUILD_ID`
+5. **Deploy** — `fly deploy --remote-only -a cannabis-paper-scraper`
+6. **Re-measure** — same holdout: `python3 calibration_agent.py --refresh-maude-from-batch scratch/calibration_runs/{batch}.json`
+7. **Log** — append `scratch/calibration_runs/handoff_learning_log.json`
+
+**Not a completed cycle:** verification-only refresh, feedback without code, or a new paper sample without user request.
+
+## Always pin in prompts / reports
+
+- Subnode (`node2a`, `node2b`, `node2c`), batch JSON filename, `MAX_CALLS`, holdout rule (same batch vs offset)
+- Pre/post **alignment %**, **recall %**, top disagreeing fields
+- Build ID from `calibration_build.py`
+
+## Read before patching
+
+- `scratch/calibration_runs/handoff_learning_log.json` — prior learnings
+- Latest `scratch/calibration_runs/staged_patches/node2*_*.json`
+- `subnode_field_scopes.py` — fields in scope per subnode
+
+## Targeted handoff variant
+
+Same holdout batch; focus on named diverging fields only (e.g. `treatment_duration`, `strain_reported`). Still implement → deploy → refresh same batch.
+
+## Production policy
+
+- Fly app: `cannabis-paper-scraper`; preflight: `fly_db_check.py`
+- Do not commit/push unless the user asks
+- Dashboard: https://cannabis-paper-scraper.fly.dev/calibration/dashboard
+
+## Copy-paste user prompt
+
+```
+Complete RL cycle on {node2b|node2c}: {N}-paper PDF holdout → feedback → implement patch → deploy → refresh SAME batch → report alignment/recall + field disagreements. Read handoff_learning_log.json first.
+```

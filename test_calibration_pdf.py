@@ -29,6 +29,35 @@ class CalibrationPdfTests(unittest.TestCase):
         self.assertIn("oral gavage", kwargs["full_text"])
         self.assertFalse(kwargs["abstract_only_extraction"])
 
+    @patch("calibration_pdf.fetch_pmc_full_text")
+    @patch("reclassify_with_llm.download_and_extract_pdf_text")
+    def test_resolve_prefers_pdf_over_pmc(self, mock_download, mock_pmc):
+        """PDF text wins over Europe PMC when both are available."""
+        mock_download.return_value = "PDF methods section"
+        mock_pmc.return_value = "PMC full text body"
+        text, source = calibration_pdf.resolve_classification_full_text(
+            full_text_link="https://example.com/paper.pdf",
+            pmid="12345",
+        )
+        self.assertEqual(source, calibration_pdf.CLASSIFICATION_SOURCE_PDF)
+        self.assertEqual(text, "PDF methods section")
+        mock_pmc.assert_not_called()
+
+    @patch("calibration_pdf.fetch_html_article_text")
+    @patch("calibration_pdf.fetch_pmc_full_text")
+    @patch("reclassify_with_llm.download_and_extract_pdf_text")
+    def test_resolve_falls_back_to_pmc(self, mock_download, mock_pmc, mock_html):
+        """Europe PMC is used when PDF extraction fails."""
+        mock_download.return_value = None
+        mock_pmc.return_value = "PMC article text"
+        text, source = calibration_pdf.resolve_classification_full_text(
+            full_text_link="https://example.com/paper.pdf",
+            pmid="12345",
+        )
+        self.assertEqual(source, calibration_pdf.CLASSIFICATION_SOURCE_FULLTEXT)
+        self.assertEqual(text, "PMC article text")
+        mock_html.assert_not_called()
+
     @patch("reclassify_with_llm.download_and_extract_pdf_text")
     def test_load_pdf_full_text_caches_by_link(self, mock_download):
         """Repeated links reuse cached PDF text within one batch run."""
@@ -39,6 +68,22 @@ class CalibrationPdfTests(unittest.TestCase):
         self.assertEqual(first, "cached pdf body")
         self.assertEqual(second, "cached pdf body")
         mock_download.assert_called_once()
+        self.assertIn("pdf:https://example.com/a.pdf", cache)
+
+    def test_maude_classifier_version_labels(self):
+        """Classifier version strings encode the text tier Maude used."""
+        self.assertEqual(
+            calibration_pdf.maude_classifier_version("pdf", "2.6.0"),
+            "maude-pdf-2.6.0",
+        )
+        self.assertEqual(
+            calibration_pdf.maude_classifier_version("fulltext", "2.6.0"),
+            "maude-fulltext-2.6.0",
+        )
+        self.assertEqual(
+            calibration_pdf.maude_classifier_version("abstract", "2.6.0"),
+            "maude-2.6.0",
+        )
 
 
 if __name__ == "__main__":

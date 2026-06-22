@@ -642,13 +642,68 @@ def save_staged_patches(
     return path
 
 
+def build_local_feedback_payload(
+    batch_payload: Dict[str, Any],
+    gap_summary: Dict[str, Any],
+    disagreement_rows: Sequence[Dict[str, Any]],
+) -> Dict[str, Any]:
+    """Builds a staged-patch payload from batch disagreements without Claude API calls."""
+    target_subnode = batch_payload.get("target_subnode") or batch_payload.get("automation_node") or "unknown"
+    top_fields = gap_summary.get("top_disagreement_fields") or []
+    field_stats = gap_summary.get("field_disagreement_stats") or []
+    examples: List[str] = []
+    for row in disagreement_rows[:8]:
+        paper_id = row.get("paper_id")
+        fields = row.get("disagree_fields") or row.get("fields") or []
+        if isinstance(fields, dict):
+            field_names = list(fields.keys())[:4]
+        else:
+            field_names = list(fields)[:4]
+        if field_names:
+            examples.append(f"paper {paper_id}: {', '.join(field_names)}")
+
+    pattern_lines = [
+        f"Top scoped disagreement fields on {target_subnode}: {', '.join(top_fields[:6]) or 'none'}.",
+        f"Batch alignment {gap_summary.get('batch_alignment_pct')}% · Maude recall {gap_summary.get('batch_maude_recall_pct')}%.",
+    ]
+    for stat in field_stats[:5]:
+        if stat.get("disagree_count"):
+            pattern_lines.append(
+                f"{stat['field']}: {stat['disagree_count']}/{stat['compared_count']} papers disagree "
+                f"({stat.get('disagree_pct')}%)."
+            )
+    if examples:
+        pattern_lines.append("Examples: " + "; ".join(examples))
+
+    handoff = (
+        f"Implement minimal patches for {target_subnode} holdout disagreements on: "
+        f"{', '.join(top_fields[:5])}. "
+        "Edit extractor.py / maude_classifier.py / maude_cues.json and add test_patch_* regressions. "
+        "Then bump calibration_build.py, deploy, and refresh the same batch with "
+        "calibration_agent.py --refresh-maude-from-batch."
+    )
+    return {
+        "pattern_summary": " ".join(pattern_lines),
+        "proposed_rules_changes": [],
+        "proposed_cues": [],
+        "maude_improvement_brief": {
+            "agent_handoff_prompt": handoff,
+            "priority_fields": top_fields[:8],
+        },
+        "agent_handoff_prompt": handoff,
+        "_local_only": True,
+    }
+
+
 def run_feedback_cycle(
     batch_path: Path,
     output_dir: Optional[Path] = None,
     db=None,
     skip_lock: bool = False,
+    local_only: bool = False,
+    skip_refresh: bool = True,
 ) -> Dict[str, Any]:
-    """Runs a full Claude feedback cycle: analyze disagreements, apply cues, refresh Maude."""
+    """Runs feedback for a batch. By default uses local disagreement analysis (no Claude, no refresh)."""
     output_dir = output_dir or resolve_calibration_output_dir(str(batch_path.parent))
     db = db or DatabaseManager()
     with open(batch_path, encoding="utf-8") as handle:
@@ -690,26 +745,34 @@ def run_feedback_cycle(
         )
 
     try:
-        try:
-            feedback = request_claude_feedback(
-                batch_payload,
-                disagreement_rows,
-                gap_summary,
-                db=db,
-            )
-        except Exception as exc:
-            return {
-                "status": "error",
-                "error": str(exc),
-                "batch_id": batch_id,
-                "gap_summary": gap_summary,
-                "disagreement_count": len(disagreement_rows),
-                "note": "Maude learning (cues/resolutions) not applied — Claude response could not be parsed.",
-            }
+        if local_only:
+            feedback = build_local_feedback_payload(batch_payload, gap_summary, disagreement_rows)
+            apply_result = {"applied_count": 0, "error_count": 0}
+            cue_result = {"cues_applied": 0}
+        else:
+            try:
+                feedback = request_claude_feedback(
+                    batch_payload,
+                    disagreement_rows,
+                    gap_summary,
+                    db=db,
+                )
+            except Exception as exc:
+                return {
+                    "status": "error",
+                    "error": str(exc),
+                    "batch_id": batch_id,
+                    "gap_summary": gap_summary,
+                    "disagreement_count": len(disagreement_rows),
+                    "note": "Maude learning (cues/resolutions) not applied — Claude response could not be parsed.",
+                }
+            apply_result = apply_feedback_resolutions(batch_payload, feedback, output_dir=output_dir, db=db)
+            cue_result = apply_proposed_cues(feedback, disagreement_rows, output_dir=output_dir)
 
-        apply_result = apply_feedback_resolutions(batch_payload, feedback, output_dir=output_dir, db=db)
-        cue_result = apply_proposed_cues(feedback, disagreement_rows, output_dir=output_dir)
-        refresh_path, _ = refresh_maude_batch(batch_path, output_dir=output_dir)
+        refresh_path = None
+        if not skip_refresh and not local_only:
+            refresh_path, _ = refresh_maude_batch(batch_path, output_dir=output_dir)
+
         staged_path = save_staged_patches(
             feedback,
             target_subnode or "unknown",
@@ -731,10 +794,11 @@ def run_feedback_cycle(
                 "error_count": apply_result.get("error_count"),
             },
             "cue_apply_result": cue_result,
-            "refresh_batch_path": str(refresh_path),
+            "refresh_batch_path": str(refresh_path) if refresh_path else None,
             "staged_patch_path": str(staged_path) if staged_path else None,
             "agent_handoff_prompt": (feedback.get("maude_improvement_brief") or {}).get("agent_handoff_prompt"),
             "salvaged_response": bool(feedback.get("_salvaged_from_truncated_response")),
+            "local_only": local_only,
             "feedback": feedback,
         }
         with open(report_path, "w", encoding="utf-8") as handle:
@@ -744,12 +808,13 @@ def run_feedback_cycle(
             "status": "completed",
             "batch_id": batch_id,
             "report_path": str(report_path),
-            "refresh_batch_path": str(refresh_path),
+            "refresh_batch_path": str(refresh_path) if refresh_path else None,
             "staged_patch_path": str(staged_path) if staged_path else None,
             "gap_summary": gap_summary,
             "llm_call_metrics": feedback.get("_llm_call_metrics"),
             "agent_handoff_prompt": report.get("agent_handoff_prompt"),
             "salvaged_response": bool(feedback.get("_salvaged_from_truncated_response")),
+            "local_only": local_only,
             **apply_result,
             **cue_result,
         }

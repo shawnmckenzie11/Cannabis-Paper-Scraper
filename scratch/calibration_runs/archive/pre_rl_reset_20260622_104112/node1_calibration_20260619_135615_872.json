@@ -1,0 +1,4962 @@
+{
+  "batch_id": "node1_calibration_20260619_135615_872",
+  "created_at": "2026-06-19T13:56:16.523185",
+  "rules_version": "2.4.0",
+  "mode": "node1_routing",
+  "automation_node": "node1",
+  "calibration_label": "node1-calibration",
+  "variants": [
+    "control"
+  ],
+  "max_calls": 40,
+  "calls_attempted": 0,
+  "planned_candidates": 0,
+  "updates_applied": 0,
+  "dry_run": true,
+  "abstract_only": true,
+  "candidate_count": 100,
+  "results": [
+    {
+      "paper_id": 27424,
+      "pmid": "30172249",
+      "title": "Cannabinoids in cancer treatment: Therapeutic potential and legislation",
+      "variant": "control",
+      "dry_run": false,
+      "locked_fields": [],
+      "before_confidence": null,
+      "before_classifier_version": "heuristic-reclassify-1.0.0",
+      "status": "updated",
+      "after_confidence": 0.775,
+      "after_classifier_version": "llm-node1-calibration-control-2.4.0",
+      "after_publication_type": "review",
+      "after_study_type": [
+        "review"
+      ],
+      "routing_subnode": "node1b",
+      "changes": {
+        "exposure_method": {
+          "old": "[\"injection cannabinoids\"]",
+          "new": [
+            "unknown"
+          ]
+        },
+        "cannabis_type": {
+          "old": "[\"pure cannabinoid\"]",
+          "new": [
+            "pure cannabinoid",
+            "CB receptor agonist"
+          ]
+        }
+      },
+      "llm_metrics": {
+        "model": "claude-sonnet-4-6",
+        "input_tokens": 973,
+        "cache_read_tokens": 0,
+        "cache_write_tokens": 5464,
+        "output_tokens": 290,
+        "cost": 0.027759,
+        "few_shot_similarity": 0.5,
+        "few_shot_count": 1,
+        "bm25_retrieval_used": 1,
+        "classification_confidence": 0.775,
+        "classifier_version": "2.4.0"
+      },
+      "llm": {
+        "publication_type": "review",
+        "study_type": [
+          "review"
+        ],
+        "exposure_method": [
+          "unknown"
+        ],
+        "cannabis_type": [
+          "pure cannabinoid",
+          "CB receptor agonist"
+        ],
+        "outcome_domain": [
+          "oncology",
+          "pain"
+        ],
+        "ingestion_status": "tangential",
+        "species": null,
+        "classification_confidence": 0.775,
+        "classifier_version": "llm-node1-calibration-control-2.4.0"
+      },
+      "maude": {
+        "publication_type": "review",
+        "study_type": [
+          "review"
+        ],
+        "exposure_method": [],
+        "cannabis_type": [],
+        "outcome_domain": [
+          "pain",
+          "oncology"
+        ],
+        "ingestion_status": "tangential",
+        "species": null,
+        "classification_confidence": 0.84,
+        "classifier_version": "maude-2.4.0",
+        "nodes_visited": [
+          "node0_ingestion",
+          "node1b_reviews"
+        ]
+      },
+      "disagreement": {
+        "fields": {
+          "exposure_method": {
+            "maude": [],
+            "llm": [
+              "unknown"
+            ]
+          },
+          "cannabis_type": {
+            "maude": [],
+            "llm": [
+              "pure cannabinoid",
+              "CB receptor agonist"
+            ]
+          }
+        },
+        "agreed_fields": {
+          "ingestion_status": "tangential",
+          "publication_type": "review",
+          "study_type": [
+            "review"
+          ],
+          "outcome_domain": [
+            "pain",
+            "oncology"
+          ],
+          "species": null
+        },
+        "high_level_count": 2,
+        "promotion_field_count": 0,
+        "flagged_for_review": true,
+        "promotion_fields": []
+      },
+      "flagged_for_review": true,
+      "abstract": "Publication Type: Review. The plant Cannabis sativa L. has been used as an herbal remedy for centuries and is the most important source of phytocannabinoids. The endocannabinoid system (ECS) consists of receptors, endogenous ligands (endocannabinoids) and metabolizing enzymes, and plays an important role in different physiological and pathological processes. Phytocannabinoids and synthetic cannabinoids can interact with the components of ECS or other cellular pathways and thus affect the development/progression of diseases, including cancer. In cancer patients, cannabinoids have primarily been used as a part of palliative care to alleviate pain, relieve nausea and stimulate appetite. In addition, numerous cell culture and animal studies showed antitumor effects of cannabinoids in various cancer types. Here we reviewed the literature on anticancer effects of plant-derived and synthetic cannabinoids, to better understand their mechanisms of action and role in cancer treatment. We also reviewed the current legislative updates on the use of cannabinoids for medical and therapeutic purposes, primarily in the EU countries. In vitro and in vivo cancer models show that cannabinoids can effectively modulate tumor growth, however, the antitumor effects appear to be largely dependent on cancer type and drug dose/concentration. Understanding how cannabinoids are able to regulate essential cellular processes involved in tumorigenesis, such as progression through the cell cycle, cell proliferation and cell death, as well as the interactions between cannabinoids and the immune system, are crucial for improving existing and developing new therapeutic approaches for cancer patients. The national legislation of the EU Member States defines the legal boundaries of permissible use of cannabinoids for medical and therapeutic purposes, however, these legislative guidelines may not be aligned with the current scientific knowledge."
+    },
+    {
+      "paper_id": 27054,
+      "pmid": "30910443",
+      "title": "Safety, efficacy, and mechanisms of action of cannabinoids in neurological disorders",
+      "variant": "control",
+      "dry_run": false,
+      "locked_fields": [],
+      "before_confidence": null,
+      "before_classifier_version": "heuristic-reclassify-1.0.0",
+      "status": "updated",
+      "after_confidence": 0.72,
+      "after_classifier_version": "llm-node1-calibration-control-2.4.0",
+      "after_publication_type": "review",
+      "after_study_type": [
+        "review"
+      ],
+      "routing_subnode": "node1b",
+      "changes": {
+        "exposure_method": {
+          "old": "[\"injection cannabinoids\"]",
+          "new": [
+            "unknown"
+          ]
+        },
+        "cannabis_type": {
+          "old": "[\"unknown\"]",
+          "new": [
+            "pure cannabinoid"
+          ]
+        },
+        "outcome_domain": {
+          "old": "[\"pain\", \"cognition\", \"neuroprotection\"]",
+          "new": [
+            "neuroprotection",
+            "pain"
+          ]
+        }
+      },
+      "llm_metrics": {
+        "model": "claude-sonnet-4-6",
+        "input_tokens": 1003,
+        "cache_read_tokens": 5464,
+        "cache_write_tokens": 0,
+        "output_tokens": 285,
+        "cost": 0.008923200000000001,
+        "few_shot_similarity": 0.4,
+        "few_shot_count": 1,
+        "bm25_retrieval_used": 1,
+        "classification_confidence": 0.72,
+        "classifier_version": "2.4.0"
+      },
+      "llm": {
+        "publication_type": "review",
+        "study_type": [
+          "review"
+        ],
+        "exposure_method": [
+          "unknown"
+        ],
+        "cannabis_type": [
+          "pure cannabinoid"
+        ],
+        "outcome_domain": [
+          "neuroprotection",
+          "pain"
+        ],
+        "ingestion_status": "relevant",
+        "species": null,
+        "classification_confidence": 0.72,
+        "classifier_version": "llm-node1-calibration-control-2.4.0"
+      },
+      "maude": {
+        "publication_type": "review",
+        "study_type": [
+          "review"
+        ],
+        "exposure_method": [],
+        "cannabis_type": [],
+        "outcome_domain": [
+          "pain",
+          "cognition",
+          "neuroprotection"
+        ],
+        "ingestion_status": "relevant",
+        "species": null,
+        "classification_confidence": 0.84,
+        "classifier_version": "maude-2.4.0",
+        "nodes_visited": [
+          "node0_ingestion",
+          "node1b_reviews"
+        ]
+      },
+      "disagreement": {
+        "fields": {
+          "exposure_method": {
+            "maude": [],
+            "llm": [
+              "unknown"
+            ]
+          },
+          "cannabis_type": {
+            "maude": [],
+            "llm": [
+              "pure cannabinoid"
+            ]
+          },
+          "outcome_domain": {
+            "maude": [
+              "pain",
+              "cognition",
+              "neuroprotection"
+            ],
+            "llm": [
+              "neuroprotection",
+              "pain"
+            ]
+          }
+        },
+        "agreed_fields": {
+          "ingestion_status": "relevant",
+          "publication_type": "review",
+          "study_type": [
+            "review"
+          ],
+          "species": null
+        },
+        "high_level_count": 3,
+        "promotion_field_count": 0,
+        "flagged_for_review": true,
+        "promotion_fields": []
+      },
+      "flagged_for_review": true,
+      "abstract": "Publication Type: Review. In the past two decades, there has been an increasing interest in the therapeutic potential of cannabinoids for neurological disorders such as epilepsy, multiple sclerosis, pain, and neurodegenerative diseases. Cannabis-based treatments for pain and spasticity in patients with multiple sclerosis have been approved in some countries. Randomised controlled trials of plant-derived cannabidiol for treatment of Lennox-Gastaut syndrome and Dravet syndrome, two severe childhood-onset epilepsies, provide evidence of anti-seizure effects. However, small clinical trials of cannabinoids in other neurological disorders such as Huntington's disease, attention deficit hyperactivity disorder, and dementia, have not found any effect. Despite positive results in these two severe epilepsy syndromes, further studies are needed to determine if the anti-seizure effects of cannabidiol extend to other forms of epilepsy, to overcome pharmacokinetic challenges with oral cannabinoids, and to uncover the exact mechanisms by which cannabidiol or other exogenous and endogenous cannabinoids exert their therapeutic effects."
+    },
+    {
+      "paper_id": 28686,
+      "pmid": "27554802",
+      "title": "Targeting the endocannabinoid system: future therapeutic strategies",
+      "variant": "control",
+      "dry_run": false,
+      "locked_fields": [],
+      "before_confidence": null,
+      "before_classifier_version": "heuristic-reclassify-1.0.0",
+      "status": "updated",
+      "after_confidence": 0.89,
+      "after_classifier_version": "llm-node1-calibration-control-2.4.0",
+      "after_publication_type": "review",
+      "after_study_type": [
+        "review"
+      ],
+      "routing_subnode": "node1b",
+      "changes": {
+        "exposure_method": {
+          "old": "[\"injection cannabinoids\"]",
+          "new": [
+            "unknown"
+          ]
+        }
+      },
+      "llm_metrics": {
+        "model": "claude-sonnet-4-6",
+        "input_tokens": 719,
+        "cache_read_tokens": 5464,
+        "cache_write_tokens": 0,
+        "output_tokens": 276,
+        "cost": 0.0079362,
+        "few_shot_similarity": 0.8,
+        "few_shot_count": 1,
+        "bm25_retrieval_used": 1,
+        "classification_confidence": 0.89,
+        "classifier_version": "2.4.0"
+      },
+      "llm": {
+        "publication_type": "review",
+        "study_type": [
+          "review"
+        ],
+        "exposure_method": [
+          "unknown"
+        ],
+        "cannabis_type": [
+          "unknown"
+        ],
+        "outcome_domain": [
+          "other"
+        ],
+        "ingestion_status": "relevant",
+        "species": null,
+        "classification_confidence": 0.89,
+        "classifier_version": "llm-node1-calibration-control-2.4.0"
+      },
+      "maude": {
+        "publication_type": "review",
+        "study_type": [
+          "review"
+        ],
+        "exposure_method": [],
+        "cannabis_type": [],
+        "outcome_domain": [
+          "other"
+        ],
+        "ingestion_status": "relevant",
+        "species": null,
+        "classification_confidence": 0.84,
+        "classifier_version": "maude-2.4.0",
+        "nodes_visited": [
+          "node0_ingestion",
+          "node1b_reviews"
+        ]
+      },
+      "disagreement": {
+        "fields": {
+          "exposure_method": {
+            "maude": [],
+            "llm": [
+              "unknown"
+            ]
+          },
+          "cannabis_type": {
+            "maude": [],
+            "llm": [
+              "unknown"
+            ]
+          }
+        },
+        "agreed_fields": {
+          "ingestion_status": "relevant",
+          "publication_type": "review",
+          "study_type": [
+            "review"
+          ],
+          "outcome_domain": [
+            "other"
+          ],
+          "species": null
+        },
+        "high_level_count": 2,
+        "promotion_field_count": 0,
+        "flagged_for_review": true,
+        "promotion_fields": []
+      },
+      "flagged_for_review": true,
+      "abstract": "Publication Type: Review. The endocannabinoid system (ECS) is involved in many physiological regulation pathways in the human body, which makes this system the target of many drugs and therapies. In this review, we highlight the latest studies regarding the role of the ECS and the drugs that target it, with a particular focus on the basis for the discovery of new cannabinoid-based drugs. In addition, we propose some key steps, such as the creation of a cannabinoid-receptor interaction matrix (CRIM) and the use of metabolomics, toward the development of improved and more specific drugs for each relevant disease."
+    },
+    {
+      "paper_id": 26119,
+      "pmid": "32709050",
+      "title": "Targeting Cannabinoid Receptors: Current Status and Prospects of Natural Products",
+      "variant": "control",
+      "dry_run": false,
+      "locked_fields": [],
+      "before_confidence": null,
+      "before_classifier_version": "heuristic-reclassify-1.0.0",
+      "status": "updated",
+      "after_confidence": 0.69,
+      "after_classifier_version": "llm-node1-calibration-control-2.4.0",
+      "after_publication_type": "review",
+      "after_study_type": [
+        "review"
+      ],
+      "routing_subnode": "node1b",
+      "changes": {
+        "exposure_method": {
+          "old": "[\"injection cannabinoids\"]",
+          "new": [
+            "unknown"
+          ]
+        },
+        "cannabis_type": {
+          "old": "[\"pure cannabinoid\"]",
+          "new": [
+            "unknown"
+          ]
+        }
+      },
+      "llm_metrics": {
+        "model": "claude-sonnet-4-6",
+        "input_tokens": 1064,
+        "cache_read_tokens": 5464,
+        "cache_write_tokens": 0,
+        "output_tokens": 276,
+        "cost": 0.0089712,
+        "few_shot_similarity": 0.3,
+        "few_shot_count": 1,
+        "bm25_retrieval_used": 1,
+        "classification_confidence": 0.69,
+        "classifier_version": "2.4.0"
+      },
+      "llm": {
+        "publication_type": "review",
+        "study_type": [
+          "review"
+        ],
+        "exposure_method": [
+          "unknown"
+        ],
+        "cannabis_type": [
+          "unknown"
+        ],
+        "outcome_domain": [
+          "other"
+        ],
+        "ingestion_status": "relevant",
+        "species": null,
+        "classification_confidence": 0.69,
+        "classifier_version": "llm-node1-calibration-control-2.4.0"
+      },
+      "maude": {
+        "publication_type": "review",
+        "study_type": [
+          "review",
+          "perspectives paper"
+        ],
+        "exposure_method": [],
+        "cannabis_type": [],
+        "outcome_domain": [
+          "other"
+        ],
+        "ingestion_status": "relevant",
+        "species": null,
+        "classification_confidence": 0.88,
+        "classifier_version": "maude-2.4.0",
+        "nodes_visited": [
+          "node0_ingestion",
+          "node1b_reviews",
+          "node3c"
+        ]
+      },
+      "disagreement": {
+        "fields": {
+          "study_type": {
+            "maude": [
+              "review",
+              "perspectives paper"
+            ],
+            "llm": [
+              "review"
+            ]
+          },
+          "exposure_method": {
+            "maude": [],
+            "llm": [
+              "unknown"
+            ]
+          },
+          "cannabis_type": {
+            "maude": [],
+            "llm": [
+              "unknown"
+            ]
+          }
+        },
+        "agreed_fields": {
+          "ingestion_status": "relevant",
+          "publication_type": "review",
+          "outcome_domain": [
+            "other"
+          ],
+          "species": null
+        },
+        "high_level_count": 3,
+        "promotion_field_count": 1,
+        "flagged_for_review": true,
+        "promotion_fields": [
+          "study_type"
+        ]
+      },
+      "flagged_for_review": true,
+      "abstract": "Publication Type: Review. Cannabinoid receptors (CB1 and CB2), as part of the endocannabinoid system, play a critical role in numerous human physiological and pathological conditions. Thus, considerable efforts have been made to develop ligands for CB1 and CB2, resulting in hundreds of phyto- and synthetic cannabinoids which have shown varying affinities relevant for the treatment of various diseases. However, only a few of these ligands are clinically used. Recently, more detailed structural information for cannabinoid receptors was revealed thanks to the powerfulness of cryo-electron microscopy, which now can accelerate structure-based drug discovery. At the same time, novel peptide-type cannabinoids from animal sources have arrived at the scene, with their potential in vivo therapeutic effects in relation to cannabinoid receptors. From a natural products perspective, it is expected that more novel cannabinoids will be discovered and forecasted as promising drug leads from diverse natural sources and species, such as animal venoms which constitute a true pharmacopeia of toxins modulating diverse targets, including voltage- and ligand-gated ion channels, G protein-coupled receptors such as CB1 and CB2, with astonishing affinity and selectivity. Therefore, it is believed that discovering novel cannabinoids starting from studying the biodiversity of the species living on planet earth is an uncharted territory."
+    },
+    {
+      "paper_id": 16059,
+      "pmid": "32197092",
+      "title": "Psychiatric symptoms caused by cannabis constituents: a systematic review and meta-analysis",
+      "variant": "control",
+      "dry_run": false,
+      "locked_fields": [],
+      "before_confidence": null,
+      "before_classifier_version": "heuristic-reclassify-1.0.0",
+      "status": "updated",
+      "after_confidence": 0.875,
+      "after_classifier_version": "llm-node1-calibration-control-2.4.0",
+      "after_publication_type": "meta-analysis",
+      "after_study_type": [
+        "meta-analysis",
+        "review"
+      ],
+      "routing_subnode": "node3b",
+      "changes": {
+        "study_type": {
+          "old": "[\"meta-analysis\"]",
+          "new": [
+            "meta-analysis",
+            "review"
+          ]
+        },
+        "exposure_method": {
+          "old": "[\"injection cannabinoids\"]",
+          "new": [
+            "injected",
+            "oral",
+            "intranasal"
+          ]
+        },
+        "cannabis_type": {
+          "old": "[\"unknown\"]",
+          "new": [
+            "pure cannabinoid"
+          ]
+        },
+        "outcome_domain": {
+          "old": "[\"other\"]",
+          "new": [
+            "anxiety",
+            "addiction"
+          ]
+        },
+        "administration_frequency": {
+          "old": "acute administration",
+          "new": null
+        },
+        "sample_size": {
+          "old": 196,
+          "new": 324
+        }
+      },
+      "llm_metrics": {
+        "model": "claude-sonnet-4-6",
+        "input_tokens": 1311,
+        "cache_read_tokens": 5464,
+        "cache_write_tokens": 0,
+        "output_tokens": 299,
+        "cost": 0.0100572,
+        "few_shot_similarity": 1.0,
+        "few_shot_count": 1,
+        "bm25_retrieval_used": 1,
+        "classification_confidence": 0.875,
+        "classifier_version": "2.4.0"
+      },
+      "llm": {
+        "publication_type": "review",
+        "study_type": [
+          "meta-analysis",
+          "review"
+        ],
+        "exposure_method": [
+          "injected",
+          "oral",
+          "intranasal"
+        ],
+        "cannabis_type": [
+          "pure cannabinoid"
+        ],
+        "outcome_domain": [
+          "anxiety",
+          "addiction"
+        ],
+        "ingestion_status": "tangential",
+        "species": null,
+        "classification_confidence": 0.875,
+        "classifier_version": "llm-node1-calibration-control-2.4.0"
+      },
+      "maude": {
+        "publication_type": "review",
+        "study_type": [
+          "review",
+          "systematic review"
+        ],
+        "exposure_method": [],
+        "cannabis_type": [],
+        "outcome_domain": [
+          "addiction"
+        ],
+        "ingestion_status": "tangential",
+        "species": null,
+        "classification_confidence": 0.93,
+        "classifier_version": "maude-2.4.0",
+        "nodes_visited": [
+          "node0_ingestion",
+          "node1b_reviews",
+          "node3a"
+        ]
+      },
+      "disagreement": {
+        "fields": {
+          "study_type": {
+            "maude": [
+              "review",
+              "systematic review"
+            ],
+            "llm": [
+              "meta-analysis",
+              "review"
+            ]
+          },
+          "exposure_method": {
+            "maude": [],
+            "llm": [
+              "injected",
+              "oral",
+              "intranasal"
+            ]
+          },
+          "cannabis_type": {
+            "maude": [],
+            "llm": [
+              "pure cannabinoid"
+            ]
+          },
+          "outcome_domain": {
+            "maude": [
+              "addiction"
+            ],
+            "llm": [
+              "anxiety",
+              "addiction"
+            ]
+          }
+        },
+        "agreed_fields": {
+          "ingestion_status": "tangential",
+          "publication_type": "review",
+          "species": null
+        },
+        "high_level_count": 4,
+        "promotion_field_count": 1,
+        "flagged_for_review": true,
+        "promotion_fields": [
+          "study_type"
+        ]
+      },
+      "flagged_for_review": true,
+      "abstract": "Publication Type: Meta-Analysis. BACKGROUND: Approximately 188 million people use cannabis yearly worldwide, and it has recently been legalised in 11 US states, Canada, and Uruguay for recreational use. The potential for increased cannabis use highlights the need to better understand its risks, including the acute induction of psychotic and other psychiatric symptoms. We aimed to investigate the effect of the cannabis constituent \u03949-tetrahydrocannabinol (THC) alone and in combination with cannabidiol (CBD) compared with placebo on psychiatric symptoms in healthy people.\n\nMETHODS: In this systematic review and meta-analysis, we searched MEDLINE, Embase, and PsycINFO for studies published in English between database inception and May 21, 2019, with a within-person, crossover design. Inclusion criteria were studies reporting symptoms using psychiatric scales (the Brief Psychiatric Rating Scale [BPRS] and the Positive and Negative Syndrome Scale [PANSS]) following the acute administration of intravenous, oral, or nasal THC, CBD, and placebo in healthy participants, and presenting data that allowed calculation of standardised mean change (SMC) scores for positive (including delusions and hallucinations), negative (such as blunted affect and amotivation), and general (including depression and anxiety) symptoms. We did a random-effects meta-analysis to assess the main outcomes of the effect sizes for total, positive, and negative PANSS and BPRS scores measured in healthy participants following THC administration versus placebo. Because the number of studies to do a meta-analysis on CBD's moderating effects was insufficient, this outcome was only systematically reviewed. This study is registered with PROSPERO, CRD42019136674.\n\nFINDINGS: 15 eligible studies involving the acute administration of THC and four studies on CBD plus THC administration were identified. Compared with placebo, THC significantly increased total symptom severity with a large effect size (assessed in nine studies, with ten independent samples, involving 196 participants: SMC 1\u00b710 [95% CI 0\u00b792-1\u00b728], p<0\u00b70001); positive symptom severity (assessed in 14 studies, with 15 independent samples, involving 324 participants: SMC 0\u00b791 [95% CI 0\u00b768-1\u00b714], p<0\u00b70001); and negative symptom severity with a large effect size (assessed in 12 studies, with 13 independent samples, involving 267 participants: SMC 0\u00b778 [95% CI 0\u00b759-0\u00b797], p<0\u00b70001). In the systematic review, of the four studies evaluating CBD's effects on THC-induced symptoms, only one identified a significant reduction in symptoms.\n\nINTERPRETATION: A single THC administration induces psychotic, negative, and other psychiatric symptoms with large effect sizes. There is no consistent evidence that CBD induces symptoms or moderates the effects of THC. These findings highlight the potential risks associated with the use of cannabis and other cannabinoids that contain THC for recreational or therapeutic purposes.\n\nFUNDING: UK Medical Research Council, Maudsley Charity, Brain and Behavior Research Foundation, Wellcome Trust, and the UK National Institute for Health Research."
+    },
+    {
+      "paper_id": 8973,
+      "pmid": "37895122",
+      "title": "Plant Extracts as Skin Care and Therapeutic Agents",
+      "variant": "control",
+      "dry_run": false,
+      "locked_fields": [],
+      "before_confidence": null,
+      "before_classifier_version": "heuristic-reclassify-1.0.0",
+      "status": "updated",
+      "after_confidence": 0.72,
+      "after_classifier_version": "llm-node1-calibration-control-2.4.0",
+      "after_publication_type": "review",
+      "after_study_type": [
+        "review"
+      ],
+      "routing_subnode": "node1b",
+      "changes": {
+        "exposure_method": {
+          "old": "[\"injection cannabinoids\"]",
+          "new": [
+            "unknown"
+          ]
+        },
+        "cannabis_type": {
+          "old": "[\"concentrates\"]",
+          "new": [
+            "unknown"
+          ]
+        },
+        "outcome_domain": {
+          "old": "[\"other\"]",
+          "new": [
+            "inflammation"
+          ]
+        }
+      },
+      "llm_metrics": {
+        "model": "claude-sonnet-4-6",
+        "input_tokens": 1149,
+        "cache_read_tokens": 5464,
+        "cache_write_tokens": 0,
+        "output_tokens": 276,
+        "cost": 0.0092262,
+        "few_shot_similarity": 0.4,
+        "few_shot_count": 1,
+        "bm25_retrieval_used": 1,
+        "classification_confidence": 0.72,
+        "classifier_version": "2.4.0"
+      },
+      "llm": {
+        "publication_type": "review",
+        "study_type": [
+          "review"
+        ],
+        "exposure_method": [
+          "unknown"
+        ],
+        "cannabis_type": [
+          "unknown"
+        ],
+        "outcome_domain": [
+          "inflammation"
+        ],
+        "ingestion_status": "relevant",
+        "species": null,
+        "classification_confidence": 0.72,
+        "classifier_version": "llm-node1-calibration-control-2.4.0"
+      },
+      "maude": {
+        "publication_type": "review",
+        "study_type": [
+          "review"
+        ],
+        "exposure_method": [],
+        "cannabis_type": [],
+        "outcome_domain": [
+          "other"
+        ],
+        "ingestion_status": "relevant",
+        "species": null,
+        "classification_confidence": 0.84,
+        "classifier_version": "maude-2.4.0",
+        "nodes_visited": [
+          "node0_ingestion",
+          "node1b_reviews"
+        ]
+      },
+      "disagreement": {
+        "fields": {
+          "exposure_method": {
+            "maude": [],
+            "llm": [
+              "unknown"
+            ]
+          },
+          "cannabis_type": {
+            "maude": [],
+            "llm": [
+              "unknown"
+            ]
+          },
+          "outcome_domain": {
+            "maude": [
+              "other"
+            ],
+            "llm": [
+              "inflammation"
+            ]
+          }
+        },
+        "agreed_fields": {
+          "ingestion_status": "relevant",
+          "publication_type": "review",
+          "study_type": [
+            "review"
+          ],
+          "species": null
+        },
+        "high_level_count": 3,
+        "promotion_field_count": 0,
+        "flagged_for_review": true,
+        "promotion_fields": []
+      },
+      "flagged_for_review": true,
+      "abstract": "Publication Type: Review. Natural ingredients have been used for centuries for skin treatment and care. Interest in the health effects of plants has recently increased due to their safety and applicability in the formulation of pharmaceuticals and cosmetics. Long-known plant materials as well as newly discovered ones are increasingly being used in natural products of plant origin. This review highlights the beneficial effects of plants and plant constituents on the skin, including moisturizing (e.g., Cannabis sativa, Hydrangea serrata, Pradosia mutisii and Carthamus tinctorius), anti-aging (e.g., Aegopodium podagraria, Euphorbia characias, Premna odorata and Warburgia salutaris), antimicrobial (e.g., Betula pendula and Epilobium angustifolium), antioxidant (e.g., Kadsura coccinea, Rosmarinus officinalis, Rubus idaeus and Spatholobus suberectus), anti-inflammatory (e.g., Antidesma thwaitesianum, Helianthus annuus, Oenanthe javanica, Penthorum chinense, Ranunculus bulumei and Zanthoxylum bungeanum), regenerative (e.g., Aloe vera, Angelica polymorpha, Digitaria ciliaris, Glycyrrihza glabra and Marantodes pumilum), wound healing (e.g., Agrimonia eupatoria, Astragalus floccosus, Bursera morelensis, Jatropha neopauciflora and Sapindus mukorossi), photoprotective (e.g., Astragalus gombiformis, Calea fruticose, Euphorbia characias and Posoqueria latifolia) and anti-tyrosinase activity (e.g., Aerva lanata, Bruguiera gymnorhiza, Dodonaea viscosa, Lonicera japonica and Schisandra chinensis), as well as their role as excipients in cosmetics (coloring (e.g., Beta vulgaris, Centaurea cyanus, Hibiscus sabdariffa and Rubia tinctiorum), protective and aromatic agents (e.g., Hyssopus officinalis, Melaleuca alternifolia, Pelargonium graveolens and Verbena officinalis))."
+    },
+    {
+      "paper_id": 27298,
+      "pmid": "30417354",
+      "title": "Medical Cannabis: A plurimillennial history of an evergreen",
+      "variant": "control",
+      "dry_run": false,
+      "locked_fields": [],
+      "before_confidence": null,
+      "before_classifier_version": "heuristic-reclassify-1.0.0",
+      "status": "updated",
+      "after_confidence": 0.9500000000000001,
+      "after_classifier_version": "llm-node1-calibration-control-2.4.0",
+      "after_publication_type": "review",
+      "after_study_type": [
+        "review"
+      ],
+      "routing_subnode": "node1b",
+      "changes": {
+        "exposure_method": {
+          "old": "[\"injection cannabinoids\"]",
+          "new": [
+            "unknown"
+          ]
+        },
+        "outcome_domain": {
+          "old": "[\"other\"]",
+          "new": [
+            "inflammation",
+            "neuroprotection"
+          ]
+        }
+      },
+      "llm_metrics": {
+        "model": "claude-sonnet-4-6",
+        "input_tokens": 803,
+        "cache_read_tokens": 5464,
+        "cache_write_tokens": 0,
+        "output_tokens": 282,
+        "cost": 0.008278200000000001,
+        "few_shot_similarity": 1.0,
+        "few_shot_count": 1,
+        "bm25_retrieval_used": 1,
+        "classification_confidence": 0.9500000000000001,
+        "classifier_version": "2.4.0"
+      },
+      "llm": {
+        "publication_type": "review",
+        "study_type": [
+          "review"
+        ],
+        "exposure_method": [
+          "unknown"
+        ],
+        "cannabis_type": [
+          "unknown"
+        ],
+        "outcome_domain": [
+          "inflammation",
+          "neuroprotection"
+        ],
+        "ingestion_status": "relevant",
+        "species": null,
+        "classification_confidence": 0.9500000000000001,
+        "classifier_version": "llm-node1-calibration-control-2.4.0"
+      },
+      "maude": {
+        "publication_type": "review",
+        "study_type": [
+          "review"
+        ],
+        "exposure_method": [],
+        "cannabis_type": [],
+        "outcome_domain": [
+          "other"
+        ],
+        "ingestion_status": "relevant",
+        "species": null,
+        "classification_confidence": 0.84,
+        "classifier_version": "maude-2.4.0",
+        "nodes_visited": [
+          "node0_ingestion",
+          "node1b_reviews"
+        ]
+      },
+      "disagreement": {
+        "fields": {
+          "exposure_method": {
+            "maude": [],
+            "llm": [
+              "unknown"
+            ]
+          },
+          "cannabis_type": {
+            "maude": [],
+            "llm": [
+              "unknown"
+            ]
+          },
+          "outcome_domain": {
+            "maude": [
+              "other"
+            ],
+            "llm": [
+              "inflammation",
+              "neuroprotection"
+            ]
+          }
+        },
+        "agreed_fields": {
+          "ingestion_status": "relevant",
+          "publication_type": "review",
+          "study_type": [
+            "review"
+          ],
+          "species": null
+        },
+        "high_level_count": 3,
+        "promotion_field_count": 0,
+        "flagged_for_review": true,
+        "promotion_fields": []
+      },
+      "flagged_for_review": true,
+      "abstract": "Publication Type: Review. The history of Cannabis goes along that of humankind, as speculated based on geographical and evolutionary models together with historic data collected to date. Its medical use is several thousand years old, as attested both by archeobotanical evidence of Cannabis remains and written records found in ancient texts from the sacred Vedic foundational texts of Ayurvedic medicine (about 800 before current era [BCE]) to the first known Pharmacopoea, the Chinese \"Shen Nung Pen Ts'ao Ching\" (1 century BCE). In this paper, we retrace the history of Cannabis traveling through the key stages of its diffusion among the most important ancient cultures up to our days, when we are facing a renaissance of its medical employment. We report through the centuries evidence of its use in numerous pathologic conditions especially for its anti-inflammatory, antiseptic, and anticonvulsing properties that support the requirement to direct our present research efforts into the definitive understanding of its efficacy."
+    },
+    {
+      "paper_id": 16786,
+      "pmid": "31013866",
+      "title": "Use of Cannabidiol in the Treatment of Epilepsy: Efficacy and Security in Clinical Trials",
+      "variant": "control",
+      "dry_run": false,
+      "locked_fields": [],
+      "before_confidence": null,
+      "before_classifier_version": "heuristic-reclassify-1.0.0",
+      "status": "updated",
+      "after_confidence": 0.9,
+      "after_classifier_version": "llm-node1-calibration-control-2.4.0",
+      "after_publication_type": "review",
+      "after_study_type": [
+        "review"
+      ],
+      "routing_subnode": "node1b",
+      "changes": {
+        "exposure_method": {
+          "old": "[\"injection cannabinoids\"]",
+          "new": [
+            "oral"
+          ]
+        },
+        "cannabis_type": {
+          "old": "[\"unknown\"]",
+          "new": [
+            "pure cannabinoid"
+          ]
+        },
+        "outcome_domain": {
+          "old": "[\"anxiety\", \"inflammation\", \"neuroprotection\"]",
+          "new": [
+            "neuroprotection"
+          ]
+        }
+      },
+      "llm_metrics": {
+        "model": "claude-sonnet-4-6",
+        "input_tokens": 723,
+        "cache_read_tokens": 5464,
+        "cache_write_tokens": 0,
+        "output_tokens": 282,
+        "cost": 0.0080382,
+        "few_shot_similarity": 1.0,
+        "few_shot_count": 1,
+        "bm25_retrieval_used": 1,
+        "classification_confidence": 0.9,
+        "classifier_version": "2.4.0"
+      },
+      "llm": {
+        "publication_type": "review",
+        "study_type": [
+          "review"
+        ],
+        "exposure_method": [
+          "oral"
+        ],
+        "cannabis_type": [
+          "pure cannabinoid"
+        ],
+        "outcome_domain": [
+          "neuroprotection"
+        ],
+        "ingestion_status": "relevant",
+        "species": null,
+        "classification_confidence": 0.9,
+        "classifier_version": "llm-node1-calibration-control-2.4.0"
+      },
+      "maude": {
+        "publication_type": "review",
+        "study_type": [
+          "review"
+        ],
+        "exposure_method": [],
+        "cannabis_type": [],
+        "outcome_domain": [
+          "anxiety",
+          "inflammation",
+          "neuroprotection"
+        ],
+        "ingestion_status": "relevant",
+        "species": null,
+        "classification_confidence": 0.84,
+        "classifier_version": "maude-2.4.0",
+        "nodes_visited": [
+          "node0_ingestion",
+          "node1b_reviews"
+        ]
+      },
+      "disagreement": {
+        "fields": {
+          "exposure_method": {
+            "maude": [],
+            "llm": [
+              "oral"
+            ]
+          },
+          "cannabis_type": {
+            "maude": [],
+            "llm": [
+              "pure cannabinoid"
+            ]
+          },
+          "outcome_domain": {
+            "maude": [
+              "anxiety",
+              "inflammation",
+              "neuroprotection"
+            ],
+            "llm": [
+              "neuroprotection"
+            ]
+          }
+        },
+        "agreed_fields": {
+          "ingestion_status": "relevant",
+          "publication_type": "review",
+          "study_type": [
+            "review"
+          ],
+          "species": null
+        },
+        "high_level_count": 3,
+        "promotion_field_count": 0,
+        "flagged_for_review": true,
+        "promotion_fields": []
+      },
+      "flagged_for_review": true,
+      "abstract": "Publication Type: Review. Cannabidiol (CBD) is one of the cannabinoids with non-psychotropic action, extracted from Cannabis sativa. CBD is a terpenophenol and it has received a great scientific interest thanks to its medical applications. This compound showed efficacy as anti-seizure, antipsychotic, neuroprotective, antidepressant and anxiolytic. The neuroprotective activity appears linked to its excellent anti-inflammatory and antioxidant properties. The purpose of this paper is to evaluate the use of CBD, in addition to common anti-epileptic drugs, in the severe treatment-resistant epilepsy through an overview of recent literature and clinical trials aimed to study the effects of the CBD treatment in different forms of epilepsy. The results of scientific studies obtained so far the use of CBD in clinical applications could represent hope for patients who are resistant to all conventional anti-epileptic drugs."
+    },
+    {
+      "paper_id": 18588,
+      "pmid": "32026735",
+      "title": "Cannabis use among U.S. adolescents in the Era of Marijuana Legalization: a review of changing use patterns, comorbidity, and health correlates",
+      "variant": "control",
+      "dry_run": false,
+      "locked_fields": [],
+      "before_confidence": null,
+      "before_classifier_version": "heuristic-reclassify-1.0.0",
+      "status": "updated",
+      "after_confidence": 0.9500000000000001,
+      "after_classifier_version": "llm-node1-calibration-control-2.4.0",
+      "after_publication_type": "review",
+      "after_study_type": [
+        "review"
+      ],
+      "routing_subnode": "node1b",
+      "changes": {
+        "exposure_method": {
+          "old": "[\"injection cannabinoids\"]",
+          "new": [
+            "unknown"
+          ]
+        },
+        "outcome_domain": {
+          "old": "[\"addiction\"]",
+          "new": [
+            "cognition",
+            "addiction"
+          ]
+        },
+        "duration_days": {
+          "old": 9125.0,
+          "new": null
+        }
+      },
+      "llm_metrics": {
+        "model": "claude-sonnet-4-6",
+        "input_tokens": 922,
+        "cache_read_tokens": 5464,
+        "cache_write_tokens": 0,
+        "output_tokens": 280,
+        "cost": 0.0086052,
+        "few_shot_similarity": 1.0,
+        "few_shot_count": 1,
+        "bm25_retrieval_used": 1,
+        "classification_confidence": 0.9500000000000001,
+        "classifier_version": "2.4.0"
+      },
+      "llm": {
+        "publication_type": "review",
+        "study_type": [
+          "review"
+        ],
+        "exposure_method": [
+          "unknown"
+        ],
+        "cannabis_type": [
+          "unknown"
+        ],
+        "outcome_domain": [
+          "cognition",
+          "addiction"
+        ],
+        "ingestion_status": "tangential",
+        "species": null,
+        "classification_confidence": 0.9500000000000001,
+        "classifier_version": "llm-node1-calibration-control-2.4.0"
+      },
+      "maude": {
+        "publication_type": "review",
+        "study_type": [
+          "review"
+        ],
+        "exposure_method": [],
+        "cannabis_type": [],
+        "outcome_domain": [
+          "addiction"
+        ],
+        "ingestion_status": "tangential",
+        "species": null,
+        "classification_confidence": 0.84,
+        "classifier_version": "maude-2.4.0",
+        "nodes_visited": [
+          "node0_ingestion",
+          "node1b_reviews"
+        ]
+      },
+      "disagreement": {
+        "fields": {
+          "exposure_method": {
+            "maude": [],
+            "llm": [
+              "unknown"
+            ]
+          },
+          "cannabis_type": {
+            "maude": [],
+            "llm": [
+              "unknown"
+            ]
+          },
+          "outcome_domain": {
+            "maude": [
+              "addiction"
+            ],
+            "llm": [
+              "cognition",
+              "addiction"
+            ]
+          }
+        },
+        "agreed_fields": {
+          "ingestion_status": "tangential",
+          "publication_type": "review",
+          "study_type": [
+            "review"
+          ],
+          "species": null
+        },
+        "high_level_count": 3,
+        "promotion_field_count": 0,
+        "flagged_for_review": true,
+        "promotion_fields": []
+      },
+      "flagged_for_review": true,
+      "abstract": "Publication Type: Review. Abstract Decriminalization, medicalization, and legalization of cannabis use by a majority of U.S. states over the past 25\u2009years have dramatically shifted societal perceptions and use patterns among Americans. How marijuana policy changes have affected population-wide health of U.S. youth and what the downstream public health implications of marijuana legalization are topics of significant debate. Cannabis remains the most commonly used federally illicit psychoactive drug by U.S. adolescents and is the main drug for which U.S. youth present for substance use treatment. Converging evidence indicates that adolescent-onset cannabis exposure is associated with short- and possibly long-term impairments in cognition, worse academic/vocational outcomes, and increased prevalence of psychotic, mood, and addictive disorders. Odds of negative developmental outcomes are increased in youth with early-onset, persistent, high frequency, and high-potency \u0394-9-THC cannabis use, suggesting dose-dependent relationships. Cannabis use disorders are treatable conditions with clear childhood antecedents that respond to targeted prevention and early intervention strategies. This review indicates that marijuana policy changes have had mixed effects on U.S. adolescent health including potential benefits from decriminalization and negative health outcomes evidenced by increases in cannabis-related motor vehicle accidents, emergency department visits, and hospitalizations. Federal and state legislatures should apply a public health framework and consider the possible downstream effects of marijuana policy change on paediatric health."
+    },
+    {
+      "paper_id": 29881,
+      "pmid": "25347455",
+      "title": "Endocannabinoids, related compounds and their metabolic routes",
+      "variant": "control",
+      "dry_run": false,
+      "locked_fields": [],
+      "before_confidence": null,
+      "before_classifier_version": "heuristic-reclassify-1.0.0",
+      "status": "updated",
+      "after_confidence": 0.83,
+      "after_classifier_version": "llm-node1-calibration-control-2.4.0",
+      "after_publication_type": "review",
+      "after_study_type": [
+        "review"
+      ],
+      "routing_subnode": "node1b",
+      "changes": {
+        "exposure_method": {
+          "old": "[\"injection cannabinoids\"]",
+          "new": [
+            "unknown"
+          ]
+        }
+      },
+      "llm_metrics": {
+        "model": "claude-sonnet-4-6",
+        "input_tokens": 786,
+        "cache_read_tokens": 5464,
+        "cache_write_tokens": 0,
+        "output_tokens": 276,
+        "cost": 0.0081372,
+        "few_shot_similarity": 0.6,
+        "few_shot_count": 1,
+        "bm25_retrieval_used": 1,
+        "classification_confidence": 0.83,
+        "classifier_version": "2.4.0"
+      },
+      "llm": {
+        "publication_type": "review",
+        "study_type": [
+          "review"
+        ],
+        "exposure_method": [
+          "unknown"
+        ],
+        "cannabis_type": [
+          "unknown"
+        ],
+        "outcome_domain": [
+          "other"
+        ],
+        "ingestion_status": "relevant",
+        "species": null,
+        "classification_confidence": 0.83,
+        "classifier_version": "llm-node1-calibration-control-2.4.0"
+      },
+      "maude": {
+        "publication_type": "review",
+        "study_type": [
+          "review"
+        ],
+        "exposure_method": [],
+        "cannabis_type": [],
+        "outcome_domain": [
+          "other"
+        ],
+        "ingestion_status": "relevant",
+        "species": null,
+        "classification_confidence": 0.84,
+        "classifier_version": "maude-2.4.0",
+        "nodes_visited": [
+          "node0_ingestion",
+          "node1b_reviews"
+        ]
+      },
+      "disagreement": {
+        "fields": {
+          "exposure_method": {
+            "maude": [],
+            "llm": [
+              "unknown"
+            ]
+          },
+          "cannabis_type": {
+            "maude": [],
+            "llm": [
+              "unknown"
+            ]
+          }
+        },
+        "agreed_fields": {
+          "ingestion_status": "relevant",
+          "publication_type": "review",
+          "study_type": [
+            "review"
+          ],
+          "outcome_domain": [
+            "other"
+          ],
+          "species": null
+        },
+        "high_level_count": 2,
+        "promotion_field_count": 0,
+        "flagged_for_review": true,
+        "promotion_fields": []
+      },
+      "flagged_for_review": true,
+      "abstract": "Publication Type: Review. Endocannabinoids are lipid mediators able to bind to and activate cannabinoid receptors, the primary molecular targets responsible for the pharmacological effects of the \u03949-tetrahydrocannabinol. These bioactive lipids belong mainly to two classes of compounds: N-acylethanolamines and acylesters, being N-arachidonoylethanolamine (AEA) and 2-arachidonoylglycerol (2-AG), respectively, their main representatives. During the last twenty years, an ever growing number of fatty acid derivatives (endocannabinoids and endocannabinoid-like compounds) have been discovered and their activities biological is the subject of intense investigations. Here, the most recent advances, from a therapeutic point of view, on endocannabinoids, related compounds, and their metabolic routes will be reviewed."
+    },
+    {
+      "paper_id": 28190,
+      "pmid": "28611591",
+      "title": "Metabolism of the Endocannabinoid Anandamide: Open Questions after 25 Years",
+      "variant": "control",
+      "dry_run": false,
+      "locked_fields": [],
+      "before_confidence": null,
+      "before_classifier_version": "heuristic-reclassify-1.0.0",
+      "status": "updated",
+      "after_confidence": 0.72,
+      "after_classifier_version": "llm-node1-calibration-control-2.4.0",
+      "after_publication_type": "review",
+      "after_study_type": [
+        "review"
+      ],
+      "routing_subnode": "node1b",
+      "changes": {
+        "exposure_method": {
+          "old": "[\"injection cannabinoids\"]",
+          "new": [
+            "unknown"
+          ]
+        },
+        "cannabis_type": {
+          "old": "[\"concentrates\"]",
+          "new": [
+            "unknown"
+          ]
+        },
+        "duration_days": {
+          "old": 9125.0,
+          "new": null
+        }
+      },
+      "llm_metrics": {
+        "model": "claude-sonnet-4-6",
+        "input_tokens": 783,
+        "cache_read_tokens": 5464,
+        "cache_write_tokens": 0,
+        "output_tokens": 276,
+        "cost": 0.0081282,
+        "few_shot_similarity": 0.4,
+        "few_shot_count": 1,
+        "bm25_retrieval_used": 1,
+        "classification_confidence": 0.72,
+        "classifier_version": "2.4.0"
+      },
+      "llm": {
+        "publication_type": "review",
+        "study_type": [
+          "review"
+        ],
+        "exposure_method": [
+          "unknown"
+        ],
+        "cannabis_type": [
+          "unknown"
+        ],
+        "outcome_domain": [
+          "other"
+        ],
+        "ingestion_status": "relevant",
+        "species": null,
+        "classification_confidence": 0.72,
+        "classifier_version": "llm-node1-calibration-control-2.4.0"
+      },
+      "maude": {
+        "publication_type": "review",
+        "study_type": [
+          "review"
+        ],
+        "exposure_method": [],
+        "cannabis_type": [],
+        "outcome_domain": [
+          "other"
+        ],
+        "ingestion_status": "relevant",
+        "species": null,
+        "classification_confidence": 0.84,
+        "classifier_version": "maude-2.4.0",
+        "nodes_visited": [
+          "node0_ingestion",
+          "node1b_reviews"
+        ]
+      },
+      "disagreement": {
+        "fields": {
+          "exposure_method": {
+            "maude": [],
+            "llm": [
+              "unknown"
+            ]
+          },
+          "cannabis_type": {
+            "maude": [],
+            "llm": [
+              "unknown"
+            ]
+          }
+        },
+        "agreed_fields": {
+          "ingestion_status": "relevant",
+          "publication_type": "review",
+          "study_type": [
+            "review"
+          ],
+          "outcome_domain": [
+            "other"
+          ],
+          "species": null
+        },
+        "high_level_count": 2,
+        "promotion_field_count": 0,
+        "flagged_for_review": true,
+        "promotion_fields": []
+      },
+      "flagged_for_review": true,
+      "abstract": "Publication Type: Review. Cannabis extracts have been used for centuries, but its main active principle \u22069-tetrahydrocannabinol (THC) was identified about 50 years ago. Yet, it is only 25 years ago that the first endogenous ligand of the same receptors engaged by the cannabis agents was discovered. This \"endocannabinoid (eCB)\" was identified as N-arachidonoylethanolamine (or anandamide (AEA)), and was shown to have several receptors, metabolic enzymes and transporters that altogether drive its biological activity. Here I report on the latest advances about AEA metabolism, with the aim of focusing open questions still awaiting an answer for a deeper understanding of AEA activity, and for translating AEA-based drugs into novel therapeutics for human diseases."
+    },
+    {
+      "paper_id": 18574,
+      "pmid": "34021274",
+      "title": "Cannabis and synaptic reprogramming of the developing brain",
+      "variant": "control",
+      "dry_run": false,
+      "locked_fields": [],
+      "before_confidence": null,
+      "before_classifier_version": "heuristic-reclassify-1.0.0",
+      "status": "updated",
+      "after_confidence": 0.9500000000000001,
+      "after_classifier_version": "llm-node1-calibration-control-2.4.0",
+      "after_publication_type": "review",
+      "after_study_type": [
+        "review"
+      ],
+      "routing_subnode": "node1b",
+      "changes": {
+        "exposure_method": {
+          "old": "[\"injection cannabinoids\"]",
+          "new": [
+            "unknown"
+          ]
+        },
+        "outcome_domain": {
+          "old": "[\"other\"]",
+          "new": [
+            "neuroprotection"
+          ]
+        }
+      },
+      "llm_metrics": {
+        "model": "claude-sonnet-4-6",
+        "input_tokens": 588,
+        "cache_read_tokens": 5464,
+        "cache_write_tokens": 0,
+        "output_tokens": 279,
+        "cost": 0.0075882,
+        "few_shot_similarity": 1.0,
+        "few_shot_count": 1,
+        "bm25_retrieval_used": 1,
+        "classification_confidence": 0.9500000000000001,
+        "classifier_version": "2.4.0"
+      },
+      "llm": {
+        "publication_type": "review",
+        "study_type": [
+          "review"
+        ],
+        "exposure_method": [
+          "unknown"
+        ],
+        "cannabis_type": [
+          "unknown"
+        ],
+        "outcome_domain": [
+          "neuroprotection"
+        ],
+        "ingestion_status": "relevant",
+        "species": null,
+        "classification_confidence": 0.9500000000000001,
+        "classifier_version": "llm-node1-calibration-control-2.4.0"
+      },
+      "maude": {
+        "publication_type": "review",
+        "study_type": [
+          "review"
+        ],
+        "exposure_method": [],
+        "cannabis_type": [],
+        "outcome_domain": [
+          "other"
+        ],
+        "ingestion_status": "relevant",
+        "species": null,
+        "classification_confidence": 0.84,
+        "classifier_version": "maude-2.4.0",
+        "nodes_visited": [
+          "node0_ingestion",
+          "node1b_reviews"
+        ]
+      },
+      "disagreement": {
+        "fields": {
+          "exposure_method": {
+            "maude": [],
+            "llm": [
+              "unknown"
+            ]
+          },
+          "cannabis_type": {
+            "maude": [],
+            "llm": [
+              "unknown"
+            ]
+          },
+          "outcome_domain": {
+            "maude": [
+              "other"
+            ],
+            "llm": [
+              "neuroprotection"
+            ]
+          }
+        },
+        "agreed_fields": {
+          "ingestion_status": "relevant",
+          "publication_type": "review",
+          "study_type": [
+            "review"
+          ],
+          "species": null
+        },
+        "high_level_count": 3,
+        "promotion_field_count": 0,
+        "flagged_for_review": true,
+        "promotion_fields": []
+      },
+      "flagged_for_review": true,
+      "abstract": "Publication Type: Review. "
+    },
+    {
+      "paper_id": 18590,
+      "pmid": "32752884",
+      "title": "Medical Marijuana, Recreational Cannabis, and Cardiovascular Health: A Scientific Statement From the American Heart Association.",
+      "variant": "control",
+      "dry_run": false,
+      "locked_fields": [],
+      "before_confidence": null,
+      "before_classifier_version": "heuristic-reclassify-1.0.0",
+      "status": "updated",
+      "after_confidence": 0.9500000000000001,
+      "after_classifier_version": "llm-node1-calibration-control-2.4.0",
+      "after_publication_type": "review",
+      "after_study_type": [
+        "review"
+      ],
+      "routing_subnode": "node1b",
+      "changes": {
+        "exposure_method": {
+          "old": "[\"injection cannabinoids\"]",
+          "new": [
+            "unknown"
+          ]
+        },
+        "duration_days": {
+          "old": 9125.0,
+          "new": null
+        }
+      },
+      "llm_metrics": {
+        "model": "claude-sonnet-4-6",
+        "input_tokens": 840,
+        "cache_read_tokens": 5464,
+        "cache_write_tokens": 0,
+        "output_tokens": 276,
+        "cost": 0.008299200000000001,
+        "few_shot_similarity": 1.0,
+        "few_shot_count": 1,
+        "bm25_retrieval_used": 1,
+        "classification_confidence": 0.9500000000000001,
+        "classifier_version": "2.4.0"
+      },
+      "llm": {
+        "publication_type": "review",
+        "study_type": [
+          "review"
+        ],
+        "exposure_method": [
+          "unknown"
+        ],
+        "cannabis_type": [
+          "unknown"
+        ],
+        "outcome_domain": [
+          "other"
+        ],
+        "ingestion_status": "tangential",
+        "species": null,
+        "classification_confidence": 0.9500000000000001,
+        "classifier_version": "llm-node1-calibration-control-2.4.0"
+      },
+      "maude": {
+        "publication_type": "review",
+        "study_type": [
+          "review",
+          "perspectives paper"
+        ],
+        "exposure_method": [],
+        "cannabis_type": [],
+        "outcome_domain": [
+          "other"
+        ],
+        "ingestion_status": "tangential",
+        "species": null,
+        "classification_confidence": 0.88,
+        "classifier_version": "maude-2.4.0",
+        "nodes_visited": [
+          "node0_ingestion",
+          "node1b_reviews",
+          "node3c"
+        ]
+      },
+      "disagreement": {
+        "fields": {
+          "study_type": {
+            "maude": [
+              "review",
+              "perspectives paper"
+            ],
+            "llm": [
+              "review"
+            ]
+          },
+          "exposure_method": {
+            "maude": [],
+            "llm": [
+              "unknown"
+            ]
+          },
+          "cannabis_type": {
+            "maude": [],
+            "llm": [
+              "unknown"
+            ]
+          }
+        },
+        "agreed_fields": {
+          "ingestion_status": "tangential",
+          "publication_type": "review",
+          "outcome_domain": [
+            "other"
+          ],
+          "species": null
+        },
+        "high_level_count": 3,
+        "promotion_field_count": 1,
+        "flagged_for_review": true,
+        "promotion_fields": [
+          "study_type"
+        ]
+      },
+      "flagged_for_review": true,
+      "abstract": "Publication Type: Review. Cannabis, or marijuana, has potential therapeutic and medicinal properties related to multiple compounds, particularly \u0394-9-tetrahydrocannabinol and cannabidiol. Over the past 25 years, attitudes toward cannabis have evolved rapidly, with expanding legalization of medical and recreational use at the state level in the United States and recreational use nationally in Canada and Uruguay. As a result, the consumption of cannabis products is increasing considerably, particularly among youth. Our understanding of the safety and efficacy of cannabis has been limited by decades of worldwide illegality and continues to be limited in the United States by the ongoing classification of cannabis as a Schedule 1 controlled substance. These shifts in cannabis use require clinicians to understand conflicting laws, health implications, and therapeutic possibilities. Cannabis may have therapeutic benefits, but few are cardiovascular in nature. Conversely, many of the concerning health implications of cannabis include cardiovascular diseases, although they may be mediated by mechanisms of delivery. This statement critically reviews the use of medicinal and recreational cannabis from a clinical but also a policy and public health perspective by evaluating its safety and efficacy profile, particularly in relationship to cardiovascular health."
+    },
+    {
+      "paper_id": 17330,
+      "pmid": "34676324",
+      "title": "The Trouble with CBD Oil",
+      "variant": "control",
+      "dry_run": false,
+      "locked_fields": [],
+      "before_confidence": null,
+      "before_classifier_version": "llm-reclassify-1.0.0",
+      "status": "updated",
+      "after_confidence": 0.76,
+      "after_classifier_version": "llm-node1-calibration-control-2.4.0",
+      "after_publication_type": "review",
+      "after_study_type": [
+        "review"
+      ],
+      "routing_subnode": "node1b",
+      "changes": {},
+      "llm_metrics": {
+        "model": "claude-sonnet-4-6",
+        "input_tokens": 853,
+        "cache_read_tokens": 5464,
+        "cache_write_tokens": 0,
+        "output_tokens": 279,
+        "cost": 0.0083832,
+        "few_shot_similarity": 0.7,
+        "few_shot_count": 1,
+        "bm25_retrieval_used": 1,
+        "classification_confidence": 0.76,
+        "classifier_version": "2.4.0"
+      },
+      "llm": {
+        "publication_type": "review",
+        "study_type": [
+          "review"
+        ],
+        "exposure_method": [
+          "unknown"
+        ],
+        "cannabis_type": [
+          "pure cannabinoid"
+        ],
+        "outcome_domain": [
+          "other"
+        ],
+        "ingestion_status": "tangential",
+        "species": null,
+        "classification_confidence": 0.76,
+        "classifier_version": "llm-node1-calibration-control-2.4.0"
+      },
+      "maude": {
+        "publication_type": "review",
+        "study_type": [
+          "review"
+        ],
+        "exposure_method": [],
+        "cannabis_type": [],
+        "outcome_domain": [
+          "other"
+        ],
+        "ingestion_status": "tangential",
+        "species": null,
+        "classification_confidence": 0.84,
+        "classifier_version": "maude-2.4.0",
+        "nodes_visited": [
+          "node0_ingestion",
+          "node1b_reviews"
+        ]
+      },
+      "disagreement": {
+        "fields": {
+          "exposure_method": {
+            "maude": [],
+            "llm": [
+              "unknown"
+            ]
+          },
+          "cannabis_type": {
+            "maude": [],
+            "llm": [
+              "pure cannabinoid"
+            ]
+          }
+        },
+        "agreed_fields": {
+          "ingestion_status": "tangential",
+          "publication_type": "review",
+          "study_type": [
+            "review"
+          ],
+          "outcome_domain": [
+            "other"
+          ],
+          "species": null
+        },
+        "high_level_count": 2,
+        "promotion_field_count": 0,
+        "flagged_for_review": true,
+        "promotion_fields": []
+      },
+      "flagged_for_review": true,
+      "abstract": "In just a few years, cannabidiol (CBD) has become immensely popular around the world. After initially being discovered as an effective self-medication for Dravet syndrome in children, CBD is now sold and used to treat a wide range of medical conditions and lifestyle diseases. The cannabinoid CBD, a non-psychoactive isomer of the more infamous tetrahydrocannabinol (THC), is available in a growing number of administration modes, but the most commonly known is CBD oil. There are currently dozens, if not hundreds, of producers and sellers of CBD oils active in the market, and their number is increasing rapidly. Those involved vary from individuals who prepare oils on a small scale for family and (Facebook) friends to compounding pharmacies, pharmaceutical companies, and licensed cannabis producers. Despite the growing availability of CBD, many uncertainties remain about the legality, quality, and safety of this new \"miracle cure.\" As a result, CBD is under scrutiny on many levels, ranging from national health organizations and agricultural lobbyists to the WHO and FDA. The central question is whether CBD is simply a food supplement, an investigational new medicine, or even a narcotic. This overview paper looks into the known risks and issues related to the composition of CBD products, and makes recommendations for better regulatory control based on accurate labeling and more scientifically supported health claims. The intention of this paper is to create a better understanding of the benefits versus the risks of the current way CBD products are produced, used, and advertised."
+    },
+    {
+      "paper_id": 30453,
+      "pmid": "24228165",
+      "title": "The endocannabinoid system, cannabinoids, and pain",
+      "variant": "control",
+      "dry_run": false,
+      "locked_fields": [],
+      "before_confidence": null,
+      "before_classifier_version": "heuristic-reclassify-1.0.0",
+      "status": "updated",
+      "after_confidence": 0.83,
+      "after_classifier_version": "llm-node1-calibration-control-2.4.0",
+      "after_publication_type": "review",
+      "after_study_type": [
+        "review"
+      ],
+      "routing_subnode": "node1b",
+      "changes": {
+        "exposure_method": {
+          "old": "[\"injection cannabinoids\"]",
+          "new": [
+            "unknown"
+          ]
+        }
+      },
+      "llm_metrics": {
+        "model": "claude-sonnet-4-6",
+        "input_tokens": 818,
+        "cache_read_tokens": 5464,
+        "cache_write_tokens": 0,
+        "output_tokens": 279,
+        "cost": 0.008278200000000001,
+        "few_shot_similarity": 0.6,
+        "few_shot_count": 1,
+        "bm25_retrieval_used": 1,
+        "classification_confidence": 0.83,
+        "classifier_version": "2.4.0"
+      },
+      "llm": {
+        "publication_type": "review",
+        "study_type": [
+          "review"
+        ],
+        "exposure_method": [
+          "unknown"
+        ],
+        "cannabis_type": [
+          "unknown"
+        ],
+        "outcome_domain": [
+          "pain",
+          "inflammation"
+        ],
+        "ingestion_status": "tangential",
+        "species": null,
+        "classification_confidence": 0.83,
+        "classifier_version": "llm-node1-calibration-control-2.4.0"
+      },
+      "maude": {
+        "publication_type": "review",
+        "study_type": [
+          "review"
+        ],
+        "exposure_method": [],
+        "cannabis_type": [],
+        "outcome_domain": [
+          "pain",
+          "inflammation"
+        ],
+        "ingestion_status": "tangential",
+        "species": null,
+        "classification_confidence": 0.84,
+        "classifier_version": "maude-2.4.0",
+        "nodes_visited": [
+          "node0_ingestion",
+          "node1b_reviews"
+        ]
+      },
+      "disagreement": {
+        "fields": {
+          "exposure_method": {
+            "maude": [],
+            "llm": [
+              "unknown"
+            ]
+          },
+          "cannabis_type": {
+            "maude": [],
+            "llm": [
+              "unknown"
+            ]
+          }
+        },
+        "agreed_fields": {
+          "ingestion_status": "tangential",
+          "publication_type": "review",
+          "study_type": [
+            "review"
+          ],
+          "outcome_domain": [
+            "pain",
+            "inflammation"
+          ],
+          "species": null
+        },
+        "high_level_count": 2,
+        "promotion_field_count": 0,
+        "flagged_for_review": true,
+        "promotion_fields": []
+      },
+      "flagged_for_review": true,
+      "abstract": "The endocannabinoid system is involved in a host of homeostatic and physiologic functions, including modulation of pain and inflammation. The specific roles of currently identified endocannabinoids that act as ligands at endogenous cannabinoid receptors within the central nervous system (primarily but not exclusively CB 1 receptors) and in the periphery (primarily but not exclusively CB 2 receptors) are only partially elucidated, but they do exert an influence on nociception. Exogenous plant-based cannabinoids (phytocannabinoids) and chemically related compounds, like the terpenes, commonly found in many foods, have been found to exert significant analgesic effects in various chronic pain conditions. Currently, the use of \u03949-tetrahydrocannabinol is limited by its psychoactive effects and predominant delivery route (smoking), as well as regulatory or legal constraints. However, other phytocannabinoids in combination, especially cannabidiol and \u03b2-caryophyllene, delivered by the oral route appear to be promising candidates for the treatment of chronic pain due to their high safety and low adverse effects profiles. This review will provide the reader with the foundational basic and clinical science linking the endocannabinoid system and the phytocannabinoids with their potentially therapeutic role in the management of chronic pain."
+    },
+    {
+      "paper_id": 28788,
+      "pmid": "28861491",
+      "title": "Clinical Endocannabinoid Deficiency Reconsidered: Current Research Supports the Theory in Migraine, Fibromyalgia, Irritable Bowel, and Other Treatment-Resistant Syndromes",
+      "variant": "control",
+      "dry_run": false,
+      "locked_fields": [],
+      "before_confidence": null,
+      "before_classifier_version": "heuristic-reclassify-1.0.0",
+      "status": "updated",
+      "after_confidence": 0.74,
+      "after_classifier_version": "llm-node1-calibration-control-2.4.0",
+      "after_publication_type": "review",
+      "after_study_type": [
+        "review"
+      ],
+      "routing_subnode": "node1b",
+      "changes": {
+        "exposure_method": {
+          "old": "[\"injection cannabinoids\"]",
+          "new": [
+            "unknown"
+          ]
+        },
+        "outcome_domain": {
+          "old": "[\"pain\"]",
+          "new": [
+            "pain",
+            "anxiety",
+            "sleep"
+          ]
+        }
+      },
+      "llm_metrics": {
+        "model": "claude-sonnet-4-6",
+        "input_tokens": 974,
+        "cache_read_tokens": 5464,
+        "cache_write_tokens": 0,
+        "output_tokens": 282,
+        "cost": 0.0087912,
+        "few_shot_similarity": 0.3,
+        "few_shot_count": 1,
+        "bm25_retrieval_used": 1,
+        "classification_confidence": 0.74,
+        "classifier_version": "2.4.0"
+      },
+      "llm": {
+        "publication_type": "review",
+        "study_type": [
+          "review"
+        ],
+        "exposure_method": [
+          "unknown"
+        ],
+        "cannabis_type": [
+          "unknown"
+        ],
+        "outcome_domain": [
+          "pain",
+          "anxiety",
+          "sleep"
+        ],
+        "ingestion_status": "relevant",
+        "species": null,
+        "classification_confidence": 0.74,
+        "classifier_version": "llm-node1-calibration-control-2.4.0"
+      },
+      "maude": {
+        "publication_type": "review",
+        "study_type": [
+          "review"
+        ],
+        "exposure_method": [],
+        "cannabis_type": [],
+        "outcome_domain": [
+          "pain"
+        ],
+        "ingestion_status": "relevant",
+        "species": null,
+        "classification_confidence": 0.84,
+        "classifier_version": "maude-2.4.0",
+        "nodes_visited": [
+          "node0_ingestion",
+          "node1b_reviews"
+        ]
+      },
+      "disagreement": {
+        "fields": {
+          "exposure_method": {
+            "maude": [],
+            "llm": [
+              "unknown"
+            ]
+          },
+          "cannabis_type": {
+            "maude": [],
+            "llm": [
+              "unknown"
+            ]
+          },
+          "outcome_domain": {
+            "maude": [
+              "pain"
+            ],
+            "llm": [
+              "pain",
+              "anxiety",
+              "sleep"
+            ]
+          }
+        },
+        "agreed_fields": {
+          "ingestion_status": "relevant",
+          "publication_type": "review",
+          "study_type": [
+            "review"
+          ],
+          "species": null
+        },
+        "high_level_count": 3,
+        "promotion_field_count": 0,
+        "flagged_for_review": true,
+        "promotion_fields": []
+      },
+      "flagged_for_review": true,
+      "abstract": "Publication Type: Review. Medicine continues to struggle in its approaches to numerous common subjective pain syndromes that lack objective signs and remain treatment resistant. Foremost among these are migraine, fibromyalgia, and irritable bowel syndrome, disorders that may overlap in their affected populations and whose sufferers have all endured the stigma of a psychosomatic label, as well as the failure of endless pharmacotherapeutic interventions with substandard benefit. The commonality in symptomatology in these conditions displaying hyperalgesia and central sensitization with possible common underlying pathophysiology suggests that a clinical endocannabinoid deficiency might characterize their origin. Its base hypothesis is that all humans have an underlying endocannabinoid tone that is a reflection of levels of the endocannabinoids, anandamide (arachidonylethanolamide), and 2-arachidonoylglycerol, their production, metabolism, and the relative abundance and state of cannabinoid receptors. Its theory is that in certain conditions, whether congenital or acquired, endocannabinoid tone becomes deficient and productive of pathophysiological syndromes. When first proposed in 2001 and subsequently, this theory was based on genetic overlap and comorbidity, patterns of symptomatology that could be mediated by the endocannabinoid system (ECS), and the fact that exogenous cannabinoid treatment frequently provided symptomatic benefit. However, objective proof and formal clinical trial data were lacking. Currently, however, statistically significant differences in cerebrospinal fluid anandamide levels have been documented in migraineurs, and advanced imaging studies have demonstrated ECS hypofunction in post-traumatic stress disorder. Additional studies have provided a firmer foundation for the theory, while clinical data have also produced evidence for decreased pain, improved sleep, and other benefits to cannabinoid treatment and adjunctive lifestyle approaches affecting the ECS."
+    },
+    {
+      "paper_id": 15881,
+      "pmid": "32504461",
+      "title": "Critical Aspects Affecting Cannabidiol Oral Bioavailability and Metabolic Elimination, and Related Clinical Implications",
+      "variant": "control",
+      "dry_run": false,
+      "locked_fields": [],
+      "before_confidence": null,
+      "before_classifier_version": "heuristic-reclassify-1.0.0",
+      "status": "updated",
+      "after_confidence": 0.870000012,
+      "after_classifier_version": "llm-node1-calibration-control-2.4.0",
+      "after_publication_type": "review",
+      "after_study_type": [
+        "review"
+      ],
+      "routing_subnode": "node1b",
+      "changes": {
+        "exposure_method": {
+          "old": "[\"injection cannabinoids\"]",
+          "new": [
+            "oral"
+          ]
+        },
+        "cannabis_type": {
+          "old": "[\"unknown\"]",
+          "new": [
+            "pure cannabinoid"
+          ]
+        },
+        "dose_mg": {
+          "old": null,
+          "new": 20.0
+        },
+        "sample_size": {
+          "old": null,
+          "new": 5
+        }
+      },
+      "llm_metrics": {
+        "model": "claude-sonnet-4-6",
+        "input_tokens": 999,
+        "cache_read_tokens": 5464,
+        "cache_write_tokens": 0,
+        "output_tokens": 283,
+        "cost": 0.0088812,
+        "few_shot_similarity": 0.90000004,
+        "few_shot_count": 1,
+        "bm25_retrieval_used": 1,
+        "classification_confidence": 0.870000012,
+        "classifier_version": "2.4.0"
+      },
+      "llm": {
+        "publication_type": "review",
+        "study_type": [
+          "review"
+        ],
+        "exposure_method": [
+          "oral"
+        ],
+        "cannabis_type": [
+          "pure cannabinoid"
+        ],
+        "outcome_domain": [
+          "other"
+        ],
+        "ingestion_status": "relevant",
+        "species": null,
+        "classification_confidence": 0.870000012,
+        "classifier_version": "llm-node1-calibration-control-2.4.0"
+      },
+      "maude": {
+        "publication_type": "review",
+        "study_type": [
+          "review"
+        ],
+        "exposure_method": [],
+        "cannabis_type": [],
+        "outcome_domain": [
+          "other"
+        ],
+        "ingestion_status": "relevant",
+        "species": null,
+        "classification_confidence": 0.84,
+        "classifier_version": "maude-2.4.0",
+        "nodes_visited": [
+          "node0_ingestion",
+          "node1b_reviews"
+        ]
+      },
+      "disagreement": {
+        "fields": {
+          "exposure_method": {
+            "maude": [],
+            "llm": [
+              "oral"
+            ]
+          },
+          "cannabis_type": {
+            "maude": [],
+            "llm": [
+              "pure cannabinoid"
+            ]
+          }
+        },
+        "agreed_fields": {
+          "ingestion_status": "relevant",
+          "publication_type": "review",
+          "study_type": [
+            "review"
+          ],
+          "outcome_domain": [
+            "other"
+          ],
+          "species": null
+        },
+        "high_level_count": 2,
+        "promotion_field_count": 0,
+        "flagged_for_review": true,
+        "promotion_fields": []
+      },
+      "flagged_for_review": true,
+      "abstract": "Publication Type: Review. This article provides a critical appraisal of the available evidence concerning clinical exposure to orally administered cannabidiol (CBD), with special reference to factors affecting gastrointestinal absorption, presystemic elimination, and susceptibility to metabolic drug interactions. Although detailed studies have not been published, the available data suggest that the absolute bioavailability of CBD after oral dosing under fasting conditions is approximately 6%, and increases fourfold when the medication is co-administered with a high-fat meal. Based on measurements of CBD plasma exposure after oral dosing and a 6% absolute oral bioavailability estimate, the actual clearance of CBD in adults can be inferred to be in the order of 67\u00a0L/h, which is similar to the value of 74\u2009\u00b1\u200914\u00a0L/h (mean\u2009\u00b1\u2009standard deviation) determined after intravenous injection of a 20-mg dose of deuterium-labeled CBD in five healthy subjects. Assuming that the CBD blood-to-plasma ratio is about 1, as in the case of tetrahydrocannabinol (THC), and that CBD metabolism takes place virtually entirely in the liver, it can be estimated that about 70 to 75% of an orally absorbed dose of CBD can be removed by hepatic metabolism before reaching the systemic circulation, and additionally CBD gastrointestinal absorption is incomplete. A formulation with improved biopharmaceutical properties could increase the extent of CBD absorption about fourfold (i.e., to the level achieved with the currently available formulations co-administered with a high-fat meal) and minimize the influence of food effects on CBD bioavailability. There is also potential for favoring the absorption of CBD through the enteric lymphatic system, thereby reducing the extent of presystemic hepatic elimination. Evidence that CBD can behave as a high hepatic clearance compound also has implications when predicting the magnitude of drug-drug interactions affecting CBD metabolism. These considerations have important clinical relevance, particularly with respect to the objective of minimizing pharmacokinetic variability and consequent intra- and interindividual differences in therapeutic response and susceptibility to adverse effects."
+    },
+    {
+      "paper_id": 30855,
+      "pmid": "23474290",
+      "title": "Endogenous cannabinoids revisited: a biochemistry perspective",
+      "variant": "control",
+      "dry_run": false,
+      "locked_fields": [],
+      "before_confidence": null,
+      "before_classifier_version": "heuristic-reclassify-1.0.0",
+      "status": "updated",
+      "after_confidence": 0.83,
+      "after_classifier_version": "llm-node1-calibration-control-2.4.0",
+      "after_publication_type": "review",
+      "after_study_type": [
+        "review"
+      ],
+      "routing_subnode": "node1b",
+      "changes": {
+        "exposure_method": {
+          "old": "[\"injection cannabinoids\"]",
+          "new": [
+            "unknown"
+          ]
+        }
+      },
+      "llm_metrics": {
+        "model": "claude-sonnet-4-6",
+        "input_tokens": 816,
+        "cache_read_tokens": 5464,
+        "cache_write_tokens": 0,
+        "output_tokens": 276,
+        "cost": 0.0082272,
+        "few_shot_similarity": 0.6,
+        "few_shot_count": 1,
+        "bm25_retrieval_used": 1,
+        "classification_confidence": 0.83,
+        "classifier_version": "2.4.0"
+      },
+      "llm": {
+        "publication_type": "review",
+        "study_type": [
+          "review"
+        ],
+        "exposure_method": [
+          "unknown"
+        ],
+        "cannabis_type": [
+          "unknown"
+        ],
+        "outcome_domain": [
+          "other"
+        ],
+        "ingestion_status": "tangential",
+        "species": null,
+        "classification_confidence": 0.83,
+        "classifier_version": "llm-node1-calibration-control-2.4.0"
+      },
+      "maude": {
+        "publication_type": "review",
+        "study_type": [
+          "review",
+          "perspectives paper"
+        ],
+        "exposure_method": [],
+        "cannabis_type": [],
+        "outcome_domain": [
+          "other"
+        ],
+        "ingestion_status": "tangential",
+        "species": null,
+        "classification_confidence": 0.88,
+        "classifier_version": "maude-2.4.0",
+        "nodes_visited": [
+          "node0_ingestion",
+          "node1b_reviews",
+          "node3c"
+        ]
+      },
+      "disagreement": {
+        "fields": {
+          "study_type": {
+            "maude": [
+              "review",
+              "perspectives paper"
+            ],
+            "llm": [
+              "review"
+            ]
+          },
+          "exposure_method": {
+            "maude": [],
+            "llm": [
+              "unknown"
+            ]
+          },
+          "cannabis_type": {
+            "maude": [],
+            "llm": [
+              "unknown"
+            ]
+          }
+        },
+        "agreed_fields": {
+          "ingestion_status": "tangential",
+          "publication_type": "review",
+          "outcome_domain": [
+            "other"
+          ],
+          "species": null
+        },
+        "high_level_count": 3,
+        "promotion_field_count": 1,
+        "flagged_for_review": true,
+        "promotion_fields": [
+          "study_type"
+        ]
+      },
+      "flagged_for_review": true,
+      "abstract": "Publication Type: Review. Marijuana is the most commonly used illegal drug, particularly in Western societies. The discovery of an endogenous cannabinoid system (ECS) highlighted new molecules in various physiological processes. The ECS consists of G-protein-coupled cannabinoid receptors that can be activated by small lipid mediators, termed endocannabinoids (eCBs) and cannabis-derived drugs, plus the associated biochemical machinery (precursors, synthesis and degradative enzymes, and transporters). Several biochemical, pharmacological and physiological studies have shown that endocannabinoid system elements are widely distributed throughout the body, with regional variations and organ-specific actions. This review portrays the endocannabinoid \"family\" on new studies concerning eCB storage, release and functional roles and on the growing importance of its bioactive metabolites. Those findings reinforce and confirm the importance of ECS. Strategies for manipulating the system for the treatment of human disease will require a thorough understanding of the roles of the different eCBs and their sources."
+    },
+    {
+      "paper_id": 26213,
+      "pmid": "32530350",
+      "title": "The synthetic cannabinoids phenomenon: from structure to toxicological properties. A review",
+      "variant": "control",
+      "dry_run": false,
+      "locked_fields": [],
+      "before_confidence": null,
+      "before_classifier_version": "heuristic-reclassify-1.0.0",
+      "status": "updated",
+      "after_confidence": 0.7325,
+      "after_classifier_version": "llm-node1-calibration-control-2.4.0",
+      "after_publication_type": "review",
+      "after_study_type": [
+        "review"
+      ],
+      "routing_subnode": "node1b",
+      "changes": {
+        "exposure_method": {
+          "old": "[\"injection cannabinoids\"]",
+          "new": [
+            "unknown"
+          ]
+        },
+        "cannabis_type": {
+          "old": "[\"dried flower\", \"pure cannabinoid\"]",
+          "new": [
+            "CB receptor agonist",
+            "vape pen",
+            "dried flower"
+          ]
+        },
+        "outcome_domain": {
+          "old": "[\"other\"]",
+          "new": [
+            "addiction",
+            "other"
+          ]
+        }
+      },
+      "llm_metrics": {
+        "model": "claude-sonnet-4-6",
+        "input_tokens": 1048,
+        "cache_read_tokens": 5464,
+        "cache_write_tokens": 0,
+        "output_tokens": 292,
+        "cost": 0.009163200000000002,
+        "few_shot_similarity": 0.4,
+        "few_shot_count": 1,
+        "bm25_retrieval_used": 1,
+        "classification_confidence": 0.7325,
+        "classifier_version": "2.4.0"
+      },
+      "llm": {
+        "publication_type": "review",
+        "study_type": [
+          "review"
+        ],
+        "exposure_method": [
+          "unknown"
+        ],
+        "cannabis_type": [
+          "CB receptor agonist",
+          "vape pen",
+          "dried flower"
+        ],
+        "outcome_domain": [
+          "addiction",
+          "other"
+        ],
+        "ingestion_status": "tangential",
+        "species": null,
+        "classification_confidence": 0.7325,
+        "classifier_version": "llm-node1-calibration-control-2.4.0"
+      },
+      "maude": {
+        "publication_type": "review",
+        "study_type": [
+          "review"
+        ],
+        "exposure_method": [],
+        "cannabis_type": [],
+        "outcome_domain": [
+          "other"
+        ],
+        "ingestion_status": "tangential",
+        "species": null,
+        "classification_confidence": 0.84,
+        "classifier_version": "maude-2.4.0",
+        "nodes_visited": [
+          "node0_ingestion",
+          "node1b_reviews"
+        ]
+      },
+      "disagreement": {
+        "fields": {
+          "exposure_method": {
+            "maude": [],
+            "llm": [
+              "unknown"
+            ]
+          },
+          "cannabis_type": {
+            "maude": [],
+            "llm": [
+              "CB receptor agonist",
+              "vape pen",
+              "dried flower"
+            ]
+          },
+          "outcome_domain": {
+            "maude": [
+              "other"
+            ],
+            "llm": [
+              "addiction",
+              "other"
+            ]
+          }
+        },
+        "agreed_fields": {
+          "ingestion_status": "tangential",
+          "publication_type": "review",
+          "study_type": [
+            "review"
+          ],
+          "species": null
+        },
+        "high_level_count": 3,
+        "promotion_field_count": 0,
+        "flagged_for_review": true,
+        "promotion_fields": []
+      },
+      "flagged_for_review": true,
+      "abstract": "Publication Type: Review. The word \"cannabinoid\" refers to every chemical substance, regardless of structure or origin, that joins the cannabinoid receptors of the body and brain and that have similar effects to those produced by the Cannabis plant and based on their source of production, cannabinoids can be classified into endocannabinoids, phytocannabinoids and synthetic cannabinoids. Synthetic cannabinoids represent the largest class of drugs detected through the EU Early Warning System with a total of 190 substances notified from 2008 to 2018 and about 280 have been reported worldwide to the United Nations Office on Drugs and Crime. Sprayed on natural herb mixtures with the aim to mimic the euphoria effect of cannabis and sold as \"herbal smoking blends\" or \"herbal incense\" under brand names like \"Spice\" or \"K2\", synthetic cannabinoids are available from websites for the combination with herbal materials or more recently, for the use in e-cigarettes. Currently labeled as \"not for human consumption\" to circumvent legislation, their legal status varies by country with many government institutions currently pushing for their control. However, due to the emergence of new substances, it requires a constant update of the list of controlled drugs. Little is known about how these substances work and their toxic effects in humans and the same product could vary not only in the amount and in the type of substance added. In the last years, synthetic cannabinoids have been associated with deaths and acute intoxications in Europe and, despite a range of new measures introduced in this area, continue to represent a challenge to current drug policy models. These synthetic substances are much more potent than natural cannabis, as well as displayed greater efficacy, acting as full agonists at the cannabinoid receptors. It is possible that, along with being highly potent, some may also have long half-lives, potentially leading to a prolonged psychoactive effect. The present work provides a review on existing literature about the development of synthetic cannabinoids as substances of abuse, current patterns of abuse and their legal status, chemical classification, and some pharmacological and toxicological properties."
+    },
+    {
+      "paper_id": 28271,
+      "pmid": "28450060",
+      "title": "Endocannabinoid modulation of dopamine neurotransmission",
+      "variant": "control",
+      "dry_run": false,
+      "locked_fields": [],
+      "before_confidence": null,
+      "before_classifier_version": "heuristic-reclassify-1.0.0",
+      "status": "updated",
+      "after_confidence": 0.83,
+      "after_classifier_version": "llm-node1-calibration-control-2.4.0",
+      "after_publication_type": "review",
+      "after_study_type": [
+        "review"
+      ],
+      "routing_subnode": "node1b",
+      "changes": {
+        "exposure_method": {
+          "old": "[\"injection cannabinoids\"]",
+          "new": [
+            "unknown"
+          ]
+        },
+        "outcome_domain": {
+          "old": "[\"cognition\"]",
+          "new": [
+            "other"
+          ]
+        }
+      },
+      "llm_metrics": {
+        "model": "claude-sonnet-4-6",
+        "input_tokens": 928,
+        "cache_read_tokens": 5464,
+        "cache_write_tokens": 0,
+        "output_tokens": 276,
+        "cost": 0.0085632,
+        "few_shot_similarity": 0.6,
+        "few_shot_count": 1,
+        "bm25_retrieval_used": 1,
+        "classification_confidence": 0.83,
+        "classifier_version": "2.4.0"
+      },
+      "llm": {
+        "publication_type": "review",
+        "study_type": [
+          "review"
+        ],
+        "exposure_method": [
+          "unknown"
+        ],
+        "cannabis_type": [
+          "unknown"
+        ],
+        "outcome_domain": [
+          "other"
+        ],
+        "ingestion_status": "relevant",
+        "species": null,
+        "classification_confidence": 0.83,
+        "classifier_version": "llm-node1-calibration-control-2.4.0"
+      },
+      "maude": {
+        "publication_type": "review",
+        "study_type": [
+          "review"
+        ],
+        "exposure_method": [],
+        "cannabis_type": [],
+        "outcome_domain": [
+          "cognition"
+        ],
+        "ingestion_status": "relevant",
+        "species": null,
+        "classification_confidence": 0.84,
+        "classifier_version": "maude-2.4.0",
+        "nodes_visited": [
+          "node0_ingestion",
+          "node1b_reviews"
+        ]
+      },
+      "disagreement": {
+        "fields": {
+          "exposure_method": {
+            "maude": [],
+            "llm": [
+              "unknown"
+            ]
+          },
+          "cannabis_type": {
+            "maude": [],
+            "llm": [
+              "unknown"
+            ]
+          },
+          "outcome_domain": {
+            "maude": [
+              "cognition"
+            ],
+            "llm": [
+              "other"
+            ]
+          }
+        },
+        "agreed_fields": {
+          "ingestion_status": "relevant",
+          "publication_type": "review",
+          "study_type": [
+            "review"
+          ],
+          "species": null
+        },
+        "high_level_count": 3,
+        "promotion_field_count": 0,
+        "flagged_for_review": true,
+        "promotion_fields": []
+      },
+      "flagged_for_review": true,
+      "abstract": "Publication Type: Review. Dopamine (DA) is a major catecholamine neurotransmitter in the mammalian brain that controls neural circuits involved in the cognitive, emotional, and motor aspects of goal-directed behavior. Accordingly, perturbations in DA neurotransmission play a central role in several neuropsychiatric disorders. Somewhat surprisingly given its prominent role in numerous behaviors, DA is released by a relatively small number of densely packed neurons originating in the midbrain. The dopaminergic midbrain innervates numerous brain regions where extracellular DA release and receptor binding promote short- and long-term changes in postsynaptic neuron function. Striatal forebrain nuclei receive the greatest proportion of DA projections and are a predominant hub at which DA influences behavior. A number of excitatory, inhibitory, and modulatory inputs orchestrate DA neurotransmission by controlling DA cell body firing patterns, terminal release, and effects on postsynaptic sites in the striatum. The endocannabinoid (eCB) system serves as an important filter of afferent input that acts locally at midbrain and terminal regions to shape how incoming information is conveyed onto DA neurons and to output targets. In this review, we aim to highlight existing knowledge regarding how eCB signaling controls DA neuron function through modifications in synaptic strength at midbrain and striatal sites, and to raise outstanding questions on this topic. This article is part of the Special Issue entitled \"A New Dawn in Cannabinoid Neurobiology\"."
+    },
+    {
+      "paper_id": 18559,
+      "pmid": "35901795",
+      "title": "Association of cannabis potency with mental ill health and addiction: a systematic review.",
+      "variant": "control",
+      "dry_run": false,
+      "locked_fields": [],
+      "before_confidence": null,
+      "before_classifier_version": "heuristic-reclassify-1.0.0",
+      "status": "updated",
+      "after_confidence": 0.920000012,
+      "after_classifier_version": "llm-node1-calibration-control-2.4.0",
+      "after_publication_type": "systematic review",
+      "after_study_type": [
+        "review"
+      ],
+      "routing_subnode": "node3a",
+      "changes": {
+        "exposure_method": {
+          "old": "[\"injection cannabinoids\"]",
+          "new": [
+            "unknown"
+          ]
+        },
+        "outcome_domain": {
+          "old": "[\"addiction\"]",
+          "new": [
+            "anxiety",
+            "addiction"
+          ]
+        }
+      },
+      "llm_metrics": {
+        "model": "claude-sonnet-4-6",
+        "input_tokens": 896,
+        "cache_read_tokens": 5464,
+        "cache_write_tokens": 0,
+        "output_tokens": 280,
+        "cost": 0.0085272,
+        "few_shot_similarity": 0.90000004,
+        "few_shot_count": 1,
+        "bm25_retrieval_used": 1,
+        "classification_confidence": 0.920000012,
+        "classifier_version": "2.4.0"
+      },
+      "llm": {
+        "publication_type": "review",
+        "study_type": [
+          "systematic review",
+          "review"
+        ],
+        "exposure_method": [
+          "unknown"
+        ],
+        "cannabis_type": [
+          "unknown"
+        ],
+        "outcome_domain": [
+          "anxiety",
+          "addiction"
+        ],
+        "ingestion_status": "relevant",
+        "species": null,
+        "classification_confidence": 0.920000012,
+        "classifier_version": "llm-node1-calibration-control-2.4.0"
+      },
+      "maude": {
+        "publication_type": "review",
+        "study_type": [
+          "review",
+          "systematic review"
+        ],
+        "exposure_method": [],
+        "cannabis_type": [],
+        "outcome_domain": [
+          "addiction"
+        ],
+        "ingestion_status": "relevant",
+        "species": null,
+        "classification_confidence": 0.93,
+        "classifier_version": "maude-2.4.0",
+        "nodes_visited": [
+          "node0_ingestion",
+          "node1b_reviews",
+          "node3a"
+        ]
+      },
+      "disagreement": {
+        "fields": {
+          "exposure_method": {
+            "maude": [],
+            "llm": [
+              "unknown"
+            ]
+          },
+          "cannabis_type": {
+            "maude": [],
+            "llm": [
+              "unknown"
+            ]
+          },
+          "outcome_domain": {
+            "maude": [
+              "addiction"
+            ],
+            "llm": [
+              "anxiety",
+              "addiction"
+            ]
+          }
+        },
+        "agreed_fields": {
+          "ingestion_status": "relevant",
+          "publication_type": "review",
+          "study_type": [
+            "review",
+            "systematic review"
+          ],
+          "species": null
+        },
+        "high_level_count": 3,
+        "promotion_field_count": 0,
+        "flagged_for_review": true,
+        "promotion_fields": []
+      },
+      "flagged_for_review": true,
+      "abstract": "Publication Type: Review. Cannabis potency, defined as the concentration of \u03949-tetrahydrocannabinol (THC), has increased internationally, which could increase the risk of adverse health outcomes for cannabis users. We present, to our knowledge, the first systematic review of the association of cannabis potency with mental health and addiction (PROSPERO, CRD42021226447). We searched Embase, PsycINFO, and MEDLINE (from database inception to Jan 14, 2021). Included studies were observational studies of human participants comparing the association of high-potency cannabis (products with a higher concentration of THC) and low-potency cannabis (products with a lower concentration of THC), as defined by the studies included, with depression, anxiety, psychosis, or cannabis use disorder (CUD). Of 4171 articles screened, 20 met the eligibility criteria: eight studies focused on psychosis, eight on anxiety, seven on depression, and six on CUD. Overall, use of higher potency cannabis, relative to lower potency cannabis, was associated with an increased risk of psychosis and CUD. Evidence varied for depression and anxiety. The association of cannabis potency with CUD and psychosis highlights its relevance in health-care settings, and for public health guidelines and policies on cannabis sales. Standardisation of exposure measures and longitudinal designs are needed to strengthen the evidence of this association."
+    },
+    {
+      "paper_id": 29899,
+      "pmid": "25282526",
+      "title": "Cannabis, cannabidiol, and epilepsy--from receptors to clinical response",
+      "variant": "control",
+      "dry_run": false,
+      "locked_fields": [],
+      "before_confidence": null,
+      "before_classifier_version": "heuristic-reclassify-1.0.0",
+      "status": "updated",
+      "after_confidence": 0.9500000000000001,
+      "after_classifier_version": "llm-node1-calibration-control-2.4.0",
+      "after_publication_type": "review",
+      "after_study_type": [
+        "review"
+      ],
+      "routing_subnode": "node1b",
+      "changes": {
+        "exposure_method": {
+          "old": "[\"injection cannabinoids\"]",
+          "new": [
+            "unknown"
+          ]
+        },
+        "strain_reported": {
+          "old": "high-CBD",
+          "new": null
+        },
+        "strain_normalized": {
+          "old": "Chemotype III",
+          "new": null
+        }
+      },
+      "llm_metrics": {
+        "model": "claude-sonnet-4-6",
+        "input_tokens": 862,
+        "cache_read_tokens": 5464,
+        "cache_write_tokens": 0,
+        "output_tokens": 279,
+        "cost": 0.008410200000000001,
+        "few_shot_similarity": 1.0,
+        "few_shot_count": 1,
+        "bm25_retrieval_used": 1,
+        "classification_confidence": 0.9500000000000001,
+        "classifier_version": "2.4.0"
+      },
+      "llm": {
+        "publication_type": "review",
+        "study_type": [
+          "review"
+        ],
+        "exposure_method": [
+          "unknown"
+        ],
+        "cannabis_type": [
+          "unknown"
+        ],
+        "outcome_domain": [
+          "neuroprotection"
+        ],
+        "ingestion_status": "tangential",
+        "species": null,
+        "classification_confidence": 0.9500000000000001,
+        "classifier_version": "llm-node1-calibration-control-2.4.0"
+      },
+      "maude": {
+        "publication_type": "review",
+        "study_type": [
+          "review"
+        ],
+        "exposure_method": [],
+        "cannabis_type": [],
+        "outcome_domain": [
+          "addiction",
+          "neuroprotection"
+        ],
+        "ingestion_status": "tangential",
+        "species": null,
+        "classification_confidence": 0.84,
+        "classifier_version": "maude-2.4.0",
+        "nodes_visited": [
+          "node0_ingestion",
+          "node1b_reviews"
+        ]
+      },
+      "disagreement": {
+        "fields": {
+          "exposure_method": {
+            "maude": [],
+            "llm": [
+              "unknown"
+            ]
+          },
+          "cannabis_type": {
+            "maude": [],
+            "llm": [
+              "unknown"
+            ]
+          },
+          "outcome_domain": {
+            "maude": [
+              "addiction",
+              "neuroprotection"
+            ],
+            "llm": [
+              "neuroprotection"
+            ]
+          }
+        },
+        "agreed_fields": {
+          "ingestion_status": "tangential",
+          "publication_type": "review",
+          "study_type": [
+            "review"
+          ],
+          "species": null
+        },
+        "high_level_count": 3,
+        "promotion_field_count": 0,
+        "flagged_for_review": true,
+        "promotion_fields": []
+      },
+      "flagged_for_review": true,
+      "abstract": "Publication Type: Review. Recreational cannabis use in adults with epilepsy is widespread. The use of cannabis for medicinal purposes is also becoming more prevalent. For this purpose, various preparations of cannabis of varying strengths and content are being used. The recent changes in the legal environment have improved the availability of products with high cannabidiol (CBD) and low tetrahydrocannabinol (THC) concentrations. There is some anecdotal evidence of their potential efficacy, but the mechanisms of such action are not entirely clear. Some suspect an existence of synergy or \"entourage effect\" between CBD and THC. There is strong evidence that THC acts via the cannabinoid receptor CB1. The mechanism of action of CBD is less clear but is likely polypharmacological. The scientific data support the role of the endocannabinoid system in seizure generation, maintenance, and control in animal models of epilepsy. There are clear data for the negative effects of cannabis on the developing and mature brain though these effects appear to be relatively mild in most cases. Further data from well-designed studies are needed regarding short- and long-term efficacy and side effects of CBD or high-CBD/low-THC products for the treatment of seizures and epilepsy in children and adults."
+    },
+    {
+      "paper_id": 27880,
+      "pmid": "29218644",
+      "title": "Cardiovascular Complications of Marijuana and Related Substances: A Review",
+      "variant": "control",
+      "dry_run": false,
+      "locked_fields": [],
+      "before_confidence": null,
+      "before_classifier_version": "heuristic-reclassify-1.0.0",
+      "status": "updated",
+      "after_confidence": 0.7666666666666667,
+      "after_classifier_version": "llm-node1-calibration-control-2.4.0",
+      "after_publication_type": "review",
+      "after_study_type": [
+        "review"
+      ],
+      "routing_subnode": "node1b",
+      "changes": {
+        "exposure_method": {
+          "old": "[\"injection cannabinoids\"]",
+          "new": [
+            "unknown"
+          ]
+        },
+        "cannabis_type": {
+          "old": "[\"pure cannabinoid\"]",
+          "new": [
+            "dried flower",
+            "pure cannabinoid",
+            "CB receptor agonist"
+          ]
+        }
+      },
+      "llm_metrics": {
+        "model": "claude-sonnet-4-6",
+        "input_tokens": 975,
+        "cache_read_tokens": 5464,
+        "cache_write_tokens": 0,
+        "output_tokens": 290,
+        "cost": 0.0089142,
+        "few_shot_similarity": 0.5,
+        "few_shot_count": 1,
+        "bm25_retrieval_used": 1,
+        "classification_confidence": 0.7666666666666667,
+        "classifier_version": "2.4.0"
+      },
+      "llm": {
+        "publication_type": "review",
+        "study_type": [
+          "review"
+        ],
+        "exposure_method": [
+          "unknown"
+        ],
+        "cannabis_type": [
+          "dried flower",
+          "pure cannabinoid",
+          "CB receptor agonist"
+        ],
+        "outcome_domain": [
+          "other"
+        ],
+        "ingestion_status": "tangential",
+        "species": null,
+        "classification_confidence": 0.7666666666666667,
+        "classifier_version": "llm-node1-calibration-control-2.4.0"
+      },
+      "maude": {
+        "publication_type": "review",
+        "study_type": [
+          "review"
+        ],
+        "exposure_method": [],
+        "cannabis_type": [],
+        "outcome_domain": [
+          "addiction"
+        ],
+        "ingestion_status": "tangential",
+        "species": null,
+        "classification_confidence": 0.84,
+        "classifier_version": "maude-2.4.0",
+        "nodes_visited": [
+          "node0_ingestion",
+          "node1b_reviews"
+        ]
+      },
+      "disagreement": {
+        "fields": {
+          "exposure_method": {
+            "maude": [],
+            "llm": [
+              "unknown"
+            ]
+          },
+          "cannabis_type": {
+            "maude": [],
+            "llm": [
+              "dried flower",
+              "pure cannabinoid",
+              "CB receptor agonist"
+            ]
+          },
+          "outcome_domain": {
+            "maude": [
+              "addiction"
+            ],
+            "llm": [
+              "other"
+            ]
+          }
+        },
+        "agreed_fields": {
+          "ingestion_status": "tangential",
+          "publication_type": "review",
+          "study_type": [
+            "review"
+          ],
+          "species": null
+        },
+        "high_level_count": 3,
+        "promotion_field_count": 0,
+        "flagged_for_review": true,
+        "promotion_fields": []
+      },
+      "flagged_for_review": true,
+      "abstract": "Publication Type: Review. The recreational use of cannabis has sharply increased in recent years in parallel with its legalization and decriminalization in several countries. Commonly, the traditional cannabis has been replaced by potent synthetic cannabinoids and cannabimimetics in various forms. Despite overwhelming public perception of the safety of these substances, an increasing number of serious cardiovascular adverse events have been reported in temporal relation to recreational cannabis use. These have included sudden cardiac death, vascular (coronary, cerebral and peripheral) events, arrhythmias and stress cardiomyopathy among others. Many of the victims of these events are relatively young men with few if any cardiovascular risk factors. However, there are reasons to believe that older individuals and those with risk factors for or established cardiovascular disease are at even higher danger of such events following exposure to cannabis. The pathophysiological basis of these events is not fully understood and likely encompasses a complex interaction between the active ingredients (particularly the major cannabinoid, \u03949-tetrahydrocannabinol), and the endo-cannabinoid system, autonomic nervous system, as well as other receptor and non-receptor mediated pathways. Other complicating factors include opposing physiologic effects of other cannabinoids (predominantly cannabidiol), presence of regulatory proteins that act as metabolizing enzymes, binding molecules, or ligands, as well as functional polymorphisms of target receptors. Tolerance to the effects of cannabis may also develop on repeated exposures at least in part due to receptor downregulation or desensitization. Moreover, effects of cannabis may be enhanced or altered by concomitant use of other illicit drugs or medications used for treatment of established cardiovascular diseases. Regardless of these considerations, it is expected that the current cannabis epidemic would add significantly to the universal burden of cardiovascular diseases."
+    },
+    {
+      "paper_id": 31152,
+      "pmid": "22908200",
+      "title": "A brain on cannabinoids: the role of dopamine release in reward seeking",
+      "variant": "control",
+      "dry_run": false,
+      "locked_fields": [],
+      "before_confidence": null,
+      "before_classifier_version": "heuristic-reclassify-1.0.0",
+      "status": "updated",
+      "after_confidence": 0.9500000000000001,
+      "after_classifier_version": "llm-node1-calibration-control-2.4.0",
+      "after_publication_type": "review",
+      "after_study_type": [
+        "review"
+      ],
+      "routing_subnode": "node1b",
+      "changes": {
+        "exposure_method": {
+          "old": "[\"injection cannabinoids\"]",
+          "new": [
+            "unknown"
+          ]
+        }
+      },
+      "llm_metrics": {
+        "model": "claude-sonnet-4-6",
+        "input_tokens": 939,
+        "cache_read_tokens": 5464,
+        "cache_write_tokens": 0,
+        "output_tokens": 276,
+        "cost": 0.0085962,
+        "few_shot_similarity": 1.0,
+        "few_shot_count": 1,
+        "bm25_retrieval_used": 1,
+        "classification_confidence": 0.9500000000000001,
+        "classifier_version": "2.4.0"
+      },
+      "llm": {
+        "publication_type": "review",
+        "study_type": [
+          "review"
+        ],
+        "exposure_method": [
+          "unknown"
+        ],
+        "cannabis_type": [
+          "unknown"
+        ],
+        "outcome_domain": [
+          "addiction"
+        ],
+        "ingestion_status": "relevant",
+        "species": null,
+        "classification_confidence": 0.9500000000000001,
+        "classifier_version": "llm-node1-calibration-control-2.4.0"
+      },
+      "maude": {
+        "publication_type": "review",
+        "study_type": [
+          "review"
+        ],
+        "exposure_method": [],
+        "cannabis_type": [],
+        "outcome_domain": [
+          "addiction"
+        ],
+        "ingestion_status": "relevant",
+        "species": null,
+        "classification_confidence": 0.84,
+        "classifier_version": "maude-2.4.0",
+        "nodes_visited": [
+          "node0_ingestion",
+          "node1b_reviews"
+        ]
+      },
+      "disagreement": {
+        "fields": {
+          "exposure_method": {
+            "maude": [],
+            "llm": [
+              "unknown"
+            ]
+          },
+          "cannabis_type": {
+            "maude": [],
+            "llm": [
+              "unknown"
+            ]
+          }
+        },
+        "agreed_fields": {
+          "ingestion_status": "relevant",
+          "publication_type": "review",
+          "study_type": [
+            "review"
+          ],
+          "outcome_domain": [
+            "addiction"
+          ],
+          "species": null
+        },
+        "high_level_count": 2,
+        "promotion_field_count": 0,
+        "flagged_for_review": true,
+        "promotion_fields": []
+      },
+      "flagged_for_review": true,
+      "abstract": "Publication Type: Review. Increases in mesolimbic dopamine transmission are observed when animals are treated with all known drugs of abuse, including cannabis, and to conditioned stimuli predicting their availability. In contrast, decreases in mesolimbic dopamine function are observed during drug withdrawal, including cannabis-withdrawal syndrome. Thus, despite general misconceptions that cannabis is unique from other drugs of abuse, cannabis exerts identical effects on the mesolimbic dopamine system. The recent discovery that endogenous cannabinoids modulate the mesolimbic dopamine system, however, might be exploited for the development of potential pharmacotherapies designed to treat disorders of motivation. Indeed, disrupting endocannabinoid signaling decreases drug-induced increases in dopamine release in addition to dopamine concentrations evoked by conditioned stimuli during reward seeking."
+    },
+    {
+      "paper_id": 30251,
+      "pmid": "24622769",
+      "title": "Care and feeding of the endocannabinoid system: a systematic review of potential clinical interventions that upregulate the endocannabinoid system",
+      "variant": "control",
+      "dry_run": false,
+      "locked_fields": [],
+      "before_confidence": null,
+      "before_classifier_version": "heuristic-reclassify-1.0.0",
+      "status": "updated",
+      "after_confidence": 0.77,
+      "after_classifier_version": "llm-node1-calibration-control-2.4.0",
+      "after_publication_type": "systematic review",
+      "after_study_type": [
+        "review"
+      ],
+      "routing_subnode": "node3a",
+      "changes": {
+        "exposure_method": {
+          "old": "[\"injection cannabinoids\"]",
+          "new": [
+            "unknown"
+          ]
+        },
+        "outcome_domain": {
+          "old": "[\"other\"]",
+          "new": [
+            "pain",
+            "anxiety",
+            "inflammation"
+          ]
+        }
+      },
+      "llm_metrics": {
+        "model": "claude-sonnet-4-6",
+        "input_tokens": 1022,
+        "cache_read_tokens": 5464,
+        "cache_write_tokens": 0,
+        "output_tokens": 283,
+        "cost": 0.0089502,
+        "few_shot_similarity": 0.4,
+        "few_shot_count": 1,
+        "bm25_retrieval_used": 1,
+        "classification_confidence": 0.77,
+        "classifier_version": "2.4.0"
+      },
+      "llm": {
+        "publication_type": "review",
+        "study_type": [
+          "systematic review",
+          "review"
+        ],
+        "exposure_method": [
+          "unknown"
+        ],
+        "cannabis_type": [
+          "unknown"
+        ],
+        "outcome_domain": [
+          "pain",
+          "anxiety",
+          "inflammation"
+        ],
+        "ingestion_status": "relevant",
+        "species": null,
+        "classification_confidence": 0.77,
+        "classifier_version": "llm-node1-calibration-control-2.4.0"
+      },
+      "maude": {
+        "publication_type": "review",
+        "study_type": [
+          "review",
+          "systematic review"
+        ],
+        "exposure_method": [],
+        "cannabis_type": [],
+        "outcome_domain": [
+          "other"
+        ],
+        "ingestion_status": "relevant",
+        "species": null,
+        "classification_confidence": 0.93,
+        "classifier_version": "maude-2.4.0",
+        "nodes_visited": [
+          "node0_ingestion",
+          "node1b_reviews",
+          "node3a"
+        ]
+      },
+      "disagreement": {
+        "fields": {
+          "exposure_method": {
+            "maude": [],
+            "llm": [
+              "unknown"
+            ]
+          },
+          "cannabis_type": {
+            "maude": [],
+            "llm": [
+              "unknown"
+            ]
+          },
+          "outcome_domain": {
+            "maude": [
+              "other"
+            ],
+            "llm": [
+              "pain",
+              "anxiety",
+              "inflammation"
+            ]
+          }
+        },
+        "agreed_fields": {
+          "ingestion_status": "relevant",
+          "publication_type": "review",
+          "study_type": [
+            "review",
+            "systematic review"
+          ],
+          "species": null
+        },
+        "high_level_count": 3,
+        "promotion_field_count": 0,
+        "flagged_for_review": true,
+        "promotion_fields": []
+      },
+      "flagged_for_review": true,
+      "abstract": "Publication Type: Review. BACKGROUND: The \"classic\" endocannabinoid (eCB) system includes the cannabinoid receptors CB1 and CB2, the eCB ligands anandamide (AEA) and 2-arachidonoylglycerol (2-AG), and their metabolic enzymes. An emerging literature documents the \"eCB deficiency syndrome\" as an etiology in migraine, fibromyalgia, irritable bowel syndrome, psychological disorders, and other conditions. We performed a systematic review of clinical interventions that enhance the eCB system--ways to upregulate cannabinoid receptors, increase ligand synthesis, or inhibit ligand degradation.\n\nMETHODOLOGY/PRINCIPAL FINDINGS: We searched PubMed for clinical trials, observational studies, and preclinical research. Data synthesis was qualitative. Exclusion criteria limited the results to 184 in vitro studies, 102 in vivo animal studies, and 36 human studies. Evidence indicates that several classes of pharmaceuticals upregulate the eCB system, including analgesics (acetaminophen, non-steroidal anti-inflammatory drugs, opioids, glucocorticoids), antidepressants, antipsychotics, anxiolytics, and anticonvulsants. Clinical interventions characterized as \"complementary and alternative medicine\" also upregulate the eCB system: massage and manipulation, acupuncture, dietary supplements, and herbal medicines. Lifestyle modification (diet, weight control, exercise, and the use of psychoactive substances--alcohol, tobacco, coffee, cannabis) also modulate the eCB system.\n\nCONCLUSIONS/SIGNIFICANCE: Few clinical trials have assessed interventions that upregulate the eCB system. Many preclinical studies point to other potential approaches; human trials are needed to explore these promising interventions."
+    },
+    {
+      "paper_id": 26304,
+      "pmid": "32357565",
+      "title": "Cannabidiol and Other Non-Psychoactive Cannabinoids for Prevention and Treatment of Gastrointestinal Disorders: Useful Nutraceuticals?",
+      "variant": "control",
+      "dry_run": false,
+      "locked_fields": [],
+      "before_confidence": null,
+      "before_classifier_version": "heuristic-reclassify-1.0.0",
+      "status": "updated",
+      "after_confidence": 0.9,
+      "after_classifier_version": "llm-node1-calibration-control-2.4.0",
+      "after_publication_type": "review",
+      "after_study_type": [
+        "review"
+      ],
+      "routing_subnode": "node1b",
+      "changes": {
+        "exposure_method": {
+          "old": "[\"injection cannabinoids\"]",
+          "new": [
+            "unknown"
+          ]
+        },
+        "cannabis_type": {
+          "old": "[\"unknown\"]",
+          "new": [
+            "pure cannabinoid"
+          ]
+        }
+      },
+      "llm_metrics": {
+        "model": "claude-sonnet-4-6",
+        "input_tokens": 894,
+        "cache_read_tokens": 5464,
+        "cache_write_tokens": 0,
+        "output_tokens": 279,
+        "cost": 0.0085062,
+        "few_shot_similarity": 1.0,
+        "few_shot_count": 1,
+        "bm25_retrieval_used": 1,
+        "classification_confidence": 0.9,
+        "classifier_version": "2.4.0"
+      },
+      "llm": {
+        "publication_type": "review",
+        "study_type": [
+          "review"
+        ],
+        "exposure_method": [
+          "unknown"
+        ],
+        "cannabis_type": [
+          "pure cannabinoid"
+        ],
+        "outcome_domain": [
+          "inflammation"
+        ],
+        "ingestion_status": "relevant",
+        "species": null,
+        "classification_confidence": 0.9,
+        "classifier_version": "llm-node1-calibration-control-2.4.0"
+      },
+      "maude": {
+        "publication_type": "review",
+        "study_type": [
+          "review"
+        ],
+        "exposure_method": [],
+        "cannabis_type": [],
+        "outcome_domain": [
+          "other"
+        ],
+        "ingestion_status": "relevant",
+        "species": null,
+        "classification_confidence": 0.84,
+        "classifier_version": "maude-2.4.0",
+        "nodes_visited": [
+          "node0_ingestion",
+          "node1b_reviews"
+        ]
+      },
+      "disagreement": {
+        "fields": {
+          "exposure_method": {
+            "maude": [],
+            "llm": [
+              "unknown"
+            ]
+          },
+          "cannabis_type": {
+            "maude": [],
+            "llm": [
+              "pure cannabinoid"
+            ]
+          },
+          "outcome_domain": {
+            "maude": [
+              "other"
+            ],
+            "llm": [
+              "inflammation"
+            ]
+          }
+        },
+        "agreed_fields": {
+          "ingestion_status": "relevant",
+          "publication_type": "review",
+          "study_type": [
+            "review"
+          ],
+          "species": null
+        },
+        "high_level_count": 3,
+        "promotion_field_count": 0,
+        "flagged_for_review": true,
+        "promotion_fields": []
+      },
+      "flagged_for_review": true,
+      "abstract": "Publication Type: Review. Cannabis sativa is an aromatic annual flowering plant with several botanical varieties, used for different purposes, like the production of fibers, the production of oil from the seeds, and especially for recreational or medical purposes. Phytocannabinoids (terpenophenolic compounds derived from the plant), include the well-known psychoactive cannabinoid \u03949-tetrahydrocannabinol, and many non-psychoactive cannabinoids, like cannabidiol. The endocannabinoid system (ECS) comprises of endocannabinoid ligands, enzymes for synthesis and degradation of such ligands, and receptors. This system is widely distributed in the gastrointestinal tract, where phytocannabinoids exert potent effects, particularly under pathological (i.e., inflammatory) conditions. Herein, we will first look at the hemp plant as a possible source of new functional food ingredients and nutraceuticals that might be eventually useful to treat or even prevent gastrointestinal conditions. Subsequently, we will briefly describe the ECS and the general pharmacology of phytocannabinoids. Finally, we will revise the available data showing that non-psychoactive phytocannabinoids, particularly cannabidiol, may be useful to treat different disorders and diseases of the gastrointestinal tract. With the increasing interest in the development of functional foods for a healthy life, the non-psychoactive phytocannabinoids are hoped to find a place as nutraceuticals and food ingredients also for a healthy gastrointestinal tract function."
+    },
+    {
+      "paper_id": 29486,
+      "pmid": "26071989",
+      "title": "The use of cannabinoids as anticancer agents",
+      "variant": "control",
+      "dry_run": false,
+      "locked_fields": [],
+      "before_confidence": null,
+      "before_classifier_version": "heuristic-reclassify-1.0.0",
+      "status": "updated",
+      "after_confidence": 0.920000012,
+      "after_classifier_version": "llm-node1-calibration-control-2.4.0",
+      "after_publication_type": "review",
+      "after_study_type": [
+        "review"
+      ],
+      "routing_subnode": "node1b",
+      "changes": {
+        "exposure_method": {
+          "old": "[\"injection cannabinoids\"]",
+          "new": [
+            "unknown"
+          ]
+        }
+      },
+      "llm_metrics": {
+        "model": "claude-sonnet-4-6",
+        "input_tokens": 778,
+        "cache_read_tokens": 5464,
+        "cache_write_tokens": 0,
+        "output_tokens": 277,
+        "cost": 0.0081282,
+        "few_shot_similarity": 0.90000004,
+        "few_shot_count": 1,
+        "bm25_retrieval_used": 1,
+        "classification_confidence": 0.920000012,
+        "classifier_version": "2.4.0"
+      },
+      "llm": {
+        "publication_type": "review",
+        "study_type": [
+          "review"
+        ],
+        "exposure_method": [
+          "unknown"
+        ],
+        "cannabis_type": [
+          "unknown"
+        ],
+        "outcome_domain": [
+          "oncology"
+        ],
+        "ingestion_status": "relevant",
+        "species": null,
+        "classification_confidence": 0.920000012,
+        "classifier_version": "llm-node1-calibration-control-2.4.0"
+      },
+      "maude": {
+        "publication_type": "review",
+        "study_type": [
+          "review"
+        ],
+        "exposure_method": [],
+        "cannabis_type": [],
+        "outcome_domain": [
+          "oncology"
+        ],
+        "ingestion_status": "relevant",
+        "species": null,
+        "classification_confidence": 0.84,
+        "classifier_version": "maude-2.4.0",
+        "nodes_visited": [
+          "node0_ingestion",
+          "node1b_reviews"
+        ]
+      },
+      "disagreement": {
+        "fields": {
+          "exposure_method": {
+            "maude": [],
+            "llm": [
+              "unknown"
+            ]
+          },
+          "cannabis_type": {
+            "maude": [],
+            "llm": [
+              "unknown"
+            ]
+          }
+        },
+        "agreed_fields": {
+          "ingestion_status": "relevant",
+          "publication_type": "review",
+          "study_type": [
+            "review"
+          ],
+          "outcome_domain": [
+            "oncology"
+          ],
+          "species": null
+        },
+        "high_level_count": 2,
+        "promotion_field_count": 0,
+        "flagged_for_review": true,
+        "promotion_fields": []
+      },
+      "flagged_for_review": true,
+      "abstract": "Publication Type: Review. It is well-established that cannabinoids exert palliative effects on some cancer-associated symptoms. In addition evidences obtained during the last fifteen years support that these compounds can reduce tumor growth in animal models of cancer. Cannabinoids have been shown to activate an ER-stress related pathway that leads to the stimulation of autophagy-mediated cancer cell death. In addition, cannabinoids inhibit tumor angiogenesis and decrease cancer cell migration. The mechanisms of resistance to cannabinoid anticancer action as well as the possible strategies to develop cannabinoid-based combinational therapies to fight cancer have also started to be explored. In this review we will summarize these observations (that have already helped to set the bases for the development of the first clinical studies to investigate the potential clinical benefit of using cannabinoids in anticancer therapies) and will discuss the possible future avenues of research in this area."
+    },
+    {
+      "paper_id": 23785,
+      "pmid": "34757514",
+      "title": "European clinical guidelines for Tourette syndrome and other tic disorders-version 2.0. Part III: pharmacological treatment",
+      "variant": "control",
+      "dry_run": false,
+      "locked_fields": [],
+      "before_confidence": null,
+      "before_classifier_version": "heuristic-reclassify-1.0.0",
+      "status": "updated",
+      "after_confidence": 0.6100000000000001,
+      "after_classifier_version": "llm-node1-calibration-control-2.4.0",
+      "after_publication_type": "review",
+      "after_study_type": [
+        "review"
+      ],
+      "routing_subnode": "node1b",
+      "changes": {
+        "study_type": {
+          "old": "[\"meta-analysis\"]",
+          "new": [
+            "review"
+          ]
+        },
+        "exposure_method": {
+          "old": "[\"injection cannabinoids\"]",
+          "new": [
+            "unknown"
+          ]
+        },
+        "publication_type": {
+          "old": "meta-analysis",
+          "new": "review"
+        },
+        "outcome_domain": {
+          "old": "[\"cognition\"]",
+          "new": [
+            "other"
+          ]
+        }
+      },
+      "llm_metrics": {
+        "model": "claude-sonnet-4-6",
+        "input_tokens": 937,
+        "cache_read_tokens": 5464,
+        "cache_write_tokens": 0,
+        "output_tokens": 276,
+        "cost": 0.008590200000000001,
+        "few_shot_similarity": 0.2,
+        "few_shot_count": 1,
+        "bm25_retrieval_used": 1,
+        "classification_confidence": 0.6100000000000001,
+        "classifier_version": "2.4.0"
+      },
+      "llm": {
+        "publication_type": "review",
+        "study_type": [
+          "review"
+        ],
+        "exposure_method": [
+          "unknown"
+        ],
+        "cannabis_type": [
+          "unknown"
+        ],
+        "outcome_domain": [
+          "other"
+        ],
+        "ingestion_status": "relevant",
+        "species": null,
+        "classification_confidence": 0.6100000000000001,
+        "classifier_version": "llm-node1-calibration-control-2.4.0"
+      },
+      "maude": {
+        "publication_type": "review",
+        "study_type": [
+          "review"
+        ],
+        "exposure_method": [],
+        "cannabis_type": [],
+        "outcome_domain": [
+          "cognition"
+        ],
+        "ingestion_status": "relevant",
+        "species": null,
+        "classification_confidence": 0.84,
+        "classifier_version": "maude-2.4.0",
+        "nodes_visited": [
+          "node0_ingestion",
+          "node1b_reviews"
+        ]
+      },
+      "disagreement": {
+        "fields": {
+          "exposure_method": {
+            "maude": [],
+            "llm": [
+              "unknown"
+            ]
+          },
+          "cannabis_type": {
+            "maude": [],
+            "llm": [
+              "unknown"
+            ]
+          },
+          "outcome_domain": {
+            "maude": [
+              "cognition"
+            ],
+            "llm": [
+              "other"
+            ]
+          }
+        },
+        "agreed_fields": {
+          "ingestion_status": "relevant",
+          "publication_type": "review",
+          "study_type": [
+            "review"
+          ],
+          "species": null
+        },
+        "high_level_count": 3,
+        "promotion_field_count": 0,
+        "flagged_for_review": true,
+        "promotion_fields": []
+      },
+      "flagged_for_review": true,
+      "abstract": "Publication Type: Review. In 2011, the European Society for the Study of Tourette Syndrome (ESSTS) published the first European guidelines for Tourette Syndrome (TS). We now present an update of the part on pharmacological treatment, based on a review of new literature with special attention to other evidence-based guidelines, meta-analyses, and randomized double-blinded studies. Moreover, our revision took into consideration results of a recent survey on treatment preferences conducted among ESSTS experts. The first preference should be given to psychoeducation and to behavioral approaches, as it strengthens the patients' self-regulatory control and thus his/her autonomy. Because behavioral approaches are not effective, available, or feasible in all patients, in a substantial number of patients pharmacological treatment is indicated, alone or in combination with behavioral therapy. The largest amount of evidence supports the use of dopamine blocking agents, preferably aripiprazole because of a more favorable profile of adverse events than first- and second-generation antipsychotics. Other agents that can be considered include tiapride, risperidone, and especially in case of co-existing attention deficit hyperactivity disorder (ADHD), clonidine and guanfacine. This view is supported by the results of our survey on medication preference among members of ESSTS, in which aripiprazole was indicated as the drug of first choice both in children and adults. In treatment resistant cases, treatment with agents with either a limited evidence base or risk of extrapyramidal adverse effects might be considered, including pimozide, haloperidol, topiramate, cannabis-based agents, and botulinum toxin injections. Overall, treatment of TS should be individualized, and decisions based on the patient's needs and preferences, presence of co-existing conditions, latest scientific findings as well as on the physician's preferences, experience, and local regulatory requirements."
+    },
+    {
+      "paper_id": 8522,
+      "pmid": "38111585",
+      "title": "Potential of dietary hemp and cannabinoids to modulate immune response to enhance health and performance in animals: opportunities and challenges",
+      "variant": "control",
+      "dry_run": false,
+      "locked_fields": [],
+      "before_confidence": null,
+      "before_classifier_version": "heuristic-reclassify-1.0.0",
+      "status": "updated",
+      "after_confidence": 0.925,
+      "after_classifier_version": "llm-node1-calibration-control-2.4.0",
+      "after_publication_type": "review",
+      "after_study_type": [
+        "review"
+      ],
+      "routing_subnode": "node1b",
+      "changes": {
+        "exposure_method": {
+          "old": "[\"injection cannabinoids\"]",
+          "new": [
+            "unknown"
+          ]
+        },
+        "cannabis_type": {
+          "old": "[\"pure cannabinoid\"]",
+          "new": [
+            "pure cannabinoid",
+            "edibles"
+          ]
+        },
+        "outcome_domain": {
+          "old": "[\"other\"]",
+          "new": [
+            "inflammation",
+            "pain",
+            "other"
+          ]
+        }
+      },
+      "llm_metrics": {
+        "model": "claude-sonnet-4-6",
+        "input_tokens": 1232,
+        "cache_read_tokens": 5464,
+        "cache_write_tokens": 0,
+        "output_tokens": 289,
+        "cost": 0.0096702,
+        "few_shot_similarity": 1.0,
+        "few_shot_count": 1,
+        "bm25_retrieval_used": 1,
+        "classification_confidence": 0.925,
+        "classifier_version": "2.4.0"
+      },
+      "llm": {
+        "publication_type": "review",
+        "study_type": [
+          "review"
+        ],
+        "exposure_method": [
+          "unknown"
+        ],
+        "cannabis_type": [
+          "pure cannabinoid",
+          "edibles"
+        ],
+        "outcome_domain": [
+          "inflammation",
+          "pain",
+          "other"
+        ],
+        "ingestion_status": "relevant",
+        "species": null,
+        "classification_confidence": 0.925,
+        "classifier_version": "llm-node1-calibration-control-2.4.0"
+      },
+      "maude": {
+        "publication_type": "review",
+        "study_type": [
+          "review"
+        ],
+        "exposure_method": [],
+        "cannabis_type": [],
+        "outcome_domain": [
+          "other"
+        ],
+        "ingestion_status": "relevant",
+        "species": null,
+        "classification_confidence": 0.84,
+        "classifier_version": "maude-2.4.0",
+        "nodes_visited": [
+          "node0_ingestion",
+          "node1b_reviews"
+        ]
+      },
+      "disagreement": {
+        "fields": {
+          "exposure_method": {
+            "maude": [],
+            "llm": [
+              "unknown"
+            ]
+          },
+          "cannabis_type": {
+            "maude": [],
+            "llm": [
+              "pure cannabinoid",
+              "edibles"
+            ]
+          },
+          "outcome_domain": {
+            "maude": [
+              "other"
+            ],
+            "llm": [
+              "inflammation",
+              "pain",
+              "other"
+            ]
+          }
+        },
+        "agreed_fields": {
+          "ingestion_status": "relevant",
+          "publication_type": "review",
+          "study_type": [
+            "review"
+          ],
+          "species": null
+        },
+        "high_level_count": 3,
+        "promotion_field_count": 0,
+        "flagged_for_review": true,
+        "promotion_fields": []
+      },
+      "flagged_for_review": true,
+      "abstract": "Publication Type: Review. Cannabinoids are a group of bioactive compounds abundantly present in Cannabis sativa plant. The active components of cannabis with therapeutic potential are known as cannabinoids. Cannabinoids are divided into three groups: plant-derived cannabinoids (phytocannabinoids), endogenous cannabinoids (endocannabinoids), and synthetic cannabinoids. These compounds play a crucial role in the regulation various physiological processes including the immune modulation by interacting with the endocannabinoid system (A complex cell-signaling system). Cannabinoid receptor type 1 (CB1) stimulates the binding of orexigenic peptides and inhibits the attachment of anorexigenic proteins to hypothalamic neurons in mammals, increasing food intake. Digestibility is unaffected by the presence of any cannabinoids in hemp stubble. Endogenous cannabinoids are also important for the peripheral control of lipid processing in adipose tissue, in addition to their role in the hypothalamus regulation of food intake. Regardless of the kind of synaptic connection or the length of the transmission, endocannabinoids play a crucial role in inhibiting synaptic transmission through a number of mechanisms. Cannabidiol (CBD) mainly influences redox equilibrium through intrinsic mechanisms. Useful effects of cannabinoids in animals have been mentioned e.g., for disorders of the cardiovascular system, pain treatment, disorders of the respiratory system or metabolic disorders. Dietary supplementation of cannabinoids has shown positive effects on health, growth and production performance of small and large animals. Animal fed diet supplemented with hemp seeds (180 g/day) or hemp seed cake (143 g/kg DM) had achieved batter performance without any detrimental effects. But the higher level of hemp or cannabinoid supplementation suppress immune functions and reduce productive performance. With an emphasis on the poultry and ruminants, this review aims to highlight the properties of cannabinoids and their derivatives as well as their significance as a potential feed additive in their diets to improve the immune status and health performance of animals."
+    },
+    {
+      "paper_id": 18577,
+      "pmid": "33873044",
+      "title": "Trends over time in adult cannabis use: A review of recent findings",
+      "variant": "control",
+      "dry_run": false,
+      "locked_fields": [],
+      "before_confidence": null,
+      "before_classifier_version": "heuristic-reclassify-1.0.0",
+      "status": "updated",
+      "after_confidence": 0.9500000000000001,
+      "after_classifier_version": "llm-node1-calibration-control-2.4.0",
+      "after_publication_type": "review",
+      "after_study_type": [
+        "review"
+      ],
+      "routing_subnode": "node1b",
+      "changes": {
+        "exposure_method": {
+          "old": "[\"injection cannabinoids\"]",
+          "new": [
+            "unknown"
+          ]
+        },
+        "outcome_domain": {
+          "old": "[\"other\"]",
+          "new": [
+            "addiction"
+          ]
+        }
+      },
+      "llm_metrics": {
+        "model": "claude-sonnet-4-6",
+        "input_tokens": 776,
+        "cache_read_tokens": 5464,
+        "cache_write_tokens": 0,
+        "output_tokens": 276,
+        "cost": 0.0081072,
+        "few_shot_similarity": 1.0,
+        "few_shot_count": 1,
+        "bm25_retrieval_used": 1,
+        "classification_confidence": 0.9500000000000001,
+        "classifier_version": "2.4.0"
+      },
+      "llm": {
+        "publication_type": "review",
+        "study_type": [
+          "review"
+        ],
+        "exposure_method": [
+          "unknown"
+        ],
+        "cannabis_type": [
+          "unknown"
+        ],
+        "outcome_domain": [
+          "addiction"
+        ],
+        "ingestion_status": "tangential",
+        "species": null,
+        "classification_confidence": 0.9500000000000001,
+        "classifier_version": "llm-node1-calibration-control-2.4.0"
+      },
+      "maude": {
+        "publication_type": "review",
+        "study_type": [
+          "review"
+        ],
+        "exposure_method": [],
+        "cannabis_type": [],
+        "outcome_domain": [
+          "addiction"
+        ],
+        "ingestion_status": "tangential",
+        "species": null,
+        "classification_confidence": 0.84,
+        "classifier_version": "maude-2.4.0",
+        "nodes_visited": [
+          "node0_ingestion",
+          "node1b_reviews"
+        ]
+      },
+      "disagreement": {
+        "fields": {
+          "exposure_method": {
+            "maude": [],
+            "llm": [
+              "unknown"
+            ]
+          },
+          "cannabis_type": {
+            "maude": [],
+            "llm": [
+              "unknown"
+            ]
+          }
+        },
+        "agreed_fields": {
+          "ingestion_status": "tangential",
+          "publication_type": "review",
+          "study_type": [
+            "review"
+          ],
+          "outcome_domain": [
+            "addiction"
+          ],
+          "species": null
+        },
+        "high_level_count": 2,
+        "promotion_field_count": 0,
+        "flagged_for_review": true,
+        "promotion_fields": []
+      },
+      "flagged_for_review": true,
+      "abstract": "Publication Type: Review. In the United States, policies regarding the medical and nonmedical use of cannabis are changing rapidly. In 2021, a total of 34 US states have legalized cannabis for adult medical use, and 15 of these states have legalized adult non-medical use. These changing policies have raised questions about increasing prevalences of cannabis use, changing perceptions regarding frequent use, and potentially related outcomes such as comorbid psychiatric illness or driving under the influence of cannabis. Research regarding the correlates of any and frequent cannabis use is also developing quickly. This article reviews recent empirical studies concerning (1) adult trends in cannabis use, (2) state cannabis laws and related outcomes, and (3) emerging evidence regarding how the global coronavirus 19 pandemic may impact cannabis use patterns. We summarize recent findings and conclude with suggestions to address unanticipated effects of rapidly changing cannabis laws and policies."
+    },
+    {
+      "paper_id": 28781,
+      "pmid": "27373505",
+      "title": "Microglia activation states and cannabinoid system: Therapeutic implications",
+      "variant": "control",
+      "dry_run": false,
+      "locked_fields": [],
+      "before_confidence": null,
+      "before_classifier_version": "heuristic-reclassify-1.0.0",
+      "status": "updated",
+      "after_confidence": 0.8,
+      "after_classifier_version": "llm-node1-calibration-control-2.4.0",
+      "after_publication_type": "review",
+      "after_study_type": [
+        "review"
+      ],
+      "routing_subnode": "node1b",
+      "changes": {
+        "exposure_method": {
+          "old": "[\"injection cannabinoids\"]",
+          "new": [
+            "unknown"
+          ]
+        },
+        "outcome_domain": {
+          "old": "[\"inflammation\"]",
+          "new": [
+            "inflammation",
+            "neuroprotection"
+          ]
+        }
+      },
+      "llm_metrics": {
+        "model": "claude-sonnet-4-6",
+        "input_tokens": 910,
+        "cache_read_tokens": 5464,
+        "cache_write_tokens": 0,
+        "output_tokens": 282,
+        "cost": 0.008599200000000001,
+        "few_shot_similarity": 0.5,
+        "few_shot_count": 1,
+        "bm25_retrieval_used": 1,
+        "classification_confidence": 0.8,
+        "classifier_version": "2.4.0"
+      },
+      "llm": {
+        "publication_type": "review",
+        "study_type": [
+          "review"
+        ],
+        "exposure_method": [
+          "unknown"
+        ],
+        "cannabis_type": [
+          "unknown"
+        ],
+        "outcome_domain": [
+          "inflammation",
+          "neuroprotection"
+        ],
+        "ingestion_status": "relevant",
+        "species": null,
+        "classification_confidence": 0.8,
+        "classifier_version": "llm-node1-calibration-control-2.4.0"
+      },
+      "maude": {
+        "publication_type": "review",
+        "study_type": [
+          "review"
+        ],
+        "exposure_method": [],
+        "cannabis_type": [],
+        "outcome_domain": [
+          "inflammation"
+        ],
+        "ingestion_status": "relevant",
+        "species": null,
+        "classification_confidence": 0.84,
+        "classifier_version": "maude-2.4.0",
+        "nodes_visited": [
+          "node0_ingestion",
+          "node1b_reviews"
+        ]
+      },
+      "disagreement": {
+        "fields": {
+          "exposure_method": {
+            "maude": [],
+            "llm": [
+              "unknown"
+            ]
+          },
+          "cannabis_type": {
+            "maude": [],
+            "llm": [
+              "unknown"
+            ]
+          },
+          "outcome_domain": {
+            "maude": [
+              "inflammation"
+            ],
+            "llm": [
+              "inflammation",
+              "neuroprotection"
+            ]
+          }
+        },
+        "agreed_fields": {
+          "ingestion_status": "relevant",
+          "publication_type": "review",
+          "study_type": [
+            "review"
+          ],
+          "species": null
+        },
+        "high_level_count": 3,
+        "promotion_field_count": 0,
+        "flagged_for_review": true,
+        "promotion_fields": []
+      },
+      "flagged_for_review": true,
+      "abstract": "Publication Type: Review. Microglial cells are recognized as the brain's intrinsic immune cells, mediating actions that range from the protection against harmful conditions that modify CNS homeostasis, to the control of proliferation and differentiation of neurons and their synaptic pruning. To perform these functions, microglia adopts different activation states, the so-called phenotypes that depending on the local environment involve them in neuroinflammation, tissue repair and even the resolution of the inflammatory process. There is accumulating evidence indicating that cannabinoids (CBs) might serve as a promising tool to modify the outcome of inflammation, especially by influencing microglial activity. Microglia has a functional endocannabinoid (eCB) signaling system, composed of cannabinoid receptors and the complete machinery for the synthesis and degradation of eCBs. The expression of cannabinoid receptors - mainly CB2 - and the production of eCBs have been related to the activation profile of these cells and therefore, the microglial phenotype, emerging as one of the mechanisms by which microglia becomes alternatively activated. Here, we will discuss recent studies that provide new insights into the role of CBs and their endogenous counterparts in defining the profile of microglia activation. These actions make CBs a promising therapeutic tool to avoid the detrimental effects of inflammation and possibly paving the way to target microglia in order to generate a reparative milieu in neurodegenerative diseases."
+    },
+    {
+      "paper_id": 18552,
+      "pmid": "37187466",
+      "title": "The Impact of Recreational Cannabis Legalization on Cannabis Use and Associated Outcomes: A Systematic Review",
+      "variant": "control",
+      "dry_run": false,
+      "locked_fields": [],
+      "before_confidence": null,
+      "before_classifier_version": "heuristic-reclassify-1.0.0",
+      "status": "updated",
+      "after_confidence": 0.9500000000000001,
+      "after_classifier_version": "llm-node1-calibration-control-2.4.0",
+      "after_publication_type": "systematic review",
+      "after_study_type": [
+        "review"
+      ],
+      "routing_subnode": "node3a",
+      "changes": {
+        "exposure_method": {
+          "old": "[\"injection cannabinoids\"]",
+          "new": [
+            "unknown"
+          ]
+        },
+        "outcome_domain": {
+          "old": "[\"other\"]",
+          "new": [
+            "addiction",
+            "other"
+          ]
+        }
+      },
+      "llm_metrics": {
+        "model": "claude-sonnet-4-6",
+        "input_tokens": 932,
+        "cache_read_tokens": 5464,
+        "cache_write_tokens": 0,
+        "output_tokens": 280,
+        "cost": 0.0086352,
+        "few_shot_similarity": 1.0,
+        "few_shot_count": 1,
+        "bm25_retrieval_used": 1,
+        "classification_confidence": 0.9500000000000001,
+        "classifier_version": "2.4.0"
+      },
+      "llm": {
+        "publication_type": "review",
+        "study_type": [
+          "systematic review",
+          "review"
+        ],
+        "exposure_method": [
+          "unknown"
+        ],
+        "cannabis_type": [
+          "unknown"
+        ],
+        "outcome_domain": [
+          "addiction",
+          "other"
+        ],
+        "ingestion_status": "tangential",
+        "species": null,
+        "classification_confidence": 0.9500000000000001,
+        "classifier_version": "llm-node1-calibration-control-2.4.0"
+      },
+      "maude": {
+        "publication_type": "review",
+        "study_type": [
+          "review",
+          "systematic review"
+        ],
+        "exposure_method": [],
+        "cannabis_type": [],
+        "outcome_domain": [
+          "addiction"
+        ],
+        "ingestion_status": "tangential",
+        "species": null,
+        "classification_confidence": 0.93,
+        "classifier_version": "maude-2.4.0",
+        "nodes_visited": [
+          "node0_ingestion",
+          "node1b_reviews",
+          "node3a"
+        ]
+      },
+      "disagreement": {
+        "fields": {
+          "exposure_method": {
+            "maude": [],
+            "llm": [
+              "unknown"
+            ]
+          },
+          "cannabis_type": {
+            "maude": [],
+            "llm": [
+              "unknown"
+            ]
+          },
+          "outcome_domain": {
+            "maude": [
+              "addiction"
+            ],
+            "llm": [
+              "addiction",
+              "other"
+            ]
+          }
+        },
+        "agreed_fields": {
+          "ingestion_status": "tangential",
+          "publication_type": "review",
+          "study_type": [
+            "review",
+            "systematic review"
+          ],
+          "species": null
+        },
+        "high_level_count": 3,
+        "promotion_field_count": 0,
+        "flagged_for_review": true,
+        "promotion_fields": []
+      },
+      "flagged_for_review": true,
+      "abstract": "Publication Type: Review. Background: Recreational cannabis legalization has become more prevalent over the past decade, increasing the need to understand its impact on downstream health-related outcomes. Although prior reviews have broadly summarized research on cannabis liberalization policies (including decriminalization and medical legalization), directed efforts are needed to synthesize the more recent research that focuses on recreational cannabis legalization specifically. Thus, the current review summarizes existing studies using longitudinal designs to evaluate impacts of recreational cannabis legalization on cannabis use and related outcomes. Method: A comprehensive bibliographic search strategy revealed 61 studies published from 2016 to 2022 that met criteria for inclusion. The studies were predominantly from the United States (66.2%) and primarily utilized self-report data (for cannabis use and attitudes) or administrative data (for health-related, driving, and crime outcomes). Results: Five main categories of outcomes were identified through the review: cannabis and other substance use, attitudes toward cannabis, health-care utilization, driving-related outcomes, and crime-related outcomes. The extant literature revealed mixed findings, including some evidence of negative consequences of legalization (such as increased young adult use, cannabis-related healthcare visits, and impaired driving) and some evidence for minimal impacts (such as little change in adolescent cannabis use rates, substance use rates, and mixed evidence for changes in cannabis-related attitudes). Conclusions: Overall, the existing literature reveals a number of negative consequences of legalization, although the findings are mixed and generally do not suggest large magnitude short-term impacts. The review highlights the need for more systematic investigation, particularly across a greater diversity of geographic regions."
+    },
+    {
+      "paper_id": 29376,
+      "pmid": "26277482",
+      "title": "Marijuana, phytocannabinoids, the endocannabinoid system, and male fertility",
+      "variant": "control",
+      "dry_run": false,
+      "locked_fields": [],
+      "before_confidence": null,
+      "before_classifier_version": "heuristic-reclassify-1.0.0",
+      "status": "updated",
+      "after_confidence": 0.8,
+      "after_classifier_version": "llm-node1-calibration-control-2.4.0",
+      "after_publication_type": "review",
+      "after_study_type": [
+        "review"
+      ],
+      "routing_subnode": "node1b",
+      "changes": {
+        "exposure_method": {
+          "old": "[\"injection cannabinoids\"]",
+          "new": [
+            "unknown"
+          ]
+        }
+      },
+      "llm_metrics": {
+        "model": "claude-sonnet-4-6",
+        "input_tokens": 829,
+        "cache_read_tokens": 5464,
+        "cache_write_tokens": 0,
+        "output_tokens": 276,
+        "cost": 0.008266200000000001,
+        "few_shot_similarity": 0.5,
+        "few_shot_count": 1,
+        "bm25_retrieval_used": 1,
+        "classification_confidence": 0.8,
+        "classifier_version": "2.4.0"
+      },
+      "llm": {
+        "publication_type": "review",
+        "study_type": [
+          "review"
+        ],
+        "exposure_method": [
+          "unknown"
+        ],
+        "cannabis_type": [
+          "unknown"
+        ],
+        "outcome_domain": [
+          "other"
+        ],
+        "ingestion_status": "relevant",
+        "species": null,
+        "classification_confidence": 0.8,
+        "classifier_version": "llm-node1-calibration-control-2.4.0"
+      },
+      "maude": {
+        "publication_type": "review",
+        "study_type": [
+          "review"
+        ],
+        "exposure_method": [],
+        "cannabis_type": [],
+        "outcome_domain": [
+          "other"
+        ],
+        "ingestion_status": "relevant",
+        "species": null,
+        "classification_confidence": 0.84,
+        "classifier_version": "maude-2.4.0",
+        "nodes_visited": [
+          "node0_ingestion",
+          "node1b_reviews"
+        ]
+      },
+      "disagreement": {
+        "fields": {
+          "exposure_method": {
+            "maude": [],
+            "llm": [
+              "unknown"
+            ]
+          },
+          "cannabis_type": {
+            "maude": [],
+            "llm": [
+              "unknown"
+            ]
+          }
+        },
+        "agreed_fields": {
+          "ingestion_status": "relevant",
+          "publication_type": "review",
+          "study_type": [
+            "review"
+          ],
+          "outcome_domain": [
+            "other"
+          ],
+          "species": null
+        },
+        "high_level_count": 2,
+        "promotion_field_count": 0,
+        "flagged_for_review": true,
+        "promotion_fields": []
+      },
+      "flagged_for_review": true,
+      "abstract": "Publication Type: Review. Marijuana has the highest consumption rate among all of the illicit drugs used in the USA, and its popularity as both a recreational and medicinal drug is increasing especially among men of reproductive age. Male factor infertility is on the increase, and the exposure to the cannabinoid compounds released by marijuana could be a contributing cause. The endocannabinoid system (ECS) is deeply involved in the complex regulation of male reproduction through the endogenous release of endocannabinoids and binding to cannabinoid receptors. Disturbing the delicate balance of the ECS due to marijuana use can negatively impact reproductive potential. Various in vivo and in vitro studies have reported on the empirical role that marijuana plays in disrupting the hypothalamus-pituitary-gonadal axis, spermatogenesis, and sperm function such as motility, capacitation, and the acrosome reaction. In this review, we highlight the latest evidence regarding the effect of marijuana use on male fertility and also provide a detailed insight into the ECS and its significance in the male reproductive system."
+    },
+    {
+      "paper_id": 15341,
+      "pmid": "33335413",
+      "title": "Therapeutic Potential of Cannabidiol (CBD) for Skin Health and Disorders",
+      "variant": "control",
+      "dry_run": false,
+      "locked_fields": [],
+      "before_confidence": null,
+      "before_classifier_version": "heuristic-reclassify-1.0.0",
+      "status": "updated",
+      "after_confidence": 0.9500000000000001,
+      "after_classifier_version": "llm-node1-calibration-control-2.4.0",
+      "after_publication_type": "review",
+      "after_study_type": [
+        "review"
+      ],
+      "routing_subnode": "node1b",
+      "changes": {
+        "exposure_method": {
+          "old": "[\"injection cannabinoids\"]",
+          "new": [
+            "unknown"
+          ]
+        },
+        "outcome_domain": {
+          "old": "[\"cognition\", \"addiction\"]",
+          "new": [
+            "inflammation",
+            "pain"
+          ]
+        }
+      },
+      "llm_metrics": {
+        "model": "claude-sonnet-4-6",
+        "input_tokens": 750,
+        "cache_read_tokens": 5464,
+        "cache_write_tokens": 0,
+        "output_tokens": 282,
+        "cost": 0.0081192,
+        "few_shot_similarity": 1.0,
+        "few_shot_count": 1,
+        "bm25_retrieval_used": 1,
+        "classification_confidence": 0.9500000000000001,
+        "classifier_version": "2.4.0"
+      },
+      "llm": {
+        "publication_type": "review",
+        "study_type": [
+          "review"
+        ],
+        "exposure_method": [
+          "unknown"
+        ],
+        "cannabis_type": [
+          "pure cannabinoid"
+        ],
+        "outcome_domain": [
+          "inflammation",
+          "pain"
+        ],
+        "ingestion_status": "relevant",
+        "species": null,
+        "classification_confidence": 0.9500000000000001,
+        "classifier_version": "llm-node1-calibration-control-2.4.0"
+      },
+      "maude": {
+        "publication_type": "review",
+        "study_type": [
+          "review"
+        ],
+        "exposure_method": [],
+        "cannabis_type": [],
+        "outcome_domain": [
+          "cognition",
+          "addiction"
+        ],
+        "ingestion_status": "relevant",
+        "species": null,
+        "classification_confidence": 0.84,
+        "classifier_version": "maude-2.4.0",
+        "nodes_visited": [
+          "node0_ingestion",
+          "node1b_reviews"
+        ]
+      },
+      "disagreement": {
+        "fields": {
+          "exposure_method": {
+            "maude": [],
+            "llm": [
+              "unknown"
+            ]
+          },
+          "cannabis_type": {
+            "maude": [],
+            "llm": [
+              "pure cannabinoid"
+            ]
+          },
+          "outcome_domain": {
+            "maude": [
+              "cognition",
+              "addiction"
+            ],
+            "llm": [
+              "inflammation",
+              "pain"
+            ]
+          }
+        },
+        "agreed_fields": {
+          "ingestion_status": "relevant",
+          "publication_type": "review",
+          "study_type": [
+            "review"
+          ],
+          "species": null
+        },
+        "high_level_count": 3,
+        "promotion_field_count": 0,
+        "flagged_for_review": true,
+        "promotion_fields": []
+      },
+      "flagged_for_review": true,
+      "abstract": "Publication Type: Review. Though there is limited research confirming the purported topical benefits of cannabinoids, it is certain that cutaneous biology is modulated by the human endocannabinoid system (ECS). Receptors from the ECS have been identified in the skin and systemic abuse of synthetic cannabinoids, and their analogs, have also been associated with the manifestation of dermatological disorders, indicating the effects of the ECS on cutaneous biology. In particular, cannabidiol (CBD), a non-psychoactive compound from the cannabis plant, has garnered significant attention in recent years for its anecdotal therapeutic potential for various pathologies, including skin and cosmetic disorders. Though a body of preclinical evidence suggests topical application of CBD may be efficacious for some skin disorders, such as eczema, psoriasis, pruritis, and inflammatory conditions, confirmed clinical efficacy and elucidation of underlying molecular mechanisms have yet to be fully identified. This article provides an update on the advances in CBD research to date and the potential areas of future exploration."
+    },
+    {
+      "paper_id": 8589,
+      "pmid": "38086109",
+      "title": "The schizophrenia syndrome, circa 2024: What we know and how that informs its nature",
+      "variant": "control",
+      "dry_run": false,
+      "locked_fields": [],
+      "before_confidence": null,
+      "before_classifier_version": "heuristic-reclassify-1.0.0",
+      "status": "updated",
+      "after_confidence": 0.68,
+      "after_classifier_version": "llm-node1-calibration-control-2.4.0",
+      "after_publication_type": "review",
+      "after_study_type": [
+        "review"
+      ],
+      "routing_subnode": "node1b",
+      "changes": {
+        "exposure_method": {
+          "old": "[\"injection cannabinoids\"]",
+          "new": [
+            "unknown"
+          ]
+        }
+      },
+      "llm_metrics": {
+        "model": "claude-sonnet-4-6",
+        "input_tokens": 1089,
+        "cache_read_tokens": 5464,
+        "cache_write_tokens": 0,
+        "output_tokens": 276,
+        "cost": 0.0090462,
+        "few_shot_similarity": 0.1,
+        "few_shot_count": 1,
+        "bm25_retrieval_used": 1,
+        "classification_confidence": 0.68,
+        "classifier_version": "2.4.0"
+      },
+      "llm": {
+        "publication_type": "review",
+        "study_type": [
+          "review"
+        ],
+        "exposure_method": [
+          "unknown"
+        ],
+        "cannabis_type": [
+          "unknown"
+        ],
+        "outcome_domain": [
+          "other"
+        ],
+        "ingestion_status": "relevant",
+        "species": null,
+        "classification_confidence": 0.68,
+        "classifier_version": "llm-node1-calibration-control-2.4.0"
+      },
+      "maude": {
+        "publication_type": "review",
+        "study_type": [
+          "review"
+        ],
+        "exposure_method": [],
+        "cannabis_type": [],
+        "outcome_domain": [
+          "other"
+        ],
+        "ingestion_status": "relevant",
+        "species": null,
+        "classification_confidence": 0.84,
+        "classifier_version": "maude-2.4.0",
+        "nodes_visited": [
+          "node0_ingestion",
+          "node1b_reviews"
+        ]
+      },
+      "disagreement": {
+        "fields": {
+          "exposure_method": {
+            "maude": [],
+            "llm": [
+              "unknown"
+            ]
+          },
+          "cannabis_type": {
+            "maude": [],
+            "llm": [
+              "unknown"
+            ]
+          }
+        },
+        "agreed_fields": {
+          "ingestion_status": "relevant",
+          "publication_type": "review",
+          "study_type": [
+            "review"
+          ],
+          "outcome_domain": [
+            "other"
+          ],
+          "species": null
+        },
+        "high_level_count": 2,
+        "promotion_field_count": 0,
+        "flagged_for_review": true,
+        "promotion_fields": []
+      },
+      "flagged_for_review": true,
+      "abstract": "Publication Type: Review. With new data about different aspects of schizophrenia being continually generated, it becomes necessary to periodically revisit exactly what we know. Along with a need to review what we currently know about schizophrenia, there is an equal imperative to evaluate the construct itself. With these objectives, we undertook an iterative, multi-phase process involving fifty international experts in the field, with each step building on learnings from the prior one. This review assembles currently established findings about schizophrenia (construct, etiology, pathophysiology, clinical expression, treatment) and posits what they reveal about its nature. Schizophrenia is a heritable, complex, multi-dimensional syndrome with varying degrees of psychotic, negative, cognitive, mood, and motor manifestations. The illness exhibits a remitting and relapsing course, with varying degrees of recovery among affected individuals with most experiencing significant social and functional impairment. Genetic risk factors likely include thousands of common genetic variants that each have a small impact on an individual's risk and a plethora of rare gene variants that have a larger individual impact on risk. Their biological effects are concentrated in the brain and many of the same variants also increase the risk of other psychiatric disorders such as bipolar disorder, autism, and other neurodevelopmental conditions. Environmental risk factors include but are not limited to urban residence in childhood, migration, older paternal age at birth, cannabis use, childhood trauma, antenatal maternal infection, and perinatal hypoxia. Structural, functional, and neurochemical brain alterations implicate multiple regions and functional circuits. Dopamine D-2 receptor antagonists and partial agonists improve psychotic symptoms and reduce risk of relapse. Certain psychological and psychosocial interventions are beneficial. Early intervention can reduce treatment delay and improve outcomes. Schizophrenia is increasingly considered to be a heterogeneous syndrome and not a singular disease entity. There is no necessary or sufficient etiology, pathology, set of clinical features, or treatment that fully circumscribes this syndrome. A single, common pathophysiological pathway appears unlikely. The boundaries of schizophrenia remain fuzzy, suggesting the absence of a categorical fit and need to reconceptualize it as a broader, multi-dimensional and/or spectrum construct."
+    },
+    {
+      "paper_id": 22131,
+      "pmid": "36379120",
+      "title": "Disorders of cancer metabolism: The therapeutic potential of cannabinoids",
+      "variant": "control",
+      "dry_run": false,
+      "locked_fields": [],
+      "before_confidence": null,
+      "before_classifier_version": "heuristic-reclassify-1.0.0",
+      "status": "updated",
+      "after_confidence": 0.75,
+      "after_classifier_version": "llm-node1-calibration-control-2.4.0",
+      "after_publication_type": "review",
+      "after_study_type": [
+        "review"
+      ],
+      "routing_subnode": "node1b",
+      "changes": {
+        "exposure_method": {
+          "old": "[\"injection cannabinoids\"]",
+          "new": [
+            "unknown"
+          ]
+        },
+        "cannabis_type": {
+          "old": "[\"unknown\"]",
+          "new": [
+            "pure cannabinoid"
+          ]
+        }
+      },
+      "llm_metrics": {
+        "model": "claude-sonnet-4-6",
+        "input_tokens": 775,
+        "cache_read_tokens": 5464,
+        "cache_write_tokens": 0,
+        "output_tokens": 280,
+        "cost": 0.0081642,
+        "few_shot_similarity": 0.5,
+        "few_shot_count": 1,
+        "bm25_retrieval_used": 1,
+        "classification_confidence": 0.75,
+        "classifier_version": "2.4.0"
+      },
+      "llm": {
+        "publication_type": "review",
+        "study_type": [
+          "review"
+        ],
+        "exposure_method": [
+          "unknown"
+        ],
+        "cannabis_type": [
+          "pure cannabinoid"
+        ],
+        "outcome_domain": [
+          "oncology"
+        ],
+        "ingestion_status": "relevant",
+        "species": null,
+        "classification_confidence": 0.75,
+        "classifier_version": "llm-node1-calibration-control-2.4.0"
+      },
+      "maude": {
+        "publication_type": "review",
+        "study_type": [
+          "review"
+        ],
+        "exposure_method": [],
+        "cannabis_type": [],
+        "outcome_domain": [
+          "oncology"
+        ],
+        "ingestion_status": "relevant",
+        "species": null,
+        "classification_confidence": 0.84,
+        "classifier_version": "maude-2.4.0",
+        "nodes_visited": [
+          "node0_ingestion",
+          "node1b_reviews"
+        ]
+      },
+      "disagreement": {
+        "fields": {
+          "exposure_method": {
+            "maude": [],
+            "llm": [
+              "unknown"
+            ]
+          },
+          "cannabis_type": {
+            "maude": [],
+            "llm": [
+              "pure cannabinoid"
+            ]
+          }
+        },
+        "agreed_fields": {
+          "ingestion_status": "relevant",
+          "publication_type": "review",
+          "study_type": [
+            "review"
+          ],
+          "outcome_domain": [
+            "oncology"
+          ],
+          "species": null
+        },
+        "high_level_count": 2,
+        "promotion_field_count": 0,
+        "flagged_for_review": true,
+        "promotion_fields": []
+      },
+      "flagged_for_review": true,
+      "abstract": "Publication Type: Review. Abnormal energy metabolism, as one of the important hallmarks of cancer, was induced by multiple carcinogenic factors and tumor-specific microenvironments. It comprises aerobic glycolysis, de novo lipid biosynthesis, and glutamine-dependent anaplerosis. Considering that metabolic reprogramming provides various nutrients for tumor survival and development, it has been considered a potential target for cancer therapy. Cannabinoids have been shown to exhibit a variety of anticancer activities by unclear mechanisms. This paper first reviews the recent progress of related signaling pathways (reactive oxygen species (ROS), AMP-activated protein kinase (AMPK), mitogen-activated protein kinases (MAPK), phosphoinositide 3-kinase (PI3K), hypoxia-inducible factor-1alpha (HIF-1\u03b1), and p53) mediating the reprogramming of cancer metabolism (including glucose metabolism, lipid metabolism, and amino acid metabolism). Then we comprehensively explore the latest discoveries and possible mechanisms of the anticancer effects of cannabinoids through the regulation of the above-mentioned related signaling pathways, to provide new targets and insights for cancer prevention and treatment."
+    },
+    {
+      "paper_id": 29047,
+      "pmid": "26876387",
+      "title": "Cannabinoids and autoimmune diseases: A systematic review",
+      "variant": "control",
+      "dry_run": false,
+      "locked_fields": [],
+      "before_confidence": null,
+      "before_classifier_version": "heuristic-reclassify-1.0.0",
+      "status": "updated",
+      "after_confidence": 0.83,
+      "after_classifier_version": "llm-node1-calibration-control-2.4.0",
+      "after_publication_type": "systematic review",
+      "after_study_type": [
+        "review"
+      ],
+      "routing_subnode": "node3a",
+      "changes": {
+        "exposure_method": {
+          "old": "[\"injection cannabinoids\"]",
+          "new": [
+            "unknown"
+          ]
+        }
+      },
+      "llm_metrics": {
+        "model": "claude-sonnet-4-6",
+        "input_tokens": 810,
+        "cache_read_tokens": 5464,
+        "cache_write_tokens": 0,
+        "output_tokens": 286,
+        "cost": 0.0083592,
+        "few_shot_similarity": 0.6,
+        "few_shot_count": 1,
+        "bm25_retrieval_used": 1,
+        "classification_confidence": 0.83,
+        "classifier_version": "2.4.0"
+      },
+      "llm": {
+        "publication_type": "review",
+        "study_type": [
+          "systematic review",
+          "review"
+        ],
+        "exposure_method": [
+          "unknown"
+        ],
+        "cannabis_type": [
+          "unknown"
+        ],
+        "outcome_domain": [
+          "inflammation",
+          "pain",
+          "neuroprotection"
+        ],
+        "ingestion_status": "relevant",
+        "species": null,
+        "classification_confidence": 0.83,
+        "classifier_version": "llm-node1-calibration-control-2.4.0"
+      },
+      "maude": {
+        "publication_type": "review",
+        "study_type": [
+          "review",
+          "systematic review"
+        ],
+        "exposure_method": [],
+        "cannabis_type": [],
+        "outcome_domain": [
+          "pain",
+          "inflammation",
+          "neuroprotection"
+        ],
+        "ingestion_status": "relevant",
+        "species": "mouse",
+        "classification_confidence": 0.93,
+        "classifier_version": "maude-2.4.0",
+        "nodes_visited": [
+          "node0_ingestion",
+          "node1b_reviews",
+          "node3a"
+        ]
+      },
+      "disagreement": {
+        "fields": {
+          "exposure_method": {
+            "maude": [],
+            "llm": [
+              "unknown"
+            ]
+          },
+          "cannabis_type": {
+            "maude": [],
+            "llm": [
+              "unknown"
+            ]
+          },
+          "species": {
+            "maude": "mouse",
+            "llm": null
+          }
+        },
+        "agreed_fields": {
+          "ingestion_status": "relevant",
+          "publication_type": "review",
+          "study_type": [
+            "review",
+            "systematic review"
+          ],
+          "outcome_domain": [
+            "pain",
+            "inflammation",
+            "neuroprotection"
+          ]
+        },
+        "high_level_count": 3,
+        "promotion_field_count": 0,
+        "flagged_for_review": true,
+        "promotion_fields": []
+      },
+      "flagged_for_review": true,
+      "abstract": "Publication Type: Review. Cannabinoids have shown to have a variety effects on body systems. Through CB1 and CB2 receptors, amongst other, they exert an effect by modulating neurotransmitter and cytokine release. Current research in the role of cannabinoids in the immune system shows that they possess immunosuppressive properties. They can inhibit proliferation of leucocytes, induce apoptosis of T cells and macrophages and reduce secretion of pro-inflammatory cytokines. In mice models, they are effective in reducing inflammation in arthritis, multiple sclerosis, have a positive effect on neuropathic pain and in type 1 diabetes mellitus. They are effective as treatment for fibromyalgia and have shown to have anti-fibrotic effect in scleroderma. Studies in human models are scarce and not conclusive and more research is required in this field. Cannabinoids can be therefore promising immunosuppressive and anti-fibrotic agents in the therapy of autoimmune disorders."
+    },
+    {
+      "paper_id": 31036,
+      "pmid": "23108550",
+      "title": "The endocannabinoid system in normal and pathological brain ageing",
+      "variant": "control",
+      "dry_run": false,
+      "locked_fields": [],
+      "before_confidence": null,
+      "before_classifier_version": "heuristic-reclassify-1.0.0",
+      "status": "updated",
+      "after_confidence": 0.8,
+      "after_classifier_version": "llm-node1-calibration-control-2.4.0",
+      "after_publication_type": "review",
+      "after_study_type": [
+        "review"
+      ],
+      "routing_subnode": "node1b",
+      "changes": {
+        "exposure_method": {
+          "old": "[\"injection cannabinoids\"]",
+          "new": [
+            "unknown"
+          ]
+        },
+        "outcome_domain": {
+          "old": "[\"neuroprotection\"]",
+          "new": [
+            "neuroprotection",
+            "cognition",
+            "inflammation"
+          ]
+        }
+      },
+      "llm_metrics": {
+        "model": "claude-sonnet-4-6",
+        "input_tokens": 936,
+        "cache_read_tokens": 5464,
+        "cache_write_tokens": 0,
+        "output_tokens": 286,
+        "cost": 0.0087372,
+        "few_shot_similarity": 0.5,
+        "few_shot_count": 1,
+        "bm25_retrieval_used": 1,
+        "classification_confidence": 0.8,
+        "classifier_version": "2.4.0"
+      },
+      "llm": {
+        "publication_type": "review",
+        "study_type": [
+          "review"
+        ],
+        "exposure_method": [
+          "unknown"
+        ],
+        "cannabis_type": [
+          "unknown"
+        ],
+        "outcome_domain": [
+          "neuroprotection",
+          "cognition",
+          "inflammation"
+        ],
+        "ingestion_status": "relevant",
+        "species": null,
+        "classification_confidence": 0.8,
+        "classifier_version": "llm-node1-calibration-control-2.4.0"
+      },
+      "maude": {
+        "publication_type": "review",
+        "study_type": [
+          "review"
+        ],
+        "exposure_method": [],
+        "cannabis_type": [],
+        "outcome_domain": [
+          "neuroprotection"
+        ],
+        "ingestion_status": "relevant",
+        "species": null,
+        "classification_confidence": 0.84,
+        "classifier_version": "maude-2.4.0",
+        "nodes_visited": [
+          "node0_ingestion",
+          "node1b_reviews"
+        ]
+      },
+      "disagreement": {
+        "fields": {
+          "exposure_method": {
+            "maude": [],
+            "llm": [
+              "unknown"
+            ]
+          },
+          "cannabis_type": {
+            "maude": [],
+            "llm": [
+              "unknown"
+            ]
+          },
+          "outcome_domain": {
+            "maude": [
+              "neuroprotection"
+            ],
+            "llm": [
+              "neuroprotection",
+              "cognition",
+              "inflammation"
+            ]
+          }
+        },
+        "agreed_fields": {
+          "ingestion_status": "relevant",
+          "publication_type": "review",
+          "study_type": [
+            "review"
+          ],
+          "species": null
+        },
+        "high_level_count": 3,
+        "promotion_field_count": 0,
+        "flagged_for_review": true,
+        "promotion_fields": []
+      },
+      "flagged_for_review": true,
+      "abstract": "Publication Type: Review. The role of endocannabinoids as inhibitory retrograde transmitters is now widely known and intensively studied. However, endocannabinoids also influence neuronal activity by exerting neuroprotective effects and regulating glial responses. This review centres around this less-studied area, focusing on the cellular and molecular mechanisms underlying the protective effect of the cannabinoid system in brain ageing. The progression of ageing is largely determined by the balance between detrimental, pro-ageing, largely stochastic processes, and the activity of the homeostatic defence system. Experimental evidence suggests that the cannabinoid system is part of the latter system. Cannabinoids as regulators of mitochondrial activity, as anti-oxidants and as modulators of clearance processes protect neurons on the molecular level. On the cellular level, the cannabinoid system regulates the expression of brain-derived neurotrophic factor and neurogenesis. Neuroinflammatory processes contributing to the progression of normal brain ageing and to the pathogenesis of neurodegenerative diseases are suppressed by cannabinoids, suggesting that they may also influence the ageing process on the system level. In good agreement with the hypothesized beneficial role of cannabinoid system activity against brain ageing, it was shown that animals lacking CB1 receptors show early onset of learning deficits associated with age-related histological and molecular changes. In preclinical models of neurodegenerative disorders, cannabinoids show beneficial effects, but the clinical evidence regarding their efficacy as therapeutic tools is either inconclusive or still missing."
+    },
+    {
+      "paper_id": 30809,
+      "pmid": "23567085",
+      "title": "Cannabinoid signaling and liver therapeutics",
+      "variant": "control",
+      "dry_run": false,
+      "locked_fields": [],
+      "before_confidence": null,
+      "before_classifier_version": "heuristic-reclassify-1.0.0",
+      "status": "updated",
+      "after_confidence": 0.86,
+      "after_classifier_version": "llm-node1-calibration-control-2.4.0",
+      "after_publication_type": "review",
+      "after_study_type": [
+        "review"
+      ],
+      "routing_subnode": "node1b",
+      "changes": {
+        "exposure_method": {
+          "old": "[\"injection cannabinoids\"]",
+          "new": [
+            "unknown"
+          ]
+        },
+        "outcome_domain": {
+          "old": "[\"other\"]",
+          "new": [
+            "inflammation"
+          ]
+        }
+      },
+      "llm_metrics": {
+        "model": "claude-sonnet-4-6",
+        "input_tokens": 860,
+        "cache_read_tokens": 5464,
+        "cache_write_tokens": 0,
+        "output_tokens": 286,
+        "cost": 0.008509200000000001,
+        "few_shot_similarity": 0.7,
+        "few_shot_count": 1,
+        "bm25_retrieval_used": 1,
+        "classification_confidence": 0.86,
+        "classifier_version": "2.4.0"
+      },
+      "llm": {
+        "publication_type": "review",
+        "study_type": [
+          "review"
+        ],
+        "exposure_method": [
+          "unknown"
+        ],
+        "cannabis_type": [
+          "CB receptor antagonist",
+          "CB receptor agonist"
+        ],
+        "outcome_domain": [
+          "inflammation"
+        ],
+        "ingestion_status": "relevant",
+        "species": null,
+        "classification_confidence": 0.86,
+        "classifier_version": "llm-node1-calibration-control-2.4.0"
+      },
+      "maude": {
+        "publication_type": "review",
+        "study_type": [
+          "review"
+        ],
+        "exposure_method": [],
+        "cannabis_type": [],
+        "outcome_domain": [
+          "other"
+        ],
+        "ingestion_status": "relevant",
+        "species": null,
+        "classification_confidence": 0.84,
+        "classifier_version": "maude-2.4.0",
+        "nodes_visited": [
+          "node0_ingestion",
+          "node1b_reviews"
+        ]
+      },
+      "disagreement": {
+        "fields": {
+          "exposure_method": {
+            "maude": [],
+            "llm": [
+              "unknown"
+            ]
+          },
+          "cannabis_type": {
+            "maude": [],
+            "llm": [
+              "CB receptor antagonist",
+              "CB receptor agonist"
+            ]
+          },
+          "outcome_domain": {
+            "maude": [
+              "other"
+            ],
+            "llm": [
+              "inflammation"
+            ]
+          }
+        },
+        "agreed_fields": {
+          "ingestion_status": "relevant",
+          "publication_type": "review",
+          "study_type": [
+            "review"
+          ],
+          "species": null
+        },
+        "high_level_count": 3,
+        "promotion_field_count": 0,
+        "flagged_for_review": true,
+        "promotion_fields": []
+      },
+      "flagged_for_review": true,
+      "abstract": "Publication Type: Review. Over the last decade, the endocannabinoid system has emerged as a pivotal mediator of acute and chronic liver injury, with the description of the role of CB1 and CB2 receptors and their endogenous lipidic ligands in various aspects of liver pathophysiology. A large number of studies have demonstrated that CB1 receptor antagonists represent an important therapeutic target, owing to beneficial effects on lipid metabolism and in light of its antifibrogenic properties. Unfortunately, the brain-penetrant CB1 antagonist rimonabant, initially approved for the management of overweight and related cardiometabolic risks, was withdrawn because of an alarming rate of mood adverse effects. However, the efficacy of peripherally-restricted CB1 antagonists with limited brain penetrance has now been validated in preclinical models of NAFLD, and beneficial effects on fibrosis and its complications are anticipated. CB2 receptor is currently considered as a promising anti-inflammatory and antifibrogenic target, although clinical development of CB2 agonists is still awaited. In this review, we highlight the latest advances on the impact of the endocannabinoid system on the key steps of chronic liver disease progression and discuss the therapeutic potential of molecules targeting cannabinoid receptors."
+    },
+    {
+      "paper_id": 18233,
+      "pmid": "27285147",
+      "title": "Current Status and Prospects for Cannabidiol Preparations as New Therapeutic Agents",
+      "variant": "control",
+      "dry_run": false,
+      "locked_fields": [],
+      "before_confidence": null,
+      "before_classifier_version": "heuristic-reclassify-1.0.0",
+      "status": "updated",
+      "after_confidence": 0.870000012,
+      "after_classifier_version": "llm-node1-calibration-control-2.4.0",
+      "after_publication_type": "review",
+      "after_study_type": [
+        "review"
+      ],
+      "routing_subnode": "node1b",
+      "changes": {
+        "exposure_method": {
+          "old": "[\"injection cannabinoids\"]",
+          "new": [
+            "unknown"
+          ]
+        },
+        "cannabis_type": {
+          "old": "[\"unknown\"]",
+          "new": [
+            "pure cannabinoid"
+          ]
+        },
+        "outcome_domain": {
+          "old": "[\"other\"]",
+          "new": [
+            "neuroprotection",
+            "anxiety",
+            "inflammation"
+          ]
+        }
+      },
+      "llm_metrics": {
+        "model": "claude-sonnet-4-6",
+        "input_tokens": 965,
+        "cache_read_tokens": 5464,
+        "cache_write_tokens": 0,
+        "output_tokens": 288,
+        "cost": 0.008854200000000001,
+        "few_shot_similarity": 0.90000004,
+        "few_shot_count": 1,
+        "bm25_retrieval_used": 1,
+        "classification_confidence": 0.870000012,
+        "classifier_version": "2.4.0"
+      },
+      "llm": {
+        "publication_type": "review",
+        "study_type": [
+          "review"
+        ],
+        "exposure_method": [
+          "unknown"
+        ],
+        "cannabis_type": [
+          "pure cannabinoid"
+        ],
+        "outcome_domain": [
+          "neuroprotection",
+          "anxiety",
+          "inflammation"
+        ],
+        "ingestion_status": "tangential",
+        "species": null,
+        "classification_confidence": 0.870000012,
+        "classifier_version": "llm-node1-calibration-control-2.4.0"
+      },
+      "maude": {
+        "publication_type": "review",
+        "study_type": [
+          "review"
+        ],
+        "exposure_method": [],
+        "cannabis_type": [],
+        "outcome_domain": [
+          "other"
+        ],
+        "ingestion_status": "tangential",
+        "species": null,
+        "classification_confidence": 0.84,
+        "classifier_version": "maude-2.4.0",
+        "nodes_visited": [
+          "node0_ingestion",
+          "node1b_reviews"
+        ]
+      },
+      "disagreement": {
+        "fields": {
+          "exposure_method": {
+            "maude": [],
+            "llm": [
+              "unknown"
+            ]
+          },
+          "cannabis_type": {
+            "maude": [],
+            "llm": [
+              "pure cannabinoid"
+            ]
+          },
+          "outcome_domain": {
+            "maude": [
+              "other"
+            ],
+            "llm": [
+              "neuroprotection",
+              "anxiety",
+              "inflammation"
+            ]
+          }
+        },
+        "agreed_fields": {
+          "ingestion_status": "tangential",
+          "publication_type": "review",
+          "study_type": [
+            "review"
+          ],
+          "species": null
+        },
+        "high_level_count": 3,
+        "promotion_field_count": 0,
+        "flagged_for_review": true,
+        "promotion_fields": []
+      },
+      "flagged_for_review": true,
+      "abstract": "Publication Type: Review. States and the federal government are under growing pressure to legalize the use of cannabis products for medical purposes in the United States. Sixteen states have legalized (or decriminalized possession of) products high in cannabidiol (CBD) and with restricted \u2206(9) -tetrahydrocannabinol (\u2206(9) -THC) content. In most of these states, the intent is for use in refractory epileptic seizures in children, but in a few states, the indications are broader. This review provides an overview of the pharmacology and toxicology of CBD; summarizes some of the regulatory, safety, and cultural issues relevant to the further exploitation of its antiepileptic or other pharmacologic activities; and assesses the current status and prospects for clinical development of CBD and CBD-rich preparations for medical use in the United States. Unlike \u0394(9) -THC, CBD elicits its pharmacologic effects without exerting any significant intrinsic activity on the cannabinoid receptors, whose activation results in the psychotropic effects characteristic of \u0394(9) -THC, and CBD possesses several pharmacologic activities that give it a high potential for therapeutic use. CBD exhibits neuroprotective, antiepileptic, anxiolytic, antipsychotic, and antiinflammatory properties. In combination with \u0394(9) -THC, CBD has received regulatory approvals in several European countries and is currently under study in trials registered by the U.S. Food and Drug Administration in the United States. A number of states have passed legislation to allow for the use of CBD-rich, limited \u0394(9) -THC-content preparations of cannabis for certain pathologic conditions. CBD is currently being studied in several clinical trials and is at different stages of clinical development for various medical indications. Judging from clinical findings reported so far, CBD and CBD-enriched preparations have great potential utility, but uncertainties regarding sourcing, long-term safety, abuse potential, and regulatory dilemmas remain."
+    }
+  ],
+  "maude_refresh_source_batch": "node1_calibration_20260619_133853_884",
+  "maude_refresh_only": true
+}

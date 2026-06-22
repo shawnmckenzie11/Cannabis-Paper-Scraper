@@ -1799,9 +1799,7 @@ class DatabaseManager:
         # Classification level filter
         class_level = filters.get("classification_level")
         if class_level and class_level != "ALL":
-            if class_level == "native":
-                where_clauses.append("(papers.classifier_version IS NULL OR papers.classifier_version NOT LIKE 'llm-%')")
-            elif class_level == "claude_abstract":
+            if class_level == "claude_abstract":
                 where_clauses.append(
                     "(papers.classifier_version LIKE 'llm-reclassify-%' AND papers.classifier_version NOT LIKE 'llm-pdf-%')"
                 )

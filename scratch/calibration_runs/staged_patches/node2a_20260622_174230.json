@@ -1,0 +1,18 @@
+{
+  "target_subnode": "node2a",
+  "created_at": "2026-06-22T17:48:00",
+  "source_batch_id": "node2a_calibration_20260622_174230_109",
+  "baseline_alignment_pct": 65.6,
+  "baseline_maude_recall_pct": 39.9,
+  "post_patch_alignment_pct": 79.4,
+  "post_patch_maude_recall_pct": 89.6,
+  "pattern_summary": "Dominant errors: review misrouting on clinical PDFs (7/10 publication_type) leaving exposure/cannabis/outcome empty; clinical oral/inhaled routes stripped by animal dedupe; sample_size from URL n= and population counts; administration_frequency from cannabis-use patterns on observational surveys; animal study_type bleed on human-participant PDFs; outcome_domain limited to abstract intro.",
+  "implementation_notes": [
+    "should_route_clinical_before_review routes primary human-subjects surveys/RCT PDFs to original research before review cues.",
+    "Clinical oral/inhaled exposure routes are retained; animal-specific dedupe only when preclinical routes are present.",
+    "sample_size scoring rejects URL/reference n= and population stats; prefers participant cohort N= with total-N tie-break.",
+    "administration_frequency requires interventional dosing context on observational clinical designs.",
+    "Observational clinical papers skip duration_days; outcomes scan PDF intro/objective text.",
+    "Human-subject node2a routing strips incidental Animal Models labels from mixed branch hits."
+  ]
+}

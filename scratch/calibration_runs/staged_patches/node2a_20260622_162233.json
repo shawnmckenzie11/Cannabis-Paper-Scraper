@@ -1,0 +1,143 @@
+{
+  "target_subnode": "node2a",
+  "created_at": "2026-06-22T16:22:33.368181",
+  "pattern_summary": "Top scoped disagreement fields on node2a: sample_size, exposure_method, strain_reported, duration_days, strain_normalized, study_type. Batch alignment 66.2% \u00b7 Maude recall 76.4%. sample_size: 9/10 papers disagree (90.0%). exposure_method: 8/10 papers disagree (80.0%). strain_reported: 7/10 papers disagree (70.0%). duration_days: 6/10 papers disagree (60.0%). strain_normalized: 5/10 papers disagree (50.0%). Examples: paper 15630: sample_size, duration_days, administration_frequency; paper 15648: exposure_method, sample_size, duration_days, strain_reported; paper 16122: study_type, exposure_method, cannabis_type, sample_size; paper 16482: study_type, exposure_method, cannabis_type, outcome_domain; paper 16540: outcome_domain, sample_size, duration_days, strain_reported; paper 16563: exposure_method, sample_size, dose_mg, strain_reported; paper 16606: exposure_method, sample_size, duration_days, dose_mg; paper 16909: exposure_method, outcome_domain, sample_size, duration_days",
+  "gap_summary": {
+    "target_subnode": "node2a",
+    "scored_paper_count": 10,
+    "papers_with_disagreements": 10,
+    "batch_alignment_rate": 0.6625,
+    "batch_alignment_pct": 66.2,
+    "batch_maude_recall_rate": 0.7643,
+    "batch_maude_recall_pct": 76.4,
+    "batch_extraction_fill_rate": 0.7643,
+    "batch_extraction_fill_pct": 76.4,
+    "field_disagreement_stats": [
+      {
+        "field": "sample_size",
+        "compared_count": 10,
+        "disagree_count": 9,
+        "disagree_pct": 90.0
+      },
+      {
+        "field": "exposure_method",
+        "compared_count": 10,
+        "disagree_count": 8,
+        "disagree_pct": 80.0
+      },
+      {
+        "field": "strain_reported",
+        "compared_count": 10,
+        "disagree_count": 7,
+        "disagree_pct": 70.0
+      },
+      {
+        "field": "duration_days",
+        "compared_count": 10,
+        "disagree_count": 6,
+        "disagree_pct": 60.0
+      },
+      {
+        "field": "strain_normalized",
+        "compared_count": 10,
+        "disagree_count": 5,
+        "disagree_pct": 50.0
+      },
+      {
+        "field": "study_type",
+        "compared_count": 10,
+        "disagree_count": 4,
+        "disagree_pct": 40.0
+      },
+      {
+        "field": "thc_pct",
+        "compared_count": 10,
+        "disagree_count": 4,
+        "disagree_pct": 40.0
+      },
+      {
+        "field": "cannabis_type",
+        "compared_count": 10,
+        "disagree_count": 3,
+        "disagree_pct": 30.0
+      },
+      {
+        "field": "outcome_domain",
+        "compared_count": 10,
+        "disagree_count": 3,
+        "disagree_pct": 30.0
+      },
+      {
+        "field": "dose_mg",
+        "compared_count": 10,
+        "disagree_count": 3,
+        "disagree_pct": 30.0
+      },
+      {
+        "field": "cbd_pct",
+        "compared_count": 10,
+        "disagree_count": 1,
+        "disagree_pct": 10.0
+      },
+      {
+        "field": "administration_frequency",
+        "compared_count": 10,
+        "disagree_count": 1,
+        "disagree_pct": 10.0
+      },
+      {
+        "field": "multiple_doses",
+        "compared_count": 10,
+        "disagree_count": 0,
+        "disagree_pct": 0.0
+      },
+      {
+        "field": "multiple_time_intervals",
+        "compared_count": 10,
+        "disagree_count": 0,
+        "disagree_pct": 0.0
+      },
+      {
+        "field": "inhaled_exposure_duration",
+        "compared_count": 10,
+        "disagree_count": 0,
+        "disagree_pct": 0.0
+      },
+      {
+        "field": "puff_count",
+        "compared_count": 10,
+        "disagree_count": 0,
+        "disagree_pct": 0.0
+      }
+    ],
+    "top_disagreement_fields": [
+      "sample_size",
+      "exposure_method",
+      "strain_reported",
+      "duration_days",
+      "strain_normalized",
+      "study_type",
+      "thc_pct",
+      "cannabis_type",
+      "outcome_domain",
+      "dose_mg"
+    ]
+  },
+  "proposed_rules_changes": [],
+  "proposed_cues": [],
+  "maude_improvement_brief": {
+    "agent_handoff_prompt": "Implement minimal patches for node2a holdout disagreements on: sample_size, exposure_method, strain_reported, duration_days, strain_normalized. Edit extractor.py / maude_classifier.py / maude_cues.json and add test_patch_* regressions. Then bump calibration_build.py, deploy, and refresh the same batch with calibration_agent.py --refresh-maude-from-batch.",
+    "priority_fields": [
+      "sample_size",
+      "exposure_method",
+      "strain_reported",
+      "duration_days",
+      "strain_normalized",
+      "study_type",
+      "thc_pct",
+      "cannabis_type"
+    ]
+  },
+  "agent_handoff_prompt": "Implement minimal patches for node2a holdout disagreements on: sample_size, exposure_method, strain_reported, duration_days, strain_normalized. Edit extractor.py / maude_classifier.py / maude_cues.json and add test_patch_* regressions. Then bump calibration_build.py, deploy, and refresh the same batch with calibration_agent.py --refresh-maude-from-batch.",
+  "llm_call_metrics": null
+}
