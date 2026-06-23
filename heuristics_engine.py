@@ -362,6 +362,7 @@ class PatternCompiler:
 
 # Global instances
 _config = FALLBACK_CONFIG
+_rules_config = None
 patterns = PatternCompiler()
 
 def load_rules_from_file() -> Optional[Dict[str, Any]]:
@@ -390,6 +391,9 @@ def load_rules_from_db() -> Optional[Dict[str, Any]]:
             if row:
                 val = row[0] if isinstance(row, tuple) else row.get("rule_value") if isinstance(row, dict) else row["rule_value"]
                 return json.loads(val)
+        except Exception:
+            # Table might not exist during initial migration run
+            pass
         finally:
             conn.close()
     except Exception as e:
@@ -427,6 +431,110 @@ def seed_rules_to_db(config_dict: Dict[str, Any]) -> None:
     except Exception as e:
         logger.warning(f"Failed to seed heuristics rules to database: {e}")
 
+def load_rules_config_from_file() -> Optional[Dict[str, Any]]:
+    """Loads rules from rules_config.json on disk."""
+    config_path = os.path.join(os.path.dirname(__file__), "rules_config.json")
+    if os.path.exists(config_path):
+        try:
+            with open(config_path, "r", encoding="utf-8") as f:
+                loaded = json.load(f)
+                if isinstance(loaded, dict) and "version" in loaded:
+                    return loaded
+        except Exception as e:
+            logger.warning(f"Failed to load rules_config.json: {e}")
+    return None
+
+def load_rules_config_from_db() -> Optional[Dict[str, Any]]:
+    """Loads rules_config from the heuristics_rules database table."""
+    try:
+        from db_manager import DatabaseManager
+        db = DatabaseManager()
+        conn = db.get_connection()
+        try:
+            cursor = conn.cursor()
+            cursor.execute("SELECT rule_value FROM heuristics_rules WHERE rule_key = 'rules_config'")
+            row = cursor.fetchone()
+            if row:
+                val = row[0] if isinstance(row, tuple) else row.get("rule_value") if isinstance(row, dict) else row["rule_value"]
+                return json.loads(val)
+        except Exception:
+            # Table might not exist during initial migration run
+            pass
+        finally:
+            conn.close()
+    except Exception as e:
+        logger.warning(f"Failed to load rules_config from database: {e}")
+    return None
+
+def seed_rules_config_to_db(config_dict: Dict[str, Any]) -> None:
+    """Seeds the heuristics_rules table with our version-controlled rules_config."""
+    try:
+        from db_manager import DatabaseManager
+        db = DatabaseManager()
+        conn = db.get_connection()
+        try:
+            cursor = conn.cursor()
+            val_str = json.dumps(config_dict)
+            
+            is_postgres = "DATABASE_URL" in os.environ
+            param = "%s" if is_postgres else "?"
+            
+            cursor.execute(f"SELECT 1 FROM heuristics_rules WHERE rule_key = {param}", ("rules_config",))
+            if cursor.fetchone():
+                cursor.execute(
+                    f"UPDATE heuristics_rules SET rule_value = {param}, updated_at = CURRENT_TIMESTAMP WHERE rule_key = {param}",
+                    (val_str, "rules_config")
+                )
+            else:
+                cursor.execute(
+                    f"INSERT INTO heuristics_rules (rule_key, rule_value) VALUES ({param}, {param})",
+                    ("rules_config", val_str)
+                )
+            conn.commit()
+            logger.info("Successfully seeded/synced rules_config to the database.")
+        finally:
+            conn.close()
+    except Exception as e:
+        logger.warning(f"Failed to seed rules_config to database: {e}")
+
+def reload_rules_config() -> None:
+    """Reloads rules_config dynamically from DB -> file -> fallback."""
+    global _rules_config
+    db_config = load_rules_config_from_db()
+    if db_config:
+        _rules_config = db_config
+        logger.info("Loaded rules_config from database.")
+    else:
+        file_config = load_rules_config_from_file()
+        if file_config:
+            _rules_config = file_config
+            logger.info("Loaded rules_config from file. Seeding database...")
+            seed_rules_config_to_db(_rules_config)
+        else:
+            # Build default fallback
+            _rules_config = {
+                "version": "1.0.0",
+                "confidence_thresholds": {
+                    "auto_accept": 0.85,
+                    "review_recommended": 0.60
+                },
+                "weights": {
+                    "self_consistency": 0.5,
+                    "retrieval_similarity": 0.3,
+                    "model_agreement": 0.2
+                },
+                "self_consistency_runs": 1,
+                "system_prompt": "Classify the attached cannabis/cannabinoid research paper..."
+            }
+            logger.warning("Using fallback rules_config configuration.")
+
+def load_rules_config() -> Dict[str, Any]:
+    """Exposes the active rules_config."""
+    global _rules_config
+    if _rules_config is None:
+        reload_rules_config()
+    return _rules_config
+
 def reload_rules() -> None:
     """Public method to reload rules dynamically from DB -> file -> fallback, and re-compile regexes."""
     global _config
@@ -446,6 +554,9 @@ def reload_rules() -> None:
             
     # Re-compile patterns dynamically
     patterns.compile_rules(_config)
+    
+    # Reload rules_config
+    reload_rules_config()
 
 # Initialize rules at startup
 reload_rules()

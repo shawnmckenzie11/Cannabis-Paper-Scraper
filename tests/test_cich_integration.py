@@ -89,5 +89,44 @@ class TestCICHIntegration(unittest.TestCase):
         self.assertEqual(task_data["task_id"], task_id)
         self.assertIn(task_data["status"], ["pending", "running", "completed", "failed"])
 
+    def test_llm_rules_lifecycle(self):
+        self.login_admin()
+        
+        # 1. Get LLM rules
+        res = self.client.get("/api/llm/rules")
+        self.assertEqual(res.status_code, 200)
+        rules = res.get_json()
+        self.assertIn("version", rules)
+        self.assertIn("decision_nodes", rules)
+        
+        # 2. Test LLM rules (dry-run prompt compilation)
+        res = self.client.post("/api/llm/test", json=rules)
+        self.assertEqual(res.status_code, 200)
+        data = res.get_json()
+        self.assertEqual(data["status"], "success")
+        self.assertIn("prompt_length", data)
+        
+        # 3. Test invalid LLM rules payload -> should return 422
+        bad_rules = json.loads(json.dumps(rules))
+        bad_rules["decision_nodes"] = "invalid_type_to_trigger_compilation_exception"
+        
+        res = self.client.post("/api/llm/test", json=bad_rules)
+        self.assertEqual(res.status_code, 422)
+        
+        # 4. Save valid LLM rules
+        res = self.client.post("/api/llm/rules", json=rules)
+        self.assertEqual(res.status_code, 200)
+        save_data = res.get_json()
+        self.assertEqual(save_data["status"], "success")
+
+    def test_llm_unauthorized_access(self):
+        # Accessing LLM rules without auth should return 401
+        res = self.client.get("/api/llm/rules")
+        self.assertEqual(res.status_code, 401)
+        
+        # Accessing LLM test without auth should return 401
+        res = self.client.post("/api/llm/test", json={})
+        self.assertEqual(res.status_code, 401)
+
 if __name__ == "__main__":
     unittest.main()

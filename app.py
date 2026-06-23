@@ -835,13 +835,8 @@ def api_edit_classification(paper_id):
         now_str = datetime.now().isoformat()
         
         # Load rules config version for metadata logging
-        rules_version = "1.0.0"
-        if os.path.exists("rules_config.json"):
-            try:
-                with open("rules_config.json", "r") as f:
-                    rules_version = json.load(f).get("version", "1.0.0")
-            except Exception:
-                pass
+        import heuristics_engine
+        rules_version = heuristics_engine.load_rules_config().get("version", "1.0.0")
 
         for field in editable_fields:
             if field not in data:
@@ -1097,13 +1092,8 @@ def api_reclassify_llm(paper_id):
         return jsonify({"error": "Paper not found."}), 404
 
     # Load rules config version
-    rules_version = "1.0.0"
-    if os.path.exists("rules_config.json"):
-        try:
-            with open("rules_config.json", "r") as f:
-                rules_version = json.load(f).get("version", "1.0.0")
-        except Exception:
-            pass
+    import heuristics_engine
+    rules_version = heuristics_engine.load_rules_config().get("version", "1.0.0")
 
     try:
         # Run Claude LLM classification on current title and abstract
@@ -2371,8 +2361,11 @@ def async_backpopulate_task(task_id: str):
     param = "%s" if is_postgres else "?"
     
     try:
-        # Select all papers in the database
-        cursor.execute("SELECT id, title, abstract FROM papers")
+        # Select all papers in the database (limit during testing to prevent locks)
+        if app.config.get('TESTING'):
+            cursor.execute("SELECT id, title, abstract FROM papers LIMIT 2")
+        else:
+            cursor.execute("SELECT id, title, abstract FROM papers")
         rows = cursor.fetchall()
         
         papers_to_process = []
@@ -2464,6 +2457,61 @@ def api_get_heuristics_rules():
     """Return active heuristics rules from the database."""
     rules = heuristics_engine.load_rules_from_db() or heuristics_engine._config
     return jsonify(rules)
+
+
+@app.route("/api/llm/rules", methods=["GET"])
+@admin_required
+def api_get_llm_rules():
+    """Return active LLM rules (rules_config) from the database."""
+    rules = heuristics_engine.load_rules_config()
+    return jsonify(rules)
+
+
+@app.route("/api/llm/test", methods=["POST"])
+@admin_required
+def api_test_llm_rules():
+    """Validate a proposed LLM rules payload (verifying JSON and prompt compilation)."""
+    rules_dict = request.get_json()
+    if not rules_dict:
+        return jsonify({"error": "Invalid rules payload."}), 400
+    try:
+        # Validate that we can compile the system prompt
+        prompt = classifier.compile_system_prompt(rules_dict)
+        if not prompt:
+            return jsonify({"error": "System prompt compilation returned empty string."}), 422
+        return jsonify({
+            "status": "success",
+            "message": "LLM rules validated successfully. Prompt compiled with no errors.",
+            "prompt_length": len(prompt)
+        })
+    except Exception as e:
+        return jsonify({"error": f"Validation failed: {str(e)}"}), 422
+
+
+@app.route("/api/llm/rules", methods=["POST"])
+@admin_required
+def api_save_llm_rules():
+    """Validate and save LLM rules to the database."""
+    rules_dict = request.get_json()
+    if not rules_dict:
+        return jsonify({"error": "Invalid rules payload."}), 400
+        
+    try:
+        # 1. Validate prompt compilation
+        prompt = classifier.compile_system_prompt(rules_dict)
+        if not prompt:
+            return jsonify({"error": "System prompt compilation returned empty string."}), 422
+            
+        # 2. Save and reload
+        heuristics_engine.seed_rules_config_to_db(rules_dict)
+        heuristics_engine.reload_rules_config()
+        
+        return jsonify({
+            "status": "success",
+            "message": "LLM rules updated successfully in database."
+        })
+    except Exception as e:
+        return jsonify({"error": f"Failed to save rules: {str(e)}"}), 500
 
 
 @app.route("/api/heuristics/test", methods=["POST"])

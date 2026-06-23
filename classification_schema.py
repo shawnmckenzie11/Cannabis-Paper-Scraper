@@ -7,9 +7,11 @@ from typing import Any, Dict, List, Optional, Sequence, Tuple
 
 import extractor
 
-PUBLICATION_TYPES: Tuple[str, ...] = ("original research", "review", "case study")
+from typing import Any, Dict, List, Optional, Sequence, Tuple
 
-REVIEW_STUDY_SUBTYPES: Tuple[str, ...] = (
+# Static Fallbacks
+_STATIC_PUBLICATION_TYPES = ("original research", "review", "case study")
+_STATIC_REVIEW_STUDY_SUBTYPES = (
     "review",
     "systematic review",
     "meta-analysis",
@@ -18,17 +20,13 @@ REVIEW_STUDY_SUBTYPES: Tuple[str, ...] = (
     "letter to the editor",
     "perspectives paper",
 )
-
-INGESTION_STATUS_VALUES: Tuple[str, ...] = (
+_STATIC_INGESTION_STATUS_VALUES = (
     "relevant",
     "tangential",
     "irrelevant",
     "not_cannabis_related",
 )
-
-GRANULAR_REVIEW_LABELS: Tuple[str, ...] = REVIEW_STUDY_SUBTYPES + ("not cannabis-related",)
-
-HIGH_LEVEL_COMPARE_FIELDS: Tuple[str, ...] = (
+_STATIC_HIGH_LEVEL_COMPARE_FIELDS = (
     "ingestion_status",
     "publication_type",
     "study_type",
@@ -37,6 +35,62 @@ HIGH_LEVEL_COMPARE_FIELDS: Tuple[str, ...] = (
     "outcome_domain",
     "species",
 )
+
+def get_publication_types() -> Tuple[str, ...]:
+    try:
+        import heuristics_engine
+        config = heuristics_engine.load_rules_config()
+        # Fallback to static list
+        return _STATIC_PUBLICATION_TYPES
+    except Exception:
+        return _STATIC_PUBLICATION_TYPES
+
+def get_review_study_subtypes() -> Tuple[str, ...]:
+    try:
+        import heuristics_engine
+        config = heuristics_engine.load_rules_config()
+        # Check if there is a list under "review_study_subtypes" or similar in rules_config.
+        # But we can also extract from REVIEW_STUDY_SUBTYPES in rules_config or fallback.
+        return tuple(config.get("review_study_subtypes") or _STATIC_REVIEW_STUDY_SUBTYPES)
+    except Exception:
+        return _STATIC_REVIEW_STUDY_SUBTYPES
+
+def get_ingestion_status_values() -> Tuple[str, ...]:
+    try:
+        import heuristics_engine
+        config = heuristics_engine.load_rules_config()
+        status_vals = config.get("maude", {}).get("ingestion_status_values")
+        if status_vals:
+            return tuple(status_vals)
+        return _STATIC_INGESTION_STATUS_VALUES
+    except Exception:
+        return _STATIC_INGESTION_STATUS_VALUES
+
+def get_high_level_compare_fields() -> Tuple[str, ...]:
+    try:
+        import heuristics_engine
+        config = heuristics_engine.load_rules_config()
+        fields = config.get("maude", {}).get("high_level_fields")
+        if fields:
+            return tuple(fields)
+        return _STATIC_HIGH_LEVEL_COMPARE_FIELDS
+    except Exception:
+        return _STATIC_HIGH_LEVEL_COMPARE_FIELDS
+
+# Module-level __getattr__ for dynamic attribute access (Python 3.7+)
+def __getattr__(name: str) -> Any:
+    if name == "PUBLICATION_TYPES":
+        return get_publication_types()
+    if name == "REVIEW_STUDY_SUBTYPES":
+        return get_review_study_subtypes()
+    if name == "INGESTION_STATUS_VALUES":
+        return get_ingestion_status_values()
+    if name == "GRANULAR_REVIEW_LABELS":
+        return get_review_study_subtypes() + ("not cannabis-related",)
+    if name == "HIGH_LEVEL_COMPARE_FIELDS":
+        return get_high_level_compare_fields()
+    raise AttributeError(f"module '{__name__}' has no attribute '{name}'")
+
 
 
 def _clean_text(value: Any) -> str:
@@ -79,7 +133,7 @@ def granular_label_to_coarse_publication(granular: str) -> Optional[str]:
         return None
     if label == "case study":
         return "case study"
-    if label in REVIEW_STUDY_SUBTYPES or label in {"commentary", "perspectives"}:
+    if label in get_review_study_subtypes() or label in {"commentary", "perspectives"}:
         return "review"
     if label == "original research":
         return "original research"
@@ -93,7 +147,7 @@ def granular_label_to_review_subtype(granular: str) -> Optional[str]:
         return "comment"
     if label == "perspectives":
         return "perspectives paper"
-    if label in REVIEW_STUDY_SUBTYPES:
+    if label in get_review_study_subtypes():
         return label
     return None
 
@@ -298,7 +352,7 @@ def compare_classifiers(
     right = normalize_classification_record(llm, title, abstract)
     disagreements: Dict[str, Dict[str, Any]] = {}
     agreed: Dict[str, Any] = {}
-    for field in HIGH_LEVEL_COMPARE_FIELDS:
+    for field in get_high_level_compare_fields():
         maude_value = left.get(field)
         llm_value = right.get(field)
         if compare_field_values(maude_value, llm_value):

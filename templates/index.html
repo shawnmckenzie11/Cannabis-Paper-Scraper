@@ -2451,8 +2451,15 @@
                     <!-- Left Column: JSON Editor -->
                     <div style="display: flex; flex-direction: column; gap: 12px; height: 100%;">
                         <div style="display: flex; justify-content: space-between; align-items: center;">
-                            <span style="font-family: var(--font-display); font-size: 0.95rem; font-weight: 600; color: var(--text-secondary);">Active Rules JSON</span>
-                            <span id="json-format-status" style="font-size: 0.8rem; color: var(--accent-green); display: flex; align-items: center; gap: 4px;">🟢 JSON Valid</span>
+                            <div style="display: flex; gap: 10px; border-bottom: 1px solid rgba(255, 255, 255, 0.05); padding-bottom: 5px; width: 100%;">
+                                <button id="tab-heuristics-editor" onclick="switchEditorTab('heuristics')" style="background: transparent; border: none; color: var(--accent-blue); border-bottom: 2px solid var(--accent-blue); padding: 6px 15px; font-family: var(--font-display); font-size: 0.9rem; font-weight: 600; cursor: pointer; outline: none; transition: all 0.2s ease;">
+                                    📊 Maude Heuristics (maude_heuristics)
+                                </button>
+                                <button id="tab-llm-editor" onclick="switchEditorTab('llm')" style="background: transparent; border: none; color: var(--text-secondary); border-bottom: 2px solid transparent; padding: 6px 15px; font-family: var(--font-display); font-size: 0.9rem; font-weight: 600; cursor: pointer; outline: none; transition: all 0.2s ease;">
+                                    🤖 LLM Prompt & Rules (rules_config)
+                                </button>
+                            </div>
+                            <span id="json-format-status" style="font-size: 0.8rem; color: var(--accent-green); display: flex; align-items: center; gap: 4px; white-space: nowrap; margin-left: 15px;">🟢 JSON Valid</span>
                         </div>
                         <div style="position: relative; border-radius: 8px; border: 1px solid rgba(255, 255, 255, 0.08); background: #0c0e17; padding: 10px; box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.5); display: flex; flex-direction: column;">
                             <textarea id="heuristics-json-textarea" spellcheck="false" 
@@ -5262,6 +5269,76 @@
         }
 
         let activeRulesObject = null;
+        let currentEditorTab = 'heuristics';
+        let cachedHeuristicsRules = null;
+        let cachedLlmRules = null;
+
+        function switchEditorTab(tab) {
+            if (tab === currentEditorTab) return;
+            
+            const textarea = document.getElementById("heuristics-json-textarea");
+            if (!textarea) return;
+            
+            // Cache the current textarea value
+            if (currentEditorTab === 'heuristics') {
+                try {
+                    cachedHeuristicsRules = JSON.parse(textarea.value);
+                } catch (e) {
+                    cachedHeuristicsRules = textarea.value;
+                }
+            } else {
+                try {
+                    cachedLlmRules = JSON.parse(textarea.value);
+                } catch (e) {
+                    cachedLlmRules = textarea.value;
+                }
+            }
+            
+            currentEditorTab = tab;
+            
+            // Update Tab Button styles
+            const heurTabBtn = document.getElementById("tab-heuristics-editor");
+            const llmTabBtn = document.getElementById("tab-llm-editor");
+            const testBtn = document.getElementById("btn-test-rules");
+            const saveBtn = document.getElementById("btn-save-rules");
+            
+            if (tab === 'heuristics') {
+                heurTabBtn.style.color = "var(--accent-blue)";
+                heurTabBtn.style.borderBottomColor = "var(--accent-blue)";
+                llmTabBtn.style.color = "var(--text-secondary)";
+                llmTabBtn.style.borderBottomColor = "transparent";
+                
+                testBtn.innerHTML = "🔬 Test Rules (Dry-Run)";
+                saveBtn.innerHTML = "💾 Save & Apply Rules";
+                
+                if (cachedHeuristicsRules) {
+                    textarea.value = typeof cachedHeuristicsRules === 'string' ? cachedHeuristicsRules : JSON.stringify(cachedHeuristicsRules, null, 4);
+                    validateJSONFormat();
+                } else {
+                    loadHeuristicsConfig();
+                }
+            } else {
+                llmTabBtn.style.color = "var(--accent-blue)";
+                llmTabBtn.style.borderBottomColor = "var(--accent-blue)";
+                heurTabBtn.style.color = "var(--text-secondary)";
+                heurTabBtn.style.borderBottomColor = "transparent";
+                
+                testBtn.innerHTML = "🧪 Test Prompt & Rules";
+                saveBtn.innerHTML = "💾 Save LLM Rules";
+                
+                if (cachedLlmRules) {
+                    textarea.value = typeof cachedLlmRules === 'string' ? cachedLlmRules : JSON.stringify(cachedLlmRules, null, 4);
+                    validateJSONFormat();
+                } else {
+                    loadLlmConfig();
+                }
+            }
+            
+            // Clear dry run results
+            const resultsDiv = document.getElementById("dry-run-results");
+            if (resultsDiv) resultsDiv.style.display = "none";
+        }
+
         function loadHeuristicsConfig() {
             const textarea = document.getElementById("heuristics-json-textarea");
             if (!textarea) return;
@@ -5273,9 +5350,12 @@
                     return res.json();
                 })
                 .then(data => {
+                    cachedHeuristicsRules = data;
                     activeRulesObject = data;
-                    textarea.value = JSON.stringify(data, null, 4);
-                    validateJSONFormat();
+                    if (currentEditorTab === 'heuristics') {
+                        textarea.value = JSON.stringify(data, null, 4);
+                        validateJSONFormat();
+                    }
                     
                     // Also fetch and display active regression score
                     document.getElementById("active-regression-score").innerText = "--%";
@@ -5293,7 +5373,33 @@
                     .catch(e => console.error(e));
                 })
                 .catch(err => {
-                    textarea.value = "Error loading rules: " + err.message;
+                    if (currentEditorTab === 'heuristics') {
+                        textarea.value = "Error loading rules: " + err.message;
+                    }
+                });
+        }
+
+        function loadLlmConfig() {
+            const textarea = document.getElementById("heuristics-json-textarea");
+            if (!textarea) return;
+            textarea.value = "Loading active LLM rules from database...";
+            
+            fetch("/api/llm/rules")
+                .then(res => {
+                    if (!res.ok) throw new Error("Failed to fetch LLM rules");
+                    return res.json();
+                })
+                .then(data => {
+                    cachedLlmRules = data;
+                    if (currentEditorTab === 'llm') {
+                        textarea.value = JSON.stringify(data, null, 4);
+                        validateJSONFormat();
+                    }
+                })
+                .catch(err => {
+                    if (currentEditorTab === 'llm') {
+                        textarea.value = "Error loading LLM rules: " + err.message;
+                    }
                 });
         }
 
@@ -5337,33 +5443,45 @@
             btn.innerHTML = "🧪 Testing...";
             resultsDiv.style.display = "none";
             
-            fetch("/api/heuristics/test", {
+            const url = currentEditorTab === 'heuristics' ? "/api/heuristics/test" : "/api/llm/test";
+            
+            fetch(url, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify(rules)
             })
             .then(res => {
-                if (!res.ok) throw new Error("Server error while testing rules");
+                if (!res.ok) {
+                    return res.json().then(data => {
+                        throw new Error(data.error || "Validation failed");
+                    }).catch(() => {
+                        throw new Error("Server error while testing rules");
+                    });
+                }
                 return res.json();
             })
             .then(data => {
                 if (data.error) {
                     alert("Testing failed: " + data.error);
                 } else {
-                    resultsDiv.style.display = "flex";
-                    const overallScore = data.score * 100;
-                    document.getElementById("dry-run-overall").innerText = overallScore.toFixed(2) + "%";
-                    
-                    const activeScoreText = document.getElementById("active-regression-score").innerText;
-                    const activeScore = parseFloat(activeScoreText) || 52.91;
-                    
-                    const verdictEl = document.getElementById("dry-run-verdict");
-                    if (overallScore >= activeScore) {
-                        verdictEl.innerText = "PASS (No Regression)";
-                        verdictEl.style.color = "var(--accent-green)";
+                    if (currentEditorTab === 'heuristics') {
+                        resultsDiv.style.display = "flex";
+                        const overallScore = data.score * 100;
+                        document.getElementById("dry-run-overall").innerText = overallScore.toFixed(2) + "%";
+                        
+                        const activeScoreText = document.getElementById("active-regression-score").innerText;
+                        const activeScore = parseFloat(activeScoreText) || 52.91;
+                        
+                        const verdictEl = document.getElementById("dry-run-verdict");
+                        if (overallScore >= activeScore) {
+                            verdictEl.innerText = "PASS (No Regression)";
+                            verdictEl.style.color = "var(--accent-green)";
+                        } else {
+                            verdictEl.innerText = "FAIL (Regression Detected)";
+                            verdictEl.style.color = "rgb(239, 68, 68)";
+                        }
                     } else {
-                        verdictEl.innerText = "FAIL (Regression Detected)";
-                        verdictEl.style.color = "rgb(239, 68, 68)";
+                        alert(data.message || "LLM prompt compiled successfully!");
                     }
                 }
             })
@@ -5393,7 +5511,9 @@
             const originalText = btn.innerHTML;
             btn.innerHTML = "💾 Saving...";
             
-            fetch("/api/heuristics/rules", {
+            const url = currentEditorTab === 'heuristics' ? "/api/heuristics/rules" : "/api/llm/rules";
+            
+            fetch(url, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify(rules)
@@ -5401,7 +5521,7 @@
             .then(res => {
                 if (res.status === 422) {
                     return res.json().then(data => {
-                        throw new Error(data.error || "Save blocked due to regression.");
+                        throw new Error(data.error || "Save blocked due to validation error.");
                     });
                 }
                 if (!res.ok) throw new Error("Server error while saving rules");
@@ -5409,10 +5529,14 @@
             })
             .then(data => {
                 alert(data.message || "Rules saved successfully!");
-                if (data.score !== undefined) {
-                    document.getElementById("active-regression-score").innerText = (data.score * 100).toFixed(2) + "%";
+                if (currentEditorTab === 'heuristics') {
+                    if (data.score !== undefined) {
+                        document.getElementById("active-regression-score").innerText = (data.score * 100).toFixed(2) + "%";
+                    }
+                    loadHeuristicsConfig();
+                } else {
+                    loadLlmConfig();
                 }
-                loadHeuristicsConfig();
             })
             .catch(err => {
                 alert("Error: " + err.message);

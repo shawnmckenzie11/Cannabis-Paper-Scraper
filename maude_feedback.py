@@ -49,9 +49,9 @@ def save_learned_cues_store(store: Dict[str, Any], path: Optional[Path] = None) 
 
 
 def load_rules_config() -> Dict[str, Any]:
-    """Loads rules_config.json."""
-    with open(RULES_CONFIG_FILE, encoding="utf-8") as handle:
-        return json.load(handle)
+    """Loads rules_config dynamically via heuristics_engine."""
+    import heuristics_engine
+    return heuristics_engine.load_rules_config()
 
 
 def merged_decision_nodes(rules_config: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:

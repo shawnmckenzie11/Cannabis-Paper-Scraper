@@ -32,11 +32,9 @@ def infer_species(text: str) -> Optional[str]:
     return heuristics_engine.infer_species(text)
 
 def _load_rules_config() -> Dict[str, Any]:
-    """Loads rules_config.json for Maude routing cues."""
-    if not RULES_CONFIG_FILE.exists():
-        return {}
-    with open(RULES_CONFIG_FILE, encoding="utf-8") as handle:
-        return json.load(handle)
+    """Loads rules_config dynamically via heuristics_engine."""
+    import heuristics_engine
+    return heuristics_engine.load_rules_config()
 
 
 def get_routing_cue_patterns(node_id: str, fallback: Sequence[str]) -> Tuple[str, ...]:
@@ -106,11 +104,9 @@ def load_maude_tree(path: Path = MAUDE_TREE_FILE) -> Dict[str, Any]:
 
 
 def load_maude_config() -> Dict[str, Any]:
-    """Loads Maude settings from rules_config.json."""
-    if not RULES_CONFIG_FILE.exists():
-        return {}
-    with open(RULES_CONFIG_FILE, encoding="utf-8") as handle:
-        config = json.load(handle)
+    """Loads Maude settings from dynamic rules_config via heuristics_engine."""
+    import heuristics_engine
+    config = heuristics_engine.load_rules_config()
     return config.get("maude") or {}
 
 

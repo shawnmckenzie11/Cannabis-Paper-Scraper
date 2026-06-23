@@ -114,9 +114,9 @@ def resolve_legacy_learned_cues_path(output_dir: Optional[Path] = None) -> Path:
 
 
 def load_rules_config() -> Dict[str, Any]:
-    """Loads rules_config.json."""
-    with open(RULES_CONFIG_FILE, encoding="utf-8") as handle:
-        return json.load(handle)
+    """Loads rules_config dynamically via heuristics_engine."""
+    import heuristics_engine
+    return heuristics_engine.load_rules_config()
 
 
 def _empty_store() -> Dict[str, Any]:
