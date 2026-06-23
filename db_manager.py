@@ -690,7 +690,9 @@ class DatabaseManager:
                 ("administration_frequency", "TEXT"),
                 ("treatment_duration", "TEXT"),
                 ("ingestion_status", "TEXT"),
-                ("species", "TEXT")
+                ("species", "TEXT"),
+                ("population_age", "TEXT"),
+                ("population_sex", "TEXT")
             ]
             
             for col_name, col_type in columns_to_add:
@@ -1522,6 +1524,7 @@ class DatabaseManager:
             "sample_size", "outcome_domain",
             "open_access", "citation_count", "date_harvested", "publication_date", "cannabis_type",
             "summary", "publication_type", "ingestion_status", "species",
+            "population_age", "population_sex",
             "expert_locked_fields", "classification_confidence",
             "classification_timestamp", "classifier_version"
         ]
@@ -1922,6 +1925,24 @@ class DatabaseManager:
                 where_clauses.append(f"{column} {operator} ?")
                 params.append(float(raw))
 
+        population_age = filters.get("population_age")
+        if population_age:
+            if isinstance(population_age, str):
+                population_age = [a.strip() for a in population_age.split(",") if a.strip()]
+            if population_age:
+                placeholders = ",".join(["?"] * len(population_age))
+                where_clauses.append(f"LOWER(COALESCE(papers.population_age, '')) IN ({placeholders})")
+                params.extend([a.lower() for a in population_age])
+
+        population_sex = filters.get("population_sex")
+        if population_sex:
+            if isinstance(population_sex, str):
+                population_sex = [s.strip() for s in population_sex.split(",") if s.strip()]
+            if population_sex:
+                placeholders = ",".join(["?"] * len(population_sex))
+                where_clauses.append(f"LOWER(COALESCE(papers.population_sex, '')) IN ({placeholders})")
+                params.extend([s.lower() for s in population_sex])
+
         species_values = filters.get("species")
         if species_values:
             if isinstance(species_values, str):
@@ -2067,6 +2088,10 @@ class DatabaseManager:
             sql += f" ORDER BY papers.study_type{collate_clause} {sort_dir}, papers.year DESC"
         elif sort_by == "exposure_method":
             sql += f" ORDER BY papers.exposure_method{collate_clause} {sort_dir}, papers.year DESC"
+        elif sort_by == "population_age":
+            sql += f" ORDER BY papers.population_age{collate_clause} {sort_dir}, papers.year DESC"
+        elif sort_by == "population_sex":
+            sql += f" ORDER BY papers.population_sex{collate_clause} {sort_dir}, papers.year DESC"
         elif sort_by == "publication_type":
             sql += f" ORDER BY papers.publication_type{collate_clause} {sort_dir}, papers.year DESC"
         elif sort_by == "cannabis_type":

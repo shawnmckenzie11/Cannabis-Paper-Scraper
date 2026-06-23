@@ -47,7 +47,9 @@ CREATE TABLE IF NOT EXISTS papers (
     classification_timestamp TEXT, -- timestamp of when the classification was made
     classifier_version TEXT, -- version of the classifier that made the classification
     ingestion_status TEXT, -- Node 0: relevant | tangential | irrelevant | not_cannabis_related
-    species TEXT -- host species label from Maude tree (mouse, rat, Rodents branch, etc.)
+    species TEXT, -- host species label from Maude tree (mouse, rat, Rodents branch, etc.)
+    population_age TEXT, -- pediatric, adult, geriatric, etc.
+    population_sex TEXT -- male, female, both, etc.
 );
 
 -- Full-Text Search FTS5 Virtual Table

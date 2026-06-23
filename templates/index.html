@@ -523,13 +523,28 @@
             color: var(--accent-blue);
         }
 
+        #header-title {
+            position: sticky;
+            left: 0;
+            z-index: 10;
+            background: #0e121c; /* solid color matching header bg */
+            box-shadow: 2px 0 5px rgba(0, 0, 0, 0.2);
+        }
         .paper-title-col {
+            position: sticky;
+            left: 0;
+            z-index: 4;
+            background: #0a0c13; /* solid dark background */
+            box-shadow: 2px 0 5px rgba(0, 0, 0, 0.15);
             font-weight: 500;
             color: var(--text-primary);
             max-width: 420px;
             overflow: hidden;
             text-overflow: ellipsis;
             white-space: nowrap;
+        }
+        table.papers-table tbody tr:hover td.paper-title-col {
+            background: #121622; /* hover state highlight */
         }
 
         /* --- Badges --- */
@@ -1955,6 +1970,22 @@
                 </div>
                 </div>
 
+                <div data-filter-section="study_population clinical">
+                <div class="filter-header-row"><div class="filter-header">Study Population</div></div>
+                <div style="font-size: 0.75rem; font-weight: 600; color: #00e676; margin-top: 4px; margin-bottom: 2px; text-transform: uppercase; letter-spacing: 0.5px;">Age</div>
+                <div class="checkbox-group" style="margin-bottom: 8px;">
+                    <label class="checkbox-item"><input type="checkbox" name="population_age" value="pediatric" onchange="triggerSearch()"> Pediatric</label>
+                    <label class="checkbox-item"><input type="checkbox" name="population_age" value="adult" onchange="triggerSearch()"> Adult</label>
+                    <label class="checkbox-item"><input type="checkbox" name="population_age" value="geriatric" onchange="triggerSearch()"> Geriatric</label>
+                </div>
+                <div style="font-size: 0.75rem; font-weight: 600; color: #00e676; margin-top: 4px; margin-bottom: 2px; text-transform: uppercase; letter-spacing: 0.5px;">Sex</div>
+                <div class="checkbox-group" style="margin-bottom: 12px;">
+                    <label class="checkbox-item"><input type="checkbox" name="population_sex" value="male" onchange="triggerSearch()"> Male</label>
+                    <label class="checkbox-item"><input type="checkbox" name="population_sex" value="female" onchange="triggerSearch()"> Female</label>
+                    <label class="checkbox-item"><input type="checkbox" name="population_sex" value="both" onchange="triggerSearch()"> Both</label>
+                </div>
+                </div>
+
                 <div data-filter-section="dose_in_vivo preclinical">
                 <div class="filter-header-row"><div class="filter-header">In Vivo Dose (mg/kg)</div></div>
                 <div class="form-group" style="margin-bottom: 12px;">
@@ -2043,14 +2074,14 @@
                             <tr>
                                 <th id="header-title" class="sortable" onclick="handleHeaderClick('title')">Title <span
                                         id="sort-icon-title" class="sort-icon">↕</span></th>
-                                <th id="header-duration" class="sortable" style="width: 95px;"
-                                    onclick="handleHeaderClick('duration')">Duration <span id="sort-icon-duration"
-                                        class="sort-icon">↕</span></th>
-                                <th id="header-treatment_duration" class="sortable" style="width: 125px; display: none;"
-                                    onclick="handleHeaderClick('treatment_duration')">Tx Duration <span id="sort-icon-treatment_duration"
-                                        class="sort-icon">↕</span></th>
                                 <th id="header-year" class="sortable" style="width: 75px;"
                                     onclick="handleHeaderClick('year')">Year <span id="sort-icon-year"
+                                        class="sort-icon">↕</span></th>
+                                <th id="header-duration" class="sortable" style="width: 140px;"
+                                    onclick="handleHeaderClick('duration')">Study Duration <span
+                                        id="sort-icon-duration" class="sort-icon">↕</span></th>
+                                <th id="header-treatment_duration" class="sortable" style="width: 125px; display: none;"
+                                    onclick="handleHeaderClick('treatment_duration')">Tx Duration <span id="sort-icon-treatment_duration"
                                         class="sort-icon">↕</span></th>
                                 <th id="header-study_type" class="sortable" style="width: 125px;"
                                     onclick="handleHeaderClick('study_type')">Study Design <span
@@ -2072,6 +2103,12 @@
                                         class="sort-icon">↕</span></th>
                                 <th id="header-admin_frequency" class="sortable" style="width: 110px; display: none;"
                                     onclick="handleHeaderClick('administration_frequency')">Admin Freq <span id="sort-icon-admin_frequency"
+                                        class="sort-icon">↕</span></th>
+                                <th id="header-population_age" class="sortable" style="width: 95px; display: none;"
+                                    onclick="handleHeaderClick('population_age')">Age <span id="sort-icon-population_age"
+                                        class="sort-icon">↕</span></th>
+                                <th id="header-population_sex" class="sortable" style="width: 95px; display: none;"
+                                    onclick="handleHeaderClick('population_sex')">Sex <span id="sort-icon-population_sex"
                                         class="sort-icon">↕</span></th>
                                 <th id="header-thc_mg_ml" class="sortable" style="width: 110px; display: none;"
                                     onclick="handleHeaderClick('thc_mg_ml')">THC (mg/mL) <span id="sort-icon-thc_mg_ml"
@@ -3164,6 +3201,11 @@
             const outcomes = Array.from(document.querySelectorAll('#filters-form input[name="outcome"]:checked')).map(cb => cb.value).join(",");
             const species = Array.from(document.querySelectorAll('#filters-form input[name="species"]:checked')).map(cb => cb.value).join(",");
             const regimen = Array.from(document.querySelectorAll('#filters-form input[name="exposure_regimen_bin"]:checked')).map(cb => cb.value).join(",");
+            const age = Array.from(document.querySelectorAll('#filters-form input[name="population_age"]:checked')).map(cb => cb.value).join(",");
+            const sex = Array.from(document.querySelectorAll('#filters-form input[name="population_sex"]:checked')).map(cb => cb.value).join(",");
+
+            if (age) params.population_age = age;
+            if (sex) params.population_sex = sex;
 
             if (studyType) {
                 params.study_type = studyType;
@@ -3414,8 +3456,47 @@
             thc_uM: false,
             cbd_uM: false,
             strain_reported: false,
-            strain_normalized: false
+            strain_normalized: false,
+            population_age: false,
+            population_sex: false
         };
+
+        const COLUMN_SECTIONS = {
+            duration: 'column_common',
+            treatment_duration: 'column_common',
+            year: 'column_common',
+            study_type: 'column_common',
+            exposure_method: 'column_common',
+            cannabis_type: 'column_common',
+            outcome_domain: 'column_common',
+            citations: 'column_common',
+            links: 'column_common',
+            
+            dose_mg: 'clinical',
+            puff_count: 'clinical',
+            admin_frequency: 'clinical',
+            population_age: 'clinical',
+            population_sex: 'clinical',
+            
+            thc_mg_kg: 'preclinical',
+            cbd_mg_kg: 'preclinical',
+            strain_reported: 'preclinical',
+            strain_normalized: 'preclinical',
+            thc_mg_ml: 'preclinical',
+            cbd_mg_ml: 'preclinical',
+            thc_uM: 'preclinical',
+            cbd_uM: 'preclinical',
+            
+            publication_type: 'review'
+        };
+
+        function isColumnRelevant(col, tab) {
+            const section = COLUMN_SECTIONS[col];
+            if (!section) return false;
+            if (section === 'column_common') return true;
+            if (tab === 'all_original') return true;
+            return section === tab;
+        }
 
         let visibleColumns = { ...DEFAULT_VISIBLE_COLUMNS };
 
@@ -3747,70 +3828,76 @@
                 // Title (fixed, always first data column)
                 cells.push(`<td class="paper-title-col" title="${p.title}">${p.title}${newBadge}</td>`);
 
-                // Optional columns
-                if (visibleColumns.duration) {
-                    cells.push(`<td style="color: var(--text-secondary);">${formatStudyDuration(p.duration_days)}</td>`);
-                }
-                if (visibleColumns.treatment_duration) {
-                    cells.push(`<td style="color: var(--text-secondary);">${p.treatment_duration || "—"}</td>`);
-                }
-                if (visibleColumns.year) {
+                // Optional columns in ordered format
+                if (visibleColumns.year && isColumnRelevant('year', currentTab)) {
                     cells.push(`<td>${p.year || "N/A"}</td>`);
                 }
-                if (visibleColumns.study_type) {
+                if (visibleColumns.duration && isColumnRelevant('duration', currentTab)) {
+                    cells.push(`<td style="color: var(--text-secondary);">${formatStudyDuration(p.duration_days)}</td>`);
+                }
+                if (visibleColumns.treatment_duration && isColumnRelevant('treatment_duration', currentTab)) {
+                    cells.push(`<td style="color: var(--text-secondary);">${p.treatment_duration || "—"}</td>`);
+                }
+                if (visibleColumns.study_type && isColumnRelevant('study_type', currentTab)) {
                     cells.push(`<td><span class="badge badge-type">${Array.isArray(p.study_type) ? p.study_type.join(', ') : (p.study_type || "unknown")}</span></td>`);
                 }
-                if (visibleColumns.exposure_method) {
+                if (visibleColumns.exposure_method && isColumnRelevant('exposure_method', currentTab)) {
                     const exposureStr = Array.isArray(p.exposure_method) ? p.exposure_method.map(formatExposureMethod).join(', ') : (p.exposure_method ? formatExposureMethod(p.exposure_method) : "unknown");
                     cells.push(`<td style="color: #b0bec5;">${exposureStr}</td>`);
                 }
-                if (visibleColumns.cannabis_type) {
+                if (visibleColumns.cannabis_type && isColumnRelevant('cannabis_type', currentTab)) {
                     cells.push(`<td style="color: var(--text-secondary);">${Array.isArray(p.cannabis_type) ? p.cannabis_type.join(', ') : (p.cannabis_type || "unknown")}</td>`);
                 }
-                if (visibleColumns.outcome_domain) {
+                if (visibleColumns.outcome_domain && isColumnRelevant('outcome_domain', currentTab)) {
                     cells.push(`<td style="color: var(--text-secondary);">${Array.isArray(p.outcome_domain) ? p.outcome_domain.join(', ') : (p.outcome_domain || "unknown")}</td>`);
                 }
-                if (visibleColumns.dose_mg) {
+                if (visibleColumns.dose_mg && isColumnRelevant('dose_mg', currentTab)) {
                     cells.push(`<td style="color: var(--text-secondary);">${p.dose_mg !== null && p.dose_mg !== undefined ? p.dose_mg : "—"}</td>`);
                 }
-                if (visibleColumns.puff_count) {
+                if (visibleColumns.puff_count && isColumnRelevant('puff_count', currentTab)) {
                     cells.push(`<td style="color: var(--text-secondary);">${p.puff_count !== null && p.puff_count !== undefined ? p.puff_count : "—"}</td>`);
                 }
-                if (visibleColumns.admin_frequency) {
+                if (visibleColumns.admin_frequency && isColumnRelevant('admin_frequency', currentTab)) {
                     cells.push(`<td style="color: var(--text-secondary);">${p.administration_frequency || "—"}</td>`);
                 }
-                if (visibleColumns.thc_mg_ml) {
+                if (visibleColumns.population_age && isColumnRelevant('population_age', currentTab)) {
+                    cells.push(`<td style="color: var(--text-secondary);">${p.population_age || "—"}</td>`);
+                }
+                if (visibleColumns.population_sex && isColumnRelevant('population_sex', currentTab)) {
+                    cells.push(`<td style="color: var(--text-secondary);">${p.population_sex || "—"}</td>`);
+                }
+                if (visibleColumns.thc_mg_ml && isColumnRelevant('thc_mg_ml', currentTab)) {
                     cells.push(`<td style="color: var(--text-secondary);">${p.thc_mg_ml !== null && p.thc_mg_ml !== undefined ? p.thc_mg_ml : "—"}</td>`);
                 }
-                if (visibleColumns.cbd_mg_ml) {
+                if (visibleColumns.cbd_mg_ml && isColumnRelevant('cbd_mg_ml', currentTab)) {
                     cells.push(`<td style="color: var(--text-secondary);">${p.cbd_mg_ml !== null && p.cbd_mg_ml !== undefined ? p.cbd_mg_ml : "—"}</td>`);
                 }
-                if (visibleColumns.thc_mg_kg) {
+                if (visibleColumns.thc_mg_kg && isColumnRelevant('thc_mg_kg', currentTab)) {
                     cells.push(`<td style="color: var(--text-secondary);">${p.thc_mg_kg !== null && p.thc_mg_kg !== undefined ? p.thc_mg_kg : "—"}</td>`);
                 }
-                if (visibleColumns.cbd_mg_kg) {
+                if (visibleColumns.cbd_mg_kg && isColumnRelevant('cbd_mg_kg', currentTab)) {
                     cells.push(`<td style="color: var(--text-secondary);">${p.cbd_mg_kg !== null && p.cbd_mg_kg !== undefined ? p.cbd_mg_kg : "—"}</td>`);
                 }
-                if (visibleColumns.thc_uM) {
+                if (visibleColumns.thc_uM && isColumnRelevant('thc_uM', currentTab)) {
                     cells.push(`<td style="color: var(--text-secondary);">${p.thc_uM !== null && p.thc_uM !== undefined ? p.thc_uM : "—"}</td>`);
                 }
-                if (visibleColumns.cbd_uM) {
+                if (visibleColumns.cbd_uM && isColumnRelevant('cbd_uM', currentTab)) {
                     cells.push(`<td style="color: var(--text-secondary);">${p.cbd_uM !== null && p.cbd_uM !== undefined ? p.cbd_uM : "—"}</td>`);
                 }
-                if (visibleColumns.strain_reported) {
+                if (visibleColumns.strain_reported && isColumnRelevant('strain_reported', currentTab)) {
                     cells.push(`<td style="color: var(--text-secondary);" title="${p.strain_reported || ''}">${p.strain_reported || "—"}</td>`);
                 }
-                if (visibleColumns.strain_normalized) {
+                if (visibleColumns.strain_normalized && isColumnRelevant('strain_normalized', currentTab)) {
                     cells.push(`<td style="color: var(--text-secondary);">${p.strain_normalized || "—"}</td>`);
                 }
-                if (currentTab === 'review' && visibleColumns.publication_type) {
+                if (visibleColumns.publication_type && isColumnRelevant('publication_type', currentTab)) {
                     const pt = p.publication_type || "unknown";
                     cells.push(`<td style="color: var(--text-secondary); font-weight: 500;">${pt}</td>`);
                 }
-                if (visibleColumns.citations) {
+                if (visibleColumns.citations && isColumnRelevant('citations', currentTab)) {
                     cells.push(`<td style="text-align: left; color: var(--text-secondary); font-weight: 500;">${citationsVal}</td>`);
                 }
-                if (visibleColumns.links) {
+                if (visibleColumns.links && isColumnRelevant('links', currentTab)) {
                     cells.push(`
                         <td style="text-align: left;" onclick="event.stopPropagation();">
                             <div class="link-icon-group">${linksHtml}</div>
@@ -4841,6 +4928,12 @@
             if (viewName !== 'my-analyses') {
                 selectedAnalysisId = null;
                 updateExportCSVButtonState();
+            }
+
+            // Set scrolling behavior on main-content: only database view is fixed
+            const mainContent = document.querySelector('.main-content');
+            if (mainContent) {
+                mainContent.style.overflowY = (viewName === 'database') ? 'hidden' : 'auto';
             }
 
             // 2. Show requested view
@@ -6658,19 +6751,23 @@
                 'thc_uM': 'header-thc_uM',
                 'cbd_uM': 'header-cbd_uM',
                 'strain_reported': 'header-strain_reported',
-                'strain_normalized': 'header-strain_normalized'
+                'strain_normalized': 'header-strain_normalized',
+                'population_age': 'header-population_age',
+                'population_sex': 'header-population_sex'
             };
 
             for (const [col, id] of Object.entries(optionalColumns)) {
                 const el = document.getElementById(id);
                 if (el) {
-                    el.style.display = visibleColumns[col] ? '' : 'none';
+                    const show = visibleColumns[col] && isColumnRelevant(col, currentTab);
+                    el.style.display = show ? '' : 'none';
                 }
             }
 
             const pubTypeHeader = document.getElementById("header-pub-type");
             if (pubTypeHeader) {
-                pubTypeHeader.style.display = (currentTab === 'review' && visibleColumns.publication_type) ? '' : 'none';
+                const showPubType = visibleColumns.publication_type && isColumnRelevant('publication_type', currentTab);
+                pubTypeHeader.style.display = showPubType ? '' : 'none';
             }
         }
 
@@ -6856,7 +6953,7 @@
                 <div class="column-editor-group" data-column-section="column_common">
                     <div class="column-editor-group-title">General</div>
                     <div class="column-editor-grid">
-                        <label><input type="checkbox" id="col-cb-duration" checked onchange="toggleColumn('duration')"> Duration</label>
+                        <label><input type="checkbox" id="col-cb-duration" checked onchange="toggleColumn('duration')"> Study Duration</label>
                         <label><input type="checkbox" id="col-cb-treatment_duration" onchange="toggleColumn('treatment_duration')"> Treatment Duration</label>
                         <label><input type="checkbox" id="col-cb-year" checked onchange="toggleColumn('year')"> Year</label>
                         <label><input type="checkbox" id="col-cb-study_type" checked onchange="toggleColumn('study_type')"> Study Design</label>
@@ -6873,6 +6970,8 @@
                         <label><input type="checkbox" id="col-cb-dose_mg" onchange="toggleColumn('dose_mg')"> Dose (mg)</label>
                         <label><input type="checkbox" id="col-cb-puff_count" onchange="toggleColumn('puff_count')"> Puff Count</label>
                         <label><input type="checkbox" id="col-cb-admin_frequency" onchange="toggleColumn('admin_frequency')"> Admin Frequency</label>
+                        <label><input type="checkbox" id="col-cb-population_age" onchange="toggleColumn('population_age')"> Age</label>
+                        <label><input type="checkbox" id="col-cb-population_sex" onchange="toggleColumn('population_sex')"> Sex</label>
                     </div>
                 </div>
                 <div class="column-editor-group" data-column-section="preclinical all_original">
