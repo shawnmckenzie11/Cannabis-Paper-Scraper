@@ -1499,9 +1499,13 @@ def api_analyze():
         user = _get_session_user(db)
         if not user:
             return jsonify({
-                "error": "Your session has expired. Please log in again to save analyses.",
-                "login_required": True,
-            }), 401
+                "id": None,
+                "name": name,
+                "paper_count": chart_data["paper_count"],
+                "filter_settings": filters,
+                "chart_data": chart_data,
+                "created_at": datetime.now().isoformat(),
+            })
 
         analysis_id = db.create_analysis(
             name=name,

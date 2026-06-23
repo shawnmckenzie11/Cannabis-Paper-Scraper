@@ -4327,16 +4327,22 @@
             if (classificationLevel && classificationLevel !== "ALL") {
                 filters.classification_level = classificationLevel;
             }
+            filters.sort_by = sortBy;
+            filters.sort_dir = sortDir;
 
             fetch("/api/analyze", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ filters: filters })
             })
-                .then(res => res.json())
-                .then(result => {
-                    if (result.error) {
-                        console.error("Analysis failed:", result.error);
+                .then(res => res.json().then(data => ({ ok: res.ok, status: res.status, data })))
+                .then(({ ok, status, data: result }) => {
+                    if (!ok || result.error) {
+                        const msg = result.error || ("Request failed (" + status + ")");
+                        console.error("Analysis failed:", msg);
+                        alert(result.login_required
+                            ? "Please log in to save analyses to My Analyses."
+                            : ("Analysis failed: " + msg));
                         return;
                     }
                     renderChartsFromData(result.chart_data);
@@ -4347,6 +4353,10 @@
                     // Show the My Analyses panel with the new analysis selected
                     openMyAnalyses();
                     loadAnalysesList(result.id);
+
+                    if (result.id == null) {
+                        alert("Analysis charts are ready. Log in to save them under My Analyses.");
+                    }
 
                     // Smooth scroll to charts
                     const panel = document.getElementById("selection-analytics-panel");

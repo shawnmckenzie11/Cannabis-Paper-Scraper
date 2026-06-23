@@ -1657,6 +1657,25 @@ class TestAnalysesUserIsolation(unittest.TestCase):
         response = self.client.get("/api/analyses/12345")
         self.assertEqual(response.status_code, 401)
 
+    def test_logged_in_user_saves_analysis(self):
+        """Logged-in users persist subset analyses to My Analyses."""
+        with self.client.session_transaction() as sess:
+            sess["logged_in"] = True
+            sess["user_id"] = self.user_a["id"]
+        response = self.client.post(
+            "/api/analyze",
+            json={"filters": {"query": "logged_in_test", "limit": 10, "offset": 0}},
+        )
+        self.assertEqual(response.status_code, 200)
+        data = json.loads(response.data.decode("utf-8"))
+        self.assertIsNotNone(data.get("id"))
+        self.assertIn("chart_data", data)
+
+        response = self.client.get("/api/analyses")
+        self.assertEqual(response.status_code, 200)
+        analyses = json.loads(response.data.decode("utf-8"))
+        self.assertTrue(any(a["id"] == data["id"] for a in analyses))
+
     def test_user_ownership_isolation(self):
         # 1. Create analysis belonging to User A
         analysis_id = self.db.create_analysis(

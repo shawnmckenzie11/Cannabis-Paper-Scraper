@@ -1968,6 +1968,10 @@ class DatabaseManager:
         finally:
             conn.close()
 
+    def search_papers_for_analysis(self, filters: Dict[str, Any]) -> List[Dict[str, Any]]:
+        """Returns all papers matching analysis filter settings (no pagination cap beyond caller limit)."""
+        return self.search_papers(filters)
+
     def count_papers(self, filters: Dict[str, Any]) -> int:
         """Counts total papers matching the filters by executing the query with COUNT(*)."""
         conn = self.get_connection()
@@ -2018,6 +2022,18 @@ class DatabaseManager:
         salt, pwd_hash = stored_hash.split(":", 1)
         test_hash = hashlib.sha256((password + salt).encode('utf-8')).hexdigest()
         return test_hash == pwd_hash
+
+    def get_user_by_id(self, user_id: int) -> Optional[Dict[str, Any]]:
+        """Fetches a user by primary key id."""
+        conn = self.get_connection()
+        conn.row_factory = sqlite3.Row
+        try:
+            cursor = conn.cursor()
+            cursor.execute("SELECT * FROM users WHERE id = ?;", (user_id,))
+            row = cursor.fetchone()
+            return dict(row) if row else None
+        finally:
+            conn.close()
 
     def get_user_by_username_or_email(self, identifier: str) -> Optional[Dict[str, Any]]:
         """Fetches a user by username or email."""
