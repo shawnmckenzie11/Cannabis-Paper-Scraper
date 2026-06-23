@@ -871,6 +871,7 @@ MAUDE_DOWNSTREAM_EXTRACTION_FIELDS: Tuple[str, ...] = (
     "thc_uM", "cbd_uM", "puff_count", "treatment_duration",
     "multiple_doses", "multiple_time_intervals", "repeat_exposure_count",
     "exposure_regimen_bin",
+    "population_age", "population_sex", "inclusion_criteria", "exclusion_criteria",
 )
 
 

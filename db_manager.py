@@ -692,7 +692,9 @@ class DatabaseManager:
                 ("ingestion_status", "TEXT"),
                 ("species", "TEXT"),
                 ("population_age", "TEXT"),
-                ("population_sex", "TEXT")
+                ("population_sex", "TEXT"),
+                ("inclusion_criteria", "TEXT"),
+                ("exclusion_criteria", "TEXT")
             ]
             
             for col_name, col_type in columns_to_add:
@@ -1525,6 +1527,7 @@ class DatabaseManager:
             "open_access", "citation_count", "date_harvested", "publication_date", "cannabis_type",
             "summary", "publication_type", "ingestion_status", "species",
             "population_age", "population_sex",
+            "inclusion_criteria", "exclusion_criteria",
             "expert_locked_fields", "classification_confidence",
             "classification_timestamp", "classifier_version"
         ]

@@ -100,42 +100,45 @@
       "routing_subnode": "node2a",
       "changes": {},
       "llm": {
-        "ingestion_status": "relevant",
         "study_type": [
           "Clinical (observational)"
         ],
+        "thc_mg_kg": null,
+        "thc_mg_ml": null,
+        "thc_mg_g": null,
+        "thc_pct": null,
         "exposure_method": [
           "unknown"
         ],
+        "population_sex": "both",
+        "thc_uM": null,
         "cannabis_type": [
-          "CB receptor agonist"
+          "pure cannabinoid"
         ],
+        "cbd_pct": null,
+        "inhaled_exposure_duration": null,
+        "sample_size": 555,
         "publication_type": "original research",
+        "administration_frequency": null,
+        "inclusion_criteria": "People who use drugs submitting drug samples or used drug administration equipment anonymously and free of charge to drug checking services in downtown Toronto",
         "outcome_domain": [
           "addiction"
         ],
-        "thc_pct": null,
-        "cbd_pct": null,
-        "dose_mg": null,
-        "strain_reported": "AMB-FUBINACA",
-        "strain_normalized": null,
-        "duration_days": 182.0,
-        "inhaled_exposure_duration": null,
-        "administration_frequency": null,
-        "treatment_duration": null,
-        "sample_size": 555,
-        "puff_count": null,
-        "thc_mg_ml": null,
-        "thc_mg_g": null,
-        "thc_mg_kg": null,
-        "cbd_mg_ml": null,
         "cbd_mg_g": null,
-        "cbd_mg_kg": null,
-        "thc_uM": null,
+        "population_age": "adult",
+        "puff_count": null,
+        "cbd_mg_ml": null,
+        "duration_days": 182.0,
+        "treatment_duration": null,
+        "dose_mg": null,
+        "exclusion_criteria": null,
+        "strain_reported": "AMB-FUBINACA",
         "cbd_uM": null,
+        "strain_normalized": null,
+        "cbd_mg_kg": null,
         "species": null,
-        "classification_confidence": 0.6875545,
-        "classifier_version": "llm-pdf-reclassify-2.1.0"
+        "classification_confidence": 0.7479602316694696,
+        "classifier_version": "llm-pdf-reclassify-2.6.0"
       },
       "maude": {
         "ingestion_status": "relevant",
@@ -379,47 +382,52 @@
       "routing_subnode": "node2a",
       "changes": {},
       "llm": {
-        "ingestion_status": "tangential",
         "study_type": [
           "Clinical (observational)"
         ],
+        "thc_mg_kg": null,
+        "thc_mg_ml": null,
+        "thc_mg_g": null,
+        "thc_pct": null,
         "exposure_method": [
-          "unknown"
+          "oral",
+          "inhaled"
         ],
+        "population_sex": "both",
+        "thc_uM": null,
         "cannabis_type": [
           "pure cannabinoid",
           "edibles",
           "vape pen",
-          "concentrates"
+          "concentrates",
+          "dried flower"
         ],
+        "cbd_pct": null,
+        "inhaled_exposure_duration": null,
+        "sample_size": 521,
         "publication_type": "original research",
+        "administration_frequency": null,
+        "inclusion_criteria": "18 years of age or older, currently in the USA, used or consumed products containing delta-8-THC",
         "outcome_domain": [
           "pain",
           "anxiety",
           "cognition"
         ],
-        "thc_pct": null,
-        "cbd_pct": null,
-        "dose_mg": null,
-        "strain_reported": null,
-        "strain_normalized": null,
-        "duration_days": null,
-        "inhaled_exposure_duration": null,
-        "administration_frequency": null,
-        "treatment_duration": null,
-        "sample_size": 521,
-        "puff_count": null,
-        "thc_mg_ml": null,
-        "thc_mg_g": null,
-        "thc_mg_kg": null,
-        "cbd_mg_ml": null,
         "cbd_mg_g": null,
-        "cbd_mg_kg": null,
-        "thc_uM": null,
+        "population_age": "adult",
+        "puff_count": null,
+        "cbd_mg_ml": null,
+        "duration_days": null,
+        "treatment_duration": null,
+        "dose_mg": 25.0,
+        "exclusion_criteria": "Under 18 years of age, not currently in the USA, no prior use of delta-8-THC products",
+        "strain_reported": null,
         "cbd_uM": null,
+        "strain_normalized": null,
+        "cbd_mg_kg": null,
         "species": null,
-        "classification_confidence": 0.7009609,
-        "classifier_version": "llm-pdf-reclassify-2.1.0"
+        "classification_confidence": 0.6669629673451658,
+        "classifier_version": "llm-pdf-reclassify-2.6.0"
       },
       "maude": {
         "ingestion_status": "tangential",
@@ -654,43 +662,46 @@
       "routing_subnode": "node2a",
       "changes": {},
       "llm": {
-        "ingestion_status": "relevant",
         "study_type": [
           "Clinical (observational)"
         ],
+        "thc_mg_kg": null,
+        "thc_mg_ml": null,
+        "thc_mg_g": null,
+        "thc_pct": null,
         "exposure_method": [
           "inhaled"
         ],
+        "population_sex": "both",
+        "thc_uM": null,
         "cannabis_type": [
           "dried flower"
         ],
+        "cbd_pct": null,
+        "inhaled_exposure_duration": null,
+        "sample_size": 321,
         "publication_type": "original research",
+        "administration_frequency": null,
+        "inclusion_criteria": "At least 18 years old, good understanding of English language, intention to take a serotonergic psychedelic drug (psilocybin/magic mushrooms/truffles, LSD/1P-LSD, ayahuasca, DMT, 5-MeO-DMT, mescaline, 2C-B or others with similar mechanism of action)",
         "outcome_domain": [
           "anxiety",
           "cognition"
         ],
-        "thc_pct": null,
-        "cbd_pct": null,
-        "dose_mg": null,
-        "strain_reported": null,
-        "strain_normalized": null,
-        "duration_days": null,
-        "inhaled_exposure_duration": null,
-        "administration_frequency": null,
-        "treatment_duration": null,
-        "sample_size": 321,
-        "puff_count": null,
-        "thc_mg_ml": null,
-        "thc_mg_g": null,
-        "thc_mg_kg": null,
-        "cbd_mg_ml": null,
         "cbd_mg_g": null,
-        "cbd_mg_kg": null,
-        "thc_uM": null,
+        "population_age": "adult",
+        "puff_count": null,
+        "cbd_mg_ml": null,
+        "duration_days": null,
+        "treatment_duration": null,
+        "dose_mg": null,
+        "exclusion_criteria": null,
+        "strain_reported": null,
         "cbd_uM": null,
+        "strain_normalized": null,
+        "cbd_mg_kg": null,
         "species": null,
-        "classification_confidence": 0.7755226,
-        "classifier_version": "llm-pdf-reclassify-2.1.0"
+        "classification_confidence": 0.6612018668048929,
+        "classifier_version": "llm-pdf-reclassify-2.6.0"
       },
       "maude": {
         "ingestion_status": "relevant",
@@ -916,42 +927,45 @@
       "routing_subnode": "node2a",
       "changes": {},
       "llm": {
-        "ingestion_status": "relevant",
         "study_type": [
           "Clinical (observational)"
         ],
+        "thc_mg_kg": null,
+        "thc_mg_ml": null,
+        "thc_mg_g": null,
+        "thc_pct": null,
         "exposure_method": [
           "unknown"
         ],
+        "population_sex": "male",
+        "thc_uM": null,
         "cannabis_type": [
           "unknown"
         ],
+        "cbd_pct": null,
+        "inhaled_exposure_duration": null,
+        "sample_size": 41,
         "publication_type": "original research",
+        "administration_frequency": null,
+        "inclusion_criteria": "High-risk group: male sex, age 20-35 years, BMI 25-30 kg/m2, leisure time physical exercise <4 h/week, maternal/paternal overweight or obesity or maternal/paternal T2D. Low-risk group: male sex, age 20-35 years, BMI 18.5-24.9 kg/m2, leisure time physical exercise \u22654 h/week, no maternal/paternal T2D.",
         "outcome_domain": [
           "other"
         ],
-        "thc_pct": null,
-        "cbd_pct": null,
-        "dose_mg": null,
-        "strain_reported": null,
-        "strain_normalized": null,
-        "duration_days": null,
-        "inhaled_exposure_duration": null,
-        "administration_frequency": null,
-        "treatment_duration": null,
-        "sample_size": 41,
-        "puff_count": null,
-        "thc_mg_ml": null,
-        "thc_mg_g": null,
-        "thc_mg_kg": null,
-        "cbd_mg_ml": null,
         "cbd_mg_g": null,
-        "cbd_mg_kg": null,
-        "thc_uM": null,
+        "population_age": "adult",
+        "puff_count": null,
+        "cbd_mg_ml": null,
+        "duration_days": null,
+        "treatment_duration": null,
+        "dose_mg": null,
+        "exclusion_criteria": "Poor compliance with study schedule, smoking or use of nicotine products, abusive use of alcohol, use of illicit drugs, any chronic disease or medication affecting glucose metabolism or neurotransmission, neurological or psychiatric disease, eating disorder, contraindication to MRI, prior participation in PET studies or significant radiation exposure.",
+        "strain_reported": null,
         "cbd_uM": null,
+        "strain_normalized": null,
+        "cbd_mg_kg": null,
         "species": null,
-        "classification_confidence": 0.6385188,
-        "classifier_version": "llm-pdf-reclassify-2.1.0"
+        "classification_confidence": 0.7288324520020474,
+        "classifier_version": "llm-pdf-reclassify-2.6.0"
       },
       "maude": {
         "ingestion_status": "relevant",
@@ -1151,47 +1165,50 @@
       "routing_subnode": "node2a",
       "changes": {},
       "llm": {
-        "ingestion_status": "relevant",
         "study_type": [
           "Clinical (RCT)",
           "Cell Culture (Cell Lines)"
         ],
+        "thc_mg_kg": null,
+        "thc_mg_ml": 2.0,
+        "thc_mg_g": null,
+        "thc_pct": 23.0,
         "exposure_method": [
           "inhaled",
           "oral",
           "cannabinoids dissolved in media"
         ],
+        "population_sex": "both",
+        "thc_uM": null,
         "cannabis_type": [
           "dried flower",
           "pure cannabinoid",
-          "concentrates"
+          "edibles"
         ],
+        "cbd_pct": 0.5,
+        "inhaled_exposure_duration": null,
+        "sample_size": 49,
         "publication_type": "original research",
+        "administration_frequency": null,
+        "inclusion_criteria": "UC patients aged 20-80 with mild to moderate UC diagnosed at least 3 months prior, Lichtiger score 4-15, Mayo endoscopic subscore \u22651; CD patients aged 20-80 with mild to moderate CD diagnosed at least 3 months prior, CDAI \u2265200, SES-CD >2",
         "outcome_domain": [
           "inflammation"
         ],
-        "thc_pct": 23.0,
-        "cbd_pct": null,
-        "dose_mg": 11.5,
-        "strain_reported": "Cannabis sativa var. Indica 'Erez'; Cannabis sativa var. Indica 'Avidekel'",
-        "strain_normalized": "Chemotype I",
-        "duration_days": 56.0,
-        "inhaled_exposure_duration": null,
-        "administration_frequency": null,
-        "treatment_duration": "48 hours",
-        "sample_size": 19,
-        "puff_count": null,
-        "thc_mg_ml": 2.0,
-        "thc_mg_g": null,
-        "thc_mg_kg": null,
-        "cbd_mg_ml": 8.0,
         "cbd_mg_g": null,
-        "cbd_mg_kg": null,
-        "thc_uM": null,
+        "population_age": "adult",
+        "puff_count": null,
+        "cbd_mg_ml": 8.0,
+        "duration_days": 56.0,
+        "treatment_duration": "48 hours",
+        "dose_mg": 11.5,
+        "exclusion_criteria": "Current cannabis use (medical or recreational), pregnancy or lactation, severe UC (Mayo score >10) or severe CD (CDAI >400), proctitis (inflammatory segment <15 cm), known psychiatric diagnosis, addiction traits, requirement for operation during study period",
+        "strain_reported": "Cannabis sativa var. Indica 'Erez'; Cannabis sativa var. Indica 'Avidekel'",
         "cbd_uM": null,
+        "strain_normalized": "Chemotype I",
+        "cbd_mg_kg": null,
         "species": null,
-        "classification_confidence": 0.6903062,
-        "classifier_version": "llm-pdf-reclassify-2.1.0"
+        "classification_confidence": 0.6264665013895931,
+        "classifier_version": "llm-pdf-reclassify-2.6.0"
       },
       "maude": {
         "ingestion_status": "relevant",
@@ -1467,43 +1484,46 @@
       "routing_subnode": "node2a",
       "changes": {},
       "llm": {
-        "ingestion_status": "relevant",
         "study_type": [
           "Clinical (observational)"
         ],
+        "thc_mg_kg": null,
+        "thc_mg_ml": null,
+        "thc_mg_g": null,
+        "thc_pct": null,
         "exposure_method": [
           "unknown"
         ],
+        "population_sex": "both",
+        "thc_uM": null,
         "cannabis_type": [
-          "pure cannabinoid"
+          "unknown"
         ],
+        "cbd_pct": null,
+        "inhaled_exposure_duration": null,
+        "sample_size": 703,
         "publication_type": "original research",
+        "administration_frequency": null,
+        "inclusion_criteria": "Postmortem human brain tissue with RNA integrity number \u22655; samples from DLPFC, hippocampus, and caudate; subjects spanning fetal period (gestational weeks 14-20) through age 85-86; diagnostic groups including schizophrenia, bipolar disorder, major depressive disorder, and non-psychiatric controls",
         "outcome_domain": [
           "addiction",
           "cognition"
         ],
-        "thc_pct": null,
-        "cbd_pct": null,
-        "dose_mg": null,
-        "strain_reported": null,
-        "strain_normalized": null,
-        "duration_days": null,
-        "inhaled_exposure_duration": null,
-        "administration_frequency": null,
-        "treatment_duration": null,
-        "sample_size": 703,
-        "puff_count": null,
-        "thc_mg_ml": null,
-        "thc_mg_g": null,
-        "thc_mg_kg": null,
-        "cbd_mg_ml": null,
         "cbd_mg_g": null,
-        "cbd_mg_kg": null,
-        "thc_uM": null,
+        "population_age": "adult",
+        "puff_count": null,
+        "cbd_mg_ml": null,
+        "duration_days": null,
+        "treatment_duration": null,
+        "dose_mg": null,
+        "exclusion_criteria": "Significant neuropathology including cerebrovascular accidents and neurodegenerative diseases; positive toxicology was exclusionary for control subjects but not for patients with psychiatric disorders",
+        "strain_reported": null,
         "cbd_uM": null,
+        "strain_normalized": null,
+        "cbd_mg_kg": null,
         "species": null,
-        "classification_confidence": 0.7103356,
-        "classifier_version": "llm-pdf-reclassify-2.1.0"
+        "classification_confidence": 0.763261467486305,
+        "classifier_version": "llm-pdf-reclassify-2.6.0"
       },
       "maude": {
         "ingestion_status": "relevant",
@@ -1726,42 +1746,45 @@
       "routing_subnode": "node2a",
       "changes": {},
       "llm": {
-        "ingestion_status": "relevant",
         "study_type": [
-          "Clinical (prospective)"
+          "Clinical (observational)"
         ],
+        "thc_mg_kg": null,
+        "thc_mg_ml": null,
+        "thc_mg_g": null,
+        "thc_pct": null,
         "exposure_method": [
           "unknown"
         ],
+        "population_sex": "both",
+        "thc_uM": null,
         "cannabis_type": [
           "unknown"
         ],
-        "publication_type": "original research",
-        "outcome_domain": [
-          "other"
-        ],
-        "thc_pct": null,
         "cbd_pct": null,
-        "dose_mg": null,
-        "strain_reported": null,
-        "strain_normalized": null,
-        "duration_days": null,
         "inhaled_exposure_duration": null,
-        "administration_frequency": null,
-        "treatment_duration": null,
         "sample_size": 20,
-        "puff_count": null,
-        "thc_mg_ml": null,
-        "thc_mg_g": null,
-        "thc_mg_kg": null,
-        "cbd_mg_ml": null,
+        "publication_type": "original research",
+        "administration_frequency": null,
+        "inclusion_criteria": "Adult patients with Tourette syndrome (TS) according to DSM-5, diagnosis confirmed by study author, able to undergo lumbar puncture without contraindications, cerebral MRI performed",
+        "outcome_domain": [
+          "neuroprotection"
+        ],
         "cbd_mg_g": null,
-        "cbd_mg_kg": null,
-        "thc_uM": null,
+        "population_age": "adult",
+        "puff_count": null,
+        "cbd_mg_ml": null,
+        "duration_days": null,
+        "treatment_duration": null,
+        "dose_mg": null,
+        "exclusion_criteria": "Patients suffering from other severe psychiatric or neurological diseases (e.g., schizophrenia, alcoholism, epilepsy, mental retardation) or any kind of autoimmune disease",
+        "strain_reported": null,
         "cbd_uM": null,
+        "strain_normalized": null,
+        "cbd_mg_kg": null,
         "species": null,
-        "classification_confidence": 0.6470286,
-        "classifier_version": "llm-pdf-reclassify-2.1.0"
+        "classification_confidence": 0.7264665013895931,
+        "classifier_version": "llm-pdf-reclassify-2.6.0"
       },
       "maude": {
         "ingestion_status": "relevant",
@@ -1985,46 +2008,49 @@
       "routing_subnode": "node2a",
       "changes": {},
       "llm": {
-        "ingestion_status": "relevant",
         "study_type": [
           "Clinical (observational)",
           "Animal Models (Mouse)",
           "Cell Culture (Primary Cells)"
         ],
+        "thc_mg_kg": null,
+        "thc_mg_ml": null,
+        "thc_mg_g": null,
+        "thc_pct": null,
         "exposure_method": [
           "injection cannabinoids",
           "cannabinoids dissolved in media"
         ],
+        "population_sex": "both",
+        "thc_uM": null,
         "cannabis_type": [
           "CB receptor agonist"
         ],
+        "cbd_pct": null,
+        "inhaled_exposure_duration": null,
+        "sample_size": 24,
         "publication_type": "original research",
+        "administration_frequency": null,
+        "inclusion_criteria": "Postmortem prefrontal cortex samples from subjects with schizophrenia (n=24), depression (n=24), and normal controls (n=24); matched for age (\u00b15 years), sex, race, side of brain, and postmortem interval",
         "outcome_domain": [
           "neuroprotection",
-          "other"
+          "anxiety"
         ],
-        "thc_pct": null,
-        "cbd_pct": null,
-        "dose_mg": null,
-        "strain_reported": "WIN55,212-2",
-        "strain_normalized": null,
-        "duration_days": null,
-        "inhaled_exposure_duration": null,
-        "administration_frequency": null,
-        "treatment_duration": "72 hours",
-        "sample_size": 24,
-        "puff_count": null,
-        "thc_mg_ml": null,
-        "thc_mg_g": null,
-        "thc_mg_kg": null,
-        "cbd_mg_ml": null,
         "cbd_mg_g": null,
-        "cbd_mg_kg": null,
-        "thc_uM": null,
+        "population_age": "adult",
+        "puff_count": null,
+        "cbd_mg_ml": null,
+        "duration_days": null,
+        "treatment_duration": null,
+        "dose_mg": null,
+        "exclusion_criteria": "Control subjects with history of psychiatric disorders, antipsychotic or antidepressant medication use, death by suicide, or neurological disorder were excluded",
+        "strain_reported": "WIN55,212-2",
         "cbd_uM": null,
+        "strain_normalized": null,
+        "cbd_mg_kg": null,
         "species": null,
-        "classification_confidence": 0.6563755,
-        "classifier_version": "llm-pdf-reclassify-2.1.0"
+        "classification_confidence": 0.6478170943115826,
+        "classifier_version": "llm-pdf-reclassify-2.6.0"
       },
       "maude": {
         "ingestion_status": "relevant",
@@ -2269,42 +2295,45 @@
       "routing_subnode": "node2a",
       "changes": {},
       "llm": {
-        "ingestion_status": "relevant",
         "study_type": [
           "Clinical (observational)"
         ],
+        "thc_mg_kg": null,
+        "thc_mg_ml": null,
+        "thc_mg_g": null,
+        "thc_pct": null,
         "exposure_method": [
           "inhaled"
         ],
+        "population_sex": "both",
+        "thc_uM": null,
         "cannabis_type": [
           "dried flower"
         ],
-        "publication_type": "original research",
-        "outcome_domain": [
-          "other"
-        ],
-        "thc_pct": null,
         "cbd_pct": null,
-        "dose_mg": null,
-        "strain_reported": null,
-        "strain_normalized": null,
-        "duration_days": null,
         "inhaled_exposure_duration": null,
-        "administration_frequency": null,
-        "treatment_duration": null,
         "sample_size": 33,
-        "puff_count": null,
-        "thc_mg_ml": null,
-        "thc_mg_g": null,
-        "thc_mg_kg": null,
-        "cbd_mg_ml": null,
+        "publication_type": "original research",
+        "administration_frequency": null,
+        "inclusion_criteria": "Cannabis users using >10 times/month (heavy) or <10 times/month (light); controls used cannabis fewer than 8 times in lifetime; all free from psychopathology or current medical problems per DSM-IV criteria",
+        "outcome_domain": [
+          "anxiety"
+        ],
         "cbd_mg_g": null,
-        "cbd_mg_kg": null,
-        "thc_uM": null,
+        "population_age": "adult",
+        "puff_count": null,
+        "cbd_mg_ml": null,
+        "duration_days": null,
+        "treatment_duration": null,
+        "dose_mg": null,
+        "exclusion_criteria": "Any diagnosis of psychopathology or current medical problems per DSM-IV criteria",
+        "strain_reported": null,
         "cbd_uM": null,
+        "strain_normalized": null,
+        "cbd_mg_kg": null,
         "species": null,
-        "classification_confidence": 0.78762853,
-        "classifier_version": "llm-pdf-reclassify-2.1.0"
+        "classification_confidence": 0.6764664415778096,
+        "classifier_version": "llm-pdf-reclassify-2.6.0"
       },
       "maude": {
         "ingestion_status": "relevant",
@@ -2523,42 +2552,45 @@
       "routing_subnode": "node2a",
       "changes": {},
       "llm": {
-        "ingestion_status": "relevant",
         "study_type": [
           "Clinical (RCT)"
         ],
+        "thc_mg_kg": null,
+        "thc_mg_ml": null,
+        "thc_mg_g": null,
+        "thc_pct": null,
         "exposure_method": [
           "inhaled"
         ],
+        "population_sex": "male",
+        "thc_uM": null,
         "cannabis_type": [
           "pure cannabinoid"
         ],
+        "cbd_pct": null,
+        "inhaled_exposure_duration": "2-3 minutes per dose",
+        "sample_size": 21,
         "publication_type": "original research",
+        "administration_frequency": "four time points per session",
+        "inclusion_criteria": "Occasional cannabis users (at least 4 times/year, at most once/week) with no negative cannabis experiences; HC: FTND score of 0 and <0.5 cigarettes/day; NAD: FTND score \u22653 and \u226510 cigarettes/day",
         "outcome_domain": [
           "addiction"
         ],
-        "thc_pct": null,
-        "cbd_pct": null,
-        "dose_mg": 6.0,
-        "strain_reported": null,
-        "strain_normalized": null,
-        "duration_days": null,
-        "inhaled_exposure_duration": "2-3 minutes per dose",
-        "administration_frequency": "multiple doses per session",
-        "treatment_duration": null,
-        "sample_size": 21,
-        "puff_count": null,
-        "thc_mg_ml": null,
-        "thc_mg_g": null,
-        "thc_mg_kg": null,
-        "cbd_mg_ml": null,
         "cbd_mg_g": null,
-        "cbd_mg_kg": null,
-        "thc_uM": null,
+        "population_age": "adult",
+        "puff_count": null,
+        "cbd_mg_ml": null,
+        "duration_days": null,
+        "treatment_duration": null,
+        "dose_mg": 6.0,
+        "exclusion_criteria": "Personal or first-degree relative diagnosis of psychiatric disorder (assessed via MINI for DSM-IV); previous negative experiences with cannabis (bad trip or cannabis-induced psychosis); high blood pressure; movement artefacts during scanning; lack of elevated plasma THC levels; not fulfilling HC or NAD inclusion criteria",
+        "strain_reported": null,
         "cbd_uM": null,
+        "strain_normalized": null,
+        "cbd_mg_kg": null,
         "species": null,
-        "classification_confidence": 0.75325376,
-        "classifier_version": "llm-pdf-reclassify-2.1.0"
+        "classification_confidence": 0.5997674166453126,
+        "classifier_version": "llm-pdf-reclassify-2.6.0"
       },
       "maude": {
         "ingestion_status": "relevant",

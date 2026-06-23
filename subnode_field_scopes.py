@@ -103,10 +103,8 @@ IN_VITRO_EXPOSURE_TO_NODE7 = {
 
 SUBNODE_FIELD_SCOPES: Dict[str, List[str]] = {
     "node2a": [
-        "study_type", "exposure_method", "cannabis_type", "outcome_domain",
-        "sample_size", "duration_days", "dose_mg", "strain_reported", "strain_normalized",
-        "thc_pct", "cbd_pct", "administration_frequency", "multiple_doses", "multiple_time_intervals",
-        "inhaled_exposure_duration", "puff_count",
+        "exposure_method", "cannabis_type", "outcome_domain", "duration_days",
+        "population_age", "population_sex", "inclusion_criteria", "exclusion_criteria"
     ],
     "node2b": [
         "study_type", "species", "exposure_method", "cannabis_type", "outcome_domain",

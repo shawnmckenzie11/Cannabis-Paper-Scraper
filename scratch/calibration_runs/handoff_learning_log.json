@@ -1,5 +1,5 @@
 {
-  "updated_at": "2026-06-22T19:06:06.028036",
+  "updated_at": "2026-06-23T12:47:45.360004",
   "handoffs": [
     {
       "id": "node2b_20260622_151932",
@@ -1156,6 +1156,66 @@
         "Remaining gaps: review synthesis exposure on 27862; CSF biomarker paper 30797 (exposure/cannabis_type/outcome/sample_size)."
       ],
       "applied_at": "2026-06-22T19:06:06.028027"
+    },
+    {
+      "id": "node2a-rl-cycle-1",
+      "summary_title": "Backtracking Fix & Initial Clinical Extraction",
+      "source_subnode": "node2a",
+      "beneficiary_nodes": [
+        "node2a"
+      ],
+      "learning_notes": [
+        "Resolved catastrophic backtracking hangs on large full-text papers (50k+ characters).",
+        "Implemented clinical text preprocessing to truncate text to first 15,000 characters (abstract, methods).",
+        "Replaced all nested repetition regex patterns with safe, flat equivalents utilizing bounded character classes.",
+        "Switched from complex regex scanning to fast, native Python substring searches to locate keyword windows."
+      ],
+      "applied_at": "2026-06-23T12:47:45.354266"
+    },
+    {
+      "id": "node2a-rl-cycle-2",
+      "summary_title": "Demographic Boundaries & Criteria Cleaning",
+      "source_subnode": "node2a",
+      "beneficiary_nodes": [
+        "node2a"
+      ],
+      "learning_notes": [
+        "Improved pediatric/geriatric age boundaries to avoid false positives on parent/child relationships.",
+        "Refined sex extraction patterns to capture specific parenthetical formats like 'Women (ages 18-30)'.",
+        "Enhanced criteria cleaning to strip leading colons, semicolons, and common prefix verbs like 'were' and 'included'.",
+        "Added automatic cleaning of leading subject noun phrases like 'patients with' and 'healthy volunteers who'."
+      ],
+      "applied_at": "2026-06-23T12:47:45.356632"
+    },
+    {
+      "id": "node2a-rl-cycle-3",
+      "summary_title": "Expanded Cohort Keywords & Descriptors",
+      "source_subnode": "node2a",
+      "beneficiary_nodes": [
+        "node2a"
+      ],
+      "learning_notes": [
+        "Added 'youth' and 'youths' as direct pediatric indicators to correctly capture gender-diverse youth cohorts.",
+        "Expanded inclusion criteria keywords with common cohort indicators like 'participants in the' and 'cohort consisted of'.",
+        "Added direct demographic survey triggers like 'adults aged' and 'adults ages' to capture online survey cohorts.",
+        "Significantly improved free-text semantic matching by filtering out common stop words during evaluation."
+      ],
+      "applied_at": "2026-06-23T12:47:45.358335"
+    },
+    {
+      "id": "node2a-rl-cycle-4",
+      "summary_title": "Survey Noise Suppression & Clinical Defaults",
+      "source_subnode": "node2a",
+      "beneficiary_nodes": [
+        "node2a"
+      ],
+      "learning_notes": [
+        "Added a professional survey filter in age extraction to prevent policy surveys about youth from being misclassified as pediatric.",
+        "Reverted sex extraction to default to 'both' when no gendered words are mentioned, aligning with clinical defaults.",
+        "Added survey/interview inclusion triggers like 'survey of', 'we surveyed', and 'interviews with' to capture elected official cohorts.",
+        "Integrated a variable/measurement exclusion filter in inclusion criteria to ignore sentences describing experimental measures."
+      ],
+      "applied_at": "2026-06-23T12:47:45.360001"
     }
   ]
 }

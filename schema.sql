@@ -49,7 +49,9 @@ CREATE TABLE IF NOT EXISTS papers (
     ingestion_status TEXT, -- Node 0: relevant | tangential | irrelevant | not_cannabis_related
     species TEXT, -- host species label from Maude tree (mouse, rat, Rodents branch, etc.)
     population_age TEXT, -- pediatric, adult, geriatric, etc.
-    population_sex TEXT -- male, female, both, etc.
+    population_sex TEXT, -- male, female, both, etc.
+    inclusion_criteria TEXT, -- study inclusion criteria
+    exclusion_criteria TEXT -- study exclusion criteria
 );
 
 -- Full-Text Search FTS5 Virtual Table

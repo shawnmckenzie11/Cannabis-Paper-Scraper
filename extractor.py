@@ -3127,7 +3127,7 @@ def _collect_study_type_hits(combined: str) -> List[str]:
         types.append("Clinical (prospective)")
     if keyword_match(combined, ["retrospective", "retrospectively", "chart review", "historical cohort"]):
         types.append("Clinical (retrospective)")
-    if keyword_match(combined, ["observational", "cross-sectional", "survey", "surveys", "registry", "registries", "longitudinal", "case-control", "epidemiological", "cohort", "cohorts", "gwas", "genome-wide", "genomewide"]):
+    if keyword_match(combined, ["observational", "cross-sectional", "survey", "surveys", "registry", "registries", "longitudinal", "case-control", "epidemiological", "cohort", "cohorts", "gwas", "genome-wide", "genomewide", "quasi-experimental", "quasi-experiment", "pre-post", "school-based intervention", "educational intervention"]):
         types.append("Clinical (observational)")
     if keyword_match(combined, ["mouse", "mice", "murine", "c57bl/6"]):
         types.append("Animal Models (Mouse)")
@@ -3985,6 +3985,394 @@ def generate_heuristic_summary(data: Dict[str, Any]) -> str:
         
     return summary
 
+def preprocess_clinical_text(text: str) -> str:
+    """Preprocesses PDF-extracted text by truncating to the first 15,000 characters and normalizing whitespace."""
+    if not text:
+        return ""
+    # Truncate to first 15,000 characters to cover title, abstract, and methods,
+    # and completely eliminate results/discussion/references noise and backtracking.
+    text = text[:15000]
+    # 1. Remove hyphenation at line breaks
+    text = re.sub(r"(\w+)\s*-\s*\n\s*(\w+)", r"\1\2", text)
+    text = re.sub(r"(\w+)-\s*\n\s*(\w+)", r"\1\2", text)
+    # 2. Replace all whitespace with a single space
+    text = re.sub(r"\s+", " ", text)
+    return text
+
+def extract_population_age(text: str) -> str:
+    """Regex-based age extraction (pediatric, adult, geriatric)."""
+    text_lower = text.lower()
+    
+    # Check if it's a survey of professionals/officials/parents/teachers where youth/child mentions are policy-only
+    professional_survey = re.search(
+        r"\b(?:survey of|interviewed|questionnaire to)\s+(?:elected officials|officials|healthcare professionals|professionals|providers|parents|teachers|retailers|staff|clinicians|physicians|pediatricians|policymakers)\b|"
+        r"\b(?:healthcare professionals|providers|parents|teachers|retailers|policymakers|pediatricians)\s+(?:completed|were surveyed|were interviewed)\b",
+        text_lower
+    )
+    if professional_survey:
+        return "adult"
+    
+    # 1. Search for pediatric indicators
+    ped_patterns = [
+        r"\b(?:pediatric|child|adolescent|infant|teenager|youth|pediatrics)\s+(?:patients|subjects|participants|cohort|population|group|users)\b",
+        r"\b(?:enrolled|recruited|included|studied)\s+(?:children|adolescents|infants|teens|youths)\b",
+        r"\bchildren\s+(?:aged|ranging from|with)\b",
+        r"\badolescents\s+(?:aged|ranging from|with)\b",
+        r"\bunder\s+18\s*(?:years|yo)?\b",
+        r"\bage\s+<\s*18\b",
+        r"\bpediatric\s+onset\b",
+        r"\bchildren\b",
+        r"\badolescents\b",
+        r"\byouth\b",
+        r"\byouths\b"
+    ]
+    
+    # 2. Search for geriatric indicators
+    geriatric_keywords = [
+        r"\bgeriatric\w*\b", r"\belderly\b", r"\bolder\s+(?:adults|patients|subjects|participants|people|population)\b",
+        r"\baged\s+(?:≥|>=|greater than or equal to|over)?\s*65\s*(?:years|yo)?\b",
+        r"\boctogenarian\w*\b", r"\bsenile\b"
+    ]
+    
+    # Check pediatric patterns
+    has_ped = False
+    for p in ped_patterns:
+        if re.search(p, text_lower):
+            has_ped = True
+            break
+            
+    # Check geriatric patterns
+    has_ger = False
+    for kw in geriatric_keywords:
+        if re.search(kw, text_lower):
+            has_ger = True
+            break
+
+    if has_ped and has_ger:
+        return "both"
+    elif has_ped:
+        # Avoid regex backtracking completely by using safe substring and local scanning
+        exclusion_minor = False
+        if "under 18" in text_lower or "under-18" in text_lower or "age < 18" in text_lower or "age<18" in text_lower:
+            for keyword in ["under 18", "under-18", "age < 18", "age<18"]:
+                idx = text_lower.find(keyword)
+                if idx != -1:
+                    window = text_lower[max(0, idx-100):min(len(text_lower), idx+100)]
+                    if "exclu" in window:
+                        exclusion_minor = True
+                        break
+        if exclusion_minor and not re.search(r"\bchildren\b", text_lower):
+            return "adult"
+        return "pediatric"
+    elif has_ger:
+        return "geriatric"
+        
+    return "adult"
+
+def extract_population_sex(text: str) -> str:
+    """Regex-based sex extraction (male, female, both) using front-matter co-occurrence heuristic."""
+    text_lower = text.lower()[:8000]
+    
+    # Check for explicit "both" indicators
+    both_patterns = [
+        r"\bboth\s+(?:sexes|genders)\b",
+        r"\bmen\s+and\s+women\b",
+        r"\bwomen\s+and\s+men\b",
+        r"\bmale\s+and\s+female\b",
+        r"\bfemale\s+and\s+male\b",
+        r"\bmales\s+and\s+females\b",
+        r"\bfemales\s+and\s+males\b",
+        r"\bmixed[- ]sex\b"
+    ]
+    for p in both_patterns:
+        if re.search(p, text_lower):
+            return "both"
+            
+    # Count occurrences of key gender indicators in the front matter
+    men_count = len(re.findall(r"\b(?:men|male|males)\b", text_lower))
+    women_count = len(re.findall(r"\b(?:women|female|females)\b", text_lower))
+    
+    # Ratio check: if one sex is heavily dominant/exclusive, return it
+    if women_count > 3 and men_count <= 1:
+        return "female"
+    if men_count > 3 and women_count <= 1:
+        return "male"
+        
+    # Look for co-occurrence in participant description
+    part_desc = re.search(
+        r"\b(\d+)\s*(?:men|male|males)\b[^.]{1,45}?\b(\d+)\s*(?:women|female|females)\b|"
+        r"\b(\d+)\s*(?:women|female|females)\b[^.]{1,45}?\b(\d+)\s*(?:men|male|males)\b",
+        text_lower
+    )
+    if part_desc:
+        return "both"
+        
+    # If they are described as "men" or "male subjects" exclusively
+    male_exclusive_patterns = [
+        r"\bmale\s+(?:subjects|patients|participants|volunteers|cohort|population|group)\b",
+        r"\b(?:subjects|patients|participants|volunteers)\s+(?:were|consisted of|included)\s+[^.]{0,40}?\s*(?:males|men)\b",
+        r"\bonly\s+male\b",
+        r"\bmen\s+(?:aged|were|diagnosed|\([^)]+\))\b"
+    ]
+    female_exclusive_patterns = [
+        r"\bfemale\s+(?:subjects|patients|participants|volunteers|cohort|population|group)\b",
+        r"\b(?:subjects|patients|participants|volunteers)\s+(?:were|consisted of|included)\s+[^.]{0,40}?\s*(?:females|women)\b",
+        r"\bonly\s+female\b",
+        r"\bwomen\s+(?:aged|were|diagnosed|\([^)]+\))\b"
+    ]
+    
+    has_male = any(re.search(p, text_lower) for p in male_exclusive_patterns)
+    has_female = any(re.search(p, text_lower) for p in female_exclusive_patterns)
+    
+    if has_male and not has_female and women_count < 4:
+        return "male"
+    if has_female and not has_male and men_count < 4:
+        return "female"
+        
+    # Default to both if both are mentioned generally in the front matter
+    if men_count > 1 and women_count > 1:
+        return "both"
+        
+    return "both"
+
+def clean_criteria(val: str) -> str:
+    """Cleans up extracted criteria text by stripping punctuation, bullet points, etc."""
+    if not val:
+        return ""
+    val = val.strip()
+    # Remove leading common prefix verbs or punctuation like colons/commas
+    val = re.sub(r"^(?:\b(?:were|was|included|includes|including|consisted of|consists of|based on|to|for|is|are)\b|[^\w\s])\s*", "", val, flags=re.IGNORECASE).strip()
+    # Remove leading symbols like -, *, •, or numbers like 1., 2) or punctuation
+    val = re.sub(r"^(?:[-*•\d\.\)\s:,;]+)", "", val)
+    # Re-run the leading verb removal in case cleaning symbols exposed one
+    val = re.sub(r"^(?:\b(?:were|was|included|includes|including|consisted of|consists of|based on|to|for|is|are)\b|[^\w\s])\s*", "", val, flags=re.IGNORECASE).strip()
+    
+    # Clean up leading participant words like "healthy patients with ", "subjects who ", etc.
+    while True:
+        old_val = val
+        val = re.sub(r"^(?:\d+|\b(?:healthy|patients|subjects|participants|volunteers|adults|with|who|suffering\s+from|diagnosed\s+with)\b)\s*", "", val, flags=re.IGNORECASE).strip()
+        if val == old_val:
+            break
+            
+    # Replace multiple spaces
+    val = re.sub(r"\s+", " ", val)
+    # Capitalize first letter
+    if val:
+        val = val[0].upper() + val[1:]
+    return val.strip()
+
+def extract_inclusion_criteria(text: str) -> str:
+    """Highly optimized inclusion criteria extraction using substring operations (backtracking-free)."""
+    text_lower = text.lower()
+    
+    # 1. Bounded window search after keywords
+    keywords = [
+        "inclusion criteria",
+        "criteria for inclusion",
+        "eligibility criteria",
+        "eligible if they",
+        "were eligible if",
+        "participants were eligible if",
+        "enrolled if they",
+        "participants in the",
+        "participants in",
+        "adults aged",
+        "adults ages",
+        "cohort consisted of",
+        "sample consisted of",
+        "participants completed",
+        "participants recruited",
+        "participants were recruited",
+        "study population included",
+        "participants included",
+        "subjects included",
+        "patients included",
+        "screening questions verified that",
+        "survey of",
+        "surveyed",
+        "we surveyed",
+        "interviews with",
+        "interviewed",
+        "eligible participants were",
+        "eligible students were",
+        "eligible subjects were",
+        "eligible patients were",
+        "eligible participants included",
+        "eligible if",
+        "students in",
+        "adolescents in",
+        "patients in",
+        "subjects in",
+        "cohort of",
+        "sample of",
+        "we analyzed",
+        "participants:",
+        "subjects:",
+        "patients:",
+        "population:",
+        "settings/participants:",
+        "setting/participants:"
+    ]
+    for kw in keywords:
+        start_search = 0
+        while True:
+            idx = text_lower.find(kw, start_search)
+            if idx == -1:
+                break
+            start = idx + len(kw)
+            window = text[start:start+300]
+            # Find the end of the sentence or next section
+            end_idx = len(window)
+            for stop in [".", "exclusion", "study design", "methods", "procedures"]:
+                stop_idx = window.lower().find(stop)
+                if stop_idx != -1 and stop_idx < end_idx:
+                    if stop == ".":
+                        # Check if followed by digit (decimal point)
+                        if stop_idx + 1 < len(window) and window[stop_idx + 1].isdigit():
+                            continue
+                    end_idx = stop_idx
+            content = window[:end_idx].strip()
+            # Ignore references to other papers/protocols
+            if any(ref in content.lower() for ref in ["reported in", "described in", "previously described", "detailed in", "published in", "trial protocol", "see "]):
+                start_search = idx + 1
+                continue
+            # Ignore if the content is just about experimental variables/measures
+            if any(word in content.lower() for word in ["items", "measures", "questionnaires", "variables", "data", "samples", "specimens", "tests", "analyses"]):
+                start_search = idx + 1
+                continue
+            if len(content) > 10:
+                return clean_criteria(content)
+            start_search = idx + 1
+                 
+    # 2. Passive voice "were included" (substring search before the verb!)
+    for verb in ["were included", "were eligible", "were enrolled", "was included", "was eligible", "was enrolled"]:
+        start_search = 0
+        while True:
+            idx = text_lower.find(verb, start_search)
+            if idx == -1:
+                break
+            # Take up to 150 characters before the verb
+            start = max(0, idx - 150)
+            window = text[start:idx]
+            # Find the last period in the window to only get the current sentence
+            last_period = window.rfind(".")
+            if last_period != -1:
+                # Check if period is a decimal point
+                if last_period + 1 < len(window) and window[last_period + 1].isdigit():
+                    prev_period = window[:last_period].rfind(".")
+                    if prev_period != -1:
+                        window = window[prev_period+1:]
+                else:
+                    window = window[last_period+1:]
+            content = window.strip()
+            # Ignore references
+            if any(ref in content.lower() for ref in ["reported in", "described in", "previously described", "detailed in", "published in", "trial protocol", "see "]):
+                start_search = idx + 1
+                continue
+            # Ignore if the content is just about experimental variables/measures
+            if any(word in content.lower() for word in ["items", "measures", "questionnaires", "variables", "data", "samples", "specimens", "tests", "analyses"]):
+                start_search = idx + 1
+                continue
+            if len(content) > 10:
+                return clean_criteria(content)
+            start_search = idx + 1
+                
+    # 3. Fallback to recruitment verb (substring search after the verb!)
+    for verb in ["recruited", "enrolled", "studied", "investigated"]:
+        start_search = 0
+        while True:
+            idx = text_lower.find(verb, start_search)
+            if idx == -1:
+                break
+            start = idx + len(verb)
+            window = text[start:start+150]
+            end_idx = len(window)
+            stop_idx = window.find(".")
+            if stop_idx != -1:
+                # Check if decimal point
+                if stop_idx + 1 < len(window) and window[stop_idx + 1].isdigit():
+                    pass
+                else:
+                    end_idx = stop_idx
+            content = window[:end_idx].strip()
+            # Clean up words like "healthy patients with " or "subjects who " using a safe loop
+            while True:
+                old_content = content
+                content = re.sub(r"^(?:\d+|\bhealthy\b|\bpatients\b|\bsubjects\b|\bparticipants\b|\bvolunteers\b|\badults\b|\bwith\b|\bwho\b|\bsuffering\s+from\b)\b", "", content, flags=re.IGNORECASE).strip()
+                if content == old_content:
+                    break
+            if len(content) > 10:
+                return clean_criteria(f"Patients with {content}")
+            start_search = idx + 1
+                
+    return ""
+
+def extract_exclusion_criteria(text: str) -> str:
+    """Highly optimized exclusion criteria extraction using substring operations (backtracking-free)."""
+    text_lower = text.lower()
+    
+    if "no exclusion criteria" in text_lower or "no subjects were excluded" in text_lower or "no exclusion" in text_lower:
+        return "None"
+        
+    keywords = [
+        "exclusion criteria",
+        "exclusionary criteria",
+        "criteria for exclusion",
+        "exclusion criteria included",
+        "exclusion was based on",
+        "participants were excluded",
+        "subjects were excluded",
+        "we excluded",
+        "was excluded",
+        "exclusion criteria were",
+        "exclusion criteria was",
+        "exclusion was"
+    ]
+    for kw in keywords:
+        start_search = 0
+        while True:
+            idx = text_lower.find(kw, start_search)
+            if idx == -1:
+                break
+            start = idx + len(kw)
+            window = text[start:start+300]
+            end_idx = len(window)
+            for stop in [".", "inclusion", "study design", "methods", "procedures"]:
+                stop_idx = window.lower().find(stop)
+                if stop_idx != -1 and stop_idx < end_idx:
+                    if stop == ".":
+                        if stop_idx + 1 < len(window) and window[stop_idx + 1].isdigit():
+                            continue
+                    end_idx = stop_idx
+            content = window[:end_idx].strip()
+            if len(content) > 10:
+                return clean_criteria(content)
+            start_search = idx + 1
+                
+    # Passive voice "were excluded"
+    start_search = 0
+    while True:
+        idx = text_lower.find("were excluded", start_search)
+        if idx == -1:
+            break
+        start = max(0, idx - 150)
+        window = text[start:idx]
+        last_period = window.rfind(".")
+        if last_period != -1:
+            # Check if period is a decimal point
+            if last_period + 1 < len(window) and window[last_period + 1].isdigit():
+                prev_period = window[:last_period].rfind(".")
+                if prev_period != -1:
+                    window = window[prev_period+1:]
+            else:
+                window = window[last_period+1:]
+        content = window.strip()
+        if len(content) > 10:
+            return clean_criteria(content)
+        start_search = idx + 1
+            
+    return "None"
+
 def extract_all_heuristics(
     title: str,
     abstract: str,
@@ -4081,6 +4469,19 @@ def extract_all_heuristics(
     is_clinical = any(s.startswith("Clinical (") for s in study_set)
     is_invivo = any(s.startswith("Animal Models (") for s in study_set)
     is_invitro = any(s.startswith("Cell Culture (") for s in study_set)
+
+    population_age = None
+    population_sex = None
+    inclusion_criteria = None
+    exclusion_criteria = None
+
+    if is_clinical:
+        text_source = full_text if full_text else combined_text
+        clin_text = preprocess_clinical_text(text_source)
+        population_age = extract_population_age(clin_text)
+        population_sex = extract_population_sex(clin_text)
+        inclusion_criteria = extract_inclusion_criteria(clin_text)
+        exclusion_criteria = extract_exclusion_criteria(clin_text)
 
     duration_days = None
     inhaled_exposure_duration = None
@@ -4264,7 +4665,11 @@ def extract_all_heuristics(
         "multiple_doses": multiple_doses,
         "multiple_time_intervals": multiple_time_intervals,
         "cannabis_type": cannabis_type,
-        "publication_type": publication_type
+        "publication_type": publication_type,
+        "population_age": population_age,
+        "population_sex": population_sex,
+        "inclusion_criteria": inclusion_criteria,
+        "exclusion_criteria": exclusion_criteria
     }
     result["summary"] = generate_heuristic_summary(result)
     import classification_schema

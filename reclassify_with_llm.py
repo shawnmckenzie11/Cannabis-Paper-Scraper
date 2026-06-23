@@ -93,7 +93,8 @@ def reclassify_papers_llm(limit=None, offset=0, prioritize=True, paper_id=None):
                    outcome_domain, thc_pct, cbd_pct, dose_mg, strain_reported, strain_normalized,
                    duration_days, inhaled_exposure_duration, administration_frequency, treatment_duration,
                    sample_size, puff_count, thc_mg_ml, thc_mg_g, thc_mg_kg, cbd_mg_ml, cbd_mg_g, cbd_mg_kg,
-                   thc_uM, cbd_uM, expert_locked_fields, full_text_link
+                   thc_uM, cbd_uM, population_age, population_sex, inclusion_criteria, exclusion_criteria,
+                   expert_locked_fields, full_text_link
             FROM papers
         """
         params = []
@@ -144,7 +145,8 @@ def reclassify_papers_llm(limit=None, offset=0, prioritize=True, paper_id=None):
             "strain_reported", "strain_normalized", "duration_days",
             "inhaled_exposure_duration", "administration_frequency", "treatment_duration",
             "sample_size", "puff_count", "thc_mg_ml", "thc_mg_g", "thc_mg_kg",
-            "cbd_mg_ml", "cbd_mg_g", "cbd_mg_kg", "thc_uM", "cbd_uM"
+            "cbd_mg_ml", "cbd_mg_g", "cbd_mg_kg", "thc_uM", "cbd_uM",
+            "population_age", "population_sex", "inclusion_criteria", "exclusion_criteria"
         }
 
         for idx, p in enumerate(papers):
