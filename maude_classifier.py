@@ -11,6 +11,7 @@ from typing import Any, Dict, List, Optional, Sequence, Tuple
 import extractor
 import classification_schema
 import maude_cues
+import heuristics_engine
 
 BASE_DIR = Path(__file__).resolve().parent
 MAUDE_TREE_FILE = BASE_DIR / "maude_tree.json"
@@ -26,74 +27,9 @@ MAUDE_HIGH_LEVEL_FIELDS: Tuple[str, ...] = (
     "species",
 )
 
-SPECIES_PATTERNS: Tuple[Tuple[str, str], ...] = (
-    (r"\bmice\b|\bmouse\b|\bmurine\b|\bC57BL", "mouse"),
-    (r"\brats\b|\brat\b|\bWistar\b|\bSprague[- ]Dawley\b", "rat"),
-    (r"\bhamster\b|\bgerbil\b|\bguinea pig\b|\bvole\b|\brabbit\b", "rodent_other"),
-    (r"\bmacaque\b|\brhesus\b|\bmonkey\b|\bbaboon\b|\bnon[- ]human primate", "non_human_primate"),
-    (r"\bzebrafish\b|\bDanio rerio\b", "zebrafish"),
-    (r"\bdrosophila\b|\bC\. elegans\b|\bCaenorhabditis\b", "invertebrate"),
-    (r"\bfrog\b|\bXenopus\b|\bbird\b|\bavian\b|\bpigeon\b", "vertebrate_non_mammal"),
-    (r"\bdog\b|\bcat\b|\bpig\b|\bporcine\b|\bcanine\b|\bovine\b", "other_mammal"),
-)
-
-# Strong review cues match in title or abstract (high precision).
-REVIEW_STRONG_CUES = (
-    r"\boverview paper\b",
-    r"\bsystematic review\b",
-    r"\bmeta-analysis\b",
-    r"\bmeta analysis\b",
-    r"\bnarrative synthesis\b",
-    r"\bnarrative review\b",
-    r"\bscoping review\b",
-    r"\bprogress report\b",
-    r"\bstate of the art\b",
-    r"\bmini-review\b",
-    r"\bminireview\b",
-    r"\bstudies reviewed here\b",
-    r"\bliterature review\b",
-    r"\beditorial\b",
-    r"\bcommentary\b",
-    r"\bletter to the editor\b",
-)
-
-# Weak review cues match title only (avoid methods-section "chart review", etc.).
-REVIEW_WEAK_TITLE_CUES = (
-    r"\breview\b",
-    r"\bperspectives?\b",
-)
-
-# Methods-context "review" phrases that should not route to Node 1B.
-REVIEW_SUPPRESS_PATTERNS = (
-    r"\bchart review\b",
-    r"\bretrospective review\b",
-    r"\brecord review\b",
-    r"\breview of (?:patient|medical) records\b",
-    r"\bepidemiological overview\b",
-    r"\boverview and survey\b",
-)
-
-REVIEW_TITLE_CUES = REVIEW_STRONG_CUES + REVIEW_WEAK_TITLE_CUES
-
-CASE_CUES = (
-    r"\bcase report\b",
-    r"\bcase series\b",
-    r"\bwe report a case\b",
-    r"\bwe present a case\b",
-    r"\bsingle patient\b",
-    r"\bseries of patients\b",
-    r"\bpresent a series of\b",
-    r"\ba case of\b",
-    r"\bcase of a patient\b",
-)
-
-ORIGINAL_NEGATIVE_CUES = (
-    r"\bwe review\b",
-    r"\bliterature suggests\b",
-    r"\bprevious studies have shown\b",
-    r"\bsummarize evidence\b",
-)
-
+def infer_species(text: str) -> Optional[str]:
+    """Infers species label from routing/extraction text using heuristics_engine."""
+    return heuristics_engine.infer_species(text)
 
 def _load_rules_config() -> Dict[str, Any]:
     """Loads rules_config.json for Maude routing cues."""
@@ -104,159 +40,61 @@ def _load_rules_config() -> Dict[str, Any]:
 
 
 def get_routing_cue_patterns(node_id: str, fallback: Sequence[str]) -> Tuple[str, ...]:
-    """Builds routing regex patterns from the unified Maude cue store plus fallbacks."""
-    return maude_cues.get_routing_patterns(node_id, fallback)
+    """Builds routing regex patterns from the dynamic configuration."""
+    if node_id == "node1b_reviews":
+        return tuple(p.pattern for p in heuristics_engine.patterns.review_strong_cues)
+    elif node_id == "node1c_case_report":
+        return tuple(p.pattern for p in heuristics_engine.patterns.case_cues)
+    return tuple(fallback)
 
 
 def get_review_routing_patterns() -> Tuple[str, ...]:
-    """Returns review-route regex patterns from config + learned cues."""
-    return get_routing_cue_patterns("node1b_reviews", REVIEW_TITLE_CUES)
+    return tuple(p.pattern for p in heuristics_engine.patterns.review_strong_cues)
 
 
 def get_case_routing_patterns() -> Tuple[str, ...]:
-    """Returns case-report regex patterns from config + learned cues."""
-    return get_routing_cue_patterns("node1c_case_report", CASE_CUES)
+    return tuple(p.pattern for p in heuristics_engine.patterns.case_cues)
 
 
 def get_original_negative_patterns() -> Tuple[str, ...]:
-    """Returns review-negative regex patterns from the unified Maude cue store."""
-    patterns = maude_cues.get_negative_patterns("node1a_original", ORIGINAL_NEGATIVE_CUES)
-    return patterns or ORIGINAL_NEGATIVE_CUES
-
-
-WEAK_REVIEW_PHRASES = frozenset({"review", "overview", "perspective", "perspectives"})
+    return tuple(p.pattern for p in heuristics_engine.patterns.original_negative_cues)
 
 
 def get_review_strong_patterns() -> Tuple[str, ...]:
-    """Returns high-precision review patterns (title or abstract) from cue store + fallbacks."""
-    store = maude_cues.load_cue_store()
-    patterns: List[str] = list(REVIEW_STRONG_CUES)
-    seen = set(patterns)
-    for phrase in maude_cues.get_positive_phrases("node1b_reviews", store):
-        normalized = phrase.strip().lower()
-        if not normalized or normalized in WEAK_REVIEW_PHRASES:
-            continue
-        pattern = rf"\b{re.escape(normalized)}\b"
-        if pattern not in seen:
-            patterns.append(pattern)
-            seen.add(pattern)
-    for row in maude_cues.get_node_config("node1b_reviews", store).get("learned_cues") or []:
-        cue = (row.get("cue") or "").strip().lower()
-        if not cue or cue in WEAK_REVIEW_PHRASES or not maude_cues.is_valid_review_learned_cue(cue):
-            continue
-        pattern = rf"\b{re.escape(cue)}\b"
-        if pattern not in seen:
-            patterns.append(pattern)
-            seen.add(pattern)
-    return tuple(patterns)
+    return tuple(p.pattern for p in heuristics_engine.patterns.review_strong_cues)
 
 
 def get_review_weak_title_patterns() -> Tuple[str, ...]:
-    """Returns title-only review patterns (base weak cues + learned weak cues)."""
-    store = maude_cues.load_cue_store()
-    patterns: List[str] = list(REVIEW_WEAK_TITLE_CUES)
-    seen = set(patterns)
-    for phrase in maude_cues.get_positive_phrases("node1b_reviews", store):
-        if phrase.strip().lower() in WEAK_REVIEW_PHRASES:
-            pattern = rf"\b{re.escape(phrase.strip().lower())}\b"
-            if pattern not in seen:
-                patterns.append(pattern)
-                seen.add(pattern)
-    for row in maude_cues.get_node_config("node1b_reviews", store).get("learned_cues") or []:
-        cue = (row.get("cue") or "").strip().lower()
-        if cue in WEAK_REVIEW_PHRASES and maude_cues.is_valid_review_learned_cue(cue):
-            pattern = rf"\b{re.escape(cue)}\b"
-            if pattern not in seen:
-                patterns.append(pattern)
-                seen.add(pattern)
-    return tuple(patterns)
+    return tuple(p.pattern for p in heuristics_engine.patterns.review_weak_title_cues)
 
 
 def get_review_suppress_patterns() -> Tuple[str, ...]:
-    """Returns patterns that block weak title review routing (methods-context review)."""
-    patterns = maude_cues.get_negative_patterns("node1b_reviews", REVIEW_SUPPRESS_PATTERNS)
-    return patterns or REVIEW_SUPPRESS_PATTERNS
-
-
-IN_VIVO_OVERRIDE_TERMS = ("in vivo", "in-vivo")
-IN_VIVO_ANIMAL_TERMS = (
-    "rat", "rats", "mouse", "mice", "rodent", "rodents", "rabbit", "rabbits",
-    "monkey", "monkeys", "primate", "primates", "zebrafish", "canine", "dog", "dogs",
-)
+    return tuple(p.pattern for p in heuristics_engine.patterns.review_suppress_patterns)
 
 
 def should_route_in_vivo_before_review(title: str, abstract: str) -> bool:
     """Returns True when abstract signals in vivo animal work despite review-like title cues."""
-    text = f"{title} {abstract}".lower()
-    if not any(term in text for term in IN_VIVO_OVERRIDE_TERMS):
+    text = f"{title or ''} {abstract or ''}".lower()
+    in_vivo_override_terms = heuristics_engine.get_routing_list("in_vivo_override_terms")
+    if not any(term in text for term in in_vivo_override_terms):
         return False
-    return any(re.search(rf"\b{re.escape(term)}\b", text) for term in IN_VIVO_ANIMAL_TERMS)
-
-
-ANIMAL_DOSING_ROUTE_PATTERNS: Tuple[str, ...] = (
-    r"\b(?:rat|rats|mouse|mice|rodent|rodents|zebrafish|rabbit|rabbits|primate|primates|canine|dog|dogs)\b"
-    r".{0,120}\b\d+(?:\.\d+)?\s*mg/kg\b",
-    r"\b\d+(?:\.\d+)?\s*mg/kg\b.{0,80}\b(?:i\.p\.|i\.v\.|s\.c\.|i\.m\.|intraperitoneal|subcutaneous|intravenous|oral gavage)\b",
-    r"\b(?:received|administered|injected|treated with|dosed with)\b.{0,80}"
-    r"\b(?:thc|cbd|cannabidiol|tetrahydrocannabinol|cannabinoid|cannabinoids)\b.{0,80}\b\d+(?:\.\d+)?\s*mg/kg\b",
-)
+    in_vivo_animal_terms = heuristics_engine.get_routing_list("in_vivo_animal_terms")
+    return any(re.search(rf"\b{re.escape(term)}\b", text) for term in in_vivo_animal_terms)
 
 
 def should_route_animal_before_review(title: str, text: str) -> bool:
     """Returns True when PDF/abstract signals primary animal dosing despite review-like PDF noise."""
-    blob = f"{title} {text}".lower()
-    if not any(re.search(rf"\b{re.escape(term)}\b", blob) for term in IN_VIVO_ANIMAL_TERMS):
-        return False
-    if should_route_in_vivo_before_review(title, text):
-        return True
-    return any(re.search(pattern, blob, re.IGNORECASE | re.DOTALL) for pattern in ANIMAL_DOSING_ROUTE_PATTERNS)
-
-
-CLINICAL_PRIMARY_DATA_PATTERNS: Tuple[str, ...] = (
-    r"\bparticipants (?:were|completed|recruited|enrolled|surveyed)\b",
-    r"\bpatients (?:were|completed|recruited|enrolled)\b",
-    r"\bwe (?:surveyed|recruited|enrolled|conducted a (?:prospective|cross-sectional|cohort))\b",
-    r"\bn\s*=\s*\d+\s+(?:participants|patients|respondents|subjects|adults)\b",
-    r"\bexploratory study\b",
-    r"\bcross-sectional (?:study|survey)\b",
-    r"\bquestionnaire (?:was|were) (?:administered|completed|distributed)\b",
-    r"\brandomized (?:controlled )?trial\b",
-    r"\bplacebo[- ]controlled\b",
-    r"\bclinical trial\b",
-)
+    return heuristics_engine.should_route_animal_before_review(title, text)
 
 
 def should_route_clinical_before_review(title: str, text: str) -> bool:
     """Returns True when full text signals primary human-subjects data despite review-like cues."""
-    blob = f"{title} {text}".lower()
-    if not extractor.keyword_match(blob, list(extractor.HUMAN_SUBJECT_KEYWORDS)):
-        return False
-    if any(re.search(pattern, blob, re.IGNORECASE) for pattern in CLINICAL_PRIMARY_DATA_PATTERNS):
-        return True
-    if re.search(r"\b(?:methods|results)\b", blob, re.IGNORECASE) and re.search(
-        r"\b(?:survey|questionnaire|interviews?|participants)\b", blob, re.IGNORECASE
-    ):
-        return True
-    return False
+    return heuristics_engine.should_route_clinical_before_review(title, text)
 
 
 def matches_review_route(title: str, abstract: str) -> bool:
-    """True when title/abstract cues justify Node 1B review routing."""
-    text = f"{title} {abstract}"
-    title_text = title or ""
-    suppressed = any(re.search(pattern, text, re.IGNORECASE) for pattern in get_review_suppress_patterns())
-
-    for pattern in get_review_strong_patterns():
-        if re.search(pattern, text, re.IGNORECASE):
-            return True
-
-    if suppressed:
-        return False
-
-    for pattern in get_review_weak_title_patterns():
-        if re.search(pattern, title_text, re.IGNORECASE):
-            return True
-    return False
+    """True when title/abstract cues justify review routing."""
+    return heuristics_engine.matches_review_route(title, abstract)
 
 
 def load_maude_tree(path: Path = MAUDE_TREE_FILE) -> Dict[str, Any]:
@@ -728,12 +566,7 @@ def apply_sparse_extraction_fallback(
     }
 
 
-def infer_species(text: str) -> Optional[str]:
-    """Infers species label from routing/extraction text."""
-    for pattern, label in SPECIES_PATTERNS:
-        if re.search(pattern, text, re.IGNORECASE):
-            return label
-    return None
+
 
 
 def _map_study_type_to_tree(study_types: Sequence[str], species: Optional[str]) -> List[str]:
@@ -774,11 +607,14 @@ def _dedupe_nodes(nodes: Sequence[str]) -> List[str]:
 
 
 def route_from_metadata(title: str, abstract: str) -> Optional[Tuple[str, Optional[str], List[str], float]]:
-    """Routes using PubMed publication-type prefixes and other metadata rules from maude_cues.json."""
+    """Routes using PubMed publication-type prefixes and other metadata rules from heuristics_engine."""
     abstract_lower = (abstract or "").lower()
     title_lower = (title or "").lower()
-    text = f"{title} {abstract}"
-    for rule in maude_cues.get_metadata_routing_rules():
+    text = f"{title or ''} {abstract or ''}"
+    
+    metadata_rules = heuristics_engine.get_routing_list("metadata_routing")
+    
+    for rule in metadata_rules:
         match_field = rule.get("match_field", "abstract")
         haystack = abstract_lower if match_field == "abstract" else f"{title_lower} {abstract_lower}"
         match_text = (rule.get("match") or "").lower()

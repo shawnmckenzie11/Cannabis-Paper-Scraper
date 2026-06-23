@@ -2926,7 +2926,8 @@ def get_methods_text(title: str, abstract: str) -> str:
     return title + "\n\n" + combined_abstract
 
 def infer_granular_publication_label(title: str, abstract: str) -> str:
-    """Infers the legacy granular publication label from text keywords."""
+    """Infers the legacy granular publication label from text keywords dynamically from the heuristics engine."""
+    import heuristics_engine
     # Check if not cannabis-related
     is_related, reason = is_cannabis_related(title, abstract)
     if not is_related:
@@ -2934,59 +2935,47 @@ def infer_granular_publication_label(title: str, abstract: str) -> str:
         
     methods_text = get_methods_text(title, abstract)
     combined = methods_text.lower()
-    
-    # Check full abstract for explicit publication type metadata first
     abstract_lower = (abstract or "").lower()
     
+    pub_types_config = heuristics_engine._config.get("publication_types", heuristics_engine.FALLBACK_CONFIG["publication_types"])
+    
+    # Check each type dynamically
     # 1. Meta-analysis
-    if "publication type: meta-analysis" in abstract_lower:
-        return "meta-analysis"
-    if keyword_match(combined, ["meta-analysis", "meta-analyses", "pooled analysis", "systematic overview"]):
+    if "publication type: meta-analysis" in abstract_lower or keyword_match(combined, pub_types_config.get("meta-analysis", [])):
         return "meta-analysis"
         
     # 2. Systematic review
-    if keyword_match(combined, ["systematic review", "systematic reviews", "scoping review", "scoping reviews"]):
+    if keyword_match(combined, pub_types_config.get("systematic_review", [])):
         return "systematic review"
         
     # 3. Review (general)
-    if "publication type: review" in abstract_lower:
+    if "publication type: review" in abstract_lower or keyword_match(combined, pub_types_config.get("review", [])):
         return "review"
-    
-    review_keywords = [
-        "literature review", "overview of reviews",
-        "narrative review", "critical review", "mini-review", "minireview", "review article",
-        "review paper", "this review", "the present review", "in this review", "we review",
-        "current review", "comprehensive review", "review of the literature", "this mini-review",
-        "this minireview", "article reviews", "reviews the current", "reviews the literature"
-    ]
-    if keyword_match(combined, review_keywords):
+    if "review" in title.lower() and re.search(r'\breviews?\b', title, re.IGNORECASE):
         return "review"
-    if "review" in title.lower():
-        if re.search(r'\breviews?\b', title, re.IGNORECASE):
-            return "review"
     if re.search(r'\b(this|present|current|our)\s+review\b', combined, re.IGNORECASE):
         return "review"
     if re.search(r'\breview\s+(highlights|summarizes|discusses|focuses|provides|aims to|examines|synthesizes|outlines)\b', combined, re.IGNORECASE):
         return "review"
         
     # 4. Case study
-    if keyword_match(combined, ["case study", "case studies", "case report", "case reports", "case series", "clinical case", "case-report", "case-series"]):
+    if keyword_match(combined, pub_types_config.get("case_study", [])):
         return "case study"
         
     # 5. Editorial
-    if keyword_match(combined, ["editorial", "editorials"]):
+    if keyword_match(combined, pub_types_config.get("editorial", [])):
         return "editorial"
         
     # 6. Comment
-    if keyword_match(combined, ["commentary", "commentaries", "comment", "opinion", "viewpoint"]):
+    if keyword_match(combined, pub_types_config.get("comment", [])):
         return "comment"
         
     # 7. Letter to the editor
-    if keyword_match(combined, ["letter to the editor", "letters to the editor"]):
+    if keyword_match(combined, pub_types_config.get("letter_to_the_editor", [])):
         return "letter to the editor"
         
     # 8. Perspectives paper
-    if keyword_match(combined, ["perspective", "perspectives"]):
+    if keyword_match(combined, pub_types_config.get("perspectives_paper", [])):
         return "perspectives paper"
         
     # Default to original research
@@ -2994,12 +2983,8 @@ def infer_granular_publication_label(title: str, abstract: str) -> str:
 
 
 def infer_publication_type(title: str, abstract: str) -> str:
-    """Infers coarse Node 1 publication type (original research, review, or case study)."""
-    import classification_schema
-
-    granular = infer_granular_publication_label(title, abstract)
-    coarse = classification_schema.granular_label_to_coarse_publication(granular)
-    return coarse or "original research"
+    """Infers Node 1 publication type."""
+    return infer_granular_publication_label(title, abstract)
 
 LAB_IN_VITRO_CUES = (
     "in vitro",
@@ -3119,44 +3104,21 @@ def _refine_study_type_list(types: List[str], combined: str, title: str, abstrac
 
 
 def _collect_study_type_hits(combined: str) -> List[str]:
-    """Returns study_type labels matched from a lowercase text blob."""
+    """Returns study_type labels matched from a lowercase text blob dynamically from the heuristics engine."""
+    import heuristics_engine
     types: List[str] = []
-    if keyword_match(combined, ["double-blind", "randomized controlled", "placebo-controlled", "rct", "randomised controlled", "clinical trial"]):
-        types.append("Clinical (RCT)")
-    if keyword_match(combined, ["prospective", "prospectively", "prospective cohort"]):
-        types.append("Clinical (prospective)")
-    if keyword_match(combined, ["retrospective", "retrospectively", "chart review", "historical cohort"]):
-        types.append("Clinical (retrospective)")
-    if keyword_match(combined, ["observational", "cross-sectional", "survey", "surveys", "registry", "registries", "longitudinal", "case-control", "epidemiological", "cohort", "cohorts", "gwas", "genome-wide", "genomewide", "quasi-experimental", "quasi-experiment", "pre-post", "school-based intervention", "educational intervention"]):
-        types.append("Clinical (observational)")
-    if keyword_match(combined, ["mouse", "mice", "murine", "c57bl/6"]):
-        types.append("Animal Models (Mouse)")
-    if keyword_match(combined, ["rat", "rats", "wistar", "sprague-dawley"]):
-        types.append("Animal Models (Rat)")
-    if keyword_match(combined, ["hamster", "hamsters", "gerbil", "gerbils", "guinea pig", "guinea pigs", "voles", "vole"]):
-        types.append("Animal Models (Other Rodents)")
-    if keyword_match(combined, ["macaque", "rhesus", "monkey", "monkeys", "primate", "primates", "baboon", "chimpanzee"]):
-        types.append("Animal Models (Non-Human Primates)")
-    if keyword_match(combined, ["dog", "dogs", "cat", "cats", "pig", "pigs", "rabbit", "rabbits", "zebrafish", "drosophila"]):
-        types.append("Animal Models (Other)")
-    elif keyword_match(combined, ["animal", "in vivo", "animal model", "rodent", "rodents"]):
+    
+    study_types_config = heuristics_engine._config.get("study_types", heuristics_engine.FALLBACK_CONFIG["study_types"])
+    
+    for label, keywords in study_types_config.items():
+        if keyword_match(combined, keywords):
+            types.append(label)
+            
+    # Keep the fallback matching logic
+    if keyword_match(combined, ["animal", "in vivo", "animal model", "rodent", "rodents"]):
         if not any(item.startswith("Animal Models (") for item in types):
             types.append("Animal Models (Other)")
-    if keyword_match(combined, ["primary cell", "primary cells", "primary culture", "primary neuronal", "primary microglia", "splenocytes", "primary hepatocytes"]):
-        types.append("Cell Culture (Primary Cells)")
-    if keyword_match(combined, ["primary cortical cell", "cortical cell culture", "neuron-enriched"]):
-        types.append("Cell Culture (Primary Cells)")
-    if keyword_match(combined, ["cell line", "cell lines", "hela", "hepg2", "pc12", "raw 264.7", "sh-sy5y", "jurkat", "cho cells"]):
-        types.append("Cell Culture (Cell Lines)")
-    if keyword_match(combined, ["organoid", "organoids", "spheroid", "spheroids", "3d culture", "3d cultures"]):
-        types.append("Cell Culture (Organoids)")
-    if keyword_match(combined, ["co-culture", "co-cultures", "coculture", "cocultures"]):
-        types.append("Cell Culture (Co-Culture)")
-    if keyword_match(combined, ["precision-cut lung slices", "pcls", "precision cut lung slices", "lung slice", "lung slices"]):
-        types.append("Cell Culture (PCLS)")
-    elif keyword_match(combined, ["in vitro", "cultured cells", "culture assay", "cell culture", "cell cultures", "epithelial cells", "epithelial cell", "airway epithelial"]):
-        if not any(item.startswith("Cell Culture (") for item in types):
-            types.append("Cell Culture (Other In Vitro)")
+            
     return types
 
 
@@ -4000,140 +3962,14 @@ def preprocess_clinical_text(text: str) -> str:
     return text
 
 def extract_population_age(text: str) -> str:
-    """Regex-based age extraction (pediatric, adult, geriatric)."""
-    text_lower = text.lower()
-    
-    # Check if it's a survey of professionals/officials/parents/teachers where youth/child mentions are policy-only
-    professional_survey = re.search(
-        r"\b(?:survey of|interviewed|questionnaire to)\s+(?:elected officials|officials|healthcare professionals|professionals|providers|parents|teachers|retailers|staff|clinicians|physicians|pediatricians|policymakers)\b|"
-        r"\b(?:healthcare professionals|providers|parents|teachers|retailers|policymakers|pediatricians)\s+(?:completed|were surveyed|were interviewed)\b",
-        text_lower
-    )
-    if professional_survey:
-        return "adult"
-    
-    # 1. Search for pediatric indicators
-    ped_patterns = [
-        r"\b(?:pediatric|child|adolescent|infant|teenager|youth|pediatrics)\s+(?:patients|subjects|participants|cohort|population|group|users)\b",
-        r"\b(?:enrolled|recruited|included|studied)\s+(?:children|adolescents|infants|teens|youths)\b",
-        r"\bchildren\s+(?:aged|ranging from|with)\b",
-        r"\badolescents\s+(?:aged|ranging from|with)\b",
-        r"\bunder\s+18\s*(?:years|yo)?\b",
-        r"\bage\s+<\s*18\b",
-        r"\bpediatric\s+onset\b",
-        r"\bchildren\b",
-        r"\badolescents\b",
-        r"\byouth\b",
-        r"\byouths\b"
-    ]
-    
-    # 2. Search for geriatric indicators
-    geriatric_keywords = [
-        r"\bgeriatric\w*\b", r"\belderly\b", r"\bolder\s+(?:adults|patients|subjects|participants|people|population)\b",
-        r"\baged\s+(?:≥|>=|greater than or equal to|over)?\s*65\s*(?:years|yo)?\b",
-        r"\boctogenarian\w*\b", r"\bsenile\b"
-    ]
-    
-    # Check pediatric patterns
-    has_ped = False
-    for p in ped_patterns:
-        if re.search(p, text_lower):
-            has_ped = True
-            break
-            
-    # Check geriatric patterns
-    has_ger = False
-    for kw in geriatric_keywords:
-        if re.search(kw, text_lower):
-            has_ger = True
-            break
-
-    if has_ped and has_ger:
-        return "both"
-    elif has_ped:
-        # Avoid regex backtracking completely by using safe substring and local scanning
-        exclusion_minor = False
-        if "under 18" in text_lower or "under-18" in text_lower or "age < 18" in text_lower or "age<18" in text_lower:
-            for keyword in ["under 18", "under-18", "age < 18", "age<18"]:
-                idx = text_lower.find(keyword)
-                if idx != -1:
-                    window = text_lower[max(0, idx-100):min(len(text_lower), idx+100)]
-                    if "exclu" in window:
-                        exclusion_minor = True
-                        break
-        if exclusion_minor and not re.search(r"\bchildren\b", text_lower):
-            return "adult"
-        return "pediatric"
-    elif has_ger:
-        return "geriatric"
-        
-    return "adult"
+    """Regex-based age extraction (pediatric, adult, geriatric) delegated to heuristics_engine."""
+    import heuristics_engine
+    return heuristics_engine.extract_population_age(text)
 
 def extract_population_sex(text: str) -> str:
-    """Regex-based sex extraction (male, female, both) using front-matter co-occurrence heuristic."""
-    text_lower = text.lower()[:8000]
-    
-    # Check for explicit "both" indicators
-    both_patterns = [
-        r"\bboth\s+(?:sexes|genders)\b",
-        r"\bmen\s+and\s+women\b",
-        r"\bwomen\s+and\s+men\b",
-        r"\bmale\s+and\s+female\b",
-        r"\bfemale\s+and\s+male\b",
-        r"\bmales\s+and\s+females\b",
-        r"\bfemales\s+and\s+males\b",
-        r"\bmixed[- ]sex\b"
-    ]
-    for p in both_patterns:
-        if re.search(p, text_lower):
-            return "both"
-            
-    # Count occurrences of key gender indicators in the front matter
-    men_count = len(re.findall(r"\b(?:men|male|males)\b", text_lower))
-    women_count = len(re.findall(r"\b(?:women|female|females)\b", text_lower))
-    
-    # Ratio check: if one sex is heavily dominant/exclusive, return it
-    if women_count > 3 and men_count <= 1:
-        return "female"
-    if men_count > 3 and women_count <= 1:
-        return "male"
-        
-    # Look for co-occurrence in participant description
-    part_desc = re.search(
-        r"\b(\d+)\s*(?:men|male|males)\b[^.]{1,45}?\b(\d+)\s*(?:women|female|females)\b|"
-        r"\b(\d+)\s*(?:women|female|females)\b[^.]{1,45}?\b(\d+)\s*(?:men|male|males)\b",
-        text_lower
-    )
-    if part_desc:
-        return "both"
-        
-    # If they are described as "men" or "male subjects" exclusively
-    male_exclusive_patterns = [
-        r"\bmale\s+(?:subjects|patients|participants|volunteers|cohort|population|group)\b",
-        r"\b(?:subjects|patients|participants|volunteers)\s+(?:were|consisted of|included)\s+[^.]{0,40}?\s*(?:males|men)\b",
-        r"\bonly\s+male\b",
-        r"\bmen\s+(?:aged|were|diagnosed|\([^)]+\))\b"
-    ]
-    female_exclusive_patterns = [
-        r"\bfemale\s+(?:subjects|patients|participants|volunteers|cohort|population|group)\b",
-        r"\b(?:subjects|patients|participants|volunteers)\s+(?:were|consisted of|included)\s+[^.]{0,40}?\s*(?:females|women)\b",
-        r"\bonly\s+female\b",
-        r"\bwomen\s+(?:aged|were|diagnosed|\([^)]+\))\b"
-    ]
-    
-    has_male = any(re.search(p, text_lower) for p in male_exclusive_patterns)
-    has_female = any(re.search(p, text_lower) for p in female_exclusive_patterns)
-    
-    if has_male and not has_female and women_count < 4:
-        return "male"
-    if has_female and not has_male and men_count < 4:
-        return "female"
-        
-    # Default to both if both are mentioned generally in the front matter
-    if men_count > 1 and women_count > 1:
-        return "both"
-        
-    return "both"
+    """Regex-based sex extraction (male, female, both) delegated to heuristics_engine."""
+    import heuristics_engine
+    return heuristics_engine.extract_population_sex(text)
 
 def clean_criteria(val: str) -> str:
     """Cleans up extracted criteria text by stripping punctuation, bullet points, etc."""

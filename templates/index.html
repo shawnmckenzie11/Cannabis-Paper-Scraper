@@ -1576,6 +1576,12 @@
                     style="padding: 8px 16px; font-size: 0.85rem; background: rgba(239, 68, 68, 0.05); border-color: rgba(239, 68, 68, 0.2); color: var(--text-secondary); display: inline-flex; align-items: center; gap: 6px; opacity: 0.65;">
                     <span>🔒</span> Connectivity
                 </button>
+                {% if session.get('email') and admin_emails_list and session.get('email') in admin_emails_list %}
+                <button class="btn btn-secondary" onclick="openHeuristicsEditor()" id="btn-heuristics"
+                    style="padding: 8px 16px; font-size: 0.85rem; background: rgba(168, 85, 247, 0.1); border-color: rgba(168, 85, 247, 0.3); color: rgb(192, 132, 252); display: inline-flex; align-items: center; gap: 6px; border-radius: 8px;">
+                    <span>⚙️</span> Heuristics
+                </button>
+                {% endif %}
             </div>
         </div>
         <div class="banner-right">
@@ -2420,6 +2426,122 @@
                             </tbody>
                         </table>
                     </div>
+                </div>
+            </section>
+
+            <!-- HEURISTICS EDITOR PANEL -->
+            <section id="heuristics-panel" style="display: none; flex-direction: column; gap: 25px; padding: 25px 30px; background: rgba(10, 12, 19, 0.4); border-radius: 12px; border: 1px solid rgba(255, 255, 255, 0.05); backdrop-filter: blur(10px);">
+                <!-- Panel Header -->
+                <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px; border-bottom: 1px solid rgba(255, 255, 255, 0.08); padding-bottom: 20px;">
+                    <div style="display: flex; align-items: center; gap: 12px;">
+                        <span style="display: inline-block; width: 12px; height: 12px; border-radius: 50%; background: rgb(168, 85, 247); box-shadow: 0 0 10px rgba(168, 85, 247, 0.8);"></span>
+                        <h3 style="font-family: var(--font-display); font-size: 1.35rem; font-weight: 700; margin: 0; color: var(--text-primary);">⚙️ Heuristics Configuration & Automation</h3>
+                        <span class="badge" style="background: rgba(168, 85, 247, 0.12); color: rgb(192, 132, 252); border: 1px solid rgba(168, 85, 247, 0.3); font-weight: 700; padding: 4px 10px; font-size: 0.8rem;">Admin Only</span>
+                    </div>
+                    <div style="display: flex; gap: 12px;">
+                        <button class="btn btn-secondary" onclick="closeHeuristicsEditor()" style="padding: 8px 16px; font-size: 0.85rem; background: rgba(0, 240, 255, 0.1); border-color: rgba(0, 240, 255, 0.3); color: var(--accent-blue); display: inline-flex; align-items: center; gap: 6px; border-radius: 8px; font-family: var(--font-display);">
+                            🗄️ Back to Database
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Main Content Area: 2 Columns -->
+                <div style="display: grid; grid-template-columns: 3fr 2fr; gap: 25px; align-items: start;">
+                    
+                    <!-- Left Column: JSON Editor -->
+                    <div style="display: flex; flex-direction: column; gap: 12px; height: 100%;">
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <span style="font-family: var(--font-display); font-size: 0.95rem; font-weight: 600; color: var(--text-secondary);">Active Rules JSON</span>
+                            <span id="json-format-status" style="font-size: 0.8rem; color: var(--accent-green); display: flex; align-items: center; gap: 4px;">🟢 JSON Valid</span>
+                        </div>
+                        <div style="position: relative; border-radius: 8px; border: 1px solid rgba(255, 255, 255, 0.08); background: #0c0e17; padding: 10px; box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.5); display: flex; flex-direction: column;">
+                            <textarea id="heuristics-json-textarea" spellcheck="false" 
+                                style="width: 100%; height: 500px; font-family: 'Fira Code', 'Courier New', Courier, monospace; font-size: 0.85rem; line-height: 1.5; background: transparent; border: none; color: #a9b2c3; resize: vertical; outline: none; padding: 5px;" 
+                                oninput="validateJSONFormat()"></textarea>
+                        </div>
+                        <div style="display: flex; gap: 12px; margin-top: 10px;">
+                            <button class="btn" id="btn-test-rules" onclick="testHeuristicsRules()" 
+                                style="flex: 1; padding: 12px; font-size: 0.9rem; font-weight: 600; border-radius: 8px; background: linear-gradient(135deg, rgba(99, 102, 241, 0.2) 0%, rgba(99, 102, 241, 0.05) 100%); border: 1px solid rgba(99, 102, 241, 0.4); color: rgb(129, 140, 248); display: inline-flex; align-items: center; justify-content: center; gap: 8px; cursor: pointer; transition: all 0.3s ease;">
+                                🔬 Test Rules (Dry-Run)
+                            </button>
+                            <button class="btn" id="btn-save-rules" onclick="saveHeuristicsRules()" 
+                                style="flex: 1; padding: 12px; font-size: 0.9rem; font-weight: 600; border-radius: 8px; background: linear-gradient(135deg, rgba(168, 85, 247, 0.3) 0%, rgba(168, 85, 247, 0.1) 100%); border: 1px solid rgba(168, 85, 247, 0.5); color: rgb(192, 132, 252); display: inline-flex; align-items: center; justify-content: center; gap: 8px; cursor: pointer; transition: all 0.3s ease; box-shadow: 0 0 15px rgba(168, 85, 247, 0.15);">
+                                💾 Save & Apply Rules
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Right Column: Stats & Operations -->
+                    <div style="display: flex; flex-direction: column; gap: 20px;">
+                        
+                        <!-- Regression Guard Card -->
+                        <div class="glass-panel" style="padding: 20px; border-radius: 8px; background: rgba(168, 85, 247, 0.03); border: 1px solid rgba(168, 85, 247, 0.15); display: flex; flex-direction: column; gap: 15px;">
+                            <div style="display: flex; align-items: center; gap: 10px;">
+                                <span style="font-size: 1.25rem;">🛡️</span>
+                                <h4 style="font-family: var(--font-display); font-size: 1rem; font-weight: 600; margin: 0; color: var(--text-primary);">CI/CH Regression Guard</h4>
+                            </div>
+                            <p style="font-size: 0.8rem; color: var(--text-muted); margin: 0; line-height: 1.5;">
+                                Any rule updates must pass the Zero-Regression Gate. Changes that drop the alignment score below the current database active baseline will be rejected automatically.
+                            </p>
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-top: 5px;">
+                                <div style="background: rgba(255, 255, 255, 0.02); padding: 12px; border-radius: 6px; border: 1px solid rgba(255, 255, 255, 0.05); text-align: center;">
+                                    <div style="font-size: 0.75rem; color: var(--text-muted); margin-bottom: 4px;">Baseline Alignment</div>
+                                    <div style="font-family: var(--font-display); font-size: 1.4rem; font-weight: 700; color: var(--text-primary);">52.91%</div>
+                                </div>
+                                <div style="background: rgba(255, 255, 255, 0.02); padding: 12px; border-radius: 6px; border: 1px solid rgba(255, 255, 255, 0.05); text-align: center;">
+                                    <div style="font-size: 0.75rem; color: var(--text-muted); margin-bottom: 4px;">Active Score</div>
+                                    <div id="active-regression-score" style="font-family: var(--font-display); font-size: 1.4rem; font-weight: 700; color: rgb(192, 132, 252);">--%</div>
+                                </div>
+                            </div>
+                            <!-- Dry-Run Results Area -->
+                            <div id="dry-run-results" style="display: none; background: rgba(99, 102, 241, 0.05); border: 1px solid rgba(99, 102, 241, 0.2); padding: 12px; border-radius: 6px; flex-direction: column; gap: 8px;">
+                                <div style="font-size: 0.8rem; font-weight: 600; color: rgb(129, 140, 248); display: flex; justify-content: space-between;">
+                                    <span>Dry-Run Test Result:</span>
+                                    <span id="dry-run-verdict">--</span>
+                                </div>
+                                <div style="font-size: 0.85rem; color: var(--text-secondary); margin-top: 4px;">
+                                    Dry-Run Overall Score: <strong id="dry-run-overall" style="color: var(--text-primary); font-size: 1rem;">--%</strong>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Backpopulation Panel -->
+                        <div class="glass-panel" style="padding: 20px; border-radius: 8px; background: rgba(0, 240, 255, 0.02); border: 1px solid rgba(0, 240, 255, 0.15); display: flex; flex-direction: column; gap: 15px;">
+                            <div style="display: flex; align-items: center; justify-content: space-between;">
+                                <div style="display: flex; align-items: center; gap: 10px;">
+                                    <span style="font-size: 1.25rem;">⚡</span>
+                                    <h4 style="font-family: var(--font-display); font-size: 1rem; font-weight: 600; margin: 0; color: var(--text-primary);">Backpopulation Engine</h4>
+                                </div>
+                                <span id="backpop-status-badge" class="badge" style="background: rgba(255, 255, 255, 0.05); color: var(--text-secondary); border: 1px solid rgba(255, 255, 255, 0.1); font-size: 0.75rem; padding: 2px 8px;">Idle</span>
+                            </div>
+                            <p style="font-size: 0.8rem; color: var(--text-muted); margin: 0; line-height: 1.5;">
+                                Run the newly configured heuristics model against all existing papers in the live database to backpopulate and align metadata (Study Type, Sex, Age, etc.).
+                            </p>
+                            
+                            <!-- Trigger Button -->
+                            <button class="btn" id="btn-trigger-backpop" onclick="triggerBackpopulation()" 
+                                style="width: 100%; padding: 12px; font-size: 0.9rem; font-weight: 600; border-radius: 8px; background: linear-gradient(135deg, rgba(0, 240, 255, 0.2) 0%, rgba(0, 240, 255, 0.05) 100%); border: 1px solid rgba(0, 240, 255, 0.4); color: var(--accent-blue); display: inline-flex; align-items: center; justify-content: center; gap: 8px; cursor: pointer; transition: all 0.3s ease; box-shadow: 0 0 10px rgba(0, 240, 255, 0.1);">
+                                🚀 Trigger Backpopulation
+                            </button>
+
+                            <!-- Progress Bar & Analytics (Hidden until active) -->
+                            <div id="backpop-progress-container" style="display: none; flex-direction: column; gap: 10px; background: rgba(0, 0, 0, 0.3); border: 1px solid rgba(0, 240, 255, 0.1); padding: 15px; border-radius: 6px; margin-top: 5px;">
+                                <div style="display: flex; justify-content: space-between; font-size: 0.8rem; color: var(--text-secondary);">
+                                    <span id="backpop-progress-text">Processing papers...</span>
+                                    <span id="backpop-progress-pct" style="font-weight: 700; color: var(--accent-blue);">0%</span>
+                                </div>
+                                <div style="width: 100%; height: 8px; background: rgba(255, 255, 255, 0.05); border-radius: 4px; overflow: hidden; border: 1px solid rgba(255, 255, 255, 0.03);">
+                                    <div id="backpop-progress-bar" style="width: 0%; height: 100%; background: linear-gradient(90deg, var(--accent-blue) 0%, rgb(168, 85, 247) 100%); transition: width 0.3s ease; box-shadow: 0 0 8px var(--accent-blue);"></div>
+                                </div>
+                                <div style="display: flex; justify-content: space-between; font-size: 0.7rem; color: var(--text-muted); margin-top: 2px;">
+                                    <span>Task ID: <code id="backpop-task-id" style="font-family: monospace; color: var(--text-secondary);">--</code></span>
+                                    <span id="backpop-elapsed-time">Elapsed: 0s</span>
+                                </div>
+                            </div>
+                        </div>
+
+                    </div>
+
                 </div>
             </section>
 
@@ -4923,6 +5045,8 @@
             document.getElementById("selection-analytics-panel").style.display = "none";
             document.getElementById("learning-dashboard-panel").style.display = "none";
             document.getElementById("connectivity-panel").style.display = "none";
+            const heurPanel = document.getElementById("heuristics-panel");
+            if (heurPanel) heurPanel.style.display = "none";
 
             // If switching away from My Analyses, reset selection
             if (viewName !== 'my-analyses') {
@@ -4952,6 +5076,10 @@
                 refreshDashboardMetrics();
             } else if (viewName === 'connectivity') {
                 document.getElementById("connectivity-panel").style.display = "flex";
+            } else if (viewName === 'heuristics') {
+                const heurPanel = document.getElementById("heuristics-panel");
+                if (heurPanel) heurPanel.style.display = "flex";
+                loadHeuristicsConfig();
             }
         }
 
@@ -5121,6 +5249,291 @@
 
         function closeConnectivity() {
             showView('database');
+        }
+
+        /* ─── Heuristics Configuration & Automation ─── */
+
+        function openHeuristicsEditor() {
+            showView('heuristics');
+        }
+
+        function closeHeuristicsEditor() {
+            showView('database');
+        }
+
+        let activeRulesObject = null;
+        function loadHeuristicsConfig() {
+            const textarea = document.getElementById("heuristics-json-textarea");
+            if (!textarea) return;
+            textarea.value = "Loading active rules from database...";
+            
+            fetch("/api/heuristics/rules")
+                .then(res => {
+                    if (!res.ok) throw new Error("Failed to fetch rules");
+                    return res.json();
+                })
+                .then(data => {
+                    activeRulesObject = data;
+                    textarea.value = JSON.stringify(data, null, 4);
+                    validateJSONFormat();
+                    
+                    // Also fetch and display active regression score
+                    document.getElementById("active-regression-score").innerText = "--%";
+                    fetch("/api/heuristics/test", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify(data)
+                    })
+                    .then(r => r.json())
+                    .then(resData => {
+                        if (resData.score !== undefined) {
+                            document.getElementById("active-regression-score").innerText = (resData.score * 100).toFixed(2) + "%";
+                        }
+                    })
+                    .catch(e => console.error(e));
+                })
+                .catch(err => {
+                    textarea.value = "Error loading rules: " + err.message;
+                });
+        }
+
+        function validateJSONFormat() {
+            const textarea = document.getElementById("heuristics-json-textarea");
+            const statusEl = document.getElementById("json-format-status");
+            const saveBtn = document.getElementById("btn-save-rules");
+            const testBtn = document.getElementById("btn-test-rules");
+            if (!textarea || !statusEl) return;
+            
+            try {
+                JSON.parse(textarea.value);
+                statusEl.innerText = "🟢 JSON Valid";
+                statusEl.style.color = "var(--accent-green)";
+                if (saveBtn) saveBtn.disabled = false;
+                if (testBtn) testBtn.disabled = false;
+            } catch (e) {
+                statusEl.innerText = "🔴 Invalid JSON: " + e.message;
+                statusEl.style.color = "rgb(239, 68, 68)";
+                if (saveBtn) saveBtn.disabled = true;
+                if (testBtn) testBtn.disabled = true;
+            }
+        }
+
+        function testHeuristicsRules() {
+            const textarea = document.getElementById("heuristics-json-textarea");
+            const btn = document.getElementById("btn-test-rules");
+            const resultsDiv = document.getElementById("dry-run-results");
+            if (!textarea || !btn || !resultsDiv) return;
+            
+            let rules;
+            try {
+                rules = JSON.parse(textarea.value);
+            } catch (e) {
+                alert("Please correct the JSON formatting errors first.");
+                return;
+            }
+            
+            btn.disabled = true;
+            const originalText = btn.innerHTML;
+            btn.innerHTML = "🧪 Testing...";
+            resultsDiv.style.display = "none";
+            
+            fetch("/api/heuristics/test", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(rules)
+            })
+            .then(res => {
+                if (!res.ok) throw new Error("Server error while testing rules");
+                return res.json();
+            })
+            .then(data => {
+                if (data.error) {
+                    alert("Testing failed: " + data.error);
+                } else {
+                    resultsDiv.style.display = "flex";
+                    const overallScore = data.score * 100;
+                    document.getElementById("dry-run-overall").innerText = overallScore.toFixed(2) + "%";
+                    
+                    const activeScoreText = document.getElementById("active-regression-score").innerText;
+                    const activeScore = parseFloat(activeScoreText) || 52.91;
+                    
+                    const verdictEl = document.getElementById("dry-run-verdict");
+                    if (overallScore >= activeScore) {
+                        verdictEl.innerText = "PASS (No Regression)";
+                        verdictEl.style.color = "var(--accent-green)";
+                    } else {
+                        verdictEl.innerText = "FAIL (Regression Detected)";
+                        verdictEl.style.color = "rgb(239, 68, 68)";
+                    }
+                }
+            })
+            .catch(err => {
+                alert("Error during test: " + err.message);
+            })
+            .finally(() => {
+                btn.disabled = false;
+                btn.innerHTML = originalText;
+            });
+        }
+
+        function saveHeuristicsRules() {
+            const textarea = document.getElementById("heuristics-json-textarea");
+            const btn = document.getElementById("btn-save-rules");
+            if (!textarea || !btn) return;
+            
+            let rules;
+            try {
+                rules = JSON.parse(textarea.value);
+            } catch (e) {
+                alert("Please correct the JSON formatting errors first.");
+                return;
+            }
+            
+            btn.disabled = true;
+            const originalText = btn.innerHTML;
+            btn.innerHTML = "💾 Saving...";
+            
+            fetch("/api/heuristics/rules", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(rules)
+            })
+            .then(res => {
+                if (res.status === 422) {
+                    return res.json().then(data => {
+                        throw new Error(data.error || "Save blocked due to regression.");
+                    });
+                }
+                if (!res.ok) throw new Error("Server error while saving rules");
+                return res.json();
+            })
+            .then(data => {
+                alert(data.message || "Rules saved successfully!");
+                if (data.score !== undefined) {
+                    document.getElementById("active-regression-score").innerText = (data.score * 100).toFixed(2) + "%";
+                }
+                loadHeuristicsConfig();
+            })
+            .catch(err => {
+                alert("Error: " + err.message);
+            })
+            .finally(() => {
+                btn.disabled = false;
+                btn.innerHTML = originalText;
+            });
+        }
+
+        let backpopIntervalId = null;
+        let backpopStartTime = null;
+
+        function triggerBackpopulation() {
+            const btn = document.getElementById("btn-trigger-backpop");
+            const container = document.getElementById("backpop-progress-container");
+            const badge = document.getElementById("backpop-status-badge");
+            if (!btn || !container || !badge) return;
+            
+            if (confirm("Are you sure you want to trigger a full database backpopulation? This will reclassify all papers using the current heuristics rules in the background.") === false) {
+                return;
+            }
+            
+            btn.disabled = true;
+            btn.innerHTML = "🚀 Starting Task...";
+            badge.innerText = "Starting";
+            badge.style.background = "rgba(234, 179, 8, 0.15)";
+            badge.style.color = "rgb(250, 204, 21)";
+            badge.style.borderColor = "rgba(234, 179, 8, 0.4)";
+            
+            fetch("/api/backpopulate", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" }
+            })
+            .then(res => {
+                if (!res.ok) throw new Error("Failed to trigger backpopulation.");
+                return res.json();
+            })
+            .then(data => {
+                const taskId = data.task_id;
+                document.getElementById("backpop-task-id").innerText = taskId;
+                container.style.display = "flex";
+                
+                document.getElementById("backpop-progress-bar").style.width = "0%";
+                document.getElementById("backpop-progress-pct").innerText = "0%";
+                document.getElementById("backpop-progress-text").innerText = "Initializing task...";
+                document.getElementById("backpop-elapsed-time").innerText = "Elapsed: 0s";
+                
+                backpopStartTime = Date.now();
+                
+                if (backpopIntervalId) clearInterval(backpopIntervalId);
+                backpopIntervalId = setInterval(() => {
+                    pollBackpopulationProgress(taskId);
+                }, 1000);
+            })
+            .catch(err => {
+                alert("Error: " + err.message);
+                btn.disabled = false;
+                btn.innerHTML = "🚀 Trigger Backpopulation";
+                badge.innerText = "Error";
+                badge.style.background = "rgba(239, 68, 68, 0.15)";
+                badge.style.color = "rgb(248, 113, 113)";
+                badge.style.borderColor = "rgba(239, 68, 68, 0.4)";
+            });
+        }
+
+        function pollBackpopulationProgress(taskId) {
+            fetch(`/api/tasks/${taskId}`)
+            .then(res => {
+                if (!res.ok) throw new Error("Failed to fetch task status.");
+                return res.json();
+            })
+            .then(data => {
+                const pct = data.total_papers > 0 ? Math.round((data.processed_papers / data.total_papers) * 100) : 0;
+                const elapsedSeconds = Math.round((Date.now() - backpopStartTime) / 1000);
+                document.getElementById("backpop-elapsed-time").innerText = `Elapsed: ${elapsedSeconds}s`;
+                
+                const badge = document.getElementById("backpop-status-badge");
+                badge.innerText = data.status.toUpperCase();
+                
+                if (data.status === "pending") {
+                    badge.style.background = "rgba(234, 179, 8, 0.15)";
+                    badge.style.color = "rgb(250, 204, 21)";
+                    badge.style.borderColor = "rgba(234, 179, 8, 0.4)";
+                    document.getElementById("backpop-progress-text").innerText = "Waiting for worker to start...";
+                } else if (data.status === "running") {
+                    badge.style.background = "rgba(0, 240, 255, 0.15)";
+                    badge.style.color = "var(--accent-blue)";
+                    badge.style.borderColor = "rgba(0, 240, 255, 0.4)";
+                    document.getElementById("backpop-progress-text").innerText = `Processing: ${data.processed_papers} / ${data.total_papers} papers`;
+                    document.getElementById("backpop-progress-bar").style.width = `${pct}%`;
+                    document.getElementById("backpop-progress-pct").innerText = `${pct}%`;
+                } else if (data.status === "completed") {
+                    badge.style.background = "rgba(34, 197, 94, 0.15)";
+                    badge.style.color = "rgb(74, 222, 128)";
+                    badge.style.borderColor = "rgba(34, 197, 94, 0.4)";
+                    document.getElementById("backpop-progress-text").innerText = `Successfully completed! ${data.processed_papers} papers updated.`;
+                    document.getElementById("backpop-progress-bar").style.width = "100%";
+                    document.getElementById("backpop-progress-pct").innerText = "100%";
+                    
+                    clearInterval(backpopIntervalId);
+                    backpopIntervalId = null;
+                    document.getElementById("btn-trigger-backpop").disabled = false;
+                    document.getElementById("btn-trigger-backpop").innerHTML = "🚀 Trigger Backpopulation";
+                    
+                    triggerSearch(false);
+                } else if (data.status === "failed") {
+                    badge.style.background = "rgba(239, 68, 68, 0.15)";
+                    badge.style.color = "rgb(248, 113, 113)";
+                    badge.style.borderColor = "rgba(239, 68, 68, 0.4)";
+                    document.getElementById("backpop-progress-text").innerText = `Failed: ${data.error_message || 'Unknown error'}`;
+                    
+                    clearInterval(backpopIntervalId);
+                    backpopIntervalId = null;
+                    document.getElementById("btn-trigger-backpop").disabled = false;
+                    document.getElementById("btn-trigger-backpop").innerHTML = "🚀 Trigger Backpopulation";
+                }
+            })
+            .catch(err => {
+                console.error("Error polling progress: ", err);
+            });
         }
 
         function loadFullNetwork() {

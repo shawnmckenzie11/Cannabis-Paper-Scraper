@@ -29,6 +29,10 @@ if [ -f "$SEED_SOURCE" ] && [ ! -f "$DB_PATH" ]; then
 fi
 
 if [ -f "$DB_PATH" ]; then
+    echo "Running database schema migrations via Alembic..."
+    if ! python3 -m alembic upgrade head; then
+        echo "Warning: database migrations did not complete; continuing startup."
+    fi
     echo "Ensuring indexed tab membership columns are ready..."
     if ! python3 ensure_tab_flags.py; then
         echo "Warning: tab flag backfill did not complete; continuing startup."

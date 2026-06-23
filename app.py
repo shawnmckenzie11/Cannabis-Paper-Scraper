@@ -2252,13 +2252,333 @@ def api_paper_cited_by(paper_id):
     """Return papers that cite this paper."""
     include_ext = request.args.get("include_external", "false") == "true"
     db = DatabaseManager()
-    cg = CitationGraph(db)
+    custom_graph = CitationGraph(db)
     try:
-        citing = cg.get_cited_by(paper_id, include_external=include_ext)
+        citing = custom_graph.get_cited_by(paper_id, include_external=include_ext)
         return jsonify(citing)
     except Exception as e:
         app.logger.error(f"Cited-by error for {paper_id}: {e}")
         return jsonify({"error": str(e)}), 500
+
+
+# --- Phase 2 Automation Systems: Heuristics & Asynchronous Backpopulation ---
+
+from typing import Dict, Any, List, Tuple
+from concurrent.futures import ThreadPoolExecutor
+import uuid
+import time
+import extractor
+import heuristics_engine
+
+# Global thread pool for asynchronous backpopulation (max 2 threads)
+task_executor = ThreadPoolExecutor(max_workers=2)
+
+def _eval_list_match(extracted: Any, ground_truth: Any) -> bool:
+    """Helper to compare list-valued fields as sets (case-insensitive)."""
+    ext_set = {str(x).strip().lower() for x in (extracted or [])}
+    gt_set = {str(x).strip().lower() for x in (ground_truth or [])}
+    return ext_set == gt_set
+
+def _eval_val_match(extracted: str, ground_truth: str, is_pub_type: bool = False) -> bool:
+    """Helper to compare single-valued fields (case-insensitive)."""
+    ext_str = str(extracted).strip().lower() if extracted else ""
+    gt_str = str(ground_truth).strip().lower() if ground_truth else ""
+    if is_pub_type:
+        reviews = ["review", "meta-analysis", "systematic review", "scoping review"]
+        if gt_str in reviews:
+            return ext_str == "review"
+    return ext_str == gt_str
+
+def run_golden_regression_eval(rules_dict: Dict[str, Any]) -> float:
+    """Runs a dry-run regression evaluation against the 100 golden papers using the provided rules."""
+    # Temporarily apply new rules and compile them
+    original_config = heuristics_engine._config
+    try:
+        heuristics_engine._config = rules_dict
+        heuristics_engine.patterns.compile_rules(rules_dict)
+        
+        # Load golden dataset using absolute path
+        dataset_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "tests", "golden_dataset.json")
+        if not os.path.exists(dataset_path):
+            logger.warning(f"Golden dataset not found at {dataset_path} during eval.")
+            return 0.0
+            
+        with open(dataset_path, "r", encoding="utf-8") as f:
+            papers = json.load(f)
+            
+        correct = 0
+        total = 0
+        
+        for p in papers:
+            title = p["title"]
+            text = p["text"]
+            gt = p["ground_truth"]
+            
+            # Run extraction
+            res = extractor.extract_all_heuristics(title=title, abstract=text, full_text=None)
+            
+            # Tier 1 Routing
+            pub_ok = _eval_val_match(res.get("publication_type"), gt.get("publication_type"), is_pub_type=True)
+            study_ok = _eval_list_match(res.get("study_type"), gt.get("study_type"))
+            
+            total += 2
+            if pub_ok:
+                correct += 1
+            if study_ok:
+                correct += 1
+                
+            # Tier 2 Extraction
+            pub_coarse = str(res.get("publication_type")).strip().lower()
+            gt_pub = str(gt.get("publication_type")).strip().lower()
+            gt_pub_coarse = "review" if gt_pub in ["review", "meta-analysis", "systematic review"] else "original research"
+            
+            if pub_coarse == "original research" and gt_pub_coarse == "original research":
+                exposure_ok = _eval_list_match(res.get("exposure_method"), gt.get("exposure_method"))
+                cannabis_ok = _eval_list_match(res.get("cannabis_type"), gt.get("cannabis_type"))
+                
+                total += 2
+                if exposure_ok:
+                    correct += 1
+                if cannabis_ok:
+                    correct += 1
+                    
+                study_types = {str(s).lower() for s in (gt.get("study_type") or [])}
+                is_clinical = any("clinical" in s for s in study_types)
+                if is_clinical:
+                    age_ok = _eval_val_match(res.get("population_age"), gt.get("population_age"))
+                    sex_ok = _eval_val_match(res.get("population_sex"), gt.get("population_sex"))
+                    total += 2
+                    if age_ok:
+                        correct += 1
+                    if sex_ok:
+                        correct += 1
+                        
+        score = correct / total if total > 0 else 0.0
+        return score
+    finally:
+        # Restore original rules and re-compile
+        heuristics_engine._config = original_config
+        heuristics_engine.patterns.compile_rules(original_config)
+
+
+def async_backpopulate_task(task_id: str):
+    """Background thread function that reclassifies the database and updates task progress."""
+    db = DatabaseManager()
+    conn = db.get_connection()
+    cursor = conn.cursor()
+    
+    is_postgres = "DATABASE_URL" in os.environ
+    param = "%s" if is_postgres else "?"
+    
+    try:
+        # Select all papers in the database
+        cursor.execute("SELECT id, title, abstract FROM papers")
+        rows = cursor.fetchall()
+        
+        papers_to_process = []
+        for row in rows:
+            p_id = row[0] if isinstance(row, tuple) else row["id"]
+            p_title = row[1] if isinstance(row, tuple) else row["title"]
+            p_abs = row[2] if isinstance(row, tuple) else row["abstract"]
+            papers_to_process.append((p_id, p_title, p_abs))
+            
+        total_papers = len(papers_to_process)
+        
+        # Update background_tasks table with total count and set status to running
+        cursor.execute(
+            f"UPDATE background_tasks SET total_papers = {param}, status = 'running', updated_at = CURRENT_TIMESTAMP WHERE task_id = {param}",
+            (total_papers, task_id)
+        )
+        conn.commit()
+        
+        processed_count = 0
+        for p_id, p_title, p_abs in papers_to_process:
+            # Check if there is a cached full text
+            full_text = None
+            cache_path = f"scratch/paper_cache/text/{p_id}.txt"
+            if os.path.exists(cache_path):
+                try:
+                    with open(cache_path, "r", encoding="utf-8") as f_txt:
+                        full_text = f_txt.read()
+                except:
+                    pass
+            
+            # Run extraction pipeline
+            res = extractor.extract_all_heuristics(title=p_title, abstract=p_abs, full_text=full_text)
+            
+            # Extract fields
+            age = res.get("population_age")
+            sex = res.get("population_sex")
+            study_type_list = res.get("study_type") or []
+            pub_type = res.get("publication_type")
+            exposure = res.get("exposure_method") or []
+            cannabis = res.get("cannabis_type") or []
+            
+            # Update papers table
+            cursor.execute(
+                f"UPDATE papers SET "
+                f"population_age = {param}, "
+                f"population_sex = {param}, "
+                f"study_type = {param}, "
+                f"publication_type = {param}, "
+                f"exposure_method = {param}, "
+                f"cannabis_type = {param} "
+                f"WHERE id = {param}",
+                (age, sex, json.dumps(study_type_list), pub_type, json.dumps(exposure), json.dumps(cannabis), p_id)
+            )
+            
+            processed_count += 1
+            if processed_count % 10 == 0 or processed_count == total_papers:
+                cursor.execute(
+                    f"UPDATE background_tasks SET processed_papers = {param}, updated_at = CURRENT_TIMESTAMP WHERE task_id = {param}",
+                    (processed_count, task_id)
+                )
+                conn.commit()
+                
+            # Sleep 1ms to prevent database locks
+            time.sleep(0.001)
+            
+        # Successfully completed!
+        cursor.execute(
+            f"UPDATE background_tasks SET status = 'completed', updated_at = CURRENT_TIMESTAMP WHERE task_id = {param}",
+            (task_id,)
+        )
+        conn.commit()
+    except Exception as e:
+        app.logger.error(f"Background task {task_id} failed: {e}")
+        try:
+            cursor.execute(
+                f"UPDATE background_tasks SET status = 'failed', error_message = {param}, updated_at = CURRENT_TIMESTAMP WHERE task_id = {param}",
+                (str(e), task_id)
+            )
+            conn.commit()
+        except:
+            pass
+    finally:
+        conn.close()
+
+
+@app.route("/api/heuristics/rules", methods=["GET"])
+@admin_required
+def api_get_heuristics_rules():
+    """Return active heuristics rules from the database."""
+    rules = heuristics_engine.load_rules_from_db() or heuristics_engine._config
+    return jsonify(rules)
+
+
+@app.route("/api/heuristics/test", methods=["POST"])
+@admin_required
+def api_test_heuristics_rules():
+    """Run a dry-run regression evaluation against the golden dataset."""
+    rules_dict = request.get_json()
+    if not rules_dict:
+        return jsonify({"error": "Invalid rules payload."}), 400
+    try:
+        score = run_golden_regression_eval(rules_dict)
+        return jsonify({"score": score})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route("/api/heuristics/rules", methods=["POST"])
+@admin_required
+def api_save_heuristics_rules():
+    """Validate rules against the golden dataset and save to database if no regression."""
+    rules_dict = request.get_json()
+    if not rules_dict:
+        return jsonify({"error": "Invalid rules payload."}), 400
+        
+    try:
+        # 1. Run regression evaluation
+        score = run_golden_regression_eval(rules_dict)
+        
+        # 2. Get current score for comparison
+        current_db_rules = heuristics_engine.load_rules_from_db() or heuristics_engine.FALLBACK_CONFIG
+        current_score = run_golden_regression_eval(current_db_rules)
+        
+        # Zero-regression gate
+        if score < current_score:
+            return jsonify({
+                "error": f"Save blocked: This change causes a regression. New score: {score * 100:.2f}%, Current score: {current_score * 100:.2f}%"
+            }), 422
+            
+        # 3. Save and reload
+        heuristics_engine.seed_rules_to_db(rules_dict)
+        heuristics_engine.reload_rules()
+        
+        return jsonify({
+            "score": score,
+            "message": f"Rules updated successfully! Golden dataset score: {score * 100:.2f}%"
+        })
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route("/api/backpopulate", methods=["POST"])
+@admin_required
+def api_trigger_backpopulate():
+    """Trigger asynchronous database backpopulation."""
+    db = DatabaseManager()
+    conn = db.get_connection()
+    cursor = conn.cursor()
+    
+    is_postgres = "DATABASE_URL" in os.environ
+    param = "%s" if is_postgres else "?"
+    
+    try:
+        task_id = str(uuid.uuid4())
+        
+        # Insert pending task
+        cursor.execute(
+            f"INSERT INTO background_tasks (task_id, sa_task_type, status, total_papers, processed_papers) "
+            f"VALUES ({param}, {param}, {param}, {param}, {param})",
+            (task_id, "backpopulation", "pending", 0, 0)
+        )
+        conn.commit()
+        
+        # Dispatch to thread pool
+        task_executor.submit(async_backpopulate_task, task_id)
+        
+        return jsonify({"task_id": task_id, "status": "pending"}), 202
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+    finally:
+        conn.close()
+
+
+@app.route("/api/tasks/<task_id>", methods=["GET"])
+@admin_required
+def api_get_task_status(task_id):
+    """Retrieve real-time status and progress of a background task."""
+    db = DatabaseManager()
+    conn = db.get_connection()
+    cursor = conn.cursor()
+    
+    is_postgres = "DATABASE_URL" in os.environ
+    param = "%s" if is_postgres else "?"
+    
+    try:
+        cursor.execute(
+            f"SELECT sa_task_type, status, total_papers, processed_papers, error_message FROM background_tasks WHERE task_id = {param}",
+            (task_id,)
+        )
+        row = cursor.fetchone()
+        if not row:
+            return jsonify({"error": "Task not found."}), 404
+            
+        res = {
+            "task_id": task_id,
+            "task_type": row[0] if isinstance(row, tuple) else row["sa_task_type"],
+            "status": row[1] if isinstance(row, tuple) else row["status"],
+            "total_papers": row[2] if isinstance(row, tuple) else row["total_papers"],
+            "processed_papers": row[3] if isinstance(row, tuple) else row["processed_papers"],
+            "error_message": row[4] if isinstance(row, tuple) else row["error_message"]
+        }
+        return jsonify(res)
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+    finally:
+        conn.close()
 
 
 # Start the background daily scheduler thread, protected against debug reloader double-runs and unit tests

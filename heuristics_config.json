@@ -1,0 +1,346 @@
+{
+  "version": "1.1.0",
+  "name": "Maude Heuristics Configuration",
+  "constants": {
+    "synthetic_agonist_cues": [
+      "cp-55940", "cp55940", "cp 55,940", "win55212", "win 55,212", "win-55212",
+      "o-1602", "jwh-", "hu-210", "hu210", "am2201"
+    ],
+    "synthetic_antagonist_cues": [
+      "sr141716", "sr 141716", "am251", "am-251", "rimonabant", "am630", "cid16020046"
+    ],
+    "pure_cannabinoid_compound_cues": [
+      "delta-9-thc", "delta9-thc", "tetrahydrocannabinol", "cannabidiol", "cannabigerol",
+      "cannabidivarin", "cbdv", "cbg", "thcv"
+    ],
+    "plant_matter_cues": [
+      "plant matter", "dried flower", "cannabis sativa plant", "cannabis flower",
+      "smoked cannabis", "combusted cannabis", "vaporized cannabis plant matter",
+      "cannabis plant matter"
+    ],
+    "extract_product_cues": [
+      "whole plant extract", "full spectrum extract", "cannabis extract", "botanical extract"
+    ],
+    "vape_pen_device_cues": [
+      "vape pen", "vape cartridge", "e-cigarette cartridge", "vaping device"
+    ],
+    "edible_oral_cues": [
+      "edible", "edibles", "food treat", "mixed in food", "in peanut butter", "thc edible",
+      "gummy", "gummies", "chocolate", "brownie", "brownies", "cookies", "cookie", "capsule", "capsules",
+      "by mouth", "per os", "p.o.", "intragastric", "chow", "drinking water", "in food"
+    ],
+    "dissolved_in_media_triggers": [
+      "isolated tissue", "tissue bath", "organ bath", "bath application",
+      "embryos were exposed to", "tank water contained", "dissolved in tank water",
+      "immersion in", "dissolved in artificial cerebrospinal fluid", "superfusion",
+      "colon strips", "colon strip", "isolated rat colon", "isometric conditions",
+      "dissolved in dmso", "diluted in dmso", "cell culture media", "culture medium",
+      "treatment medium", "liposome", "liposomes", "mof", "drug delivery",
+      "molecular dynamics simulation", "in silico", "incubated with cbd", "incubated with thc"
+    ],
+    "injection_route_guards": [
+      "i.p.", "i.v.", "s.c.", "subcutaneous", "intraperitoneal", "intravenous",
+      "intrathecal", "intracerebroventricular", "i.c.v.", "intramuscular", "i.m."
+    ],
+    "analytical_computational_cues": [
+      "uhplc", "hplc", "hrms", "orbitrap", "lc-ms", "gc-ms", "gas chromatography",
+      "flame ionization", "mass spectrometry", "thermal degradation", "pyrolysis",
+      "kinetic degradation", "deep eutectic", "extraction yield", "extraction time",
+      "extraction of bioactive", "certified reference material",
+      "molecular docking", "molecular dynamics", "gromacs", "autodock", "vina",
+      "dft", "density functional", "in silico", "docking score", "binding affinity",
+      "pharmacophore model", "admet prediction", "swissadme", "pkcsm"
+    ],
+    "species_patterns": {
+      "mouse": "\\bmice\\b|\\bmouse\\b|\\bmurine\\b|\\bC57BL",
+      "rat": "\\brats\\b|\\brat\\b|\\bWistar\\b|\\bSprague[- ]Dawley\\b",
+      "rodent_other": "\\bhamster\\b|\\bgerbil\\b|\\bguinea pig\\b|\\bvole\\b|\\brabbit\\b",
+      "non_human_primate": "\\bmacaque\\b|\\brhesus\\b|\\bmonkey\\b|\\bbaboon\\b|\\bnon[- ]human primate",
+      "zebrafish": "\\bzebrafish\\b|\\bDanio rerio\\b",
+      "invertebrate": "\\bdrosophila\\b|\\bC\\. elegans\\b|\\bCaenorhabditis\\b",
+      "vertebrate_non_mammal": "\\bfrog\\b|\\bXenopus\\b|\\bbird\\b|\\bavian\\b|\\bpigeon\\b",
+      "other_mammal": "\\bdog\\b|\\bcat\\b|\\bpig\\b|\\bporcine\\b|\\bcanine\\b|\\bovine\\b"
+    }
+  },
+  "routing": {
+    "review_strong_cues": [
+      "\\boverview paper\\b",
+      "\\bsystematic review\\b",
+      "\\bmeta-analysis\\b",
+      "\\bmeta analysis\\b",
+      "\\bnarrative synthesis\\b",
+      "\\bnarrative review\\b",
+      "\\bscoping review\\b",
+      "\\bprogress report\\b",
+      "\\bstate of the art\\b",
+      "\\bmini-review\\b",
+      "\\bminireview\\b",
+      "\\bstudies reviewed here\\b",
+      "\\bliterature review\\b",
+      "\\beditorial\\b",
+      "\\bcommentary\\b",
+      "\\bletter to the editor\\b"
+    ],
+    "review_weak_title_cues": [
+      "\\breview\\b",
+      "\\bperspectives?\\b"
+    ],
+    "review_suppress_patterns": [
+      "\\bchart review\\b",
+      "\\bretrospective review\\b",
+      "\\brecord review\\b",
+      "\\breview of (?:patient|medical) records\\b",
+      "\\bepidemiological overview\\b",
+      "\\boverview and survey\\b"
+    ],
+    "case_cues": [
+      "\\bcase report\\b",
+      "\\bcase series\\b",
+      "\\bwe report a case\\b",
+      "\\bwe present a case\\b",
+      "\\bsingle patient\\b",
+      "\\bseries of patients\\b",
+      "\\bpresent a series of\\b",
+      "\\ba case of\\b",
+      "\\bcase of a patient\\b"
+    ],
+    "original_negative_cues": [
+      "\\bwe review\\b",
+      "\\bliterature suggests\\b",
+      "\\bprevious studies have shown\\b",
+      "\\bsummarize evidence\\b"
+    ],
+    "animal_dosing_route_patterns": [
+      "\\b(?:rat|rats|mouse|mice|rodent|rodents|zebrafish|rabbit|rabbits|primate|primates|canine|dog|dogs)\\b.{0,120}\\b\\d+(?:\\.\\d+)?\\s*mg/kg\\b",
+      "\\b\\d+(?:\\.\\d+)?\\s*mg/kg\\b.{0,80}\\b(?:i\\.p\\.|i\\.v\\.|s\\.c\\.|i\\.m\\.|intraperitoneal|subcutaneous|intravenous|oral gavage)\\b",
+      "\\b(?:received|administered|injected|treated with|dosed with)\\b.{0,80}\\b(?:thc|cbd|cannabidiol|tetrahydrocannabinol|cannabinoid|cannabinoids)\\b.{0,80}\\b\\d+(?:\\.\\d+)?\\s*mg/kg\\b"
+    ],
+    "clinical_primary_data_patterns": [
+      "\\bparticipants (?:were|completed|recruited|enrolled|surveyed)\\b",
+      "\\bpatients (?:were|completed|recruited|enrolled)\\b",
+      "\\bwe (?:surveyed|recruited|enrolled|conducted a (?:prospective|cross-sectional|cohort))\\b",
+      "\\bn\\s*=\\s*\\d+\\s+(?:participants|patients|respondents|subjects|adults)\\b",
+      "\\bexploratory study\\b",
+      "\\bcross-sectional (?:study|survey)\\b",
+      "\\bquestionnaire (?:was|were) (?:administered|completed|distributed)\\b",
+      "\\brandomized (?:controlled )?trial\\b",
+      "\\bplacebo[- ]controlled\\b",
+      "\\bclinical trial\\b"
+    ],
+    "study_design_exempt_patterns": [
+      "\\bwe conducted\\b",
+      "\\bwe analyzed\\b",
+      "\\bwe surveyed\\b",
+      "\\bhere we present\\b",
+      "\\bparticipants\\b",
+      "\\bpatients\\b",
+      "\\bn\\s*=\\s*\\d",
+      "\\bsample of\\b",
+      "\\bcross[- ]sectional\\b",
+      "\\bcohort\\b",
+      "\\bsurvey\\b",
+      "\\bretrospective\\b",
+      "\\bprospective\\b",
+      "\\brandomized\\b",
+      "\\bclinical trial\\b",
+      "\\bobservational\\b",
+      "\\bquestionnaire\\b",
+      "\\bprevalence of\\b"
+    ],
+    "administration_cue_patterns": [
+      "\\badministered\\b",
+      "\\btreated with\\b",
+      "\\breceived (cbd|thc|cannabidiol|tetrahydrocannabinol)\\b",
+      "\\bdose\\b",
+      "\\bmg/kg\\b",
+      "\\binjected\\b",
+      "\\bgavage\\b",
+      "\\binhaled\\b",
+      "\\bsmoked\\b",
+      "\\bWIN 55\\b",
+      "\\bCP 55\\b",
+      "\\banandamide\\b",
+      "\\b2-AG\\b",
+      "\\bcb receptor agonist\\b"
+    ],
+    "in_vivo_animal_terms": [
+      "rat", "rats", "mouse", "mice", "rodent", "rodents", "rabbit", "rabbits",
+      "monkey", "monkeys", "primate", "primates", "zebrafish", "canine", "dog", "dogs"
+    ],
+    "in_vivo_override_terms": [
+      "in vivo", "in-vivo"
+    ],
+    "narrative_review_study_cues": [
+      "consensus recommendations",
+      "pharmacological foundations",
+      "receptor mechanisms underlying",
+      "endocannabinoid signaling",
+      "exploiting the multifaceted",
+      "cannabis use: neurobiological",
+      "terpenes/terpenoids",
+      "medical cannabis and driving",
+      "life cycle assessment",
+      "comprehensive cannabinoid profiling",
+      "high-resolution ion mobility",
+      "selective preparation and high dynamic-range"
+    ],
+    "metadata_routing": [
+      {
+        "id": "pubmed_meta_analysis_prefix",
+        "match": "publication type: meta-analysis",
+        "match_field": "abstract",
+        "node_id": "node1b_reviews",
+        "publication_type": "review",
+        "study_type": "meta-analysis",
+        "extra_nodes": ["node3b"],
+        "score": 0.55,
+        "source": "harvest.py PubMed PublicationTypeList",
+        "priority": 100
+      },
+      {
+        "id": "pubmed_review_prefix",
+        "match": "publication type: review",
+        "match_field": "abstract",
+        "node_id": "node1b_reviews",
+        "publication_type": "review",
+        "study_type": "review",
+        "extra_nodes": [],
+        "score": 0.5,
+        "source": "harvest.py PubMed PublicationTypeList",
+        "priority": 90
+      }
+    ]
+  },
+  "publication_types": {
+    "meta-analysis": [
+      "publication type: meta-analysis", "meta-analysis", "meta-analyses", "pooled analysis", "systematic overview"
+    ],
+    "systematic_review": [
+      "systematic review", "systematic reviews", "scoping review", "scoping reviews"
+    ],
+    "review": [
+      "publication type: review", "literature review", "overview of reviews", "narrative review", "critical review",
+      "mini-review", "minireview", "review article", "review paper", "this review", "the present review",
+      "in this review", "we review", "current review", "comprehensive review", "review of the literature",
+      "this mini-review", "this minireview", "article reviews", "reviews the current", "reviews the literature"
+    ],
+    "case_study": [
+      "case study", "case studies", "case report", "case reports", "case series", "clinical case", "case-report", "case-series"
+    ],
+    "editorial": [
+      "editorial", "editorials"
+    ],
+    "comment": [
+      "commentary", "commentaries", "comment", "opinion", "viewpoint"
+    ],
+    "letter_to_the_editor": [
+      "letter to the editor", "letters to the editor"
+    ],
+    "perspectives_paper": [
+      "perspective", "perspectives"
+    ]
+  },
+  "study_types": {
+    "Clinical (RCT)": [
+      "double-blind", "randomized controlled", "placebo-controlled", "rct", "randomised controlled", "clinical trial"
+    ],
+    "Clinical (prospective)": [
+      "prospective", "prospectively", "prospective cohort"
+    ],
+    "Clinical (retrospective)": [
+      "retrospective", "retrospectively", "chart review", "historical cohort"
+    ],
+    "Clinical (observational)": [
+      "observational", "cross-sectional", "survey", "surveys", "registry", "registries",
+      "longitudinal", "case-control", "epidemiological", "cohort", "cohorts", "gwas",
+      "genome-wide", "genomewide", "quasi-experimental", "quasi-experiment", "pre-post",
+      "school-based intervention", "educational intervention"
+    ],
+    "Animal Models (Mouse)": [
+      "mouse", "mice", "murine", "c57bl/6"
+    ],
+    "Animal Models (Rat)": [
+      "rat", "rats", "wistar", "sprague-dawley"
+    ],
+    "Animal Models (Other Rodents)": [
+      "hamster", "hamsters", "gerbil", "gerbils", "guinea pig", "guinea pigs", "voles", "vole"
+    ],
+    "Animal Models (Non-Human Primates)": [
+      "macaque", "rhesus", "monkey", "monkeys", "primate", "primates", "baboon", "chimpanzee"
+    ],
+    "Animal Models (Other)": [
+      "dog", "dogs", "cat", "cats", "pig", "pigs", "rabbit", "rabbits", "zebrafish", "drosophila"
+    ],
+    "Cell Culture (Primary Cells)": [
+      "primary cell", "primary cells", "primary culture", "primary neuronal", "primary microglia", "splenocytes", "primary hepatocytes", "primary cortical cell", "cortical cell culture", "neuron-enriched"
+    ],
+    "Cell Culture (Cell Lines)": [
+      "cell line", "cell lines", "hela", "hepg2", "pc12", "raw 264.7", "sh-sy5y", "jurkat", "cho cells"
+    ],
+    "Cell Culture (Organoids)": [
+      "organoid", "organoids", "spheroid", "spheroids", "3d culture", "3d cultures"
+    ],
+    "Cell Culture (Co-Culture)": [
+      "co-culture", "co-cultures", "coculture", "cocultures"
+    ],
+    "Cell Culture (PCLS)": [
+      "precision-cut lung slices", "pcls", "precision cut lung slices", "lung slice", "lung slices"
+    ],
+    "Cell Culture (Other In Vitro)": [
+      "in vitro", "cultured cells", "culture assay", "cell culture", "cell cultures", "epithelial cells", "epithelial cell", "airway epithelial"
+    ]
+  },
+  "extraction": {
+    "population_age": {
+      "professional_surveys": [
+        "\\b(?:survey of|interviewed|questionnaire to)\\s+(?:elected officials|officials|healthcare professionals|professionals|providers|parents|teachers|retailers|staff|clinicians|physicians|pediatricians|policymakers)\\b",
+        "\\b(?:healthcare professionals|providers|parents|teachers|retailers|policymakers|pediatricians)\\s+(?:completed|were surveyed|were interviewed)\\b"
+      ],
+      "pediatric_indicators": [
+        "\\b(?:pediatric|child|adolescent|infant|teenager|youth|pediatrics)\\s+(?:patients|subjects|participants|cohort|population|group|users)\\b",
+        "\\b(?:enrolled|recruited|included|studied)\\s+(?:children|adolescents|infants|teens|youths)\\b",
+        "\\bchildren\\s+(?:aged|ranging from|with)\\b",
+        "\\badolescents\\s+(?:aged|ranging from|with)\\b",
+        "\\bunder\\s+18\\s*(?:years|yo)?\\b",
+        "\\bage\\s+<\\s*18\\b",
+        "\\bpediatric\\s+onset\\b",
+        "\\bchildren\\b",
+        "\\badolescents\\b",
+        "\\byouth\\b",
+        "\\byouths\\b"
+      ],
+      "geriatric_indicators": [
+        "\\bgeriatric\\w*\\b",
+        "\\belderly\\b",
+        "\\bolder\\s+(?:adults|patients|subjects|participants|people|population)\\b",
+        "\\baged\\s+(?:≥|>=|greater than or equal to|over)?\\s*65\\s*(?:years|yo)?\\b",
+        "\\boctogenarian\\w*\\b",
+        "\\bsenile\\b"
+      ]
+    },
+    "population_sex": {
+      "both_indicators": [
+        "\\bboth\\s+(?:sexes|genders)\\b",
+        "\\bmen\\s+and\\s+women\\b",
+        "\\bwomen\\s+and\\s+men\\b",
+        "\\bmale\\s+and\\s+female\\b",
+        "\\bfemale\\s+and\\s+male\\b",
+        "\\bmales\\s+and\\s+females\\b",
+        "\\bfemales\\s+and\\s+males\\b",
+        "\\bmixed[- ]sex\\b"
+      ],
+      "male_indicators": [
+        "\\bmale\\s+(?:subjects|patients|participants|volunteers|cohort|population|group)\\b",
+        "\\b(?:subjects|patients|participants|volunteers)\\s+(?:were|consisted of|included)\\s+[^.]{0,40}?\\s*(?:males|men)\\b",
+        "\\bonly\\s+male\\b",
+        "\\bmen\\s+(?:aged|were|diagnosed|\\([^)]+\\))\\b"
+      ],
+      "female_indicators": [
+        "\\bfemale\\s+(?:subjects|patients|participants|volunteers|cohort|population|group)\\b",
+        "\\b(?:subjects|patients|participants|volunteers)\\s+(?:were|consisted of|included)\\s+[^.]{0,40}?\\s*(?:females|women)\\b",
+        "\\bonly\\s+female\\b",
+        "\\bwomen\\s+(?:aged|were|diagnosed|\\([^)]+\\))\\b"
+      ]
+    }
+  }
+}
