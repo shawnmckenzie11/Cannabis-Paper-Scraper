@@ -273,6 +273,9 @@ _LEGACY_SQL_PRECLINICAL_STUDY = (
 )
 
 LEGACY_TAB_SQL = {
+    "all_original": (
+        f"({_LEGACY_SQL_ORIGINAL_RESEARCH} AND NOT {_LEGACY_SQL_INGESTION_ROUTED})"
+    ),
     "preclinical": (
         f"({_LEGACY_SQL_ORIGINAL_RESEARCH} AND NOT {_LEGACY_SQL_INGESTION_ROUTED} AND {_LEGACY_SQL_PRECLINICAL_STUDY})"
     ),
@@ -283,9 +286,36 @@ LEGACY_TAB_SQL = {
         f"({_LEGACY_SQL_ORIGINAL_RESEARCH} AND NOT {_LEGACY_SQL_INGESTION_ROUTED}"
         f" AND NOT {_LEGACY_SQL_CLINICAL_STUDY} AND NOT {_LEGACY_SQL_PRECLINICAL_STUDY})"
     ),
+    "unclassified": (
+        f"(LOWER(COALESCE(papers.ingestion_status, '')) = 'tangential') OR "
+        f"({_LEGACY_SQL_ORIGINAL_RESEARCH} AND NOT {_LEGACY_SQL_INGESTION_ROUTED}"
+        f" AND NOT {_LEGACY_SQL_CLINICAL_STUDY} AND NOT {_LEGACY_SQL_PRECLINICAL_STUDY})"
+    ),
     "tangential": "LOWER(COALESCE(papers.ingestion_status, '')) = 'tangential'",
     "review": f"({_LEGACY_SQL_REVIEW_PUBLICATION} AND NOT {_LEGACY_SQL_INGESTION_ROUTED})",
 }
+
+
+def recent_range_sql(recent_range: Optional[str] = None) -> tuple:
+    """Return (WHERE fragment, params) for a harvest-date recency filter.
+
+    Used as a cross-tab sidebar filter; stacks with tab SQL rather than replacing it.
+    """
+    from datetime import datetime as dt, timedelta as td
+
+    now = dt.now()
+    if recent_range == "today":
+        start_date = now.strftime("%Y-%m-%d") + "T00:00:00"
+        return "papers.date_harvested >= ?", [start_date]
+    if recent_range == "week":
+        start_date = (now - td(days=7)).strftime("%Y-%m-%d") + "T00:00:00"
+        return "papers.date_harvested >= ?", [start_date]
+    if recent_range == "month":
+        start_date = (now - td(days=30)).strftime("%Y-%m-%d") + "T00:00:00"
+        return "papers.date_harvested >= ?", [start_date]
+    recent_date = (now - td(days=180)).strftime("%Y-%m-%d")
+    current_year = now.year
+    return "(papers.publication_date >= ? OR papers.year >= ?)", [recent_date, current_year]
 
 
 def legacy_tab_sql_for(tab: str) -> str:

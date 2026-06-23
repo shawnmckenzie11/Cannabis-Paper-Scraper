@@ -673,6 +673,7 @@ def classify_with_maude(
     pmid: Optional[str] = None,
     doi: Optional[str] = None,
     cache: Optional[Dict[str, Optional[str]]] = None,
+    abstract_only: bool = False,
 ) -> Dict[str, Any]:
     """Runs the RL-tuned Maude classifier using PDF, article full text, or abstract."""
     import calibration_pdf
@@ -680,7 +681,10 @@ def classify_with_maude(
     rules_version = get_rules_version()
     source = calibration_pdf.CLASSIFICATION_SOURCE_ABSTRACT
     resolved_text = full_text
-    if resolved_text is None:
+    if abstract_only:
+        resolved_text = None
+        source = calibration_pdf.CLASSIFICATION_SOURCE_ABSTRACT
+    elif resolved_text is None:
         resolved_text, source = calibration_pdf.resolve_classification_full_text(
             full_text_link=full_text_link,
             pmid=pmid,
@@ -723,6 +727,7 @@ def process_paper_metadata(
     pmid: Optional[str] = None,
     doi: Optional[str] = None,
     pdf_cache: Optional[Dict[str, Optional[str]]] = None,
+    abstract_only: bool = False,
 ) -> Dict[str, Any]:
     """Extracts metadata from paper via Claude LLM or the Maude rule/cue classifier.
 
@@ -739,6 +744,7 @@ def process_paper_metadata(
         pmid: Optional PubMed ID for Europe PMC full-text lookup
         doi: Optional DOI for Europe PMC full-text lookup
         pdf_cache: Optional per-run cache for PDF/PMC/HTML fetches
+        abstract_only: When True, Maude uses abstract only (no PDF/PMC/HTML fetch).
 
     Returns:
         Dict containing all extracted metadata.
@@ -769,6 +775,7 @@ def process_paper_metadata(
                 pmid=pmid,
                 doi=doi,
                 cache=pdf_cache,
+                abstract_only=abstract_only,
             )
         except Exception as exc:
             logger.error("Maude classification failed: %s. Falling back to legacy heuristics.", exc)

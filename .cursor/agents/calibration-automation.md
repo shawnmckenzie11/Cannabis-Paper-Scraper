@@ -68,9 +68,42 @@ Your job is to run **complete RL cycles** on node2 sub-nodes: measure on a PDF h
 | Same-holdout post-patch metrics | New paper sample without user request |
 | Handoff log entry added | Feedback staged but not implemented |
 
+## Gate policy (95% phase)
+
+- **Primary gate:** fixed holdout batch per subnode (`primary_holdout_batches` in loop state)
+- **Scored fields:** tier + Node7 path scope **minus** `strain_reported` / `strain_normalized`
+- **Strain:** tracked as optional recall sidecar only (not alignment denominator)
+- **Offset-0 batches:** run every **3 cycles** (`offset0_every_n_cycles`) for generalization only — do not gate on them
+- **Verify gate:** `python3 calibration_rl_alternating_loop.py status` → `latest_holdout_alignment_pct`
+- **Before resuming:** `python3 audit_tier_field_gaps.py` → `scratch/calibration_runs/tier_field_gap_audit.json`
+
+## Cycle workflow (each cycle)
+
+1. **Read context first**
+   - `scratch/calibration_runs/handoff_learning_log.json`
+   - `python3 calibration_rl_alternating_loop.py plan-next` (check `run_offset0_generalization`)
+   - Holdout batch from `primary_holdout_batches` for the active subnode
+
+2. **Preflight Fly production**
+   ```bash
+   fly ssh console -a cannabis-paper-scraper -C "sh -c 'cd /app && python3 fly_db_check.py'"
+   ```
+
+3. **Analyze holdout disagreements** (same holdout — do not draw a new sample unless `plan-next` says `run_offset0_generalization: true`)
+
+4. **Feedback** — local-only on holdout batch JSON
+
+5. **Implement patch** → tests → deploy → `--refresh-maude-from-batch` on **same holdout**
+
+6. **Record metrics** on holdout via `compute_scoped_metrics` / `score_paper_rl_metrics` (strain excluded from alignment)
+
+7. **Optional offset-0 batch** when `cycles_completed % 3 == 0` — record under `latest_offset0_alignment_pct` only
+
+8. **Update** handoff log + `rl_alternating_loop_state.json` (`latest_holdout_alignment_pct`)
+
 ## Targeted handoff (same holdout)
 
-When the user names diverging fields (e.g. `treatment_duration`, `strain_reported`, `duration_days`):
+When the user names diverging fields (e.g. `treatment_duration`, `duration_days`):
 
 1. Analyze disagreements in the **existing** batch JSON — do not draw a new sample
 2. Implement minimal patches for those fields only
@@ -90,6 +123,8 @@ When the user names diverging fields (e.g. `treatment_duration`, `strain_reporte
 | `scripts/run_subnode_calibration.sh` | Fly PDF batch + pull + feedback |
 | `calibration_rl_alternating_loop.py` | Alternating node2b→2c→2a state, offsets, targeted-pass detection |
 | `scripts/run_alternating_rl_loop.sh` | Loop documentation / entry point |
+| `paper_text_cache.py` | Lazy local PDF/full-text disk cache (`scratch/paper_cache/`, gitignored) |
+| `scripts/cache_paper_full_text.py` | Optional bulk pre-fetch; normal RL path caches on read automatically |
 | `.cursor/rules/rl-calibration.mdc` | Always-on cycle contract for main agent |
 
 ## Output format

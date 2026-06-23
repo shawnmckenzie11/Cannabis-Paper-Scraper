@@ -1,0 +1,161 @@
+{
+  "batch_id": "calibration_20260622_174637_460",
+  "target_subnode": "node2a",
+  "created_at": "2026-06-22T17:47:02.961532",
+  "disagreement_count": 9,
+  "gap_summary": {
+    "target_subnode": "node2a",
+    "scored_paper_count": 10,
+    "papers_with_disagreements": 9,
+    "batch_alignment_rate": 0.8187,
+    "batch_alignment_pct": 81.9,
+    "batch_maude_recall_rate": 0.8407,
+    "batch_maude_recall_pct": 84.1,
+    "batch_extraction_fill_rate": 0.8407,
+    "batch_extraction_fill_pct": 84.1,
+    "field_disagreement_stats": [
+      {
+        "field": "cannabis_type",
+        "compared_count": 10,
+        "disagree_count": 5,
+        "disagree_pct": 50.0
+      },
+      {
+        "field": "strain_reported",
+        "compared_count": 10,
+        "disagree_count": 5,
+        "disagree_pct": 50.0
+      },
+      {
+        "field": "exposure_method",
+        "compared_count": 10,
+        "disagree_count": 4,
+        "disagree_pct": 40.0
+      },
+      {
+        "field": "study_type",
+        "compared_count": 10,
+        "disagree_count": 3,
+        "disagree_pct": 30.0
+      },
+      {
+        "field": "outcome_domain",
+        "compared_count": 10,
+        "disagree_count": 3,
+        "disagree_pct": 30.0
+      },
+      {
+        "field": "duration_days",
+        "compared_count": 10,
+        "disagree_count": 3,
+        "disagree_pct": 30.0
+      },
+      {
+        "field": "dose_mg",
+        "compared_count": 10,
+        "disagree_count": 2,
+        "disagree_pct": 20.0
+      },
+      {
+        "field": "sample_size",
+        "compared_count": 10,
+        "disagree_count": 1,
+        "disagree_pct": 10.0
+      },
+      {
+        "field": "strain_normalized",
+        "compared_count": 10,
+        "disagree_count": 1,
+        "disagree_pct": 10.0
+      },
+      {
+        "field": "thc_pct",
+        "compared_count": 10,
+        "disagree_count": 1,
+        "disagree_pct": 10.0
+      },
+      {
+        "field": "inhaled_exposure_duration",
+        "compared_count": 10,
+        "disagree_count": 1,
+        "disagree_pct": 10.0
+      },
+      {
+        "field": "cbd_pct",
+        "compared_count": 10,
+        "disagree_count": 0,
+        "disagree_pct": 0.0
+      },
+      {
+        "field": "administration_frequency",
+        "compared_count": 10,
+        "disagree_count": 0,
+        "disagree_pct": 0.0
+      },
+      {
+        "field": "multiple_doses",
+        "compared_count": 10,
+        "disagree_count": 0,
+        "disagree_pct": 0.0
+      },
+      {
+        "field": "multiple_time_intervals",
+        "compared_count": 10,
+        "disagree_count": 0,
+        "disagree_pct": 0.0
+      },
+      {
+        "field": "puff_count",
+        "compared_count": 10,
+        "disagree_count": 0,
+        "disagree_pct": 0.0
+      }
+    ],
+    "top_disagreement_fields": [
+      "cannabis_type",
+      "strain_reported",
+      "exposure_method",
+      "study_type",
+      "outcome_domain",
+      "duration_days",
+      "dose_mg",
+      "sample_size",
+      "strain_normalized",
+      "thc_pct"
+    ]
+  },
+  "pattern_summary": "Top scoped disagreement fields on node2a: cannabis_type, strain_reported, exposure_method, study_type, outcome_domain, duration_days. Batch alignment 81.9% \u00b7 Maude recall 84.1%. cannabis_type: 5/10 papers disagree (50.0%). strain_reported: 5/10 papers disagree (50.0%). exposure_method: 4/10 papers disagree (40.0%). study_type: 3/10 papers disagree (30.0%). outcome_domain: 3/10 papers disagree (30.0%). Examples: paper 23516: study_type, duration_days; paper 23553: exposure_method, cannabis_type, strain_reported; paper 23808: exposure_method; paper 25228: study_type, duration_days, dose_mg, strain_reported; paper 26272: cannabis_type; paper 26358: cannabis_type, strain_reported; paper 27862: study_type, exposure_method, cannabis_type, outcome_domain; paper 30797: exposure_method, cannabis_type, outcome_domain, sample_size",
+  "llm_call_metrics": null,
+  "apply_result": {
+    "applied_count": 0,
+    "error_count": 0
+  },
+  "cue_apply_result": {
+    "cues_applied": 0
+  },
+  "refresh_batch_path": null,
+  "staged_patch_path": "scratch/calibration_runs/staged_patches/node2a_20260622_174702.json",
+  "agent_handoff_prompt": "Implement minimal patches for node2a holdout disagreements on: cannabis_type, strain_reported, exposure_method, study_type, outcome_domain. Edit extractor.py / maude_classifier.py / maude_cues.json and add test_patch_* regressions. Then bump calibration_build.py, deploy, and refresh the same batch with calibration_agent.py --refresh-maude-from-batch.",
+  "salvaged_response": false,
+  "local_only": true,
+  "feedback": {
+    "pattern_summary": "Top scoped disagreement fields on node2a: cannabis_type, strain_reported, exposure_method, study_type, outcome_domain, duration_days. Batch alignment 81.9% \u00b7 Maude recall 84.1%. cannabis_type: 5/10 papers disagree (50.0%). strain_reported: 5/10 papers disagree (50.0%). exposure_method: 4/10 papers disagree (40.0%). study_type: 3/10 papers disagree (30.0%). outcome_domain: 3/10 papers disagree (30.0%). Examples: paper 23516: study_type, duration_days; paper 23553: exposure_method, cannabis_type, strain_reported; paper 23808: exposure_method; paper 25228: study_type, duration_days, dose_mg, strain_reported; paper 26272: cannabis_type; paper 26358: cannabis_type, strain_reported; paper 27862: study_type, exposure_method, cannabis_type, outcome_domain; paper 30797: exposure_method, cannabis_type, outcome_domain, sample_size",
+    "proposed_rules_changes": [],
+    "proposed_cues": [],
+    "maude_improvement_brief": {
+      "agent_handoff_prompt": "Implement minimal patches for node2a holdout disagreements on: cannabis_type, strain_reported, exposure_method, study_type, outcome_domain. Edit extractor.py / maude_classifier.py / maude_cues.json and add test_patch_* regressions. Then bump calibration_build.py, deploy, and refresh the same batch with calibration_agent.py --refresh-maude-from-batch.",
+      "priority_fields": [
+        "cannabis_type",
+        "strain_reported",
+        "exposure_method",
+        "study_type",
+        "outcome_domain",
+        "duration_days",
+        "dose_mg",
+        "sample_size"
+      ]
+    },
+    "agent_handoff_prompt": "Implement minimal patches for node2a holdout disagreements on: cannabis_type, strain_reported, exposure_method, study_type, outcome_domain. Edit extractor.py / maude_classifier.py / maude_cues.json and add test_patch_* regressions. Then bump calibration_build.py, deploy, and refresh the same batch with calibration_agent.py --refresh-maude-from-batch.",
+    "_local_only": true
+  }
+}

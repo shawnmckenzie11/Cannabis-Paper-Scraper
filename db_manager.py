@@ -54,6 +54,16 @@ _SQL_INGESTION_IRRELEVANT = "LOWER(COALESCE(papers.ingestion_status, '')) = 'irr
 
 _SQL_INGESTION_TANGENTIAL = "LOWER(COALESCE(papers.ingestion_status, '')) = 'tangential'"
 
+_SQL_HAS_PDF_LINK = (
+    "(papers.full_text_link IS NOT NULL AND TRIM(papers.full_text_link) != ''"
+    " AND LOWER(papers.full_text_link) LIKE '%.pdf')"
+)
+
+_SQL_HAS_FULL_TEXT_LINK = (
+    "(papers.full_text_link IS NOT NULL AND TRIM(papers.full_text_link) != ''"
+    " AND LOWER(papers.full_text_link) NOT LIKE '%pubmed.ncbi.nlm.nih.gov/%')"
+)
+
 _SQL_INGESTION_ROUTED = (
     "("
     f"  {_SQL_INGESTION_NOT_CANNABIS}"
@@ -88,6 +98,9 @@ _SQL_PRECLINICAL_STUDY = (
 )
 
 _TAB_SQL = {
+    "all_original": (
+        f"({_SQL_ORIGINAL_RESEARCH} AND NOT {_SQL_INGESTION_ROUTED})"
+    ),
     "preclinical": (
         f"({_SQL_ORIGINAL_RESEARCH} AND NOT {_SQL_INGESTION_ROUTED} AND {_SQL_PRECLINICAL_STUDY})"
     ),
@@ -98,9 +111,22 @@ _TAB_SQL = {
         f"({_SQL_ORIGINAL_RESEARCH} AND NOT {_SQL_INGESTION_ROUTED}"
         f" AND NOT {_SQL_CLINICAL_STUDY} AND NOT {_SQL_PRECLINICAL_STUDY})"
     ),
+    "unclassified": (
+        f"({_SQL_INGESTION_TANGENTIAL}) OR "
+        f"({_SQL_ORIGINAL_RESEARCH} AND NOT {_SQL_INGESTION_ROUTED}"
+        f" AND NOT {_SQL_CLINICAL_STUDY} AND NOT {_SQL_PRECLINICAL_STUDY})"
+    ),
     "tangential": f"({_SQL_INGESTION_TANGENTIAL})",
     "review": f"({_SQL_REVIEW_PUBLICATION} AND NOT {_SQL_INGESTION_ROUTED})",
 }
+
+_DASHBOARD_TAB_KEYS = (
+    "all_original",
+    "preclinical",
+    "clinical",
+    "review",
+    "unclassified",
+)
 
 
 class PostgresCursorWrapper:
@@ -303,6 +329,84 @@ class PostgresConnectionWrapper:
     @row_factory.setter
     def row_factory(self, value):
         pass
+
+# UI species checkbox values map to study_type labels and optional papers.species tokens.
+_SPECIES_FILTER_TARGETS: Dict[str, Dict[str, Any]] = {
+    "mouse": {
+        "study_types": ["Animal Models (Mouse)"],
+        "species_like": ["%mouse%"],
+    },
+    "rat": {
+        "study_types": ["Animal Models (Rat)"],
+        "species_like": ["%rat%"],
+    },
+    "rodent": {
+        "study_types": [
+            "Animal Models (Mouse)",
+            "Animal Models (Rat)",
+            "Animal Models (Other Rodents)",
+        ],
+        "species_like": ["%rodent%", "%rodent_other%", "%mouse%", "%rat%"],
+    },
+    "hamster": {
+        "study_types": ["Animal Models (Other Rodents)"],
+        "species_like": ["%hamster%", "%rodent_other%"],
+    },
+    "guinea pig": {
+        "study_types": ["Animal Models (Other Rodents)"],
+        "species_like": ["%guinea%", "%rodent_other%"],
+    },
+    "non-human primate": {
+        "study_types": ["Animal Models (Non-Human Primates)"],
+        "species_like": ["%non_human_primate%", "%non-human primate%"],
+    },
+    "rabbit": {
+        "study_types": ["Animal Models (Other Rodents)", "Animal Models (Other)"],
+        "species_like": ["%rabbit%", "%rodent_other%", "%other_mammal%"],
+    },
+    "dog": {
+        "study_types": ["Animal Models (Other)"],
+        "species_like": ["%dog%", "%other_mammal%"],
+    },
+    "pig": {
+        "study_types": ["Animal Models (Other)"],
+        "species_like": ["%pig%", "%porcine%", "%other_mammal%"],
+    },
+    "zebrafish": {
+        "study_types": ["Animal Models (Other)"],
+        "species_like": ["%zebrafish%", "%vertebrate_non_mammal%"],
+    },
+}
+
+
+def _study_type_label_match_clause(label: str) -> Tuple[str, List[Any]]:
+    """Return SQL matching a canonical study_type label in JSON or scalar form."""
+    clause = (
+        "((json_valid(papers.study_type) AND json_type(papers.study_type) = 'array' AND EXISTS ("
+        "SELECT 1 FROM json_each(papers.study_type) WHERE json_each.value = ?"
+        ")) OR (papers.study_type = ?))"
+    )
+    return clause, [label, label]
+
+
+def _species_ui_match_clause(species_key: str) -> Tuple[str, List[Any]]:
+    """Build species filter SQL for a dashboard checkbox value."""
+    normalized = (species_key or "").strip().lower()
+    targets = _SPECIES_FILTER_TARGETS.get(normalized)
+    if not targets:
+        return "LOWER(COALESCE(papers.species, '')) LIKE ?", [f"%{normalized}%"]
+
+    parts: List[str] = []
+    params: List[Any] = []
+    for pattern in targets.get("species_like", []):
+        parts.append("LOWER(COALESCE(papers.species, '')) LIKE ?")
+        params.append(pattern)
+    for study_label in targets.get("study_types", []):
+        clause, clause_params = _study_type_label_match_clause(study_label)
+        parts.append(clause)
+        params.extend(clause_params)
+    return "(" + " OR ".join(parts) + ")", params
+
 
 class DatabaseManager:
     """Manages SQLite and PostgreSQL operations, indexing, and dynamic querying for cannabis papers."""
@@ -1737,6 +1841,30 @@ class DatabaseManager:
         if filters.get("thc_max") is not None:
             where_clauses.append("papers.thc_pct <= ?")
             params.append(float(filters["thc_max"]))
+
+        if filters.get("cbd_min") is not None:
+            where_clauses.append("papers.cbd_pct >= ?")
+            params.append(float(filters["cbd_min"]))
+
+        if filters.get("cbd_max") is not None:
+            where_clauses.append("papers.cbd_pct <= ?")
+            params.append(float(filters["cbd_max"]))
+
+        has_pdf = filters.get("has_pdf")
+        has_full_text = filters.get("has_full_text")
+        if has_pdf is not None or has_full_text is not None:
+            if isinstance(has_pdf, str):
+                has_pdf = has_pdf.lower() in ("true", "1", "yes")
+            if isinstance(has_full_text, str):
+                has_full_text = has_full_text.lower() in ("true", "1", "yes")
+            pdf_active = bool(has_pdf)
+            full_text_active = bool(has_full_text)
+            if pdf_active and full_text_active:
+                where_clauses.append(f"({_SQL_HAS_PDF_LINK} OR {_SQL_HAS_FULL_TEXT_LINK})")
+            elif pdf_active:
+                where_clauses.append(_SQL_HAS_PDF_LINK)
+            elif full_text_active:
+                where_clauses.append(_SQL_HAS_FULL_TEXT_LINK)
             
             
         if filters.get("open_access") is not None:
@@ -1748,35 +1876,75 @@ class DatabaseManager:
             where_clauses.append("papers.open_access = ?")
             params.append(val)
             
-        # Tab-based filtering (mutually exclusive except Recents; clinical/preclinical may overlap)
+        # Tab-based filtering (clinical/preclinical may overlap; recents stacks via recent_range)
         tab = filters.get("tab")
         if tab == "original":
-            tab = "preclinical"
+            tab = "all_original"
+        if tab == "recent":
+            tab = None
         tab_sql = _TAB_SQL.get(tab or "")
         if tab_sql:
             where_clauses.append(tab_sql)
-        elif tab == "recent" or filters.get("recent"):
-            recent_range = filters.get("recent_range")
-            from datetime import datetime as dt, timedelta as td
-            now = dt.now()
-            if recent_range == "today":
-                start_date = now.strftime("%Y-%m-%d") + "T00:00:00"
-                where_clauses.append("papers.date_harvested >= ?")
-                params.append(start_date)
-            elif recent_range == "week":
-                start_date = (now - td(days=7)).strftime("%Y-%m-%d") + "T00:00:00"
-                where_clauses.append("papers.date_harvested >= ?")
-                params.append(start_date)
-            elif recent_range == "month":
-                start_date = (now - td(days=30)).strftime("%Y-%m-%d") + "T00:00:00"
-                where_clauses.append("papers.date_harvested >= ?")
-                params.append(start_date)
-            else:
-                recent_date = (now - td(days=180)).strftime("%Y-%m-%d")
-                current_year = now.year
-                where_clauses.append("(papers.publication_date >= ? OR papers.year >= ?)")
-                params.extend([recent_date, current_year])
-            
+
+        recent_range = filters.get("recent_range")
+        if recent_range or filters.get("recent"):
+            from paper_tab_flags import recent_range_sql
+
+            recent_clause, recent_params = recent_range_sql(recent_range or "180d")
+            where_clauses.append(recent_clause)
+            params.extend(recent_params)
+
+        # Numeric / sub-node scoped filters (read-only on existing columns)
+        _NUMERIC_RANGE_FILTERS = (
+            ("sample_size_min", "papers.sample_size", ">="),
+            ("sample_size_max", "papers.sample_size", "<="),
+            ("dose_mg_min", "papers.dose_mg", ">="),
+            ("dose_mg_max", "papers.dose_mg", "<="),
+            ("duration_days_min", "papers.duration_days", ">="),
+            ("duration_days_max", "papers.duration_days", "<="),
+            ("thc_mg_kg_min", "papers.thc_mg_kg", ">="),
+            ("thc_mg_kg_max", "papers.thc_mg_kg", "<="),
+            ("cbd_mg_kg_min", "papers.cbd_mg_kg", ">="),
+            ("cbd_mg_kg_max", "papers.cbd_mg_kg", "<="),
+            ("thc_mg_ml_min", "papers.thc_mg_ml", ">="),
+            ("thc_mg_ml_max", "papers.thc_mg_ml", "<="),
+            ("cbd_mg_ml_min", "papers.cbd_mg_ml", ">="),
+            ("cbd_mg_ml_max", "papers.cbd_mg_ml", "<="),
+            ("thc_uM_min", "papers.thc_uM", ">="),
+            ("thc_uM_max", "papers.thc_uM", "<="),
+            ("cbd_uM_min", "papers.cbd_uM", ">="),
+            ("cbd_uM_max", "papers.cbd_uM", "<="),
+            ("puff_count_min", "papers.puff_count", ">="),
+        )
+        for filter_key, column, operator in _NUMERIC_RANGE_FILTERS:
+            raw = filters.get(filter_key)
+            if raw is not None and raw != "":
+                where_clauses.append(f"{column} {operator} ?")
+                params.append(float(raw))
+
+        species_values = filters.get("species")
+        if species_values:
+            if isinstance(species_values, str):
+                species_values = [s.strip() for s in species_values.split(",") if s.strip()]
+            if species_values:
+                species_clauses = []
+                for species in species_values:
+                    clause, clause_params = _species_ui_match_clause(species)
+                    species_clauses.append(clause)
+                    params.extend(clause_params)
+                where_clauses.append("(" + " OR ".join(species_clauses) + ")")
+
+        regimen_values = filters.get("exposure_regimen_bin")
+        if regimen_values:
+            if isinstance(regimen_values, str):
+                regimen_values = [r.strip() for r in regimen_values.split(",") if r.strip()]
+            if regimen_values:
+                placeholders = ",".join(["?"] * len(regimen_values))
+                where_clauses.append(
+                    f"LOWER(COALESCE(papers.exposure_regimen_bin, '')) IN ({placeholders})"
+                )
+                params.extend([value.lower() for value in regimen_values])
+
         # Outcome domain filters (JSON list)
         outcomes = filters.get("outcome")
         if outcomes:
@@ -1796,7 +1964,24 @@ class DatabaseManager:
         if filters.get("claude_classified"):
             where_clauses.append("papers.classifier_version LIKE 'llm-%'")
             
-        # Classification level filter
+        # Filter on publication types (§5.2 — sidebar review tab)
+        publication_types = filters.get("publication_type")
+        if publication_types:
+            if isinstance(publication_types, str):
+                publication_types = [p.strip() for p in publication_types.split(",") if p.strip()]
+            if publication_types:
+                if filters.get("publication_type_logic", "or").lower() == "and":
+                    for pub_type in publication_types:
+                        where_clauses.append("LOWER(papers.publication_type) = LOWER(?)")
+                        params.append(pub_type)
+                else:
+                    placeholders = ",".join(["?"] * len(publication_types))
+                    where_clauses.append(
+                        f"LOWER(papers.publication_type) IN ({','.join(['LOWER(?)'] * len(publication_types))})"
+                    )
+                    params.extend(publication_types)
+
+        # Classification level filter (§5.2 — sidebar Classification Details)
         class_level = filters.get("classification_level")
         if class_level and class_level != "ALL":
             if class_level == "claude_abstract":
@@ -1995,6 +2180,24 @@ class DatabaseManager:
             cursor.execute(sql, params)
             row = cursor.fetchone()
             return row["total"] if row else 0
+        finally:
+            conn.close()
+
+    def get_tab_counts(self) -> Dict[str, int]:
+        """Return paper counts for each primary dashboard tab using query-time SQL."""
+        counts: Dict[str, int] = {}
+        conn = self.get_connection()
+        cursor = conn.cursor()
+        try:
+            for tab_key in _DASHBOARD_TAB_KEYS:
+                tab_sql = _TAB_SQL.get(tab_key, "")
+                if not tab_sql:
+                    counts[tab_key] = 0
+                    continue
+                cursor.execute(f"SELECT COUNT(*) as total FROM papers WHERE {tab_sql}")
+                row = cursor.fetchone()
+                counts[tab_key] = row["total"] if row else 0
+            return counts
         finally:
             conn.close()
 

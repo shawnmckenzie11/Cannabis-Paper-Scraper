@@ -1,0 +1,642 @@
+{
+  "generated_at": "2026-06-22T18:54:47.152968",
+  "gate_mode": "holdout_field_subset",
+  "alignment_excluded_fields": [
+    "strain_normalized",
+    "strain_reported"
+  ],
+  "optional_recall_fields": [
+    "strain_normalized",
+    "strain_reported"
+  ],
+  "nodes": {
+    "node2a": {
+      "subnode": "node2a",
+      "batch_id": "node2a_calibration_20260622_203356_002",
+      "paper_count": 10,
+      "alignment_pct": 75.7,
+      "optional_strain_recall_pct": 0.0,
+      "tier_counts": {
+        "pdf_extracted": 10
+      },
+      "top_alignment_disagrees": [
+        [
+          "outcome_domain",
+          6
+        ],
+        [
+          "sample_size",
+          6
+        ],
+        [
+          "cannabis_type",
+          5
+        ],
+        [
+          "administration_frequency",
+          4
+        ],
+        [
+          "study_type",
+          3
+        ],
+        [
+          "duration_days",
+          3
+        ],
+        [
+          "exposure_method",
+          3
+        ],
+        [
+          "dose_mg",
+          2
+        ],
+        [
+          "thc_pct",
+          1
+        ],
+        [
+          "inhaled_exposure_duration",
+          1
+        ]
+      ],
+      "top_full_scope_disagrees": [
+        [
+          "strain_reported",
+          7
+        ],
+        [
+          "outcome_domain",
+          6
+        ],
+        [
+          "sample_size",
+          6
+        ],
+        [
+          "cannabis_type",
+          5
+        ],
+        [
+          "administration_frequency",
+          4
+        ],
+        [
+          "study_type",
+          3
+        ],
+        [
+          "duration_days",
+          3
+        ],
+        [
+          "exposure_method",
+          3
+        ],
+        [
+          "strain_normalized",
+          2
+        ],
+        [
+          "dose_mg",
+          2
+        ]
+      ],
+      "disagreement_types": {
+        "value_mismatch": 23,
+        "claude_only_populated": 7,
+        "maude_only_populated": 4
+      },
+      "counterfactual": {
+        "alignment_pct_current": 75.7,
+        "if_outcome_domain_fixed_upper_bound": 80.0,
+        "if_sample_size_fixed_upper_bound": 80.0,
+        "if_cannabis_type_fixed_upper_bound": 79.3,
+        "if_administration_frequency_fixed_upper_bound": 78.6,
+        "if_study_type_fixed_upper_bound": 77.8,
+        "if_duration_days_fixed_upper_bound": 77.8,
+        "if_exposure_method_fixed_upper_bound": 77.8,
+        "if_dose_mg_fixed_upper_bound": 77.1
+      },
+      "sample_papers": [
+        {
+          "paper_id": 23516,
+          "title": "Diverse psychotropic substances detected in drug and drug administration equipme",
+          "content_tier": "pdf_extracted",
+          "scope_key": "node2a",
+          "disagreements": {
+            "study_type": "value_mismatch",
+            "cannabis_type": "value_mismatch",
+            "outcome_domain": "value_mismatch",
+            "duration_days": "claude_only_populated"
+          }
+        },
+        {
+          "paper_id": 23553,
+          "title": "Delta-8-THC: Delta-9-THC's nicer younger sibling?",
+          "content_tier": "pdf_extracted",
+          "scope_key": "node2a",
+          "disagreements": {
+            "exposure_method": "value_mismatch",
+            "outcome_domain": "value_mismatch",
+            "administration_frequency": "maude_only_populated"
+          }
+        },
+        {
+          "paper_id": 23808,
+          "title": "Psychedelic experience dose-dependently modulated by cannabis: results of a pros",
+          "content_tier": "pdf_extracted",
+          "scope_key": "node2a",
+          "disagreements": {
+            "exposure_method": "value_mismatch",
+            "outcome_domain": "value_mismatch",
+            "sample_size": "value_mismatch"
+          }
+        },
+        {
+          "paper_id": 23817,
+          "title": "Obesity risk is associated with altered cerebral glucose metabolism and decrease",
+          "content_tier": "pdf_extracted",
+          "scope_key": "node2a",
+          "disagreements": {
+            "sample_size": "value_mismatch"
+          }
+        },
+        {
+          "paper_id": 25228,
+          "title": "Endocannabinoid Levels in Ulcerative Colitis Patients Correlate With Clinical Pa",
+          "content_tier": "pdf_extracted",
+          "scope_key": "node2a",
+          "disagreements": {
+            "study_type": "value_mismatch",
+            "outcome_domain": "value_mismatch",
+            "sample_size": "value_mismatch",
+            "duration_days": "claude_only_populated",
+            "dose_mg": "claude_only_populated",
+            "thc_pct": "claude_only_populated",
+            "administration_frequency": "maude_only_populated"
+          }
+        },
+        {
+          "paper_id": 26272,
+          "title": "Cannabinoid receptor CNR1 expression and DNA methylation in human prefrontal cor",
+          "content_tier": "pdf_extracted",
+          "scope_key": "node2a",
+          "disagreements": {
+            "cannabis_type": "value_mismatch",
+            "sample_size": "value_mismatch",
+            "administration_frequency": "maude_only_populated"
+          }
+        },
+        {
+          "paper_id": 26358,
+          "title": "Cerebrospinal fluid endocannabinoid levels in Gilles de la Tourette syndrome",
+          "content_tier": "pdf_extracted",
+          "scope_key": "node2a",
+          "disagreements": {
+            "cannabis_type": "value_mismatch",
+            "outcome_domain": "value_mismatch"
+          }
+        },
+        {
+          "paper_id": 27862,
+          "title": "Schizophrenia and depression, two poles of endocannabinoid system deregulation",
+          "content_tier": "pdf_extracted",
+          "scope_key": "node2a",
+          "disagreements": {
+            "study_type": "value_mismatch",
+            "exposure_method": "value_mismatch",
+            "cannabis_type": "value_mismatch"
+          }
+        },
+        {
+          "paper_id": 30797,
+          "title": "Cerebrospinal fluid anandamide levels, cannabis use and psychotic-like symptoms",
+          "content_tier": "pdf_extracted",
+          "scope_key": "node2a",
+          "disagreements": {
+            "cannabis_type": "value_mismatch",
+            "outcome_domain": "value_mismatch",
+            "sample_size": "value_mismatch"
+          }
+        },
+        {
+          "paper_id": 30871,
+          "title": "THC reduces the anticipatory nucleus accumbens response to reward in subjects wi",
+          "content_tier": "pdf_extracted",
+          "scope_key": "node2a",
+          "disagreements": {
+            "sample_size": "value_mismatch",
+            "duration_days": "maude_only_populated",
+            "dose_mg": "claude_only_populated",
+            "administration_frequency": "claude_only_populated",
+            "inhaled_exposure_duration": "claude_only_populated"
+          }
+        }
+      ]
+    },
+    "node2b": {
+      "subnode": "node2b",
+      "batch_id": "node2b_calibration_20260622_200722_248",
+      "paper_count": 10,
+      "alignment_pct": 66.2,
+      "optional_strain_recall_pct": 0.0,
+      "tier_counts": {
+        "pdf_extracted": 10
+      },
+      "top_alignment_disagrees": [
+        [
+          "exposure_method",
+          10
+        ],
+        [
+          "cannabis_type",
+          9
+        ],
+        [
+          "duration_days",
+          8
+        ],
+        [
+          "administration_frequency",
+          7
+        ],
+        [
+          "cbd_mg_kg",
+          5
+        ],
+        [
+          "cbd_pct",
+          2
+        ],
+        [
+          "dose_mg",
+          1
+        ],
+        [
+          "thc_mg_kg",
+          1
+        ],
+        [
+          "study_type",
+          1
+        ],
+        [
+          "outcome_domain",
+          1
+        ]
+      ],
+      "top_full_scope_disagrees": [
+        [
+          "exposure_method",
+          10
+        ],
+        [
+          "cannabis_type",
+          9
+        ],
+        [
+          "strain_reported",
+          9
+        ],
+        [
+          "duration_days",
+          8
+        ],
+        [
+          "administration_frequency",
+          7
+        ],
+        [
+          "cbd_mg_kg",
+          5
+        ],
+        [
+          "cbd_pct",
+          2
+        ],
+        [
+          "dose_mg",
+          1
+        ],
+        [
+          "thc_mg_kg",
+          1
+        ],
+        [
+          "study_type",
+          1
+        ]
+      ],
+      "disagreement_types": {
+        "claude_only_populated": 44,
+        "value_mismatch": 2,
+        "maude_only_populated": 1
+      },
+      "counterfactual": {
+        "alignment_pct_current": 66.2,
+        "if_exposure_method_fixed_upper_bound": 70.5,
+        "if_cannabis_type_fixed_upper_bound": 70.1,
+        "if_duration_days_fixed_upper_bound": 69.7,
+        "if_administration_frequency_fixed_upper_bound": 69.2,
+        "if_cbd_mg_kg_fixed_upper_bound": 68.4,
+        "if_cbd_pct_fixed_upper_bound": 67.1,
+        "if_dose_mg_fixed_upper_bound": 66.6,
+        "if_thc_mg_kg_fixed_upper_bound": 66.6
+      },
+      "sample_papers": [
+        {
+          "paper_id": 11824,
+          "title": "Cannabidiol may prevent the development of congestive hepatopathy secondary to r",
+          "content_tier": "pdf_extracted",
+          "scope_key": "node7_in_vivo.7c",
+          "disagreements": {
+            "exposure_method": "claude_only_populated",
+            "cannabis_type": "claude_only_populated",
+            "cbd_mg_kg": "claude_only_populated",
+            "duration_days": "claude_only_populated",
+            "administration_frequency": "claude_only_populated"
+          }
+        },
+        {
+          "paper_id": 11988,
+          "title": "Diclofenac and dexamethasone modulate the effect of cannabidiol on the rat colon",
+          "content_tier": "pdf_extracted",
+          "scope_key": "node7_in_vivo.7c",
+          "disagreements": {
+            "exposure_method": "claude_only_populated",
+            "cannabis_type": "claude_only_populated"
+          }
+        },
+        {
+          "paper_id": 12689,
+          "title": "Cannabidiol improves muscular lipid profile by affecting the expression of fatty",
+          "content_tier": "pdf_extracted",
+          "scope_key": "node7_in_vivo.7c",
+          "disagreements": {
+            "exposure_method": "claude_only_populated",
+            "cannabis_type": "claude_only_populated",
+            "cbd_mg_kg": "claude_only_populated",
+            "duration_days": "claude_only_populated",
+            "administration_frequency": "claude_only_populated"
+          }
+        },
+        {
+          "paper_id": 12697,
+          "title": "Cannabidiol improves haloperidol-induced motor dysfunction in zebrafish: a compa",
+          "content_tier": "pdf_extracted",
+          "scope_key": "node7_in_vivo.7d",
+          "disagreements": {
+            "exposure_method": "claude_only_populated",
+            "cannabis_type": "claude_only_populated"
+          }
+        },
+        {
+          "paper_id": 13048,
+          "title": "Cannabinoid receptor 2 (Cb2r) mediates cannabinol (CBN) induced developmental de",
+          "content_tier": "pdf_extracted",
+          "scope_key": "node7_in_vivo.7d",
+          "disagreements": {
+            "exposure_method": "claude_only_populated",
+            "cannabis_type": "claude_only_populated",
+            "duration_days": "claude_only_populated",
+            "administration_frequency": "claude_only_populated"
+          }
+        },
+        {
+          "paper_id": 13089,
+          "title": "Effects of cannabidiol on vacuous chewing movements, plasma glucose and oxidativ",
+          "content_tier": "pdf_extracted",
+          "scope_key": "node7_in_vivo.7d",
+          "disagreements": {
+            "exposure_method": "claude_only_populated",
+            "cannabis_type": "claude_only_populated",
+            "cbd_mg_kg": "claude_only_populated",
+            "duration_days": "claude_only_populated",
+            "administration_frequency": "claude_only_populated"
+          }
+        },
+        {
+          "paper_id": 13570,
+          "title": "Effects of chronic cannabidiol in a mouse model of naturally occurring neuroinfl",
+          "content_tier": "pdf_extracted",
+          "scope_key": "node7_in_vivo.7d",
+          "disagreements": {
+            "exposure_method": "value_mismatch",
+            "cbd_mg_kg": "claude_only_populated",
+            "dose_mg": "maude_only_populated",
+            "duration_days": "claude_only_populated",
+            "administration_frequency": "claude_only_populated"
+          }
+        },
+        {
+          "paper_id": 13666,
+          "title": "THC and CBD affect metabolic syndrome parameters including microbiome in mice fe",
+          "content_tier": "pdf_extracted",
+          "scope_key": "node7_in_vivo.7d",
+          "disagreements": {
+            "exposure_method": "claude_only_populated",
+            "cannabis_type": "claude_only_populated",
+            "thc_mg_kg": "claude_only_populated",
+            "cbd_mg_kg": "claude_only_populated",
+            "duration_days": "claude_only_populated",
+            "administration_frequency": "claude_only_populated"
+          }
+        },
+        {
+          "paper_id": 14114,
+          "title": "Effects of short-term environmental stresses on the onset of cannabinoid product",
+          "content_tier": "pdf_extracted",
+          "scope_key": "node2b",
+          "disagreements": {
+            "study_type": "value_mismatch",
+            "exposure_method": "claude_only_populated",
+            "cannabis_type": "claude_only_populated",
+            "outcome_domain": "claude_only_populated",
+            "sample_size": "claude_only_populated",
+            "cbd_pct": "claude_only_populated",
+            "duration_days": "claude_only_populated"
+          }
+        },
+        {
+          "paper_id": 14313,
+          "title": "UV induced changes in proteome of rats plasma are reversed by dermally applied c",
+          "content_tier": "pdf_extracted",
+          "scope_key": "node7_in_vivo.7c",
+          "disagreements": {
+            "exposure_method": "claude_only_populated",
+            "cannabis_type": "claude_only_populated",
+            "cbd_mg_g": "claude_only_populated",
+            "cbd_pct": "claude_only_populated",
+            "duration_days": "claude_only_populated",
+            "administration_frequency": "claude_only_populated"
+          }
+        }
+      ]
+    },
+    "node2c": {
+      "subnode": "node2c",
+      "batch_id": "node2c_calibration_20260622_201423_837",
+      "paper_count": 10,
+      "alignment_pct": 86.7,
+      "optional_strain_recall_pct": 7.7,
+      "tier_counts": {
+        "pdf_extracted": 10
+      },
+      "top_alignment_disagrees": [
+        [
+          "treatment_duration",
+          5
+        ],
+        [
+          "cbd_mg_ml",
+          3
+        ],
+        [
+          "exposure_method",
+          3
+        ],
+        [
+          "outcome_domain",
+          2
+        ],
+        [
+          "cbd_pct",
+          1
+        ],
+        [
+          "cannabis_type",
+          1
+        ],
+        [
+          "inhaled_exposure_duration",
+          1
+        ]
+      ],
+      "top_full_scope_disagrees": [
+        [
+          "strain_reported",
+          9
+        ],
+        [
+          "treatment_duration",
+          5
+        ],
+        [
+          "cbd_mg_ml",
+          3
+        ],
+        [
+          "exposure_method",
+          3
+        ],
+        [
+          "outcome_domain",
+          2
+        ],
+        [
+          "cbd_pct",
+          1
+        ],
+        [
+          "cannabis_type",
+          1
+        ],
+        [
+          "inhaled_exposure_duration",
+          1
+        ]
+      ],
+      "disagreement_types": {
+        "claude_only_populated": 9,
+        "value_mismatch": 6,
+        "maude_only_populated": 1
+      },
+      "counterfactual": {
+        "alignment_pct_current": 86.7,
+        "if_treatment_duration_fixed_upper_bound": 91.2,
+        "if_cbd_mg_ml_fixed_upper_bound": 89.4,
+        "if_exposure_method_fixed_upper_bound": 89.4,
+        "if_outcome_domain_fixed_upper_bound": 88.5,
+        "if_cbd_pct_fixed_upper_bound": 87.6,
+        "if_cannabis_type_fixed_upper_bound": 87.6,
+        "if_inhaled_exposure_duration_fixed_upper_bound": 87.6
+      },
+      "sample_papers": [
+        {
+          "paper_id": 11539,
+          "title": "Dental pulp stem cells-derived cannabidiol-treated organoid-like microspheroids ",
+          "content_tier": "pdf_extracted",
+          "scope_key": "node7_in_vitro.7c",
+          "disagreements": {
+            "cbd_mg_ml": "claude_only_populated",
+            "treatment_duration": "value_mismatch"
+          }
+        },
+        {
+          "paper_id": 11893,
+          "title": "High Concentrations of Cannabidiol Induce Neurotoxicity in Neurosphere Culture S",
+          "content_tier": "pdf_extracted",
+          "scope_key": "node7_in_vitro.7c",
+          "disagreements": {
+            "cbd_pct": "maude_only_populated",
+            "outcome_domain": "value_mismatch"
+          }
+        },
+        {
+          "paper_id": 11988,
+          "title": "Diclofenac and dexamethasone modulate the effect of cannabidiol on the rat colon",
+          "content_tier": "pdf_extracted",
+          "scope_key": "node7_in_vitro.7c",
+          "disagreements": {
+            "exposure_method": "value_mismatch",
+            "treatment_duration": "claude_only_populated"
+          }
+        },
+        {
+          "paper_id": 12681,
+          "title": "Efficient controlled release of cannabinoids loaded in \u03b3-CD-MOFs and DPPC liposo",
+          "content_tier": "pdf_extracted",
+          "scope_key": "node7_in_vitro.7c",
+          "disagreements": {
+            "cbd_mg_ml": "claude_only_populated",
+            "treatment_duration": "value_mismatch"
+          }
+        },
+        {
+          "paper_id": 13088,
+          "title": "Effect of temperature in the degradation of cannabinoids: From a brief residence",
+          "content_tier": "pdf_extracted",
+          "scope_key": "node7_in_vitro.7c",
+          "disagreements": {
+            "treatment_duration": "value_mismatch"
+          }
+        },
+        {
+          "paper_id": 13718,
+          "title": "Extraction of Bioactive Compounds From Cannabis sativa L. Flowers and/or Leaves ",
+          "content_tier": "pdf_extracted",
+          "scope_key": "node7_in_vitro.7c",
+          "disagreements": {
+            "exposure_method": "claude_only_populated",
+            "cannabis_type": "claude_only_populated",
+            "treatment_duration": "claude_only_populated",
+            "outcome_domain": "claude_only_populated"
+          }
+        },
+        {
+          "paper_id": 14911,
+          "title": "CBD, a precursor of THC in e-cigarettes",
+          "content_tier": "pdf_extracted",
+          "scope_key": "node7_in_vitro.7b",
+          "disagreements": {
+            "exposure_method": "value_mismatch",
+            "cbd_mg_ml": "claude_only_populated",
+            "inhaled_exposure_duration": "claude_only_populated"
+          }
+        }
+      ]
+    }
+  }
+}

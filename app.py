@@ -8,6 +8,7 @@ from datetime import datetime, date
 from pathlib import Path
 from functools import wraps
 from flask import Flask, render_template, request, jsonify, session, redirect, url_for, send_file
+from dashboard_ui_config import build_dashboard_ui_config
 import random
 import smtplib
 import requests
@@ -117,6 +118,7 @@ def daily_harvest_scheduler():
     import time
 
     import scheduled_jobs
+    import maude_reingest_watchdog
 
     sched_logger = logging.getLogger("scheduler")
     sched_logger.info("Daily background scheduler thread starting...")
@@ -134,6 +136,7 @@ def daily_harvest_scheduler():
     while True:
         try:
             scheduled_jobs.run_due_jobs(db)
+            maude_reingest_watchdog.run_watchdog(db)
 
             current_hour = datetime.now().hour
             if last_harvest_check_hour != current_hour:
@@ -583,7 +586,16 @@ def logout():
 @app.route("/")
 def index():
     """Serves the Single-Page Application dynamic research dashboard."""
-    return render_template("index.html", admin_emails_list=list(ADMIN_EMAILS))
+    return render_template(
+        "index.html",
+        admin_emails_list=list(ADMIN_EMAILS),
+        dashboard_config=build_dashboard_ui_config(),
+    )
+
+@app.route("/api/dashboard-config", methods=["GET"])
+def api_dashboard_config():
+    """Return tab and filter profile configuration for the research dashboard."""
+    return jsonify(build_dashboard_ui_config())
 
 @app.route("/api/tab-counts", methods=["GET"])
 def api_tab_counts():
@@ -617,10 +629,37 @@ def api_search():
     cannabis_type = request.args.get("cannabis_type")
     claude_classified = request.args.get("claude_classified")
     classification_level = request.args.get("classification_level")
+    publication_type = request.args.get("publication_type")
+    publication_type_logic = request.args.get("publication_type_logic", "or")
     cannabis_logic = request.args.get("cannabis_logic", "or")
     method_logic = request.args.get("method_logic", "or")
     outcome_logic = request.args.get("outcome_logic", "or")
     study_logic = request.args.get("study_logic", "or")
+    sample_size_min = request.args.get("sample_size_min")
+    sample_size_max = request.args.get("sample_size_max")
+    dose_mg_min = request.args.get("dose_mg_min")
+    dose_mg_max = request.args.get("dose_mg_max")
+    duration_days_min = request.args.get("duration_days_min")
+    duration_days_max = request.args.get("duration_days_max")
+    thc_mg_kg_min = request.args.get("thc_mg_kg_min")
+    thc_mg_kg_max = request.args.get("thc_mg_kg_max")
+    cbd_mg_kg_min = request.args.get("cbd_mg_kg_min")
+    cbd_mg_kg_max = request.args.get("cbd_mg_kg_max")
+    thc_mg_ml_min = request.args.get("thc_mg_ml_min")
+    thc_mg_ml_max = request.args.get("thc_mg_ml_max")
+    cbd_mg_ml_min = request.args.get("cbd_mg_ml_min")
+    cbd_mg_ml_max = request.args.get("cbd_mg_ml_max")
+    thc_uM_min = request.args.get("thc_uM_min")
+    thc_uM_max = request.args.get("thc_uM_max")
+    cbd_uM_min = request.args.get("cbd_uM_min")
+    cbd_uM_max = request.args.get("cbd_uM_max")
+    puff_count_min = request.args.get("puff_count_min")
+    species = request.args.get("species")
+    exposure_regimen_bin = request.args.get("exposure_regimen_bin")
+    cbd_min = request.args.get("cbd_min")
+    cbd_max = request.args.get("cbd_max")
+    has_pdf = request.args.get("has_pdf")
+    has_full_text = request.args.get("has_full_text")
     
     page = request.args.get("page", 1)
     limit = request.args.get("limit", 50)
@@ -664,16 +703,46 @@ def api_search():
         clean_filters["citations_min"] = int(citations_min)
     if tab:
         clean_filters["tab"] = tab
-    elif recent and recent.lower() == "true":
-        clean_filters["tab"] = "recent"
     if recent_range:
         clean_filters["recent_range"] = recent_range
+    elif recent and recent.lower() == "true":
+        clean_filters["recent"] = True
     if cannabis_type and cannabis_type != "ALL":
         clean_filters["cannabis_type"] = cannabis_type
     if claude_classified:
         clean_filters["claude_classified"] = claude_classified == "true"
     if classification_level and classification_level != "ALL":
         clean_filters["classification_level"] = classification_level
+    if publication_type and publication_type != "ALL":
+        clean_filters["publication_type"] = publication_type
+        clean_filters["publication_type_logic"] = publication_type_logic
+
+    _FLOAT_FILTER_KEYS = (
+        "sample_size_min", "sample_size_max",
+        "dose_mg_min", "dose_mg_max",
+        "duration_days_min", "duration_days_max",
+        "thc_mg_kg_min", "thc_mg_kg_max",
+        "cbd_mg_kg_min", "cbd_mg_kg_max",
+        "thc_mg_ml_min", "thc_mg_ml_max",
+        "cbd_mg_ml_min", "cbd_mg_ml_max",
+        "thc_uM_min", "thc_uM_max",
+        "cbd_uM_min", "cbd_uM_max",
+        "puff_count_min",
+        "cbd_min", "cbd_max",
+    )
+    _local_vars = locals()
+    for key in _FLOAT_FILTER_KEYS:
+        raw = _local_vars.get(key)
+        if raw is not None and raw != "":
+            clean_filters[key] = float(raw)
+    if species:
+        clean_filters["species"] = species
+    if exposure_regimen_bin:
+        clean_filters["exposure_regimen_bin"] = exposure_regimen_bin
+    if has_pdf and has_pdf.lower() in ("true", "1", "yes"):
+        clean_filters["has_pdf"] = True
+    if has_full_text and has_full_text.lower() in ("true", "1", "yes"):
+        clean_filters["has_full_text"] = True
         
     clean_filters["cannabis_logic"] = cannabis_logic
     clean_filters["exposure_logic"] = method_logic

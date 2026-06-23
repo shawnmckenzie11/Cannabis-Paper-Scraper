@@ -23,6 +23,17 @@ _HTML_TAG_RE = re.compile(r"<(script|style)[^>]*>.*?</\1>", re.IGNORECASE | re.D
 _HTML_STRIP_RE = re.compile(r"<[^>]+>")
 
 
+def has_direct_pdf_link(full_text_link: Optional[str]) -> bool:
+    """Returns True when the link is a non-PubMed-landing URL suitable for PDF fetch."""
+    link = (full_text_link or "").strip()
+    return bool(link) and not _PUBMED_LANDING_RE.search(link)
+
+
+def has_pmc_lookup_ids(*, pmid: Optional[str] = None, doi: Optional[str] = None) -> bool:
+    """Returns True when Europe PMC full-text lookup identifiers are present."""
+    return bool((pmid or "").strip() or (doi or "").strip())
+
+
 def load_pdf_full_text(
     full_text_link: Optional[str],
     *,

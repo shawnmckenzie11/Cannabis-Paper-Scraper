@@ -97,12 +97,15 @@
             line-height: 1.6;
             overflow: hidden;
             height: 100vh;
+            display: flex;
+            flex-direction: column;
         }
 
         /* --- Layout --- */
         .app-container {
             display: flex;
-            height: calc(100vh - 130px);
+            flex: 1;
+            min-height: 0;
             position: relative;
             overflow: hidden;
         }
@@ -158,16 +161,22 @@
             flex-shrink: 0;
             background: rgba(10, 12, 19, 0.85);
             border-right: 1px solid var(--card-border);
+            display: flex;
+            flex-direction: column;
+            min-height: 0;
+            backdrop-filter: blur(20px);
+            z-index: 10;
+            overflow: hidden;
+        }
+
+        .sidebar-filters-body {
+            flex: 1;
+            min-height: 0;
+            overflow-y: auto;
             padding: 24px;
             display: flex;
             flex-direction: column;
             gap: 20px;
-            backdrop-filter: blur(20px);
-            position: sticky;
-            top: 130px;
-            height: calc(100vh - 130px);
-            overflow-y: auto;
-            z-index: 10;
         }
 
         /* --- Main Content --- */
@@ -177,8 +186,19 @@
             display: flex;
             flex-direction: column;
             min-width: 0;
-            height: 100%;
-            overflow-y: auto;
+            min-height: 0;
+            overflow: hidden;
+        }
+
+        .database-table-section {
+            flex: 1;
+            min-height: 0;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .pagination-bar {
+            flex-shrink: 0;
         }
 
         /* --- Header Actions --- */
@@ -819,10 +839,79 @@
             box-shadow: 0 0 10px rgba(0, 240, 255, 0.3);
         }
 
-        /* --- Tabs --- */
+        /* --- Global filters + tabs --- */
+        .global-filters-bar {
+            flex-shrink: 0;
+            z-index: 91;
+            background: rgba(10, 14, 24, 0.97);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+            backdrop-filter: blur(20px);
+            padding: 12px 30px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px 20px;
+            align-items: flex-end;
+        }
+
+        .global-filters-bar .global-filter-field {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            min-width: 0;
+        }
+
+        .global-filters-bar .global-filter-field label {
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.4px;
+        }
+
+        .global-filters-bar .global-filter-field input[type="text"],
+        .global-filters-bar .global-filter-field select {
+            padding: 8px 12px;
+            border-radius: 8px;
+            background: rgba(15, 23, 42, 0.6);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            color: var(--text-primary);
+            font-family: 'Outfit', sans-serif;
+            font-size: 0.85rem;
+            outline: none;
+        }
+
+        .global-filters-bar .global-filter-search {
+            flex: 1 1 220px;
+            max-width: 360px;
+        }
+
+        .global-filters-bar .global-filter-select {
+            flex: 0 1 220px;
+        }
+
+        .global-filters-bar .global-filter-checks {
+            display: flex;
+            gap: 14px;
+            align-items: center;
+            padding-bottom: 8px;
+            flex: 0 0 auto;
+        }
+
+        .global-filters-bar .global-filter-checks label {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 0.85rem;
+            font-weight: 500;
+            color: var(--text-primary);
+            text-transform: none;
+            letter-spacing: normal;
+            cursor: pointer;
+            white-space: nowrap;
+        }
+
         .tabs-container {
-            position: sticky;
-            top: 70px;
+            flex-shrink: 0;
             z-index: 90;
             min-height: 60px;
             height: auto;
@@ -1001,18 +1090,90 @@
         }
 
         .sidebar-sticky-footer {
-            position: sticky;
-            bottom: -24px;
-            margin-top: 20px;
-            background: rgba(10, 12, 19, 0.95);
+            flex-shrink: 0;
+            background: rgba(10, 12, 19, 0.98);
             backdrop-filter: blur(10px);
-            padding: 15px 0 24px 0;
-            border-top: 1px solid rgba(255, 255, 255, 0.05);
-            margin-left: -24px;
-            margin-right: -24px;
-            padding-left: 24px;
-            padding-right: 24px;
-            z-index: 10;
+            padding: 15px 24px 20px;
+            border-top: 1px solid rgba(255, 255, 255, 0.08);
+            z-index: 11;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .sidebar-action-btn {
+            width: 100%;
+            padding: 10px 14px;
+            font-size: 0.85rem;
+            border-radius: 8px;
+            font-family: var(--font-display);
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+        }
+
+        .sidebar-action-btn.analyze-btn {
+            background: linear-gradient(135deg, rgba(0, 240, 255, 0.2) 0%, rgba(0, 240, 255, 0.05) 100%);
+            border: 1px solid rgba(0, 240, 255, 0.3);
+            color: var(--accent-blue);
+            box-shadow: 0 0 10px rgba(0, 240, 255, 0.1);
+        }
+
+        /* --- Column editor modal --- */
+        .column-editor-modal-panel {
+            max-width: 720px;
+            width: 92%;
+            max-height: 85vh;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            padding: 24px;
+            border-radius: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            background: rgba(15, 20, 32, 0.98);
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.6);
+        }
+
+        .column-editor-modal-body {
+            overflow-y: auto;
+            padding-right: 4px;
+            display: flex;
+            flex-direction: column;
+            gap: 18px;
+        }
+
+        .column-editor-group {
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 12px;
+            padding: 14px 16px;
+            background: rgba(255, 255, 255, 0.02);
+        }
+
+        .column-editor-group-title {
+            font-family: var(--font-display);
+            font-size: 0.8rem;
+            font-weight: 700;
+            letter-spacing: 0.04em;
+            text-transform: uppercase;
+            color: var(--accent-blue);
+            margin-bottom: 10px;
+        }
+
+        .column-editor-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+            gap: 8px 14px;
+        }
+
+        .column-editor-grid label {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.85rem;
+            cursor: pointer;
+            color: var(--text-primary);
         }
 
         /* --- Compact & Premium Properties Panel for Details Drawer --- */
@@ -1407,108 +1568,43 @@
         </div>
     </header>
 
+    <!-- GLOBAL FILTERS (§5.1 bibliographic only — see dashboard_ui_config.GLOBAL_FILTER_CONTROLS) -->
+    <div class="global-filters-bar" id="global-filters-bar">
+        <div class="global-filter-field global-filter-search">
+            <label for="filter-query">Search Articles</label>
+            <input type="text" id="filter-query" placeholder="Title, abstract, author, journal, PMID, DOI..."
+                oninput="debounceSearch()">
+        </div>
+        <div class="global-filter-field global-filter-select">
+            <label for="filter-recent-range">Recently Harvested</label>
+            <select id="filter-recent-range" onchange="triggerGlobalFilterSearch()">
+                <option value="">All harvest dates</option>
+                <option value="today">Harvested today</option>
+                <option value="week">Harvested this week</option>
+                <option value="month">Harvested this month</option>
+                <option value="180d">Last 180 days / current year</option>
+            </select>
+        </div>
+        <div class="global-filter-checks">
+            <label><input type="checkbox" id="filter-has-pdf" onchange="triggerGlobalFilterSearch()"> PDF</label>
+            <label><input type="checkbox" id="filter-has-full-text" onchange="triggerGlobalFilterSearch()"> Full Text</label>
+        </div>
+    </div>
+
     <!-- FULL PAGE WIDTH TABS -->
     <div class="tabs-container" id="global-tabs-container">
         <div style="display: flex; gap: 10px 15px; align-items: center; flex-wrap: wrap;">
-            <button class="tab-btn active" id="tab-preclinical" onclick="switchTab('preclinical')">Pre-Clinical Studies</button>
-            <button class="tab-btn" id="tab-clinical" onclick="switchTab('clinical')">Clinical Studies</button>
-            <button class="tab-btn" id="tab-tangential" onclick="switchTab('tangential')">Tangential</button>
-            <button class="tab-btn" id="tab-unclassified-preclinical" onclick="switchTab('unclassified_preclinical')">Unclassified Pre-Clinical</button>
+            <button class="tab-btn active" id="tab-all-original" onclick="switchTab('all_original')">All Original Research</button>
+            <button class="tab-btn" id="tab-preclinical" onclick="switchTab('preclinical')">Pre-Clinical</button>
+            <button class="tab-btn" id="tab-clinical" onclick="switchTab('clinical')">Clinical</button>
             <button class="tab-btn" id="tab-review" onclick="switchTab('review')">Reviews &amp; Meta-Analyses</button>
-            <button class="tab-btn" id="tab-recent" onclick="switchTab('recent')">Recents</button>
+            <button class="tab-btn" id="tab-unclassified" onclick="switchTab('unclassified')">Unclassified</button>
         </div>
         <div style="display: flex; gap: 10px; align-items: center;">
-            <select id="recents-timeframe" onchange="triggerSearch(true)" class="timeframe-select"
-                style="display: none;">
-                <option value="today">New Today</option>
-                <option value="week" selected>New This Week</option>
-                <option value="month">New This Month</option>
-            </select>
-
-            <button type="button" class="btn" id="btn-analyze-subset" onclick="analyzeFilteredSubset()"
+            <button type="button" class="btn" id="edit-columns-btn" onclick="openColumnEditorModal(event)"
                 style="padding: 6px 14px; font-size: 0.85rem; border-radius: 8px; font-family: var(--font-display); background: linear-gradient(135deg, rgba(0, 240, 255, 0.2) 0%, rgba(0, 240, 255, 0.05) 100%); border: 1px solid rgba(0, 240, 255, 0.3); color: var(--accent-blue); cursor: pointer; box-shadow: 0 0 10px rgba(0, 240, 255, 0.1); display: inline-flex; align-items: center; gap: 6px;">
-                📊 Analyze Filtered Articles
+                ⚙️ Edit Columns
             </button>
-
-            <div style="position: relative; display: inline-block;">
-                <button type="button" class="btn" id="edit-columns-btn" onclick="toggleColumnEditor(event)"
-                    style="padding: 6px 14px; font-size: 0.85rem; border-radius: 8px; font-family: var(--font-display); background: linear-gradient(135deg, rgba(0, 240, 255, 0.2) 0%, rgba(0, 240, 255, 0.05) 100%); border: 1px solid rgba(0, 240, 255, 0.3); color: var(--accent-blue); cursor: pointer; box-shadow: 0 0 10px rgba(0, 240, 255, 0.1); display: inline-flex; align-items: center; gap: 6px;">
-                    ⚙️ Edit Columns
-                </button>
-
-                <!-- Popover dynamic column editor -->
-                <div id="column-editor-popover" class="glass-panel" 
-                    style="display: none; position: absolute; right: 0; top: 100%; margin-top: 8px; z-index: 100; width: 220px; padding: 15px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); border-color: rgba(255,255,255,0.1); background: rgba(15, 20, 32, 0.95); flex-direction: column; gap: 10px; border-radius: 12px;">
-                    <div style="font-weight: 700; font-size: 0.9rem; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 8px; margin-bottom: 4px; display: flex; justify-content: space-between; align-items: center;">
-                        <span>Display Columns</span>
-                    </div>
-                    <div style="display: flex; flex-direction: column; gap: 8px; max-height: 250px; overflow-y: auto; padding-right: 4px;">
-                        <label style="display: flex; align-items: center; gap: 8px; font-size: 0.85rem; cursor: pointer; color: var(--text-primary);">
-                            <input type="checkbox" id="col-cb-duration" checked onchange="toggleColumn('duration')"> Duration
-                        </label>
-                        <label style="display: flex; align-items: center; gap: 8px; font-size: 0.85rem; cursor: pointer; color: var(--text-primary);">
-                            <input type="checkbox" id="col-cb-treatment_duration" onchange="toggleColumn('treatment_duration')"> Treatment Duration
-                        </label>
-                        <label style="display: flex; align-items: center; gap: 8px; font-size: 0.85rem; cursor: pointer; color: var(--text-primary);">
-                            <input type="checkbox" id="col-cb-year" checked onchange="toggleColumn('year')"> Year
-                        </label>
-                        <label style="display: flex; align-items: center; gap: 8px; font-size: 0.85rem; cursor: pointer; color: var(--text-primary);">
-                            <input type="checkbox" id="col-cb-study_type" checked onchange="toggleColumn('study_type')"> Study Design
-                        </label>
-                        <label style="display: flex; align-items: center; gap: 8px; font-size: 0.85rem; cursor: pointer; color: var(--text-primary);">
-                            <input type="checkbox" id="col-cb-exposure_method" checked onchange="toggleColumn('exposure_method')"> Exposure
-                        </label>
-                        <label style="display: flex; align-items: center; gap: 8px; font-size: 0.85rem; cursor: pointer; color: var(--text-primary);">
-                            <input type="checkbox" id="col-cb-cannabis_type" onchange="toggleColumn('cannabis_type')"> Cannabis Type
-                        </label>
-                        <label style="display: flex; align-items: center; gap: 8px; font-size: 0.85rem; cursor: pointer; color: var(--text-primary);">
-                            <input type="checkbox" id="col-cb-outcome_domain" onchange="toggleColumn('outcome_domain')"> Outcome Domain
-                        </label>
-                        <label style="display: flex; align-items: center; gap: 8px; font-size: 0.85rem; cursor: pointer; color: var(--text-primary);">
-                            <input type="checkbox" id="col-cb-dose_mg" onchange="toggleColumn('dose_mg')"> Dose (mg)
-                        </label>
-                        <label style="display: flex; align-items: center; gap: 8px; font-size: 0.85rem; cursor: pointer; color: var(--text-primary);">
-                            <input type="checkbox" id="col-cb-puff_count" onchange="toggleColumn('puff_count')"> Puff Count
-                        </label>
-                        <label style="display: flex; align-items: center; gap: 8px; font-size: 0.85rem; cursor: pointer; color: var(--text-primary);">
-                            <input type="checkbox" id="col-cb-admin_frequency" onchange="toggleColumn('admin_frequency')"> Admin Freq
-                        </label>
-                        <label style="display: flex; align-items: center; gap: 8px; font-size: 0.85rem; cursor: pointer; color: var(--text-primary);">
-                            <input type="checkbox" id="col-cb-thc_mg_ml" onchange="toggleColumn('thc_mg_ml')"> THC (mg/mL)
-                        </label>
-                        <label style="display: flex; align-items: center; gap: 8px; font-size: 0.85rem; cursor: pointer; color: var(--text-primary);">
-                            <input type="checkbox" id="col-cb-cbd_mg_ml" onchange="toggleColumn('cbd_mg_ml')"> CBD (mg/mL)
-                        </label>
-                        <label style="display: flex; align-items: center; gap: 8px; font-size: 0.85rem; cursor: pointer; color: var(--text-primary);">
-                            <input type="checkbox" id="col-cb-thc_mg_kg" onchange="toggleColumn('thc_mg_kg')"> THC (mg/kg)
-                        </label>
-                        <label style="display: flex; align-items: center; gap: 8px; font-size: 0.85rem; cursor: pointer; color: var(--text-primary);">
-                            <input type="checkbox" id="col-cb-cbd_mg_kg" onchange="toggleColumn('cbd_mg_kg')"> CBD (mg/kg)
-                        </label>
-                        <label style="display: flex; align-items: center; gap: 8px; font-size: 0.85rem; cursor: pointer; color: var(--text-primary);">
-                            <input type="checkbox" id="col-cb-thc_uM" onchange="toggleColumn('thc_uM')"> THC (µM)
-                        </label>
-                        <label style="display: flex; align-items: center; gap: 8px; font-size: 0.85rem; cursor: pointer; color: var(--text-primary);">
-                            <input type="checkbox" id="col-cb-cbd_uM" onchange="toggleColumn('cbd_uM')"> CBD (µM)
-                        </label>
-                        <label style="display: flex; align-items: center; gap: 8px; font-size: 0.85rem; cursor: pointer; color: var(--text-primary);">
-                            <input type="checkbox" id="col-cb-strain_reported" onchange="toggleColumn('strain_reported')"> Reported Strain
-                        </label>
-                        <label style="display: flex; align-items: center; gap: 8px; font-size: 0.85rem; cursor: pointer; color: var(--text-primary);">
-                            <input type="checkbox" id="col-cb-strain_normalized" onchange="toggleColumn('strain_normalized')"> Normalized Strain
-                        </label>
-                        <label id="col-label-pub-type" style="display: none; align-items: center; gap: 8px; font-size: 0.85rem; cursor: pointer; color: var(--text-primary);">
-                            <input type="checkbox" id="col-cb-publication_type" checked onchange="toggleColumn('publication_type')"> Pub Type
-                        </label>
-                        <label style="display: flex; align-items: center; gap: 8px; font-size: 0.85rem; cursor: pointer; color: var(--text-primary);">
-                            <input type="checkbox" id="col-cb-citations" checked onchange="toggleColumn('citations')"> Citations
-                        </label>
-                        <label style="display: flex; align-items: center; gap: 8px; font-size: 0.85rem; cursor: pointer; color: var(--text-primary);">
-                            <input type="checkbox" id="col-cb-links" checked onchange="toggleColumn('links')"> Links
-                        </label>
-                    </div>
-                </div>
-            </div>
         </div>
     </div>
 
@@ -1517,18 +1613,17 @@
         <!-- SIDEBAR QUERY CONTROLS -->
         <aside class="sidebar">
 
-            <!-- Filters Form -->
-            <form id="filters-form" onsubmit="event.preventDefault(); triggerSearch();">
+            <!-- Filters Form (scrollable; reset button pinned below) -->
+            <form id="filters-form" class="sidebar-filters-body" onsubmit="event.preventDefault(); triggerSearch();">
 
-                <div class="form-group" style="margin-bottom: 12px;">
-                    <label for="filter-query">Search Original Articles</label>
-                    <input type="text" id="filter-query" placeholder="e.g. pain, anxiety, author name..."
-                        oninput="debounceSearch()">
+                <div data-filter-section="classification_details all_original preclinical clinical review unclassified">
+                <div class="filter-header-row">
+                    <div class="filter-header">Classification Details</div>
                 </div>
-
                 <div class="form-group" style="margin-bottom: 15px;">
-                    <label for="filter-classification-level" style="font-size: 0.8rem; font-weight: 600; margin-bottom: 6px; display: block; color: var(--text-secondary);">Classification Model</label>
-                    <select id="filter-classification-level" onchange="triggerSearch()" style="width: 100%; padding: 8px 12px; border-radius: 8px; background: rgba(15,23,42,0.6); border: 1px solid rgba(255,255,255,0.08); color: var(--text-primary); font-family: 'Outfit', sans-serif; font-size: 0.85rem; cursor: pointer; outline: none; transition: border-color 0.2s;">
+                    <label for="filter-classification-level" style="font-size: 0.75rem; color: var(--text-secondary); display: block; margin-bottom: 4px;">Classification Model</label>
+                    <select id="filter-classification-level" onchange="triggerSearch()"
+                        style="width: 100%; padding: 8px; background: #121621; border: 1px solid rgba(255,255,255,0.1); color: var(--text-primary); border-radius: 4px;">
                         <option value="ALL">All Papers (No Model Filter)</option>
                         <option value="maude">Maude Classifications (maude-*)</option>
                         <option value="claude_abstract">Claude Abstract Classifications (llm-reclassify)</option>
@@ -1537,7 +1632,30 @@
                         <option value="optimal">Optimal Classifications (PDF / Manual Edits)</option>
                     </select>
                 </div>
+                </div>
 
+                <div data-filter-section="publication_type review">
+                <div class="filter-header-row">
+                    <div class="filter-header">Publication Type</div>
+                    <div class="logic-toggle" id="toggle-publication_type">
+                        <span class="logic-btn active" onclick="setLogic('publication_type', 'or')">OR</span>
+                        <span class="logic-btn" onclick="setLogic('publication_type', 'and')">AND</span>
+                        <input type="hidden" name="publication_type_logic" id="logic-publication_type" value="or">
+                    </div>
+                </div>
+                <div class="checkbox-group" style="margin-bottom: 15px;">
+                    <label class="checkbox-item"><input type="checkbox" name="publication_type" value="review" onchange="triggerSearch()"> Review</label>
+                    <label class="checkbox-item"><input type="checkbox" name="publication_type" value="systematic review" onchange="triggerSearch()"> Systematic Review</label>
+                    <label class="checkbox-item"><input type="checkbox" name="publication_type" value="meta-analysis" onchange="triggerSearch()"> Meta-Analysis</label>
+                    <label class="checkbox-item"><input type="checkbox" name="publication_type" value="editorial" onchange="triggerSearch()"> Editorial</label>
+                    <label class="checkbox-item"><input type="checkbox" name="publication_type" value="comment" onchange="triggerSearch()"> Comment</label>
+                    <label class="checkbox-item"><input type="checkbox" name="publication_type" value="letter to the editor" onchange="triggerSearch()"> Letter to the Editor</label>
+                    <label class="checkbox-item"><input type="checkbox" name="publication_type" value="perspectives paper" onchange="triggerSearch()"> Perspectives</label>
+                    <label class="checkbox-item"><input type="checkbox" name="publication_type" value="case study" onchange="triggerSearch()"> Case Study</label>
+                </div>
+                </div>
+
+                <div data-filter-section="study_type_all study_type_clinical study_type_animal study_type_cell all_original preclinical clinical">
                 <div class="filter-header-row">
                     <div class="filter-header">Study Design</div>
                     <div class="logic-toggle" id="toggle-study_type">
@@ -1549,9 +1667,10 @@
                 <div class="checkbox-group"
                     style="margin-bottom: 12px; display: flex; flex-direction: column; gap: 4px;">
                     <!-- Clinical Section -->
-                    <div
+                    <div data-filter-section="study_type_all study_type_clinical all_original clinical"
                         style="font-size: 0.75rem; font-weight: 600; color: #00e676; margin-top: 4px; margin-bottom: 2px; text-transform: uppercase; letter-spacing: 0.5px;">
                         Clinical</div>
+                    <div data-filter-section="study_type_all study_type_clinical all_original clinical">
                     <label class="checkbox-item"><input type="checkbox" name="study_type" value="Clinical (RCT)"
                             onchange="triggerSearch()"> RCT</label>
                     <label class="checkbox-item"><input type="checkbox" name="study_type" value="Clinical (prospective)"
@@ -1560,11 +1679,13 @@
                             value="Clinical (observational)" onchange="triggerSearch()"> Observational</label>
                     <label class="checkbox-item"><input type="checkbox" name="study_type"
                             value="Clinical (retrospective)" onchange="triggerSearch()"> Retrospective</label>
+                    </div>
 
                     <!-- Animal Models Section -->
-                    <div
+                    <div data-filter-section="study_type_all study_type_animal all_original preclinical"
                         style="font-size: 0.75rem; font-weight: 600; color: #00e676; margin-top: 6px; margin-bottom: 2px; text-transform: uppercase; letter-spacing: 0.5px;">
                         Animal Models</div>
+                    <div data-filter-section="study_type_all study_type_animal all_original preclinical">
                     <label class="checkbox-item"><input type="checkbox" name="study_type" value="Animal Models (Mouse)"
                             onchange="triggerSearch()"> Mouse</label>
                     <label class="checkbox-item"><input type="checkbox" name="study_type" value="Animal Models (Rat)"
@@ -1577,11 +1698,13 @@
                         Primates</label>
                     <label class="checkbox-item"><input type="checkbox" name="study_type" value="Animal Models (Other)"
                             onchange="triggerSearch()"> Other</label>
+                    </div>
 
                     <!-- Cell Culture Section -->
-                    <div
+                    <div data-filter-section="study_type_all study_type_cell all_original preclinical"
                         style="font-size: 0.75rem; font-weight: 600; color: #00e676; margin-top: 6px; margin-bottom: 2px; text-transform: uppercase; letter-spacing: 0.5px;">
                         Cell Culture</div>
+                    <div data-filter-section="study_type_all study_type_cell all_original preclinical">
                     <label class="checkbox-item"><input type="checkbox" name="study_type"
                             value="Cell Culture (Primary Cells)" onchange="triggerSearch()"> Primary Cells</label>
                     <label class="checkbox-item"><input type="checkbox" name="study_type"
@@ -1594,8 +1717,11 @@
                             value="Cell Culture (PCLS)" onchange="triggerSearch()"> PCLS</label>
                     <label class="checkbox-item"><input type="checkbox" name="study_type"
                             value="Cell Culture (Other In Vitro)" onchange="triggerSearch()"> Other In Vitro</label>
+                    </div>
+                </div>
                 </div>
 
+                <div data-filter-section="exposure_all exposure_clinical exposure_in_vivo exposure_in_vitro all_original preclinical clinical">
                 <div class="filter-header-row">
                     <div class="filter-header">Exposure Pathway</div>
                     <div class="logic-toggle" id="toggle-method">
@@ -1607,9 +1733,10 @@
                 <div class="checkbox-group"
                     style="margin-bottom: 12px; display: flex; flex-direction: column; gap: 4px;">
                     <!-- Clinical Exposure Section -->
-                    <div
+                    <div data-filter-section="exposure_all exposure_clinical all_original clinical"
                         style="font-size: 0.75rem; font-weight: 600; color: #00e676; margin-top: 4px; margin-bottom: 2px; text-transform: uppercase; letter-spacing: 0.5px;">
                         Clinical Exposure</div>
+                    <div data-filter-section="exposure_all exposure_clinical all_original clinical">
                     <label class="checkbox-item"><input type="checkbox" name="method" value="inhaled"
                             onchange="triggerSearch()"> Inhaled</label>
                     <label class="checkbox-item"><input type="checkbox" name="method" value="oral"
@@ -1618,11 +1745,13 @@
                             onchange="triggerSearch()"> Sublingual</label>
                     <label class="checkbox-item"><input type="checkbox" name="method" value="injected"
                             onchange="triggerSearch()"> Injected</label>
+                    </div>
 
                     <!-- In Vitro Exposure Section -->
-                    <div
+                    <div data-filter-section="exposure_all exposure_in_vitro all_original preclinical"
                         style="font-size: 0.75rem; font-weight: 600; color: #00e676; margin-top: 6px; margin-bottom: 2px; text-transform: uppercase; letter-spacing: 0.5px;">
                         In Vitro Exposure</div>
+                    <div data-filter-section="exposure_all exposure_in_vitro all_original preclinical">
                     <label class="checkbox-item"><input type="checkbox" name="method"
                             value="exposure of cells to smoke/vapor" onchange="triggerSearch()"> Exposure of cells to
                         smoke/vapor</label>
@@ -1632,11 +1761,13 @@
                     <label class="checkbox-item"><input type="checkbox" name="method"
                             value="smoke/vapor conditioned media" onchange="triggerSearch()"> Smoke/vapor conditioned
                         media</label>
+                    </div>
 
                     <!-- In Vivo Exposure Section -->
-                    <div
+                    <div data-filter-section="exposure_all exposure_in_vivo all_original preclinical"
                         style="font-size: 0.75rem; font-weight: 600; color: #00e676; margin-top: 6px; margin-bottom: 2px; text-transform: uppercase; letter-spacing: 0.5px;">
                         In Vivo Exposure</div>
+                    <div data-filter-section="exposure_all exposure_in_vivo all_original preclinical">
                     <label class="checkbox-item"><input type="checkbox" name="method" value="whole body. smoke/vapor"
                             onchange="triggerSearch()"> Whole body smoke/vapor</label>
                     <label class="checkbox-item"><input type="checkbox" name="method" value="nose only smoke/vapor"
@@ -1651,11 +1782,34 @@
                             onchange="triggerSearch()"> Intranasal</label>
                     <label class="checkbox-item"><input type="checkbox" name="method" value="intratracheal"
                             onchange="triggerSearch()"> Intratracheal</label>
+                    </div>
 
+                    <div data-filter-section="exposure_all all_original">
                     <label class="checkbox-item"><input type="checkbox" name="method" value="unknown"
                             onchange="triggerSearch()"> Unknown</label>
+                    </div>
+                </div>
                 </div>
 
+                <div data-filter-section="species preclinical">
+                <div class="filter-header-row">
+                    <div class="filter-header">Species (In Vivo)</div>
+                </div>
+                <div class="checkbox-group" style="margin-bottom: 12px;">
+                    <label class="checkbox-item"><input type="checkbox" name="species" value="mouse" onchange="triggerSearch()"> Mouse</label>
+                    <label class="checkbox-item"><input type="checkbox" name="species" value="rat" onchange="triggerSearch()"> Rat</label>
+                    <label class="checkbox-item"><input type="checkbox" name="species" value="rodent" onchange="triggerSearch()"> Rodent</label>
+                    <label class="checkbox-item"><input type="checkbox" name="species" value="hamster" onchange="triggerSearch()"> Hamster</label>
+                    <label class="checkbox-item"><input type="checkbox" name="species" value="guinea pig" onchange="triggerSearch()"> Guinea pig</label>
+                    <label class="checkbox-item"><input type="checkbox" name="species" value="non-human primate" onchange="triggerSearch()"> Non-human primate</label>
+                    <label class="checkbox-item"><input type="checkbox" name="species" value="rabbit" onchange="triggerSearch()"> Rabbit</label>
+                    <label class="checkbox-item"><input type="checkbox" name="species" value="dog" onchange="triggerSearch()"> Dog</label>
+                    <label class="checkbox-item"><input type="checkbox" name="species" value="pig" onchange="triggerSearch()"> Pig</label>
+                    <label class="checkbox-item"><input type="checkbox" name="species" value="zebrafish" onchange="triggerSearch()"> Zebrafish</label>
+                </div>
+                </div>
+
+                <div data-filter-section="cannabis_type all_original preclinical clinical">
                 <div class="filter-header-row">
                     <div class="filter-header">Cannabis Type</div>
                     <div class="logic-toggle" id="toggle-cannabis_type">
@@ -1682,7 +1836,9 @@
                     <label class="checkbox-item"><input type="checkbox" name="cannabis_type" value="CB receptor antagonist"
                             onchange="triggerSearch()"> CB receptor antagonist</label>
                 </div>
+                </div>
 
+                <div data-filter-section="thc_pct all_original preclinical clinical">
                 <div class="form-group" style="margin-bottom: 12px;">
                     <label>Min THC Content: <span id="thc-min-val"
                             style="color: var(--accent-blue); font-weight: 600;">0</span>%</label>
@@ -1695,7 +1851,24 @@
                     <input type="range" id="filter-thc-max" min="0" max="100" value="100" step="0.5"
                         oninput="updateSliderValues(); triggerSearch()">
                 </div>
+                </div>
 
+                <div data-filter-section="cbd_pct preclinical clinical">
+                <div class="form-group" style="margin-bottom: 12px;">
+                    <label>Min CBD Content: <span id="cbd-min-val"
+                            style="color: var(--accent-blue); font-weight: 600;">0</span>%</label>
+                    <input type="range" id="filter-cbd-min" min="0" max="100" value="0" step="0.5"
+                        oninput="updateSliderValues(); triggerSearch()">
+                </div>
+                <div class="form-group" style="margin-bottom: 12px;">
+                    <label>Max CBD Content: <span id="cbd-max-val"
+                            style="color: var(--accent-blue); font-weight: 600;">100</span>%</label>
+                    <input type="range" id="filter-cbd-max" min="0" max="100" value="100" step="0.5"
+                        oninput="updateSliderValues(); triggerSearch()">
+                </div>
+                </div>
+
+                <div data-filter-section="year review unclassified all_original preclinical clinical">
                 <div class="form-group" style="margin-bottom: 12px;">
                     <label>Min Publication Year: <span id="year-min-val"
                             style="color: var(--accent-blue); font-weight: 600;">1950</span></label>
@@ -1708,7 +1881,9 @@
                     <input type="range" id="filter-year-max" min="1950" max="2026" value="2026" step="1"
                         oninput="updateSliderValues(); triggerSearch()">
                 </div>
+                </div>
 
+                <div data-filter-section="outcomes all_original preclinical clinical">
                 <!-- Outcomes Checkboxes -->
                 <div class="filter-header-row">
                     <div class="filter-header">Outcome Domains</div>
@@ -1736,13 +1911,122 @@
                     <label class="checkbox-item"><input type="checkbox" name="outcome" value="sleep"
                             onchange="triggerSearch()"> Sleep</label>
                 </div>
+                </div>
 
-                <div class="sidebar-sticky-footer">
-                    <button type="button" class="btn btn-secondary" style="width: 100%;"
-                        onclick="resetFilters()">Reset All Filters</button>
+                <div data-filter-section="sample_size clinical">
+                <div class="filter-header-row"><div class="filter-header">Sample Size (N)</div></div>
+                <div class="form-group" style="margin-bottom: 12px;">
+                    <label>Min N: <span id="sample-size-min-val" style="color: var(--accent-blue); font-weight: 600;">0</span></label>
+                    <input type="range" id="filter-sample-size-min" min="0" max="10000" value="0" step="1"
+                        oninput="updateSliderValues(); triggerSearch()">
+                </div>
+                <div class="form-group" style="margin-bottom: 12px;">
+                    <label>Max N: <span id="sample-size-max-val" style="color: var(--accent-blue); font-weight: 600;">10000</span></label>
+                    <input type="range" id="filter-sample-size-max" min="0" max="10000" value="10000" step="1"
+                        oninput="updateSliderValues(); triggerSearch()">
+                </div>
+                </div>
+
+                <div data-filter-section="dose_clinical clinical">
+                <div class="filter-header-row"><div class="filter-header">Clinical Dose (mg)</div></div>
+                <div class="form-group" style="margin-bottom: 12px;">
+                    <label>Min dose (mg): <span id="dose-mg-min-val" style="color: var(--accent-blue); font-weight: 600;">0</span></label>
+                    <input type="range" id="filter-dose-mg-min" min="0" max="1000" value="0" step="1"
+                        oninput="updateSliderValues(); triggerSearch()">
+                </div>
+                <div class="form-group" style="margin-bottom: 12px;">
+                    <label>Max dose (mg): <span id="dose-mg-max-val" style="color: var(--accent-blue); font-weight: 600;">1000</span></label>
+                    <input type="range" id="filter-dose-mg-max" min="0" max="1000" value="1000" step="1"
+                        oninput="updateSliderValues(); triggerSearch()">
+                </div>
+                </div>
+
+                <div data-filter-section="duration_clinical clinical">
+                <div class="filter-header-row"><div class="filter-header">Study Duration (days)</div></div>
+                <div class="form-group" style="margin-bottom: 12px;">
+                    <label>Min days: <span id="duration-days-min-val" style="color: var(--accent-blue); font-weight: 600;">0</span></label>
+                    <input type="range" id="filter-duration-days-min" min="0" max="365" value="0" step="1"
+                        oninput="updateSliderValues(); triggerSearch()">
+                </div>
+                <div class="form-group" style="margin-bottom: 12px;">
+                    <label>Max days: <span id="duration-days-max-val" style="color: var(--accent-blue); font-weight: 600;">365</span></label>
+                    <input type="range" id="filter-duration-days-max" min="0" max="365" value="365" step="1"
+                        oninput="updateSliderValues(); triggerSearch()">
+                </div>
+                </div>
+
+                <div data-filter-section="dose_in_vivo preclinical">
+                <div class="filter-header-row"><div class="filter-header">In Vivo Dose (mg/kg)</div></div>
+                <div class="form-group" style="margin-bottom: 12px;">
+                    <label>Min THC (mg/kg): <span id="thc-mg-kg-min-val" style="color: var(--accent-blue); font-weight: 600;">0</span></label>
+                    <input type="range" id="filter-thc-mg-kg-min" min="0" max="100" value="0" step="0.1"
+                        oninput="updateSliderValues(); triggerSearch()">
+                </div>
+                <div class="form-group" style="margin-bottom: 12px;">
+                    <label>Max THC (mg/kg): <span id="thc-mg-kg-max-val" style="color: var(--accent-blue); font-weight: 600;">100</span></label>
+                    <input type="range" id="filter-thc-mg-kg-max" min="0" max="100" value="100" step="0.1"
+                        oninput="updateSliderValues(); triggerSearch()">
+                </div>
+                <div class="form-group" style="margin-bottom: 12px;">
+                    <label>Min CBD (mg/kg): <span id="cbd-mg-kg-min-val" style="color: var(--accent-blue); font-weight: 600;">0</span></label>
+                    <input type="range" id="filter-cbd-mg-kg-min" min="0" max="100" value="0" step="0.1"
+                        oninput="updateSliderValues(); triggerSearch()">
+                </div>
+                <div class="form-group" style="margin-bottom: 12px;">
+                    <label>Max CBD (mg/kg): <span id="cbd-mg-kg-max-val" style="color: var(--accent-blue); font-weight: 600;">100</span></label>
+                    <input type="range" id="filter-cbd-mg-kg-max" min="0" max="100" value="100" step="0.1"
+                        oninput="updateSliderValues(); triggerSearch()">
+                </div>
+                </div>
+
+                <div data-filter-section="dose_in_vitro preclinical">
+                <div class="filter-header-row"><div class="filter-header">In Vitro Concentration</div></div>
+                <div class="form-group" style="margin-bottom: 12px;">
+                    <label>Min THC (mg/mL): <span id="thc-mg-ml-min-val" style="color: var(--accent-blue); font-weight: 600;">0</span></label>
+                    <input type="range" id="filter-thc-mg-ml-min" min="0" max="10" value="0" step="0.01"
+                        oninput="updateSliderValues(); triggerSearch()">
+                </div>
+                <div class="form-group" style="margin-bottom: 12px;">
+                    <label>Max THC (mg/mL): <span id="thc-mg-ml-max-val" style="color: var(--accent-blue); font-weight: 600;">10</span></label>
+                    <input type="range" id="filter-thc-mg-ml-max" min="0" max="10" value="10" step="0.01"
+                        oninput="updateSliderValues(); triggerSearch()">
+                </div>
+                <div class="form-group" style="margin-bottom: 12px;">
+                    <label>Min THC (µM): <span id="thc-uM-min-val" style="color: var(--accent-blue); font-weight: 600;">0</span></label>
+                    <input type="range" id="filter-thc-uM-min" min="0" max="100" value="0" step="0.1"
+                        oninput="updateSliderValues(); triggerSearch()">
+                </div>
+                <div class="form-group" style="margin-bottom: 12px;">
+                    <label>Max THC (µM): <span id="thc-uM-max-val" style="color: var(--accent-blue); font-weight: 600;">100</span></label>
+                    <input type="range" id="filter-thc-uM-max" min="0" max="100" value="100" step="0.1"
+                        oninput="updateSliderValues(); triggerSearch()">
+                </div>
+                </div>
+
+                <div data-filter-section="exposure_regimen preclinical">
+                <div class="filter-header-row"><div class="filter-header">Exposure Regimen</div></div>
+                <div class="checkbox-group" style="margin-bottom: 12px;">
+                    <label class="checkbox-item"><input type="checkbox" name="exposure_regimen_bin" value="acute" onchange="triggerSearch()"> Acute</label>
+                    <label class="checkbox-item"><input type="checkbox" name="exposure_regimen_bin" value="subchronic" onchange="triggerSearch()"> Subchronic</label>
+                    <label class="checkbox-item"><input type="checkbox" name="exposure_regimen_bin" value="chronic" onchange="triggerSearch()"> Chronic</label>
+                </div>
+                </div>
+
+                <div data-filter-section="puff_count preclinical clinical">
+                <div class="form-group" style="margin-bottom: 12px;">
+                    <label>Min Puff Count: <span id="puff-count-min-val" style="color: var(--accent-blue); font-weight: 600;">0</span></label>
+                    <input type="range" id="filter-puff-count-min" min="0" max="100" value="0" step="1"
+                        oninput="updateSliderValues(); triggerSearch()">
+                </div>
                 </div>
 
             </form>
+            <div class="sidebar-sticky-footer">
+                <button type="button" class="btn btn-secondary sidebar-action-btn"
+                    onclick="resetFilters()">Reset All Filters</button>
+                <button type="button" class="sidebar-action-btn analyze-btn" id="btn-analyze-subset"
+                    onclick="analyzeFilteredSubset()">📊 Analyze Filtered Articles</button>
+            </div>
         </aside>
 
         <!-- MAIN DASHBOARD CONTENT -->
@@ -1752,7 +2036,7 @@
 
 
             <!-- TABLE OF MATCHED PAPERS -->
-            <section class="glass-panel" style="flex: 1; min-height: 0; display: flex; flex-direction: column; padding: 0; border-radius: 0; border: none; border-top: 1px solid rgba(255, 255, 255, 0.08); background: rgba(10, 12, 19, 0.5);">
+            <section class="glass-panel database-table-section" style="padding: 0; border-radius: 0; border: none; border-top: 1px solid rgba(255, 255, 255, 0.08); background: rgba(10, 12, 19, 0.5);">
                 <div class="table-wrapper" style="flex: 1; min-height: 0; border-radius: 0; border: none; overflow-y: auto;">
                     <table class="papers-table">
                         <thead>
@@ -2832,6 +3116,230 @@
             is_google: {{ 'true' if session.get('is_google') else 'false' }}
         };
         const IS_ADMIN = {{ 'true' if session.get('email') and admin_emails_list and session.get('email') in admin_emails_list else 'false' }};
+        const DASHBOARD_CONFIG = {{ dashboard_config | tojson }};
+
+        /** Read a filter control value when the element may be absent for a tab/profile. */
+        function getFilterValue(elementId, fallback = "") {
+            const el = document.getElementById(elementId);
+            return el ? el.value : fallback;
+        }
+
+        /** Read a sidebar AND/OR logic hidden input when present. */
+        function getLogicValue(key, fallback = "or") {
+            const el = document.getElementById(`logic-${key}`);
+            return el ? el.value : fallback;
+        }
+
+        /** Collect global filter bar params (§5.1 bibliographic only — apply across all tabs). */
+        function collectGlobalFilterParams() {
+            const params = {};
+            const allowed = new Set(DASHBOARD_CONFIG.global_filter_params || ["query", "recent_range", "has_pdf", "has_full_text"]);
+            const query = getFilterValue("filter-query").trim();
+            const recentRange = getFilterValue("filter-recent-range");
+            const hasPdfEl = document.getElementById("filter-has-pdf");
+            const hasFullTextEl = document.getElementById("filter-has-full-text");
+
+            if (query && allowed.has("query")) params.query = query;
+            if (recentRange && allowed.has("recent_range")) params.recent_range = recentRange;
+            if (hasPdfEl && hasPdfEl.checked && allowed.has("has_pdf")) params.has_pdf = "true";
+            if (hasFullTextEl && hasFullTextEl.checked && allowed.has("has_full_text")) params.has_full_text = "true";
+            return params;
+        }
+
+        /** Collect sidebar tab-specific filter params (§5.2 routing + §5.3 extraction). */
+        function collectTabFilterParams() {
+            const params = {};
+            const classificationLevel = getFilterValue("filter-classification-level", "ALL");
+            if (classificationLevel && classificationLevel !== "ALL") {
+                params.classification_level = classificationLevel;
+            }
+            const publicationTypes = Array.from(document.querySelectorAll('#filters-form input[name="publication_type"]:checked')).map(cb => cb.value).join(",");
+            if (publicationTypes) {
+                params.publication_type = publicationTypes;
+                params.publication_type_logic = getLogicValue("publication_type");
+            }
+            const studyType = Array.from(document.querySelectorAll('#filters-form input[name="study_type"]:checked')).map(cb => cb.value).join(",");
+            const method = Array.from(document.querySelectorAll('#filters-form input[name="method"]:checked')).map(cb => cb.value).join(",");
+            const cannabisType = Array.from(document.querySelectorAll('#filters-form input[name="cannabis_type"]:checked')).map(cb => cb.value).join(",");
+            const outcomes = Array.from(document.querySelectorAll('#filters-form input[name="outcome"]:checked')).map(cb => cb.value).join(",");
+            const species = Array.from(document.querySelectorAll('#filters-form input[name="species"]:checked')).map(cb => cb.value).join(",");
+            const regimen = Array.from(document.querySelectorAll('#filters-form input[name="exposure_regimen_bin"]:checked')).map(cb => cb.value).join(",");
+
+            if (studyType) {
+                params.study_type = studyType;
+                params.study_logic = getLogicValue("study_type");
+            }
+            if (method) {
+                params.method = method;
+                params.method_logic = getLogicValue("method");
+            }
+            if (cannabisType) {
+                params.cannabis_type = cannabisType;
+                params.cannabis_logic = getLogicValue("cannabis_type");
+            }
+            if (outcomes) {
+                params.outcome = outcomes;
+                params.outcome_logic = getLogicValue("outcome");
+            }
+            if (species) params.species = species;
+            if (regimen) params.exposure_regimen_bin = regimen;
+
+            const thcMin = getFilterValue("filter-thc-min", "0");
+            const thcMax = getFilterValue("filter-thc-max", "100");
+            const cbdMin = getFilterValue("filter-cbd-min", "0");
+            const cbdMax = getFilterValue("filter-cbd-max", "100");
+            const yearMin = getFilterValue("filter-year-min", "1950");
+            const yearMax = getFilterValue("filter-year-max", "2026");
+            if (thcMin && thcMin !== "0") params.thc_min = thcMin;
+            if (thcMax && thcMax !== "100") params.thc_max = thcMax;
+            if (cbdMin && cbdMin !== "0") params.cbd_min = cbdMin;
+            if (cbdMax && cbdMax !== "100") params.cbd_max = cbdMax;
+            if (yearMin && yearMin !== "1950") params.year_min = yearMin;
+            if (yearMax && yearMax !== "2026") params.year_max = yearMax;
+
+            const numericFilters = [
+                ["filter-sample-size-min", "sample_size_min", "0"],
+                ["filter-sample-size-max", "sample_size_max", "10000"],
+                ["filter-dose-mg-min", "dose_mg_min", "0"],
+                ["filter-dose-mg-max", "dose_mg_max", "1000"],
+                ["filter-duration-days-min", "duration_days_min", "0"],
+                ["filter-duration-days-max", "duration_days_max", "365"],
+                ["filter-thc-mg-kg-min", "thc_mg_kg_min", "0"],
+                ["filter-thc-mg-kg-max", "thc_mg_kg_max", "100"],
+                ["filter-cbd-mg-kg-min", "cbd_mg_kg_min", "0"],
+                ["filter-cbd-mg-kg-max", "cbd_mg_kg_max", "100"],
+                ["filter-thc-mg-ml-min", "thc_mg_ml_min", "0"],
+                ["filter-thc-mg-ml-max", "thc_mg_ml_max", "10"],
+                ["filter-thc-uM-min", "thc_uM_min", "0"],
+                ["filter-thc-uM-max", "thc_uM_max", "100"],
+                ["filter-puff-count-min", "puff_count_min", "0"],
+            ];
+            numericFilters.forEach(([elementId, paramKey, defaultValue]) => {
+                const el = document.getElementById(elementId);
+                if (!el) return;
+                const val = el.value;
+                if (val && val !== defaultValue) params[paramKey] = val;
+            });
+            return params;
+        }
+
+        /** Collect sidebar filter params shared by search and analyze endpoints. */
+        function collectFilterParams(tabOverride = null) {
+            return {
+                ...collectGlobalFilterParams(),
+                ...collectTabFilterParams(),
+                tab: tabOverride || currentTab,
+                sort_by: currentSortCol,
+                sort_dir: currentSortDir,
+            };
+        }
+
+        /** Show sidebar sections that match the active tab filter profile. */
+        function applyFilterProfile(tab) {
+            const profile = (DASHBOARD_CONFIG.filter_profiles || {})[tab] || { sections: [] };
+            const activeSections = new Set(profile.sections || []);
+            activeSections.add(tab);
+            activeSections.add("year");
+
+            document.querySelectorAll("#filters-form [data-filter-section]").forEach(el => {
+                const tokens = (el.getAttribute("data-filter-section") || "").split(/\s+/).filter(Boolean);
+                const show = tokens.some(token => activeSections.has(token));
+                el.style.display = show ? "" : "none";
+            });
+        }
+
+        /** Reset global filter bar controls (§5.1 only). */
+        function resetGlobalFilters() {
+            const queryEl = document.getElementById("filter-query");
+            const recentEl = document.getElementById("filter-recent-range");
+            const pdfEl = document.getElementById("filter-has-pdf");
+            const fullTextEl = document.getElementById("filter-has-full-text");
+            if (queryEl) queryEl.value = "";
+            if (recentEl) recentEl.value = "";
+            if (pdfEl) pdfEl.checked = false;
+            if (fullTextEl) fullTextEl.checked = false;
+        }
+
+        /** Scroll sidebar filter panel back to the top. */
+        function scrollFiltersToTop() {
+            const form = document.getElementById("filters-form");
+            if (form) form.scrollTop = 0;
+        }
+
+        /** Reset sidebar filters when switching tabs; preserve global bar controls. */
+        function resetFiltersOnTabChange() {
+            resetTabSpecificFilters();
+            scrollFiltersToTop();
+        }
+
+        /** Reset sidebar tab-specific filters. */
+        function resetTabSpecificFilters() {
+            const form = document.getElementById("filters-form");
+            if (!form) return;
+
+            form.querySelectorAll('input[type="checkbox"]').forEach(cb => {
+                cb.checked = false;
+            });
+
+            const classificationSelect = document.getElementById("filter-classification-level");
+            if (classificationSelect) classificationSelect.value = "ALL";
+
+            const rangeDefaults = {
+                "filter-thc-min": "0",
+                "filter-thc-max": "100",
+                "filter-cbd-min": "0",
+                "filter-cbd-max": "100",
+                "filter-year-min": "1950",
+                "filter-year-max": "2026",
+                "filter-sample-size-min": "0",
+                "filter-sample-size-max": "10000",
+                "filter-dose-mg-min": "0",
+                "filter-dose-mg-max": "1000",
+                "filter-duration-days-min": "0",
+                "filter-duration-days-max": "365",
+                "filter-thc-mg-kg-min": "0",
+                "filter-thc-mg-kg-max": "100",
+                "filter-cbd-mg-kg-min": "0",
+                "filter-cbd-mg-kg-max": "100",
+                "filter-thc-mg-ml-min": "0",
+                "filter-thc-mg-ml-max": "10",
+                "filter-thc-uM-min": "0",
+                "filter-thc-uM-max": "100",
+                "filter-puff-count-min": "0",
+            };
+            Object.entries(rangeDefaults).forEach(([id, defaultValue]) => {
+                const el = document.getElementById(id);
+                if (el) el.value = defaultValue;
+            });
+
+            ["method", "cannabis_type", "outcome", "study_type", "publication_type"].forEach(key => {
+                const hiddenInput = document.getElementById(`logic-${key}`);
+                if (hiddenInput) hiddenInput.value = "or";
+                const container = document.getElementById(`toggle-${key}`);
+                if (container) {
+                    container.querySelectorAll(".logic-btn").forEach(btn => {
+                        if (btn.innerText.toLowerCase() === "or") {
+                            btn.classList.add("active");
+                        } else {
+                            btn.classList.remove("active");
+                        }
+                    });
+                }
+            });
+
+            updateSliderValues();
+        }
+
+        /** Suggest relevant table columns per tab without hiding user choices. */
+        function applyTabColumnHints(tab) {
+            if (tab === "clinical") {
+                visibleColumns.dose_mg = true;
+            } else if (tab === "preclinical") {
+                visibleColumns.thc_mg_kg = true;
+                visibleColumns.thc_mg_ml = true;
+            }
+            updateColumnVisibility();
+        }
 
         function setLogic(key, val) {
             document.getElementById(`logic-${key}`).value = val;
@@ -2877,14 +3385,15 @@
         }
 
         let searchTimeout = null;
+        let activeSearchRequestId = 0;
         let harvestPollInterval = null;
         let currentPage = 1;
         const pageSize = 50;
-        let currentTab = 'preclinical';
+        let currentTab = DASHBOARD_CONFIG.default_tab || 'all_original';
         let currentSortCol = "year";
         let currentSortDir = "desc";
 
-        let visibleColumns = {
+        const DEFAULT_VISIBLE_COLUMNS = {
             duration: true,
             treatment_duration: false,
             year: true,
@@ -2907,6 +3416,8 @@
             strain_reported: false,
             strain_normalized: false
         };
+
+        let visibleColumns = { ...DEFAULT_VISIBLE_COLUMNS };
 
         // Subset Selection Tracking & Dynamic Visualizations Variables
         let currentPapersInView = [];
@@ -2933,17 +3444,22 @@
         let chartCalibrationHlFields = null;
 
         const TAB_BUTTON_IDS = {
+            all_original: 'tab-all-original',
             preclinical: 'tab-preclinical',
             clinical: 'tab-clinical',
-            tangential: 'tab-tangential',
-            unclassified_preclinical: 'tab-unclassified-preclinical',
             review: 'tab-review',
-            recent: 'tab-recent'
+            unclassified: 'tab-unclassified'
         };
-        const ANALYZE_SUBSET_TABS = new Set(['preclinical', 'clinical']);
+        const ANALYZE_SUBSET_TABS = new Set(DASHBOARD_CONFIG.analyze_subset_tabs || ['all_original', 'preclinical', 'clinical']);
 
         // Switch table views between database tabs
         function switchTab(tab) {
+            clearTimeout(searchTimeout);
+            searchTimeout = null;
+
+            if (tab !== currentTab) {
+                resetFiltersOnTabChange();
+            }
             currentTab = tab;
             document.querySelectorAll(".tab-btn").forEach(btn => {
                 btn.classList.remove("active");
@@ -2952,28 +3468,69 @@
             if (tabButtonId) {
                 document.getElementById(tabButtonId).classList.add("active");
             }
+            updateAnalyzeButtonVisibility(tab);
+            applyFilterProfile(tab);
+            applyColumnEditorProfile(tab);
+            applyTabColumnHints(tab);
+            updateColumnVisibility();
+            triggerSearch(true, tab);
+        }
+
+        /** Show or hide the analyze button based on active tab. */
+        function updateAnalyzeButtonVisibility(tab = currentTab) {
             const analyzeBtn = document.getElementById("btn-analyze-subset");
-            const recentsSelect = document.getElementById("recents-timeframe");
             if (analyzeBtn) {
                 analyzeBtn.style.display = ANALYZE_SUBSET_TABS.has(tab) ? "inline-flex" : "none";
             }
-            if (recentsSelect) {
-                recentsSelect.style.display = tab === 'recent' ? "inline-block" : "none";
-            }
-            updateColumnVisibility();
-            triggerSearch(true);
         }
 
         // Update ranges text descriptors on slide inputs
         function updateSliderValues() {
-            document.getElementById("thc-min-val").innerText = document.getElementById("filter-thc-min").value;
-            document.getElementById("thc-max-val").innerText = document.getElementById("filter-thc-max").value;
-            document.getElementById("year-min-val").innerText = document.getElementById("filter-year-min").value;
-            document.getElementById("year-max-val").innerText = document.getElementById("filter-year-max").value;
+            const thcMinEl = document.getElementById("filter-thc-min");
+            const thcMaxEl = document.getElementById("filter-thc-max");
+            const thcMinVal = document.getElementById("thc-min-val");
+            const thcMaxVal = document.getElementById("thc-max-val");
+            if (thcMinEl && thcMinVal) thcMinVal.innerText = thcMinEl.value;
+            if (thcMaxEl && thcMaxVal) thcMaxVal.innerText = thcMaxEl.value;
+            const cbdMinEl = document.getElementById("filter-cbd-min");
+            const cbdMaxEl = document.getElementById("filter-cbd-max");
+            if (cbdMinEl) document.getElementById("cbd-min-val").innerText = cbdMinEl.value;
+            if (cbdMaxEl) document.getElementById("cbd-max-val").innerText = cbdMaxEl.value;
+            const yearMinEl = document.getElementById("filter-year-min");
+            const yearMaxEl = document.getElementById("filter-year-max");
+            const yearMinVal = document.getElementById("year-min-val");
+            const yearMaxVal = document.getElementById("year-max-val");
+            if (yearMinEl && yearMinVal) yearMinVal.innerText = yearMinEl.value;
+            if (yearMaxEl && yearMaxVal) yearMaxVal.innerText = yearMaxEl.value;
+            const sliderMap = [
+                ["filter-sample-size-min", "sample-size-min-val"],
+                ["filter-sample-size-max", "sample-size-max-val"],
+                ["filter-dose-mg-min", "dose-mg-min-val"],
+                ["filter-dose-mg-max", "dose-mg-max-val"],
+                ["filter-duration-days-min", "duration-days-min-val"],
+                ["filter-duration-days-max", "duration-days-max-val"],
+                ["filter-thc-mg-kg-min", "thc-mg-kg-min-val"],
+                ["filter-thc-mg-kg-max", "thc-mg-kg-max-val"],
+                ["filter-cbd-mg-kg-min", "cbd-mg-kg-min-val"],
+                ["filter-cbd-mg-kg-max", "cbd-mg-kg-max-val"],
+                ["filter-thc-mg-ml-min", "thc-mg-ml-min-val"],
+                ["filter-thc-mg-ml-max", "thc-mg-ml-max-val"],
+                ["filter-thc-uM-min", "thc-uM-min-val"],
+                ["filter-thc-uM-max", "thc-uM-max-val"],
+                ["filter-puff-count-min", "puff-count-min-val"],
+            ];
+            sliderMap.forEach(([inputId, labelId]) => {
+                const input = document.getElementById(inputId);
+                const label = document.getElementById(labelId);
+                if (input && label) label.innerText = input.value;
+            });
         }
 
         // On document load, fetch full catalog listing
         document.addEventListener("DOMContentLoaded", () => {
+            applyFilterProfile(currentTab);
+            applyColumnEditorProfile(currentTab);
+            updateAnalyzeButtonVisibility(currentTab);
             updateSliderValues();
             triggerSearch(true);
             updateSchedulerStatus();
@@ -2995,7 +3552,10 @@
         });
 
         // Trigger dynamic AJAX search
-        function triggerSearch(resetPage = true) {
+        function triggerSearch(resetPage = true, tabOverride = null) {
+            clearTimeout(searchTimeout);
+            searchTimeout = null;
+
             if (resetPage) {
                 currentPage = 1;
             }
@@ -3009,86 +3569,49 @@
                 panel.style.display = "none";
             }
 
-            // Build parameters from sidebar elements
-            const query = document.getElementById("filter-query").value;
-            const classificationLevel = document.getElementById("filter-classification-level").value;
-            const studyTypeCheckboxes = document.querySelectorAll('input[name="study_type"]:checked');
-            const studyType = Array.from(studyTypeCheckboxes).map(cb => cb.value).join(",");
-            const thcMin = document.getElementById("filter-thc-min").value;
-            const thcMax = document.getElementById("filter-thc-max").value;
-            const yearMin = document.getElementById("filter-year-min").value;
-            const yearMax = document.getElementById("filter-year-max").value;
-            const sortBy = currentSortCol;
-            const sortDir = currentSortDir;
-
-            const studyLogic = document.getElementById("logic-study_type").value;
-            const methodLogic = document.getElementById("logic-method").value;
-            const cannabisLogic = document.getElementById("logic-cannabis_type").value;
-            const outcomeLogic = document.getElementById("logic-outcome").value;
-
-            // Extract method checkboxes
-            const methodCheckboxes = document.querySelectorAll('input[name="method"]:checked');
-            const method = Array.from(methodCheckboxes).map(cb => cb.value).join(",");
-
-            // Extract cannabis type checkboxes
-            const cannabisTypeCheckboxes = document.querySelectorAll('input[name="cannabis_type"]:checked');
-            const cannabisType = Array.from(cannabisTypeCheckboxes).map(cb => cb.value).join(",");
-
-            // Extract outcome checkboxes
-            const outcomeCheckboxes = document.querySelectorAll('input[name="outcome"]:checked');
-            const outcomes = Array.from(outcomeCheckboxes).map(cb => cb.value).join(",");
-
-            // Build dynamic URL search query
-            let url = `/api/search?`;
+            const activeTab = tabOverride || currentTab;
+            const filterParams = collectFilterParams(activeTab);
             const params = [];
-            if (query) params.push(`query=${encodeURIComponent(query)}`);
-            if (studyType) {
-                params.push(`study_type=${encodeURIComponent(studyType)}`);
-                params.push(`study_logic=${studyLogic}`);
+            Object.entries(filterParams).forEach(([key, value]) => {
+                if (key === "tab" || key === "sort_by" || key === "sort_dir") return;
+                if (key === "method") {
+                    params.push(`method=${encodeURIComponent(value)}`);
+                    return;
+                }
+                params.push(`${encodeURIComponent(key)}=${encodeURIComponent(value)}`);
+            });
+            if (filterParams.sort_by) {
+                params.push(`sort_by=${filterParams.sort_by}`);
+                params.push(`sort_dir=${filterParams.sort_dir}`);
             }
-            if (method) {
-                params.push(`method=${method}`);
-                params.push(`method_logic=${methodLogic}`);
-            }
-            if (thcMin && thcMin !== "0") params.push(`thc_min=${thcMin}`);
-            if (thcMax && thcMax !== "100") params.push(`thc_max=${thcMax}`);
-            if (yearMin && yearMin !== "1950") params.push(`year_min=${yearMin}`);
-            if (yearMax && yearMax !== "2026") params.push(`year_max=${yearMax}`);
-            if (sortBy) {
-                params.push(`sort_by=${sortBy}`);
-                params.push(`sort_dir=${sortDir}`);
-            }
-            if (outcomes) {
-                params.push(`outcome=${outcomes}`);
-                params.push(`outcome_logic=${outcomeLogic}`);
-            }
-            if (currentTab) params.push(`tab=${currentTab}`);
-            if (currentTab === 'recent') {
-                const recentsTimeframe = document.getElementById("recents-timeframe").value;
-                params.push(`recent_range=${recentsTimeframe}`);
-            }
-            if (cannabisType) {
-                params.push(`cannabis_type=${cannabisType}`);
-                params.push(`cannabis_logic=${cannabisLogic}`);
-            }
-            if (classificationLevel && classificationLevel !== "ALL") {
-                params.push(`classification_level=${classificationLevel}`);
-            }
+            if (activeTab) params.push(`tab=${activeTab}`);
 
             // Append page and limit
             params.push(`page=${currentPage}`);
             params.push(`limit=${pageSize}`);
 
-            url += params.join("&");
+            const url = `/api/search?${params.join("&")}`;
+            const requestId = ++activeSearchRequestId;
 
             fetch(url)
                 .then(res => res.json())
                 .then(data => {
+                    if (requestId !== activeSearchRequestId) return;
                     populateTable(data.papers);
                     updatePagination(data.total_count, data.page, data.limit);
                 })
                 .catch(err => {
+                    if (requestId !== activeSearchRequestId) return;
                     console.error("AJAX Search Failed: ", err);
+                    const tbody = document.getElementById("papers-table-body");
+                    if (tbody) {
+                        tbody.innerHTML = "";
+                    }
+                    const emptyState = document.getElementById("table-empty-state");
+                    if (emptyState) {
+                        emptyState.style.display = "block";
+                        emptyState.textContent = "Search failed to load. Refresh the page or redeploy the latest dashboard build.";
+                    }
                 });
         }
 
@@ -3118,8 +3641,14 @@
         function debounceSearch() {
             clearTimeout(searchTimeout);
             searchTimeout = setTimeout(() => {
+                searchTimeout = null;
                 triggerSearch(true);
             }, 300);
+        }
+
+        /** Immediate search for global filter bar controls (select/checkbox). */
+        function triggerGlobalFilterSearch() {
+            triggerSearch(true);
         }
 
         function handleHeaderClick(col) {
@@ -3203,9 +3732,10 @@
                     linksHtml += `<a href="${p.full_text_link}" target="_blank" class="icon-link" onclick="event.stopPropagation();" title="Direct PDF Download" style="background: rgba(0, 230, 118, 0.08); border-color: rgba(0, 230, 118, 0.2);">PDF</a>`;
                 }
 
-                // Newly harvested badge for Recents tab
+                // Newly harvested badge when recency filter is active
                 let newBadge = "";
-                if (currentTab === 'recent' && p.newly_harvested) {
+                const recentRange = document.getElementById("filter-recent-range").value;
+                if (recentRange && p.newly_harvested) {
                     newBadge = `<span class="badge" style="background: rgba(0, 240, 255, 0.12); color: var(--accent-blue); border: 1px solid rgba(0, 240, 255, 0.35); margin-left: 8px; font-size: 0.65rem; font-weight: 700; letter-spacing: 0.5px; padding: 2px 6px; text-transform: uppercase; border-radius: 4px; display: inline-block; vertical-align: middle;">Auto Ingested</span>`;
                 }
 
@@ -3295,68 +3825,24 @@
 
         // Reset sidebar filters
         function resetFilters() {
-            document.getElementById("filters-form").reset();
-            // Trigger checkbox triggers manually
-            const checkboxes = document.querySelectorAll('#filters-form input[type="checkbox"]');
-            checkboxes.forEach(cb => cb.checked = false);
-
-            // Sync slider descriptors back to default reset values
-            updateSliderValues();
-
-            // Reset logic hidden inputs and toggles
-            ['method', 'cannabis_type', 'outcome', 'study_type'].forEach(key => {
-                const hiddenInput = document.getElementById(`logic-${key}`);
-                if (hiddenInput) hiddenInput.value = 'or';
-                const container = document.getElementById(`toggle-${key}`);
-                if (container) {
-                    const buttons = container.querySelectorAll('.logic-btn');
-                    buttons.forEach(btn => {
-                        if (btn.innerText.toLowerCase() === 'or') {
-                            btn.classList.add('active');
-                        } else {
-                            btn.classList.remove('active');
-                        }
-                    });
-                }
-            });
-
-            // Reset active tab state
-            currentTab = 'preclinical';
+            resetGlobalFilters();
+            resetTabSpecificFilters();
+            scrollFiltersToTop();
+            currentTab = DASHBOARD_CONFIG.default_tab || 'all_original';
             document.querySelectorAll(".tab-btn").forEach(btn => {
                 btn.classList.remove("active");
             });
-            document.getElementById("tab-preclinical").classList.add("active");
-            const analyzeBtn = document.getElementById("btn-analyze-subset");
-            if (analyzeBtn) analyzeBtn.style.display = "inline-flex";
+            document.getElementById("tab-all-original").classList.add("active");
+            applyFilterProfile(currentTab);
+            updateAnalyzeButtonVisibility(currentTab);
 
             // Reset sorting state
             currentSortCol = "year";
             currentSortDir = "desc";
 
             // Reset column visibility
-            visibleColumns = {
-                duration: true,
-                treatment_duration: false,
-                year: true,
-                study_type: true,
-                exposure_method: true,
-                publication_type: true,
-                citations: true,
-                links: true,
-                cannabis_type: false,
-                outcome_domain: false,
-                dose_mg: false,
-                puff_count: false,
-                admin_frequency: false,
-                thc_mg_ml: false,
-                cbd_mg_ml: false,
-                thc_mg_kg: false,
-                cbd_mg_kg: false,
-                thc_uM: false,
-                cbd_uM: false,
-                strain_reported: false,
-                strain_normalized: false
-            };
+            visibleColumns = { ...DEFAULT_VISIBLE_COLUMNS };
+            applyColumnEditorProfile(currentTab);
             updateColumnVisibility();
 
             triggerSearch();
@@ -4283,52 +4769,15 @@
             btn.disabled = true;
             btn.innerHTML = "⌛ Analyzing...";
 
-            // Build parameters from sidebar elements
-            const query = document.getElementById("filter-query").value;
-            const classificationLevel = document.getElementById("filter-classification-level").value;
-            const studyTypeCheckboxes = document.querySelectorAll('input[name="study_type"]:checked');
-            const studyType = Array.from(studyTypeCheckboxes).map(cb => cb.value).join(",");
-            const thcMin = document.getElementById("filter-thc-min").value;
-            const thcMax = document.getElementById("filter-thc-max").value;
-            const yearMin = document.getElementById("filter-year-min").value;
-            const yearMax = document.getElementById("filter-year-max").value;
-            const sortBy = currentSortCol;
-            const sortDir = currentSortDir;
-
-            const studyLogic = document.getElementById("logic-study_type").value;
-            const methodLogic = document.getElementById("logic-method").value;
-            const cannabisLogic = document.getElementById("logic-cannabis_type").value;
-            const outcomeLogic = document.getElementById("logic-outcome").value;
-
-            const methodCheckboxes = document.querySelectorAll('input[name="method"]:checked');
-            const method = Array.from(methodCheckboxes).map(cb => cb.value).join(",");
-
-            const cannabisTypeCheckboxes = document.querySelectorAll('input[name="cannabis_type"]:checked');
-            const cannabisType = Array.from(cannabisTypeCheckboxes).map(cb => cb.value).join(",");
-
-            const outcomeCheckboxes = document.querySelectorAll('input[name="outcome"]:checked');
-            const outcomes = Array.from(outcomeCheckboxes).map(cb => cb.value).join(",");
-
             // Build filters payload for the backend
-            const filters = {};
-            if (query) filters.query = query;
-            if (studyType) { filters.study_type = studyType; filters.study_logic = studyLogic; }
-            if (method) { filters.exposure_method = method; filters.exposure_logic = methodLogic; }
-            if (thcMin && thcMin !== "0") filters.thc_min = parseFloat(thcMin);
-            if (thcMax && thcMax !== "100") filters.thc_max = parseFloat(thcMax);
-            if (yearMin && yearMin !== "1950") filters.year_min = parseInt(yearMin);
-            if (yearMax && yearMax !== "2026") filters.year_max = parseInt(yearMax);
-            if (outcomes) { filters.outcome = outcomes; filters.outcome_logic = outcomeLogic; }
-            if (cannabisType) { filters.cannabis_type = cannabisType; filters.cannabis_logic = cannabisLogic; }
-            filters.tab = currentTab;
-            if (currentTab === 'recent') {
-                filters.recent_range = document.getElementById("recents-timeframe").value;
+            const rawFilters = collectFilterParams();
+            const filters = { ...rawFilters };
+            if (filters.method) {
+                filters.exposure_method = filters.method;
+                delete filters.method;
+                if (rawFilters.method_logic) filters.exposure_logic = rawFilters.method_logic;
+                delete filters.method_logic;
             }
-            if (classificationLevel && classificationLevel !== "ALL") {
-                filters.classification_level = classificationLevel;
-            }
-            filters.sort_by = sortBy;
-            filters.sort_dir = sortDir;
 
             fetch("/api/analyze", {
                 method: "POST",
@@ -4378,8 +4827,9 @@
         function showView(viewName) {
             // 1. Hide all views and overlays first
             document.querySelector('.sidebar').style.display = 'none';
+            document.getElementById('global-filters-bar').style.display = 'none';
             document.getElementById('global-tabs-container').style.display = 'none';
-            const tableSection = document.querySelector('.main-content > section.glass-panel');
+            const tableSection = document.querySelector('.main-content > section.database-table-section');
             if (tableSection) tableSection.style.display = 'none';
 
             document.getElementById("my-analyses-panel").classList.remove("visible");
@@ -4396,6 +4846,7 @@
             // 2. Show requested view
             if (viewName === 'database') {
                 document.querySelector('.sidebar').style.display = '';
+                document.getElementById('global-filters-bar').style.display = '';
                 document.getElementById('global-tabs-container').style.display = '';
                 if (tableSection) tableSection.style.display = 'flex';
                 triggerSearch(false);
@@ -6133,39 +6584,47 @@
         }
 
         // Trigger AJAX bulk delete call to backend Purger route
-        // Toggle column editor popover visibility
-        function toggleColumnEditor(event) {
-            event.stopPropagation();
-            const popover = document.getElementById("column-editor-popover");
-            const isOpen = popover.style.display === "flex";
-            popover.style.display = isOpen ? "none" : "flex";
-
-            if (!isOpen) {
-                document.getElementById("col-cb-duration").checked = visibleColumns.duration;
-                document.getElementById("col-cb-treatment_duration").checked = visibleColumns.treatment_duration;
-                document.getElementById("col-cb-year").checked = visibleColumns.year;
-                document.getElementById("col-cb-study_type").checked = visibleColumns.study_type;
-                document.getElementById("col-cb-exposure_method").checked = visibleColumns.exposure_method;
-                document.getElementById("col-cb-publication_type").checked = visibleColumns.publication_type;
-                document.getElementById("col-cb-citations").checked = visibleColumns.citations;
-                document.getElementById("col-cb-links").checked = visibleColumns.links;
-                document.getElementById("col-cb-cannabis_type").checked = visibleColumns.cannabis_type;
-                document.getElementById("col-cb-outcome_domain").checked = visibleColumns.outcome_domain;
-                document.getElementById("col-cb-dose_mg").checked = visibleColumns.dose_mg;
-                document.getElementById("col-cb-puff_count").checked = visibleColumns.puff_count;
-                document.getElementById("col-cb-admin_frequency").checked = visibleColumns.admin_frequency;
-                document.getElementById("col-cb-thc_mg_ml").checked = visibleColumns.thc_mg_ml;
-                document.getElementById("col-cb-cbd_mg_ml").checked = visibleColumns.cbd_mg_ml;
-                document.getElementById("col-cb-thc_mg_kg").checked = visibleColumns.thc_mg_kg;
-                document.getElementById("col-cb-cbd_mg_kg").checked = visibleColumns.cbd_mg_kg;
-                document.getElementById("col-cb-thc_uM").checked = visibleColumns.thc_uM;
-                document.getElementById("col-cb-cbd_uM").checked = visibleColumns.cbd_uM;
-                document.getElementById("col-cb-strain_reported").checked = visibleColumns.strain_reported;
-                document.getElementById("col-cb-strain_normalized").checked = visibleColumns.strain_normalized;
-
-                // Show/hide publication type column checkbox in popover depending on current tab
-                document.getElementById("col-label-pub-type").style.display = currentTab === 'review' ? 'flex' : 'none';
+        /** Show column groups relevant to the active tab in the editor modal. */
+        function applyColumnEditorProfile(tab) {
+            const activeSections = new Set(["column_common", tab]);
+            if (tab === "all_original") {
+                activeSections.add("clinical");
+                activeSections.add("preclinical");
+                activeSections.add("review");
             }
+            document.querySelectorAll("#column-editor-modal [data-column-section]").forEach(el => {
+                const tokens = (el.getAttribute("data-column-section") || "").split(/\s+/).filter(Boolean);
+                const show = tokens.some(token => activeSections.has(token));
+                el.style.display = show ? "" : "none";
+            });
+            const subtitle = document.getElementById("column-editor-tab-label");
+            if (subtitle) {
+                const tabMeta = (DASHBOARD_CONFIG.tabs || []).find(t => t.key === tab);
+                subtitle.textContent = tabMeta ? tabMeta.label : tab;
+            }
+        }
+
+        /** Sync column editor checkboxes with current visibility state. */
+        function syncColumnEditorCheckboxes() {
+            Object.keys(DEFAULT_VISIBLE_COLUMNS).forEach(col => {
+                const checkbox = document.getElementById(`col-cb-${col}`);
+                if (checkbox) checkbox.checked = !!visibleColumns[col];
+            });
+        }
+
+        /** Open the full-screen column editor modal. */
+        function openColumnEditorModal(event) {
+            if (event) event.stopPropagation();
+            applyColumnEditorProfile(currentTab);
+            syncColumnEditorCheckboxes();
+            const modal = document.getElementById("column-editor-modal");
+            if (modal) modal.style.display = "flex";
+        }
+
+        /** Close the column editor modal. */
+        function closeColumnEditorModal() {
+            const modal = document.getElementById("column-editor-modal");
+            if (modal) modal.style.display = "none";
         }
 
         // Toggle visibility of a specific column
@@ -6215,12 +6674,11 @@
             }
         }
 
-        // Close column editor popover when clicking elsewhere
+        // Close column editor modal when clicking the backdrop
         document.addEventListener("click", function(event) {
-            const popover = document.getElementById("column-editor-popover");
-            const btn = document.getElementById("edit-columns-btn");
-            if (popover && popover.style.display === "flex" && !popover.contains(event.target) && event.target !== btn) {
-                popover.style.display = "none";
+            const modal = document.getElementById("column-editor-modal");
+            if (modal && modal.style.display === "flex" && event.target === modal) {
+                closeColumnEditorModal();
             }
         });
 
@@ -6382,6 +6840,69 @@
         }
     </script>
     
+    <!-- Column Editor Modal -->
+    <div id="column-editor-modal" class="modal-overlay" onclick="if (event.target === this) closeColumnEditorModal()">
+        <div class="column-editor-modal-panel glass-panel" onclick="event.stopPropagation()">
+            <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; margin-bottom: 16px;">
+                <div>
+                    <h3 style="font-family: var(--font-display); font-size: 1.25rem; font-weight: 700; margin: 0 0 4px; color: var(--text-primary);">Edit Table Columns</h3>
+                    <p style="margin: 0; font-size: 0.85rem; color: var(--text-secondary);">
+                        Options for <span id="column-editor-tab-label" style="color: var(--accent-blue); font-weight: 600;">All Original Research</span>
+                    </p>
+                </div>
+                <button type="button" class="btn btn-secondary" onclick="closeColumnEditorModal()" style="padding: 8px 14px; border-radius: 8px;">Close</button>
+            </div>
+            <div class="column-editor-modal-body">
+                <div class="column-editor-group" data-column-section="column_common">
+                    <div class="column-editor-group-title">General</div>
+                    <div class="column-editor-grid">
+                        <label><input type="checkbox" id="col-cb-duration" checked onchange="toggleColumn('duration')"> Duration</label>
+                        <label><input type="checkbox" id="col-cb-treatment_duration" onchange="toggleColumn('treatment_duration')"> Treatment Duration</label>
+                        <label><input type="checkbox" id="col-cb-year" checked onchange="toggleColumn('year')"> Year</label>
+                        <label><input type="checkbox" id="col-cb-study_type" checked onchange="toggleColumn('study_type')"> Study Design</label>
+                        <label><input type="checkbox" id="col-cb-exposure_method" checked onchange="toggleColumn('exposure_method')"> Exposure</label>
+                        <label><input type="checkbox" id="col-cb-cannabis_type" onchange="toggleColumn('cannabis_type')"> Cannabis Type</label>
+                        <label><input type="checkbox" id="col-cb-outcome_domain" onchange="toggleColumn('outcome_domain')"> Outcome Domain</label>
+                        <label><input type="checkbox" id="col-cb-citations" checked onchange="toggleColumn('citations')"> Citations</label>
+                        <label><input type="checkbox" id="col-cb-links" checked onchange="toggleColumn('links')"> Links</label>
+                    </div>
+                </div>
+                <div class="column-editor-group" data-column-section="clinical all_original">
+                    <div class="column-editor-group-title">Clinical (Node 2A)</div>
+                    <div class="column-editor-grid">
+                        <label><input type="checkbox" id="col-cb-dose_mg" onchange="toggleColumn('dose_mg')"> Dose (mg)</label>
+                        <label><input type="checkbox" id="col-cb-puff_count" onchange="toggleColumn('puff_count')"> Puff Count</label>
+                        <label><input type="checkbox" id="col-cb-admin_frequency" onchange="toggleColumn('admin_frequency')"> Admin Frequency</label>
+                    </div>
+                </div>
+                <div class="column-editor-group" data-column-section="preclinical all_original">
+                    <div class="column-editor-group-title">Pre-Clinical In Vivo (Node 2B)</div>
+                    <div class="column-editor-grid">
+                        <label><input type="checkbox" id="col-cb-thc_mg_kg" onchange="toggleColumn('thc_mg_kg')"> THC (mg/kg)</label>
+                        <label><input type="checkbox" id="col-cb-cbd_mg_kg" onchange="toggleColumn('cbd_mg_kg')"> CBD (mg/kg)</label>
+                        <label><input type="checkbox" id="col-cb-strain_reported" onchange="toggleColumn('strain_reported')"> Reported Strain</label>
+                        <label><input type="checkbox" id="col-cb-strain_normalized" onchange="toggleColumn('strain_normalized')"> Normalized Strain</label>
+                    </div>
+                </div>
+                <div class="column-editor-group" data-column-section="preclinical all_original">
+                    <div class="column-editor-group-title">Pre-Clinical In Vitro (Node 2C)</div>
+                    <div class="column-editor-grid">
+                        <label><input type="checkbox" id="col-cb-thc_mg_ml" onchange="toggleColumn('thc_mg_ml')"> THC (mg/mL)</label>
+                        <label><input type="checkbox" id="col-cb-cbd_mg_ml" onchange="toggleColumn('cbd_mg_ml')"> CBD (mg/mL)</label>
+                        <label><input type="checkbox" id="col-cb-thc_uM" onchange="toggleColumn('thc_uM')"> THC (µM)</label>
+                        <label><input type="checkbox" id="col-cb-cbd_uM" onchange="toggleColumn('cbd_uM')"> CBD (µM)</label>
+                    </div>
+                </div>
+                <div class="column-editor-group" data-column-section="review all_original">
+                    <div class="column-editor-group-title">Reviews &amp; Meta-Analyses</div>
+                    <div class="column-editor-grid">
+                        <label><input type="checkbox" id="col-cb-publication_type" checked onchange="toggleColumn('publication_type')"> Publication Type</label>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Auth Required Modal -->
     <div id="auth-required-modal" class="modal-overlay">
         <div class="glass-panel" style="max-width: 400px; width: 90%; padding: 30px; text-align: center; border-radius: 20px; border: 1px solid rgba(255,255,255,0.08); background: rgba(15, 20, 32, 0.95); box-shadow: 0 20px 50px rgba(0,0,0,0.6);">

@@ -95,6 +95,9 @@ def schedule_maude_reingest(
             "batch_size": batch_size,
             "refresh_maude_confidence": refresh_maude_confidence,
             "maude_and_heuristic": maude_and_heuristic,
+            "two_pass": maude_and_heuristic,
+            "workers": 4,
+            "detached": maude_and_heuristic,
         },
     }
     jobs.append(record)
@@ -118,21 +121,52 @@ def cancel_job(job_id: str, db: Optional[DatabaseManager] = None) -> bool:
 
 
 def _execute_maude_reingest(payload: Dict[str, Any]) -> Dict[str, Any]:
-    """Runs the heuristic → Maude re-ingest pipeline."""
+    """Runs the Maude two-pass or legacy re-ingest pipeline."""
     import reingest_heuristic_papers
 
     batch_size = int(payload.get("batch_size") or 25)
     maude_and_heuristic = bool(payload.get("maude_and_heuristic"))
-    summary = reingest_heuristic_papers.reingest_heuristic_papers(
-        dry_run=False,
-        batch_size=batch_size,
-        only_heuristic=not maude_and_heuristic,
-        maude_and_heuristic=maude_and_heuristic,
-    )
-    if payload.get("refresh_maude_confidence") or summary.get("papers_processed", 0) > 0:
-        summary["confidence_refresh"] = reingest_heuristic_papers.refresh_maude_confidence_scores(
-            batch_size=batch_size
+    two_pass = bool(payload.get("two_pass", maude_and_heuristic))
+    workers = int(payload.get("workers") or 4)
+    detached = bool(payload.get("detached", two_pass and maude_and_heuristic))
+
+    if detached:
+        from maude_reingest_watchdog import (
+            REINGEST_LOG,
+            activate_bulk_watchdog,
+            start_detached_two_pass,
         )
+
+        activate_bulk_watchdog(batch_size=batch_size, workers=workers)
+        pid = start_detached_two_pass(batch_size=batch_size, workers=workers)
+        return {
+            "detached": True,
+            "pid": pid,
+            "pass_mode": "two-pass" if two_pass else "full",
+            "batch_size": batch_size,
+            "workers": workers,
+            "log_path": REINGEST_LOG,
+        }
+
+    if two_pass and maude_and_heuristic:
+        summary = reingest_heuristic_papers.run_two_pass_reingest(
+            batch_size=batch_size,
+            workers=workers,
+            refresh_maude_confidence=bool(payload.get("refresh_maude_confidence", True)),
+        )
+    else:
+        summary = reingest_heuristic_papers.reingest_heuristic_papers(
+            dry_run=False,
+            batch_size=batch_size,
+            only_heuristic=not maude_and_heuristic,
+            maude_and_heuristic=maude_and_heuristic,
+            pass_mode=str(payload.get("pass_mode") or "full"),
+            workers=workers,
+        )
+        if payload.get("refresh_maude_confidence") or summary.get("papers_processed", 0) > 0:
+            summary["confidence_refresh"] = reingest_heuristic_papers.refresh_maude_confidence_scores(
+                batch_size=batch_size
+            )
     return summary
 
 
@@ -140,6 +174,8 @@ def run_maude_reingest_now(
     batch_size: int = 50,
     refresh_maude_confidence: bool = True,
     maude_and_heuristic: bool = True,
+    two_pass: bool = True,
+    workers: int = 4,
     db: Optional[DatabaseManager] = None,
 ) -> Dict[str, Any]:
     """Immediately runs the Maude re-ingest job (does not require a scheduled record)."""
@@ -147,6 +183,8 @@ def run_maude_reingest_now(
         "batch_size": batch_size,
         "refresh_maude_confidence": refresh_maude_confidence,
         "maude_and_heuristic": maude_and_heuristic,
+        "two_pass": two_pass,
+        "workers": workers,
     }
     logger.info("Starting immediate Maude re-ingest: %s", payload)
     return _execute_maude_reingest(payload)
@@ -244,6 +282,12 @@ def main() -> None:
         help="Only re-classify heuristic-1.0.0 papers (legacy scheduled scope).",
     )
     run_now_parser.add_argument(
+        "--legacy-full",
+        action="store_true",
+        help="Use legacy single-pass PDF→fulltext→abstract (not two-pass).",
+    )
+    run_now_parser.add_argument("--workers", type=int, default=4, help="Slow-pass parallel workers.")
+    run_now_parser.add_argument(
         "--no-confidence-refresh",
         action="store_true",
         help="Skip post-run maude-* confidence refresh.",
@@ -261,6 +305,7 @@ def main() -> None:
             timezone_name=args.timezone,
             batch_size=args.batch_size,
             refresh_maude_confidence=not args.no_confidence_refresh,
+            maude_and_heuristic=args.maude_and_heuristic,
         )
         print(json.dumps(record, indent=2))
         return
@@ -270,6 +315,8 @@ def main() -> None:
             batch_size=args.batch_size,
             refresh_maude_confidence=not args.no_confidence_refresh,
             maude_and_heuristic=not args.heuristic_only,
+            two_pass=not args.legacy_full,
+            workers=args.workers,
         )
         print(json.dumps(result, indent=2))
         return

@@ -1,0 +1,52 @@
+{
+  "version": "1.0.0-client-draft",
+  "confidence_thresholds": {
+    "auto_accept": 0.85,
+    "review_recommended": 0.6
+  },
+  "weights": {
+    "self_consistency": 0.5,
+    "retrieval_similarity": 0.3,
+    "model_agreement": 0.2
+  },
+  "self_consistency_runs": 1,
+  "field_groups": {
+    "relevance": [
+      "publication_type"
+    ],
+    "extraction": []
+  },
+  "reward_function": {
+    "lambda_cost": 0.1,
+    "lambda_fallback": 0.5,
+    "lambda_regression": 2.0,
+    "zero_regression_gate": true,
+    "failed_attempts_before_human_review": 3
+  },
+  "cues": {
+    "relevance": {
+      "positive_cues": [],
+      "negative_cues": []
+    },
+    "extraction": {
+      "preclinical_cues": [],
+      "clinical_cues": []
+    }
+  },
+  "agent_automation": {
+    "review_queue_confidence_max": 0.6,
+    "feedback_eval_threshold": 10,
+    "decision_chart_status": "[Client decision tree — date TBD]",
+    "decision_tree_source": "[Expert worksheet or PDF path]",
+    "calibration_rl": {
+      "agreement_threshold_pct": 90,
+      "primary_holdout_batches": {
+        "node2a": null,
+        "node2b": null,
+        "node2c": null
+      }
+    }
+  },
+  "decision_boundaries": {},
+  "outcome_domains": []
+}
