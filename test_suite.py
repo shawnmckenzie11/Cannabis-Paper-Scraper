@@ -1582,6 +1582,136 @@ class TestAdminRequiredEndpoints(unittest.TestCase):
         self.assertEqual(res2.status_code, 404)
 
 
+class TestHeuristicReingestionRunner(unittest.TestCase):
+    """Test cases for bounded heuristic re-ingestion runs."""
+
+    def setUp(self):
+        """Create an isolated SQLite database for re-ingestion tests."""
+        import tempfile
+
+        self.temp_dir = tempfile.TemporaryDirectory()
+        self.db_path = os.path.join(self.temp_dir.name, "reingest_test.db")
+        self.previous_database_url = os.environ.pop("DATABASE_URL", None)
+        self.previous_database_path = os.environ.get("DATABASE_PATH")
+        os.environ["DATABASE_PATH"] = self.db_path
+
+        DatabaseManager._initialized = False
+        self.db = DatabaseManager(self.db_path)
+
+    def tearDown(self):
+        """Restore environment and remove the temporary test database."""
+        if self.previous_database_url is not None:
+            os.environ["DATABASE_URL"] = self.previous_database_url
+        if self.previous_database_path is None:
+            os.environ.pop("DATABASE_PATH", None)
+        else:
+            os.environ["DATABASE_PATH"] = self.previous_database_path
+        DatabaseManager._initialized = False
+        self.temp_dir.cleanup()
+
+    def _insert_reingest_candidate(self, pmid, classifier_version):
+        """Insert a minimal paper row for re-ingestion runner tests."""
+        conn = self.db.get_connection()
+        try:
+            conn.execute(
+                """
+                INSERT INTO papers (
+                    pmid, title, abstract, date_harvested, expert_locked_fields,
+                    study_type, exposure_method, cannabis_type, outcome_domain,
+                    classification_confidence, classifier_version
+                )
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """,
+                (
+                    pmid,
+                    f"Bounded candidate {pmid}",
+                    "Patients received oral CBD for pain in a controlled study.",
+                    "2026-06-24T00:00:00",
+                    "[]",
+                    json.dumps(["unknown"]),
+                    json.dumps(["unknown"]),
+                    json.dumps(["unknown"]),
+                    json.dumps(["other"]),
+                    0.2,
+                    classifier_version,
+                ),
+            )
+            conn.commit()
+        finally:
+            conn.close()
+
+    def test_only_pending_limit_bounds_processed_rows(self):
+        """Verify only the requested number of legacy pending rows are updated."""
+        import reingest_heuristic_papers
+
+        for idx in range(3):
+            self._insert_reingest_candidate(f"pending-{idx}", "heuristic-reclassify-1.0.0")
+        self._insert_reingest_candidate("already-current", "heuristic-1.0.0")
+
+        original_classifier = reingest_heuristic_papers.classifier.process_paper_metadata
+        original_database_manager = reingest_heuristic_papers.DatabaseManager
+
+        def fake_database_manager():
+            """Return the isolated test database manager for the runner."""
+            return self.db
+
+        def fake_process_paper_metadata(title, abstract, run_llm=False):
+            """Return deterministic extracted fields for bounded runner tests."""
+            return {
+                "study_type": ["Clinical (observational)"],
+                "exposure_method": ["oral administration"],
+                "cannabis_type": ["CBD"],
+                "outcome_domain": ["pain"],
+                "duration_days": 14.0,
+                "inhaled_exposure_duration": None,
+                "administration_frequency": "daily",
+                "treatment_duration": "14 days",
+                "sample_size": None,
+                "thc_pct": None,
+                "cbd_pct": None,
+                "dose_mg": None,
+                "strain_reported": None,
+                "strain_normalized": None,
+                "publication_type": "original research",
+                "summary": "Deterministic test summary.",
+                "classification_confidence": 0.6,
+                "classification_timestamp": "2026-06-24T00:00:00",
+                "classifier_version": "heuristic-1.0.0",
+            }
+
+        try:
+            reingest_heuristic_papers.DatabaseManager = fake_database_manager
+            reingest_heuristic_papers.classifier.process_paper_metadata = fake_process_paper_metadata
+            summary = reingest_heuristic_papers.reingest_heuristic_papers(
+                batch_size=1,
+                only_pending=True,
+                limit=2,
+            )
+        finally:
+            reingest_heuristic_papers.DatabaseManager = original_database_manager
+            reingest_heuristic_papers.classifier.process_paper_metadata = original_classifier
+
+        conn = self.db.get_connection()
+        try:
+            rows = conn.execute(
+                """
+                SELECT pmid, classifier_version
+                FROM papers
+                ORDER BY id
+                """
+            ).fetchall()
+        finally:
+            conn.close()
+
+        versions = {row["pmid"]: row["classifier_version"] for row in rows}
+        self.assertEqual(summary["papers_processed"], 2)
+        self.assertEqual(summary["remaining_pending"], 1)
+        self.assertEqual(versions["pending-0"], "heuristic-1.0.0")
+        self.assertEqual(versions["pending-1"], "heuristic-1.0.0")
+        self.assertEqual(versions["pending-2"], "heuristic-reclassify-1.0.0")
+        self.assertEqual(versions["already-current"], "heuristic-1.0.0")
+
+
 if __name__ == "__main__":
     unittest.main()
 
