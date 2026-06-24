@@ -1,16 +1,40 @@
-# Exclude virtual environments and local secrets
+# Local dev / secrets
 venv/
 .env
+.env.*
 .git/
 .DS_Store
+.cursor/
+
+# Local SQLite (production uses Postgres + /data volume)
+*.db
+*.db-shm
+*.db-wal
 cannabis_papers.db
 
-# Exclude python cache files
+# Local-only scratch artifacts (Fly uses /data for cache + calibration)
+scratch/
+
+# Python cache
 __pycache__/
 *.pyc
 *.pyo
 *.pyd
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
 
-# Exclude local SSL certs
+# Local SSL / tunnel configs
 cert.pem
 com.cloudflare.cloudflared.plist
+
+# Editor / OS
+*.swp
+*.swo
+.idea/
+.vscode/
+
+# Docs and tests are not needed in the runtime image
+docs/
+tests/
+test_*.py

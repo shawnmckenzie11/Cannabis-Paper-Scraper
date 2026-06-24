@@ -1643,7 +1643,7 @@
                 </div>
                 <div class="form-group" style="margin-bottom: 15px;">
                     <label for="filter-classification-level" style="font-size: 0.75rem; color: var(--text-secondary); display: block; margin-bottom: 4px;">Classification Model</label>
-                    <select id="filter-classification-level" onchange="triggerSearch()"
+                    <select id="filter-classification-level" onchange="scheduleSearch()"
                         style="width: 100%; padding: 8px; background: #121621; border: 1px solid rgba(255,255,255,0.1); color: var(--text-primary); border-radius: 4px;">
                         <option value="ALL">All Papers (No Model Filter)</option>
                         <option value="maude">Maude Classifications (maude-*)</option>
@@ -1665,14 +1665,14 @@
                     </div>
                 </div>
                 <div class="checkbox-group" style="margin-bottom: 15px;">
-                    <label class="checkbox-item"><input type="checkbox" name="publication_type" value="review" onchange="triggerSearch()"> Review</label>
-                    <label class="checkbox-item"><input type="checkbox" name="publication_type" value="systematic review" onchange="triggerSearch()"> Systematic Review</label>
-                    <label class="checkbox-item"><input type="checkbox" name="publication_type" value="meta-analysis" onchange="triggerSearch()"> Meta-Analysis</label>
-                    <label class="checkbox-item"><input type="checkbox" name="publication_type" value="editorial" onchange="triggerSearch()"> Editorial</label>
-                    <label class="checkbox-item"><input type="checkbox" name="publication_type" value="comment" onchange="triggerSearch()"> Comment</label>
-                    <label class="checkbox-item"><input type="checkbox" name="publication_type" value="letter to the editor" onchange="triggerSearch()"> Letter to the Editor</label>
-                    <label class="checkbox-item"><input type="checkbox" name="publication_type" value="perspectives paper" onchange="triggerSearch()"> Perspectives</label>
-                    <label class="checkbox-item"><input type="checkbox" name="publication_type" value="case study" onchange="triggerSearch()"> Case Study</label>
+                    <label class="checkbox-item"><input type="checkbox" name="publication_type" value="review" onchange="scheduleSearch()"> Review</label>
+                    <label class="checkbox-item"><input type="checkbox" name="publication_type" value="systematic review" onchange="scheduleSearch()"> Systematic Review</label>
+                    <label class="checkbox-item"><input type="checkbox" name="publication_type" value="meta-analysis" onchange="scheduleSearch()"> Meta-Analysis</label>
+                    <label class="checkbox-item"><input type="checkbox" name="publication_type" value="editorial" onchange="scheduleSearch()"> Editorial</label>
+                    <label class="checkbox-item"><input type="checkbox" name="publication_type" value="comment" onchange="scheduleSearch()"> Comment</label>
+                    <label class="checkbox-item"><input type="checkbox" name="publication_type" value="letter to the editor" onchange="scheduleSearch()"> Letter to the Editor</label>
+                    <label class="checkbox-item"><input type="checkbox" name="publication_type" value="perspectives paper" onchange="scheduleSearch()"> Perspectives</label>
+                    <label class="checkbox-item"><input type="checkbox" name="publication_type" value="case study" onchange="scheduleSearch()"> Case Study</label>
                 </div>
                 </div>
 
@@ -1693,13 +1693,13 @@
                         Clinical</div>
                     <div data-filter-section="study_type_all study_type_clinical all_original clinical">
                     <label class="checkbox-item"><input type="checkbox" name="study_type" value="Clinical (RCT)"
-                            onchange="triggerSearch()"> RCT</label>
+                            onchange="scheduleSearch()"> RCT</label>
                     <label class="checkbox-item"><input type="checkbox" name="study_type" value="Clinical (prospective)"
-                            onchange="triggerSearch()"> Prospective</label>
+                            onchange="scheduleSearch()"> Prospective</label>
                     <label class="checkbox-item"><input type="checkbox" name="study_type"
-                            value="Clinical (observational)" onchange="triggerSearch()"> Observational</label>
+                            value="Clinical (observational)" onchange="scheduleSearch()"> Observational</label>
                     <label class="checkbox-item"><input type="checkbox" name="study_type"
-                            value="Clinical (retrospective)" onchange="triggerSearch()"> Retrospective</label>
+                            value="Clinical (retrospective)" onchange="scheduleSearch()"> Retrospective</label>
                     </div>
 
                     <!-- Animal Models Section -->
@@ -1708,17 +1708,17 @@
                         Animal Models</div>
                     <div data-filter-section="study_type_all study_type_animal all_original preclinical">
                     <label class="checkbox-item"><input type="checkbox" name="study_type" value="Animal Models (Mouse)"
-                            onchange="triggerSearch()"> Mouse</label>
+                            onchange="scheduleSearch()"> Mouse</label>
                     <label class="checkbox-item"><input type="checkbox" name="study_type" value="Animal Models (Rat)"
-                            onchange="triggerSearch()"> Rat</label>
+                            onchange="scheduleSearch()"> Rat</label>
                     <label class="checkbox-item"><input type="checkbox" name="study_type"
-                            value="Animal Models (Other Rodents)" onchange="triggerSearch()"> Other
+                            value="Animal Models (Other Rodents)" onchange="scheduleSearch()"> Other
                         Rodents</label>
                     <label class="checkbox-item"><input type="checkbox" name="study_type"
-                            value="Animal Models (Non-Human Primates)" onchange="triggerSearch()"> Non-Human
+                            value="Animal Models (Non-Human Primates)" onchange="scheduleSearch()"> Non-Human
                         Primates</label>
                     <label class="checkbox-item"><input type="checkbox" name="study_type" value="Animal Models (Other)"
-                            onchange="triggerSearch()"> Other</label>
+                            onchange="scheduleSearch()"> Other</label>
                     </div>
 
                     <!-- Cell Culture Section -->
@@ -1727,17 +1727,17 @@
                         Cell Culture</div>
                     <div data-filter-section="study_type_all study_type_cell all_original preclinical">
                     <label class="checkbox-item"><input type="checkbox" name="study_type"
-                            value="Cell Culture (Primary Cells)" onchange="triggerSearch()"> Primary Cells</label>
+                            value="Cell Culture (Primary Cells)" onchange="scheduleSearch()"> Primary Cells</label>
                     <label class="checkbox-item"><input type="checkbox" name="study_type"
-                            value="Cell Culture (Cell Lines)" onchange="triggerSearch()"> Cell Lines</label>
+                            value="Cell Culture (Cell Lines)" onchange="scheduleSearch()"> Cell Lines</label>
                     <label class="checkbox-item"><input type="checkbox" name="study_type"
-                            value="Cell Culture (Organoids)" onchange="triggerSearch()"> Organoids</label>
+                            value="Cell Culture (Organoids)" onchange="scheduleSearch()"> Organoids</label>
                     <label class="checkbox-item"><input type="checkbox" name="study_type"
-                            value="Cell Culture (Co-Culture)" onchange="triggerSearch()"> Co-Culture</label>
+                            value="Cell Culture (Co-Culture)" onchange="scheduleSearch()"> Co-Culture</label>
                     <label class="checkbox-item"><input type="checkbox" name="study_type"
-                            value="Cell Culture (PCLS)" onchange="triggerSearch()"> PCLS</label>
+                            value="Cell Culture (PCLS)" onchange="scheduleSearch()"> PCLS</label>
                     <label class="checkbox-item"><input type="checkbox" name="study_type"
-                            value="Cell Culture (Other In Vitro)" onchange="triggerSearch()"> Other In Vitro</label>
+                            value="Cell Culture (Other In Vitro)" onchange="scheduleSearch()"> Other In Vitro</label>
                     </div>
                 </div>
                 </div>
@@ -1759,13 +1759,13 @@
                         Clinical Exposure</div>
                     <div data-filter-section="exposure_all exposure_clinical all_original clinical">
                     <label class="checkbox-item"><input type="checkbox" name="method" value="inhaled"
-                            onchange="triggerSearch()"> Inhaled</label>
+                            onchange="scheduleSearch()"> Inhaled</label>
                     <label class="checkbox-item"><input type="checkbox" name="method" value="oral"
-                            onchange="triggerSearch()"> Oral</label>
+                            onchange="scheduleSearch()"> Oral</label>
                     <label class="checkbox-item"><input type="checkbox" name="method" value="sublingual"
-                            onchange="triggerSearch()"> Sublingual</label>
+                            onchange="scheduleSearch()"> Sublingual</label>
                     <label class="checkbox-item"><input type="checkbox" name="method" value="injected"
-                            onchange="triggerSearch()"> Injected</label>
+                            onchange="scheduleSearch()"> Injected</label>
                     </div>
 
                     <!-- In Vitro Exposure Section -->
@@ -1774,13 +1774,13 @@
                         In Vitro Exposure</div>
                     <div data-filter-section="exposure_all exposure_in_vitro all_original preclinical">
                     <label class="checkbox-item"><input type="checkbox" name="method"
-                            value="exposure of cells to smoke/vapor" onchange="triggerSearch()"> Exposure of cells to
+                            value="exposure of cells to smoke/vapor" onchange="scheduleSearch()"> Exposure of cells to
                         smoke/vapor</label>
                     <label class="checkbox-item"><input type="checkbox" name="method"
-                            value="cannabinoids dissolved in media" onchange="triggerSearch()"> Cannabinoids dissolved
+                            value="cannabinoids dissolved in media" onchange="scheduleSearch()"> Cannabinoids dissolved
                         in media</label>
                     <label class="checkbox-item"><input type="checkbox" name="method"
-                            value="smoke/vapor conditioned media" onchange="triggerSearch()"> Smoke/vapor conditioned
+                            value="smoke/vapor conditioned media" onchange="scheduleSearch()"> Smoke/vapor conditioned
                         media</label>
                     </div>
 
@@ -1790,24 +1790,24 @@
                         In Vivo Exposure</div>
                     <div data-filter-section="exposure_all exposure_in_vivo all_original preclinical">
                     <label class="checkbox-item"><input type="checkbox" name="method" value="whole body. smoke/vapor"
-                            onchange="triggerSearch()"> Whole body smoke/vapor</label>
+                            onchange="scheduleSearch()"> Whole body smoke/vapor</label>
                     <label class="checkbox-item"><input type="checkbox" name="method" value="nose only smoke/vapor"
-                            onchange="triggerSearch()"> Nose only smoke/vapor</label>
+                            onchange="scheduleSearch()"> Nose only smoke/vapor</label>
                     <label class="checkbox-item"><input type="checkbox" name="method" value="injection cannabinoids"
-                            onchange="triggerSearch()"> Injection cannabinoids</label>
+                            onchange="scheduleSearch()"> Injection cannabinoids</label>
                     <label class="checkbox-item"><input type="checkbox" name="method" value="oral administration"
-                            onchange="triggerSearch()"> Oral administration</label>
+                            onchange="scheduleSearch()"> Oral administration</label>
                     <label class="checkbox-item"><input type="checkbox" name="method" value="sub-lingual"
-                            onchange="triggerSearch()"> Sub-lingual</label>
+                            onchange="scheduleSearch()"> Sub-lingual</label>
                     <label class="checkbox-item"><input type="checkbox" name="method" value="intranasal"
-                            onchange="triggerSearch()"> Intranasal</label>
+                            onchange="scheduleSearch()"> Intranasal</label>
                     <label class="checkbox-item"><input type="checkbox" name="method" value="intratracheal"
-                            onchange="triggerSearch()"> Intratracheal</label>
+                            onchange="scheduleSearch()"> Intratracheal</label>
                     </div>
 
                     <div data-filter-section="exposure_all all_original">
                     <label class="checkbox-item"><input type="checkbox" name="method" value="unknown"
-                            onchange="triggerSearch()"> Unknown</label>
+                            onchange="scheduleSearch()"> Unknown</label>
                     </div>
                 </div>
                 </div>
@@ -1817,16 +1817,16 @@
                     <div class="filter-header">Species (In Vivo)</div>
                 </div>
                 <div class="checkbox-group" style="margin-bottom: 12px;">
-                    <label class="checkbox-item"><input type="checkbox" name="species" value="mouse" onchange="triggerSearch()"> Mouse</label>
-                    <label class="checkbox-item"><input type="checkbox" name="species" value="rat" onchange="triggerSearch()"> Rat</label>
-                    <label class="checkbox-item"><input type="checkbox" name="species" value="rodent" onchange="triggerSearch()"> Rodent</label>
-                    <label class="checkbox-item"><input type="checkbox" name="species" value="hamster" onchange="triggerSearch()"> Hamster</label>
-                    <label class="checkbox-item"><input type="checkbox" name="species" value="guinea pig" onchange="triggerSearch()"> Guinea pig</label>
-                    <label class="checkbox-item"><input type="checkbox" name="species" value="non-human primate" onchange="triggerSearch()"> Non-human primate</label>
-                    <label class="checkbox-item"><input type="checkbox" name="species" value="rabbit" onchange="triggerSearch()"> Rabbit</label>
-                    <label class="checkbox-item"><input type="checkbox" name="species" value="dog" onchange="triggerSearch()"> Dog</label>
-                    <label class="checkbox-item"><input type="checkbox" name="species" value="pig" onchange="triggerSearch()"> Pig</label>
-                    <label class="checkbox-item"><input type="checkbox" name="species" value="zebrafish" onchange="triggerSearch()"> Zebrafish</label>
+                    <label class="checkbox-item"><input type="checkbox" name="species" value="mouse" onchange="scheduleSearch()"> Mouse</label>
+                    <label class="checkbox-item"><input type="checkbox" name="species" value="rat" onchange="scheduleSearch()"> Rat</label>
+                    <label class="checkbox-item"><input type="checkbox" name="species" value="rodent" onchange="scheduleSearch()"> Rodent</label>
+                    <label class="checkbox-item"><input type="checkbox" name="species" value="hamster" onchange="scheduleSearch()"> Hamster</label>
+                    <label class="checkbox-item"><input type="checkbox" name="species" value="guinea pig" onchange="scheduleSearch()"> Guinea pig</label>
+                    <label class="checkbox-item"><input type="checkbox" name="species" value="non-human primate" onchange="scheduleSearch()"> Non-human primate</label>
+                    <label class="checkbox-item"><input type="checkbox" name="species" value="rabbit" onchange="scheduleSearch()"> Rabbit</label>
+                    <label class="checkbox-item"><input type="checkbox" name="species" value="dog" onchange="scheduleSearch()"> Dog</label>
+                    <label class="checkbox-item"><input type="checkbox" name="species" value="pig" onchange="scheduleSearch()"> Pig</label>
+                    <label class="checkbox-item"><input type="checkbox" name="species" value="zebrafish" onchange="scheduleSearch()"> Zebrafish</label>
                 </div>
                 </div>
 
@@ -1841,21 +1841,21 @@
                 </div>
                 <div class="checkbox-group" style="margin-bottom: 12px;">
                     <label class="checkbox-item"><input type="checkbox" name="cannabis_type" value="dried flower"
-                            onchange="triggerSearch()"> Dried Flower</label>
+                            onchange="scheduleSearch()"> Dried Flower</label>
                     <label class="checkbox-item"><input type="checkbox" name="cannabis_type" value="concentrates"
-                            onchange="triggerSearch()"> Concentrates (shatter, tinctures, resin, etc.)</label>
+                            onchange="scheduleSearch()"> Concentrates (shatter, tinctures, resin, etc.)</label>
                     <label class="checkbox-item"><input type="checkbox" name="cannabis_type" value="vape pen"
-                            onchange="triggerSearch()"> Vape Pen</label>
+                            onchange="scheduleSearch()"> Vape Pen</label>
                     <label class="checkbox-item"><input type="checkbox" name="cannabis_type" value="pure cannabinoid"
-                            onchange="triggerSearch()"> Pure Cannabinoid</label>
+                            onchange="scheduleSearch()"> Pure Cannabinoid</label>
                     <label class="checkbox-item"><input type="checkbox" name="cannabis_type" value="edibles"
-                            onchange="triggerSearch()"> Edibles (gummies, chocolates, oils, etc.)</label>
+                            onchange="scheduleSearch()"> Edibles (gummies, chocolates, oils, etc.)</label>
                     <label class="checkbox-item"><input type="checkbox" name="cannabis_type" value="hashish/kief"
-                            onchange="triggerSearch()"> Hashish/Kief</label>
+                            onchange="scheduleSearch()"> Hashish/Kief</label>
                     <label class="checkbox-item"><input type="checkbox" name="cannabis_type" value="CB receptor agonist"
-                            onchange="triggerSearch()"> CB receptor agonist</label>
+                            onchange="scheduleSearch()"> CB receptor agonist</label>
                     <label class="checkbox-item"><input type="checkbox" name="cannabis_type" value="CB receptor antagonist"
-                            onchange="triggerSearch()"> CB receptor antagonist</label>
+                            onchange="scheduleSearch()"> CB receptor antagonist</label>
                 </div>
                 </div>
 
@@ -1864,13 +1864,13 @@
                     <label>Min THC Content: <span id="thc-min-val"
                             style="color: var(--accent-blue); font-weight: 600;">0</span>%</label>
                     <input type="range" id="filter-thc-min" min="0" max="100" value="0" step="0.5"
-                        oninput="updateSliderValues(); triggerSearch()">
+                        oninput="updateSliderValues(); scheduleSearch()">
                 </div>
                 <div class="form-group" style="margin-bottom: 12px;">
                     <label>Max THC Content: <span id="thc-max-val"
                             style="color: var(--accent-blue); font-weight: 600;">100</span>%</label>
                     <input type="range" id="filter-thc-max" min="0" max="100" value="100" step="0.5"
-                        oninput="updateSliderValues(); triggerSearch()">
+                        oninput="updateSliderValues(); scheduleSearch()">
                 </div>
                 </div>
 
@@ -1879,13 +1879,13 @@
                     <label>Min CBD Content: <span id="cbd-min-val"
                             style="color: var(--accent-blue); font-weight: 600;">0</span>%</label>
                     <input type="range" id="filter-cbd-min" min="0" max="100" value="0" step="0.5"
-                        oninput="updateSliderValues(); triggerSearch()">
+                        oninput="updateSliderValues(); scheduleSearch()">
                 </div>
                 <div class="form-group" style="margin-bottom: 12px;">
                     <label>Max CBD Content: <span id="cbd-max-val"
                             style="color: var(--accent-blue); font-weight: 600;">100</span>%</label>
                     <input type="range" id="filter-cbd-max" min="0" max="100" value="100" step="0.5"
-                        oninput="updateSliderValues(); triggerSearch()">
+                        oninput="updateSliderValues(); scheduleSearch()">
                 </div>
                 </div>
 
@@ -1894,13 +1894,13 @@
                     <label>Min Publication Year: <span id="year-min-val"
                             style="color: var(--accent-blue); font-weight: 600;">1950</span></label>
                     <input type="range" id="filter-year-min" min="1950" max="2026" value="1950" step="1"
-                        oninput="updateSliderValues(); triggerSearch()">
+                        oninput="updateSliderValues(); scheduleSearch()">
                 </div>
                 <div class="form-group" style="margin-bottom: 12px;">
                     <label>Max Publication Year: <span id="year-max-val"
                             style="color: var(--accent-blue); font-weight: 600;">2026</span></label>
                     <input type="range" id="filter-year-max" min="1950" max="2026" value="2026" step="1"
-                        oninput="updateSliderValues(); triggerSearch()">
+                        oninput="updateSliderValues(); scheduleSearch()">
                 </div>
                 </div>
 
@@ -1916,21 +1916,21 @@
                 </div>
                 <div class="checkbox-group" style="margin-bottom: 15px;">
                     <label class="checkbox-item"><input type="checkbox" name="outcome" value="pain"
-                            onchange="triggerSearch()"> Pain</label>
+                            onchange="scheduleSearch()"> Pain</label>
                     <label class="checkbox-item"><input type="checkbox" name="outcome" value="anxiety"
-                            onchange="triggerSearch()"> Anxiety</label>
+                            onchange="scheduleSearch()"> Anxiety</label>
                     <label class="checkbox-item"><input type="checkbox" name="outcome" value="cognition"
-                            onchange="triggerSearch()"> Cognition</label>
+                            onchange="scheduleSearch()"> Cognition</label>
                     <label class="checkbox-item"><input type="checkbox" name="outcome" value="inflammation"
-                            onchange="triggerSearch()"> Inflammation</label>
+                            onchange="scheduleSearch()"> Inflammation</label>
                     <label class="checkbox-item"><input type="checkbox" name="outcome" value="addiction"
-                            onchange="triggerSearch()"> Addiction</label>
+                            onchange="scheduleSearch()"> Addiction</label>
                     <label class="checkbox-item"><input type="checkbox" name="outcome" value="oncology"
-                            onchange="triggerSearch()"> Oncology</label>
+                            onchange="scheduleSearch()"> Oncology</label>
                     <label class="checkbox-item"><input type="checkbox" name="outcome" value="neuroprotection"
-                            onchange="triggerSearch()"> Neuroprotection</label>
+                            onchange="scheduleSearch()"> Neuroprotection</label>
                     <label class="checkbox-item"><input type="checkbox" name="outcome" value="sleep"
-                            onchange="triggerSearch()"> Sleep</label>
+                            onchange="scheduleSearch()"> Sleep</label>
                 </div>
                 </div>
 
@@ -1939,12 +1939,12 @@
                 <div class="form-group" style="margin-bottom: 12px;">
                     <label>Min N: <span id="sample-size-min-val" style="color: var(--accent-blue); font-weight: 600;">0</span></label>
                     <input type="range" id="filter-sample-size-min" min="0" max="10000" value="0" step="1"
-                        oninput="updateSliderValues(); triggerSearch()">
+                        oninput="updateSliderValues(); scheduleSearch()">
                 </div>
                 <div class="form-group" style="margin-bottom: 12px;">
                     <label>Max N: <span id="sample-size-max-val" style="color: var(--accent-blue); font-weight: 600;">10000</span></label>
                     <input type="range" id="filter-sample-size-max" min="0" max="10000" value="10000" step="1"
-                        oninput="updateSliderValues(); triggerSearch()">
+                        oninput="updateSliderValues(); scheduleSearch()">
                 </div>
                 </div>
 
@@ -1953,12 +1953,12 @@
                 <div class="form-group" style="margin-bottom: 12px;">
                     <label>Min dose (mg): <span id="dose-mg-min-val" style="color: var(--accent-blue); font-weight: 600;">0</span></label>
                     <input type="range" id="filter-dose-mg-min" min="0" max="1000" value="0" step="1"
-                        oninput="updateSliderValues(); triggerSearch()">
+                        oninput="updateSliderValues(); scheduleSearch()">
                 </div>
                 <div class="form-group" style="margin-bottom: 12px;">
                     <label>Max dose (mg): <span id="dose-mg-max-val" style="color: var(--accent-blue); font-weight: 600;">1000</span></label>
                     <input type="range" id="filter-dose-mg-max" min="0" max="1000" value="1000" step="1"
-                        oninput="updateSliderValues(); triggerSearch()">
+                        oninput="updateSliderValues(); scheduleSearch()">
                 </div>
                 </div>
 
@@ -1967,12 +1967,12 @@
                 <div class="form-group" style="margin-bottom: 12px;">
                     <label>Min days: <span id="duration-days-min-val" style="color: var(--accent-blue); font-weight: 600;">0</span></label>
                     <input type="range" id="filter-duration-days-min" min="0" max="365" value="0" step="1"
-                        oninput="updateSliderValues(); triggerSearch()">
+                        oninput="updateSliderValues(); scheduleSearch()">
                 </div>
                 <div class="form-group" style="margin-bottom: 12px;">
                     <label>Max days: <span id="duration-days-max-val" style="color: var(--accent-blue); font-weight: 600;">365</span></label>
                     <input type="range" id="filter-duration-days-max" min="0" max="365" value="365" step="1"
-                        oninput="updateSliderValues(); triggerSearch()">
+                        oninput="updateSliderValues(); scheduleSearch()">
                 </div>
                 </div>
 
@@ -1980,15 +1980,15 @@
                 <div class="filter-header-row"><div class="filter-header">Study Population</div></div>
                 <div style="font-size: 0.75rem; font-weight: 600; color: #00e676; margin-top: 4px; margin-bottom: 2px; text-transform: uppercase; letter-spacing: 0.5px;">Age</div>
                 <div class="checkbox-group" style="margin-bottom: 8px;">
-                    <label class="checkbox-item"><input type="checkbox" name="population_age" value="pediatric" onchange="triggerSearch()"> Pediatric</label>
-                    <label class="checkbox-item"><input type="checkbox" name="population_age" value="adult" onchange="triggerSearch()"> Adult</label>
-                    <label class="checkbox-item"><input type="checkbox" name="population_age" value="geriatric" onchange="triggerSearch()"> Geriatric</label>
+                    <label class="checkbox-item"><input type="checkbox" name="population_age" value="pediatric" onchange="scheduleSearch()"> Pediatric</label>
+                    <label class="checkbox-item"><input type="checkbox" name="population_age" value="adult" onchange="scheduleSearch()"> Adult</label>
+                    <label class="checkbox-item"><input type="checkbox" name="population_age" value="geriatric" onchange="scheduleSearch()"> Geriatric</label>
                 </div>
                 <div style="font-size: 0.75rem; font-weight: 600; color: #00e676; margin-top: 4px; margin-bottom: 2px; text-transform: uppercase; letter-spacing: 0.5px;">Sex</div>
                 <div class="checkbox-group" style="margin-bottom: 12px;">
-                    <label class="checkbox-item"><input type="checkbox" name="population_sex" value="male" onchange="triggerSearch()"> Male</label>
-                    <label class="checkbox-item"><input type="checkbox" name="population_sex" value="female" onchange="triggerSearch()"> Female</label>
-                    <label class="checkbox-item"><input type="checkbox" name="population_sex" value="both" onchange="triggerSearch()"> Both</label>
+                    <label class="checkbox-item"><input type="checkbox" name="population_sex" value="male" onchange="scheduleSearch()"> Male</label>
+                    <label class="checkbox-item"><input type="checkbox" name="population_sex" value="female" onchange="scheduleSearch()"> Female</label>
+                    <label class="checkbox-item"><input type="checkbox" name="population_sex" value="both" onchange="scheduleSearch()"> Both</label>
                 </div>
                 </div>
 
@@ -1997,22 +1997,22 @@
                 <div class="form-group" style="margin-bottom: 12px;">
                     <label>Min THC (mg/kg): <span id="thc-mg-kg-min-val" style="color: var(--accent-blue); font-weight: 600;">0</span></label>
                     <input type="range" id="filter-thc-mg-kg-min" min="0" max="100" value="0" step="0.1"
-                        oninput="updateSliderValues(); triggerSearch()">
+                        oninput="updateSliderValues(); scheduleSearch()">
                 </div>
                 <div class="form-group" style="margin-bottom: 12px;">
                     <label>Max THC (mg/kg): <span id="thc-mg-kg-max-val" style="color: var(--accent-blue); font-weight: 600;">100</span></label>
                     <input type="range" id="filter-thc-mg-kg-max" min="0" max="100" value="100" step="0.1"
-                        oninput="updateSliderValues(); triggerSearch()">
+                        oninput="updateSliderValues(); scheduleSearch()">
                 </div>
                 <div class="form-group" style="margin-bottom: 12px;">
                     <label>Min CBD (mg/kg): <span id="cbd-mg-kg-min-val" style="color: var(--accent-blue); font-weight: 600;">0</span></label>
                     <input type="range" id="filter-cbd-mg-kg-min" min="0" max="100" value="0" step="0.1"
-                        oninput="updateSliderValues(); triggerSearch()">
+                        oninput="updateSliderValues(); scheduleSearch()">
                 </div>
                 <div class="form-group" style="margin-bottom: 12px;">
                     <label>Max CBD (mg/kg): <span id="cbd-mg-kg-max-val" style="color: var(--accent-blue); font-weight: 600;">100</span></label>
                     <input type="range" id="filter-cbd-mg-kg-max" min="0" max="100" value="100" step="0.1"
-                        oninput="updateSliderValues(); triggerSearch()">
+                        oninput="updateSliderValues(); scheduleSearch()">
                 </div>
                 </div>
 
@@ -2021,31 +2021,31 @@
                 <div class="form-group" style="margin-bottom: 12px;">
                     <label>Min THC (mg/mL): <span id="thc-mg-ml-min-val" style="color: var(--accent-blue); font-weight: 600;">0</span></label>
                     <input type="range" id="filter-thc-mg-ml-min" min="0" max="10" value="0" step="0.01"
-                        oninput="updateSliderValues(); triggerSearch()">
+                        oninput="updateSliderValues(); scheduleSearch()">
                 </div>
                 <div class="form-group" style="margin-bottom: 12px;">
                     <label>Max THC (mg/mL): <span id="thc-mg-ml-max-val" style="color: var(--accent-blue); font-weight: 600;">10</span></label>
                     <input type="range" id="filter-thc-mg-ml-max" min="0" max="10" value="10" step="0.01"
-                        oninput="updateSliderValues(); triggerSearch()">
+                        oninput="updateSliderValues(); scheduleSearch()">
                 </div>
                 <div class="form-group" style="margin-bottom: 12px;">
                     <label>Min THC (µM): <span id="thc-uM-min-val" style="color: var(--accent-blue); font-weight: 600;">0</span></label>
                     <input type="range" id="filter-thc-uM-min" min="0" max="100" value="0" step="0.1"
-                        oninput="updateSliderValues(); triggerSearch()">
+                        oninput="updateSliderValues(); scheduleSearch()">
                 </div>
                 <div class="form-group" style="margin-bottom: 12px;">
                     <label>Max THC (µM): <span id="thc-uM-max-val" style="color: var(--accent-blue); font-weight: 600;">100</span></label>
                     <input type="range" id="filter-thc-uM-max" min="0" max="100" value="100" step="0.1"
-                        oninput="updateSliderValues(); triggerSearch()">
+                        oninput="updateSliderValues(); scheduleSearch()">
                 </div>
                 </div>
 
                 <div data-filter-section="exposure_regimen preclinical">
                 <div class="filter-header-row"><div class="filter-header">Exposure Regimen</div></div>
                 <div class="checkbox-group" style="margin-bottom: 12px;">
-                    <label class="checkbox-item"><input type="checkbox" name="exposure_regimen_bin" value="acute" onchange="triggerSearch()"> Acute</label>
-                    <label class="checkbox-item"><input type="checkbox" name="exposure_regimen_bin" value="subchronic" onchange="triggerSearch()"> Subchronic</label>
-                    <label class="checkbox-item"><input type="checkbox" name="exposure_regimen_bin" value="chronic" onchange="triggerSearch()"> Chronic</label>
+                    <label class="checkbox-item"><input type="checkbox" name="exposure_regimen_bin" value="acute" onchange="scheduleSearch()"> Acute</label>
+                    <label class="checkbox-item"><input type="checkbox" name="exposure_regimen_bin" value="subchronic" onchange="scheduleSearch()"> Subchronic</label>
+                    <label class="checkbox-item"><input type="checkbox" name="exposure_regimen_bin" value="chronic" onchange="scheduleSearch()"> Chronic</label>
                 </div>
                 </div>
 
@@ -2053,7 +2053,7 @@
                 <div class="form-group" style="margin-bottom: 12px;">
                     <label>Min Puff Count: <span id="puff-count-min-val" style="color: var(--accent-blue); font-weight: 600;">0</span></label>
                     <input type="range" id="filter-puff-count-min" min="0" max="100" value="0" step="1"
-                        oninput="updateSliderValues(); triggerSearch()">
+                        oninput="updateSliderValues(); scheduleSearch()">
                 </div>
                 </div>
 
@@ -2074,7 +2074,11 @@
 
             <!-- TABLE OF MATCHED PAPERS -->
             <section class="glass-panel database-table-section" style="padding: 0; border-radius: 0; border: none; border-top: 1px solid rgba(255, 255, 255, 0.08); background: rgba(10, 12, 19, 0.5);">
-                <div class="table-wrapper" style="flex: 1; min-height: 0; border-radius: 0; border: none; overflow-y: auto;">
+                <div class="table-wrapper" style="flex: 1; min-height: 0; border-radius: 0; border: none; overflow-y: auto; position: relative;">
+                    <div id="table-loading-overlay" style="display: none; position: absolute; inset: 0; z-index: 20; align-items: center; justify-content: center; flex-direction: column; gap: 12px; background: rgba(10, 12, 19, 0.72);">
+                        <div class="spinner" style="width: 28px; height: 28px; border-width: 3px;"></div>
+                        <div style="color: var(--text-secondary); font-size: 0.85rem;">Loading papers…</div>
+                    </div>
                     <table class="papers-table">
                         <thead>
                             <tr>
@@ -3525,7 +3529,7 @@
                     }
                 });
             }
-            triggerSearch();
+            scheduleSearch();
         }
 
         function formatStudyDuration(days) {
@@ -3557,6 +3561,10 @@
 
         let searchTimeout = null;
         let activeSearchRequestId = 0;
+        let activeSearchAbort = null;
+        let lastKnownTotal = null;
+        let lastFilterFingerprint = "";
+        let tableSearchInFlight = false;
         let harvestPollInterval = null;
         let currentPage = 1;
         const pageSize = 50;
@@ -3666,9 +3674,14 @@
         function switchTab(tab) {
             clearTimeout(searchTimeout);
             searchTimeout = null;
+            if (activeSearchAbort) {
+                activeSearchAbort.abort();
+            }
 
             if (tab !== currentTab) {
                 resetFiltersOnTabChange();
+                lastKnownTotal = null;
+                lastFilterFingerprint = "";
             }
             currentTab = tab;
             document.querySelectorAll(".tab-btn").forEach(btn => {
@@ -3762,6 +3775,41 @@
         });
 
         // Trigger dynamic AJAX search
+        function buildFilterFingerprint(filterParams) {
+            const fp = { ...(filterParams || {}) };
+            delete fp.sort_by;
+            delete fp.sort_dir;
+            return JSON.stringify(fp);
+        }
+
+        function setTableLoading(isLoading) {
+            tableSearchInFlight = isLoading;
+            const overlay = document.getElementById("table-loading-overlay");
+            if (overlay) {
+                overlay.style.display = isLoading ? "flex" : "none";
+            }
+            const emptyState = document.getElementById("table-empty-state");
+            if (isLoading && emptyState) {
+                emptyState.style.display = "none";
+            }
+            const prevBtn = document.getElementById("btn-page-prev");
+            const nextBtn = document.getElementById("btn-page-next");
+            if (prevBtn) prevBtn.disabled = isLoading || currentPage <= 1;
+            if (nextBtn) nextBtn.disabled = isLoading;
+            const rangeEl = document.getElementById("pagination-range");
+            if (isLoading && rangeEl) {
+                rangeEl.innerText = "Loading…";
+            }
+        }
+
+        function scheduleSearch(resetPage = true, tabOverride = null) {
+            clearTimeout(searchTimeout);
+            searchTimeout = setTimeout(() => {
+                searchTimeout = null;
+                triggerSearch(resetPage, tabOverride);
+            }, 300);
+        }
+
         function triggerSearch(resetPage = true, tabOverride = null) {
             clearTimeout(searchTimeout);
             searchTimeout = null;
@@ -3781,6 +3829,8 @@
 
             const activeTab = tabOverride || currentTab;
             const filterParams = collectFilterParams(activeTab);
+            const fingerprint = buildFilterFingerprint(filterParams);
+            const canSkipCount = lastKnownTotal !== null && fingerprint === lastFilterFingerprint;
             const params = [];
             Object.entries(filterParams).forEach(([key, value]) => {
                 if (key === "tab" || key === "sort_by" || key === "sort_dir") return;
@@ -3799,18 +3849,44 @@
             // Append page and limit
             params.push(`page=${currentPage}`);
             params.push(`limit=${pageSize}`);
+            if (canSkipCount) {
+                params.push("skip_count=1");
+                params.push(`known_total=${lastKnownTotal}`);
+            }
 
             const url = `/api/search?${params.join("&")}`;
             const requestId = ++activeSearchRequestId;
+            const requestedTab = activeTab;
 
-            fetch(url)
-                .then(res => res.json())
+            if (activeSearchAbort) {
+                activeSearchAbort.abort();
+            }
+            activeSearchAbort = new AbortController();
+            setTableLoading(true);
+
+            fetch(url, { signal: activeSearchAbort.signal })
+                .then(res => {
+                    if (!res.ok) {
+                        throw new Error(`Search failed (${res.status})`);
+                    }
+                    return res.json();
+                })
                 .then(data => {
                     if (requestId !== activeSearchRequestId) return;
-                    populateTable(data.papers);
-                    updatePagination(data.total_count, data.page, data.limit);
+                    if (requestedTab !== currentTab) return;
+                    if (data.error) {
+                        throw new Error(data.error);
+                    }
+                    populateTable(data.papers || []);
+                    const totalCount = Number.isFinite(Number(data.total_count))
+                        ? Number(data.total_count)
+                        : (lastKnownTotal || 0);
+                    updatePagination(totalCount, data.page || currentPage, data.limit || pageSize);
+                    lastKnownTotal = totalCount;
+                    lastFilterFingerprint = fingerprint;
                 })
                 .catch(err => {
+                    if (err && err.name === "AbortError") return;
                     if (requestId !== activeSearchRequestId) return;
                     console.error("AJAX Search Failed: ", err);
                     const tbody = document.getElementById("papers-table-body");
@@ -3820,25 +3896,34 @@
                     const emptyState = document.getElementById("table-empty-state");
                     if (emptyState) {
                         emptyState.style.display = "block";
-                        emptyState.textContent = "Search failed to load. Refresh the page or redeploy the latest dashboard build.";
+                        emptyState.textContent = "Search failed to load. Refresh the page or try again.";
+                    }
+                    updatePagination(lastKnownTotal || 0, currentPage, pageSize);
+                })
+                .finally(() => {
+                    if (requestId === activeSearchRequestId) {
+                        setTableLoading(false);
                     }
                 });
         }
 
         // Update pagination bar displays and button active states
         function updatePagination(totalCount, page, limit) {
-            const rangeStart = totalCount === 0 ? 0 : (page - 1) * limit + 1;
-            const rangeEnd = Math.min(page * limit, totalCount);
+            const safeTotal = Number.isFinite(Number(totalCount)) ? Number(totalCount) : 0;
+            const safePage = Number.isFinite(Number(page)) ? Number(page) : 1;
+            const safeLimit = Number.isFinite(Number(limit)) ? Number(limit) : pageSize;
+            const rangeStart = safeTotal === 0 ? 0 : (safePage - 1) * safeLimit + 1;
+            const rangeEnd = Math.min(safePage * safeLimit, safeTotal);
 
-            document.getElementById("pagination-range").innerText = `${rangeStart}-${rangeEnd} of ${totalCount}`;
-            document.getElementById("pagination-current").innerText = page;
+            document.getElementById("pagination-range").innerText = `${rangeStart}-${rangeEnd} of ${safeTotal}`;
+            document.getElementById("pagination-current").innerText = safePage;
 
-            const totalPages = Math.ceil(totalCount / limit) || 1;
+            const totalPages = Math.ceil(safeTotal / safeLimit) || 1;
             document.getElementById("pagination-total").innerText = totalPages;
 
             // Enable/disable page buttons
-            document.getElementById("btn-page-prev").disabled = (page <= 1);
-            document.getElementById("btn-page-next").disabled = (page >= totalPages);
+            document.getElementById("btn-page-prev").disabled = tableSearchInFlight || safePage <= 1;
+            document.getElementById("btn-page-next").disabled = tableSearchInFlight || safePage >= totalPages;
         }
 
         // Change current page in pagination
@@ -3849,16 +3934,12 @@
 
         // Debounce search input to avoid querying on every keystroke
         function debounceSearch() {
-            clearTimeout(searchTimeout);
-            searchTimeout = setTimeout(() => {
-                searchTimeout = null;
-                triggerSearch(true);
-            }, 300);
+            scheduleSearch(true);
         }
 
         /** Immediate search for global filter bar controls (select/checkbox). */
         function triggerGlobalFilterSearch() {
-            triggerSearch(true);
+            scheduleSearch(true);
         }
 
         function handleHeaderClick(col) {
@@ -4061,7 +4142,9 @@
             applyColumnEditorProfile(currentTab);
             updateColumnVisibility();
 
-            triggerSearch();
+            lastKnownTotal = null;
+            lastFilterFingerprint = "";
+            triggerSearch(true);
         }
 
         let editMode = false;
@@ -4272,6 +4355,20 @@
 
         // Open details Drawer slide-in
         function openDrawer(paper) {
+            if (paper && paper.id && paper.abstract === undefined) {
+                fetch(`/api/papers/${paper.id}`)
+                    .then(res => {
+                        if (!res.ok) throw new Error("Failed to load paper");
+                        return res.json();
+                    })
+                    .then(data => renderDrawer(data.paper || paper))
+                    .catch(() => renderDrawer(paper));
+                return;
+            }
+            renderDrawer(paper);
+        }
+
+        function renderDrawer(paper) {
             activeEditingPaper = paper;
             editMode = false;
             document.getElementById("drawer-view-container").style.display = "block";

@@ -12,6 +12,7 @@ from datetime import datetime, timezone
 from typing import Any, Dict, Optional
 
 from db_manager import DatabaseManager
+from db_health import postgres_configured, postgres_is_healthy, production_reingest_limits
 
 logger = logging.getLogger("maude.watchdog")
 
@@ -104,9 +105,21 @@ def start_detached_two_pass(
     *,
     batch_size: int = 50,
     workers: int = 4,
+    workers_fast: Optional[int] = None,
     log_path: Optional[str] = None,
 ) -> int:
     """Starts two-pass Maude re-ingest detached; returns subprocess pid."""
+    limits = production_reingest_limits()
+    if postgres_configured():
+        if batch_size >= 50:
+            batch_size = limits["batch_size"]
+        if workers >= 4:
+            workers = limits["workers"]
+        if workers_fast is None:
+            workers_fast = limits["workers_fast"]
+    if workers_fast is None:
+        workers_fast = int(os.getenv("WORKERS_FAST", "4"))
+
     log_path = log_path or REINGEST_LOG
     os.makedirs(os.path.dirname(log_path) or ".", exist_ok=True)
     log_file = open(log_path, "a", encoding="utf-8")
@@ -114,6 +127,7 @@ def start_detached_two_pass(
     log_file.flush()
     cmd = [
         "python3",
+        "-u",
         "/app/reingest_heuristic_papers.py",
         "--pass",
         "two-pass",
@@ -122,14 +136,19 @@ def start_detached_two_pass(
         str(batch_size),
         "--workers",
         str(workers),
+        "--workers-fast",
+        str(workers_fast),
         "--refresh-maude-confidence",
     ]
+    env = os.environ.copy()
+    env["PYTHONUNBUFFERED"] = "1"
     proc = subprocess.Popen(
         cmd,
         stdout=log_file,
         stderr=subprocess.STDOUT,
         start_new_session=True,
         cwd="/app",
+        env=env,
     )
     logger.info("Started detached Maude re-ingest pid=%s cmd=%s", proc.pid, cmd)
     return proc.pid
@@ -278,23 +297,30 @@ def run_watchdog(
             "at": _now_iso(),
         }
     elif remaining is None:
-        # DB unavailable: restart if not running so bulk work can resume when DB recovers.
-        pid = start_detached_two_pass(batch_size=batch_size, workers=workers)
         summary = {
-            "action": "restarted",
-            "pid": pid,
-            "remaining": None,
+            "action": "db_unavailable",
+            "reason": "skip_restart_while_postgres_down",
             "db_error": db_error,
             "at": _now_iso(),
         }
     else:
-        pid = start_detached_two_pass(batch_size=batch_size, workers=workers)
-        summary = {
-            "action": "restarted",
-            "pid": pid,
-            "remaining": remaining,
-            "at": _now_iso(),
-        }
+        healthy, health_detail = postgres_is_healthy()
+        if postgres_configured() and not healthy:
+            summary = {
+                "action": "db_unavailable",
+                "reason": "skip_restart_while_postgres_down",
+                "db_error": health_detail,
+                "remaining": remaining,
+                "at": _now_iso(),
+            }
+        else:
+            pid = start_detached_two_pass(batch_size=batch_size, workers=workers)
+            summary = {
+                "action": "restarted",
+                "pid": pid,
+                "remaining": remaining,
+                "at": _now_iso(),
+            }
 
     try:
         db.set_metadata(METADATA_LAST_ACTION, json.dumps(summary))
@@ -315,9 +341,17 @@ def ensure_reingest_running(
     batch_size: int = 50,
     workers: int = 4,
 ) -> Dict[str, Any]:
-    """Starts detached re-ingest when no process is running (no DB required)."""
+    """Starts detached re-ingest when no process is running and Postgres is healthy."""
     if is_reingest_running():
         return {"action": "running", "at": _now_iso()}
+    healthy, detail = postgres_is_healthy()
+    if postgres_configured() and not healthy:
+        return {
+            "action": "db_unavailable",
+            "reason": "skip_start_while_postgres_down",
+            "db_error": detail,
+            "at": _now_iso(),
+        }
     pid = start_detached_two_pass(batch_size=batch_size, workers=workers)
     return {"action": "restarted", "pid": pid, "at": _now_iso()}
 
@@ -330,30 +364,54 @@ def main() -> None:
     parser.add_argument("--force", action="store_true", help="Run immediately (ignore 30m interval).")
     parser.add_argument("--batch-size", type=int, default=50)
     parser.add_argument("--workers", type=int, default=4)
-    parser.add_argument("--status", action="store_true", help="Print last watchdog action only.")
-    parser.add_argument("--start-only", action="store_true", help="Start re-ingest if stopped (no DB).")
+    parser.add_argument("--status", action="store_true", help="Print watchdog and bulk status.")
+    parser.add_argument("--disarm", action="store_true", help="Stop auto-restart until next scheduled bulk job.")
+    parser.add_argument("--start-only", action="store_true", help="Start re-ingest if stopped and Postgres is healthy.")
     args = parser.parse_args()
+
+    if args.disarm:
+        try:
+            db = DatabaseManager()
+            deactivate_bulk_watchdog(db)
+            print(json.dumps({"action": "disarmed", "at": _now_iso()}, indent=2))
+        except Exception as exc:
+            print(json.dumps({"action": "disarm_failed", "error": str(exc)}, indent=2))
+        return
 
     if args.start_only:
         result = ensure_reingest_running(batch_size=args.batch_size, workers=args.workers)
         print(json.dumps(result, indent=2))
         return
 
+    if args.status:
+        healthy, health_detail = postgres_is_healthy()
+        status = {
+            "postgres_healthy": healthy,
+            "postgres_detail": health_detail,
+            "reingest_running": is_reingest_running(),
+        }
+        try:
+            db = DatabaseManager()
+            status["watchdog_active"] = is_bulk_watchdog_active(db)
+            raw = db.get_metadata(METADATA_LAST_ACTION) or "{}"
+            status["last_action"] = json.loads(raw) if raw.startswith("{") else raw
+            try:
+                status["remaining"] = _with_db_retries(count_papers_needing_reingest, db)
+            except Exception as exc:
+                status["remaining"] = None
+                status["remaining_error"] = str(exc)
+        except Exception as exc:
+            status["db_error"] = str(exc)
+        print(json.dumps(status, indent=2))
+        return
+
     try:
         db = DatabaseManager()
     except Exception as exc:
         if args.force:
-            print(json.dumps({"db_error": str(exc), **ensure_reingest_running()}, indent=2))
+            print(json.dumps({"db_error": str(exc), "action": "db_unavailable"}, indent=2))
             return
         raise
-
-    if args.status:
-        raw = db.get_metadata(METADATA_LAST_ACTION) or "{}"
-        print(raw)
-        print("active", is_bulk_watchdog_active(db))
-        print("running", is_reingest_running())
-        print("remaining", count_papers_needing_reingest(db))
-        return
 
     result = run_watchdog(db, force=args.force, batch_size=args.batch_size, workers=args.workers)
     print(json.dumps(result, indent=2))

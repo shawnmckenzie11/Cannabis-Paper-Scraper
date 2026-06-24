@@ -2,7 +2,14 @@
 import json
 import unittest
 
-from paper_tab_flags import LEGACY_TAB_SQL, compute_tab_flags, legacy_tab_sql_for, recent_range_sql, tab_sql_for
+from paper_tab_flags import (
+    LEGACY_TAB_SQL,
+    compute_tab_flags,
+    dashboard_tab_sql,
+    legacy_tab_sql_for,
+    recent_range_sql,
+    tab_sql_for,
+)
 from db_manager import DatabaseManager
 
 
@@ -87,6 +94,14 @@ class TestPaperTabFlags(unittest.TestCase):
         self.assertEqual(tab_sql_for("clinical"), "papers.tab_clinical = 1")
         self.assertEqual(tab_sql_for("preclinical"), "papers.tab_preclinical = 1")
 
+    def test_dashboard_tab_sql_covers_primary_tabs(self):
+        """Dashboard tab SQL uses indexed columns for all primary tabs."""
+        self.assertIn("tab_preclinical", dashboard_tab_sql("all_original"))
+        self.assertIn("tab_clinical", dashboard_tab_sql("all_original"))
+        self.assertEqual(dashboard_tab_sql("clinical"), "papers.tab_clinical = 1")
+        self.assertEqual(dashboard_tab_sql("review"), "papers.tab_review = 1")
+        self.assertIn("tab_tangential", dashboard_tab_sql("unclassified"))
+
     def test_legacy_tab_sql_includes_all_original_and_unclassified(self):
         """New dashboard tabs have legacy query-time SQL fragments."""
         self.assertIn("all_original", LEGACY_TAB_SQL)
@@ -111,9 +126,23 @@ class TestDashboardSearchFilters(unittest.TestCase):
             "tab": "all_original",
             "recent_range": "week",
         })
-        self.assertTrue(any("publication_type" in clause or "original research" in clause for clause in clauses))
+        joined = " ".join(clauses)
+        if db._tab_flags_are_ready():
+            self.assertIn("tab_preclinical", joined)
+        else:
+            self.assertTrue("publication_type" in joined or "original research" in joined)
         self.assertTrue(any("date_harvested" in clause for clause in clauses))
         self.assertEqual(len(params), 1)
+
+    def test_clinical_tab_uses_indexed_sql_when_ready(self):
+        """Clinical tab filter prefers indexed tab_clinical when columns exist."""
+        db = DatabaseManager()
+        clauses, _ = db._build_filter_clauses({"tab": "clinical"})
+        joined = " ".join(clauses)
+        if db._tab_flags_are_ready():
+            self.assertIn("papers.tab_clinical = 1", joined)
+        else:
+            self.assertIn("clinical", joined.lower())
 
     def test_clinical_tab_with_sample_size_filter(self):
         """Clinical sub-node filters apply numeric range predicates."""
@@ -160,6 +189,16 @@ class TestDashboardSearchFilters(unittest.TestCase):
         fulltext_clauses, _ = db._build_filter_clauses({"has_full_text": True})
         self.assertTrue(any("pubmed.ncbi.nlm.nih.gov" in clause for clause in fulltext_clauses))
 
+
+    def test_search_papers_include_total_returns_tuple(self):
+        """search_papers(include_total=True) returns papers and total count."""
+        db = DatabaseManager()
+        results, total = db.search_papers({"tab": "clinical", "limit": 5}, include_total=True)
+        self.assertIsInstance(results, list)
+        self.assertIsInstance(total, int)
+        if results:
+            self.assertNotIn("abstract", results[0])
+            self.assertIn("title", results[0])
 
     def test_publication_type_filter_sql(self):
         """Publication type sidebar filter builds IN clause (§5.2)."""

@@ -17,6 +17,31 @@ except ImportError:
 
 DATABASE_FILE = os.getenv("DATABASE_PATH", "cannabis_papers.db")
 SCHEMA_FILE = "schema.sql"
+_DEBUG_LOG_PATH = os.path.join(
+    os.path.dirname(os.path.abspath(__file__)),
+    ".cursor",
+    "debug-65a066.log",
+)
+
+
+def _agent_debug_log(hypothesis_id: str, location: str, message: str, data: Optional[Dict[str, Any]] = None) -> None:
+    """Append one NDJSON debug line for agent diagnostics (session 65a066)."""
+    # #region agent log
+    try:
+        payload = {
+            "sessionId": "65a066",
+            "hypothesisId": hypothesis_id,
+            "location": location,
+            "message": message,
+            "data": data or {},
+            "timestamp": int(datetime.now().timestamp() * 1000),
+        }
+        os.makedirs(os.path.dirname(_DEBUG_LOG_PATH), exist_ok=True)
+        with open(_DEBUG_LOG_PATH, "a", encoding="utf-8") as handle:
+            handle.write(json.dumps(payload) + "\n")
+    except Exception:
+        pass
+    # #endregion
 
 _SQL_ORIGINAL_RESEARCH = (
     "("
@@ -126,6 +151,53 @@ _DASHBOARD_TAB_KEYS = (
     "clinical",
     "review",
     "unclassified",
+)
+
+TABLE_LIST_COLUMNS = (
+    "papers.id",
+    "papers.pmid",
+    "papers.doi",
+    "papers.title",
+    "papers.authors",
+    "papers.journal",
+    "papers.year",
+    "papers.full_text_link",
+    "papers.study_type",
+    "papers.publication_type",
+    "papers.exposure_method",
+    "papers.cannabis_type",
+    "papers.thc_pct",
+    "papers.cbd_pct",
+    "papers.dose_mg",
+    "papers.puff_count",
+    "papers.thc_mg_ml",
+    "papers.thc_mg_g",
+    "papers.thc_mg_kg",
+    "papers.cbd_mg_ml",
+    "papers.cbd_mg_g",
+    "papers.cbd_mg_kg",
+    "papers.thc_uM",
+    "papers.cbd_uM",
+    "papers.strain_reported",
+    "papers.strain_normalized",
+    "papers.duration_days",
+    "papers.inhaled_exposure_duration",
+    "papers.administration_frequency",
+    "papers.treatment_duration",
+    "papers.repeat_exposure_count",
+    "papers.exposure_regimen_bin",
+    "papers.sample_size",
+    "papers.outcome_domain",
+    "papers.open_access",
+    "papers.citation_count",
+    "papers.date_harvested",
+    "papers.expert_locked_fields",
+    "papers.classification_confidence",
+    "papers.classifier_version",
+    "papers.ingestion_status",
+    "papers.species",
+    "papers.population_age",
+    "papers.population_sex",
 )
 
 
@@ -412,6 +484,7 @@ class DatabaseManager:
     """Manages SQLite and PostgreSQL operations, indexing, and dynamic querying for cannabis papers."""
     
     _initialized = False
+    _postgres_compat_ready = False
     
     @property
     def is_postgres(self):
@@ -435,71 +508,108 @@ class DatabaseManager:
         db_exists = False
         if self.is_postgres:
             try:
+                if not DatabaseManager._postgres_compat_ready:
+                    conn_check = self.get_connection()
+                    unwrapped_conn = conn_check.conn
+                    cursor = unwrapped_conn.cursor()
+                    cursor.execute("""
+                        CREATE OR REPLACE FUNCTION json_valid(p_val text)
+                        RETURNS boolean AS $$
+                        BEGIN
+                          IF p_val IS NULL THEN
+                            RETURN NULL;
+                          END IF;
+                          PERFORM p_val::jsonb;
+                          RETURN true;
+                        EXCEPTION
+                          WHEN others THEN
+                            RETURN false;
+                        END;
+                        $$ LANGUAGE plpgsql IMMUTABLE;
+                    """)
+                    cursor.execute("""
+                        CREATE OR REPLACE FUNCTION json_type(p_val text)
+                        RETURNS text AS $$
+                        DECLARE
+                          v_json jsonb;
+                        BEGIN
+                          IF p_val IS NULL THEN
+                            RETURN NULL;
+                          END IF;
+                          v_json := p_val::jsonb;
+                          RETURN jsonb_typeof(v_json);
+                        EXCEPTION
+                          WHEN others THEN
+                            RETURN NULL;
+                        END;
+                        $$ LANGUAGE plpgsql IMMUTABLE;
+                    """)
+                    unwrapped_conn.commit()
+                    DatabaseManager._postgres_compat_ready = True
+                    conn_check.close()
+                    _agent_debug_log(
+                        "C",
+                        "db_manager.__init__",
+                        "postgres_compat_functions_ready",
+                        {"compat_ready": True},
+                    )
                 conn_check = self.get_connection()
-                # Unwrapped connection check
                 unwrapped_conn = conn_check.conn
                 cursor = unwrapped_conn.cursor()
-                # Ensure compatibility functions exist
-                cursor.execute("""
-                    CREATE OR REPLACE FUNCTION json_valid(p_val text)
-                    RETURNS boolean AS $$
-                    BEGIN
-                      IF p_val IS NULL THEN
-                        RETURN NULL;
-                      END IF;
-                      PERFORM p_val::jsonb;
-                      RETURN true;
-                    EXCEPTION
-                      WHEN others THEN
-                        RETURN false;
-                    END;
-                    $$ LANGUAGE plpgsql IMMUTABLE;
-                """)
-                cursor.execute("""
-                    CREATE OR REPLACE FUNCTION json_type(p_val text)
-                    RETURNS text AS $$
-                    DECLARE
-                      v_json jsonb;
-                    BEGIN
-                      IF p_val IS NULL THEN
-                        RETURN NULL;
-                      END IF;
-                      v_json := p_val::jsonb;
-                      RETURN jsonb_typeof(v_json);
-                    EXCEPTION
-                      WHEN others THEN
-                        RETURN NULL;
-                    END;
-                    $$ LANGUAGE plpgsql IMMUTABLE;
-                """)
-                unwrapped_conn.commit()
-                cursor.execute("SELECT EXISTS (SELECT FROM information_schema.tables WHERE table_name = 'papers');")
+                cursor.execute(
+                    "SELECT EXISTS (SELECT FROM information_schema.tables WHERE table_name = 'papers');"
+                )
                 row = cursor.fetchone()
                 db_exists = list(row.values())[0] if isinstance(row, dict) else row[0]
-                
+                _agent_debug_log(
+                    "A",
+                    "db_manager.__init__",
+                    "postgres_papers_table_probe",
+                    {"db_exists": bool(db_exists)},
+                )
+
                 if db_exists:
                     try:
-                        cursor.execute("SELECT EXISTS (SELECT FROM information_schema.tables WHERE table_name = 'system_metadata');")
+                        cursor.execute(
+                            "SELECT EXISTS (SELECT FROM information_schema.tables WHERE table_name = 'system_metadata');"
+                        )
                         meta_table_exists_row = cursor.fetchone()
-                        meta_table_exists = list(meta_table_exists_row.values())[0] if meta_table_exists_row else False
+                        meta_table_exists = (
+                            list(meta_table_exists_row.values())[0] if meta_table_exists_row else False
+                        )
                         if meta_table_exists:
-                            cursor.execute("SELECT value FROM system_metadata WHERE key = 'fts_index_updated_authors';")
+                            cursor.execute(
+                                "SELECT value FROM system_metadata WHERE key = 'fts_index_updated_authors';"
+                            )
                             meta_row = cursor.fetchone()
                             meta_val = list(meta_row.values())[0] if meta_row else None
-                            if meta_val != 'true':
+                            if meta_val != "true":
                                 cursor.execute("SET maintenance_work_mem = '16MB';")
                                 cursor.execute("DROP INDEX IF EXISTS idx_papers_fts;")
-                                cursor.execute("CREATE INDEX IF NOT EXISTS idx_papers_fts ON papers USING GIN (to_tsvector('english', title || ' ' || coalesce(abstract, '') || ' ' || coalesce(authors, '')));")
-                                cursor.execute("INSERT INTO system_metadata (key, value) VALUES ('fts_index_updated_authors', 'true') ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value;")
+                                cursor.execute(
+                                    "CREATE INDEX IF NOT EXISTS idx_papers_fts ON papers "
+                                    "USING GIN (to_tsvector('english', title || ' ' || "
+                                    "coalesce(abstract, '') || ' ' || coalesce(authors, '')));"
+                                )
+                                cursor.execute(
+                                    "INSERT INTO system_metadata (key, value) VALUES "
+                                    "('fts_index_updated_authors', 'true') "
+                                    "ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value;"
+                                )
                                 unwrapped_conn.commit()
                     except Exception as idx_err:
                         logger.error(f"Failed to update FTS GIN index: {idx_err}")
-                        pass
-                        
+
                 conn_check.close()
             except Exception as e:
                 logger.error(f"Postgres connection check/compat functions failed: {e}")
-                pass
+                _agent_debug_log(
+                    "B",
+                    "db_manager.__init__",
+                    "postgres_check_failed_assume_exists",
+                    {"error": str(e), "skip_init_db": True},
+                )
+                db_exists = True
         else:
             if os.path.exists(self.db_path) and os.path.getsize(self.db_path) > 0:
                 try:
@@ -513,7 +623,15 @@ class DatabaseManager:
                     pass
 
         if not db_exists:
-            self.init_db()
+            if self.is_postgres:
+                _agent_debug_log(
+                    "B",
+                    "db_manager.__init__",
+                    "postgres_missing_papers_table_no_autoinit",
+                    {"init_db_skipped": True},
+                )
+            else:
+                self.init_db()
             DatabaseManager._initialized = True
         elif not DatabaseManager._initialized:
             if not self.is_postgres:
@@ -527,10 +645,18 @@ class DatabaseManager:
                 raise ImportError("PostgreSQL connection requested but psycopg2 is not installed.")
             # Handle URL scheme adjustment if needed (Fly.io might pass postgres://)
             url = self.database_url
-            conn = psycopg2.connect(url, cursor_factory=psycopg2.extras.RealDictCursor)
+            conn = psycopg2.connect(
+                url,
+                cursor_factory=psycopg2.extras.RealDictCursor,
+                connect_timeout=int(os.getenv("POSTGRES_CONNECT_TIMEOUT", "5")),
+            )
             return PostgresConnectionWrapper(conn)
         else:
-            conn = sqlite3.connect(self.db_path, timeout=30.0)
+            conn = sqlite3.connect(
+                self.db_path,
+                timeout=30.0,
+                check_same_thread=False,
+            )
             conn.row_factory = sqlite3.Row
             conn.execute("PRAGMA foreign_keys = ON;")
             conn.execute("PRAGMA journal_mode = WAL;")
@@ -788,7 +914,12 @@ class DatabaseManager:
                 "CREATE INDEX IF NOT EXISTS idx_papers_version ON papers(classifier_version);",
                 "CREATE INDEX IF NOT EXISTS idx_papers_pubtype ON papers(publication_type);",
                 "CREATE INDEX IF NOT EXISTS idx_papers_harvested ON papers(date_harvested);",
-                "CREATE INDEX IF NOT EXISTS idx_papers_thc ON papers(thc_pct);"
+                "CREATE INDEX IF NOT EXISTS idx_papers_thc ON papers(thc_pct);",
+                "CREATE INDEX IF NOT EXISTS idx_papers_tab_preclinical ON papers(tab_preclinical);",
+                "CREATE INDEX IF NOT EXISTS idx_papers_tab_clinical ON papers(tab_clinical);",
+                "CREATE INDEX IF NOT EXISTS idx_papers_tab_review ON papers(tab_review);",
+                "CREATE INDEX IF NOT EXISTS idx_papers_tab_unclassified ON papers(tab_unclassified_preclinical);",
+                "CREATE INDEX IF NOT EXISTS idx_papers_tab_tangential ON papers(tab_tangential);",
             ]:
                 try:
                     conn.execute(idx_stmt)
@@ -1888,7 +2019,7 @@ class DatabaseManager:
             tab = "all_original"
         if tab == "recent":
             tab = None
-        tab_sql = _TAB_SQL.get(tab or "")
+        tab_sql = self._resolve_tab_sql(tab)
         if tab_sql:
             where_clauses.append(tab_sql)
 
@@ -2058,12 +2189,16 @@ class DatabaseManager:
         
         query_val = filters.get("query")
         
+        list_columns_sql = ", ".join(TABLE_LIST_COLUMNS)
         # 1. Base Select
         if query_val:
             # Join with FTS table
-            select_sql = "SELECT papers.*, papers_fts.rank FROM papers JOIN papers_fts ON papers.id = papers_fts.rowid"
+            select_sql = (
+                f"SELECT {list_columns_sql}, papers_fts.rank "
+                f"FROM papers JOIN papers_fts ON papers.id = papers_fts.rowid"
+            )
         else:
-            select_sql = "SELECT papers.* FROM papers"
+            select_sql = f"SELECT {list_columns_sql} FROM papers"
             
         where_clauses, params = self._build_filter_clauses(filters)
 
@@ -2218,7 +2353,7 @@ class DatabaseManager:
         cursor = conn.cursor()
         try:
             for tab_key in _DASHBOARD_TAB_KEYS:
-                tab_sql = _TAB_SQL.get(tab_key, "")
+                tab_sql = self._resolve_tab_sql(tab_key)
                 if not tab_sql:
                     counts[tab_key] = 0
                     continue
@@ -2434,6 +2569,21 @@ class DatabaseManager:
             return cursor.rowcount > 0
         finally:
             conn.close()
+
+    def _resolve_tab_sql(self, tab: Optional[str]) -> str:
+        """Return tab WHERE SQL, preferring indexed tab_* columns when available."""
+        if not tab:
+            return ""
+        from paper_tab_flags import dashboard_tab_sql, legacy_tab_sql_for
+
+        if self._tab_flags_are_ready():
+            indexed_sql = dashboard_tab_sql(tab)
+            if indexed_sql:
+                return indexed_sql
+        legacy_sql = legacy_tab_sql_for(tab)
+        if legacy_sql:
+            return legacy_sql
+        return _TAB_SQL.get(tab, "")
 
     def sync_tab_flags_for_paper(
         self,

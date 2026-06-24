@@ -749,16 +749,23 @@ def api_search():
     clean_filters["outcome_logic"] = outcome_logic
     clean_filters["study_logic"] = study_logic
         
+    import time
+    search_started = time.perf_counter()
     try:
         if skip_count and known_total is not None:
             total_count = int(known_total)
             clean_filters["limit"] = limit
             clean_filters["offset"] = (page - 1) * limit
             results = db.search_papers(clean_filters)
+            count_ms = 0.0
         else:
             clean_filters["limit"] = limit
             clean_filters["offset"] = (page - 1) * limit
+            count_started = time.perf_counter()
             results, total_count = db.search_papers(clean_filters, include_total=True)
+            count_ms = (time.perf_counter() - count_started) * 1000.0
+        
+        search_ms = (time.perf_counter() - search_started) * 1000.0
         
         # Calculate newly_harvested boolean based on last auto-harvest timestamp
         last_harvest_ts = db.get_metadata("last_daily_harvest_timestamp")
@@ -773,10 +780,22 @@ def api_search():
             "papers": results,
             "total_count": total_count,
             "page": page,
-            "limit": limit
+            "limit": limit,
+            "search_ms": round(search_ms, 1),
+            "count_ms": round(count_ms, 1),
+            "skipped_count": bool(skip_count and known_total is not None),
         })
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+
+@app.route("/api/papers/<int:paper_id>", methods=["GET"])
+def api_get_paper(paper_id):
+    """Return a single paper row for drawer/detail views."""
+    db = DatabaseManager()
+    paper = db.get_paper(paper_id)
+    if not paper:
+        return jsonify({"error": "Paper not found."}), 404
+    return jsonify({"paper": paper})
 
 @app.route("/api/papers/delete", methods=["POST"])
 @admin_required

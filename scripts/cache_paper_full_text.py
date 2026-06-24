@@ -58,6 +58,17 @@ def build_parser() -> argparse.ArgumentParser:
         action="store_true",
         help="Re-download even when a cache entry already exists.",
     )
+    parser.add_argument(
+        "--reingest-slow-candidates",
+        action="store_true",
+        help="Cache papers eligible for the slow re-ingest pass (maude/heuristic original research).",
+    )
+    parser.add_argument(
+        "--workers",
+        type=int,
+        default=4,
+        help="Parallel download workers for --reingest-slow-candidates (default: 4).",
+    )
     return parser
 
 
@@ -111,6 +122,16 @@ def collect_papers(args: argparse.Namespace) -> list:
 def main() -> None:
     """CLI entry point."""
     args = build_parser().parse_args()
+    if args.reingest_slow_candidates:
+        import reingest_heuristic_papers as rip
+
+        summary = rip.prewarm_slow_pass_cache(
+            limit=args.limit,
+            workers=args.workers,
+        )
+        print(json.dumps(summary, indent=2))
+        return
+
     papers = collect_papers(args)
     if not papers:
         print("No papers to cache.")

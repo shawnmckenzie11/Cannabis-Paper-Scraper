@@ -96,7 +96,7 @@ def schedule_maude_reingest(
             "refresh_maude_confidence": refresh_maude_confidence,
             "maude_and_heuristic": maude_and_heuristic,
             "two_pass": maude_and_heuristic,
-            "workers": 4,
+            "workers": 1,
             "detached": maude_and_heuristic,
         },
     }
@@ -123,12 +123,23 @@ def cancel_job(job_id: str, db: Optional[DatabaseManager] = None) -> bool:
 def _execute_maude_reingest(payload: Dict[str, Any]) -> Dict[str, Any]:
     """Runs the Maude two-pass or legacy re-ingest pipeline."""
     import reingest_heuristic_papers
+    from db_health import postgres_configured, postgres_is_healthy, production_reingest_limits
 
-    batch_size = int(payload.get("batch_size") or 25)
+    limits = production_reingest_limits()
+    batch_size = int(payload.get("batch_size") or limits["batch_size"])
     maude_and_heuristic = bool(payload.get("maude_and_heuristic"))
     two_pass = bool(payload.get("two_pass", maude_and_heuristic))
-    workers = int(payload.get("workers") or 4)
+    workers = int(payload.get("workers") or limits["workers"])
     detached = bool(payload.get("detached", two_pass and maude_and_heuristic))
+
+    if postgres_configured():
+        healthy, detail = postgres_is_healthy()
+        if not healthy:
+            return {
+                "status": "skipped",
+                "reason": "postgres_unavailable",
+                "detail": detail,
+            }
 
     if detached:
         from maude_reingest_watchdog import (

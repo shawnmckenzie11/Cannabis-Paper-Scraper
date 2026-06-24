@@ -149,6 +149,21 @@ def tab_sql_for(tab: str) -> str:
     return f"papers.{column} = 1"
 
 
+def dashboard_tab_sql(tab: str) -> str:
+    """Return the indexed WHERE fragment for a primary dashboard tab key."""
+    normalized = (tab or "").strip()
+    if normalized == "all_original":
+        return (
+            "(papers.tab_preclinical = 1 OR papers.tab_clinical = 1 "
+            "OR papers.tab_unclassified_preclinical = 1)"
+        )
+    if normalized == "unclassified":
+        return (
+            "(papers.tab_tangential = 1 OR papers.tab_unclassified_preclinical = 1)"
+        )
+    return tab_sql_for(normalized)
+
+
 BACKFILL_TAB_FLAGS_SQL_FAST = """
 UPDATE papers SET
   tab_tangential = CASE
