@@ -4,9 +4,11 @@ import os
 import json
 import sqlite3
 from pathlib import Path
+from unittest.mock import patch
 from db_manager import DatabaseManager
 import extractor
 import classifier
+import reingest_heuristic_papers as reingest
 
 class TestHeuristicExtractor(unittest.TestCase):
     """Test cases for regex extractions and heuristics in extractor.py."""
@@ -258,6 +260,90 @@ class TestHeuristicExtractor(unittest.TestCase):
         self.assertIn("This is an animal study", summary_no)
         self.assertIn("pure cannabinoid cannabis administration", summary_no)
         self.assertIn("No specific strain was specified.", summary_no)
+
+
+class TestHeuristicReingestion(unittest.TestCase):
+    """Test cases for bounded heuristic paper re-ingestion."""
+
+    def setUp(self):
+        """Create an isolated SQLite database for each re-ingestion test."""
+        self.test_db_path = "test_reingest_heuristic_papers.db"
+        if os.path.exists(self.test_db_path):
+            os.remove(self.test_db_path)
+        self.db = DatabaseManager(self.test_db_path)
+
+    def tearDown(self):
+        """Remove the isolated SQLite database after each re-ingestion test."""
+        if os.path.exists(self.test_db_path):
+            os.remove(self.test_db_path)
+
+    def test_max_papers_limits_pending_reingestion(self):
+        """Only the capped number of pending papers should be re-ingested."""
+        conn = self.db.get_connection()
+        cur = conn.cursor()
+        for idx in range(1, 4):
+            cur.execute(
+                """
+                INSERT INTO papers (
+                    pmid, title, abstract, date_harvested, classifier_version,
+                    classification_confidence, expert_locked_fields
+                ) VALUES (?, ?, ?, ?, ?, ?, ?)
+                """,
+                (
+                    f"pending-{idx}",
+                    f"Pending Cannabis Paper {idx}",
+                    "This clinical cannabis study measured outcomes over 30 days.",
+                    "2026-06-25",
+                    "heuristic-reclassify-1.0.0",
+                    0.9,
+                    "[]",
+                ),
+            )
+        cur.execute(
+            """
+            INSERT INTO papers (
+                pmid, title, abstract, date_harvested, classifier_version,
+                classification_confidence, expert_locked_fields
+            ) VALUES (?, ?, ?, ?, ?, ?, ?)
+            """,
+            (
+                "already-current",
+                "Already Current Cannabis Paper",
+                "This clinical cannabis study was already processed.",
+                "2026-06-25",
+                "heuristic-1.0.0",
+                0.6,
+                "[]",
+            ),
+        )
+        conn.commit()
+        conn.close()
+
+        with patch.object(reingest, "DatabaseManager", return_value=self.db):
+            summary = reingest.reingest_heuristic_papers(
+                batch_size=1,
+                only_pending=True,
+                max_papers=2,
+            )
+
+        self.assertEqual(summary["papers_processed"], 2)
+
+        conn = self.db.get_connection()
+        cur = conn.cursor()
+        cur.execute(
+            """
+            SELECT pmid, classifier_version
+            FROM papers
+            ORDER BY id
+            """
+        )
+        versions = {row["pmid"]: row["classifier_version"] for row in cur.fetchall()}
+        conn.close()
+
+        self.assertEqual(versions["pending-1"], "heuristic-1.0.0")
+        self.assertEqual(versions["pending-2"], "heuristic-1.0.0")
+        self.assertEqual(versions["pending-3"], "heuristic-reclassify-1.0.0")
+        self.assertEqual(versions["already-current"], "heuristic-1.0.0")
 
 
 class TestDatabaseManager(unittest.TestCase):
