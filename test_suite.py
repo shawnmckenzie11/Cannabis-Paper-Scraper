@@ -260,6 +260,85 @@ class TestHeuristicExtractor(unittest.TestCase):
         self.assertIn("No specific strain was specified.", summary_no)
 
 
+class TestHeuristicReingestion(unittest.TestCase):
+    """Test cases for bounded heuristic re-ingestion runs."""
+
+    def setUp(self):
+        """Create an isolated database and point the re-ingestion script at it."""
+        self.test_db_path = "test_reingest_papers.db"
+        for suffix in ("", "-wal", "-shm"):
+            path = f"{self.test_db_path}{suffix}"
+            if os.path.exists(path):
+                try:
+                    os.remove(path)
+                except Exception:
+                    pass
+        self.db = DatabaseManager(self.test_db_path)
+
+        import reingest_heuristic_papers
+
+        self.reingest_module = reingest_heuristic_papers
+        self.original_db_manager = reingest_heuristic_papers.DatabaseManager
+        reingest_heuristic_papers.DatabaseManager = lambda: self.db
+
+    def tearDown(self):
+        """Restore the re-ingestion database factory and remove test files."""
+        self.reingest_module.DatabaseManager = self.original_db_manager
+        for suffix in ("", "-wal", "-shm"):
+            path = f"{self.test_db_path}{suffix}"
+            if os.path.exists(path):
+                try:
+                    os.remove(path)
+                except Exception:
+                    pass
+
+    def test_max_papers_limits_pending_reingestion(self):
+        """Verify a capped pending-only run updates only the requested row count."""
+        for idx in range(3):
+            self.db.insert_paper(
+                {
+                    "pmid": f"reingest-{idx}",
+                    "title": f"Pending cannabis heuristic paper {idx}",
+                    "abstract": "This randomized clinical trial studied oral CBD for pain over 14 days.",
+                    "study_type": ["review"],
+                    "exposure_method": ["inhaled"],
+                    "cannabis_type": ["unknown"],
+                    "outcome_domain": ["other"],
+                    "classification_confidence": 0.95,
+                    "classifier_version": "heuristic-reclassify-1.0.0",
+                }
+            )
+
+        summary = self.reingest_module.reingest_heuristic_papers(
+            dry_run=False,
+            batch_size=1,
+            only_pending=True,
+            max_papers=2,
+        )
+
+        self.assertEqual(summary["papers_processed"], 2)
+
+        conn = self.db.get_connection()
+        try:
+            cur = conn.cursor()
+            cur.execute(
+                """
+                SELECT classifier_version, COUNT(*) AS count
+                FROM papers
+                GROUP BY classifier_version
+                """
+            )
+            version_counts = {
+                row["classifier_version"]: row["count"]
+                for row in cur.fetchall()
+            }
+        finally:
+            conn.close()
+
+        self.assertEqual(version_counts.get("heuristic-1.0.0"), 2)
+        self.assertEqual(version_counts.get("heuristic-reclassify-1.0.0"), 1)
+
+
 class TestDatabaseManager(unittest.TestCase):
     """Test cases for SQLite dynamic operations, FTS5 sync, and CRUD."""
 
