@@ -1556,10 +1556,18 @@ class TestHeuristicReingestion(unittest.TestCase):
             "abstract": "abstract TEXT",
             "expert_locked_fields": "expert_locked_fields TEXT",
         }
+        column_types = {
+            "classification_confidence": "REAL",
+            "cbd_pct": "REAL",
+            "dose_mg": "REAL",
+            "duration_days": "REAL",
+            "sample_size": "INTEGER",
+            "thc_pct": "REAL",
+        }
         columns = list(base_columns.values())
         for column in reingest_heuristic_papers.UPDATE_COLUMNS:
             if column not in base_columns:
-                columns.append(f"{column} TEXT")
+                columns.append(f"{column} {column_types.get(column, 'TEXT')}")
 
         conn = sqlite3.connect(self.db_path)
         try:
