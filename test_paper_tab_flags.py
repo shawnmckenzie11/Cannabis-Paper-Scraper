@@ -127,7 +127,7 @@ class TestDashboardSearchFilters(unittest.TestCase):
             "recent_range": "week",
         })
         joined = " ".join(clauses)
-        if db._tab_flags_are_ready():
+        if db._tab_flag_columns_exist():
             self.assertIn("tab_preclinical", joined)
         else:
             self.assertTrue("publication_type" in joined or "original research" in joined)
@@ -139,7 +139,7 @@ class TestDashboardSearchFilters(unittest.TestCase):
         db = DatabaseManager()
         clauses, _ = db._build_filter_clauses({"tab": "clinical"})
         joined = " ".join(clauses)
-        if db._tab_flags_are_ready():
+        if db._tab_flag_columns_exist():
             self.assertIn("papers.tab_clinical = 1", joined)
         else:
             self.assertIn("clinical", joined.lower())
@@ -155,6 +155,30 @@ class TestDashboardSearchFilters(unittest.TestCase):
         self.assertIn("papers.sample_size >= ?", clauses)
         self.assertIn("papers.sample_size <= ?", clauses)
         self.assertEqual(params[-2:], [10.0, 100.0])
+
+    def test_clinical_population_age_filter(self):
+        """Study population age filter builds exact IN clause on population_age."""
+        db = DatabaseManager()
+        clauses, params = db._build_filter_clauses({
+            "tab": "clinical",
+            "population_age": "pediatric,adult",
+        })
+        joined = " ".join(clauses)
+        self.assertIn("papers.population_age", joined)
+        self.assertIn("pediatric", params)
+        self.assertIn("adult", params)
+
+    def test_clinical_population_sex_filter(self):
+        """Study population sex filter builds exact IN clause on population_sex."""
+        db = DatabaseManager()
+        clauses, params = db._build_filter_clauses({
+            "tab": "clinical",
+            "population_sex": "male,female",
+        })
+        joined = " ".join(clauses)
+        self.assertIn("papers.population_sex", joined)
+        self.assertIn("male", params)
+        self.assertIn("female", params)
 
     def test_preclinical_species_filter(self):
         """Species filter matches papers.species and study_type animal labels."""
@@ -210,6 +234,21 @@ class TestDashboardSearchFilters(unittest.TestCase):
         self.assertIn("publication_type", joined)
         self.assertIn("review", params)
         self.assertIn("meta-analysis", params)
+
+    def test_incomplete_tab_backfill_still_uses_indexed_sql(self):
+        """When tab_* columns exist, search uses indexed SQL even if backfill metadata is false."""
+        from unittest.mock import patch
+
+        db = DatabaseManager()
+        with patch.object(db, "_tab_flag_columns_exist", return_value=True), patch.object(
+            db, "get_metadata", return_value="false"
+        ):
+            DatabaseManager._tab_flags_ready_cache = None
+            self.assertFalse(db._tab_flags_are_ready())
+            clauses, _ = db._build_filter_clauses({"tab": "clinical"})
+            joined = " ".join(clauses)
+            self.assertIn("papers.tab_clinical = 1", joined)
+        DatabaseManager._tab_flags_ready_cache = None
 
 
 if __name__ == "__main__":

@@ -519,7 +519,7 @@ def run_harvest_pipeline(
         progress_callback: Optional callable for live progress text updates
         
     Returns:
-        tuple: (success_count, skipped_count_pubmed, filter_skipped)
+        tuple: (success_count, skipped_count_pubmed, filter_skipped, ingested_paper_ids)
     """
     db = DatabaseManager()
     harvest_batch_id = f"harvest_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
@@ -599,6 +599,7 @@ def run_harvest_pipeline(
 
     # 5. Process metadata extraction & classification
     success_count = 0
+    ingested_paper_ids: List[int] = []
     date_str = datetime.now().isoformat()
     total_to_process = len(merged_papers)
     
@@ -628,12 +629,18 @@ def run_harvest_pipeline(
             # Write to Database
             row_id = db.insert_paper(paper)
             success_count += 1
-            logger.info(f"  -> Saved paper successfully (DB ID: {row_id})")
+            ingested_paper_ids.append(int(row_id))
+            version = extracted.get("classifier_version", "unknown")
+            logger.info(
+                "  -> Saved paper successfully (DB ID: %s, classifier: %s)",
+                row_id,
+                version,
+            )
             
         except Exception as e:
             logger.error(f"  -> Failed to process paper '{title[:40]}...': {e}")
             
-    return success_count, skipped_count_pubmed, filter_skipped
+    return success_count, skipped_count_pubmed, filter_skipped, ingested_paper_ids
 
 
 def main():
@@ -645,7 +652,7 @@ def main():
     
     args = parser.parse_args()
     
-    success_count, skipped_count, filter_skipped = run_harvest_pipeline(
+    success_count, skipped_count, filter_skipped, _ingested_ids = run_harvest_pipeline(
         query=args.query,
         max_results=args.max_results,
         update=args.update,

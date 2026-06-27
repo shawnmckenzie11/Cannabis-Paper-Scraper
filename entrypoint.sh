@@ -33,10 +33,6 @@ if [ -f "$DB_PATH" ]; then
     if ! python3 -m alembic upgrade head; then
         echo "Warning: database migrations did not complete; continuing startup."
     fi
-    echo "Ensuring indexed tab membership columns are ready..."
-    if ! python3 ensure_tab_flags.py; then
-        echo "Warning: tab flag backfill did not complete; continuing startup."
-    fi
 fi
 
 # Start gunicorn in background so the port is immediately available
@@ -45,6 +41,13 @@ GUNICORN_PID=$!
 
 # Give gunicorn a moment to bind the port before proceeding
 sleep 2
+
+if [ -f "$DB_PATH" ] && [ -z "$DATABASE_URL" ]; then
+    echo "Scheduling indexed tab membership backfill in background (local SQLite only)..."
+    nohup python3 ensure_tab_flags.py > /tmp/tab_flags_backfill.log 2>&1 &
+elif [ -n "$DATABASE_URL" ]; then
+    echo "PostgreSQL mode: skipping startup tab backfill (run ensure_tab_flags.py manually during maintenance)."
+fi
 
 # Run heuristic reclassification in background if needed (non-blocking)
 if [ -f "$DB_PATH" ]; then

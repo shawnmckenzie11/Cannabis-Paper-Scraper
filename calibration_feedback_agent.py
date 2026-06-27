@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import json
+import logging
 import os
 import re
 from collections import Counter, defaultdict
@@ -26,11 +27,37 @@ try:
 except ImportError:  # pragma: no cover
     Anthropic = None
 
+logger = logging.getLogger(__name__)
+
 SKIPPED_FEEDBACK_STATUSES = frozenset({
     "candidate_only",
     "no_extraction",
     "claude_no_extraction",
 })
+
+
+def _anthropic_client(api_key: str) -> Any:
+    """Build Anthropic client with golden-feedback timeouts and retries."""
+    timeout_sec = float(os.getenv("ANTHROPIC_TIMEOUT_SEC", "600"))
+    max_retries = int(os.getenv("ANTHROPIC_MAX_RETRIES", "5"))
+    return Anthropic(api_key=api_key, timeout=timeout_sec, max_retries=max_retries)
+
+
+def _anthropic_handoff_client(api_key: str) -> Any:
+    """Anthropic client for optional handoff call #2 — no retries (avoids repeat input billing)."""
+    timeout_sec = float(os.getenv("ANTHROPIC_HANDOFF_TIMEOUT_SEC", "600"))
+    max_retries = int(os.getenv("ANTHROPIC_HANDOFF_MAX_RETRIES", "0"))
+    return Anthropic(api_key=api_key, timeout=timeout_sec, max_retries=max_retries)
+
+
+def _golden_handoff_uses_claude() -> bool:
+    """Return True only when the user explicitly opts into the paid handoff API call."""
+    if os.getenv("GOLDEN_HANDOFF_CLAUDE", "").strip().lower() in ("1", "true", "yes"):
+        return True
+    # Legacy alias: synthesize-only skips Claude handoff.
+    if os.getenv("GOLDEN_SYNTHESIZE_HANDOFF_ONLY", "").strip().lower() in ("1", "true", "yes"):
+        return False
+    return False
 
 
 def load_rl_config(rules_config: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
@@ -113,6 +140,8 @@ def summarize_batch_gaps(
                 llm_block,
             )
         for field in scope_fields:
+            if field in content_tiers.ALIGNMENT_EXCLUDED_FIELDS:
+                continue
             field_compared[field] += 1
             if field in disagree_field_names:
                 field_disagree[field] += 1
@@ -298,6 +327,155 @@ def _build_feedback_prompt(
     )
 
 
+def _truncate_text_for_prompt(text: str, max_chars: int = 3500) -> str:
+    """Truncates long paper text for Claude prompts."""
+    text = (text or "").strip()
+    if len(text) <= max_chars:
+        return text
+    return text[:max_chars] + "\n...[truncated for prompt size]"
+
+
+def build_golden_claude_paper_packets(
+    batch_payload: Dict[str, Any],
+    llm_results: Optional[Dict[str, Any]] = None,
+) -> List[Dict[str, Any]]:
+    """Build per-paper payloads with golden LLM labels, Maude output, and text excerpts."""
+    text_by_id: Dict[int, str] = {}
+    candidate_meta: Dict[int, Dict[str, Any]] = {}
+    if llm_results:
+        for item in llm_results.get("results") or []:
+            try:
+                paper_id = int(item.get("paper_id"))
+            except (TypeError, ValueError):
+                continue
+            text_by_id[paper_id] = str(item.get("text") or "")
+            candidate_meta[paper_id] = {
+                "classifier_version": item.get("classifier_version"),
+                "classification_confidence": item.get("classification_confidence"),
+                "text_source": item.get("text_source"),
+                "pmid": item.get("pmid"),
+                "doi": item.get("doi"),
+            }
+
+    packets: List[Dict[str, Any]] = []
+    for result in batch_payload.get("results") or []:
+        try:
+            paper_id = int(result.get("paper_id"))
+        except (TypeError, ValueError):
+            continue
+        llm = result.get("llm") or {}
+        maude = result.get("maude") or {}
+        scoped = result.get("scoped_disagreement") or {}
+        disagree = scoped.get("fields") or {}
+        meta = candidate_meta.get(paper_id) or {}
+        skip_keys = frozenset({"nodes_visited", "rationale"})
+        llm_clean = {
+            k: v for k, v in llm.items()
+            if not str(k).startswith("_") and k not in skip_keys
+        }
+        maude_clean = {
+            k: v for k, v in maude.items()
+            if not str(k).startswith("_") and k not in skip_keys
+        }
+        text_excerpt = text_by_id.get(paper_id) or result.get("abstract") or ""
+        packets.append({
+            "paper_id": paper_id,
+            "title": result.get("title"),
+            "content_tier": result.get("content_tier"),
+            "routing_subnode": result.get("routing_subnode"),
+            "node7_path": result.get("node7_path"),
+            "pdf_text_used": result.get("pdf_text_used"),
+            "golden_llm_classifier_version": (
+                meta.get("classifier_version") or llm.get("classifier_version")
+            ),
+            "golden_llm_confidence": (
+                meta.get("classification_confidence") or llm.get("classification_confidence")
+            ),
+            "text_source": meta.get("text_source"),
+            "golden_llm_ground_truth": llm_clean,
+            "maude_classification": maude_clean,
+            "scoped_disagreements": disagree,
+            "text_excerpt": _truncate_text_for_prompt(text_excerpt),
+        })
+    return packets
+
+
+def _build_golden_patch_feedback_prompt(
+    batch_payload: Dict[str, Any],
+    paper_packets: Sequence[Dict[str, Any]],
+    disagreement_rows: Sequence[Dict[str, Any]],
+    gap_summary: Dict[str, Any],
+    rules_config: Dict[str, Any],
+    *,
+    include_handoff: bool = False,
+) -> str:
+    """Builds Claude prompt for golden-endpoint Maude patch guidance."""
+    target_subnode = batch_payload.get("target_subnode") or "unknown"
+    endpoint_id = batch_payload.get("endpoint_id") or batch_payload.get("batch_id") or "unknown"
+    fields_in_scope = batch_payload.get("fields_in_scope") or subnode_field_scopes.fields_in_scope(
+        target_subnode,
+    )
+    node_cfg = _node_config_for_subnode(rules_config, target_subnode)
+    handoff_note = (
+        "Do NOT include agent_handoff_prompt in your JSON (it is requested in a follow-up call).\n"
+        if not include_handoff
+        else "Include a concise agent_handoff_prompt (max 3000 characters) in maude_improvement_brief.\n"
+    )
+    disagreement_examples = disagreement_rows[:10]
+    return (
+        "You are the golden-dataset calibration analyst for the Maude rule-based cannabis paper classifier.\n"
+        "Each candidate paper was classified by Claude (llm-golden-* classifier_version). "
+        "Those golden_llm_ground_truth labels are AUTHORITATIVE ground truth for this endpoint.\n"
+        "Maude must be patched (maude_classifier.py, extractor.py, maude_cues.json) to agree with golden LLM "
+        "on guard fields for promoted papers and remaining candidates.\n"
+        "Do not treat Maude as correct when it disagrees with golden LLM unless the excerpt clearly shows "
+        "the LLM misread the paper.\n\n"
+        f"Endpoint: {endpoint_id}\n"
+        f"Active sub-node: {target_subnode}\n"
+        f"Batch alignment (golden LLM vs Maude): {gap_summary.get('batch_alignment_pct')}% "
+        f"(Maude recall {gap_summary.get('batch_maude_recall_pct')}%)\n"
+        f"Papers with disagreements: {gap_summary.get('papers_with_disagreements')} / "
+        f"{gap_summary.get('scored_paper_count')}\n"
+        f"Fields in scope: {json.dumps(fields_in_scope)}\n"
+        f"Decision node purpose: {node_cfg.get('purpose', 'n/a')}\n"
+        "Golden guard excludes verbatim inclusion_criteria / exclusion_criteria text matching; "
+        "focus on structured routing fields (study_type, exposure_method, outcome_domain, duration_days, etc.).\n\n"
+        "For each disagreement pattern:\n"
+        "1) Confirm golden LLM vs Maude who is correct from text_excerpt.\n"
+        "2) Propose short positive cues (quoted phrases) for maude_cues.json.\n"
+        "3) Propose concrete classifier_logic / extractor changes when cues alone cannot fix the gap.\n"
+        f"{handoff_note}\n"
+        "Keep field_resolutions to at most 12 highest-impact rows. Prioritize top_disagreement_fields.\n"
+        "Keep explanations under 200 characters each.\n"
+        "Return ONLY valid JSON (no markdown fences):\n"
+        "{\n"
+        '  "pattern_summary": "2-4 sentences on dominant error patterns",\n'
+        '  "field_resolutions": [\n'
+        '    {"paper_id": 1, "field": "exposure_method", "source": "llm", '
+        '"resolved_value": ["inhaled"], "explanation": "..."}\n'
+        "  ],\n"
+        '  "proposed_cues": [\n'
+        '    {"node_id": "node2a_clinical", "field": "exposure_method", "cue": "inhaled cannabis", '
+        '"explanation": "why this cue helps"}\n'
+        "  ],\n"
+        '  "proposed_rules_changes": [\n'
+        '    {"type": "classifier_logic", "description": "...", "patch_hint": "maude_classifier.py", '
+        '"priority": "high|medium|low"}\n'
+        "  ],\n"
+        '  "maude_improvement_brief": {\n'
+        '    "summary": "one paragraph",\n'
+        '    "top_gap_patterns": ["pattern 1", "pattern 2"]'
+        + (',\n    "agent_handoff_prompt": "..."' if include_handoff else "")
+        + "\n  }\n"
+        "}\n\n"
+        f"Batch gap summary:\n{json.dumps(gap_summary, indent=2, default=str)}\n\n"
+        f"Scoped disagreement rows ({len(disagreement_rows)} papers, showing {len(disagreement_examples)}):\n"
+        f"{json.dumps(disagreement_examples, indent=2, default=str)}\n\n"
+        f"Golden candidate papers with full golden LLM + Maude outputs ({len(paper_packets)} papers):\n"
+        f"{json.dumps(list(paper_packets), indent=2, default=str)}"
+    )
+
+
 def _strip_json_fence(text: str) -> str:
     """Removes markdown code fences from Claude output."""
     text = (text or "").strip()
@@ -439,7 +617,7 @@ def _request_agent_handoff_brief(
     """Second Claude call for a compact coding-agent handoff (avoids truncating learning JSON)."""
     target_subnode = batch_payload.get("target_subnode") or "unknown"
     rules = feedback.get("proposed_rules_changes") or []
-    if not rules:
+    if not rules or not _golden_handoff_uses_claude():
         return synthesize_agent_handoff_prompt(feedback, target_subnode, gap_summary)
 
     prompt = (
@@ -454,7 +632,7 @@ def _request_agent_handoff_brief(
     )
     response = client.messages.create(
         model=model,
-        max_tokens=4096,
+        max_tokens=int(os.getenv("GOLDEN_HANDOFF_MAX_TOKENS", "2048")),
         messages=[{"role": "user", "content": prompt}],
     )
     blocks = [
@@ -488,7 +666,7 @@ def request_claude_feedback(
     prompt = _build_feedback_prompt(
         batch_payload, disagreement_rows, gap_summary, rules_config, include_handoff=False,
     )
-    client = Anthropic(api_key=api_key)
+    client = _anthropic_client(api_key)
     model = os.getenv("ANTHROPIC_CALIBRATION_MODEL", "claude-sonnet-4-6")
     response = client.messages.create(
         model=model,
@@ -542,6 +720,228 @@ def request_claude_feedback(
             pass
 
     return feedback
+
+
+def request_golden_claude_patch_feedback(
+    batch_payload: Dict[str, Any],
+    disagreement_rows: Sequence[Dict[str, Any]],
+    gap_summary: Dict[str, Any],
+    *,
+    llm_results: Optional[Dict[str, Any]] = None,
+    rules_config: Optional[Dict[str, Any]] = None,
+    db: Optional[DatabaseManager] = None,
+) -> Dict[str, Any]:
+    """Calls Claude with golden candidate papers and Maude outputs for patch guidance."""
+    rules_config = rules_config or classifier.load_rules_config()
+    api_key = os.getenv("ANTHROPIC_API_KEY")
+    if not api_key or Anthropic is None:
+        raise RuntimeError("ANTHROPIC_API_KEY and anthropic package are required for golden Claude feedback.")
+
+    paper_packets = build_golden_claude_paper_packets(batch_payload, llm_results)
+    prompt = _build_golden_patch_feedback_prompt(
+        batch_payload,
+        paper_packets,
+        disagreement_rows,
+        gap_summary,
+        rules_config,
+        include_handoff=False,
+    )
+    client = _anthropic_client(api_key)
+    model = os.getenv("ANTHROPIC_CALIBRATION_MODEL", "claude-sonnet-4-6")
+    response = client.messages.create(
+        model=model,
+        max_tokens=8192,
+        messages=[{"role": "user", "content": prompt}],
+    )
+    text_blocks = [
+        block.text for block in response.content
+        if getattr(block, "type", None) == "text"
+    ]
+    feedback = _parse_claude_json("\n".join(text_blocks))
+
+    target_subnode = batch_payload.get("target_subnode") or "unknown"
+    handoff_client = _anthropic_handoff_client(api_key)
+    try:
+        handoff_prompt = _request_agent_handoff_brief(
+            feedback,
+            batch_payload,
+            gap_summary,
+            rules_config,
+            handoff_client,
+            model,
+        )
+    except Exception as exc:
+        logger.warning(
+            "Golden handoff brief Claude call failed (%s); using synthesized handoff.",
+            exc,
+        )
+        handoff_prompt = synthesize_agent_handoff_prompt(
+            feedback, target_subnode, gap_summary,
+        )
+        feedback["_handoff_call_error"] = str(exc)
+        feedback["_handoff_billing_note"] = (
+            "Handoff API failed; no additional output tokens billed; using free synthesize fallback."
+        )
+    feedback.setdefault("maude_improvement_brief", {})
+    if isinstance(feedback["maude_improvement_brief"], dict):
+        feedback["maude_improvement_brief"]["agent_handoff_prompt"] = handoff_prompt
+    feedback["agent_handoff_prompt"] = handoff_prompt
+    feedback["_handoff_source"] = "claude" if _golden_handoff_uses_claude() else "synthesized"
+
+    usage = getattr(response, "usage", None)
+    input_tokens = int(getattr(usage, "input_tokens", 0) or 0)
+    output_tokens = int(getattr(usage, "output_tokens", 0) or 0)
+    metrics = {
+        "model": model,
+        "input_tokens": input_tokens,
+        "output_tokens": output_tokens,
+        "total_tokens": input_tokens + output_tokens,
+        "estimated_cost_usd": _estimate_feedback_cost(model, input_tokens, output_tokens),
+        "prompt_chars": len(prompt),
+        "disagreement_rows_sent": len(disagreement_rows),
+        "golden_paper_packets_sent": len(paper_packets),
+        "golden_feedback_mode": True,
+    }
+    feedback["_llm_call_metrics"] = metrics
+
+    if db is not None:
+        try:
+            db.log_llm_call(
+                paper_id=None,
+                metrics={
+                    **metrics,
+                    "classifier_version": (
+                        f"golden-patch-feedback-{rules_config.get('version', 'unknown')}"
+                    ),
+                },
+                batch_id=batch_payload.get("batch_id"),
+            )
+        except Exception:
+            pass
+
+    return feedback
+
+
+def run_golden_feedback_cycle(
+    batch_path: Path,
+    output_dir: Optional[Path] = None,
+    *,
+    llm_results: Optional[Dict[str, Any]] = None,
+    llm_results_path: Optional[Path] = None,
+    skip_lock: bool = False,
+    skip_refresh: bool = True,
+    db: Optional[DatabaseManager] = None,
+) -> Dict[str, Any]:
+    """Runs Claude golden patch feedback on a golden disagreement batch JSON."""
+    output_dir = output_dir or resolve_calibration_output_dir()
+    batch_path = Path(batch_path)
+    with open(batch_path, encoding="utf-8") as handle:
+        batch_payload = json.load(handle)
+
+    if llm_results is None and llm_results_path is not None:
+        llm_path = Path(llm_results_path)
+        if llm_path.exists():
+            with open(llm_path, encoding="utf-8") as handle:
+                llm_results = json.load(handle)
+    if llm_results is None:
+        sibling = batch_path.parent / "llm_results.json"
+        if sibling.exists():
+            with open(sibling, encoding="utf-8") as handle:
+                llm_results = json.load(handle)
+
+    batch_id = batch_payload.get("batch_id") or batch_path.stem
+    target_subnode = batch_payload.get("target_subnode")
+    db = db or DatabaseManager()
+
+    gap_summary = summarize_batch_gaps(batch_payload, target_subnode=target_subnode)
+    disagreement_rows = collect_disagreement_rows(batch_payload, target_subnode=target_subnode, db=db)
+
+    if not skip_lock:
+        calibration_coordinator.acquire_lock(
+            operation="golden_feedback_cycle",
+            batch_id=batch_id,
+            db=db,
+        )
+
+    try:
+        try:
+            feedback = request_golden_claude_patch_feedback(
+                batch_payload,
+                disagreement_rows,
+                gap_summary,
+                llm_results=llm_results,
+                rules_config=classifier.load_rules_config(),
+                db=db,
+            )
+        except Exception as exc:
+            return {
+                "status": "error",
+                "error": str(exc),
+                "batch_id": batch_id,
+                "gap_summary": gap_summary,
+                "disagreement_count": len(disagreement_rows),
+                "golden_feedback_mode": True,
+                "note": "Golden Claude patch feedback failed — Maude patch loop not started.",
+            }
+
+        apply_result = apply_feedback_resolutions(batch_payload, feedback, output_dir=output_dir, db=db)
+        cue_result = apply_proposed_cues(feedback, disagreement_rows, output_dir=output_dir)
+
+        refresh_path = None
+        if not skip_refresh:
+            refresh_path, _ = refresh_maude_batch(batch_path, output_dir=output_dir)
+
+        staged_path = save_staged_patches(
+            feedback,
+            target_subnode or "unknown",
+            output_dir,
+            gap_summary=gap_summary,
+        )
+
+        report_path = output_dir / f"{batch_id}_golden_feedback_report.json"
+        report = {
+            "batch_id": batch_id,
+            "target_subnode": target_subnode,
+            "endpoint_id": batch_payload.get("endpoint_id"),
+            "created_at": datetime.now().isoformat(),
+            "disagreement_count": len(disagreement_rows),
+            "gap_summary": gap_summary,
+            "pattern_summary": feedback.get("pattern_summary"),
+            "llm_call_metrics": feedback.get("_llm_call_metrics"),
+            "apply_result": {
+                "applied_count": apply_result.get("applied_count"),
+                "error_count": apply_result.get("error_count"),
+            },
+            "cue_apply_result": cue_result,
+            "refresh_batch_path": str(refresh_path) if refresh_path else None,
+            "staged_patch_path": str(staged_path) if staged_path else None,
+            "agent_handoff_prompt": (feedback.get("maude_improvement_brief") or {}).get(
+                "agent_handoff_prompt",
+            ),
+            "salvaged_response": bool(feedback.get("_salvaged_from_truncated_response")),
+            "golden_feedback_mode": True,
+            "feedback": feedback,
+        }
+        with open(report_path, "w", encoding="utf-8") as handle:
+            json.dump(report, handle, indent=2, default=str)
+
+        return {
+            "status": "completed",
+            "batch_id": batch_id,
+            "report_path": str(report_path),
+            "refresh_batch_path": str(refresh_path) if refresh_path else None,
+            "staged_patch_path": str(staged_path) if staged_path else None,
+            "gap_summary": gap_summary,
+            "llm_call_metrics": feedback.get("_llm_call_metrics"),
+            "agent_handoff_prompt": report.get("agent_handoff_prompt"),
+            "salvaged_response": bool(feedback.get("_salvaged_from_truncated_response")),
+            "golden_feedback_mode": True,
+            **apply_result,
+            **cue_result,
+        }
+    finally:
+        if not skip_lock:
+            calibration_coordinator.release_lock(db=db)
 
 
 def apply_feedback_resolutions(

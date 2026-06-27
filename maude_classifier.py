@@ -90,6 +90,24 @@ def should_route_clinical_before_review(title: str, text: str) -> bool:
     return heuristics_engine.should_route_clinical_before_review(title, text)
 
 
+def should_route_invitro_before_review(title: str, text: str) -> bool:
+    """Returns True when the title signals primary in-vitro original research despite review-like PDF noise."""
+    title_lower = (title or "").lower()
+    if not re.search(r"\bin vitro\b", title_lower):
+        return False
+    if re.search(
+        r"\b(?:development|characterization|nano(?:particle|formulation)s?|"
+        r"plga|microparticles?|encapsul(?:at|ed)|release of)\b",
+        title_lower,
+    ):
+        return True
+    prefix = (text or "")[:2500].lower()
+    return bool(
+        re.search(r"\bresearch article\b|\boriginal research\b", prefix)
+        and re.search(r"\bin vitro\b", title_lower)
+    )
+
+
 def matches_review_route(title: str, abstract: str) -> bool:
     """True when title/abstract cues justify review routing."""
     return heuristics_engine.matches_review_route(title, abstract)
@@ -283,6 +301,11 @@ def resolve_study_type_for_routing(
     """Resolves study_type using Node 1 publication route plus Node 2 branch fallbacks."""
     routing_blob = f"{title} {abstract} {methods_text}"
     full_blob = f"{title} {abstract}"
+    if re.search(r"(?i)\b(?:zebrafish|danio rerio)\b", routing_blob) and re.search(
+        r"(?i)\b(?:embryos?|larvae|hpf|water in the well|immersion|waterborne)\b",
+        routing_blob,
+    ):
+        return ["Animal Models (Other)"]
     has_human_subjects = extractor.keyword_match(
         routing_blob.lower(),
         list(extractor.HUMAN_SUBJECT_KEYWORDS),
@@ -342,10 +365,21 @@ def resolve_study_type_for_routing(
                 ):
                     study_type.append("Cell Culture (Cell Lines)")
         branch_set = set(node2_branches)
+        invivo_primary = re.search(
+            r"(?i)\b(?:mice were|mice received|high fat fed mice|ob/ob|db/db|c57bl|"
+            r"oral administration of (?:cbd|abn-cbd|thc)|administered.{0,40}(?:mice|dams|rats))\b",
+            routing_blob,
+        )
         if "node2a_clinical" in branch_set and extractor.keyword_match(
             routing_blob, list(extractor.HUMAN_SUBJECT_KEYWORDS)
         ):
-            study_type = [item for item in study_type if not item.startswith("Animal Models")]
+            if not invivo_primary:
+                study_type = [item for item in study_type if not item.startswith("Animal Models")]
+        if not study_type and invivo_primary and "node2b_in_vivo" in branch_set:
+            if re.search(r"(?i)\b(?:mouse|mice|c57bl)\b", routing_blob):
+                study_type = ["Animal Models (Mouse)"]
+            elif re.search(r"(?i)\b(?:rat|rats|wistar|sprague)\b", routing_blob):
+                study_type = ["Animal Models (Rat)"]
         return study_type
     if publication_type != "original research":
         return study_type
@@ -356,6 +390,48 @@ def resolve_study_type_for_routing(
 
     full_blob = f"{title} {abstract}".lower()
     branch_set = set(node2_branches)
+    animal_blob = f"{title} {abstract} {methods_text}"
+    orthotopic_blob = f"{title} {abstract} {methods_text}"
+    if re.search(
+        r"(?i)\b(?:orthotopic|xenograft|intracranial(?:ly)? injected)\b",
+        orthotopic_blob,
+    ) and re.search(r"(?i)\b(?:glioblastoma|gbm|glioma|tumor model|temozolomide)\b", orthotopic_blob):
+        mixed_types: List[str] = []
+        if re.search(r"(?i)\bmice\b|\bmouse\b|\bmurine\b", orthotopic_blob):
+            mixed_types.append("Animal Models (Mouse)")
+        elif re.search(r"(?i)\brats\b|\brat\b", orthotopic_blob):
+            mixed_types.append("Animal Models (Rat)")
+        else:
+            mixed_types.append("Animal Models (Mouse)")
+        if re.search(
+            r"(?i)\b(?:primary cells?|patient-derived|glioma stem|gsc\b|pdg\b)\b",
+            orthotopic_blob,
+        ):
+            mixed_types.append("Cell Culture (Primary Cells)")
+        if re.search(
+            r"(?i)\b(?:cell line|cell lines|in vitro|u87|u251|ln229|glioblastoma cells)\b",
+            orthotopic_blob,
+        ):
+            mixed_types.append("Cell Culture (Cell Lines)")
+        return mixed_types
+    if (
+        "node2b_in_vivo" in branch_set
+        and re.search(r"(?i)chemotherapy-induced neuropathic|neuropathic pain|cipn", animal_blob)
+        and re.search(r"(?i)\b(?:mouse|mice|murine|intraperitoneal|i\.p\.|subcutaneous)\b", animal_blob)
+    ):
+        types: List[str] = ["Animal Models (Mouse)"]
+        if re.search(r"(?i)\b(?:cell culture|in vitro|primary cells|neuron)\b", animal_blob):
+            types.append("Cell Culture (Cell Lines)")
+        return types
+    if "node2b_in_vivo" in branch_set and should_route_animal_before_review(title, animal_blob):
+        lowered = animal_blob.lower()
+        if re.search(r"\bzebrafish\b|\bdanio rerio\b", lowered, re.IGNORECASE):
+            return ["Animal Models (Other)"]
+        if re.search(r"\bmice\b|\bmouse\b|\bmurine\b", lowered, re.IGNORECASE):
+            return ["Animal Models (Mouse)"]
+        if re.search(r"\brats\b|\brat\b|\bwistar\b|\bsprague[- ]dawley\b", lowered, re.IGNORECASE):
+            return ["Animal Models (Rat)"]
+        return ["Animal Models (Other)"]
     if "node2a_clinical" in branch_set and "node2c_in_vitro" in branch_set and has_human_subjects:
         clinical = extractor.infer_study_type_for_publication(title, abstract, publication_type)
         if clinical:
@@ -384,16 +460,6 @@ def resolve_study_type_for_routing(
         if re.search(r"\bmice\b|\bmouse\b", blob, re.IGNORECASE):
             return ["Animal Models (Mouse)"]
         if re.search(r"\brats\b|\brat\b", blob, re.IGNORECASE):
-            return ["Animal Models (Rat)"]
-        return ["Animal Models (Other)"]
-    animal_blob = f"{title} {abstract} {methods_text}"
-    if "node2b_in_vivo" in branch_set and should_route_animal_before_review(title, animal_blob):
-        lowered = animal_blob.lower()
-        if re.search(r"\bzebrafish\b|\bdanio rerio\b", lowered, re.IGNORECASE):
-            return ["Animal Models (Other)"]
-        if re.search(r"\bmice\b|\bmouse\b|\bmurine\b", lowered, re.IGNORECASE):
-            return ["Animal Models (Mouse)"]
-        if re.search(r"\brats\b|\brat\b|\bwistar\b|\bsprague[- ]dawley\b", lowered, re.IGNORECASE):
             return ["Animal Models (Rat)"]
         return ["Animal Models (Other)"]
     human_blob = f"{title} {abstract} {methods_text}".lower()
@@ -665,6 +731,10 @@ def route_publication_type(
         nodes.append("node1a_original")
         return "original research", None, nodes, score + 0.25
 
+    if should_route_invitro_before_review(title, text):
+        nodes.append("node1a_original")
+        return "original research", None, nodes, score + 0.25
+
     if matches_review_route(title, abstract):
         nodes.append("node1b_reviews")
         score += 0.35
@@ -721,6 +791,12 @@ def classify_paper(
     tree = load_maude_tree()
     routing_text = f"{title} {abstract}"
     methods_text = extract_methods_section(full_text)
+    if methods_text:
+        routing_text = f"{routing_text} {methods_text[:12000]}"
+        if len(methods_text.strip()) < 1500 and full_text:
+            routing_text = f"{routing_text} {full_text[:12000]}"
+    elif full_text:
+        routing_text = f"{routing_text} {full_text[:12000]}"
     extraction_text = methods_text or routing_text
     publication_routing_text = routing_text
     if full_text:
@@ -792,7 +868,14 @@ def classify_paper(
             cannabis_type = heuristics.get("cannabis_type") or []
             outcome_domain = heuristics.get("outcome_domain") or []
             if not any(item.startswith("Animal Models") for item in study_type):
-                species = None
+                if not (species and "node2d_mixed" in nodes):
+                    species = None
+            elif (
+                any(item.startswith("Cell Culture (") for item in study_type)
+                and any(item.startswith("Animal Models") for item in study_type)
+                and species is not None
+            ):
+                pass
             elif (
                 any(item.startswith("Cell Culture (") for item in study_type)
                 and not extractor._looks_like_invivo_primary(extraction_text)

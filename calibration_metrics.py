@@ -543,7 +543,11 @@ def score_paper_rl_metrics(
         "fields_in_scope": len(scope_fields),
         "content_tier": paper_tier,
         "optional_field_recall": optional_recall,
-        "alignment_disagree_fields": list((scoped.get("fields") or {}).keys()),
+        "alignment_disagree_fields": [
+            field
+            for field in (scoped.get("fields") or {}).keys()
+            if field not in content_tiers.ALIGNMENT_EXCLUDED_FIELDS
+        ],
     }
 
 

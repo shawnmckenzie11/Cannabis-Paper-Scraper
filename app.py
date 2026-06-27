@@ -150,12 +150,25 @@ def daily_harvest_scheduler():
                     db.set_metadata("last_daily_harvest_status", f"Running automated harvest since {datetime.now().strftime('%H:%M:%S')}...")
 
                     # Call the unified pipeline
-                    success_count, skipped_count, filter_skipped = harvest.run_harvest_pipeline(
+                    success_count, skipped_count, filter_skipped, ingested_ids = harvest.run_harvest_pipeline(
                         query=query,
                         max_results=max_results,
                         update=True,
                         classify=classify
                     )
+
+                    if ingested_ids:
+                        try:
+                            upgrade = scheduled_jobs.run_post_harvest_maude_upgrade(ingested_ids)
+                            sched_logger.info(
+                                "Daily scheduler: post-harvest Maude upgrade: %s",
+                                upgrade,
+                            )
+                        except Exception as upgrade_err:
+                            sched_logger.error(
+                                "Daily scheduler: post-harvest Maude upgrade failed: %s",
+                                upgrade_err,
+                            )
 
                     # Run the purger to clean up any accidentally added unrelated papers
                     sched_logger.info("Daily scheduler: Running purge_unrelated to clean up acronym-collision outliers...")
@@ -197,13 +210,26 @@ def bg_harvest_worker(query: str, max_results: int, update: bool, classify: bool
             with harvest_lock:
                 harvest_state["progress"] = msg
                 
-        success_count, skipped_count, filter_skipped = harvest.run_harvest_pipeline(
+        success_count, skipped_count, filter_skipped, ingested_ids = harvest.run_harvest_pipeline(
             query=query,
             max_results=max_results,
             update=update,
             classify=classify,
             progress_callback=update_progress
         )
+
+        if ingested_ids:
+            try:
+                import scheduled_jobs
+                upgrade = scheduled_jobs.run_post_harvest_maude_upgrade(ingested_ids)
+                update_progress(
+                    f"Queued Maude PDF/full-text upgrade for {upgrade.get('paper_count', len(ingested_ids))} new papers."
+                )
+            except Exception as upgrade_err:
+                logging.getLogger("harvest.worker").error(
+                    "Post-harvest Maude upgrade failed: %s",
+                    upgrade_err,
+                )
             
         with harvest_lock:
             harvest_state["status"] = "success"
@@ -656,6 +682,8 @@ def api_search():
     puff_count_min = request.args.get("puff_count_min")
     species = request.args.get("species")
     exposure_regimen_bin = request.args.get("exposure_regimen_bin")
+    population_age = request.args.get("population_age")
+    population_sex = request.args.get("population_sex")
     cbd_min = request.args.get("cbd_min")
     cbd_max = request.args.get("cbd_max")
     has_pdf = request.args.get("has_pdf")
@@ -739,6 +767,10 @@ def api_search():
         clean_filters["species"] = species
     if exposure_regimen_bin:
         clean_filters["exposure_regimen_bin"] = exposure_regimen_bin
+    if population_age:
+        clean_filters["population_age"] = population_age
+    if population_sex:
+        clean_filters["population_sex"] = population_sex
     if has_pdf and has_pdf.lower() in ("true", "1", "yes"):
         clean_filters["has_pdf"] = True
     if has_full_text and has_full_text.lower() in ("true", "1", "yes"):
@@ -833,7 +865,8 @@ def api_edit_classification(paper_id):
         "cbd_mg_ml", "cbd_mg_g", "cbd_mg_kg", "thc_uM", "cbd_uM", "strain_reported", "strain_normalized", "duration_days",
         "inhaled_exposure_duration", "administration_frequency", "treatment_duration",
         "repeat_exposure_count", "exposure_regimen_bin",
-        "sample_size", "outcome_domain", "cannabis_type", "summary", "abstract"
+        "sample_size", "outcome_domain", "cannabis_type", "summary", "abstract",
+        "population_age", "population_sex", "inclusion_criteria", "exclusion_criteria",
     ]
     
     conn = db.get_connection()
@@ -1460,6 +1493,70 @@ def api_classification_run_eval():
 
 # ─── Analyses Endpoints ─────────────────────────────────────────
 
+ANALYSIS_QUANTITATIVE_FIELDS = (
+    ("thc_pct", "THC %"),
+    ("cbd_pct", "CBD %"),
+    ("sample_size", "Sample Size"),
+    ("dose_mg", "Dose (mg)"),
+    ("puff_count", "Puff Count"),
+    ("duration_days", "Duration (days)"),
+    ("thc_mg_kg", "THC (mg/kg)"),
+    ("cbd_mg_kg", "CBD (mg/kg)"),
+    ("thc_mg_ml", "THC (mg/mL)"),
+    ("cbd_mg_ml", "CBD (mg/mL)"),
+    ("thc_mg_g", "THC (mg/g)"),
+    ("cbd_mg_g", "CBD (mg/g)"),
+    ("thc_uM", "THC (µM)"),
+    ("cbd_uM", "CBD (µM)"),
+    ("repeat_exposure_count", "Repeat Exposures"),
+    ("citation_count", "Citations"),
+)
+
+
+def _numeric_field_value(value):
+    """Return a float when value is numeric, else None."""
+    if value is None or value == "":
+        return None
+    try:
+        return float(value)
+    except (TypeError, ValueError):
+        return None
+
+
+def _compute_quantitative_aggregates(papers):
+    """Average and count for each numeric field with at least one reported value."""
+    aggregates = {}
+    for field_key, label in ANALYSIS_QUANTITATIVE_FIELDS:
+        values = [
+            num for p in papers
+            if (num := _numeric_field_value(p.get(field_key))) is not None
+        ]
+        if values:
+            aggregates[field_key] = {
+                "label": label,
+                "avg": round(sum(values) / len(values), 2),
+                "count": len(values),
+            }
+    return aggregates
+
+
+def _slim_paper_for_analysis(paper):
+    """Minimal paper payload for My Analyses chart drill-down."""
+    slim = {
+        "id": paper.get("id"),
+        "title": paper.get("title") or "Untitled",
+        "year": paper.get("year"),
+        "publication_date": paper.get("publication_date"),
+        "study_type": paper.get("study_type"),
+        "exposure_method": paper.get("exposure_method"),
+        "cannabis_type": paper.get("cannabis_type"),
+        "outcome_domain": paper.get("outcome_domain") or [],
+    }
+    for field_key, _label in ANALYSIS_QUANTITATIVE_FIELDS:
+        slim[field_key] = paper.get(field_key)
+    return slim
+
+
 def _compute_analysis_chart_data(papers):
     """Server-side computation mirroring client-side renderVisualAnalysis logic."""
     thc_values = [p["thc_pct"] for p in papers if p.get("thc_pct") is not None]
@@ -1471,10 +1568,12 @@ def _compute_analysis_chart_data(papers):
         "avg_cbd": round(sum(cbd_values) / len(cbd_values), 1) if cbd_values else None,
         "large_sample_pct": round(sum(1 for s in sample_sizes if s and s > 50) / len(sample_sizes) * 100) if sample_sizes else None
     }
+    quantitative_aggregates = _compute_quantitative_aggregates(papers)
 
     study_design = {}
     timeline = {}
     thc_bins = {"zero": 0, "low": 0, "medLow": 0, "med": 0, "medHigh": 0, "high": 0, "veryHigh": 0, "ultraHigh": 0, "notReported": 0}
+    cbd_bins = {"zero": 0, "low": 0, "medLow": 0, "med": 0, "medHigh": 0, "high": 0, "veryHigh": 0, "ultraHigh": 0, "notReported": 0}
     clinical_exp = {"inhaled": 0, "oral": 0, "sublingual": 0, "injected": 0}
     vitro_exp = {"exposure of cells to smoke/vapor": 0, "cannabinoids dissolved in media": 0, "smoke/vapor conditioned media": 0}
     vivo_exp = {"whole body. smoke/vapor": 0, "nose only smoke/vapor": 0, "injection cannabinoids": 0, "oral administration": 0, "sub-lingual": 0, "intranasal": 0, "intratracheal": 0}
@@ -1515,6 +1614,26 @@ def _compute_analysis_chart_data(papers):
         else:
             thc_bins["ultraHigh"] += 1
 
+        cbd = p.get("cbd_pct")
+        if cbd is None:
+            cbd_bins["notReported"] += 1
+        elif cbd == 0:
+            cbd_bins["zero"] += 1
+        elif cbd <= 5:
+            cbd_bins["low"] += 1
+        elif cbd <= 10:
+            cbd_bins["medLow"] += 1
+        elif cbd <= 15:
+            cbd_bins["med"] += 1
+        elif cbd <= 20:
+            cbd_bins["medHigh"] += 1
+        elif cbd <= 25:
+            cbd_bins["high"] += 1
+        elif cbd <= 30:
+            cbd_bins["veryHigh"] += 1
+        else:
+            cbd_bins["ultraHigh"] += 1
+
         # Exposure methods
         exps = p.get("exposure_method")
         if isinstance(exps, list):
@@ -1544,8 +1663,10 @@ def _compute_analysis_chart_data(papers):
     return {
         "paper_count": len(papers),
         "aggregates": aggregates,
+        "quantitative_aggregates": quantitative_aggregates,
         "study_design": study_design,
         "thc_bins": thc_bins,
+        "cbd_bins": cbd_bins,
         "timeline": timeline,
         "clinical_exposure": clinical_exp,
         "vitro_exposure": vitro_exp,
@@ -1573,6 +1694,7 @@ def api_analyze():
 
         chart_data = _compute_analysis_chart_data(papers)
         chart_data["paper_ids"] = [p["id"] for p in papers]
+        analysis_papers = [_slim_paper_for_analysis(p) for p in papers]
 
         user = _get_session_user(db)
         if not user:
@@ -1582,6 +1704,7 @@ def api_analyze():
                 "paper_count": chart_data["paper_count"],
                 "filter_settings": filters,
                 "chart_data": chart_data,
+                "papers": analysis_papers,
                 "created_at": datetime.now().isoformat(),
             })
 
@@ -1599,11 +1722,62 @@ def api_analyze():
             "paper_count": chart_data["paper_count"],
             "filter_settings": filters,
             "chart_data": chart_data,
+            "papers": analysis_papers,
             "created_at": datetime.now().isoformat(),
         })
     except Exception as e:
         app.logger.error(f"Analysis failed: {e}")
         return jsonify({"error": str(e)}), 500
+
+
+DASHBOARD_VISIBLE_COLUMN_KEYS = frozenset({
+    "duration", "treatment_duration", "year", "study_type", "exposure_method",
+    "publication_type", "citations", "links", "cannabis_type", "outcome_domain",
+    "dose_mg", "puff_count", "admin_frequency", "population_age", "population_sex",
+    "thc_mg_ml", "cbd_mg_ml", "thc_mg_kg", "cbd_mg_kg", "thc_uM", "cbd_uM",
+    "strain_reported", "strain_normalized",
+})
+
+
+def _sanitize_visible_columns(raw):
+    """Keep only known dashboard column keys with boolean values."""
+    if not isinstance(raw, dict):
+        return {}
+    return {
+        key: bool(value)
+        for key, value in raw.items()
+        if key in DASHBOARD_VISIBLE_COLUMN_KEYS and isinstance(value, bool)
+    }
+
+
+@app.route("/api/user/dashboard-preferences", methods=["GET"])
+def api_get_dashboard_preferences():
+    """Return saved dashboard UI preferences for the logged-in user."""
+    user = _get_session_user()
+    if not user:
+        return jsonify({"error": "Unauthorized", "login_required": True}), 401
+
+    db = DatabaseManager()
+    prefs = db.get_user_dashboard_preferences(user["id"])
+    visible_columns = _sanitize_visible_columns(prefs.get("visible_columns"))
+    return jsonify({"visible_columns": visible_columns})
+
+
+@app.route("/api/user/dashboard-preferences", methods=["PUT"])
+def api_set_dashboard_preferences():
+    """Persist dashboard UI preferences for the logged-in user."""
+    user = _get_session_user()
+    if not user:
+        return jsonify({"error": "Unauthorized", "login_required": True}), 401
+
+    data = request.get_json(silent=True) or {}
+    visible_columns = _sanitize_visible_columns(data.get("visible_columns"))
+    db = DatabaseManager()
+    existing = db.get_user_dashboard_preferences(user["id"])
+    merged = {**existing, "visible_columns": visible_columns}
+    if not db.set_user_dashboard_preferences(user["id"], merged):
+        return jsonify({"error": "Failed to save preferences"}), 500
+    return jsonify({"success": True, "visible_columns": visible_columns})
 
 
 @app.route("/api/analyses", methods=["GET"])
@@ -1622,6 +1796,70 @@ def api_list_analyses():
         except (json.JSONDecodeError, TypeError):
             a["filter_settings"] = {}
     return jsonify(analyses)
+
+
+def _fetch_analysis_papers(db, chart_data, filter_settings):
+    """Load slim paper rows for an analysis from stored paper_ids."""
+    paper_ids = chart_data.get("paper_ids") or filter_settings.get("paper_ids") or []
+    if not paper_ids:
+        return []
+    import sqlite3
+    conn = db.get_connection()
+    conn.row_factory = sqlite3.Row
+    cursor = conn.cursor()
+    try:
+        placeholders = ",".join(["?"] * len(paper_ids))
+        cursor.execute(f"SELECT * FROM papers WHERE id IN ({placeholders})", paper_ids)
+        rows = cursor.fetchall()
+        papers = []
+        for row in rows:
+            res = dict(row)
+            for json_field in ["authors", "outcome_domain"]:
+                if res.get(json_field):
+                    try:
+                        res[json_field] = json.loads(res[json_field])
+                    except Exception:
+                        res[json_field] = []
+                else:
+                    res[json_field] = []
+            for json_field in ["study_type", "exposure_method", "cannabis_type"]:
+                if res.get(json_field):
+                    try:
+                        val = res[json_field].strip()
+                        if val.startswith("[") and val.endswith("]"):
+                            res[json_field] = json.loads(res[json_field])
+                    except Exception:
+                        pass
+            papers.append(_slim_paper_for_analysis(res))
+        return papers
+    finally:
+        conn.close()
+
+
+@app.route("/api/analyses/<int:analysis_id>/papers", methods=["GET"])
+def api_get_analysis_papers(analysis_id):
+    """Returns slim paper rows for chart drill-down on a saved analysis."""
+    user = _get_session_user()
+    if not user:
+        return jsonify({"error": "Unauthorized", "login_required": True}), 401
+
+    db = DatabaseManager()
+    analysis = db.get_analysis(analysis_id)
+    if not analysis:
+        return jsonify({"error": "Analysis not found"}), 404
+    if analysis.get("user_id") != user["id"]:
+        return jsonify({"error": "Forbidden"}), 403
+
+    try:
+        filter_settings = json.loads(analysis["filter_settings"])
+    except (json.JSONDecodeError, TypeError):
+        filter_settings = {}
+    try:
+        chart_data = json.loads(analysis["chart_data"])
+    except (json.JSONDecodeError, TypeError):
+        chart_data = {}
+
+    return jsonify({"papers": _fetch_analysis_papers(db, chart_data, filter_settings)})
 
 
 @app.route("/api/analyses/<int:analysis_id>", methods=["GET"])

@@ -73,14 +73,13 @@ def _with_db_retries(fn, *args, **kwargs):
 
 def count_papers_needing_reingest(db: Optional[DatabaseManager] = None) -> int:
     """Counts non-LLM maude/heuristic original-research papers not on Maude 2.6.0 tiers."""
+    import calibration_pdf
     import classifier
     from reingest_heuristic_papers import _reingest_where_clause
 
     rules = classifier.get_rules_version()
-    current_tiers = (
-        f"maude-{rules}",
-        f"maude-pdf-{rules}",
-        f"maude-fulltext-{rules}",
+    current_tiers = calibration_pdf.maude_tier_classifier_versions(rules) + (
+        calibration_pdf.legacy_fulltext_classifier_version(rules),
     )
     db = db or DatabaseManager()
     conn = db.get_connection()
@@ -107,6 +106,9 @@ def start_detached_two_pass(
     workers: int = 4,
     workers_fast: Optional[int] = None,
     log_path: Optional[str] = None,
+    paper_ids: Optional[List[int]] = None,
+    slow_only: bool = False,
+    no_skip_current: bool = False,
 ) -> int:
     """Starts two-pass Maude re-ingest detached; returns subprocess pid."""
     limits = production_reingest_limits()
@@ -140,6 +142,12 @@ def start_detached_two_pass(
         str(workers_fast),
         "--refresh-maude-confidence",
     ]
+    if slow_only:
+        cmd.append("--slow-only")
+    if no_skip_current:
+        cmd.append("--no-skip-current")
+    if paper_ids:
+        cmd.extend(["--paper-ids", ",".join(str(int(pid)) for pid in paper_ids)])
     env = os.environ.copy()
     env["PYTHONUNBUFFERED"] = "1"
     proc = subprocess.Popen(

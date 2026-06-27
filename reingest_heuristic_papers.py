@@ -44,6 +44,14 @@ UPDATE_COLUMNS = [
     "thc_pct",
     "cbd_pct",
     "dose_mg",
+    "thc_mg_ml",
+    "thc_mg_g",
+    "thc_mg_kg",
+    "thc_uM",
+    "cbd_mg_ml",
+    "cbd_mg_g",
+    "cbd_mg_kg",
+    "cbd_uM",
     "strain_reported",
     "strain_normalized",
     "publication_type",
@@ -287,33 +295,48 @@ def paper_needs_slow_pass(paper: Dict[str, Any]) -> bool:
 
 def _current_maude_versions(rules_version: str) -> tuple:
     """Returns classifier_version labels for abstract, pdf, and fulltext tiers."""
-    return (
-        f"maude-{rules_version}",
-        f"maude-pdf-{rules_version}",
-        f"maude-fulltext-{rules_version}",
-    )
+    import calibration_pdf
+    import os
+
+    row_index: Optional[int] = None
+    golden_row = os.getenv("GOLDEN_ROW_INDEX")
+    if golden_row is not None:
+        try:
+            row_index = int(golden_row)
+        except ValueError:
+            row_index = None
+    return calibration_pdf.maude_tier_classifier_versions(rules_version, row_index=row_index)
+
+
+def _legacy_maude_fulltext_versions(rules_version: str) -> tuple:
+    """Returns older full-text labels that should still count as slow-pass complete."""
+    import calibration_pdf
+
+    return (calibration_pdf.legacy_fulltext_classifier_version(rules_version),)
+
+
+def _tier_versions_for_pass(pass_mode: PassMode, rules_version: str) -> tuple:
+    """Return all classifier_version labels that satisfy the given pass tier."""
+    abstract_v, pdf_v, ft_v = _current_maude_versions(rules_version)
+    legacy_ft = _legacy_maude_fulltext_versions(rules_version)
+    if pass_mode == "fast":
+        return (abstract_v, pdf_v, ft_v) + legacy_ft
+    if pass_mode == "slow":
+        return (pdf_v, ft_v) + legacy_ft
+    return (abstract_v, pdf_v, ft_v) + legacy_ft
 
 
 def _already_at_pass_tier(paper: Dict[str, Any], pass_mode: PassMode, rules_version: str) -> bool:
     """Returns True when the paper already has the target tier for this pass."""
     version = str(paper.get("classifier_version") or "")
-    abstract_v, pdf_v, fulltext_v = _current_maude_versions(rules_version)
-    if pass_mode == "fast":
-        return version in {abstract_v, pdf_v, fulltext_v}
-    if pass_mode == "slow":
-        return version in {pdf_v, fulltext_v}
-    return False
+    return version in set(_tier_versions_for_pass(pass_mode, rules_version))
 
 
 def _skip_current_version_clause(pass_mode: PassMode, rules_version: str) -> str:
     """SQL fragment excluding papers already stamped at the current pass tier."""
-    abstract_v, pdf_v, fulltext_v = _current_maude_versions(rules_version)
-    if pass_mode == "fast":
-        versions = (abstract_v, pdf_v, fulltext_v)
-    elif pass_mode == "slow":
-        versions = (pdf_v, fulltext_v)
-    else:
+    if pass_mode == "full":
         return "1=1"
+    versions = _tier_versions_for_pass(pass_mode, rules_version)
     quoted = ", ".join(f"'{v}'" for v in versions)
     return f"(classifier_version IS NULL OR classifier_version NOT IN ({quoted}))"
 
@@ -326,9 +349,13 @@ def _where_for_pass(
     tabs: Optional[List[str]] = None,
     skip_current_version: bool = False,
     rules_version: Optional[str] = None,
+    paper_ids: Optional[List[int]] = None,
 ) -> str:
     """Builds the WHERE clause for a specific re-ingest pass."""
-    if tabs:
+    if paper_ids:
+        id_list = sorted({int(pid) for pid in paper_ids})
+        base = "id IN (" + ", ".join(str(pid) for pid in id_list) + ")"
+    elif tabs:
         base = _tabs_where_clause(tabs)
     else:
         base = _reingest_where_clause(
@@ -352,6 +379,7 @@ def _fetch_target_papers(
     limit: Optional[int],
     skip_current_version: bool = False,
     rules_version: Optional[str] = None,
+    paper_ids: Optional[List[int]] = None,
 ) -> List[Dict[str, Any]]:
     """Loads paper rows for the requested pass."""
     conn = db.get_connection()
@@ -364,6 +392,7 @@ def _fetch_target_papers(
         tabs=tabs,
         skip_current_version=skip_current_version,
         rules_version=rules_version,
+        paper_ids=paper_ids,
     )
     limit_sql = f" LIMIT {int(limit)}" if limit else ""
     cur.execute(
@@ -396,6 +425,7 @@ def _classify_one_paper(
     """Runs Maude classification for a single paper (thread-safe cache optional)."""
     abstract_only = pass_mode == "fast"
     resolved_text = None
+    resolved_source: Optional[str] = None
     if pass_mode in {"full", "slow"}:
         fetch_start = time.time()
         paper_id = paper.get("id")
@@ -404,21 +434,20 @@ def _classify_one_paper(
             cached_text, _ = paper_text_cache.lookup_cached_text_for_paper(int(paper_id))
             had_disk_cache = bool(cached_text)
 
-        def _resolve() -> Optional[str]:
-            text, _ = paper_text_cache.resolve_paper_text(
+        def _resolve():
+            return paper_text_cache.resolve_paper_text(
                 paper_id=paper_id,
                 full_text_link=paper.get("full_text_link"),
                 pmid=paper.get("pmid"),
                 doi=paper.get("doi"),
                 memory_cache=memory_cache,
             )
-            return text
 
         if cache_lock:
             with cache_lock:
-                resolved_text = _resolve()
+                resolved_text, resolved_source = _resolve()
         else:
-            resolved_text = _resolve()
+            resolved_text, resolved_source = _resolve()
 
         if stats is not None:
             stats.text_fetch_seconds += time.time() - fetch_start
@@ -438,6 +467,7 @@ def _classify_one_paper(
         doi=paper.get("doi"),
         pdf_cache=memory_cache,
         abstract_only=abstract_only,
+        text_source=resolved_source,
     )
     if stats is not None:
         stats.classify_seconds += time.time() - classify_start
@@ -449,7 +479,7 @@ def _source_bucket(classifier_version: str) -> str:
     version = str(classifier_version or "")
     if version.startswith("maude-pdf-"):
         return "pdf"
-    if version.startswith("maude-fulltext-"):
+    if version.startswith("maude-ft-") or version.startswith("maude-fulltext-"):
         return "fulltext"
     return "abstract"
 
@@ -478,6 +508,13 @@ def _apply_paper_update(
         stats.db_write_seconds += time.time() - write_start
         stats.papers_written += 1
         stats.written_paper_ids.add(int(paper["id"]))
+    if not db.is_postgres:
+        try:
+            from local_sync import mark_papers_dirty
+
+            mark_papers_dirty(conn, [int(paper["id"])])
+        except Exception:
+            logger.debug("Could not mark paper %s dirty for local sync push", paper.get("id"))
     return True
 
 
@@ -760,6 +797,7 @@ def reingest_heuristic_papers(
     workers: int = 1,
     skip_current_version: bool = True,
     tabs: Optional[List[str]] = None,
+    paper_ids: Optional[List[int]] = None,
 ) -> dict:
     """Re-classify papers with the current Maude pipeline.
 
@@ -775,6 +813,7 @@ def reingest_heuristic_papers(
         skip_current_version: Skip papers already stamped with the current rules version
             for the pass tier.
         tabs: Optional UI tab keys (e.g. ``tangential``, ``unclassified_preclinical``).
+        paper_ids: Optional explicit paper id list (overrides tab/heuristic filters).
 
     Returns:
         Summary statistics for the run.
@@ -813,6 +852,7 @@ def reingest_heuristic_papers(
         limit=limit,
         skip_current_version=skip_current_version,
         rules_version=rules_version if skip_current_version else None,
+        paper_ids=paper_ids,
     )
 
     if pass_mode == "slow":
@@ -902,6 +942,7 @@ def prewarm_slow_pass_cache(
     workers: int = 4,
     skip_current_version: bool = True,
     tabs: Optional[List[str]] = None,
+    paper_ids: Optional[List[int]] = None,
 ) -> dict:
     """Pre-fetch PDF/PMC text for slow-pass candidates into the disk cache."""
     db = db or DatabaseManager()
@@ -915,6 +956,7 @@ def prewarm_slow_pass_cache(
         limit=limit,
         skip_current_version=skip_current_version,
         rules_version=rules_version if skip_current_version else None,
+        paper_ids=paper_ids,
     )
     papers = [p for p in papers if paper_needs_slow_pass(p)]
 
@@ -970,6 +1012,7 @@ def run_two_pass_reingest(
     refresh_maude_confidence_full: bool = False,
     skip_current_version: bool = True,
     tabs: Optional[List[str]] = None,
+    paper_ids: Optional[List[int]] = None,
 ) -> dict:
     """Runs fast abstract-only pass then slow PDF/full-text pass on the non-LLM corpus.
 
@@ -1021,6 +1064,7 @@ def run_two_pass_reingest(
             workers=max(1, workers_fast),
             skip_current_version=skip_current_version,
             tabs=tabs,
+            paper_ids=paper_ids,
         )
         combined["passes"].append(fast_summary)
         written_ids.update(fast_summary.get("written_paper_ids") or [])
@@ -1032,6 +1076,7 @@ def run_two_pass_reingest(
             workers=workers,
             skip_current_version=skip_current_version,
             tabs=tabs,
+            paper_ids=paper_ids,
         )
 
     if not fast_only:
@@ -1039,11 +1084,12 @@ def run_two_pass_reingest(
             dry_run=dry_run,
             batch_size=batch_size,
             limit=limit,
-            maude_and_heuristic=bool(tabs) or True,
+            maude_and_heuristic=bool(tabs) or bool(paper_ids) or True,
             pass_mode="slow",
             workers=workers,
             skip_current_version=skip_current_version,
             tabs=tabs,
+            paper_ids=paper_ids,
         )
         combined["passes"].append(slow_summary)
         written_ids.update(slow_summary.get("written_paper_ids") or [])
@@ -1218,6 +1264,11 @@ def main():
         help="Refresh classification_confidence on all maude-* papers (not just written IDs).",
     )
     parser.add_argument(
+        "--paper-ids",
+        default=None,
+        help="Comma-separated paper ids to re-classify (scoped reingest).",
+    )
+    parser.add_argument(
         "--confidence-only",
         action="store_true",
         help="Only refresh maude-* classification_confidence from node alignment (no re-ingest).",
@@ -1229,6 +1280,9 @@ def main():
 
     skip_current = not args.no_skip_current
     tab_list = [t.strip() for t in args.tabs.split(",")] if args.tabs else None
+    paper_id_list = None
+    if args.paper_ids:
+        paper_id_list = [int(pid.strip()) for pid in args.paper_ids.split(",") if pid.strip()]
     if args.pass_mode == "two-pass":
         summary = run_two_pass_reingest(
             dry_run=args.dry_run,
@@ -1243,6 +1297,7 @@ def main():
             refresh_maude_confidence_full=args.refresh_maude_confidence_full,
             skip_current_version=skip_current,
             tabs=tab_list,
+            paper_ids=paper_id_list,
         )
         print(json.dumps(summary, indent=2, default=str))
         return
@@ -1257,6 +1312,7 @@ def main():
         workers=args.workers,
         skip_current_version=skip_current,
         tabs=tab_list,
+        paper_ids=paper_id_list,
     )
     if args.refresh_maude_confidence or summary.get("papers_written", 0) > 0:
         written_ids = set(summary.get("written_paper_ids") or [])

@@ -1,6 +1,7 @@
 """Tests for scheduled background jobs."""
 
 import unittest
+from unittest import mock
 from zoneinfo import ZoneInfo
 
 import scheduled_jobs
@@ -28,6 +29,24 @@ class ScheduledJobsTests(unittest.TestCase):
                 run_date="2020-01-01",
                 timezone_name="America/Toronto",
             )
+
+
+    def test_run_post_harvest_maude_upgrade_skips_empty_ids(self):
+        """No subprocess is started when the harvest batch is empty."""
+        result = scheduled_jobs.run_post_harvest_maude_upgrade([])
+        self.assertEqual(result["status"], "skipped")
+        self.assertEqual(result["paper_count"], 0)
+
+    @unittest.mock.patch("maude_reingest_watchdog.start_detached_two_pass", return_value=12345)
+    def test_run_post_harvest_maude_upgrade_starts_slow_pass(self, mock_start):
+        """Fresh harvest ids trigger a scoped slow-only two-pass re-ingest."""
+        result = scheduled_jobs.run_post_harvest_maude_upgrade([101, 102, 101])
+        self.assertEqual(result["status"], "started")
+        self.assertEqual(result["paper_count"], 2)
+        mock_start.assert_called_once()
+        kwargs = mock_start.call_args.kwargs
+        self.assertEqual(kwargs["paper_ids"], [101, 102])
+        self.assertTrue(kwargs["slow_only"])
 
 
 if __name__ == "__main__":

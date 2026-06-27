@@ -652,8 +652,10 @@ def classify_with_maude(
     doi: Optional[str] = None,
     cache: Optional[Dict[str, Optional[str]]] = None,
     abstract_only: bool = False,
+    text_source: Optional[str] = None,
 ) -> Dict[str, Any]:
     """Runs the RL-tuned Maude classifier using PDF, article full text, or abstract."""
+    import calibration_build
     import calibration_pdf
 
     rules_version = get_rules_version()
@@ -662,6 +664,14 @@ def classify_with_maude(
     if abstract_only:
         resolved_text = None
         source = calibration_pdf.CLASSIFICATION_SOURCE_ABSTRACT
+    elif resolved_text is not None:
+        if text_source is not None:
+            source = calibration_pdf.normalize_classification_source(text_source)
+        elif not str(resolved_text).strip():
+            resolved_text = None
+            source = calibration_pdf.CLASSIFICATION_SOURCE_ABSTRACT
+        else:
+            source = calibration_pdf.CLASSIFICATION_SOURCE_FULLTEXT
     elif resolved_text is None:
         resolved_text, source = calibration_pdf.resolve_classification_full_text(
             full_text_link=full_text_link,
@@ -681,8 +691,24 @@ def classify_with_maude(
     if not result.get("summary"):
         result["summary"] = extractor.generate_heuristic_summary(result)
     result["classification_timestamp"] = datetime.now().isoformat()
-    result["classifier_version"] = calibration_pdf.maude_classifier_version(source, rules_version)
+    row_index: Optional[int] = None
+    golden_row = os.getenv("GOLDEN_ROW_INDEX")
+    if golden_row is not None:
+        try:
+            row_index = int(golden_row)
+        except ValueError:
+            row_index = None
+    result["classifier_version"] = calibration_pdf.maude_classifier_version(
+        source, rules_version, row_index=row_index,
+    )
     maude_confidence.apply_maude_confidence(result)
+    logger.info(
+        "Maude classification complete (build=%s rules=v%s source=%s version=%s).",
+        calibration_build.MAUDE_CLASSIFIER_BUILD_ID,
+        rules_version,
+        source,
+        result["classifier_version"],
+    )
     return result
 
 
@@ -706,6 +732,7 @@ def process_paper_metadata(
     doi: Optional[str] = None,
     pdf_cache: Optional[Dict[str, Optional[str]]] = None,
     abstract_only: bool = False,
+    text_source: Optional[str] = None,
 ) -> Dict[str, Any]:
     """Extracts metadata from paper via Claude LLM or the Maude rule/cue classifier.
 
@@ -723,6 +750,7 @@ def process_paper_metadata(
         doi: Optional DOI for Europe PMC full-text lookup
         pdf_cache: Optional per-run cache for PDF/PMC/HTML fetches
         abstract_only: When True, Maude uses abstract only (no PDF/PMC/HTML fetch).
+        text_source: Optional resolved tier label (pdf/fulltext/abstract) when full_text is preset.
 
     Returns:
         Dict containing all extracted metadata.
@@ -754,6 +782,7 @@ def process_paper_metadata(
                 doi=doi,
                 cache=pdf_cache,
                 abstract_only=abstract_only,
+                text_source=text_source,
             )
         except Exception as exc:
             logger.error("Maude classification failed: %s. Falling back to legacy heuristics.", exc)

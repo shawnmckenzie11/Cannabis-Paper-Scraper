@@ -35,9 +35,12 @@
       "strain_vendor_blocklist": ["Sigma-Aldrich", "Tocris", "Cayman Chemical", "catalog no", "cat no"],
       "strain_invitro_priority": ["chemotype profile", "cv.", "331-18A", "botanical source", "compound panel"],
       "strain_suppress_animal_in_invitro": true,
-      "oncology_outcome_terms": ["leukemia", "glioblastoma", "apoptosis", "cytotoxicity", "IC50", "MTT assay"],
+      "oncology_outcome_terms": ["leukemia", "glioblastoma", "apoptosis", "cytotoxicity", "IC50", "MTT assay", "antitumor", "anticancer", "cell viability", "colorectal cancer"],
       "pain_outcome_terms": ["GIRK", "analgesia", "nociception", "hyperalgesia"],
-      "addiction_outcome_terms": ["drug tolerance", "receptor internalization", "conditioned place preference"]
+      "addiction_outcome_terms": ["drug tolerance", "receptor internalization", "conditioned place preference"],
+      "cardiac_outcome_terms": ["hERG", "IKr", "action potential duration", "QTc", "arrhythmia"],
+      "nanoparticle_exposure_terms": ["nanoparticle", "nanocapsule", "LNC", "PLGA", "in vitro efficacy", "encapsulated CBD", "THC-loaded"],
+      "pure_cannabinoid_loaded_terms": ["THC-loaded", "CBD-loaded", "encapsulated THC", "encapsulated CBD"]
     },
     "strain_cues": {
       "animal_strains": ["Sprague-Dawley", "Wistar", "Long-Evans", "C57BL/6J", "BALB/c", "Fischer 344", "CD-1", "Lewis"],
@@ -213,7 +216,10 @@
         "animal experiment",
         "cell line assay",
         "intervention arm",
-        "dose"
+        "dose",
+        "Development, Characterization and In Vitro",
+        "in vitro gastrointestinal release",
+        "PLGA nanoparticles loaded with full-spectrum cannabis"
       ],
       "negative_cues": [
         "we review",
@@ -317,7 +323,9 @@
         "cultivar",
         "chemovar",
         "CB1 agonist",
-        "synthetic cannabinoid"
+        "synthetic cannabinoid",
+        "bleomycin-induced scleroderma",
+        "full-spectrum cannabis extract"
       ],
       "negative_cues": [
         "patient",

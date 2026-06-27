@@ -66,17 +66,28 @@ fi
 
 if [[ "$PUSH" == "1" ]]; then
   export DATABASE_URL="$SAVED_DATABASE_URL"
-  PUSH_ARGS=(
-    python3 scripts/push_classification_deltas.py
-    --sqlite-path "$SQLITE_PATH"
-    --batch-size "$PUSH_BATCH_SIZE"
-    --batch-pause-seconds "$PUSH_BATCH_PAUSE"
-  )
-  if [[ "$DRY_RUN_PUSH" == "1" ]]; then
-    PUSH_ARGS+=(--dry-run)
+  if [[ "${RESILIENT_PUSH:-0}" == "1" ]]; then
+    echo "push: scripts/run_resilient_push.sh (RESILIENT_PUSH=1)" | tee -a "$LOG"
+    RESILIENT_PUSH=1 SQLITE_PATH="$SQLITE_PATH" LOG="$LOG" \
+      PUSH_BATCH_SIZE="$PUSH_BATCH_SIZE" \
+      PUSH_BATCH_PAUSE="$PUSH_BATCH_PAUSE" \
+      bash scripts/run_resilient_push.sh 2>&1 | tee -a "$LOG"
+  else
+    PUSH_ARGS=(
+      python3 scripts/push_classification_deltas.py
+      --sqlite-path "$SQLITE_PATH"
+      --batch-size "$PUSH_BATCH_SIZE"
+      --batch-pause-seconds "$PUSH_BATCH_PAUSE"
+      --stall-seconds "${PUSH_STALL_SECONDS:-90}"
+      --commit-timeout-seconds "${PUSH_COMMIT_TIMEOUT_SECONDS:-60}"
+      --statement-timeout-ms "${PUSH_STATEMENT_TIMEOUT_MS:-30000}"
+    )
+    if [[ "$DRY_RUN_PUSH" == "1" ]]; then
+      PUSH_ARGS+=(--dry-run)
+    fi
+    echo "push: ${PUSH_ARGS[*]}" | tee -a "$LOG"
+    "${PUSH_ARGS[@]}" 2>&1 | tee -a "$LOG"
   fi
-  echo "push: ${PUSH_ARGS[*]}" | tee -a "$LOG"
-  "${PUSH_ARGS[@]}" 2>&1 | tee -a "$LOG"
 fi
 
 echo "=== local reingest cycle finished $(date -Iseconds) ===" | tee -a "$LOG"

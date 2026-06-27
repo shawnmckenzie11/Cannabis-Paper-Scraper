@@ -3,11 +3,14 @@ from db_manager import DatabaseManager
 
 
 def main() -> None:
-    """Backfill tab flags synchronously when they are missing or incomplete."""
+    """Backfill tab flags when columns exist but membership is incomplete."""
     db = DatabaseManager()
+    if not db._tab_flag_columns_exist():
+        raise SystemExit("Tab membership columns are missing.")
+
     db._refresh_tab_flags_ready_cache()
     if db._tab_flags_are_ready():
-        print("Indexed tab membership columns already ready.")
+        print("Indexed tab membership columns already backfilled.")
         return
 
     conn = db.get_connection()
@@ -19,8 +22,8 @@ def main() -> None:
     db._refresh_tab_flags_ready_cache()
     if db._tab_flags_are_ready():
         print("Indexed tab membership columns backfilled successfully.")
-    else:
-        raise SystemExit("Tab membership backfill did not complete.")
+        return
+    raise SystemExit("Tab membership backfill did not complete.")
 
 
 if __name__ == "__main__":

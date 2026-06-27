@@ -49,6 +49,7 @@ class CalibrationPdfTests(unittest.TestCase):
                 rules_version="2.6.0",
             )
         self.assertTrue(pdf_used)
+        self.assertEqual(maude_out["classifier_version"], "maude-pdf-2.6.0")
         self.assertEqual(maude_out["study_type"], ["Animal Models (Mouse)"])
         mock_classify.assert_called_once()
         kwargs = mock_classify.call_args.kwargs
@@ -104,11 +105,41 @@ class CalibrationPdfTests(unittest.TestCase):
         )
         self.assertEqual(
             calibration_pdf.maude_classifier_version("fulltext", "2.6.0"),
-            "maude-fulltext-2.6.0",
+            "maude-ft-2.6.0",
         )
         self.assertEqual(
             calibration_pdf.maude_classifier_version("abstract", "2.6.0"),
             "maude-2.6.0",
+        )
+
+    def test_maude_classifier_version_golden_row_tag(self):
+        """Golden table row 3+ stamps classifier_version with .rowN for DB traceability."""
+        self.assertEqual(
+            calibration_pdf.maude_classifier_version("pdf", "2.6.0", row_index=3),
+            "maude-pdf-2.6.row3",
+        )
+        self.assertEqual(
+            calibration_pdf.maude_classifier_version("abstract", "2.6.0", row_index=3),
+            "maude-2.6.row3",
+        )
+        self.assertEqual(
+            calibration_pdf.maude_classifier_version("pdf", "2.6.0", row_index=2),
+            "maude-pdf-2.6.0",
+        )
+        abstract, pdf, ft = calibration_pdf.maude_tier_classifier_versions("2.6.0", row_index=4)
+        self.assertEqual(pdf, "maude-pdf-2.6.row4")
+        self.assertEqual(abstract, "maude-2.6.row4")
+        self.assertEqual(ft, "maude-ft-2.6.row4")
+
+    def test_normalize_classification_source(self):
+        """Source normalization accepts legacy cache labels."""
+        self.assertEqual(
+            calibration_pdf.normalize_classification_source("pdf"),
+            calibration_pdf.CLASSIFICATION_SOURCE_PDF,
+        )
+        self.assertEqual(
+            calibration_pdf.normalize_classification_source("pmc"),
+            calibration_pdf.CLASSIFICATION_SOURCE_FULLTEXT,
         )
 
 

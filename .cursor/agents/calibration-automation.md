@@ -158,3 +158,26 @@ For publication/study_type routing calibration (not node2 extraction handoffs):
 See `docs/agent_automation_plan.md` for expert resolve and automation layers.
 
 Run all commands yourself. Do not claim deploy or metrics without verifying batch JSON timestamps and build ID from `fly_db_check.py`.
+
+## Golden endpoint mode (`GOLDEN_ENDPOINT_CYCLE=1`)
+
+When invoked from `golden-endpoint-rl` for a per-endpoint golden cycle:
+
+1. **Read** `scratch/golden_dataset/cycles/{endpoint}/{cycle}/golden_disagreement_*.json`, `llm_results.json`, and `golden_*_golden_feedback_report.json` (or `golden_regression_failures_iter_*.json` after guard failures)
+2. **Claude golden patch feedback** (default) — cycle sends all candidate papers with `golden_llm_ground_truth` + `maude_classification` + text excerpts to Claude via `run_golden_feedback_cycle` / `scripts/golden_claude_patch_feedback.py`. Requires `ANTHROPIC_API_KEY`. Staged patches land in `{cycle}/staged_patches/`.
+3. **Read** `scratch/calibration_runs/handoff_learning_log.json` and latest staged patches
+4. **Implement patch** in `extractor.py`, `maude_classifier.py`, `maude_cues.json`, `test_patch_*.py` using Claude `agent_handoff_prompt` + `proposed_rules_changes` + `proposed_cues`
+5. **Bump** `calibration_build.py` → new `MAUDE_CLASSIFIER_BUILD_ID`
+6. **Test** `python3 -m unittest test_patch_* test_golden_confirmed_regression -q`
+7. **Golden guard** — subnode-scoped only (`node2a` / `node2b` / `node2c`); max **10** attempts:
+   ```bash
+   GUARD_ONLY=1 ARTIFACT_DIR=scratch/golden_dataset/cycles/... ENDPOINT_ID=... \
+     ./scripts/run_golden_endpoint_cycle.sh
+   ```
+8. **Skip** Fly deploy and `calibration_agent.py --refresh-maude-from-batch` on Fly
+9. **Do not push** — orchestrator handles reingest + Postgres push after guard passes
+
+Set `GOLDEN_LOCAL_FEEDBACK=1` only to skip Claude and use local disagreement summaries.
+
+Golden guard compares Maude output to `golden_confirmed.json` ground_truth for papers sharing the same `scope_subnode` only. **Pass gate:** average batch alignment ≥ **90%** vs golden LLM on structured guard fields (`inclusion_criteria` / `exclusion_criteria` excluded from all alignment checks).
+

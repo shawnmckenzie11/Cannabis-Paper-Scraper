@@ -1242,11 +1242,106 @@
         .drawer-properties-panel {
             display: flex;
             flex-direction: column;
-            gap: 14px;
+            gap: 10px;
+            background: transparent;
+            border: none;
+            border-radius: 0;
+            padding: 0;
+        }
+
+        .drawer-info-card {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
             background: rgba(0, 0, 0, 0.25);
-            border: 1px solid rgba(255, 255, 255, 0.05);
-            border-radius: 12px;
-            padding: 16px;
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            border-radius: 10px;
+            padding: 10px 12px;
+        }
+
+        .drawer-card-title {
+            font-size: 0.68rem;
+            text-transform: uppercase;
+            color: var(--accent-blue);
+            font-weight: 700;
+            letter-spacing: 0.6px;
+            border-bottom: 1px solid rgba(0, 240, 255, 0.12);
+            padding-bottom: 4px;
+            margin-bottom: 2px;
+        }
+
+        .drawer-card-subtitle {
+            font-size: 0.62rem;
+            text-transform: uppercase;
+            color: var(--text-secondary);
+            font-weight: 600;
+            letter-spacing: 0.5px;
+            margin-top: 4px;
+        }
+
+        .compact-meta-grid .meta-label {
+            font-size: 0.62rem;
+        }
+
+        .compact-meta-grid .meta-value {
+            font-size: 0.78rem;
+            line-height: 1.35;
+        }
+
+        .compact-meta-grid .outcome-tag,
+        .compact-meta-grid .cannabis-tag {
+            font-size: 0.68rem;
+            padding: 2px 6px;
+        }
+
+        .compact-meta-grid .meta-item--full {
+            grid-column: 1 / -1;
+        }
+
+        .drawer-header-actions {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-shrink: 0;
+        }
+
+        .drawer-action-btn {
+            padding: 4px 10px;
+            font-size: 0.78rem;
+            border-radius: 4px;
+            font-weight: 600;
+            background: rgba(0, 240, 255, 0.06);
+            border: 1px solid rgba(0, 240, 255, 0.2);
+            color: var(--accent-blue);
+            cursor: pointer;
+        }
+
+        .drawer-action-btn:hover {
+            background: rgba(0, 240, 255, 0.12);
+        }
+
+        .drawer-links-footer {
+            margin-top: 12px;
+            padding-top: 10px;
+            border-top: 1px solid rgba(255, 255, 255, 0.06);
+        }
+
+        .drawer-links-footer .link-icon-group {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px 14px;
+            align-items: center;
+        }
+
+        .drawer-links-footer .drawer-link {
+            font-size: 0.72rem;
+            color: var(--accent-blue);
+            text-decoration: none;
+            font-weight: 600;
+        }
+
+        .drawer-links-footer .drawer-link:hover {
+            text-decoration: underline;
         }
 
         .properties-group {
@@ -1284,6 +1379,8 @@
             gap: 8px;
             width: 100%;
         }
+
+        /* legacy - links now in drawer footer */
 
         .drawer-properties-panel .link-icon-group .btn {
             width: 100%;
@@ -1434,12 +1531,188 @@
         #my-analyses-panel {
             display: none;
             flex-direction: column;
-            gap: 20px;
-            padding: 20px 30px;
+            flex: 1;
+            min-height: 0;
+            gap: 0;
+            padding: 16px 24px 20px;
         }
 
         #my-analyses-panel.visible {
             display: flex;
+        }
+
+        .analysis-three-col {
+            display: grid;
+            grid-template-columns: 1fr 2.5fr 2.5fr;
+            grid-template-rows: auto 1fr;
+            gap: 12px;
+            flex: 1;
+            min-height: 0;
+            align-items: stretch;
+        }
+
+        .analysis-col-list {
+            grid-column: 1;
+            grid-row: 1 / -1;
+        }
+
+        .analysis-stats-span {
+            grid-column: 2 / 4;
+            grid-row: 1;
+            min-width: 0;
+        }
+
+        .analysis-col-charts {
+            grid-column: 2;
+            grid-row: 2;
+            overflow-y: auto;
+            min-height: 0;
+            height: 100%;
+            gap: 10px;
+            background: transparent;
+            border: none;
+            padding: 0;
+        }
+
+        .analysis-col-drilldown {
+            grid-column: 3;
+            grid-row: 2;
+            min-height: 0;
+            overflow: hidden;
+        }
+
+        .analysis-col-list .analyses-table-wrap {
+            flex: 1;
+            min-height: 0;
+            overflow-y: auto;
+        }
+
+        .analysis-col {
+            min-width: 0;
+            min-height: 0;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            background: rgba(0, 0, 0, 0.12);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            border-radius: 12px;
+            padding: 10px 12px;
+        }
+
+        .analysis-col h4 {
+            margin: 0 0 4px 0;
+            font-family: var(--font-display);
+            font-size: 0.82rem;
+            font-weight: 600;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.4px;
+        }
+
+        .analysis-col-drilldown .chart-drilldown-table-wrap {
+            flex: 1;
+            min-height: 0;
+            overflow-y: auto;
+        }
+
+        .analysis-row-actions {
+            display: flex;
+            gap: 2px;
+            align-items: center;
+            justify-content: flex-end;
+            white-space: nowrap;
+        }
+
+        .analysis-row-actions .btn-sm-icon[title="Rename"] {
+            border-color: rgba(0, 240, 255, 0.25);
+            background: rgba(0, 240, 255, 0.08);
+            color: var(--accent-blue);
+        }
+
+        .analysis-row-actions .btn-sm-icon {
+            padding: 2px 5px;
+            font-size: 0.68rem;
+        }
+
+        #analysis-charts-content {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .analysis-col-placeholder {
+            color: var(--text-secondary);
+            font-size: 0.82rem;
+            padding: 24px 12px;
+            text-align: center;
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .analyses-table-wrap.analyses-table-compact th,
+        .analyses-table-wrap.analyses-table-compact td {
+            padding: 6px 8px;
+            font-size: 0.72rem;
+        }
+
+        .analyses-table-wrap.analyses-table-compact th {
+            font-size: 0.65rem;
+            letter-spacing: 0.3px;
+        }
+
+        .analysis-export-fab {
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            z-index: 200;
+            padding: 10px 18px;
+            font-size: 0.85rem;
+            border-radius: 999px;
+            font-family: var(--font-display);
+            background: linear-gradient(135deg, rgba(0, 240, 255, 0.25) 0%, rgba(0, 240, 255, 0.08) 100%);
+            border: 1px solid rgba(0, 240, 255, 0.35);
+            color: var(--accent-blue);
+            cursor: not-allowed;
+            opacity: 0.45;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.35);
+            display: none;
+            align-items: center;
+            gap: 6px;
+            transition: all 0.2s ease;
+        }
+
+        .analysis-export-fab.visible {
+            display: inline-flex;
+        }
+
+        .analysis-export-fab:not([disabled]) {
+            cursor: pointer;
+            opacity: 1;
+        }
+
+        .analysis-chart-card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .analysis-chart-select {
+            font-size: 0.72rem;
+            padding: 3px 8px;
+            border-radius: 6px;
+            background: rgba(0, 240, 255, 0.06);
+            border: 1px solid rgba(0, 240, 255, 0.2);
+            color: var(--accent-blue);
+            font-family: var(--font-sans);
+            cursor: pointer;
+        }
+
+        .analysis-timeline-section {
+            margin-top: 0;
         }
 
         .analyses-table-wrap {
@@ -1528,6 +1801,182 @@
             background: linear-gradient(135deg, rgba(0, 240, 255, 0.3) 0%, rgba(0, 240, 255, 0.1) 100%);
         }
 
+        /* ─── My Analyses: Subset Summarizer ─── */
+        #selection-analytics-panel {
+            display: none;
+            flex-direction: column;
+            gap: 14px;
+            border: 1px solid rgba(0, 240, 255, 0.15);
+            box-shadow: 0 0 20px rgba(0, 240, 255, 0.05);
+            border-radius: 12px;
+            padding: 16px 18px;
+            background: rgba(255,255,255,0.01);
+        }
+
+        #selection-analytics-panel.visible {
+            display: flex;
+        }
+
+        .quant-stats-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            overflow: visible;
+            padding-bottom: 2px;
+            align-content: flex-start;
+        }
+
+        .quant-stat-chip {
+            flex: 1 1 calc(20% - 8px);
+            min-width: 108px;
+            max-width: 100%;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            background: rgba(255,255,255,0.02);
+            border: 1px solid rgba(255,255,255,0.06);
+            border-radius: 8px;
+            padding: 5px 10px;
+            white-space: nowrap;
+            font-size: 0.74rem;
+        }
+
+        .quant-stat-chip .quant-label {
+            color: var(--text-secondary);
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.4px;
+            font-size: 0.68rem;
+        }
+
+        .quant-stat-chip .quant-value {
+            font-family: var(--font-display);
+            font-weight: 800;
+            color: var(--accent-blue);
+        }
+
+        .quant-stat-chip .quant-n {
+            color: var(--text-secondary);
+            font-size: 0.72rem;
+        }
+
+        .analysis-charts-layout {
+            display: none;
+        }
+
+        .analysis-charts-left {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .analysis-chart-card {
+            background: rgba(0, 0, 0, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            border-radius: 12px;
+            padding: 12px 14px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            cursor: pointer;
+            transition: border-color 0.15s, box-shadow 0.15s;
+        }
+
+        .analysis-chart-card.selected {
+            border-color: rgba(0, 240, 255, 0.45);
+            box-shadow: 0 0 12px rgba(0, 240, 255, 0.12);
+        }
+
+        .analysis-chart-card h4 {
+            font-family: var(--font-display);
+            font-size: 0.88rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin: 0;
+        }
+
+        .analysis-chart-card .chart-canvas-wrap {
+            position: relative;
+            height: 180px;
+            width: 100%;
+        }
+
+        .analysis-drilldown-right {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            background: rgba(0, 0, 0, 0.15);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            border-radius: 12px;
+            padding: 14px;
+            min-height: 0;
+        }
+
+        .analysis-drilldown-right h4 {
+            margin: 0;
+            font-family: var(--font-display);
+            font-size: 0.95rem;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .chart-drilldown-table-wrap {
+            overflow-y: auto;
+        }
+
+        .analysis-col-drilldown .chart-drilldown-table-wrap {
+            flex: 1;
+            min-height: 0;
+            max-height: none;
+        }
+
+        .chart-drilldown-table-wrap table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.82rem;
+        }
+
+        .chart-drilldown-table-wrap th {
+            position: sticky;
+            top: 0;
+            background: rgba(12, 16, 27, 0.98);
+            text-align: left;
+            padding: 8px 10px;
+            font-size: 0.72rem;
+            text-transform: uppercase;
+            letter-spacing: 0.4px;
+            color: var(--text-secondary);
+            border-bottom: 1px solid rgba(255,255,255,0.08);
+        }
+
+        .chart-drilldown-table-wrap td {
+            padding: 8px 10px;
+            border-bottom: 1px solid rgba(255,255,255,0.04);
+            color: var(--text-primary);
+        }
+
+        .chart-drilldown-table-wrap tr.drilldown-row {
+            cursor: pointer;
+        }
+
+        .chart-drilldown-table-wrap tr.drilldown-row:hover td {
+            background: rgba(0, 240, 255, 0.05);
+        }
+
+        .chart-drilldown-table-wrap td.drilldown-title-cell {
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            max-width: 0;
+        }
+
+        .chart-drilldown-empty {
+            color: var(--text-secondary);
+            font-size: 0.85rem;
+            padding: 24px 12px;
+            text-align: center;
+        }
+
         /* ─── Connectivity / Citation Graph ─── */
         .connect-search-item:hover {
             background: rgba(99, 102, 241, 0.15) !important;
@@ -1568,20 +2017,6 @@
                     style="padding: 8px 16px; font-size: 0.85rem; background: rgba(0, 240, 255, 0.1); border-color: rgba(0, 240, 255, 0.3); color: var(--accent-blue); display: inline-flex; align-items: center; gap: 6px;">
                     <span>📊</span> My Analyses
                 </button>
-                <button class="btn btn-secondary" onclick="showMvpLockModal('Learning Dashboard')" id="btn-learning-dashboard"
-                    style="padding: 8px 16px; font-size: 0.85rem; background: rgba(239, 68, 68, 0.05); border-color: rgba(239, 68, 68, 0.2); color: var(--text-secondary); display: inline-flex; align-items: center; gap: 6px; opacity: 0.65;">
-                    <span>🔒</span> Learning Dashboard
-                </button>
-                <button class="btn btn-secondary" onclick="showMvpLockModal('Connectivity')" id="btn-connectivity"
-                    style="padding: 8px 16px; font-size: 0.85rem; background: rgba(239, 68, 68, 0.05); border-color: rgba(239, 68, 68, 0.2); color: var(--text-secondary); display: inline-flex; align-items: center; gap: 6px; opacity: 0.65;">
-                    <span>🔒</span> Connectivity
-                </button>
-                {% if session.get('email') and admin_emails_list and session.get('email') in admin_emails_list %}
-                <button class="btn btn-secondary" onclick="openHeuristicsEditor()" id="btn-heuristics"
-                    style="padding: 8px 16px; font-size: 0.85rem; background: rgba(168, 85, 247, 0.1); border-color: rgba(168, 85, 247, 0.3); color: rgb(192, 132, 252); display: inline-flex; align-items: center; gap: 6px; border-radius: 8px;">
-                    <span>⚙️</span> Heuristics
-                </button>
-                {% endif %}
             </div>
         </div>
         <div class="banner-right">
@@ -2182,40 +2617,101 @@
 
             <!-- MY ANALYSES PANEL -->
             <section id="my-analyses-panel">
-                <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
-                    <div style="display: flex; align-items: center; gap: 12px;">
-                        <span style="display: inline-block; width: 10px; height: 10px; border-radius: 50%; background: var(--accent-blue); box-shadow: 0 0 8px var(--accent-blue-glow);"></span>
-                        <h3 style="font-family: var(--font-display); font-size: 1.25rem; font-weight: 700; margin: 0; color: var(--text-primary);">My Analyses</h3>
-                        <span id="analyses-count-badge" class="badge" style="background: rgba(0, 240, 255, 0.12); color: var(--accent-blue); border: 1px solid rgba(0, 240, 255, 0.3); font-weight: 700; padding: 4px 10px; font-size: 0.85rem;">0 saved</span>
+                <div class="analysis-three-col">
+                    <div class="analysis-col analysis-col-list">
+                        <h4>Saved Analyses</h4>
+                        <div class="analyses-table-wrap analyses-table-compact">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>Name</th>
+                                        <th style="width: 28px; text-align: center;">#</th>
+                                        <th style="width: 52px;"></th>
+                                    </tr>
+                                </thead>
+                                <tbody id="analyses-tbody">
+                                    <tr><td colspan="3" style="text-align: center; color: var(--text-secondary); padding: 20px; font-size: 0.75rem;">No analyses yet</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <div id="quantitative-stats-row" class="quant-stats-row analysis-stats-span" style="display: none;"></div>
+
+                    <div class="analysis-col analysis-col-charts" id="analysis-charts-column">
+                        <div id="analysis-charts-placeholder" class="analysis-col-placeholder">Select a saved analysis to view charts</div>
+                        <div id="analysis-charts-content" style="display: none; flex-direction: column; gap: 10px;">
+                            <div class="analysis-chart-card" id="container-chart-study-design" data-chart-id="study-design" onclick="selectAnalysisChart('study-design')">
+                                <h4>Study Design Distribution</h4>
+                                <div class="chart-canvas-wrap"><canvas id="chart-study-design"></canvas></div>
+                            </div>
+                            <div class="analysis-chart-card" id="container-chart-cannabinoid-distribution" data-chart-id="cannabinoid-distribution" onclick="selectAnalysisChart('cannabinoid-distribution')">
+                                <div class="analysis-chart-card-header">
+                                    <h4>Cannabinoid Distribution</h4>
+                                    <select id="select-cannabinoid-view" class="analysis-chart-select" onclick="event.stopPropagation();" onchange="onCannabinoidViewChange()">
+                                        <option value="absolute">Absolute (%)</option>
+                                        <option value="concentration">Concentration (mg/mL)</option>
+                                        <option value="weight">Weight (mg/g or mg/kg)</option>
+                                    </select>
+                                </div>
+                                <div class="chart-canvas-wrap"><canvas id="chart-cannabinoid-distribution"></canvas></div>
+                            </div>
+                            <div class="analysis-chart-card" id="container-chart-exposure" data-chart-id="exposure" onclick="selectAnalysisChart('exposure')">
+                                <div class="analysis-chart-card-header">
+                                    <h4>Exposure Breakdown</h4>
+                                    <select id="select-exposure-mode" class="analysis-chart-select" onclick="event.stopPropagation();" onchange="onExposureModeChange()">
+                                        <option value="clinical">Clinical</option>
+                                        <option value="vitro">In Vitro</option>
+                                        <option value="vivo">In Vivo</option>
+                                    </select>
+                                </div>
+                                <div class="chart-canvas-wrap" style="display: flex; justify-content: center; align-items: center;">
+                                    <canvas id="chart-exposure" style="max-height: 180px; max-width: 180px;"></canvas>
+                                    <div id="fallback-exposure" class="chart-drilldown-empty" style="display: none; padding: 12px;">No exposure data in this subset</div>
+                                </div>
+                            </div>
+                            <div class="analysis-chart-card" id="container-chart-cannabis-type" data-chart-id="cannabis-type" onclick="selectAnalysisChart('cannabis-type')">
+                                <h4>Cannabis Type Breakdown</h4>
+                                <div class="chart-canvas-wrap" style="display: flex; justify-content: center; align-items: center;">
+                                    <canvas id="chart-cannabis-type-doughnut" style="max-height: 180px; max-width: 180px;"></canvas>
+                                </div>
+                            </div>
+                            <div class="analysis-chart-card" id="container-chart-outcome" data-chart-id="outcome" onclick="selectAnalysisChart('outcome')">
+                                <h4>Outcome Domain Prevalence</h4>
+                                <div class="chart-canvas-wrap"><canvas id="chart-outcome-bar"></canvas></div>
+                            </div>
+                            <div class="analysis-chart-card analysis-timeline-section" id="container-chart-timeline" data-chart-id="timeline" onclick="selectAnalysisChart('timeline')">
+                                <div class="analysis-chart-card-header">
+                                    <h4>Publication Timeline</h4>
+                                    <button id="btn-timescale-toggle" onclick="event.stopPropagation(); toggleTimescale();" class="btn btn-secondary btn-sm"
+                                        style="padding: 2px 10px; font-size: 0.72rem; background: rgba(0,240,255,0.06); border-color: rgba(0,240,255,0.2); color: var(--accent-blue); cursor: pointer; border-radius: 4px; font-weight: 600;">Timescale: Yearly</button>
+                                </div>
+                                <div class="chart-canvas-wrap" style="height: 200px;"><canvas id="chart-timeline"></canvas></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="analysis-col analysis-col-drilldown">
+                        <div style="display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap;">
+                            <h4 id="chart-drilldown-title" style="margin: 0;">Papers in Selection</h4>
+                            <span id="selection-count-badge" class="badge" style="display: none; background: rgba(0, 240, 255, 0.12); color: var(--accent-blue); border: 1px solid rgba(0, 240, 255, 0.3); font-weight: 700; padding: 2px 8px; font-size: 0.72rem;">0 Articles</span>
+                        </div>
+                        <p id="chart-drilldown-subtitle" style="margin: 0 0 6px 0; font-size: 0.72rem; color: var(--text-secondary);">Click a chart section to list papers.</p>
+                        <div id="analysis-drilldown-placeholder" class="analysis-col-placeholder" style="padding: 12px;">No section selected</div>
+                        <div class="chart-drilldown-table-wrap analyses-table-wrap" id="analysis-drilldown-table-wrap" style="display: none;">
+                            <table>
+                                <thead>
+                                    <tr><th>Title</th></tr>
+                                </thead>
+                                <tbody id="chart-drilldown-tbody"></tbody>
+                            </table>
+                        </div>
                     </div>
                 </div>
 
-                <div class="analyses-table-wrap" style="max-height: 45vh; overflow-y: auto;">
-                    <table>
-                        <thead>
-                            <tr>
-                                <th style="width: 24px;"></th>
-                                <th>Name</th>
-                                <th>Search Text</th>
-                                <th style="width: 70px;">Papers</th>
-                                <th>Study Design</th>
-                                <th>Exposure Method</th>
-                                <th>Cannabis Type</th>
-                                <th>Outcome</th>
-                                <th style="width: 60px;"></th>
-                            </tr>
-                        </thead>
-                        <tbody id="analyses-tbody">
-                            <tr><td colspan="9" style="text-align: center; color: var(--text-secondary); padding: 30px;">No analyses yet. Run an analysis first!</td></tr>
-                        </tbody>
-                    </table>
-                </div>
-                <div style="display: flex; justify-content: flex-end; margin-top: 15px;">
-                    <button type="button" class="btn" id="btn-export-analysis-csv" onclick="exportAnalysisCSV()" disabled
-                        style="padding: 8px 18px; font-size: 0.85rem; border-radius: 8px; font-family: var(--font-display); background: linear-gradient(135deg, rgba(0, 240, 255, 0.2) 0%, rgba(0, 240, 255, 0.05) 100%); border: 1px solid rgba(0, 240, 255, 0.3); color: var(--accent-blue); cursor: not-allowed; opacity: 0.5; box-shadow: 0 0 10px rgba(0, 240, 255, 0.05); display: inline-flex; align-items: center; gap: 6px; transition: all 0.3s ease;">
-                        📥 Export CSV
-                    </button>
-                </div>
+                <button type="button" class="analysis-export-fab" id="btn-export-analysis-csv" onclick="exportAnalysisCSV()" disabled>
+                    📥 Export CSV
+                </button>
             </section>
 
             <!-- LEARNING DASHBOARD PANEL -->
@@ -2622,167 +3118,6 @@
                     </div>
                 </div>
             </section>
-
-            <!-- SELECTION ANALYTICS PANEL -->
-            <section id="selection-analytics-panel" class="glass-panel"
-                style="display: none; flex-direction: column; gap: 20px; border-color: rgba(0, 240, 255, 0.15); box-shadow: 0 0 20px rgba(0, 240, 255, 0.05); margin: 15px 30px 30px 30px;">
-                <div
-                    style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(255,255,255,0.08); padding-bottom: 12px;">
-                    <div style="display: flex; align-items: center; gap: 10px;">
-                        <span
-                            style="display: inline-block; width: 10px; height: 10px; border-radius: 50%; background: var(--accent-blue); box-shadow: 0 0 8px var(--accent-blue-glow);"></span>
-                        <h3
-                            style="font-family: var(--font-display); font-size: 1.25rem; font-weight: 700; margin: 0; color: var(--text-primary);">
-                            Subset Summarizer & Visual Analytics</h3>
-                    </div>
-                    <span id="selection-count-badge" class="badge"
-                        style="background: rgba(0, 240, 255, 0.12); color: var(--accent-blue); border: 1px solid rgba(0, 240, 255, 0.3); font-weight: 700; padding: 4px 10px; font-size: 0.85rem;">0
-                        Selected</span>
-                </div>
-
-                <!-- Aggregated Numerical Metrics -->
-                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 15px;">
-
-                    <div
-                        style="background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.04); border-radius: 10px; padding: 12px; display: flex; flex-direction: column; gap: 4px; align-items: center; text-align: center;">
-                        <span
-                            style="font-size: 0.75rem; text-transform: uppercase; color: var(--text-secondary); letter-spacing: 0.5px; font-weight: 600;">Avg
-                            THC %</span>
-                        <span id="agg-avg-thc"
-                            style="font-family: var(--font-display); font-size: 1.6rem; font-weight: 800; color: #ff8a65;">N/A</span>
-                    </div>
-                    <div
-                        style="background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.04); border-radius: 10px; padding: 12px; display: flex; flex-direction: column; gap: 4px; align-items: center; text-align: center;">
-                        <span
-                            style="font-size: 0.75rem; text-transform: uppercase; color: var(--text-secondary); letter-spacing: 0.5px; font-weight: 600;">Avg
-                            CBD %</span>
-                        <span id="agg-avg-cbd"
-                            style="font-family: var(--font-display); font-size: 1.6rem; font-weight: 800; color: var(--accent-blue); text-shadow: 0 0 8px var(--accent-blue-glow);">N/A</span>
-                    </div>
-                    <div
-                        style="background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.04); border-radius: 10px; padding: 12px; display: flex; flex-direction: column; gap: 4px; align-items: center; text-align: center;">
-                        <span
-                            style="font-size: 0.75rem; text-transform: uppercase; color: var(--text-secondary); letter-spacing: 0.5px; font-weight: 600;">Large
-                            Sample (>50)</span>
-                        <span id="agg-large-sample-pct"
-                            style="font-family: var(--font-display); font-size: 1.6rem; font-weight: 800; color: var(--accent-amber);">N/A</span>
-                    </div>
-                </div>
-
-                <!-- Graphic Visualizations Grid -->
-                <div id="charts-grid"
-                    style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 20px; margin-top: 10px;">
-                    <!-- Chart 1: Study Design (Bar Chart) -->
-                    <div
-                        style="background: rgba(0, 0, 0, 0.2); border: 1px solid rgba(255, 255, 255, 0.05); border-radius: 12px; padding: 15px; display: flex; flex-direction: column; gap: 10px;">
-                        <h4
-                            style="font-family: var(--font-display); font-size: 0.95rem; font-weight: 600; color: var(--text-primary); margin: 0;">
-                            Study Design Distribution</h4>
-                        <div style="position: relative; height: 220px; width: 100%;">
-                            <canvas id="chart-study-design"></canvas>
-                        </div>
-                    </div>
-
-
-
-                    <!-- Chart 3: THC Content Distribution (Histogram) -->
-                    <div id="container-chart-thc-distribution"
-                        style="background: rgba(0, 0, 0, 0.2); border: 1px solid rgba(255, 255, 255, 0.05); border-radius: 12px; padding: 15px; display: flex; flex-direction: column; gap: 10px;">
-                        <h4
-                            style="font-family: var(--font-display); font-size: 0.95rem; font-weight: 600; color: var(--text-primary); margin: 0;">
-                            THC Content Distribution</h4>
-                        <div style="position: relative; height: 220px; width: 100%;">
-                            <canvas id="chart-thc-distribution"></canvas>
-                        </div>
-                    </div>
-
-                    <!-- Chart 3: Publication Timeline with Timescale Toggle -->
-                    <div
-                        style="background: rgba(0, 0, 0, 0.2); border: 1px solid rgba(255, 255, 255, 0.05); border-radius: 12px; padding: 15px; display: flex; flex-direction: column; gap: 10px;">
-                        <div style="display: flex; justify-content: space-between; align-items: center;">
-                            <h4
-                                style="font-family: var(--font-display); font-size: 0.95rem; font-weight: 600; color: var(--text-primary); margin: 0;">
-                                Publication Timeline</h4>
-                            <button id="btn-timescale-toggle" onclick="toggleTimescale()"
-                                class="btn btn-secondary btn-sm"
-                                style="padding: 2px 10px; font-size: 0.75rem; background: rgba(0,240,255,0.06); border-color: rgba(0,240,255,0.2); color: var(--accent-blue); cursor: pointer; border-radius: 4px; font-weight: 600;">Timescale:
-                                Yearly</button>
-                        </div>
-                        <div style="position: relative; height: 220px; width: 100%;">
-                            <canvas id="chart-timeline"></canvas>
-                        </div>
-                    </div>
-
-                    <!-- Chart 4: Clinical Exposure Pathway (Pie Chart) -->
-                    <div id="container-chart-exposure-clinical"
-                        style="background: rgba(0, 0, 0, 0.2); border: 1px solid rgba(255, 255, 255, 0.05); border-radius: 12px; padding: 15px; display: flex; flex-direction: column; gap: 10px;">
-                        <h4
-                            style="font-family: var(--font-display); font-size: 0.95rem; font-weight: 600; color: var(--text-primary); margin: 0;">
-                            Clinical Exposure Breakdown</h4>
-                        <div
-                            style="position: relative; height: 220px; width: 100%; display: flex; justify-content: center; align-items: center;">
-                            <canvas id="chart-exposure-clinical" style="max-height: 220px; max-width: 220px;"></canvas>
-                            <div id="fallback-exposure-clinical"
-                                style="position: absolute; color: var(--text-secondary); font-size: 0.85rem; display: none;">
-                                No clinical exposure data in this subset</div>
-                        </div>
-                    </div>
-
-                    <!-- Chart 5: In Vitro Exposure Pathway (Pie Chart) -->
-                    <div id="container-chart-exposure-vitro"
-                        style="background: rgba(0, 0, 0, 0.2); border: 1px solid rgba(255, 255, 255, 0.05); border-radius: 12px; padding: 15px; display: flex; flex-direction: column; gap: 10px;">
-                        <h4
-                            style="font-family: var(--font-display); font-size: 0.95rem; font-weight: 600; color: var(--text-primary); margin: 0;">
-                            In Vitro Exposure Breakdown</h4>
-                        <div
-                            style="position: relative; height: 220px; width: 100%; display: flex; justify-content: center; align-items: center;">
-                            <canvas id="chart-exposure-vitro" style="max-height: 220px; max-width: 220px;"></canvas>
-                            <div id="fallback-exposure-vitro"
-                                style="position: absolute; color: var(--text-secondary); font-size: 0.85rem; display: none;">
-                                No in vitro exposure data in this subset</div>
-                        </div>
-                    </div>
-
-                    <!-- Chart 6: In Vivo Exposure Pathway (Pie Chart) -->
-                    <div id="container-chart-exposure-vivo"
-                        style="background: rgba(0, 0, 0, 0.2); border: 1px solid rgba(255, 255, 255, 0.05); border-radius: 12px; padding: 15px; display: flex; flex-direction: column; gap: 10px;">
-                        <h4
-                            style="font-family: var(--font-display); font-size: 0.95rem; font-weight: 600; color: var(--text-primary); margin: 0;">
-                            In Vivo Exposure Breakdown</h4>
-                        <div
-                            style="position: relative; height: 220px; width: 100%; display: flex; justify-content: center; align-items: center;">
-                            <canvas id="chart-exposure-vivo" style="max-height: 220px; max-width: 220px;"></canvas>
-                            <div id="fallback-exposure-vivo"
-                                style="position: absolute; color: var(--text-secondary); font-size: 0.85rem; display: none;">
-                                No in vivo exposure data in this subset</div>
-                        </div>
-                    </div>
-
-                    <!-- Chart 5: Cannabis Type (Doughnut Chart) -->
-                    <div id="container-chart-cannabis-type"
-                        style="background: rgba(0, 0, 0, 0.2); border: 1px solid rgba(255, 255, 255, 0.05); border-radius: 12px; padding: 15px; display: flex; flex-direction: column; gap: 10px;">
-                        <h4
-                            style="font-family: var(--font-display); font-size: 0.95rem; font-weight: 600; color: var(--text-primary); margin: 0;">
-                            Cannabis Type Breakdown</h4>
-                        <div
-                            style="position: relative; height: 220px; width: 100%; display: flex; justify-content: center; align-items: center;">
-                            <canvas id="chart-cannabis-type-doughnut"
-                                style="max-height: 220px; max-width: 220px;"></canvas>
-                        </div>
-                    </div>
-
-                    <!-- Chart 6: Outcome Domains (Bar Chart) -->
-                    <div id="container-chart-outcome"
-                        style="background: rgba(0, 0, 0, 0.2); border: 1px solid rgba(255, 255, 255, 0.05); border-radius: 12px; padding: 15px; display: flex; flex-direction: column; gap: 10px;">
-                        <h4
-                            style="font-family: var(--font-display); font-size: 0.95rem; font-weight: 600; color: var(--text-primary); margin: 0;">
-                            Outcome Domain Prevalence</h4>
-                        <div style="position: relative; height: 220px; width: 100%;">
-                            <canvas id="chart-outcome-bar"></canvas>
-                        </div>
-                    </div>
-                </div>
-            </section>
         </main>
     </div>
 
@@ -2796,11 +3131,10 @@
                 <div id="drawer-journal-year" style="margin-bottom: 8px; font-size: 0.85rem; color: var(--accent-blue); font-weight: 600; font-family: var(--font-display); letter-spacing: 0.5px;">Clinical Journal (2026)</div>
                 <h3 id="drawer-title">Paper Title</h3>
             </div>
-            <div style="display: flex; align-items: center; gap: 10px;">
-                <button class="btn btn-secondary btn-sm" id="btn-reclassify-claude" onclick="reclassifyCurrentPaperWithClaude()" style="padding: 4px 10px; font-size: 0.8rem; background: rgba(245,158,11,0.08); border-color: rgba(245,158,11,0.2); color: var(--accent-amber); cursor: pointer; border-radius: 4px; font-weight: 600; display: inline-flex; align-items: center; gap: 4px;"><svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor" style="vertical-align: middle;"><path d="M12 2l2.4 7.2 7.2 2.4-7.2 2.4-2.4 7.2-2.4-7.2-7.2-2.4 7.2-2.4z"/></svg> Reclassify with Claude</button>
-                <button class="btn btn-secondary btn-sm" id="btn-delete-paper" onclick="deleteCurrentPaper()" style="padding: 4px 10px; font-size: 0.8rem; background: rgba(255,61,0,0.08); border-color: rgba(255,61,0,0.2); color: #ff8a65; cursor: pointer; border-radius: 4px; font-weight: 600;">🗑️ Delete</button>
-                <button class="btn btn-secondary btn-sm" id="btn-edit-classification" onclick="toggleEditMode()" style="padding: 4px 10px; font-size: 0.8rem; background: rgba(0,240,255,0.06); border-color: rgba(0,240,255,0.2); color: var(--accent-blue); cursor: pointer; border-radius: 4px; font-weight: 600;">✏️ Edit</button>
-                <button class="btn-close" onclick="closeDrawer()">&times;</button>
+            <div class="drawer-header-actions">
+                <button class="btn btn-secondary btn-sm drawer-action-btn" id="btn-delete-paper" onclick="deleteCurrentPaper()">Delete</button>
+                <button class="btn btn-secondary btn-sm drawer-action-btn" id="btn-edit-classification" onclick="toggleEditMode()">Edit</button>
+                <button class="btn btn-secondary btn-sm drawer-action-btn" onclick="closeDrawer()">Close</button>
             </div>
         </div>
 
@@ -2821,13 +3155,12 @@
                     </div>
                 </div>
 
-                <!-- Right Column: Structured & Compact Properties Panel -->
+                <!-- Right Column: Three compact info cards -->
                 <div class="drawer-properties-col">
                     <div class="drawer-properties-panel">
-                        <!-- Group 1: Study & Publication Context -->
-                        <div class="properties-group">
-                            <div class="properties-group-title">Study & Pub Context</div>
-                            <div class="properties-row-grid">
+                        <div class="drawer-info-card" id="card-study-overview">
+                            <div class="drawer-card-title">Study &amp; Publication Overview</div>
+                            <div class="properties-row-grid compact-meta-grid">
                                 <div class="meta-item">
                                     <span class="meta-label" id="label-pub-type">Publication Type</span>
                                     <span class="meta-value" id="drawer-pub-type">Original Research</span>
@@ -2840,72 +3173,82 @@
                                     <span class="meta-label" id="label-sample-size">Sample Size (N)</span>
                                     <span class="meta-value" id="drawer-sample-size">Not Reported</span>
                                 </div>
+                                <div class="meta-item" id="item-study-duration">
+                                    <span class="meta-label" id="label-duration">Study Duration</span>
+                                    <span class="meta-value" id="drawer-duration">Not Reported</span>
+                                </div>
                                 <div class="meta-item">
                                     <span class="meta-label" id="label-citations">Citations</span>
                                     <span class="meta-value" id="drawer-citations">0</span>
                                 </div>
-                                <div class="meta-item" style="grid-column: span 2;">
+                                <div class="meta-item meta-item--full">
                                     <span class="meta-label" id="label-outcomes">Outcome Domains</span>
-                                    <div class="tag-container" id="drawer-outcomes-container" style="margin-top: 4px;">
-                                        <!-- outcomes tags -->
+                                    <div class="tag-container" id="drawer-outcomes-container" style="margin-top: 2px;"></div>
+                                </div>
+                            </div>
+                            <div id="drawer-population-section" style="display: none;">
+                                <div class="drawer-card-subtitle">Study Population</div>
+                                <div class="properties-row-grid compact-meta-grid">
+                                    <div class="meta-item">
+                                        <span class="meta-label" id="label-population-age">Age Group</span>
+                                        <span class="meta-value" id="drawer-population-age">—</span>
+                                    </div>
+                                    <div class="meta-item">
+                                        <span class="meta-label" id="label-population-sex">Sex</span>
+                                        <span class="meta-value" id="drawer-population-sex">—</span>
+                                    </div>
+                                    <div class="meta-item meta-item--full">
+                                        <span class="meta-label" id="label-inclusion-criteria">Inclusion Criteria</span>
+                                        <span class="meta-value" id="drawer-inclusion-criteria">—</span>
+                                    </div>
+                                    <div class="meta-item meta-item--full">
+                                        <span class="meta-label" id="label-exclusion-criteria">Exclusion Criteria</span>
+                                        <span class="meta-value" id="drawer-exclusion-criteria">—</span>
                                     </div>
                                 </div>
                             </div>
                         </div>
 
-                        <!-- Group 2: Dynamic Cannabinoid Profile & Dose -->
-                        <div class="properties-group" id="group-cannabinoid-profile">
-                            <div class="properties-group-title">Cannabinoid Profile & Dose</div>
-                            <div class="properties-row-grid" id="drawer-cannabinoid-container">
-                                <!-- Dynamically injected depending on cannabis type -->
-                            </div>
-                        </div>
-
-                        <!-- Group 2b: Administration & Strain -->
-                        <div class="properties-group" id="group-admin-strain">
-                            <div class="properties-group-title">Administration & Strain</div>
-                            <div class="properties-row-grid">
-                                <div class="meta-item" id="item-exposure">
+                        <div class="drawer-info-card" id="card-cannabis-profile">
+                            <div class="drawer-card-title">Cannabis Profile</div>
+                            <div class="properties-row-grid compact-meta-grid">
+                                <div class="meta-item meta-item--full" id="item-exposure">
                                     <span class="meta-label" id="label-exposure">Exposure Pathway</span>
-                                    <span class="meta-value" id="drawer-exposure">vaporized</span>
+                                    <span class="meta-value" id="drawer-exposure">—</span>
                                 </div>
-                                <div class="meta-item" id="item-study-duration" style="display: none;">
-                                    <span class="meta-label" id="label-duration">Study Duration</span>
-                                    <span class="meta-value" id="drawer-duration">14 days</span>
+                                <div class="meta-item meta-item--full" id="item-cannabis-types">
+                                    <span class="meta-label" id="label-cannabis-types">Cannabis Type</span>
+                                    <div class="tag-container" id="drawer-cannabis-types-container" style="margin-top: 2px;"></div>
                                 </div>
-                                <div class="meta-item" id="item-admin-frequency" style="display: none;">
-                                    <span class="meta-label" id="label-admin-frequency">Admin Frequency</span>
-                                    <span class="meta-value" id="drawer-admin-frequency">Not Reported</span>
-                                </div>
-                                <div class="meta-item" id="item-inhaled-duration" style="display: none;">
-                                    <span class="meta-label" id="label-inhaled-duration">Inhaled Exp Duration</span>
-                                    <span class="meta-value" id="drawer-inhaled-exposure-duration">Not Reported</span>
-                                </div>
-                                <div class="meta-item" id="item-treatment-duration" style="display: none;">
-                                    <span class="meta-label" id="label-treatment-duration">Treatment Duration</span>
-                                    <span class="meta-value" id="drawer-treatment-duration">Not Reported</span>
+                                <div class="meta-item" id="item-strain-reported">
+                                    <span class="meta-label" id="label-strain-reported">Reported Strain</span>
+                                    <span class="meta-value" id="drawer-strain-reported">—</span>
                                 </div>
                                 <div class="meta-item" id="item-strain-normalized">
                                     <span class="meta-label" id="label-strain-normalized">Chemotype</span>
-                                    <span class="meta-value" id="drawer-strain-normalized">Chemotype I</span>
+                                    <span class="meta-value" id="drawer-strain-normalized">—</span>
                                 </div>
-                                <div class="meta-item" id="item-strain-reported" style="grid-column: span 2;">
-                                    <span class="meta-label" id="label-strain-reported">Reported Strain</span>
-                                    <span class="meta-value" id="drawer-strain-reported">Bedrocan</span>
+                            </div>
+                            <div class="properties-row-grid compact-meta-grid" id="drawer-cannabinoid-container"></div>
+                            <div class="properties-row-grid compact-meta-grid">
+                                <div class="meta-item" id="item-treatment-duration">
+                                    <span class="meta-label" id="label-treatment-duration">Treatment Duration</span>
+                                    <span class="meta-value" id="drawer-treatment-duration">—</span>
                                 </div>
-                                <div class="meta-item" id="item-cannabis-types" style="grid-column: span 2;">
-                                    <span class="meta-label" id="label-cannabis-types">Cannabis Type</span>
-                                    <div class="tag-container" id="drawer-cannabis-types-container" style="margin-top: 4px;">
-                                        <!-- cannabis type tags -->
-                                    </div>
+                                <div class="meta-item" id="item-admin-frequency">
+                                    <span class="meta-label" id="label-admin-frequency">Admin Frequency</span>
+                                    <span class="meta-value" id="drawer-admin-frequency">—</span>
+                                </div>
+                                <div class="meta-item" id="item-inhaled-duration">
+                                    <span class="meta-label" id="label-inhaled-duration">Inhaled Exp Duration</span>
+                                    <span class="meta-value" id="drawer-inhaled-exposure-duration">—</span>
                                 </div>
                             </div>
                         </div>
 
-                        <!-- Group 4: AI Classification Details -->
-                        <div class="properties-group">
-                            <div class="properties-group-title">AI Provenance</div>
-                            <div class="properties-row-grid">
+                        <div class="drawer-info-card" id="card-classification">
+                            <div class="drawer-card-title">Classification</div>
+                            <div class="properties-row-grid compact-meta-grid">
                                 <div class="meta-item">
                                     <span class="meta-label" id="label-confidence">Confidence</span>
                                     <span class="meta-value" id="drawer-confidence">95%</span>
@@ -2916,16 +3259,11 @@
                                 </div>
                             </div>
                         </div>
-
-                        <!-- Resource Links inside Right Column -->
-                        <div class="properties-group" style="border-top: 1px solid rgba(255,255,255,0.06); padding-top: 15px; margin-top: 5px;">
-                            <div class="properties-group-title">Resource Links</div>
-                            <div class="link-icon-group" id="drawer-links-container" style="margin-top: 6px;">
-                                <!-- link buttons -->
-                            </div>
-                        </div>
                     </div>
                 </div>
+            </div>
+            <div class="drawer-links-footer">
+                <div class="link-icon-group" id="drawer-links-container"></div>
             </div>
         </div>
 
@@ -3185,6 +3523,39 @@
                 <div class="form-group" style="margin-bottom: 12px;">
                     <label style="font-size: 0.85rem; font-weight: 600; display: block; margin-bottom: 4px; color: var(--text-primary);">Sample Size (N)</label>
                     <input type="number" id="edit-sample-size" style="width: 100%; padding: 8px; background: #121621; border: 1px solid rgba(255,255,255,0.1); color: var(--text-primary); border-radius: 4px;">
+                </div>
+
+                <div id="edit-group-study-population" style="margin-bottom: 12px; display: none;">
+                    <label style="font-size: 0.85rem; font-weight: 600; display: block; margin-bottom: 6px; color: var(--text-primary);">Study Population</label>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 8px;">
+                        <div class="form-group">
+                            <label style="font-size: 0.78rem; display: block; margin-bottom: 4px; color: var(--text-secondary);">Age Group</label>
+                            <select id="edit-population-age" style="width: 100%; padding: 8px; background: #121621; border: 1px solid rgba(255,255,255,0.1); color: var(--text-primary); border-radius: 4px;">
+                                <option value="">Not reported</option>
+                                <option value="pediatric">Pediatric</option>
+                                <option value="adult">Adult</option>
+                                <option value="geriatric">Geriatric</option>
+                                <option value="both">Both (pediatric &amp; geriatric)</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label style="font-size: 0.78rem; display: block; margin-bottom: 4px; color: var(--text-secondary);">Sex</label>
+                            <select id="edit-population-sex" style="width: 100%; padding: 8px; background: #121621; border: 1px solid rgba(255,255,255,0.1); color: var(--text-primary); border-radius: 4px;">
+                                <option value="">Not reported</option>
+                                <option value="male">Male</option>
+                                <option value="female">Female</option>
+                                <option value="both">Both</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-group" style="margin-bottom: 8px;">
+                        <label style="font-size: 0.78rem; display: block; margin-bottom: 4px; color: var(--text-secondary);">Inclusion Criteria</label>
+                        <textarea id="edit-inclusion-criteria" rows="2" placeholder="Key inclusion criteria" style="width: 100%; padding: 8px; background: #121621; border: 1px solid rgba(255,255,255,0.1); color: var(--text-primary); border-radius: 4px; font-family: var(--font-body); font-size: 0.85rem;"></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label style="font-size: 0.78rem; display: block; margin-bottom: 4px; color: var(--text-secondary);">Exclusion Criteria</label>
+                        <textarea id="edit-exclusion-criteria" rows="2" placeholder="Key exclusion criteria" style="width: 100%; padding: 8px; background: #121621; border: 1px solid rgba(255,255,255,0.1); color: var(--text-primary); border-radius: 4px; font-family: var(--font-body); font-size: 0.85rem;"></textarea>
+                    </div>
                 </div>
 
                 <div class="form-group" style="margin-bottom: 12px;">
@@ -3507,8 +3878,14 @@
 
         /** Suggest relevant table columns per tab without hiding user choices. */
         function applyTabColumnHints(tab) {
+            if (userColumnPrefsLoaded) {
+                updateColumnVisibility();
+                return;
+            }
             if (tab === "clinical") {
                 visibleColumns.dose_mg = true;
+                visibleColumns.population_age = true;
+                visibleColumns.population_sex = true;
             } else if (tab === "preclinical") {
                 visibleColumns.thc_mg_kg = true;
                 visibleColumns.thc_mg_ml = true;
@@ -3636,6 +4013,105 @@
         }
 
         let visibleColumns = { ...DEFAULT_VISIBLE_COLUMNS };
+        let userColumnPrefsLoaded = false;
+        let columnPrefsSaveTimeout = null;
+
+        /** localStorage key scoped to the current dashboard user (or anonymous). */
+        function columnPrefsStorageKey() {
+            const userKey = CURRENT_USER.username || "anonymous";
+            return `cps_dashboard_visible_columns:${userKey}`;
+        }
+
+        /** Merge saved booleans with defaults, ignoring unknown keys. */
+        function sanitizeVisibleColumns(raw) {
+            const merged = { ...DEFAULT_VISIBLE_COLUMNS };
+            if (raw && typeof raw === "object") {
+                Object.keys(DEFAULT_VISIBLE_COLUMNS).forEach(col => {
+                    if (typeof raw[col] === "boolean") {
+                        merged[col] = raw[col];
+                    }
+                });
+            }
+            return merged;
+        }
+
+        /** Apply column visibility to headers, editor checkboxes, and table rows. */
+        function applyVisibleColumns(raw) {
+            visibleColumns = sanitizeVisibleColumns(raw);
+            syncColumnEditorCheckboxes();
+            updateColumnVisibility();
+            if (currentPapersInView && currentPapersInView.length > 0) {
+                populateTable(currentPapersInView);
+            }
+        }
+
+        /** Load saved column choices from the server (logged in) or localStorage. */
+        async function loadColumnPreferences() {
+            if (IS_LOGGED_IN) {
+                try {
+                    const res = await fetch("/api/user/dashboard-preferences");
+                    if (res.ok) {
+                        const data = await res.json();
+                        const saved = data.visible_columns;
+                        if (saved && Object.keys(saved).length > 0) {
+                            applyVisibleColumns(saved);
+                            userColumnPrefsLoaded = true;
+                            try {
+                                localStorage.setItem(columnPrefsStorageKey(), JSON.stringify(saved));
+                            } catch (e) { /* ignore quota errors */ }
+                            return;
+                        }
+                    }
+                } catch (e) {
+                    console.warn("Failed to load column preferences from server", e);
+                }
+            }
+
+            try {
+                const cached = localStorage.getItem(columnPrefsStorageKey());
+                if (cached) {
+                    applyVisibleColumns(JSON.parse(cached));
+                    userColumnPrefsLoaded = true;
+                    return;
+                }
+            } catch (e) {
+                console.warn("Failed to load column preferences from localStorage", e);
+            }
+
+            applyTabColumnHints(currentTab);
+        }
+
+        /** Debounced persist of column visibility per user. */
+        function scheduleSaveColumnPreferences() {
+            clearTimeout(columnPrefsSaveTimeout);
+            columnPrefsSaveTimeout = setTimeout(saveColumnPreferences, 400);
+        }
+
+        /** Save column choices to localStorage and the user profile when signed in. */
+        async function saveColumnPreferences() {
+            const payload = { visible_columns: { ...visibleColumns } };
+            try {
+                localStorage.setItem(columnPrefsStorageKey(), JSON.stringify(payload.visible_columns));
+            } catch (e) { /* ignore quota errors */ }
+
+            if (!IS_LOGGED_IN) {
+                userColumnPrefsLoaded = true;
+                return;
+            }
+
+            try {
+                const res = await fetch("/api/user/dashboard-preferences", {
+                    method: "PUT",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(payload),
+                });
+                if (res.ok) {
+                    userColumnPrefsLoaded = true;
+                }
+            } catch (e) {
+                console.warn("Failed to save column preferences", e);
+            }
+        }
 
         // Subset Selection Tracking & Dynamic Visualizations Variables
         let currentPapersInView = [];
@@ -3643,17 +4119,48 @@
         let timelineTimescale = 'yearly';
         let currentPieChartType = 'exposure';
         let currentAnalyzedPapers = null;
+        let currentAnalysisPapers = [];
         let selectedAnalysisId = null;
+        let selectedAnalysisChartId = null;
+        let cannabinoidViewMode = 'absolute';
+        let exposureChartMode = 'clinical';
+        let currentChartDataRef = null;
+        let currentExposureData = { clinical: {}, vitro: {}, vivo: {} };
+
+        const PERCENT_BIN_LABELS = ['0%', '0.1 - 5%', '5.1 - 10%', '10.1 - 15%', '15.1 - 20%', '20.1 - 25%', '25.1 - 30%', '> 30%', 'Not Reported'];
+        const NUMERIC_BIN_LABELS = ['0', '0 - 1', '1 - 5', '5 - 10', '10 - 25', '25 - 50', '50 - 100', '> 100', 'Not Reported'];
+
+        const ANALYSIS_QUANTITATIVE_FIELDS = [
+            ["thc_pct", "THC %"],
+            ["cbd_pct", "CBD %"],
+            ["sample_size", "Sample Size"],
+            ["dose_mg", "Dose (mg)"],
+            ["puff_count", "Puff Count"],
+            ["duration_days", "Duration (days)"],
+            ["thc_mg_kg", "THC (mg/kg)"],
+            ["cbd_mg_kg", "CBD (mg/kg)"],
+            ["thc_mg_ml", "THC (mg/mL)"],
+            ["cbd_mg_ml", "CBD (mg/mL)"],
+            ["thc_mg_g", "THC (mg/g)"],
+            ["cbd_mg_g", "CBD (mg/g)"],
+            ["thc_uM", "THC (µM)"],
+            ["cbd_uM", "CBD (µM)"],
+            ["repeat_exposure_count", "Repeat Exposures"],
+            ["citation_count", "Citations"],
+        ];
+        const THC_BIN_KEYS = ["zero", "low", "medLow", "med", "medHigh", "high", "veryHigh", "ultraHigh", "notReported"];
+        const OUTCOME_LABELS = {
+            pain: "Pain", anxiety: "Anxiety", cognition: "Cognition", inflammation: "Inflammation",
+            addiction: "Addiction", oncology: "Oncology", neuroprotection: "Neuroprotection", sleep: "Sleep"
+        };
 
         // Chart.js global instances references
         let chartStudyDesign = null;
-        let chartExposureClinical = null;
-        let chartExposureVitro = null;
-        let chartExposureVivo = null;
+        let chartExposure = null;
         let chartCannabisTypeDoughnut = null;
         let chartOutcomeBar = null;
         let chartTimeline = null;
-        let chartThcDistribution = null;
+        let chartCannabinoidDistribution = null;
         let chartCostTokens = null;
         let chartConfidenceTrend = null;
         let chartLockedFields = null;
@@ -3750,9 +4257,10 @@
         }
 
         // On document load, fetch full catalog listing
-        document.addEventListener("DOMContentLoaded", () => {
+        document.addEventListener("DOMContentLoaded", async () => {
             applyFilterProfile(currentTab);
             applyColumnEditorProfile(currentTab);
+            await loadColumnPreferences();
             updateAnalyzeButtonVisibility(currentTab);
             updateSliderValues();
             triggerSearch(true);
@@ -3822,10 +4330,8 @@
 
             // Hide the analysis panel when filters/tabs update
             currentAnalyzedPapers = null;
-            const panel = document.getElementById("selection-analytics-panel");
-            if (panel) {
-                panel.style.display = "none";
-            }
+            currentAnalysisPapers = [];
+            hideAnalysisCharts();
 
             const activeTab = tabOverride || currentTab;
             const filterParams = collectFilterParams(activeTab);
@@ -4139,8 +4645,10 @@
 
             // Reset column visibility
             visibleColumns = { ...DEFAULT_VISIBLE_COLUMNS };
+            userColumnPrefsLoaded = true;
             applyColumnEditorProfile(currentTab);
             updateColumnVisibility();
+            saveColumnPreferences();
 
             lastKnownTotal = null;
             lastFilterFingerprint = "";
@@ -4163,54 +4671,60 @@
                 "cbd_pct": { label: "CBD Content", format: val => `${val}%` },
                 "dose_mg": { label: "Dose", format: val => `${val} mg` },
                 "puff_count": { label: "Puff Count", format: val => `${val} puffs` },
-                "thc_mg_ml": { label: "THC (mg/mL)", format: val => `${val} mg/mL <small style="opacity: 0.7; font-size: 0.75rem;">(product)</small>` },
-                "thc_mg_g": { label: "THC (mg/g)", format: val => `${val} mg/g <small style="opacity: 0.7; font-size: 0.75rem;">(subject wt)</small>` },
-                "thc_mg_kg": { label: "THC (mg/kg)", format: val => `${val} mg/kg <small style="opacity: 0.7; font-size: 0.75rem;">(subject wt)</small>` },
-                "cbd_mg_ml": { label: "CBD (mg/mL)", format: val => `${val} mg/mL <small style="opacity: 0.7; font-size: 0.75rem;">(product)</small>` },
-                "cbd_mg_g": { label: "CBD (mg/g)", format: val => `${val} mg/g <small style="opacity: 0.7; font-size: 0.75rem;">(subject wt)</small>` },
-                "cbd_mg_kg": { label: "CBD (mg/kg)", format: val => `${val} mg/kg <small style="opacity: 0.7; font-size: 0.75rem;">(subject wt)</small>` },
-                "thc_uM": { label: "THC (µM)", format: val => `${val} µM <small style="opacity: 0.7; font-size: 0.75rem;">(in vitro)</small>` },
-                "cbd_uM": { label: "CBD (µM)", format: val => `${val} µM <small style="opacity: 0.7; font-size: 0.75rem;">(in vitro)</small>` }
+                "thc_mg_ml": { label: "THC (mg/mL)", format: val => `${val} mg/mL` },
+                "thc_mg_g": { label: "THC (mg/g)", format: val => `${val} mg/g` },
+                "thc_mg_kg": { label: "THC (mg/kg)", format: val => `${val} mg/kg` },
+                "cbd_mg_ml": { label: "CBD (mg/mL)", format: val => `${val} mg/mL` },
+                "cbd_mg_g": { label: "CBD (mg/g)", format: val => `${val} mg/g` },
+                "cbd_mg_kg": { label: "CBD (mg/kg)", format: val => `${val} mg/kg` },
+                "thc_uM": { label: "THC (µM)", format: val => `${val} µM` },
+                "cbd_uM": { label: "CBD (µM)", format: val => `${val} µM` }
             };
 
             const container = document.getElementById("drawer-cannabinoid-container");
-            const groupEl = document.getElementById("group-cannabinoid-profile");
-            if (container) {
-                container.innerHTML = "";
-                const locked = paper.expert_locked_fields || [];
-                
-                const orderedKeys = [
-                    "thc_pct", "cbd_pct", "dose_mg", "puff_count",
-                    "thc_mg_ml", "cbd_mg_ml",
-                    "thc_mg_g", "cbd_mg_g",
-                    "thc_mg_kg", "cbd_mg_kg",
-                    "thc_uM", "cbd_uM"
-                ];
-                
-                let renderedCount = 0;
-                orderedKeys.forEach(f => {
-                    const val = paper[f];
-                    if (val !== null && val !== undefined && val !== "") {
-                        const def = cannabinoidFieldDefs[f];
-                        const formatted = def.format(val);
-                        
-                        const itemHtml = `
-                            <div class="meta-item">
-                                <span class="meta-label" id="label-${f}">${def.label}</span>
-                                <span class="meta-value" id="drawer-${f}">${formatted}</span>
-                            </div>
-                        `;
-                        container.innerHTML += itemHtml;
-                        renderedCount++;
-                        
-                        updateMetaLabel(`label-${f}`, def.label, locked.includes(f));
-                    }
-                });
-                
-                if (groupEl) {
-                    groupEl.style.display = renderedCount > 0 ? "block" : "none";
+            if (!container) return;
+
+            container.innerHTML = "";
+            const locked = paper.expert_locked_fields || [];
+            const orderedKeys = [
+                "thc_pct", "cbd_pct", "dose_mg", "puff_count",
+                "thc_mg_ml", "cbd_mg_ml",
+                "thc_mg_g", "cbd_mg_g",
+                "thc_mg_kg", "cbd_mg_kg",
+                "thc_uM", "cbd_uM"
+            ];
+
+            orderedKeys.forEach(f => {
+                const val = paper[f];
+                if (val !== null && val !== undefined && val !== "") {
+                    const def = cannabinoidFieldDefs[f];
+                    container.innerHTML += `
+                        <div class="meta-item">
+                            <span class="meta-label" id="label-${f}">${def.label}</span>
+                            <span class="meta-value" id="drawer-${f}">${def.format(val)}</span>
+                        </div>
+                    `;
+                    updateMetaLabel(`label-${f}`, def.label, locked.includes(f));
                 }
-            }
+            });
+            container.style.display = container.innerHTML ? "grid" : "none";
+        }
+
+        function isClinicalPaper(paper) {
+            const studyTypes = Array.isArray(paper.study_type)
+                ? paper.study_type
+                : (paper.study_type ? [paper.study_type] : []);
+            return studyTypes.some(t => String(t).toLowerCase().includes("clinical"));
+        }
+
+        function formatDrawerLabel(value) {
+            if (value === null || value === undefined || value === "") return "—";
+            return String(value).charAt(0).toUpperCase() + String(value).slice(1);
+        }
+
+        function setDrawerItemVisibility(itemId, visible) {
+            const item = document.getElementById(itemId);
+            if (item) item.style.display = visible ? "" : "none";
         }
 
         function updateEditFormCannabinoidFields() {
@@ -4321,6 +4835,12 @@
             if (invitroGroup) {
                 invitroGroup.style.display = isInvitro ? "block" : "none";
             }
+
+            const isClinical = studyTypes.some(t => t.toLowerCase().includes("clinical"));
+            const popGroup = document.getElementById("edit-group-study-population");
+            if (popGroup) {
+                popGroup.style.display = isClinical ? "block" : "none";
+            }
         }
 
         function formatExposureMethod(method) {
@@ -4373,7 +4893,7 @@
             editMode = false;
             document.getElementById("drawer-view-container").style.display = "block";
             document.getElementById("drawer-edit-container").style.display = "none";
-            document.getElementById("btn-edit-classification").innerText = "✏️ Edit";
+            document.getElementById("btn-edit-classification").innerText = "Edit";
             document.getElementById("btn-edit-classification").classList.remove("btn-secondary");
 
             document.getElementById("drawer-title").innerText = paper.title;
@@ -4417,7 +4937,7 @@
             let showTreatment = false;
             const itemTreatment = document.getElementById("item-treatment-duration");
             if (itemTreatment) {
-                if (isInvitro && paper.treatment_duration && paper.treatment_duration.toLowerCase() !== "not reported" && paper.treatment_duration.toLowerCase() !== "unknown" && paper.treatment_duration.toLowerCase() !== "not specified") {
+                if (paper.treatment_duration && paper.treatment_duration.toLowerCase() !== "not reported" && paper.treatment_duration.toLowerCase() !== "unknown" && paper.treatment_duration.toLowerCase() !== "not specified") {
                     showTreatment = true;
                     itemTreatment.style.display = "block";
                     const valEl = document.getElementById("drawer-treatment-duration");
@@ -4430,7 +4950,7 @@
             let showStudy = false;
             const itemStudy = document.getElementById("item-study-duration");
             if (itemStudy) {
-                if (isClinicalInVivo && paper.duration_days !== null && paper.duration_days !== undefined && paper.duration_days !== "") {
+                if (paper.duration_days !== null && paper.duration_days !== undefined && paper.duration_days !== "") {
                     showStudy = true;
                     itemStudy.style.display = "block";
                     const valEl = document.getElementById("drawer-duration");
@@ -4443,7 +4963,7 @@
             let showFreq = false;
             const itemFreq = document.getElementById("item-admin-frequency");
             if (itemFreq) {
-                if (isClinicalInVivo && paper.administration_frequency && paper.administration_frequency.toLowerCase() !== "not reported" && paper.administration_frequency.toLowerCase() !== "unknown" && paper.administration_frequency.toLowerCase() !== "not specified") {
+                if (paper.administration_frequency && paper.administration_frequency.toLowerCase() !== "not reported" && paper.administration_frequency.toLowerCase() !== "unknown" && paper.administration_frequency.toLowerCase() !== "not specified") {
                     showFreq = true;
                     itemFreq.style.display = "block";
                     const valFreqEl = document.getElementById("drawer-admin-frequency");
@@ -4456,7 +4976,7 @@
             let showInhaled = false;
             const itemInhaled = document.getElementById("item-inhaled-duration");
             if (itemInhaled) {
-                if (isClinicalInVivo && isInhaled && paper.inhaled_exposure_duration && paper.inhaled_exposure_duration.toLowerCase() !== "not reported" && paper.inhaled_exposure_duration.toLowerCase() !== "unknown" && paper.inhaled_exposure_duration.toLowerCase() !== "not specified") {
+                if (paper.inhaled_exposure_duration && paper.inhaled_exposure_duration.toLowerCase() !== "not reported" && paper.inhaled_exposure_duration.toLowerCase() !== "unknown" && paper.inhaled_exposure_duration.toLowerCase() !== "not specified") {
                     showInhaled = true;
                     itemInhaled.style.display = "block";
                     const valInhaledEl = document.getElementById("drawer-inhaled-exposure-duration");
@@ -4510,31 +5030,27 @@
                 }
             }
 
-            const groupAdminStrain = document.getElementById("group-admin-strain");
-            if (groupAdminStrain) {
-                const hasAnyVisible = showExposure || showTreatment || showStudy || showFreq || showInhaled || showStrainReported || showStrainNormalized || showCannabisTypes;
-                groupAdminStrain.style.display = hasAnyVisible ? "block" : "none";
-            }
             document.getElementById("drawer-abstract").innerText = paper.abstract || "No abstract content cataloged.";
 
-            // Toggle visibility of reclassify button
-            const reclassifyBtn = document.getElementById("btn-reclassify-claude");
-            if (reclassifyBtn) {
-                if (paper.classifier_version && paper.classifier_version.startsWith('llm-')) {
-                    reclassifyBtn.style.display = "none";
-                } else if (paper.classifier_version && paper.classifier_version.startsWith('maude-')) {
-                    reclassifyBtn.style.display = "inline-flex";
-                } else {
-                    reclassifyBtn.style.display = "inline-flex";
-                }
-            }
-
-            // Populate newly reformatted property fields
+            // Populate overview and classification fields
             document.getElementById("drawer-pub-type").innerText = paper.publication_type || "original research";
             const designEl = document.getElementById("drawer-study-design");
             if (designEl) designEl.innerText = studyTypeStr;
             const sampleSizeEl = document.getElementById("drawer-sample-size");
             if (sampleSizeEl) sampleSizeEl.innerText = paper.sample_size !== null && paper.sample_size !== undefined ? paper.sample_size : "Not Reported";
+
+            const populationSection = document.getElementById("drawer-population-section");
+            if (populationSection) {
+                populationSection.style.display = isClinicalPaper(paper) ? "block" : "none";
+            }
+            const ageEl = document.getElementById("drawer-population-age");
+            if (ageEl) ageEl.innerText = formatDrawerLabel(paper.population_age);
+            const sexEl = document.getElementById("drawer-population-sex");
+            if (sexEl) sexEl.innerText = formatDrawerLabel(paper.population_sex);
+            const inclEl = document.getElementById("drawer-inclusion-criteria");
+            if (inclEl) inclEl.innerText = paper.inclusion_criteria || "—";
+            const exclEl = document.getElementById("drawer-exclusion-criteria");
+            if (exclEl) exclEl.innerText = paper.exclusion_criteria || "—";
 
             const confEl = document.getElementById("drawer-confidence");
             if (confEl) {
@@ -4545,16 +5061,7 @@
             }
             const verEl = document.getElementById("drawer-classifier-version");
             if (verEl) {
-                const verVal = paper.classifier_version || "N/A";
-                if (paper.classifier_version && paper.classifier_version.startsWith('llm-')) {
-                    const badgeHtml = `<span class="badge badge-claude" style="margin-left: 8px; font-size: 0.65rem; font-weight: 700; letter-spacing: 0.5px; padding: 2px 6px; border-radius: 4px; display: inline-block; vertical-align: middle;" title="Classified by Claude LLM"><svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor" style="vertical-align: middle; margin-top: -2px; margin-right: 3px; display: inline-block;"><path d="M12 2l2.4 7.2 7.2 2.4-7.2 2.4-2.4 7.2-2.4-7.2-7.2-2.4 7.2-2.4z"/></svg>Claude</span>`;
-                    verEl.innerHTML = `${verVal} ${badgeHtml}`;
-                } else if (paper.classifier_version && paper.classifier_version.startsWith('maude-')) {
-                    const badgeHtml = `<span class="badge badge-maude" style="margin-left: 8px; font-size: 0.65rem; font-weight: 700; letter-spacing: 0.5px; padding: 2px 6px; border-radius: 4px; display: inline-block; vertical-align: middle; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.35);" title="Classified by Maude rule/cue engine">Maude</span>`;
-                    verEl.innerHTML = `${verVal} ${badgeHtml}`;
-                } else {
-                    verEl.innerText = verVal;
-                }
+                verEl.innerText = paper.classifier_version || "N/A";
             }
 
             // Render Lock Icons for expert locked fields
@@ -4574,9 +5081,22 @@
             updateMetaLabel("label-pub-type", "Publication Type", locked.includes("publication_type"));
             updateMetaLabel("label-study-design", "Study Design", locked.includes("study_type"));
             updateMetaLabel("label-sample-size", "Sample Size (N)", locked.includes("sample_size"));
+            updateMetaLabel("label-population-age", "Age Group", locked.includes("population_age"));
+            updateMetaLabel("label-population-sex", "Sex", locked.includes("population_sex"));
+            updateMetaLabel("label-inclusion-criteria", "Inclusion Criteria", locked.includes("inclusion_criteria"));
+            updateMetaLabel("label-exclusion-criteria", "Exclusion Criteria", locked.includes("exclusion_criteria"));
 
             // Dynamically render cannabinoid profile and its locks
             renderCannabinoidProfile(paper);
+
+            const cannabisCard = document.getElementById("card-cannabis-profile");
+            if (cannabisCard) {
+                const cannabinoidContainer = document.getElementById("drawer-cannabinoid-container");
+                const hasAnyCannabis = showExposure || showTreatment || showFreq || showInhaled
+                    || showStrainReported || showStrainNormalized || showCannabisTypes
+                    || (cannabinoidContainer && cannabinoidContainer.innerHTML.length > 0);
+                cannabisCard.style.display = hasAnyCannabis ? "flex" : "none";
+            }
 
             // Outcomes tags
             const outcomesContainer = document.getElementById("drawer-outcomes-container");
@@ -4589,19 +5109,21 @@
 
 
 
-            // Links container inside drawer
+            // Resource links footer
             const linksContainer = document.getElementById("drawer-links-container");
             linksContainer.innerHTML = "";
             if (paper.doi) {
-                linksContainer.innerHTML += `<a href="https://doi.org/${paper.doi}" target="_blank" class="btn btn-secondary">DOI Resolver</a>`;
+                linksContainer.innerHTML += `<a href="https://doi.org/${paper.doi}" target="_blank" rel="noopener" class="drawer-link">DOI</a>`;
             }
             if (paper.pmid) {
-                linksContainer.innerHTML += `<a href="https://pubmed.ncbi.nlm.nih.gov/${paper.pmid}/" target="_blank" class="btn btn-secondary">PubMed Link</a>`;
+                linksContainer.innerHTML += `<a href="https://pubmed.ncbi.nlm.nih.gov/${paper.pmid}/" target="_blank" rel="noopener" class="drawer-link">PubMed</a>`;
             }
             if (paper.full_text_link) {
-                const label = paper.full_text_link.endsWith(".pdf") ? "Download PDF" : "Open full text";
-                const activeClass = paper.full_text_link.endsWith(".pdf") ? "btn-primary" : "btn-secondary";
-                linksContainer.innerHTML += `<a href="${paper.full_text_link}" target="_blank" class="btn ${activeClass}">${label}</a>`;
+                const label = paper.full_text_link.endsWith(".pdf") ? "PDF" : "Full text";
+                linksContainer.innerHTML += `<a href="${paper.full_text_link}" target="_blank" rel="noopener" class="drawer-link">${label}</a>`;
+            }
+            if (!linksContainer.innerHTML) {
+                linksContainer.innerHTML = `<span style="font-size: 0.72rem; color: var(--text-secondary);">No resource links</span>`;
             }
 
             // Slide drawer out and reset scroll position to the top
@@ -4629,7 +5151,7 @@
             } else {
                 viewContainer.style.display = "block";
                 editContainer.style.display = "none";
-                editBtn.innerText = "✏️ Edit";
+                editBtn.innerText = "Edit";
                 editBtn.classList.remove("btn-secondary");
             }
         }
@@ -4707,6 +5229,10 @@
             document.getElementById("edit-inhaled-exposure-duration").value = paper.inhaled_exposure_duration || "";
             document.getElementById("edit-admin-frequency").value = paper.administration_frequency || "";
             document.getElementById("edit-treatment-duration").value = paper.treatment_duration || "";
+            document.getElementById("edit-population-age").value = paper.population_age || "";
+            document.getElementById("edit-population-sex").value = paper.population_sex || "";
+            document.getElementById("edit-inclusion-criteria").value = paper.inclusion_criteria || "";
+            document.getElementById("edit-exclusion-criteria").value = paper.exclusion_criteria || "";
             
             function setCheckboxes(name, values) {
                 const checkboxes = document.querySelectorAll(`input[name="${name}"]`);
@@ -4785,7 +5311,11 @@
                 cbd_uM: document.getElementById("edit-cbd-uM").value !== "" ? parseFloat(document.getElementById("edit-cbd-uM").value) : null,
                 inhaled_exposure_duration: document.getElementById("edit-inhaled-exposure-duration").value.trim() || null,
                 administration_frequency: document.getElementById("edit-admin-frequency").value.trim() || null,
-                treatment_duration: document.getElementById("edit-treatment-duration").value.trim() || null
+                treatment_duration: document.getElementById("edit-treatment-duration").value.trim() || null,
+                population_age: document.getElementById("edit-population-age").value || null,
+                population_sex: document.getElementById("edit-population-sex").value || null,
+                inclusion_criteria: document.getElementById("edit-inclusion-criteria").value.trim() || null,
+                exclusion_criteria: document.getElementById("edit-exclusion-criteria").value.trim() || null
             };
             
             fetch(`/api/papers/${activeEditingPaper.id}/edit-classification`, {
@@ -4811,46 +5341,6 @@
             .catch(err => {
                 console.error("Error saving classification: ", err);
                 alert("An error occurred while saving changes.");
-            });
-        }
-
-        function reclassifyCurrentPaperWithClaude() {
-            if (!activeEditingPaper) return;
-            const paperId = activeEditingPaper.id;
-            const btn = document.getElementById("btn-reclassify-claude");
-            const originalHtml = btn.innerHTML;
-            
-            // Set loading state
-            btn.disabled = true;
-            btn.innerHTML = `<span class="sync-icon animate-spin" style="display: inline-block;">🔄</span> Reclassifying...`;
-            
-            fetch(`/api/papers/${paperId}/reclassify-llm`, {
-                method: "POST"
-            })
-            .then(res => {
-                if (!res.ok) {
-                    return res.json().then(err => { throw new Error(err.error || "Reclassification failed"); });
-                }
-                return res.json();
-            })
-            .then(data => {
-                alert(data.message || "Paper reclassified with Claude successfully.");
-                // Update activeEditingPaper with the newly retrieved database values
-                if (data.paper) {
-                    activeEditingPaper = data.paper;
-                }
-                // Re-open details drawer with the updated paper values (to refresh fields)
-                openDrawer(activeEditingPaper);
-                // Refresh main grid search
-                triggerSearch(false);
-            })
-            .catch(err => {
-                console.error("Error reclassifying: ", err);
-                alert("Failed to reclassify: " + err.message);
-            })
-            .finally(() => {
-                btn.disabled = false;
-                btn.innerHTML = originalHtml;
             });
         }
 
@@ -5109,6 +5599,7 @@
                     }
                     renderChartsFromData(result.chart_data);
                     currentAnalyzedPapers = result.chart_data;
+                    currentAnalysisPapers = result.papers || [];
                     selectedAnalysisId = result.id;
                     updateExportCSVButtonState();
 
@@ -5118,12 +5609,6 @@
 
                     if (result.id == null) {
                         alert("Analysis charts are ready. Log in to save them under My Analyses.");
-                    }
-
-                    // Smooth scroll to charts
-                    const panel = document.getElementById("selection-analytics-panel");
-                    if (panel) {
-                        setTimeout(() => panel.scrollIntoView({ behavior: 'smooth', block: 'start' }), 300);
                     }
                 })
                 .catch(err => {
@@ -5146,7 +5631,8 @@
             if (tableSection) tableSection.style.display = 'none';
 
             document.getElementById("my-analyses-panel").classList.remove("visible");
-            document.getElementById("selection-analytics-panel").style.display = "none";
+            document.getElementById("btn-export-analysis-csv").classList.remove("visible");
+            hideAnalysisCharts();
             document.getElementById("learning-dashboard-panel").style.display = "none";
             document.getElementById("connectivity-panel").style.display = "none";
             const heurPanel = document.getElementById("heuristics-panel");
@@ -5161,7 +5647,7 @@
             // Set scrolling behavior on main-content: only database view is fixed
             const mainContent = document.querySelector('.main-content');
             if (mainContent) {
-                mainContent.style.overflowY = (viewName === 'database') ? 'hidden' : 'auto';
+                mainContent.style.overflowY = (viewName === 'database' || viewName === 'my-analyses') ? 'hidden' : 'auto';
             }
 
             // 2. Show requested view
@@ -5173,7 +5659,7 @@
                 triggerSearch(false);
             } else if (viewName === 'my-analyses') {
                 document.getElementById("my-analyses-panel").classList.add("visible");
-                document.getElementById("selection-analytics-panel").style.display = "flex";
+                document.getElementById("btn-export-analysis-csv").classList.add("visible");
                 loadAnalysesList();
             } else if (viewName === 'learning-dashboard') {
                 document.getElementById("learning-dashboard-panel").style.display = "flex";
@@ -5202,15 +5688,29 @@
             if (!btn) return;
             if (selectedAnalysisId) {
                 btn.removeAttribute("disabled");
-                btn.style.opacity = "1";
-                btn.style.cursor = "pointer";
-                btn.style.boxShadow = "0 0 15px rgba(0, 240, 255, 0.2)";
             } else {
                 btn.setAttribute("disabled", "true");
-                btn.style.opacity = "0.5";
-                btn.style.cursor = "not-allowed";
-                btn.style.boxShadow = "0 0 10px rgba(0, 240, 255, 0.05)";
             }
+        }
+
+        function showAnalysisChartsUI(show) {
+            const placeholder = document.getElementById("analysis-charts-placeholder");
+            const content = document.getElementById("analysis-charts-content");
+            const quantRow = document.getElementById("quantitative-stats-row");
+            const countBadge = document.getElementById("selection-count-badge");
+            const chartsCol = document.getElementById("analysis-charts-column");
+            const drillCol = document.querySelector(".analysis-col-drilldown");
+            if (placeholder) placeholder.style.display = show ? "none" : "flex";
+            if (content) content.style.display = show ? "flex" : "none";
+            if (quantRow) quantRow.style.display = show ? "flex" : "none";
+            if (countBadge) countBadge.style.display = show ? "inline-block" : "none";
+            if (chartsCol) chartsCol.style.gridRow = show ? "2" : "1 / -1";
+            if (drillCol) drillCol.style.gridRow = show ? "2" : "1 / -1";
+        }
+
+        function hideAnalysisCharts() {
+            showAnalysisChartsUI(false);
+            clearChartDrilldown();
         }
 
         function exportAnalysisCSV() {
@@ -5226,11 +5726,12 @@
                 .then(res => res.json())
                 .then(analyses => {
                     const tbody = document.getElementById("analyses-tbody");
-                    document.getElementById("analyses-count-badge").innerText = analyses.length + " saved";
                     if (analyses.length === 0) {
-                        tbody.innerHTML = '<tr><td colspan="9" style="text-align: center; color: var(--text-secondary); padding: 30px;">No analyses yet. Click "Analyze Filtered Articles" to run one!</td></tr>';
+                        tbody.innerHTML = '<tr><td colspan="3" style="text-align: center; color: var(--text-secondary); padding: 20px; font-size: 0.75rem;">No analyses yet. Click "Analyze Filtered Articles" to run one!</td></tr>';
                         selectedAnalysisId = null;
+                        currentAnalysisPapers = [];
                         updateExportCSVButtonState();
+                        renderChartsFromData(null);
                         return;
                     }
                     if (selectId !== undefined) {
@@ -5238,20 +5739,16 @@
                     }
                     updateExportCSVButtonState();
                     tbody.innerHTML = analyses.map((a) => {
-                        const fs = a.filter_settings || {};
-                        const tag = (val, prefix) => val ? '<span class="analyses-filter-tag">' + prefix + val + '</span>' : '<span style="color:var(--text-secondary);font-size:0.75rem;">—</span>';
                         const isSelected = selectedAnalysisId !== null && a.id === selectedAnalysisId;
                         var rowClass = isSelected ? 'selected' : '';
+                        const safeName = (a.name || 'Untitled').replace(/</g, '&lt;');
                         return '<tr class="' + rowClass + '" onclick="loadAnalysis(' + a.id + ')" data-id="' + a.id + '">'
-                            + '<td style="color:var(--accent-blue);font-size:0.8rem;">\ud83d\udcca</td>'
-                            + '<td class="analysis-name-cell" style="font-weight:600;cursor:pointer;" onclick="event.stopPropagation();startRename(' + a.id + ', this)">' + (a.name || 'Untitled') + '</td>'
-                            + '<td style="color:var(--text-secondary);font-size:0.85rem;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + (fs.query || '—') + '</td>'
-                            + '<td style="font-weight:700;">' + a.paper_count + '</td>'
-                            + '<td>' + tag(fs.study_type, '') + '</td>'
-                            + '<td>' + tag(fs.exposure_method, '') + '</td>'
-                            + '<td>' + tag(fs.cannabis_type, '') + '</td>'
-                            + '<td>' + tag(fs.outcome, '') + '</td>'
-                            + '<td><button class="btn-sm-icon" onclick="event.stopPropagation(); deleteAnalysis(' + a.id + ', event)">\ud83d\uddd1\ufe0f</button></td>'
+                            + '<td class="analysis-name-cell" style="font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="' + safeName + '">' + safeName + '</td>'
+                            + '<td style="font-weight:700;text-align:center;">' + a.paper_count + '</td>'
+                            + '<td><div class="analysis-row-actions">'
+                            + '<button type="button" class="btn-sm-icon" title="Rename" onclick="event.stopPropagation();startRename(' + a.id + ', this.closest(\'tr\').querySelector(\'.analysis-name-cell\'))">&#9998;</button>'
+                            + '<button type="button" class="btn-sm-icon" title="Delete" onclick="event.stopPropagation(); deleteAnalysis(' + a.id + ', event)">&#128465;</button>'
+                            + '</div></td>'
                             + '</tr>';
                     }).join('');
                 });
@@ -5259,7 +5756,7 @@
 
         function startRename(id, cell) {
             var current = cell.innerText;
-            cell.innerHTML = '<input type="text" value="' + current.replace(/"/g, '&quot;') + '" style="width:100%;box-sizing:border-box;background:rgba(0,0,0,0.3);border:1px solid var(--accent-blue);border-radius:4px;color:#fff;padding:4px 6px;font-size:0.85rem;">';
+            cell.innerHTML = '<input type="text" value="' + current.replace(/"/g, '&quot;') + '" style="width:100%;box-sizing:border-box;background:rgba(0,0,0,0.3);border:1px solid var(--accent-blue);border-radius:4px;color:#fff;padding:2px 4px;font-size:0.72rem;">';
             var input = cell.querySelector('input');
             input.focus();
             input.select();
@@ -5286,22 +5783,20 @@
         }
 
         function loadAnalysis(id) {
-            fetch("/api/analyses/" + id)
-                .then(res => res.json())
-                .then(analysis => {
+            Promise.all([
+                fetch("/api/analyses/" + id).then(res => res.json()),
+                fetch("/api/analyses/" + id + "/papers").then(res => res.json())
+            ])
+                .then(([analysis, papersResp]) => {
                     if (analysis.error) return;
                     selectedAnalysisId = id;
                     updateExportCSVButtonState();
                     document.querySelectorAll("#analyses-tbody tr").forEach(tr => tr.classList.remove("selected"));
                     const row = document.querySelector(`#analyses-tbody tr[data-id="${id}"]`);
                     if (row) row.classList.add("selected");
+                    currentAnalysisPapers = papersResp.papers || [];
                     renderChartsFromData(analysis.chart_data);
                     currentAnalyzedPapers = analysis.chart_data;
-                    const panel = document.getElementById("selection-analytics-panel");
-                    if (panel) {
-                        panel.style.display = "flex";
-                        panel.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                    }
                 });
         }
 
@@ -5320,6 +5815,7 @@
                         if (selectedAnalysisId === id) {
                             selectedAnalysisId = null;
                             updateExportCSVButtonState();
+                            currentAnalysisPapers = [];
                             renderChartsFromData(null);
                         }
                         loadAnalysesList();
@@ -6650,50 +7146,281 @@
             });
         }
 
-        function renderChartsFromData(d) {
-            if (!d || d.paper_count === 0) {
-                document.getElementById("selection-analytics-panel").style.display = "none";
+        function numericFieldValue(value) {
+            if (value === null || value === undefined || value === "") return null;
+            const num = Number(value);
+            return Number.isFinite(num) ? num : null;
+        }
+
+        function computeQuantitativeAggregates(papers) {
+            const aggregates = {};
+            ANALYSIS_QUANTITATIVE_FIELDS.forEach(([fieldKey, label]) => {
+                const values = papers
+                    .map(p => numericFieldValue(p[fieldKey]))
+                    .filter(v => v !== null);
+                if (values.length) {
+                    aggregates[fieldKey] = {
+                        label,
+                        avg: Math.round((values.reduce((a, b) => a + b, 0) / values.length) * 100) / 100,
+                        count: values.length,
+                    };
+                }
+            });
+            return aggregates;
+        }
+
+        function renderQuantitativeStatsRow(chartData, papers) {
+            const row = document.getElementById("quantitative-stats-row");
+            if (!row) return;
+            const quants = chartData.quantitative_aggregates || computeQuantitativeAggregates(papers || []);
+            const entries = Object.values(quants);
+            if (!entries.length) {
+                row.innerHTML = '<span style="color: var(--text-secondary); font-size: 0.82rem;">No quantitative characteristics reported in this subset.</span>';
                 return;
             }
-            const panel = document.getElementById("selection-analytics-panel");
-            panel.style.display = "flex";
+            row.innerHTML = entries.map(item => {
+                const suffix = item.label.includes("%") ? "%" : "";
+                return '<div class="quant-stat-chip">'
+                    + '<span class="quant-label">' + item.label + '</span>'
+                    + '<span class="quant-value">' + item.avg + suffix + '</span>'
+                    + '<span class="quant-n">n=' + item.count + '</span>'
+                    + '</div>';
+            }).join("");
+        }
+
+        function selectAnalysisChart(chartId) {
+            selectedAnalysisChartId = chartId;
+            document.querySelectorAll(".analysis-chart-card").forEach(card => {
+                card.classList.toggle("selected", card.dataset.chartId === chartId);
+            });
+        }
+
+        function clearChartDrilldown() {
+            const tbody = document.getElementById("chart-drilldown-tbody");
+            const title = document.getElementById("chart-drilldown-title");
+            const subtitle = document.getElementById("chart-drilldown-subtitle");
+            const placeholder = document.getElementById("analysis-drilldown-placeholder");
+            const tableWrap = document.getElementById("analysis-drilldown-table-wrap");
+            if (tbody) tbody.innerHTML = "";
+            if (title) title.innerText = "Papers in Selection";
+            if (subtitle) subtitle.innerText = "Click a chart section to list papers.";
+            if (placeholder) placeholder.style.display = "flex";
+            if (tableWrap) tableWrap.style.display = "none";
+        }
+
+        function emptyCannabinoidBins() {
+            return { zero: 0, low: 0, medLow: 0, med: 0, medHigh: 0, high: 0, veryHigh: 0, ultraHigh: 0, notReported: 0 };
+        }
+
+        function classifyPercentBin(val) {
+            if (val === null || val === undefined) return "notReported";
+            if (val === 0) return "zero";
+            if (val <= 5) return "low";
+            if (val <= 10) return "medLow";
+            if (val <= 15) return "med";
+            if (val <= 20) return "medHigh";
+            if (val <= 25) return "high";
+            if (val <= 30) return "veryHigh";
+            return "ultraHigh";
+        }
+
+        function classifyNumericBin(val) {
+            if (val === null || val === undefined) return "notReported";
+            if (val === 0) return "zero";
+            if (val <= 1) return "low";
+            if (val <= 5) return "medLow";
+            if (val <= 10) return "med";
+            if (val <= 25) return "medHigh";
+            if (val <= 50) return "high";
+            if (val <= 100) return "veryHigh";
+            return "ultraHigh";
+        }
+
+        function getCannabinoidBinLabels(mode) {
+            return mode === "absolute" ? PERCENT_BIN_LABELS : NUMERIC_BIN_LABELS;
+        }
+
+        function getCannabinoidValues(paper, compound, mode) {
+            if (mode === "absolute") {
+                return compound === "thc" ? paper.thc_pct : paper.cbd_pct;
+            }
+            if (mode === "concentration") {
+                return compound === "thc" ? paper.thc_mg_ml : paper.cbd_mg_ml;
+            }
+            if (compound === "thc") return paper.thc_mg_g ?? paper.thc_mg_kg;
+            return paper.cbd_mg_g ?? paper.cbd_mg_kg;
+        }
+
+        function computeCannabinoidBins(papers, mode) {
+            const thcBins = emptyCannabinoidBins();
+            const cbdBins = emptyCannabinoidBins();
+            const classify = mode === "absolute" ? classifyPercentBin : classifyNumericBin;
+            papers.forEach(p => {
+                thcBins[classify(getCannabinoidValues(p, "thc", mode))]++;
+                cbdBins[classify(getCannabinoidValues(p, "cbd", mode))]++;
+            });
+            return { thcBins, cbdBins, labels: getCannabinoidBinLabels(mode) };
+        }
+
+        function paperInCannabinoidBin(paper, binKey, compound, mode) {
+            const val = getCannabinoidValues(paper, compound, mode);
+            const classify = mode === "absolute" ? classifyPercentBin : classifyNumericBin;
+            return classify(val) === binKey;
+        }
+
+        function onCannabinoidViewChange() {
+            const sel = document.getElementById("select-cannabinoid-view");
+            if (sel) cannabinoidViewMode = sel.value;
+            renderCannabinoidDistributionChart();
+        }
+
+        function onExposureModeChange() {
+            const sel = document.getElementById("select-exposure-mode");
+            if (sel) exposureChartMode = sel.value;
+            renderExposureChart();
+        }
+
+        function paperMatchesListField(paper, field, value) {
+            const raw = paper[field];
+            if (Array.isArray(raw)) return raw.includes(value);
+            return raw === value;
+        }
+
+        function filterPapersForChartSegment(chartKind, index, meta) {
+            const papers = currentAnalysisPapers || [];
+            if (!papers.length || !meta) return [];
+            if (chartKind === "study-design") {
+                const key = meta.rawLabels[index];
+                return papers.filter(p => paperMatchesListField(p, "study_type", key));
+            }
+            if (chartKind === "cannabinoid-distribution") {
+                const binKey = THC_BIN_KEYS[index];
+                const compound = meta.compound || "thc";
+                const mode = meta.mode || cannabinoidViewMode;
+                return papers.filter(p => paperInCannabinoidBin(p, binKey, compound, mode));
+            }
+            if (chartKind === "timeline") {
+                const key = meta.sortedLabels[index];
+                return papers.filter(p => {
+                    if (timelineTimescale === "monthly") {
+                        let monthKey = "N/A";
+                        if (p.publication_date) monthKey = p.publication_date.substring(0, 7);
+                        else if (p.year) monthKey = p.year + "-01";
+                        return monthKey === key;
+                    }
+                    return String(p.year || "N/A") === String(key);
+                });
+            }
+            if (chartKind === "outcome") {
+                const key = meta.rawLabels[index];
+                return papers.filter(p => (p.outcome_domain || []).includes(key));
+            }
+            if (chartKind === "cannabis-type") {
+                const key = meta.rawLabels[index];
+                return papers.filter(p => paperMatchesListField(p, "cannabis_type", key));
+            }
+            if (chartKind === "exposure") {
+                const key = meta.rawLabels[index];
+                return papers.filter(p => paperMatchesListField(p, "exposure_method", key));
+            }
+            return [];
+        }
+
+        function renderChartDrilldownTable(papers, chartKind, segmentLabel) {
+            const tbody = document.getElementById("chart-drilldown-tbody");
+            const title = document.getElementById("chart-drilldown-title");
+            const subtitle = document.getElementById("chart-drilldown-subtitle");
+            const placeholder = document.getElementById("analysis-drilldown-placeholder");
+            const tableWrap = document.getElementById("analysis-drilldown-table-wrap");
+            if (!tbody) return;
+            if (title) title.innerText = segmentLabel + " (" + papers.length + ")";
+            if (subtitle) subtitle.innerText = "Click a row to open the paper drawer.";
+            if (!papers.length) {
+                if (placeholder) {
+                    placeholder.innerText = "No papers in this section";
+                    placeholder.style.display = "flex";
+                }
+                if (tableWrap) tableWrap.style.display = "none";
+                tbody.innerHTML = "";
+                return;
+            }
+            if (placeholder) placeholder.style.display = "none";
+            if (tableWrap) tableWrap.style.display = "block";
+            tbody.innerHTML = papers.map(p => {
+                const safeTitle = (p.title || "Untitled").replace(/</g, "&lt;").replace(/"/g, "&quot;");
+                return '<tr class="drilldown-row" data-paper-id="' + p.id + '">'
+                    + '<td class="drilldown-title-cell" title="' + safeTitle + '">' + safeTitle + '</td>'
+                    + '</tr>';
+            }).join("");
+            tbody.querySelectorAll(".drilldown-row").forEach(row => {
+                row.addEventListener("click", () => {
+                    const paperId = Number(row.dataset.paperId);
+                    const paper = papers.find(p => p.id === paperId);
+                    if (paper) openDrawer(paper);
+                });
+            });
+        }
+
+        function handleAnalysisChartClick(chartKind, index, meta) {
+            selectAnalysisChart(chartKind);
+            const matched = filterPapersForChartSegment(chartKind, index, meta);
+            let segmentLabel = "";
+            if (chartKind === "cannabinoid-distribution") {
+                const labels = getCannabinoidBinLabels(meta.mode || cannabinoidViewMode);
+                const compoundLabel = (meta.compound || "thc").toUpperCase();
+                segmentLabel = compoundLabel + " · " + (labels[index] || THC_BIN_KEYS[index]);
+            } else if (chartKind === "outcome") {
+                segmentLabel = OUTCOME_LABELS[meta.rawLabels[index]] || meta.rawLabels[index];
+            } else if (chartKind === "timeline") {
+                segmentLabel = meta.sortedLabels[index];
+            } else {
+                segmentLabel = meta.displayLabels ? meta.displayLabels[index] : meta.rawLabels[index];
+            }
+            renderChartDrilldownTable(matched, chartKind, segmentLabel);
+        }
+
+        function analysisChartClickHandler(chartKind, meta) {
+            return (_evt, elements) => {
+                if (!elements.length) return;
+                handleAnalysisChartClick(chartKind, elements[0].index, meta);
+            };
+        }
+
+        function renderChartsFromData(d) {
+            if (!d || d.paper_count === 0) {
+                currentChartDataRef = null;
+                hideAnalysisCharts();
+                return;
+            }
+            currentChartDataRef = d;
+            showAnalysisChartsUI(true);
             document.getElementById("selection-count-badge").innerText = d.paper_count + " Articles";
+            renderQuantitativeStatsRow(d, currentAnalysisPapers);
+            clearChartDrilldown();
 
-            // Aggregates
-            document.getElementById("agg-avg-thc").innerText = d.aggregates.avg_thc !== null && d.aggregates.avg_thc !== undefined ? d.aggregates.avg_thc + "%" : "N/A";
-            document.getElementById("agg-avg-cbd").innerText = d.aggregates.avg_cbd !== null && d.aggregates.avg_cbd !== undefined ? d.aggregates.avg_cbd + "%" : "N/A";
-            document.getElementById("agg-large-sample-pct").innerText = d.aggregates.large_sample_pct !== null && d.aggregates.large_sample_pct !== undefined ? d.aggregates.large_sample_pct + "%" : "N/A";
-
-            // Show all chart containers
-            document.getElementById("container-chart-exposure-clinical").style.display = "flex";
-            document.getElementById("container-chart-exposure-vitro").style.display = "flex";
-            document.getElementById("container-chart-exposure-vivo").style.display = "flex";
-            document.getElementById("container-chart-cannabis-type").style.display = "flex";
-            document.getElementById("container-chart-outcome").style.display = "flex";
+            currentExposureData = {
+                clinical: d.clinical_exposure || {},
+                vitro: d.vitro_exposure || {},
+                vivo: d.vivo_exposure || {}
+            };
 
             renderStudyDesignChart(d.study_design || {});
-            renderThcDistributionChart(d.thc_bins || {});
-            renderTimelineChart(d.timeline || {});
-            renderClinicalExposureChart(d.clinical_exposure || {});
-            renderVitroExposureChart(d.vitro_exposure || {});
-            renderVivoExposureChart(d.vivo_exposure || {});
+            renderCannabinoidDistributionChart();
+            renderExposureChart();
             renderCannabisTypeDoughnutChart(d.cannabis_type || {});
             renderOutcomeBarChart(d.outcome || {});
+            renderTimelineChart(d.timeline || {});
         }
 
         // Render visual analysis metrics and charts on the analyzed dataset
         function renderVisualAnalysis(papers) {
             currentAnalyzedPapers = papers;
-
-            const panel = document.getElementById("selection-analytics-panel");
-            if (!panel) return;
+            currentAnalysisPapers = papers;
 
             if (papers.length === 0) {
-                panel.style.display = "none";
+                hideAnalysisCharts();
                 return;
             }
-
-            panel.style.display = "flex";
 
             // Compute chart data from papers (mirrors server-side _compute_analysis_chart_data)
             let totalThc = 0, thcCount = 0, totalCbd = 0, cbdCount = 0, largeSampleCount = 0, sampleSizeCount = 0;
@@ -6709,6 +7436,7 @@
             const studyDesignCounts = {};
             const timelineCounts = {};
             const thcBins = { zero: 0, low: 0, medLow: 0, med: 0, medHigh: 0, high: 0, veryHigh: 0, ultraHigh: 0, notReported: 0 };
+            const cbdBins = { zero: 0, low: 0, medLow: 0, med: 0, medHigh: 0, high: 0, veryHigh: 0, ultraHigh: 0, notReported: 0 };
             const clinicalCounts = { inhaled: 0, oral: 0, sublingual: 0, injected: 0 };
             const vitroCounts = { 'exposure of cells to smoke/vapor': 0, 'cannabinoids dissolved in media': 0, 'smoke/vapor conditioned media': 0 };
             const vivoCounts = { 'whole body. smoke/vapor': 0, 'nose only smoke/vapor': 0, 'injection cannabinoids': 0, 'oral administration': 0, 'sub-lingual': 0, 'intranasal': 0, 'intratracheal': 0 };
@@ -6731,14 +7459,11 @@
 
                 const thc = p.thc_pct;
                 if (thc === null || thc === undefined) thcBins.notReported++;
-                else if (thc === 0) thcBins.zero++;
-                else if (thc <= 5) thcBins.low++;
-                else if (thc <= 10) thcBins.medLow++;
-                else if (thc <= 15) thcBins.med++;
-                else if (thc <= 20) thcBins.medHigh++;
-                else if (thc <= 25) thcBins.high++;
-                else if (thc <= 30) thcBins.veryHigh++;
-                else thcBins.ultraHigh++;
+                else thcBins[classifyPercentBin(thc)]++;
+
+                const cbd = p.cbd_pct;
+                if (cbd === null || cbd === undefined) cbdBins.notReported++;
+                else cbdBins[classifyPercentBin(cbd)]++;
 
                 const exps = Array.isArray(p.exposure_method) ? p.exposure_method : [p.exposure_method || 'unknown'];
                 exps.forEach(e => {
@@ -6761,8 +7486,10 @@
                     avg_cbd: cbdCount > 0 ? parseFloat((totalCbd / cbdCount).toFixed(1)) : null,
                     large_sample_pct: sampleSizeCount > 0 ? Math.round((largeSampleCount / sampleSizeCount) * 100) : null
                 },
-                study_design: studyDesignCounts,
+                quantitative_aggregates: computeQuantitativeAggregates(papers),
                 thc_bins: thcBins,
+                cbd_bins: cbdBins,
+                study_design: studyDesignCounts,
                 timeline: timelineCounts,
                 clinical_exposure: clinicalCounts,
                 vitro_exposure: vitroCounts,
@@ -6777,8 +7504,10 @@
         // Render Study Design Bar Graph
         function renderStudyDesignChart(counts) {
             const ctx = document.getElementById('chart-study-design').getContext('2d');
-            const labels = Object.keys(counts);
+            const rawLabels = Object.keys(counts);
+            const displayLabels = rawLabels;
             const data = Object.values(counts);
+            const meta = { rawLabels, displayLabels };
 
             if (chartStudyDesign) {
                 chartStudyDesign.destroy();
@@ -6787,7 +7516,7 @@
             chartStudyDesign = new Chart(ctx, {
                 type: 'bar',
                 data: {
-                    labels: labels,
+                    labels: displayLabels,
                     datasets: [{
                         label: 'Papers',
                         data: data,
@@ -6800,6 +7529,7 @@
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
+                    onClick: analysisChartClickHandler('study-design', meta),
                     plugins: {
                         legend: { display: false },
                         tooltip: {
@@ -6827,17 +7557,18 @@
             });
         }
 
-        // Render Clinical Exposure Pathway Pie Chart
-        function renderClinicalExposureChart(counts) {
-            const ctx = document.getElementById('chart-exposure-clinical').getContext('2d');
-            const canvas = document.getElementById('chart-exposure-clinical');
-            const fallback = document.getElementById('fallback-exposure-clinical');
+        // Render merged Exposure Breakdown pie chart (clinical / in vitro / in vivo dropdown)
+        function renderExposureChart() {
+            const ctx = document.getElementById('chart-exposure').getContext('2d');
+            const canvas = document.getElementById('chart-exposure');
+            const fallback = document.getElementById('fallback-exposure');
+            const counts = currentExposureData[exposureChartMode] || {};
 
             const rawLabels = Object.keys(counts).filter(k => counts[k] > 0);
             const data = rawLabels.map(k => counts[k]);
 
-            if (chartExposureClinical) {
-                chartExposureClinical.destroy();
+            if (chartExposure) {
+                chartExposure.destroy();
             }
 
             if (rawLabels.length === 0) {
@@ -6852,34 +7583,31 @@
             const labels = rawLabels.map(label => {
                 return label.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
             });
+            const meta = { rawLabels, displayLabels: labels };
 
-            chartExposureClinical = new Chart(ctx, {
+            chartExposure = new Chart(ctx, {
                 type: 'pie',
                 data: {
                     labels: labels,
                     datasets: [{
                         data: data,
                         backgroundColor: [
-                            'rgba(0, 240, 255, 0.45)',  // inhaled (cyan)
-                            'rgba(0, 230, 118, 0.45)',  // oral (green)
-                            'rgba(255, 214, 0, 0.45)',  // sublingual (amber)
-                            'rgba(255, 61, 0, 0.45)'    // injected (red)
+                            'rgba(0, 240, 255, 0.45)', 'rgba(0, 230, 118, 0.45)', 'rgba(255, 214, 0, 0.45)',
+                            'rgba(255, 61, 0, 0.45)', 'rgba(156, 39, 176, 0.45)', 'rgba(233, 30, 99, 0.45)',
+                            'rgba(3, 169, 244, 0.45)'
                         ],
-                        borderColor: ['#00f0ff', '#00e676', '#ffd600', '#ff3d00'],
+                        borderColor: ['#00f0ff', '#00e676', '#ffd600', '#ff3d00', '#9c27b0', '#e91e63', '#03a9f4'],
                         borderWidth: 1.5
                     }]
                 },
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
+                    onClick: analysisChartClickHandler('exposure', meta),
                     plugins: {
                         legend: {
                             position: 'right',
-                            labels: {
-                                color: '#90a4ae',
-                                font: { family: 'Inter', size: 9 },
-                                boxWidth: 10
-                            }
+                            labels: { color: '#90a4ae', font: { family: 'Inter', size: 9 }, boxWidth: 10 }
                         },
                         tooltip: {
                             backgroundColor: 'rgba(12, 16, 27, 0.95)',
@@ -6893,132 +7621,72 @@
             });
         }
 
-        // Render In Vitro Exposure Pathway Pie Chart
-        function renderVitroExposureChart(counts) {
-            const ctx = document.getElementById('chart-exposure-vitro').getContext('2d');
-            const canvas = document.getElementById('chart-exposure-vitro');
-            const fallback = document.getElementById('fallback-exposure-vitro');
+        // Render Cannabinoid Distribution (THC + CBD side-by-side; view mode dropdown)
+        function renderCannabinoidDistributionChart() {
+            const ctx = document.getElementById('chart-cannabinoid-distribution').getContext('2d');
+            const papers = currentAnalysisPapers || [];
+            const { thcBins, cbdBins, labels } = computeCannabinoidBins(papers, cannabinoidViewMode);
+            const thcData = THC_BIN_KEYS.map(k => thcBins[k] || 0);
+            const cbdData = THC_BIN_KEYS.map(k => cbdBins[k] || 0);
 
-            const rawLabels = Object.keys(counts).filter(k => counts[k] > 0);
-            const data = rawLabels.map(k => counts[k]);
-
-            if (chartExposureVitro) {
-                chartExposureVitro.destroy();
+            if (chartCannabinoidDistribution) {
+                chartCannabinoidDistribution.destroy();
             }
 
-            if (rawLabels.length === 0) {
-                canvas.style.display = "none";
-                fallback.style.display = "block";
-                return;
-            }
+            const meta = { mode: cannabinoidViewMode, compound: "thc" };
 
-            canvas.style.display = "block";
-            fallback.style.display = "none";
-
-            const labels = rawLabels.map(label => {
-                return label.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
-            });
-
-            chartExposureVitro = new Chart(ctx, {
-                type: 'pie',
+            chartCannabinoidDistribution = new Chart(ctx, {
+                type: 'bar',
                 data: {
                     labels: labels,
-                    datasets: [{
-                        data: data,
-                        backgroundColor: [
-                            'rgba(156, 39, 176, 0.45)', // exposure of cells (purple)
-                            'rgba(233, 30, 99, 0.45)',  // dissolved in media (pink)
-                            'rgba(3, 169, 244, 0.45)'   // conditioned media (light blue)
-                        ],
-                        borderColor: ['#9c27b0', '#e91e63', '#03a9f4'],
-                        borderWidth: 1.5
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        legend: {
-                            position: 'right',
-                            labels: {
-                                color: '#90a4ae',
-                                font: { family: 'Inter', size: 9 },
-                                boxWidth: 10
-                            }
+                    datasets: [
+                        {
+                            label: 'THC',
+                            data: thcData,
+                            backgroundColor: 'rgba(255, 138, 101, 0.45)',
+                            borderColor: '#ff8a65',
+                            borderWidth: 1.5,
+                            borderRadius: 4
                         },
-                        tooltip: {
-                            backgroundColor: 'rgba(12, 16, 27, 0.95)',
-                            borderColor: 'rgba(255,255,255,0.08)',
-                            borderWidth: 1,
-                            titleFont: { family: 'Outfit', weight: '600' },
-                            bodyFont: { family: 'Inter' }
+                        {
+                            label: 'CBD',
+                            data: cbdData,
+                            backgroundColor: 'rgba(0, 240, 255, 0.4)',
+                            borderColor: '#00f0ff',
+                            borderWidth: 1.5,
+                            borderRadius: 4
                         }
-                    }
-                }
-            });
-        }
-
-        // Render In Vivo Exposure Pathway Pie Chart
-        function renderVivoExposureChart(counts) {
-            const ctx = document.getElementById('chart-exposure-vivo').getContext('2d');
-            const canvas = document.getElementById('chart-exposure-vivo');
-            const fallback = document.getElementById('fallback-exposure-vivo');
-
-            const rawLabels = Object.keys(counts).filter(k => counts[k] > 0);
-            const data = rawLabels.map(k => counts[k]);
-
-            if (chartExposureVivo) {
-                chartExposureVivo.destroy();
-            }
-
-            if (rawLabels.length === 0) {
-                canvas.style.display = "none";
-                fallback.style.display = "block";
-                return;
-            }
-
-            canvas.style.display = "block";
-            fallback.style.display = "none";
-
-            const labels = rawLabels.map(label => {
-                return label.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
-            });
-
-            chartExposureVivo = new Chart(ctx, {
-                type: 'pie',
-                data: {
-                    labels: labels,
-                    datasets: [{
-                        data: data,
-                        backgroundColor: [
-                            'rgba(0, 240, 255, 0.45)',  // whole body (cyan)
-                            'rgba(0, 230, 118, 0.45)',  // nose only (green)
-                            'rgba(255, 214, 0, 0.45)',  // injection (amber)
-                            'rgba(255, 61, 0, 0.45)',   // oral (red)
-                            'rgba(156, 39, 176, 0.45)', // sublingual (purple)
-                            'rgba(233, 30, 99, 0.45)',  // intranasal (pink)
-                            'rgba(3, 169, 244, 0.45)'   // intratracheal (light blue)
-                        ],
-                        borderColor: [
-                            '#00f0ff', '#00e676', '#ffd600', '#ff3d00', '#9c27b0', '#e91e63', '#03a9f4'
-                        ],
-                        borderWidth: 1.5
-                    }]
+                    ]
                 },
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
+                    onClick: (evt, elements) => {
+                        if (!elements.length) return;
+                        const el = elements[0];
+                        meta.compound = el.datasetIndex === 0 ? "thc" : "cbd";
+                        handleAnalysisChartClick('cannabinoid-distribution', el.index, meta);
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            grid: { color: 'rgba(255, 255, 255, 0.05)' },
+                            ticks: { color: '#90a4ae', font: { family: 'Inter', size: 10 }, stepSize: 1 }
+                        },
+                        x: {
+                            grid: { display: false },
+                            ticks: { color: '#90a4ae', font: { family: 'Inter', size: 8 }, maxRotation: 45, minRotation: 45 }
+                        }
+                    },
                     plugins: {
                         legend: {
-                            position: 'right',
-                            labels: {
-                                color: '#90a4ae',
-                                font: { family: 'Inter', size: 9 },
-                                boxWidth: 10
-                            }
+                            display: true,
+                            labels: { color: '#90a4ae', font: { family: 'Inter', size: 10 }, boxWidth: 12 }
                         },
                         tooltip: {
                             backgroundColor: 'rgba(12, 16, 27, 0.95)',
+                            titleColor: '#fff',
+                            bodyColor: '#eceff1',
                             borderColor: 'rgba(255,255,255,0.08)',
                             borderWidth: 1,
                             titleFont: { family: 'Outfit', weight: '600' },
@@ -7053,6 +7721,7 @@
             const borderColors = [
                 '#00f0ff', '#00e676', '#ffd600', '#ff3d00', '#9c27b0', '#e91e63'
             ];
+            const meta = { rawLabels, displayLabels: labels };
 
             chartCannabisTypeDoughnut = new Chart(ctx, {
                 type: 'doughnut',
@@ -7068,6 +7737,7 @@
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
+                    onClick: analysisChartClickHandler('cannabis-type', meta),
                     plugins: {
                         legend: {
                             position: 'right',
@@ -7103,8 +7773,10 @@
                 'neuroprotection': 'Neuroprotection',
                 'sleep': 'Sleep'
             };
-            const labels = Object.keys(counts).map(k => keyMap[k] || k);
-            const data = Object.values(counts);
+            const rawLabels = Object.keys(counts);
+            const labels = rawLabels.map(k => keyMap[k] || k);
+            const data = rawLabels.map(k => counts[k]);
+            const meta = { rawLabels, displayLabels: labels };
 
             if (chartOutcomeBar) {
                 chartOutcomeBar.destroy();
@@ -7127,6 +7799,7 @@
                     indexAxis: 'y', // Horizontal Bar Chart
                     responsive: true,
                     maintainAspectRatio: false,
+                    onClick: analysisChartClickHandler('outcome', meta),
                     scales: {
                         x: {
                             beginAtZero: true,
@@ -7154,81 +7827,6 @@
             });
         }
 
-        // Render THC Content Distribution Histogram
-        function renderThcDistributionChart(bins) {
-            const ctx = document.getElementById('chart-thc-distribution').getContext('2d');
-            const labels = [
-                '0%',
-                '0.1 - 5%',
-                '5.1 - 10%',
-                '10.1 - 15%',
-                '15.1 - 20%',
-                '20.1 - 25%',
-                '25.1 - 30%',
-                '> 30%',
-                'Not Reported'
-            ];
-            const data = [
-                bins.zero || 0,
-                bins.low || 0,
-                bins.medLow || 0,
-                bins.med || 0,
-                bins.medHigh || 0,
-                bins.high || 0,
-                bins.veryHigh || 0,
-                bins.ultraHigh || 0,
-                bins.notReported || 0
-            ];
-
-            if (chartThcDistribution) {
-                chartThcDistribution.destroy();
-            }
-
-            chartThcDistribution = new Chart(ctx, {
-                type: 'bar',
-                data: {
-                    labels: labels,
-                    datasets: [{
-                        label: 'Papers',
-                        data: data,
-                        backgroundColor: 'rgba(255, 138, 101, 0.4)',
-                        borderColor: '#ff8a65',
-                        borderWidth: 1.5,
-                        borderRadius: 6
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    scales: {
-                        y: {
-                            beginAtZero: true,
-                            grid: { color: 'rgba(255, 255, 255, 0.05)' },
-                            ticks: { color: '#90a4ae', font: { family: 'Inter', size: 10 }, stepSize: 1 }
-                        },
-                        x: {
-                            grid: { display: false },
-                            ticks: { color: '#90a4ae', font: { family: 'Inter', size: 9 } }
-                        }
-                    },
-                    plugins: {
-                        legend: { display: false },
-                        tooltip: {
-                            backgroundColor: 'rgba(12, 16, 27, 0.95)',
-                            titleColor: '#fff',
-                            bodyColor: '#eceff1',
-                            borderColor: 'rgba(255,255,255,0.08)',
-                            borderWidth: 1,
-                            titleFont: { family: 'Outfit', weight: '600' },
-                            bodyFont: { family: 'Inter' }
-                        }
-                    }
-                }
-            });
-        }
-
-
-
         // Render Publication timeline with Yearly / Monthly support
         function renderTimelineChart(counts) {
             const ctx = document.getElementById('chart-timeline').getContext('2d');
@@ -7238,6 +7836,7 @@
                 return a.localeCompare(b);
             });
             const data = sortedLabels.map(label => counts[label]);
+            const meta = { sortedLabels, displayLabels: sortedLabels };
 
             if (chartTimeline) {
                 chartTimeline.destroy();
@@ -7256,12 +7855,14 @@
                         fill: true,
                         tension: 0.3,
                         pointBackgroundColor: '#ffd600',
-                        pointHoverRadius: 6
+                        pointHoverRadius: 6,
+                        pointHitRadius: 12
                     }]
                 },
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
+                    onClick: analysisChartClickHandler('timeline', meta),
                     plugins: {
                         legend: { display: false },
                         tooltip: {
@@ -7302,11 +7903,10 @@
                 timelineTimescale = 'yearly';
                 btn.innerText = "Timescale: Yearly";
             }
-            if (currentAnalyzedPapers) {
-                if (Array.isArray(currentAnalyzedPapers)) {
-                    renderVisualAnalysis(currentAnalyzedPapers);
-                }
-                // Saved analysis timeline data is yearly-only; toggle requires re-fetch from saved papers
+            if (currentAnalysisPapers && currentAnalysisPapers.length) {
+                renderVisualAnalysis(currentAnalysisPapers);
+            } else if (currentAnalyzedPapers && Array.isArray(currentAnalyzedPapers)) {
+                renderVisualAnalysis(currentAnalyzedPapers);
             }
         }
 
@@ -7361,6 +7961,7 @@
             if (currentPapersInView && currentPapersInView.length > 0) {
                 populateTable(currentPapersInView);
             }
+            scheduleSaveColumnPreferences();
         }
 
         // Apply style.display (show/hide) to corresponding table header elements
@@ -7549,7 +8150,7 @@
                 if (btnDelete) {
                     btnDelete.removeAttribute("onclick");
                     btnDelete.addEventListener("click", clickHandler);
-                    btnDelete.innerHTML = `🗑️ Delete <span style="font-size:0.7rem; opacity:0.6; margin-left: 2px;">🔒</span>`;
+                    btnDelete.innerText = "Delete";
                 }
                 
                 // Intercept Edit in drawer
@@ -7557,15 +8158,7 @@
                 if (btnEdit) {
                     btnEdit.removeAttribute("onclick");
                     btnEdit.addEventListener("click", clickHandler);
-                    btnEdit.innerHTML = `✏️ Edit <span style="font-size:0.7rem; opacity:0.6; margin-left: 2px;">🔒</span>`;
-                }
-                
-                // Intercept Reclassify with Claude in drawer
-                const btnReclassify = document.getElementById("btn-reclassify-claude");
-                if (btnReclassify) {
-                    btnReclassify.removeAttribute("onclick");
-                    btnReclassify.addEventListener("click", clickHandler);
-                    btnReclassify.innerHTML = `<svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor" style="vertical-align: middle;"><path d="M12 2l2.4 7.2 7.2 2.4-7.2 2.4-2.4 7.2-2.4-7.2-7.2-2.4 7.2-2.4z"/></svg> Reclassify with Claude <span style="font-size:0.7rem; opacity:0.6; margin-left: 2px;">🔒</span>`;
+                    btnEdit.innerText = "Edit";
                 }
             }
         }

@@ -181,6 +181,48 @@ def _execute_maude_reingest(payload: Dict[str, Any]) -> Dict[str, Any]:
     return summary
 
 
+def run_post_harvest_maude_upgrade(
+    paper_ids: List[int],
+    *,
+    batch_size: int = 25,
+    workers: int = 4,
+    log_path: Optional[str] = None,
+) -> Dict[str, Any]:
+    """Retry PDF/full-text Maude classification for papers ingested on the latest harvest."""
+    from db_health import postgres_configured, production_reingest_limits
+    from maude_reingest_watchdog import REINGEST_LOG, start_detached_two_pass
+
+    ids = sorted({int(pid) for pid in paper_ids if pid is not None})
+    if not ids:
+        return {"status": "skipped", "reason": "no_new_papers", "paper_count": 0}
+
+    limits = production_reingest_limits() if postgres_configured() else {}
+    if batch_size >= 50 and limits:
+        batch_size = int(limits.get("batch_size") or batch_size)
+    if workers >= 4 and limits:
+        workers = int(limits.get("workers") or workers)
+
+    pid = start_detached_two_pass(
+        batch_size=batch_size,
+        workers=workers,
+        log_path=log_path or REINGEST_LOG,
+        paper_ids=ids,
+        slow_only=True,
+    )
+    logger.info(
+        "Started post-harvest Maude PDF/full-text upgrade for %s papers (pid=%s)",
+        len(ids),
+        pid,
+    )
+    return {
+        "status": "started",
+        "pid": pid,
+        "paper_count": len(ids),
+        "pass_mode": "two-pass-slow-only",
+        "log_path": log_path or REINGEST_LOG,
+    }
+
+
 def run_maude_reingest_now(
     batch_size: int = 50,
     refresh_maude_confidence: bool = True,

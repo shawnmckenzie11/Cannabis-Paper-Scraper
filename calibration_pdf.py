@@ -210,13 +210,63 @@ def resolve_classification_full_text(
     return None, CLASSIFICATION_SOURCE_ABSTRACT
 
 
-def maude_classifier_version(source: str, rules_version: str) -> str:
+def _golden_row_rules_label(rules_version: str, row_index: int) -> str:
+    """Return a rules-version label tagged with golden table row index (e.g. 2.6.row3)."""
+    label = str(rules_version or "2.6.0").strip()
+    if re.match(r"^\d+\.\d+\.0$", label):
+        label = label[:-2]
+    return f"{label}.row{int(row_index)}"
+
+
+def maude_classifier_version(
+    source: str,
+    rules_version: str,
+    row_index: Optional[int] = None,
+) -> str:
     """Builds a classifier_version label that records which text tier Maude used."""
-    if source == CLASSIFICATION_SOURCE_PDF:
-        return f"maude-pdf-{rules_version}"
-    if source == CLASSIFICATION_SOURCE_FULLTEXT:
-        return f"maude-fulltext-{rules_version}"
-    return f"maude-{rules_version}"
+    version_label = rules_version
+    if row_index is not None and int(row_index) >= 3:
+        version_label = _golden_row_rules_label(rules_version, int(row_index))
+    normalized = normalize_classification_source(source)
+    if normalized == CLASSIFICATION_SOURCE_PDF:
+        return f"maude-pdf-{version_label}"
+    if normalized == CLASSIFICATION_SOURCE_FULLTEXT:
+        return f"maude-ft-{version_label}"
+    return f"maude-{version_label}"
+
+
+def normalize_classification_source(source: Optional[str]) -> str:
+    """Map stored or resolved source labels to pdf/fulltext/abstract buckets."""
+    value = (source or "").strip().lower()
+    if value in {CLASSIFICATION_SOURCE_PDF, "pdf"}:
+        return CLASSIFICATION_SOURCE_PDF
+    if value in {CLASSIFICATION_SOURCE_FULLTEXT, "fulltext", "ft", "html", "pmc"}:
+        return CLASSIFICATION_SOURCE_FULLTEXT
+    return CLASSIFICATION_SOURCE_ABSTRACT
+
+
+def maude_tier_classifier_versions(
+    rules_version: str,
+    row_index: Optional[int] = None,
+) -> tuple[str, str, str]:
+    """Return abstract, pdf, and full-text classifier_version labels for a rules version."""
+    if row_index is not None and int(row_index) >= 3:
+        label = _golden_row_rules_label(rules_version, int(row_index))
+        return (
+            f"maude-{label}",
+            f"maude-pdf-{label}",
+            f"maude-ft-{label}",
+        )
+    return (
+        f"maude-{rules_version}",
+        f"maude-pdf-{rules_version}",
+        f"maude-ft-{rules_version}",
+    )
+
+
+def legacy_fulltext_classifier_version(rules_version: str) -> str:
+    """Return the pre-maude-ft full-text label kept for skip/upgrade compatibility."""
+    return f"maude-fulltext-{rules_version}"
 
 
 def classify_maude_for_calibration(
@@ -254,4 +304,5 @@ def classify_maude_for_calibration(
         abstract_only_extraction=resolved_text is None,
     )
     maude_confidence.apply_maude_confidence(maude_out)
+    maude_out["classifier_version"] = maude_classifier_version(source, rules_version)
     return maude_out, pdf_used

@@ -134,7 +134,31 @@ class ReingestTwoPassTests(unittest.TestCase):
         clause = rip._skip_current_version_clause("fast", "2.6.0")
         self.assertIn("maude-2.6.0", clause)
         self.assertIn("maude-pdf-2.6.0", clause)
+        self.assertIn("maude-ft-2.6.0", clause)
         self.assertIn("NOT IN", clause)
+
+    def test_already_at_pass_tier_slow_pdf(self):
+        """Slow pass skips papers already stamped at the pdf tier."""
+        paper = {"classifier_version": "maude-pdf-2.6.0"}
+        self.assertTrue(rip._already_at_pass_tier(paper, "slow", "2.6.0"))
+
+    def test_already_at_pass_tier_slow_fulltext(self):
+        """Slow pass skips papers stamped at current or legacy full-text tiers."""
+        self.assertTrue(
+            rip._already_at_pass_tier({"classifier_version": "maude-ft-2.6.0"}, "slow", "2.6.0")
+        )
+        self.assertTrue(
+            rip._already_at_pass_tier(
+                {"classifier_version": "maude-fulltext-2.6.0"}, "slow", "2.6.0"
+            )
+        )
+
+    def test_source_bucket_labels(self):
+        """Source bucket mapping recognizes pdf, ft, and legacy fulltext labels."""
+        self.assertEqual(rip._source_bucket("maude-pdf-2.6.0"), "pdf")
+        self.assertEqual(rip._source_bucket("maude-ft-2.6.0"), "fulltext")
+        self.assertEqual(rip._source_bucket("maude-fulltext-2.6.0"), "fulltext")
+        self.assertEqual(rip._source_bucket("maude-2.6.0"), "abstract")
 
     @patch.object(DatabaseManager, "sync_tab_flags_for_paper")
     def test_apply_paper_update_uses_single_update(self, mock_sync):

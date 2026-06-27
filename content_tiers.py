@@ -34,9 +34,12 @@ METHODS_HEAVY_FIELDS = frozenset({
 })
 
 # Optional fields tracked via recall sidecar, not RL alignment denominator.
+# Free-text inclusion/exclusion criteria are LLM extraction detail — not alignment gates.
 ALIGNMENT_EXCLUDED_FIELDS = frozenset({
     "strain_reported",
     "strain_normalized",
+    "inclusion_criteria",
+    "exclusion_criteria",
 })
 
 OPTIONAL_RECALL_FIELDS = frozenset(ALIGNMENT_EXCLUDED_FIELDS)

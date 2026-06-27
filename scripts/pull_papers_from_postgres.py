@@ -70,6 +70,11 @@ def build_parser() -> argparse.ArgumentParser:
         action="store_true",
         help="Skip local DatabaseManager.init_db() before pull.",
     )
+    parser.add_argument(
+        "--replace-all-baseline",
+        action="store_true",
+        help="Replace the entire push baseline with this pull (default: upsert pulled rows only).",
+    )
     return parser
 
 
@@ -217,7 +222,12 @@ def pull_papers(args: argparse.Namespace) -> Dict[str, Any]:
         if args.paper_ids:
             break
 
-    save_baseline_rows(sqlite_conn, baseline_rows, pulled_at=pulled_at, replace_all=True)
+    save_baseline_rows(
+        sqlite_conn,
+        baseline_rows,
+        pulled_at=pulled_at,
+        replace_all=bool(args.replace_all_baseline and not args.paper_ids),
+    )
     store_pull_metadata(sqlite_conn, row_count=pulled, reingest_only=args.reingest_only)
 
     sqlite_conn.close()

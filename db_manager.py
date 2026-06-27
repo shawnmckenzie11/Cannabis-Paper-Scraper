@@ -6,6 +6,7 @@ import re
 from datetime import datetime
 from typing import List, Dict, Any, Optional, Tuple
 import logging
+import time
 
 logger = logging.getLogger(__name__)
 
@@ -480,11 +481,16 @@ def _species_ui_match_clause(species_key: str) -> Tuple[str, List[Any]]:
     return "(" + " OR ".join(parts) + ")", params
 
 
+TAB_FLAGS_READY_METADATA_KEY = "tab_flags_backfill_complete"
+
+
 class DatabaseManager:
     """Manages SQLite and PostgreSQL operations, indexing, and dynamic querying for cannabis papers."""
     
     _initialized = False
     _postgres_compat_ready = False
+    _tab_flags_ready_cache: Optional[bool] = None
+    _tab_columns_exist_cache: Optional[bool] = None
     
     @property
     def is_postgres(self):
@@ -569,36 +575,7 @@ class DatabaseManager:
                 )
 
                 if db_exists:
-                    try:
-                        cursor.execute(
-                            "SELECT EXISTS (SELECT FROM information_schema.tables WHERE table_name = 'system_metadata');"
-                        )
-                        meta_table_exists_row = cursor.fetchone()
-                        meta_table_exists = (
-                            list(meta_table_exists_row.values())[0] if meta_table_exists_row else False
-                        )
-                        if meta_table_exists:
-                            cursor.execute(
-                                "SELECT value FROM system_metadata WHERE key = 'fts_index_updated_authors';"
-                            )
-                            meta_row = cursor.fetchone()
-                            meta_val = list(meta_row.values())[0] if meta_row else None
-                            if meta_val != "true":
-                                cursor.execute("SET maintenance_work_mem = '16MB';")
-                                cursor.execute("DROP INDEX IF EXISTS idx_papers_fts;")
-                                cursor.execute(
-                                    "CREATE INDEX IF NOT EXISTS idx_papers_fts ON papers "
-                                    "USING GIN (to_tsvector('english', title || ' ' || "
-                                    "coalesce(abstract, '') || ' ' || coalesce(authors, '')));"
-                                )
-                                cursor.execute(
-                                    "INSERT INTO system_metadata (key, value) VALUES "
-                                    "('fts_index_updated_authors', 'true') "
-                                    "ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value;"
-                                )
-                                unwrapped_conn.commit()
-                    except Exception as idx_err:
-                        logger.error(f"Failed to update FTS GIN index: {idx_err}")
+                    pass  # FTS GIN index: run via init_db or manual migration only — not on worker boot.
 
                 conn_check.close()
             except Exception as e:
@@ -634,23 +611,36 @@ class DatabaseManager:
                 self.init_db()
             DatabaseManager._initialized = True
         elif not DatabaseManager._initialized:
-            if not self.is_postgres:
+            if self.is_postgres and db_exists:
+                try:
+                    self._ensure_postgres_schema_patches()
+                except Exception as exc:
+                    logger.error("Postgres schema patches failed: %s", exc)
+            elif not self.is_postgres:
                 self.init_db()
             DatabaseManager._initialized = True
 
-    def get_connection(self):
+    def get_connection(self, retries: int = 3):
         """Returns a connection wrapper supporting standard operations."""
         if self.is_postgres:
             if psycopg2 is None:
                 raise ImportError("PostgreSQL connection requested but psycopg2 is not installed.")
-            # Handle URL scheme adjustment if needed (Fly.io might pass postgres://)
             url = self.database_url
-            conn = psycopg2.connect(
-                url,
-                cursor_factory=psycopg2.extras.RealDictCursor,
-                connect_timeout=int(os.getenv("POSTGRES_CONNECT_TIMEOUT", "5")),
-            )
-            return PostgresConnectionWrapper(conn)
+            last_exc = None
+            for attempt in range(max(1, retries)):
+                try:
+                    conn = psycopg2.connect(
+                        url,
+                        cursor_factory=psycopg2.extras.RealDictCursor,
+                        connect_timeout=int(os.getenv("POSTGRES_CONNECT_TIMEOUT", "5")),
+                    )
+                    return PostgresConnectionWrapper(conn)
+                except Exception as exc:
+                    last_exc = exc
+                    if attempt + 1 >= retries:
+                        break
+                    time.sleep(0.4 * (attempt + 1))
+            raise last_exc
         else:
             conn = sqlite3.connect(
                 self.db_path,
@@ -661,6 +651,113 @@ class DatabaseManager:
             conn.execute("PRAGMA foreign_keys = ON;")
             conn.execute("PRAGMA journal_mode = WAL;")
             return conn
+
+    _PAPERS_PATCH_COLUMNS: Tuple[Tuple[str, str], ...] = (
+        ("publication_date", "TEXT"),
+        ("cannabis_type", "TEXT"),
+        ("summary", "TEXT"),
+        ("publication_type", "TEXT"),
+        ("expert_locked_fields", "TEXT DEFAULT '[]'"),
+        ("classification_confidence", "REAL"),
+        ("classification_timestamp", "TEXT"),
+        ("classifier_version", "TEXT"),
+        ("puff_count", "INTEGER"),
+        ("thc_mg_ml", "REAL"),
+        ("thc_mg_g", "REAL"),
+        ("thc_mg_kg", "REAL"),
+        ("cbd_mg_ml", "REAL"),
+        ("cbd_mg_g", "REAL"),
+        ("cbd_mg_kg", "REAL"),
+        ("thc_uM", "REAL"),
+        ("cbd_uM", "REAL"),
+        ("inhaled_exposure_duration", "TEXT"),
+        ("administration_frequency", "TEXT"),
+        ("treatment_duration", "TEXT"),
+        ("ingestion_status", "TEXT"),
+        ("species", "TEXT"),
+        ("population_age", "TEXT"),
+        ("population_sex", "TEXT"),
+        ("inclusion_criteria", "TEXT"),
+        ("exclusion_criteria", "TEXT"),
+        ("tab_preclinical", "INTEGER DEFAULT 0"),
+        ("tab_clinical", "INTEGER DEFAULT 0"),
+        ("tab_unclassified_preclinical", "INTEGER DEFAULT 0"),
+        ("tab_tangential", "INTEGER DEFAULT 0"),
+        ("tab_review", "INTEGER DEFAULT 0"),
+    )
+
+    _PAPERS_SEARCH_INDEXES: Tuple[str, ...] = (
+        "CREATE INDEX IF NOT EXISTS idx_papers_year ON papers(year);",
+        "CREATE INDEX IF NOT EXISTS idx_papers_citations ON papers(citation_count);",
+        "CREATE INDEX IF NOT EXISTS idx_papers_version ON papers(classifier_version);",
+        "CREATE INDEX IF NOT EXISTS idx_papers_pubtype ON papers(publication_type);",
+        "CREATE INDEX IF NOT EXISTS idx_papers_harvested ON papers(date_harvested);",
+        "CREATE INDEX IF NOT EXISTS idx_papers_thc ON papers(thc_pct);",
+        "CREATE INDEX IF NOT EXISTS idx_papers_tab_preclinical ON papers(tab_preclinical);",
+        "CREATE INDEX IF NOT EXISTS idx_papers_tab_clinical ON papers(tab_clinical);",
+        "CREATE INDEX IF NOT EXISTS idx_papers_tab_review ON papers(tab_review);",
+        "CREATE INDEX IF NOT EXISTS idx_papers_tab_unclassified ON papers(tab_unclassified_preclinical);",
+        "CREATE INDEX IF NOT EXISTS idx_papers_tab_tangential ON papers(tab_tangential);",
+    )
+
+    def _ensure_postgres_schema_patches(self) -> None:
+        """Apply idempotent column and index migrations on Postgres without full init_db."""
+        conn = self.get_connection()
+        try:
+            for col_name, col_type in self._PAPERS_PATCH_COLUMNS:
+                if self.column_exists("papers", col_name, conn):
+                    continue
+                pg_type = col_type
+                if pg_type.startswith("TEXT DEFAULT '[]'"):
+                    pg_type = "JSONB DEFAULT '[]'::jsonb"
+                elif pg_type == "REAL":
+                    pg_type = "DOUBLE PRECISION"
+                try:
+                    conn.execute(f"ALTER TABLE papers ADD COLUMN {col_name} {pg_type};")
+                    conn.commit()
+                except Exception as exc:
+                    logger.error("Failed to add papers.%s: %s", col_name, exc)
+
+            conn.execute("""
+                CREATE TABLE IF NOT EXISTS system_metadata (
+                    key TEXT PRIMARY KEY,
+                    value TEXT
+                );
+            """)
+            conn.commit()
+
+            users_sql = """
+                CREATE TABLE IF NOT EXISTS users (
+                    id SERIAL PRIMARY KEY,
+                    username TEXT UNIQUE NOT NULL,
+                    email TEXT UNIQUE NOT NULL,
+                    password_hash TEXT,
+                    google_id TEXT,
+                    is_verified INTEGER DEFAULT 0,
+                    verification_code TEXT,
+                    created_at TEXT DEFAULT NOW()
+                );
+            """
+            conn.execute(users_sql)
+            conn.commit()
+
+            if not self.column_exists("users", "dashboard_preferences", conn):
+                try:
+                    conn.execute(
+                        "ALTER TABLE users ADD COLUMN dashboard_preferences JSONB DEFAULT '{}'::jsonb;"
+                    )
+                    conn.commit()
+                except Exception as exc:
+                    logger.error("Failed to add users.dashboard_preferences: %s", exc)
+
+            for idx_stmt in self._PAPERS_SEARCH_INDEXES:
+                try:
+                    conn.execute(idx_stmt)
+                    conn.commit()
+                except Exception as exc:
+                    logger.debug("Index patch skipped: %s (%s)", idx_stmt, exc)
+        finally:
+            conn.close()
 
     def column_exists(self, table_name, column_name, conn):
         try:
@@ -820,7 +917,12 @@ class DatabaseManager:
                 ("population_age", "TEXT"),
                 ("population_sex", "TEXT"),
                 ("inclusion_criteria", "TEXT"),
-                ("exclusion_criteria", "TEXT")
+                ("exclusion_criteria", "TEXT"),
+                ("tab_preclinical", "INTEGER DEFAULT 0"),
+                ("tab_clinical", "INTEGER DEFAULT 0"),
+                ("tab_unclassified_preclinical", "INTEGER DEFAULT 0"),
+                ("tab_tangential", "INTEGER DEFAULT 0"),
+                ("tab_review", "INTEGER DEFAULT 0"),
             ]
             
             for col_name, col_type in columns_to_add:
@@ -865,6 +967,14 @@ class DatabaseManager:
                 users_sql = users_sql.replace("DEFAULT CURRENT_TIMESTAMP", "DEFAULT NOW()")
             conn.execute(users_sql)
             conn.commit()
+
+            if not self.column_exists("users", "dashboard_preferences", conn):
+                pref_type = "JSONB DEFAULT '{}'::jsonb" if self.is_postgres else "TEXT DEFAULT '{}'"
+                try:
+                    conn.execute(f"ALTER TABLE users ADD COLUMN dashboard_preferences {pref_type};")
+                    conn.commit()
+                except Exception as e:
+                    logger.error(f"Failed to add users.dashboard_preferences column: {e}")
 
             # Ensure analyses table exists
             self.init_analyses_table()
@@ -2347,7 +2457,22 @@ class DatabaseManager:
             conn.close()
 
     def get_tab_counts(self) -> Dict[str, int]:
-        """Return paper counts for each primary dashboard tab using query-time SQL."""
+        """Return paper counts for each primary dashboard tab using indexed tab SQL."""
+        cache_key = "dashboard_tab_counts_json"
+        cache_at_key = "dashboard_tab_counts_cached_at"
+        cache_ttl = int(os.getenv("TAB_COUNTS_CACHE_SECONDS", "120"))
+        try:
+            cached_raw = self.get_metadata(cache_key)
+            cached_at_raw = self.get_metadata(cache_at_key)
+            if cached_raw and cached_at_raw:
+                age = time.time() - float(cached_at_raw)
+                if age < cache_ttl:
+                    parsed = json.loads(cached_raw)
+                    if isinstance(parsed, dict):
+                        return {str(k): int(v) for k, v in parsed.items()}
+        except (TypeError, ValueError, json.JSONDecodeError):
+            pass
+
         counts: Dict[str, int] = {}
         conn = self.get_connection()
         cursor = conn.cursor()
@@ -2360,6 +2485,11 @@ class DatabaseManager:
                 cursor.execute(f"SELECT COUNT(*) as total FROM papers WHERE {tab_sql}")
                 row = cursor.fetchone()
                 counts[tab_key] = row["total"] if row else 0
+            try:
+                self.set_metadata(cache_key, json.dumps(counts))
+                self.set_metadata(cache_at_key, str(time.time()))
+            except Exception as exc:
+                logger.debug("Tab count cache write failed: %s", exc)
             return counts
         finally:
             conn.close()
@@ -2398,6 +2528,48 @@ class DatabaseManager:
             cursor.execute("SELECT * FROM users WHERE id = ?;", (user_id,))
             row = cursor.fetchone()
             return dict(row) if row else None
+        finally:
+            conn.close()
+
+    def get_user_dashboard_preferences(self, user_id: int) -> Dict[str, Any]:
+        """Return parsed dashboard UI preferences for a user, or an empty dict."""
+        conn = self.get_connection()
+        conn.row_factory = sqlite3.Row
+        try:
+            if not self.column_exists("users", "dashboard_preferences", conn):
+                return {}
+            cursor = conn.cursor()
+            cursor.execute("SELECT dashboard_preferences FROM users WHERE id = ?;", (user_id,))
+            row = cursor.fetchone()
+            if not row:
+                return {}
+            raw = row["dashboard_preferences"]
+            if raw in (None, ""):
+                return {}
+            if isinstance(raw, dict):
+                return raw
+            try:
+                parsed = json.loads(raw)
+            except (json.JSONDecodeError, TypeError):
+                return {}
+            return parsed if isinstance(parsed, dict) else {}
+        finally:
+            conn.close()
+
+    def set_user_dashboard_preferences(self, user_id: int, preferences: Dict[str, Any]) -> bool:
+        """Persist dashboard UI preferences JSON for a user."""
+        conn = self.get_connection()
+        try:
+            payload = json.dumps(preferences or {})
+            conn.execute(
+                "UPDATE users SET dashboard_preferences = ? WHERE id = ?;",
+                (payload, user_id),
+            )
+            conn.commit()
+            return True
+        except Exception as e:
+            logger.error(f"Failed to save dashboard preferences for user {user_id}: {e}")
+            return False
         finally:
             conn.close()
 
@@ -2571,12 +2743,16 @@ class DatabaseManager:
             conn.close()
 
     def _resolve_tab_sql(self, tab: Optional[str]) -> str:
-        """Return tab WHERE SQL, preferring indexed tab_* columns when available."""
+        """Return tab WHERE SQL, preferring indexed tab_* columns when available.
+
+        Never uses legacy tab SQL on the request hot path when tab_* columns exist —
+        legacy expressions scan the full table (~20s on production) and cause search timeouts.
+        """
         if not tab:
             return ""
         from paper_tab_flags import dashboard_tab_sql, legacy_tab_sql_for
 
-        if self._tab_flags_are_ready():
+        if self._tab_flag_columns_exist():
             indexed_sql = dashboard_tab_sql(tab)
             if indexed_sql:
                 return indexed_sql
@@ -2645,35 +2821,149 @@ class DatabaseManager:
             if own_conn:
                 conn.close()
 
-    def _tab_flags_are_ready(self) -> bool:
-        """Returns True when indexed tab columns exist and are populated."""
-        conn = self.get_connection()
+    def _tab_flag_columns_exist(self, conn=None) -> bool:
+        """Return True when indexed tab membership columns are present."""
+        if conn is None and DatabaseManager._tab_columns_exist_cache is not None:
+            return DatabaseManager._tab_columns_exist_cache
+
+        own_conn = conn is None
+        if own_conn:
+            conn = self.get_connection()
         try:
-            cursor = conn.cursor()
-            cursor.execute(
-                "SELECT tab_preclinical FROM papers LIMIT 1"
-            )
-            cursor.fetchone()
-            return True
-        except Exception:
+            exists = self.column_exists("papers", "tab_preclinical", conn)
+            if own_conn:
+                DatabaseManager._tab_columns_exist_cache = exists
+            return exists
+        finally:
+            if own_conn:
+                conn.close()
+
+    def _tab_flags_backfill_is_complete(self) -> bool:
+        """Return True when indexed tab counts match legacy routing SQL."""
+        from paper_tab_flags import dashboard_tab_sql, legacy_tab_sql_for
+
+        indexed_sql = dashboard_tab_sql("all_original")
+        legacy_sql = legacy_tab_sql_for("all_original")
+        if not indexed_sql or not legacy_sql:
+            return False
+
+        conn = self.get_connection()
+        cursor = conn.cursor()
+        try:
+            cursor.execute(f"SELECT COUNT(*) as total FROM papers WHERE {indexed_sql}")
+            row = cursor.fetchone()
+            indexed_count = row["total"] if hasattr(row, "keys") else row[0]
+
+            cursor.execute(f"SELECT COUNT(*) as total FROM papers WHERE {legacy_sql}")
+            row = cursor.fetchone()
+            legacy_count = row["total"] if hasattr(row, "keys") else row[0]
+
+            if legacy_count == 0:
+                return True
+            tolerance = max(5, int(legacy_count * 0.01))
+            return indexed_count >= (legacy_count - tolerance)
+        except Exception as exc:
+            logger.debug("Tab flag completeness check failed: %s", exc)
             return False
         finally:
             conn.close()
 
+    def _backfill_tab_flags_python(self, conn) -> None:
+        """Populate tab_* columns row-by-row using compute_tab_flags (Postgres-safe)."""
+        from paper_tab_flags import TAB_FLAG_FIELDS, compute_tab_flags
+
+        cursor = conn.cursor()
+        cursor.execute(
+            "SELECT id, publication_type, study_type, ingestion_status FROM papers"
+        )
+        rows = cursor.fetchall()
+        tab_columns = list(TAB_FLAG_FIELDS.values())
+        set_clause = ", ".join(f"{column} = ?" for column in tab_columns)
+        batch: List[List[Any]] = []
+
+        for row in rows:
+            if hasattr(row, "keys"):
+                paper_id = row["id"]
+                publication_type = row["publication_type"]
+                study_type = row["study_type"]
+                ingestion_status = row["ingestion_status"]
+            else:
+                paper_id, publication_type, study_type, ingestion_status = row
+
+            flags = compute_tab_flags(
+                publication_type=publication_type,
+                study_type=study_type,
+                ingestion_status=ingestion_status,
+            )
+            params = [int(flags.get(column, 0)) for column in tab_columns]
+            params.append(paper_id)
+            batch.append(params)
+            if len(batch) >= 500:
+                cursor.executemany(
+                    f"UPDATE papers SET {set_clause} WHERE id = ?",
+                    batch,
+                )
+                conn.commit()
+                batch = []
+
+        if batch:
+            cursor.executemany(
+                f"UPDATE papers SET {set_clause} WHERE id = ?",
+                batch,
+            )
+            conn.commit()
+
+    def _mark_tab_flags_ready(self, ready: bool) -> None:
+        """Persist and cache indexed tab-flag readiness for request hot paths."""
+        self.set_metadata(TAB_FLAGS_READY_METADATA_KEY, "true" if ready else "false")
+        DatabaseManager._tab_flags_ready_cache = ready
+
+    def _tab_flags_are_ready(self) -> bool:
+        """Returns True when indexed tab columns exist and backfill is marked complete."""
+        if DatabaseManager._tab_flags_ready_cache is not None:
+            return DatabaseManager._tab_flags_ready_cache
+
+        if not self._tab_flag_columns_exist():
+            DatabaseManager._tab_flags_ready_cache = False
+            return False
+
+        meta = self.get_metadata(TAB_FLAGS_READY_METADATA_KEY)
+        if meta == "true":
+            DatabaseManager._tab_flags_ready_cache = True
+            return True
+        if meta == "false":
+            DatabaseManager._tab_flags_ready_cache = False
+            return False
+
+        DatabaseManager._tab_flags_ready_cache = False
+        return False
+
     def _refresh_tab_flags_ready_cache(self) -> None:
-        """Placeholder for startup cache refresh (no-op when columns are absent)."""
-        return
+        """Clear cached tab-flag readiness so the next query re-evaluates metadata."""
+        DatabaseManager._tab_flags_ready_cache = None
 
     def _backfill_tab_flags(self, conn) -> None:
-        """Backfills tab_* columns using paper_tab_flags SQL when columns exist."""
+        """Backfills tab_* columns using SQL on SQLite or Python on Postgres."""
         from paper_tab_flags import BACKFILL_TAB_FLAGS_SQL
+
+        if not self._tab_flag_columns_exist(conn):
+            logger.warning("Tab flag columns unavailable; skipping backfill.")
+            return
+
+        if self.is_postgres:
+            self._backfill_tab_flags_python(conn)
+            ready = self._tab_flags_backfill_is_complete()
+            self._mark_tab_flags_ready(ready)
+            self._refresh_tab_flags_ready_cache()
+            return
 
         cursor = conn.cursor()
         try:
             cursor.execute(BACKFILL_TAB_FLAGS_SQL)
             conn.commit()
         except Exception as exc:
-            if "no such column" in str(exc).lower() or "does not exist" in str(exc).lower():
-                logger.warning("Tab flag columns unavailable; skipping backfill.")
-                return
-            raise
+            logger.warning("SQL tab flag backfill failed; falling back to Python: %s", exc)
+            self._backfill_tab_flags_python(conn)
+        ready = self._tab_flags_backfill_is_complete()
+        self._mark_tab_flags_ready(ready)
+        self._refresh_tab_flags_ready_cache()

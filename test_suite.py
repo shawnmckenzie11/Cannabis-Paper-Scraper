@@ -1789,6 +1789,73 @@ class TestAdminRequiredEndpoints(unittest.TestCase):
         self.assertEqual(res2.status_code, 404)
 
 
+class TestDashboardColumnPreferences(unittest.TestCase):
+    """Dashboard column editor preferences persist per user across sessions."""
+
+    def setUp(self):
+        from db_manager import DatabaseManager
+        self.db = DatabaseManager()
+        if self.db.is_postgres:
+            self.db.clear_all_tables()
+        self.db.init_db()
+
+        self.db.create_user(username="colprefs", email="colprefs@mckenzian.org", is_verified=1)
+        self.user = self.db.get_user_by_username_or_email("colprefs")
+        self.user_id = self.user["id"]
+
+        from app import app
+        app.config["TESTING"] = True
+        self.client = app.test_client()
+
+    def tearDown(self):
+        conn = self.db.get_connection()
+        try:
+            conn.execute("DELETE FROM users WHERE id = ?;", (self.user_id,))
+            conn.commit()
+        finally:
+            conn.close()
+
+    def test_get_requires_login(self):
+        response = self.client.get("/api/user/dashboard-preferences")
+        self.assertEqual(response.status_code, 401)
+
+    def test_save_and_load_visible_columns(self):
+        saved = {
+            "visible_columns": {
+                "duration": False,
+                "year": True,
+                "population_age": True,
+                "not_a_column": True,
+                "dose_mg": "yes",
+            }
+        }
+
+        with self.client.session_transaction() as sess:
+            sess["logged_in"] = True
+            sess["user_id"] = self.user_id
+
+        put_res = self.client.put(
+            "/api/user/dashboard-preferences",
+            json=saved,
+        )
+        self.assertEqual(put_res.status_code, 200)
+        body = json.loads(put_res.data.decode("utf-8"))
+        self.assertTrue(body["success"])
+        self.assertEqual(body["visible_columns"]["duration"], False)
+        self.assertEqual(body["visible_columns"]["population_age"], True)
+        self.assertNotIn("not_a_column", body["visible_columns"])
+        self.assertNotIn("dose_mg", body["visible_columns"])
+
+        get_res = self.client.get("/api/user/dashboard-preferences")
+        self.assertEqual(get_res.status_code, 200)
+        loaded = json.loads(get_res.data.decode("utf-8"))
+        self.assertEqual(loaded["visible_columns"]["duration"], False)
+        self.assertEqual(loaded["visible_columns"]["population_age"], True)
+
+        stored = self.db.get_user_dashboard_preferences(self.user_id)
+        self.assertEqual(stored["visible_columns"]["duration"], False)
+
+
 if __name__ == "__main__":
     unittest.main()
 

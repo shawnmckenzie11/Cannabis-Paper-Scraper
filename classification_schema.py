@@ -101,6 +101,16 @@ def _clean_text(value: Any) -> str:
 def _normalize_duration_range(value: str) -> str:
     """Normalizes duration ranges so unit placement variants compare equal."""
     cleaned = value.strip()
+    hyphen_range = re.match(
+        r'^([\d.]+)-([\d.]+)\s+(\w+)$',
+        cleaned,
+        re.I,
+    )
+    if hyphen_range:
+        return (
+            f"{hyphen_range.group(1)} to {hyphen_range.group(2)} "
+            f"{hyphen_range.group(3).lower()}"
+        )
     shared_unit = re.match(
         r'^([\d.]+)\s+(\w+)\s+to\s+([\d.]+)\s+(\w+)$',
         cleaned,
@@ -169,7 +179,23 @@ def infer_ingestion_status(title: str, abstract: str, publication_type: Optional
     if pub in {"not cannabis-related", "not_cannabis_related"}:
         return "not_cannabis_related"
     combined = f"{title} {abstract}".lower()
-    tangential_markers = ("hemp fiber", "agricultural yield", "textile", "legal", "policy")
+    research_legal_phrases = (
+        "legal restriction",
+        "legal restrictions",
+        "years of legal restriction",
+    )
+    if any(phrase in combined for phrase in research_legal_phrases):
+        combined = combined.replace("legal restriction", "").replace("legal restrictions", "")
+    tangential_markers = (
+        "hemp fiber",
+        "agricultural yield",
+        "textile",
+        "legal policy",
+        "legal status",
+        "legalization",
+        "policy discussion",
+        "regulatory framework",
+    )
     if any(marker in combined for marker in tangential_markers):
         return "tangential"
     return "relevant"
@@ -315,12 +341,26 @@ def _strain_labels_overlap(left: str, right: str) -> bool:
     return bool(left_hits and right_hits and left_hits.intersection(right_hits))
 
 
+def _frequency_values_equivalent(left: str, right: str) -> bool:
+    """True when two administration_frequency strings describe the same schedule."""
+    left_norm = _clean_text(left)
+    right_norm = _clean_text(right)
+    if left_norm == right_norm:
+        return True
+    daily_aliases = {"daily", "once daily", "once a day", "once per day", "1 daily"}
+    if left_norm in daily_aliases and right_norm in daily_aliases:
+        return True
+    return False
+
+
 def compare_field_values(left: Any, right: Any) -> bool:
     """Returns True when two high-level field values are equivalent after normalization."""
     if isinstance(left, str) and isinstance(right, str):
         if _strain_labels_overlap(left, right):
             return True
         if _duration_values_equivalent(left, right):
+            return True
+        if _frequency_values_equivalent(left, right):
             return True
     if isinstance(left, list) or isinstance(right, list):
         left_list = normalize_study_type_list(left)
@@ -338,6 +378,13 @@ def compare_field_values(left: Any, right: Any) -> bool:
         return False
     if left in (None, "", []) and right in (None, "", []):
         return True
+    if isinstance(left, (int, float)) and isinstance(right, (int, float)):
+        if left == right:
+            return True
+        if left and right:
+            ratio = abs(float(left) - float(right)) / max(abs(float(left)), abs(float(right)), 1.0)
+            if ratio <= 0.05:
+                return True
     return _clean_text(left) == _clean_text(right)
 
 

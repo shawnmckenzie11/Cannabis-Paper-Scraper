@@ -8,12 +8,16 @@ import unittest
 from db_manager import DatabaseManager
 from local_sync import (
     BASELINE_TABLE,
+    DIRTY_TABLE,
     collect_delta_papers,
-    ensure_baseline_schema,
+    ensure_sync_schema,
     intersect_table_columns,
+    mark_papers_dirty,
     merged_update_sql,
     paper_row_to_extracted,
+    push_update_sql,
     save_baseline_rows,
+    tracked_row_differs,
 )
 
 
@@ -34,7 +38,11 @@ class LocalSyncTests(unittest.TestCase):
 
         self.conn = sqlite3.connect(self.db_path)
         self.conn.row_factory = sqlite3.Row
-        ensure_baseline_schema(self.conn)
+        ensure_sync_schema(self.conn)
+        existing_cols = {
+            row[1]
+            for row in self.conn.execute("PRAGMA table_info(papers)").fetchall()
+        }
         for col_name in (
             "tab_preclinical",
             "tab_clinical",
@@ -42,7 +50,8 @@ class LocalSyncTests(unittest.TestCase):
             "tab_tangential",
             "tab_review",
         ):
-            self.conn.execute(f"ALTER TABLE papers ADD COLUMN {col_name} INTEGER DEFAULT 0")
+            if col_name not in existing_cols:
+                self.conn.execute(f"ALTER TABLE papers ADD COLUMN {col_name} INTEGER DEFAULT 0")
         self.conn.commit()
         self.conn.execute(
             """
@@ -113,6 +122,38 @@ class LocalSyncTests(unittest.TestCase):
         save_baseline_rows(self.conn, [paper], replace_all=True)
         self.assertEqual(collect_delta_papers(self.conn), [])
 
+    def test_collect_delta_papers_includes_dirty_without_baseline(self):
+        """Dirty papers without a baseline snapshot are still eligible for push."""
+        mark_papers_dirty(self.conn, [1])
+        deltas = collect_delta_papers(self.conn)
+        self.assertEqual(len(deltas), 1)
+        baseline, current = deltas[0]
+        self.assertIsNone(baseline.get("classifier_version"))
+        self.assertEqual(current["classifier_version"], "maude-2.0.0")
+
+    def test_tracked_row_differs_on_tab_flags(self):
+        """Tab flag changes are detected even when classifier fields are unchanged."""
+        paper = dict(
+            self.conn.execute("SELECT * FROM papers WHERE id = 1").fetchone()
+        )
+        save_baseline_rows(self.conn, [paper], replace_all=True)
+        self.conn.execute("UPDATE papers SET tab_clinical = 0 WHERE id = 1")
+        self.conn.commit()
+        current = dict(
+            self.conn.execute("SELECT * FROM papers WHERE id = 1").fetchone()
+        )
+        baseline = dict(paper)
+        self.assertTrue(tracked_row_differs(baseline, current))
+
+    def test_push_update_sql_uses_stored_tab_flags(self):
+        """Push SQL writes stored tab_* values from the local row."""
+        paper = dict(
+            self.conn.execute("SELECT * FROM papers WHERE id = 1").fetchone()
+        )
+        sql, params = push_update_sql(paper)
+        self.assertIn("tab_clinical = ?", sql)
+        self.assertIn(int(paper["tab_clinical"]), params[:-1])
+
     def test_merged_update_sql_uses_sqlite_placeholders(self):
         """Merged UPDATE SQL stays compatible with DatabaseManager placeholder rewriting."""
         paper = dict(
@@ -126,11 +167,15 @@ class LocalSyncTests(unittest.TestCase):
         self.assertEqual(params[-1], 1)
 
     def test_baseline_table_created(self):
-        """Baseline schema helper creates the sync table."""
+        """Baseline schema helper creates the sync tables."""
         row = self.conn.execute(
             f"SELECT name FROM sqlite_master WHERE name = '{BASELINE_TABLE}'"
         ).fetchone()
         self.assertIsNotNone(row)
+        dirty = self.conn.execute(
+            f"SELECT name FROM sqlite_master WHERE name = '{DIRTY_TABLE}'"
+        ).fetchone()
+        self.assertIsNotNone(dirty)
 
 
 if __name__ == "__main__":
