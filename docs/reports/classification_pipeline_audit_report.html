@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Classification Pipeline Audit Report — Cannabis Paper Scraper</title>
+  <style>
+    :root {
+      --text: #1a1a1a;
+      --muted: #555;
+      --border: #ccc;
+      --accent: #2c5282;
+      --bg-soft: #f7f8fa;
+    }
+    * { box-sizing: border-box; }
+    body {
+      font-family: "Georgia", "Times New Roman", serif;
+      font-size: 11pt;
+      line-height: 1.55;
+      color: var(--text);
+      max-width: 7.5in;
+      margin: 0 auto;
+      padding: 0.6in 0.75in;
+      background: #fff;
+    }
+    header {
+      border-bottom: 2px solid var(--text);
+      padding-bottom: 0.4rem;
+      margin-bottom: 1.2rem;
+    }
+    h1 {
+      font-family: "Helvetica Neue", Arial, sans-serif;
+      font-size: 18pt;
+      font-weight: 600;
+      margin: 0 0 0.25rem;
+      line-height: 1.25;
+    }
+    .meta {
+      font-family: "Helvetica Neue", Arial, sans-serif;
+      font-size: 9pt;
+      color: var(--muted);
+    }
+    h2 {
+      font-family: "Helvetica Neue", Arial, sans-serif;
+      font-size: 12pt;
+      font-weight: 600;
+      color: var(--accent);
+      margin: 1.1rem 0 0.45rem;
+      page-break-after: avoid;
+    }
+    p { margin: 0 0 0.55rem; text-align: justify; }
+    ul { margin: 0.3rem 0 0.6rem; padding-left: 1.2rem; }
+    li { margin-bottom: 0.25rem; }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-family: "Helvetica Neue", Arial, sans-serif;
+      font-size: 9pt;
+      margin: 0.5rem 0 0.75rem;
+      page-break-inside: avoid;
+    }
+    th, td {
+      border: 1px solid var(--border);
+      padding: 0.3rem 0.45rem;
+      text-align: left;
+      vertical-align: top;
+    }
+    th { background: var(--bg-soft); font-weight: 600; }
+    .diagram-wrap {
+      background: var(--bg-soft);
+      border: 1px solid var(--border);
+      padding: 0.75rem;
+      margin: 0.6rem 0 0.85rem;
+      page-break-inside: avoid;
+      overflow-x: auto;
+    }
+    .diagram-wrap pre {
+      font-family: "Helvetica Neue", Arial, sans-serif;
+      font-size: 8.5pt;
+      line-height: 1.4;
+      margin: 0;
+      white-space: pre-wrap;
+    }
+    .stat { font-weight: 600; }
+    footer {
+      margin-top: 1.5rem;
+      padding-top: 0.5rem;
+      border-top: 1px solid var(--border);
+      font-size: 8.5pt;
+      color: var(--muted);
+      font-family: "Helvetica Neue", Arial, sans-serif;
+    }
+    @media print {
+      body { padding: 0; max-width: none; }
+      h2 { break-after: avoid; }
+      .no-print { display: none; }
+    }
+  </style>
+  <script type="module">
+    import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs";
+    mermaid.initialize({ startOnLoad: true, theme: "neutral", securityLevel: "loose" });
+  </script>
+</head>
+<body>
+
+<header>
+  <h1>Classification Pipeline Audit Report</h1>
+  <p class="meta">
+    System: Cannabis Paper Scraper &nbsp;|&nbsp;
+    Production app: cannabis-paper-scraper (Fly.io) &nbsp;|&nbsp;
+    Report date: 28 June 2026 &nbsp;|&nbsp;
+    Maude build ID: <span class="stat">20260628-manual-edit-tracker-v2</span>
+  </p>
+</header>
+
+<h2>Executive Summary</h2>
+<p>
+  This audit examines the Cannabis Paper Scraper classification pipeline: a node-based literature system that harvests PubMed records, routes them through Maude (deterministic) and LLM-assisted classifiers, and improves accuracy through controlled RL cycles. The decision tree runs Node 0 (relevance gate), Node 1B/1A (secondary literature before original research), and Node 2A/2B/2C (clinical, in vivo, in vitro extraction).
+</p>
+<p>
+  As of 28 June 2026, eleven golden-endpoint cycles completed with guard validation passed. Batch alignment ranges from 90.0% to 100.0% (mean 92.2%) against a ≥90% guard threshold. Golden row 0 (<code>node2c.cell_culture_other_in_vitro.cannabinoids_dissolved_in_media</code>) reached 100% alignment after three guard iterations, with subnode reingest changing 3,162 of 3,778 papers and cohort routing improving by +78 within a 1,420-paper pool. Six node2b endpoints passed guard at 90.0–92.2% alignment. Quality gates, build traceability, and artifact logging are in place; 67 of 78 golden-table rows remain uncycled.
+</p>
+
+<h2>Architecture Overview</h2>
+<p>
+  The design specification defines five principles: Maude for cheap deterministic extraction; LLM and PDF tier for ambiguity; sub-threshold records to expert review; locked expert corrections; and same-holdout re-measurement after every deploy. Each record stores classification source, version/build ID, confidence, and timestamp. Production writes target Fly Postgres; the active build is <span class="stat">MAUDE_CLASSIFIER_BUILD_ID = "20260628-manual-edit-tracker-v2"</span> in <code>calibration_build.py</code>.
+</p>
+
+<div class="diagram-wrap">
+  <pre class="mermaid">
+flowchart TB
+  subgraph intake["Intake &amp; routing"]
+    H[harvest.py / PubMed] --> N0[Node 0 relevance gate]
+    N0 --> N1B[Node 1B secondary literature]
+    N1B --> N1A[Node 1A original research]
+    N1A --> N2A[Node 2A clinical]
+    N1A --> N2B[Node 2B in vivo]
+    N1A --> N2C[Node 2C in vitro]
+  end
+  subgraph classify["Classification"]
+    N2A --> M[Maude classifier]
+    N2B --> M
+    N2C --> M
+    M --> L[LLM / PDF tier]
+    L --> R[Review queue]
+  end
+  subgraph learn["Learning loops"]
+    R --> FA[feedback_audit]
+    FA --> UP[Upward propagation BM25]
+    FA --> MEC[Manual edit cycle]
+    MEC --> LA[Loop A calibration]
+    FA --> LB[Loop B golden endpoint RL]
+    LA --> BR[Blast radius + cohort validation]
+    LB --> BR
+    BR --> PG[(Postgres production)]
+  end
+  </pre>
+</div>
+
+<h2>Learning Loops</h2>
+<p><strong>Loop A (subnode calibration).</strong> PDF Maude A/B on Fly → feedback → patch (<code>extractor.py</code>, <code>maude_classifier.py</code>, <code>maude_cues.json</code>) → build bump → deploy → same-holdout refresh → subnode reingest and blast-radius via <code>run_loop_a_finish.sh</code>.</p>
+<p><strong>Loop B (golden endpoint RL).</strong> Per golden-table row (78 total, largest pool first): pull candidates → LLM-label 10 → promote top 5 → Claude patch feedback → golden guard (≥90%, max 10 iterations) → reingest → push deltas. Row <em>n</em> is blocked until prior rows show <code>guard_passed: true</code>.</p>
+<p><strong>Manual edit cycle.</strong> <code>manual_edit_cycle.py</code> harvests expert-drawer edits from <code>feedback_audit</code>, deduplicates by paper/field, and routes them into the Loop A feedback pipeline between scheduled batches. Current build ID reflects this track (<span class="stat">20260628-manual-edit-tracker-v2</span>).</p>
+
+<h2>Quality Assurance &amp; Metrics</h2>
+<ul>
+  <li><strong>Golden guard.</strong> Pass gate: average batch alignment ≥90% on promoted golden papers (<code>GOLDEN_MIN_ALIGNMENT_PCT</code>). Among eleven completed endpoints in <code>golden_endpoint_status.json</code>, all eleven report <code>guard_passed: true</code> (100% guard pass rate on completed cycles). Guard iterations ranged from 1 to 6 per endpoint.</li>
+  <li><strong>Blast radius.</strong> After reingest, <code>patch_blast_radius.py</code> quantifies how many papers and fields changed under a patch. For row 0 (node2c other in vitro / dissolved media): 3,778 papers scanned, 3,162 changed (83.7%), 7,142 total field-level changes across 21 of 28 tracked characteristics. Top affected fields included classifier_version (2,349), summary (857), and outcome_domain (825).</li>
+  <li><strong>Cohort validation.</strong> <code>similarity_cohort_validation.py</code> measures routing impact on papers similar to the endpoint cohort. Row 0 cohort pool: 1,420 papers; routing matches rose from 1,279 to 1,357 (+78); 996 cohort papers had routing changes; 1,295 subnode papers had routing changes.</li>
+  <li><strong>Feedback_audit upward propagation.</strong> At classification time, prior expert corrections are retrieved via BM25 search over <code>feedback_audit_fts</code> and injected as dynamic few-shot context—distinct from static cues in <code>rules_config.json</code>. Loop A finish and golden cycles preflight-sync Postgres <code>feedback_audit</code> into local SQLite before reingest so patches respect locked expert fields.</li>
+</ul>
+
+<h2>Evidence from Completed Runs</h2>
+<p><strong>Golden row 0 — node2c.cell_culture_other_in_vitro.cannabinoids_dissolved_in_media.</strong> Cycle ID <code>…20260628_161206</code>. Status: completed; guard passed after 3 iterations; batch alignment 100.0%; five papers promoted; 486 classification deltas pushed to production; Maude classifier version 2.7.0. Full subnode reingest processed 3,778 papers and wrote 3,162. Blast-radius and cohort reports are archived under <code>scratch/patch_reports/golden_b/node2c.cell_culture_other_in_vitro.cannabinoids_dissolved_in_media_20260628_161206/</code>.</p>
+
+<p><strong>Node2b endpoints (golden_endpoint_status.json).</strong> Six in vivo endpoints completed between 27–28 June 2026:</p>
+<table>
+  <thead>
+    <tr>
+      <th>Endpoint</th>
+      <th>Alignment</th>
+      <th>Guard iter.</th>
+      <th>Deltas pushed</th>
+      <th>Build ID</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>animal_models_mouse.injection_cannabinoids</td>
+      <td>92.2%</td>
+      <td>6</td>
+      <td>497</td>
+      <td>20260627-node2b-golden-guard-v2</td>
+    </tr>
+    <tr>
+      <td>animal_models_rat.injection_cannabinoids</td>
+      <td>92.2%</td>
+      <td>2</td>
+      <td>5,831</td>
+      <td>20260627-node2b-golden-guard-v2</td>
+    </tr>
+    <tr>
+      <td>animal_models_mouse.cannabinoids_dissolved_in_media</td>
+      <td>92.2%</td>
+      <td>2</td>
+      <td>486</td>
+      <td>20260627-node2b-golden-guard-v3</td>
+    </tr>
+    <tr>
+      <td>animal_models_other.cannabinoids_dissolved_in_media</td>
+      <td>90.0%</td>
+      <td>1</td>
+      <td>5,820</td>
+      <td>20260627-node2c-golden-guard-v1</td>
+    </tr>
+    <tr>
+      <td>animal_models_other.injection_cannabinoids</td>
+      <td>90.5%</td>
+      <td>5</td>
+      <td>5,820</td>
+      <td>20260627-node2b-golden-other-injection-v1</td>
+    </tr>
+    <tr>
+      <td>animal_models_rat.cannabinoids_dissolved_in_media</td>
+      <td>90.4%</td>
+      <td>3</td>
+      <td>5,823</td>
+      <td>20260627-node2b-golden-rat-media-v1</td>
+    </tr>
+  </tbody>
+</table>
+<p>
+  Other completed endpoints: node2a observational inhaled (92.1%), RCT inhaled (91.6%), RCT oral (91.1%), node2c cell lines media (92.4%). Elevated delta counts reflect subnode reingest scope, not holdout size alone.
+</p>
+
+<h2>Limitations &amp; Safeguards</h2>
+<p>
+  Limitations: small holdout batches (five promoted papers per cycle) limit power on rare fields; 67 of 78 golden rows remain uncycled; subnode reingest can change most papers in scope (row 0: 83.7%). Safeguards: Fly build-ID preflight, golden guard (≤10 iterations), row gating, expert field locking, zero-regression gate, full artifact logging, and per-record traceability. No credentials appear in this report.
+</p>
+
+<h2>Conclusion</h2>
+<p>
+  The pipeline provides auditable separation of routing, extraction, expert review, and rule refinement. Completed cycles show repeatable guard passage at ≥90% alignment; row 0 reached 100% with measurable cohort routing gain. Blast-radius and cohort validation expose production impact before push. Next priorities: sequential golden-table completion, Loop A calibration for out-of-scope field drift, and blast-radius review when change rates exceed tolerance.
+</p>
+
+<footer>
+  Prepared from repository artifacts: golden_endpoint_status.json (updated 2026-06-28T17:49:33Z),
+  blast_radius.json for node2c row 0 cycle 20260628_161206,
+  calibration_build.py, and architecture-design-document.md v1.0.
+  No confidential credentials included.
+</footer>
+
+</body>
+</html>
