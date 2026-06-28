@@ -1101,6 +1101,12 @@ def build_local_feedback_payload(
     if examples:
         pattern_lines.append("Examples: " + "; ".join(examples))
 
+    miss_reasons = batch_payload.get("miss_reasons") or []
+    if batch_payload.get("mode") == "manual_edit" and miss_reasons:
+        pattern_lines.insert(0, "Expert drawer corrections (ground truth) vs current Maude output.")
+        for line in miss_reasons[:10]:
+            pattern_lines.append(f"Miss: {line}")
+
     handoff = (
         f"Implement minimal patches for {target_subnode} holdout disagreements on: "
         f"{', '.join(top_fields[:5])}. "
@@ -1108,6 +1114,13 @@ def build_local_feedback_payload(
         "Then bump calibration_build.py, deploy, and refresh the same batch with "
         "calibration_agent.py --refresh-maude-from-batch."
     )
+    if batch_payload.get("mode") == "manual_edit":
+        handoff = (
+            f"Expert manual edits require Maude fixes on {target_subnode} for fields: "
+            f"{', '.join(top_fields[:6])}. "
+            + (f"Key misses: {'; '.join(miss_reasons[:4])}. " if miss_reasons else "")
+            + "Edit extractor.py / maude_classifier.py / maude_cues.json; bump calibration_build.py and deploy."
+        )
     return {
         "pattern_summary": " ".join(pattern_lines),
         "proposed_rules_changes": [],

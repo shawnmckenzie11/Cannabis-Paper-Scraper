@@ -13,6 +13,12 @@ if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
 import golden_dataset_paths
+from golden_endpoint_status import (
+    missing_rl_table_fields,
+    reconcile_all_endpoint_status,
+)
+from patch_blast_radius import local_report_file_url
+from scripts.golden_endpoint_cycle import sorted_endpoint_ids_from_golden
 
 INPUT = ROOT / "scratch/golden_dataset/tree_path_golden.json"
 OUTPUT = ROOT / "scratch/golden_dataset/tree_path_golden_table.html"
@@ -54,10 +60,10 @@ def _endpoint_characteristics_cells(endpoint: dict) -> str:
 def _rl_status_cell(endpoint_id: str, status_map: dict) -> str:
     """Formats RL cycle summary columns for one endpoint row."""
     st = status_map.get(endpoint_id) or {}
+    empty_cols = 12
     if not st:
-        return (
-            "<td>—</td><td>—</td><td>—</td><td>—</td><td>—</td>"
-        )
+        return "".join(f"<td class=\"rl-empty\">—</td>" for _ in range(empty_cols))
+
     guard_pct = st.get("batch_alignment_pct")
     guard_txt = f"{guard_pct}%" if guard_pct is not None else "—"
     if st.get("guard_passed"):
@@ -67,15 +73,41 @@ def _rl_status_cell(endpoint_id: str, status_map: dict) -> str:
     promoted_txt = str(promoted) if promoted is not None else "—"
     if promoted_ids:
         promoted_txt = f"{promoted_txt} ({', '.join(str(p) for p in promoted_ids[:5])})"
-    push_txt = st.get("push_summary") or "—"
+    scanned = st.get("papers_scanned")
+    changed = st.get("papers_changed")
+    pushed = st.get("papers_pushed")
+    if pushed is None:
+        pushed = st.get("delta_count")
+    cohort = st.get("cohort_validation") or {}
+    cohort_delta = st.get("cohort_routing_delta")
+    if cohort_delta is None and cohort:
+        cohort_delta = cohort.get("cohort_routing_delta")
+    blast_path = st.get("blast_radius_report_path") or ""
+    blast_txt = "—"
+    if blast_path:
+        blast_href = local_report_file_url(blast_path) if not blast_path.startswith("file://") else blast_path
+        blast_txt = f'<a href="{escape(blast_href)}" target="_blank" rel="noopener">report</a>'
     build_txt = escape(str(st.get("maude_build_id") or "—"))
     status_txt = escape(str(st.get("status") or "—"))
+    gaps = missing_rl_table_fields(st)
+    gaps_txt = escape(", ".join(gaps)) if gaps else "—"
+    gap_class = " class=\"rl-gap\"" if gaps else ""
+
+    def _cell(value: str, field_name: str) -> str:
+        css = " class=\"rl-empty\"" if value == "—" else ""
+        return f"<td{css} title=\"{escape(field_name)}\">{value}</td>"
+
     return (
-        f"<td>{status_txt}</td>"
-        f"<td>{escape(guard_txt)}</td>"
-        f"<td>{escape(promoted_txt)}</td>"
-        f"<td>{escape(str(push_txt))}</td>"
-        f"<td>{build_txt}</td>"
+        f"{_cell(status_txt, 'status')}"
+        f"{_cell(escape(guard_txt), 'guard align')}"
+        f"{_cell(escape(promoted_txt), 'promoted')}"
+        f"{_cell(str(scanned) if scanned is not None else '—', 'scanned')}"
+        f"{_cell(str(changed) if changed is not None else '—', 'changed')}"
+        f"{_cell(str(pushed) if pushed is not None else '—', 'pushed')}"
+        f"{_cell(str(cohort_delta) if cohort_delta is not None else '—', 'cohort delta')}"
+        f"<td title=\"blast-radius report\">{blast_txt}</td>"
+        f"{_cell(build_txt, 'maude build')}"
+        f"<td{gap_class} title=\"RL columns still empty\">{gaps_txt}</td>"
     )
 
 
@@ -83,6 +115,9 @@ def main() -> None:
     """Writes the HTML breakdown table."""
     with open(INPUT, encoding="utf-8") as handle:
         data = json.load(handle)
+
+    endpoint_ids = sorted_endpoint_ids_from_golden(data)
+    reconcile_all_endpoint_status(endpoint_ids)
 
     status_data: dict = {}
     if STATUS_PATH.is_file():
@@ -166,6 +201,8 @@ input.addEventListener('input', () => {
         "th { background: #f4f4f4; position: sticky; top: 0; }\n"
         "tr:nth-child(even) { background: #fafafa; }\n"
         "a { color: #0b5fff; }\n"
+        "td.rl-empty { background: #fff4f4; color: #8a1f1f; }\n"
+        "td.rl-gap { background: #fff8e6; color: #7a4d00; font-size: 0.78rem; }\n"
         "#filter { width: 100%; max-width: 480px; padding: 8px; margin-bottom: 12px; font-size: 0.9rem; }\n"
         ".wrap { overflow-x: auto; }\n"
         "</style>\n</head>\n<body>\n"
@@ -179,7 +216,9 @@ input.addEventListener('input', () => {
         "<th>Study type</th><th>Exposure method</th><th>Required gates</th><th>Scored fields</th>"
         "<th>Selected</th>"
         "<th>Pool (PDF class)</th><th>Pool (PDF kw)</th>"
-        "<th>RL status</th><th>Guard align</th><th>Promoted</th><th>Push</th><th>Maude build</th>"
+        "<th>RL status</th><th>Guard align</th><th>Promoted</th>"
+        "<th>Scanned</th><th>Changed</th><th>Pushed</th><th>Cohort Δ</th>"
+        "<th>Blast report</th><th>Maude build</th><th>RL gaps</th>"
         "</tr></thead>\n<tbody>"
         + "".join(summary_rows)
         + "</tbody></table></div>\n"

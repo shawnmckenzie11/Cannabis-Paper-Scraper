@@ -141,14 +141,27 @@ class TestMaudeClassifier(unittest.TestCase):
     def test_abstract_only_clears_downstream_fields(self):
         """Abstract-only classification should leave downstream extraction fields empty."""
         result = maude_classifier.classify_paper(
-            "Randomized trial of CBD for anxiety",
-            "Participants were randomized to CBD or placebo in a double-blind trial.",
+            "Cannabinoid receptor pharmacology in neural tissue",
+            "We characterized binding profiles in membrane preparations.",
         )
         self.assertEqual(result["exposure_method"], [])
         self.assertEqual(result["cannabis_type"], [])
         self.assertEqual(result["outcome_domain"], [])
         self.assertIsNone(result["species"])
         self.assertTrue(result["_maude_meta"].get("abstract_only_extraction"))
+
+    def test_abstract_only_allows_preclinical_downstream(self):
+        """Preclinical title cues should allow downstream extraction without full text."""
+        title = (
+            "Cannabidiol Enhances Atezolizumab Efficacy by Upregulating PD-L1 Expression "
+            "via the cGAS-STING Pathway in Triple-Negative Breast Cancer Cells"
+        )
+        result = maude_classifier.classify_paper(
+            title,
+            "CBD was applied to cultured breast cancer cells for 24 hours.",
+        )
+        self.assertFalse(result["_maude_meta"].get("abstract_only_extraction"))
+        self.assertTrue(result.get("study_type"))
 
     def test_compare_maude_llm_flags_disagreements(self):
         """Disagreement detector should flag publication_type mismatches."""

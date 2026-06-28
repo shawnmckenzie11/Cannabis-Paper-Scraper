@@ -340,6 +340,16 @@ def resolve_study_type_for_routing(
     study_type = extractor.infer_study_type_for_publication(title, abstract, publication_type)
     if publication_type == "review" and review_subtype and review_subtype not in study_type:
         return [review_subtype]
+    if not study_type and publication_type == "original research":
+        routing_blob = f"{title} {abstract} {methods_text}".lower()
+        hit_types = extractor._collect_study_type_hits(routing_blob)
+        if hit_types:
+            study_type = extractor._refine_study_type_list(
+                hit_types,
+                routing_blob,
+                title,
+                abstract,
+            )
     if study_type:
         routing_blob = f"{title} {abstract} {methods_text}".lower()
         for label in extractor._collect_study_type_hits(routing_blob):
@@ -438,6 +448,33 @@ def resolve_study_type_for_routing(
             return clinical
         return ["Clinical (observational)"]
     if "node2c_in_vitro" in branch_set and "node2a_clinical" not in branch_set:
+        if "node2b_in_vivo" in branch_set:
+            invivo_blob = f"{title} {abstract} {methods_text}"
+            if re.search(
+                r"(?i)\b(?:mice|mouse|murine|rats?\b|zebrafish|drosophila|canine|dogs?\b)\b",
+                invivo_blob,
+            ):
+                rat_hits = len(re.findall(
+                    r"(?i)\brats?\b|\bwistar\b|\bsprague[- ]dawley\b|\bsd rats?\b",
+                    invivo_blob,
+                ))
+                mouse_hits = len(re.findall(
+                    r"(?i)\bmice\b|\bmouse\b|\bmurine\b|\bc57bl\b",
+                    invivo_blob,
+                ))
+                if rat_hits > mouse_hits:
+                    return ["Animal Models (Rat)"]
+                if mouse_hits > rat_hits:
+                    return ["Animal Models (Mouse)"]
+                if re.search(r"(?i)\b(?:mice|mouse|murine)\b", invivo_blob):
+                    return ["Animal Models (Mouse)"]
+                if re.search(r"(?i)\b(?:rats?\b|wistar|sprague)\b", invivo_blob):
+                    return ["Animal Models (Rat)"]
+                if re.search(r"(?i)\b(?:zebrafish|drosophila)\b", invivo_blob):
+                    return ["Animal Models (Other)"]
+                if re.search(r"(?i)\b(?:canine|dogs?\b)\b", invivo_blob):
+                    return ["Animal Models (Other)"]
+                return ["Animal Models (Other)"]
         return ["Cell Culture (Other In Vitro)"]
     if "node2b_in_vivo" in branch_set and "node2a_clinical" not in branch_set:
         blob = f"{title} {abstract}".lower()
@@ -534,6 +571,16 @@ def _abstract_allows_downstream_extraction(title: str, abstract: str) -> bool:
         r"(?i)\b(?:cannabis use|marijuana use|used cannabis|cannabis users|participants|patients|volunteers)\b",
         blob,
     ):
+        return True
+    if extractor.keyword_match(blob.lower(), list(extractor.INVITRO_CONTEXT_CUES)):
+        return True
+    if extractor.keyword_match(blob.lower(), list(extractor.INVIVO_PRIMARY_CUES)):
+        return True
+    if re.search(r"(?i)\bin vitro\b", blob):
+        return True
+    if re.search(r"(?i)\b(?:in mice|in rats?|smoke exposure|breast cancer cells?)\b", blob):
+        return True
+    if re.search(r"(?i)\b(?:c57bl/?6|sprague.?dawley)\b", blob):
         return True
     return False
 
@@ -946,6 +993,9 @@ def classify_paper(
             result[field] = heuristics.get(field)
     if not extract_downstream:
         apply_abstract_only_extraction_policy(result)
+    if any(str(item).startswith("Animal Models (") for item in (study_type or [])):
+        if "injection cannabinoids" in (exposure_method or []):
+            result["ingestion_status"] = "relevant"
     return classification_schema.normalize_classification_record(result, title, abstract)
 
 

@@ -620,7 +620,24 @@ def extract_population_sex(text: str) -> str:
     if not text:
         return "both"
     text_lower = text.lower()[:8000]
-    
+
+    if re.search(
+        r"(?i)\b(?:male or female|female or male|men or women|women or men|"
+        r"both sexes|mixed-sex|mixed sex)\b(?:\s+(?:subjects|participants|volunteers|patients))?\b",
+        text_lower,
+    ):
+        return "both"
+
+    if re.search(r"\b(?:only )?(?:women|females)\s+with\b", text_lower):
+        if not re.search(r"\b(?:men|male|males)\s+with\b", text_lower):
+            return "female"
+    if re.search(r"\b(?:only )?women\b(?![^.]{0,40}\b(?:and men|and male)\b)", text_lower):
+        if re.search(r"\b(?:female participants only|only female|all female|all-female)\b", text_lower):
+            return "female"
+    women_with = re.search(r"\b(\d+)\s+women\s+with\b", text_lower)
+    if women_with and not re.search(r"\b(?:\d+\s+)?men\s+with\b", text_lower):
+        return "female"
+
     # 1. Check explicit "both" indicators
     for pattern in patterns.both_indicators:
         if pattern.search(text_lower):

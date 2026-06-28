@@ -5,7 +5,7 @@ from __future__ import annotations
 import json
 from functools import lru_cache
 from pathlib import Path
-from typing import Any, Dict, Optional
+from typing import Any, Dict, Optional, Tuple
 
 import classification_schema
 import handoff_learning_log
@@ -107,3 +107,37 @@ def apply_maude_confidence(extracted: Dict[str, Any]) -> Dict[str, Any]:
     """Overwrites classification_confidence on a Maude result using node alignment."""
     extracted["classification_confidence"] = confidence_for_classification(extracted)
     return extracted
+
+
+def bump_alignment_for_subnode(
+    subnode: str,
+    delta_pct: float,
+    *,
+    cap: float = 100.0,
+    output_dir: Optional[Path] = None,
+) -> Tuple[float, float]:
+    """Raises the latest RL alignment % for a sub-node by delta_pct, capped at cap.
+
+    Returns (previous_pct, new_pct). Persists a lightweight handoff log entry so
+    ``confidence_for_classification`` picks up the new alignment on next classify.
+    """
+    rl_subnode = ROUTING_TO_RL_SUBNODE.get(subnode, subnode)
+    alignments = dict(cached_alignment_pcts())
+    previous = float(alignments.get(rl_subnode, DEFAULT_ALIGNMENT_PCT.get(rl_subnode, 70.0)))
+    new_value = round(min(float(cap), previous + float(delta_pct)), 1)
+
+    entry = {
+        "entry_type": "manual_edit_alignment",
+        "source_subnode": rl_subnode,
+        "beneficiary_nodes": [rl_subnode],
+        "post_patch_alignment_pct": new_value,
+        "summary_title": f"Manual edit alignment bump ({rl_subnode})",
+        "learning_notes": [
+            f"Expert drawer corrections increased {rl_subnode} alignment from {previous}% to {new_value}%.",
+            f"Applied +{delta_pct}% confidence delta from manual edit cycle (cap {cap}%).",
+            "Alignment feeds maude_confidence.apply_maude_confidence on subsequent classifications.",
+        ],
+    }
+    handoff_learning_log.append_handoff_entry(entry, output_dir=output_dir)
+    cached_alignment_pcts.cache_clear()
+    return previous, new_value

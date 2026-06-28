@@ -16,6 +16,7 @@ When the user asks to run a batch, patch, handoff, or RL cycle on a sub-node, ex
 5. **Deploy** — `fly deploy --remote-only -a cannabis-paper-scraper`
 6. **Re-measure** — same holdout: `python3 calibration_agent.py --refresh-maude-from-batch scratch/calibration_runs/{batch}.json`
 7. **Log** — append `scratch/calibration_runs/handoff_learning_log.json`
+8. **Finish** — subnode reingest + blast-radius report: `SUBNODE=node2b ./scripts/run_loop_a_finish.sh` (optional `ENDPOINT_ID=` for cohort validation; set `PUSH=1` to push deltas)
 
 **Not a completed cycle:** verification-only refresh, feedback without code, or a new paper sample without user request.
 
@@ -38,6 +39,7 @@ Same holdout batch; focus on named diverging fields only (e.g. `treatment_durati
 ## Production policy
 
 - Fly app: `cannabis-paper-scraper`; preflight: `fly_db_check.py`
+- **Preflight (all Loop A/B/manual runs):** when `DATABASE_URL` is set, run `feedback_audit_sync.sync_feedback_audit_from_postgres()` to copy production `feedback_audit` corrections into local SQLite and pull affected papers (wired in `run_golden_endpoint_with_fly_proxy.sh`, `golden_endpoint_automate_row.py`, `run_loop_a_finish.sh`, `manual_edit_cycle.py`).
 - Do not commit/push unless the user asks
 - Dashboard: https://cannabis-paper-scraper.fly.dev/calibration/dashboard
 

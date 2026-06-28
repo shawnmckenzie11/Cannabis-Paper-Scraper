@@ -1543,7 +1543,7 @@
 
         .analysis-three-col {
             display: grid;
-            grid-template-columns: 1fr 2.5fr 2.5fr;
+            grid-template-columns: 1.28fr 2.5fr 2fr;
             grid-template-rows: auto 1fr;
             gap: 12px;
             flex: 1;
@@ -1623,10 +1623,45 @@
             white-space: nowrap;
         }
 
-        .analysis-row-actions .btn-sm-icon[title="Rename"] {
+        .analysis-row-actions .btn-sm-icon[title="Rename"],
+        .analyses-table-wrap .btn-sm-icon.btn-edit-analysis {
             border-color: rgba(0, 240, 255, 0.25);
             background: rgba(0, 240, 255, 0.08);
             color: var(--accent-blue);
+        }
+
+        .analyses-table-wrap .btn-sm-icon.btn-edit-analysis:hover {
+            background: rgba(0, 240, 255, 0.2);
+        }
+
+        .analyses-table-wrap.analyses-table-compact .analysis-edit-cell {
+            width: 30px;
+            min-width: 30px;
+            padding: 6px 4px;
+            text-align: center;
+        }
+
+        .analyses-table-wrap.analyses-table-compact .analysis-name-cell {
+            min-width: 0;
+            width: 62%;
+        }
+
+        .analyses-table-wrap.analyses-table-compact .analysis-count-cell {
+            width: 44px;
+            min-width: 44px;
+            max-width: 44px;
+            padding-left: 4px;
+            padding-right: 4px;
+            text-align: center;
+            font-weight: 700;
+            white-space: nowrap;
+        }
+
+        .analyses-table-wrap.analyses-table-compact .analysis-delete-cell {
+            width: 42px;
+            min-width: 42px;
+            padding: 6px 6px;
+            text-align: center;
         }
 
         .analysis-row-actions .btn-sm-icon {
@@ -1671,12 +1706,12 @@
             font-size: 0.85rem;
             border-radius: 999px;
             font-family: var(--font-display);
-            background: linear-gradient(135deg, rgba(0, 240, 255, 0.25) 0%, rgba(0, 240, 255, 0.08) 100%);
-            border: 1px solid rgba(0, 240, 255, 0.35);
-            color: var(--accent-blue);
+            background: linear-gradient(135deg, #374151 0%, #1f2937 100%);
+            border: 1px solid rgba(255, 255, 255, 0.18);
+            color: rgba(255, 255, 255, 0.55);
             cursor: not-allowed;
-            opacity: 0.45;
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.35);
+            opacity: 1;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.45);
             display: none;
             align-items: center;
             gap: 6px;
@@ -1689,7 +1724,14 @@
 
         .analysis-export-fab:not([disabled]) {
             cursor: pointer;
-            opacity: 1;
+            background: linear-gradient(135deg, #0891b2 0%, #0e7490 100%);
+            border-color: rgba(0, 240, 255, 0.55);
+            color: #ecfeff;
+            box-shadow: 0 4px 20px rgba(0, 180, 200, 0.35);
+        }
+
+        .analysis-export-fab:not([disabled]):hover {
+            background: linear-gradient(135deg, #06b6d4 0%, #0891b2 100%);
         }
 
         .analysis-chart-card-header {
@@ -1709,6 +1751,31 @@
             color: var(--accent-blue);
             font-family: var(--font-sans);
             cursor: pointer;
+        }
+
+        .analysis-chart-header-controls {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex-wrap: wrap;
+            justify-content: flex-end;
+        }
+
+        .analysis-chart-nr-toggle {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            font-size: 0.68rem;
+            color: var(--text-secondary);
+            white-space: nowrap;
+            cursor: pointer;
+            user-select: none;
+        }
+
+        .analysis-chart-nr-toggle input {
+            margin: 0;
+            cursor: pointer;
+            accent-color: var(--accent-blue);
         }
 
         .analysis-timeline-section {
@@ -1818,46 +1885,115 @@
         }
 
         .quant-stats-row {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 8px;
-            overflow: visible;
+            display: block;
+            width: 100%;
+            min-width: 0;
             padding-bottom: 2px;
-            align-content: flex-start;
         }
 
-        .quant-stat-chip {
-            flex: 1 1 calc(20% - 8px);
-            min-width: 108px;
-            max-width: 100%;
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
-            background: rgba(255,255,255,0.02);
-            border: 1px solid rgba(255,255,255,0.06);
-            border-radius: 8px;
-            padding: 5px 10px;
-            white-space: nowrap;
-            font-size: 0.74rem;
+        .quant-stats-table-wrap {
+            overflow-x: auto;
+            width: 100%;
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            border-radius: 10px;
+            background: rgba(0, 0, 0, 0.15);
+            -webkit-overflow-scrolling: touch;
         }
 
-        .quant-stat-chip .quant-label {
-            color: var(--text-secondary);
-            font-weight: 600;
-            text-transform: uppercase;
-            letter-spacing: 0.4px;
-            font-size: 0.68rem;
-        }
-
-        .quant-stat-chip .quant-value {
-            font-family: var(--font-display);
-            font-weight: 800;
-            color: var(--accent-blue);
-        }
-
-        .quant-stat-chip .quant-n {
-            color: var(--text-secondary);
+        .quant-stats-table {
+            width: max-content;
+            min-width: 100%;
+            border-collapse: collapse;
             font-size: 0.72rem;
+        }
+
+        .quant-stats-table thead th {
+            text-align: center;
+            padding: 3px 10px;
+            line-height: 1.15;
+            font-family: var(--font-display);
+            font-weight: 600;
+            color: var(--text-secondary);
+            font-size: 0.68rem;
+            text-transform: uppercase;
+            letter-spacing: 0.35px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+            background: rgba(0, 0, 0, 0.25);
+            white-space: nowrap;
+        }
+
+        .quant-stats-table tbody th,
+        .quant-stats-table tbody td {
+            padding: 2px 10px;
+            line-height: 1.15;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+            text-align: center;
+            white-space: nowrap;
+        }
+
+        .quant-stats-table tbody th {
+            text-align: left;
+            font-weight: 700;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
+            font-size: 0.66rem;
+            position: sticky;
+            left: 0;
+            background: rgba(12, 16, 27, 0.98);
+            z-index: 1;
+            min-width: 56px;
+        }
+
+        .quant-stats-table tbody td {
+            color: var(--text-primary);
+            font-family: var(--font-sans);
+        }
+
+        .quant-stats-table tbody tr:last-child th,
+        .quant-stats-table tbody tr:last-child td {
+            border-bottom: none;
+        }
+
+        .quant-stats-table .quant-stats-na {
+            color: var(--text-secondary);
+            opacity: 0.55;
+        }
+
+        .analysis-chart-jump-bar {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 8px 12px;
+            background: #0c101b;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            position: sticky;
+            top: 0;
+            z-index: 5;
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.55);
+        }
+
+        .analysis-chart-jump-bar label {
+            font-size: 0.72rem;
+            font-weight: 600;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.35px;
+            white-space: nowrap;
+        }
+
+        .analysis-chart-jump-select {
+            flex: 1;
+            min-width: 0;
+            font-size: 0.78rem;
+            padding: 6px 10px;
+            border-radius: 8px;
+            background: rgba(0, 240, 255, 0.06);
+            border: 1px solid rgba(0, 240, 255, 0.2);
+            color: var(--accent-blue);
+            font-family: var(--font-sans);
+            cursor: pointer;
         }
 
         .analysis-charts-layout {
@@ -2624,13 +2760,14 @@
                             <table>
                                 <thead>
                                     <tr>
+                                        <th style="width: 30px;"></th>
                                         <th>Name</th>
-                                        <th style="width: 28px; text-align: center;">#</th>
-                                        <th style="width: 52px;"></th>
+                                        <th style="width: 44px; text-align: center;">#</th>
+                                        <th style="width: 42px;"></th>
                                     </tr>
                                 </thead>
                                 <tbody id="analyses-tbody">
-                                    <tr><td colspan="3" style="text-align: center; color: var(--text-secondary); padding: 20px; font-size: 0.75rem;">No analyses yet</td></tr>
+                                    <tr><td colspan="4" style="text-align: center; color: var(--text-secondary); padding: 20px; font-size: 0.75rem;">No analyses yet</td></tr>
                                 </tbody>
                             </table>
                         </div>
@@ -2641,6 +2778,12 @@
                     <div class="analysis-col analysis-col-charts" id="analysis-charts-column">
                         <div id="analysis-charts-placeholder" class="analysis-col-placeholder">Select a saved analysis to view charts</div>
                         <div id="analysis-charts-content" style="display: none; flex-direction: column; gap: 10px;">
+                            <div class="analysis-chart-jump-bar">
+                                <label for="select-analysis-chart-jump">Jump to chart</label>
+                                <select id="select-analysis-chart-jump" class="analysis-chart-jump-select" onchange="jumpToAnalysisChart(this.value)">
+                                    <option value="">Select a chart…</option>
+                                </select>
+                            </div>
                             <div class="analysis-chart-card" id="container-chart-study-design" data-chart-id="study-design" onclick="selectAnalysisChart('study-design')">
                                 <h4>Study Design Distribution</h4>
                                 <div class="chart-canvas-wrap"><canvas id="chart-study-design"></canvas></div>
@@ -2648,11 +2791,17 @@
                             <div class="analysis-chart-card" id="container-chart-cannabinoid-distribution" data-chart-id="cannabinoid-distribution" onclick="selectAnalysisChart('cannabinoid-distribution')">
                                 <div class="analysis-chart-card-header">
                                     <h4>Cannabinoid Distribution</h4>
-                                    <select id="select-cannabinoid-view" class="analysis-chart-select" onclick="event.stopPropagation();" onchange="onCannabinoidViewChange()">
-                                        <option value="absolute">Absolute (%)</option>
-                                        <option value="concentration">Concentration (mg/mL)</option>
-                                        <option value="weight">Weight (mg/g or mg/kg)</option>
-                                    </select>
+                                    <div class="analysis-chart-header-controls">
+                                        <select id="select-cannabinoid-view" class="analysis-chart-select" onclick="event.stopPropagation();" onchange="onCannabinoidViewChange()">
+                                            <option value="absolute">Absolute (%)</option>
+                                            <option value="concentration">Concentration (mg/mL)</option>
+                                            <option value="weight">Weight (mg/g or mg/kg)</option>
+                                        </select>
+                                        <label class="analysis-chart-nr-toggle" onclick="event.stopPropagation();">
+                                            <input type="checkbox" id="cb-cannabinoid-include-nr" onchange="onCannabinoidIncludeNRChange()">
+                                            Include not reported
+                                        </label>
+                                    </div>
                                 </div>
                                 <div class="chart-canvas-wrap"><canvas id="chart-cannabinoid-distribution"></canvas></div>
                             </div>
@@ -2679,6 +2828,62 @@
                             <div class="analysis-chart-card" id="container-chart-outcome" data-chart-id="outcome" onclick="selectAnalysisChart('outcome')">
                                 <h4>Outcome Domain Prevalence</h4>
                                 <div class="chart-canvas-wrap"><canvas id="chart-outcome-bar"></canvas></div>
+                            </div>
+                            <div class="analysis-chart-card" id="container-chart-duration" data-chart-id="duration" onclick="selectAnalysisChart('duration')">
+                                <div class="analysis-chart-card-header">
+                                    <h4>Duration Distribution</h4>
+                                    <div class="analysis-chart-header-controls">
+                                        <select id="select-duration-mode" class="analysis-chart-select" onclick="event.stopPropagation();" onchange="onDurationModeChange()">
+                                            <option value="study">Study Duration</option>
+                                            <option value="treatment">Treatment Duration</option>
+                                        </select>
+                                        <label class="analysis-chart-nr-toggle" onclick="event.stopPropagation();">
+                                            <input type="checkbox" id="cb-duration-include-nr" onchange="onDurationIncludeNRChange()">
+                                            Include not reported
+                                        </label>
+                                    </div>
+                                </div>
+                                <div class="chart-canvas-wrap"><canvas id="chart-duration"></canvas></div>
+                            </div>
+                            <div class="analysis-chart-card" id="container-chart-puff-count" data-chart-id="puff-count" onclick="selectAnalysisChart('puff-count')">
+                                <div class="analysis-chart-card-header">
+                                    <h4>Puff Count Distribution</h4>
+                                    <label class="analysis-chart-nr-toggle" onclick="event.stopPropagation();">
+                                        <input type="checkbox" id="cb-puff-count-include-nr" onchange="onPuffCountIncludeNRChange()">
+                                        Include not reported
+                                    </label>
+                                </div>
+                                <div class="chart-canvas-wrap"><canvas id="chart-puff-count"></canvas></div>
+                            </div>
+                            <div class="analysis-chart-card" id="container-chart-admin-frequency" data-chart-id="admin-frequency" onclick="selectAnalysisChart('admin-frequency')">
+                                <div class="analysis-chart-card-header">
+                                    <h4>Administration Frequency</h4>
+                                    <label class="analysis-chart-nr-toggle" onclick="event.stopPropagation();">
+                                        <input type="checkbox" id="cb-admin-frequency-include-nr" onchange="onAdminFrequencyIncludeNRChange()">
+                                        Include not reported
+                                    </label>
+                                </div>
+                                <div class="chart-canvas-wrap"><canvas id="chart-admin-frequency"></canvas></div>
+                            </div>
+                            <div class="analysis-chart-card" id="container-chart-population-sex" data-chart-id="population-sex" onclick="selectAnalysisChart('population-sex')">
+                                <div class="analysis-chart-card-header">
+                                    <h4>Population Sex</h4>
+                                    <label class="analysis-chart-nr-toggle" onclick="event.stopPropagation();">
+                                        <input type="checkbox" id="cb-population-sex-include-nr" onchange="onPopulationSexIncludeNRChange()">
+                                        Include not reported
+                                    </label>
+                                </div>
+                                <div class="chart-canvas-wrap"><canvas id="chart-population-sex"></canvas></div>
+                            </div>
+                            <div class="analysis-chart-card" id="container-chart-population-age" data-chart-id="population-age" onclick="selectAnalysisChart('population-age')">
+                                <div class="analysis-chart-card-header">
+                                    <h4>Population Age</h4>
+                                    <label class="analysis-chart-nr-toggle" onclick="event.stopPropagation();">
+                                        <input type="checkbox" id="cb-population-age-include-nr" onchange="onPopulationAgeIncludeNRChange()">
+                                        Include not reported
+                                    </label>
+                                </div>
+                                <div class="chart-canvas-wrap"><canvas id="chart-population-age"></canvas></div>
                             </div>
                             <div class="analysis-chart-card analysis-timeline-section" id="container-chart-timeline" data-chart-id="timeline" onclick="selectAnalysisChart('timeline')">
                                 <div class="analysis-chart-card-header">
@@ -4124,6 +4329,7 @@
         let selectedAnalysisChartId = null;
         let cannabinoidViewMode = 'absolute';
         let exposureChartMode = 'clinical';
+        let durationChartMode = 'study';
         let currentChartDataRef = null;
         let currentExposureData = { clinical: {}, vitro: {}, vivo: {} };
 
@@ -4136,7 +4342,7 @@
             ["sample_size", "Sample Size"],
             ["dose_mg", "Dose (mg)"],
             ["puff_count", "Puff Count"],
-            ["duration_days", "Duration (days)"],
+            ["duration_days", "Study Duration (days)"],
             ["thc_mg_kg", "THC (mg/kg)"],
             ["cbd_mg_kg", "CBD (mg/kg)"],
             ["thc_mg_ml", "THC (mg/mL)"],
@@ -4148,6 +4354,47 @@
             ["repeat_exposure_count", "Repeat Exposures"],
             ["citation_count", "Citations"],
         ];
+        const ANALYSIS_STATS_COLUMNS = [
+            { key: "thc_pct", label: "THC %", kind: "numeric", suffix: "%" },
+            { key: "cbd_pct", label: "CBD %", kind: "numeric", suffix: "%" },
+            { key: "sample_size", label: "Sample Size", kind: "numeric" },
+            { key: "dose_mg", label: "Dose (mg)", kind: "numeric" },
+            { key: "puff_count", label: "Puff Count", kind: "numeric" },
+            { key: "duration_days", label: "Study Duration (d)", kind: "numeric" },
+            { key: "treatment_duration_hours", label: "Treatment Duration (hr)", kind: "numeric", sourceKey: "treatment_duration", extract: "treatment_hours" },
+            { key: "administration_frequency", label: "Admin Freq", kind: "categorical" },
+            { key: "population_sex", label: "Sex", kind: "categorical" },
+            { key: "population_age", label: "Age", kind: "categorical" },
+            { key: "thc_mg_kg", label: "THC (mg/kg)", kind: "numeric" },
+            { key: "cbd_mg_kg", label: "CBD (mg/kg)", kind: "numeric" },
+            { key: "thc_mg_ml", label: "THC (mg/mL)", kind: "numeric" },
+            { key: "cbd_mg_ml", label: "CBD (mg/mL)", kind: "numeric" },
+            { key: "thc_mg_g", label: "THC (mg/g)", kind: "numeric" },
+            { key: "cbd_mg_g", label: "CBD (mg/g)", kind: "numeric" },
+            { key: "thc_uM", label: "THC (µM)", kind: "numeric" },
+            { key: "cbd_uM", label: "CBD (µM)", kind: "numeric" },
+            { key: "repeat_exposure_count", label: "Repeat Exposures", kind: "numeric" },
+            { key: "citation_count", label: "Citations", kind: "numeric" },
+        ];
+        const ANALYSIS_CHART_JUMP_OPTIONS = [
+            { id: "study-design", label: "Study Design" },
+            { id: "cannabinoid-distribution", label: "Cannabinoid Distribution" },
+            { id: "exposure", label: "Exposure Breakdown" },
+            { id: "cannabis-type", label: "Cannabis Type" },
+            { id: "outcome", label: "Outcome Domain" },
+            { id: "duration", label: "Duration" },
+            { id: "puff-count", label: "Puff Count" },
+            { id: "admin-frequency", label: "Admin Frequency" },
+            { id: "population-sex", label: "Population Sex" },
+            { id: "population-age", label: "Population Age" },
+            { id: "timeline", label: "Publication Timeline" },
+        ];
+        const STUDY_DURATION_BIN_KEYS = ["notReported", "upTo7", "upTo30", "upTo90", "upTo365", "over365"];
+        const STUDY_DURATION_BIN_LABELS = ["Not Reported", "1–7 d", "8–30 d", "31–90 d", "91–365 d", "> 365 d"];
+        const TREATMENT_DURATION_BIN_KEYS = ["notReported", "under1h", "h1to24", "d1to7", "w1to4", "over4w"];
+        const TREATMENT_DURATION_BIN_LABELS = ["Not Reported", "< 1 hr", "1–24 hr", "1–7 d", "1–4 wk", "> 4 wk"];
+        const PUFF_COUNT_BIN_KEYS = ["notReported", "zero", "low", "med", "high", "veryHigh"];
+        const PUFF_COUNT_BIN_LABELS = ["Not Reported", "0", "1–5", "6–10", "11–20", "> 20"];
         const THC_BIN_KEYS = ["zero", "low", "medLow", "med", "medHigh", "high", "veryHigh", "ultraHigh", "notReported"];
         const OUTCOME_LABELS = {
             pain: "Pain", anxiety: "Anxiety", cognition: "Cognition", inflammation: "Inflammation",
@@ -4161,6 +4408,12 @@
         let chartOutcomeBar = null;
         let chartTimeline = null;
         let chartCannabinoidDistribution = null;
+        let chartDuration = null;
+        let chartPuffCount = null;
+        let chartAdminFrequency = null;
+        let chartPopulationSex = null;
+        let chartPopulationAge = null;
+        const NOT_REPORTED_CATEGORICAL_LABEL = "Not Reported";
         let chartCostTokens = null;
         let chartConfidenceTrend = null;
         let chartLockedFields = null;
@@ -4661,7 +4914,7 @@
         function updateMetaLabel(elementId, labelText, isLocked) {
             const labelEl = document.getElementById(elementId);
             if (labelEl) {
-                labelEl.innerHTML = labelText + (isLocked ? ' <span title="Locked by Expert Override" style="color: var(--accent-amber); cursor: help; font-size: 0.85rem;">🔒</span>' : '');
+                labelEl.innerText = labelText;
             }
         }
 
@@ -4685,7 +4938,6 @@
             if (!container) return;
 
             container.innerHTML = "";
-            const locked = paper.expert_locked_fields || [];
             const orderedKeys = [
                 "thc_pct", "cbd_pct", "dose_mg", "puff_count",
                 "thc_mg_ml", "cbd_mg_ml",
@@ -4704,7 +4956,6 @@
                             <span class="meta-value" id="drawer-${f}">${def.format(val)}</span>
                         </div>
                     `;
-                    updateMetaLabel(`label-${f}`, def.label, locked.includes(f));
                 }
             });
             container.style.display = container.innerHTML ? "grid" : "none";
@@ -4727,120 +4978,50 @@
             if (item) item.style.display = visible ? "" : "none";
         }
 
-        function updateEditFormCannabinoidFields() {
-            const checkboxes = document.querySelectorAll('input[name="edit_cannabis_type"]:checked');
-            const selectedTypes = Array.from(checkboxes).map(cb => cb.value.toLowerCase().trim());
-            
-            const fieldsToShow = new Set();
-            
-            const typeToFields = {
-                "dried flower": ["thc_pct", "cbd_pct", "puff_count"],
-                "concentrates": ["thc_pct", "thc_mg_ml", "thc_mg_kg", "cbd_pct", "cbd_mg_ml", "cbd_mg_kg"],
-                "vape pen": ["thc_pct", "cbd_pct", "puff_count"],
-                "pure cannabinoid": ["thc_mg_ml", "thc_mg_kg", "cbd_mg_ml", "cbd_mg_kg"],
-                "edibles": ["thc_mg_ml", "thc_mg_g", "thc_mg_kg", "cbd_mg_ml", "cbd_mg_g", "cbd_mg_kg"],
-                "hashish/kief": ["thc_pct", "cbd_pct"]
-            };
-            
-            let matchedAny = false;
-            selectedTypes.forEach(t => {
-                let mappedType = t;
-                if (t === "hash/kief" || t === "hashish/kief") {
-                    mappedType = "hashish/kief";
-                }
-                if (typeToFields[mappedType]) {
-                    matchedAny = true;
-                    typeToFields[mappedType].forEach(f => fieldsToShow.add(f));
+        function showAllEditFormFields() {
+            /** Expert edit drawer: always show every classification field (no cannabis-type gating). */
+            const rowIds = [
+                "edit-row-pct",
+                "edit-row-dose-puff",
+                "edit-row-mg-ml",
+                "edit-row-uM",
+                "edit-row-mg-g",
+                "edit-row-mg-kg",
+            ];
+            rowIds.forEach(id => {
+                const el = document.getElementById(id);
+                if (el) el.style.display = "grid";
+            });
+
+            const inputIds = [
+                "edit-thc", "edit-cbd", "edit-dose", "edit-puff-count",
+                "edit-thc-mg-ml", "edit-cbd-mg-ml", "edit-thc-mg-g", "edit-cbd-mg-g",
+                "edit-thc-mg-kg", "edit-cbd-mg-kg", "edit-thc-uM", "edit-cbd-uM",
+            ];
+            inputIds.forEach(id => {
+                const input = document.getElementById(id);
+                if (input && input.closest(".form-group")) {
+                    input.closest(".form-group").style.display = "block";
                 }
             });
-            
-            if (!matchedAny) {
-                fieldsToShow.add("thc_pct");
-                fieldsToShow.add("cbd_pct");
-                fieldsToShow.add("dose_mg");
-            }
-            
-            const showThc = fieldsToShow.has("thc_pct");
-            const showCbd = fieldsToShow.has("cbd_pct");
-            document.getElementById("edit-thc").closest('.form-group').style.display = showThc ? "block" : "none";
-            document.getElementById("edit-cbd").closest('.form-group').style.display = showCbd ? "block" : "none";
-            document.getElementById("edit-row-pct").style.display = (showThc || showCbd) ? "grid" : "none";
-            
-            const showDose = fieldsToShow.has("dose_mg");
-            const showPuff = fieldsToShow.has("puff_count");
-            document.getElementById("edit-group-dose").style.display = showDose ? "block" : "none";
-            document.getElementById("edit-group-puff-count").style.display = showPuff ? "block" : "none";
-            document.getElementById("edit-row-dose-puff").style.display = (showDose || showPuff) ? "grid" : "none";
-            
-            const showThcMgMl = fieldsToShow.has("thc_mg_ml");
-            const showCbdMgMl = fieldsToShow.has("cbd_mg_ml");
-            document.getElementById("edit-thc-mg-ml").closest('.form-group').style.display = showThcMgMl ? "block" : "none";
-            document.getElementById("edit-cbd-mg-ml").closest('.form-group').style.display = showCbdMgMl ? "block" : "none";
-            document.getElementById("edit-row-mg-ml").style.display = (showThcMgMl || showCbdMgMl) ? "grid" : "none";
-            
-            const showThcMgG = fieldsToShow.has("thc_mg_g");
-            const showCbdMgG = fieldsToShow.has("cbd_mg_g");
-            document.getElementById("edit-thc-mg-g").closest('.form-group').style.display = showThcMgG ? "block" : "none";
-            document.getElementById("edit-cbd-mg-g").closest('.form-group').style.display = showCbdMgG ? "block" : "none";
-            document.getElementById("edit-row-mg-g").style.display = (showThcMgG || showCbdMgG) ? "grid" : "none";
-            
-            const showThcMgKg = fieldsToShow.has("thc_mg_kg");
-            const showCbdMgKg = fieldsToShow.has("cbd_mg_kg");
-            document.getElementById("edit-thc-mg-kg").closest('.form-group').style.display = showThcMgKg ? "block" : "none";
-            document.getElementById("edit-cbd-mg-kg").closest('.form-group').style.display = showCbdMgKg ? "block" : "none";
-            document.getElementById("edit-row-mg-kg").style.display = (showThcMgKg || showCbdMgKg) ? "grid" : "none";
 
-            // Determine if study design is Cell Culture/In vitro
-            const studyTypeCbs = document.querySelectorAll('input[name="edit_study_type"]:checked');
-            const studyTypes = Array.from(studyTypeCbs).map(cb => cb.value.toLowerCase().trim());
-            const exposureCbs = document.querySelectorAll('input[name="edit_exposure"]:checked');
-            const exposureMethods = Array.from(exposureCbs).map(cb => cb.value.toLowerCase().trim());
-            const isInvitroStudy = studyTypes.some(t => t.includes("cell culture") || t.includes("in vitro"));
-            const isInvitroExposure = exposureMethods.some(e => e.includes("in vitro"));
-            const isInvitro = isInvitroStudy || isInvitroExposure;
+            ["edit-group-dose", "edit-group-puff-count", "edit-group-inhaled-duration"].forEach(id => {
+                const el = document.getElementById(id);
+                if (el) el.style.display = "block";
+            });
 
-            const showThcU = isInvitro;
-            const showCbdU = isInvitro;
-            document.getElementById("edit-thc-uM").closest('.form-group').style.display = showThcU ? "block" : "none";
-            document.getElementById("edit-cbd-uM").closest('.form-group').style.display = showCbdU ? "block" : "none";
-            document.getElementById("edit-row-uM").style.display = (showThcU || showCbdU) ? "grid" : "none";
+            ["edit-group-clinical-duration", "edit-group-invitro-duration", "edit-group-study-population"].forEach(id => {
+                const el = document.getElementById(id);
+                if (el) el.style.display = "block";
+            });
+        }
+
+        function updateEditFormCannabinoidFields() {
+            showAllEditFormFields();
         }
 
         function updateEditFormDurationFields() {
-            const studyTypeCbs = document.querySelectorAll('input[name="edit_study_type"]:checked');
-            const studyTypes = Array.from(studyTypeCbs).map(cb => cb.value.toLowerCase().trim());
-            const exposureCbs = document.querySelectorAll('input[name="edit_exposure"]:checked');
-            const exposureMethods = Array.from(exposureCbs).map(cb => cb.value.toLowerCase().trim());
-            
-            const isInvitroStudy = studyTypes.some(t => t.includes("cell culture") || t.includes("in vitro"));
-            const isInvitroExposure = exposureMethods.some(e => e.includes("in vitro"));
-            const isInvitro = isInvitroStudy || isInvitroExposure;
-            
-            const isClinicalInVivo = studyTypes.some(t => t.includes("clinical") || t.includes("animal")) || !isInvitro;
-            
-            const isInhaled = exposureMethods.some(e => {
-                return e.includes("smoked") || e.includes("vaporized") || e.includes("inhaled") || e.includes("inhalation");
-            });
-            
-            const clinicalGroup = document.getElementById("edit-group-clinical-duration");
-            const inhaledGroup = document.getElementById("edit-group-inhaled-duration");
-            const invitroGroup = document.getElementById("edit-group-invitro-duration");
-            
-            if (clinicalGroup) {
-                clinicalGroup.style.display = isClinicalInVivo ? "block" : "none";
-            }
-            if (inhaledGroup) {
-                inhaledGroup.style.display = (isClinicalInVivo && isInhaled) ? "block" : "none";
-            }
-            if (invitroGroup) {
-                invitroGroup.style.display = isInvitro ? "block" : "none";
-            }
-
-            const isClinical = studyTypes.some(t => t.toLowerCase().includes("clinical"));
-            const popGroup = document.getElementById("edit-group-study-population");
-            if (popGroup) {
-                popGroup.style.display = isClinical ? "block" : "none";
-            }
+            showAllEditFormFields();
         }
 
         function formatExposureMethod(method) {
@@ -5064,27 +5245,23 @@
                 verEl.innerText = paper.classifier_version || "N/A";
             }
 
-            // Render Lock Icons for expert locked fields
-            const locked = paper.expert_locked_fields || [];
-            updateMetaLabel("label-exposure", "Exposure Pathway", locked.includes("exposure_method"));
-
-            updateMetaLabel("label-duration", "Study Duration", locked.includes("duration_days"));
-            updateMetaLabel("label-admin-frequency", "Admin Frequency", locked.includes("administration_frequency"));
-            updateMetaLabel("label-inhaled-duration", "Inhaled Exp Duration", locked.includes("inhaled_exposure_duration"));
-            updateMetaLabel("label-treatment-duration", "Treatment Duration", locked.includes("treatment_duration"));
-            updateMetaLabel("label-strain-reported", "Reported Strain", locked.includes("strain_reported"));
-            updateMetaLabel("label-strain-normalized", "Normalized Strain", locked.includes("strain_normalized"));
-            updateMetaLabel("label-outcomes", "Outcome Domains", locked.includes("outcome_domain"));
-            updateMetaLabel("label-cannabis-types", "Cannabis Type", locked.includes("cannabis_type"));
-            
-            // Newly added properties locking labels
-            updateMetaLabel("label-pub-type", "Publication Type", locked.includes("publication_type"));
-            updateMetaLabel("label-study-design", "Study Design", locked.includes("study_type"));
-            updateMetaLabel("label-sample-size", "Sample Size (N)", locked.includes("sample_size"));
-            updateMetaLabel("label-population-age", "Age Group", locked.includes("population_age"));
-            updateMetaLabel("label-population-sex", "Sex", locked.includes("population_sex"));
-            updateMetaLabel("label-inclusion-criteria", "Inclusion Criteria", locked.includes("inclusion_criteria"));
-            updateMetaLabel("label-exclusion-criteria", "Exclusion Criteria", locked.includes("exclusion_criteria"));
+            // Field labels (view mode — no lock icons)
+            updateMetaLabel("label-exposure", "Exposure Pathway");
+            updateMetaLabel("label-duration", "Study Duration");
+            updateMetaLabel("label-admin-frequency", "Admin Frequency");
+            updateMetaLabel("label-inhaled-duration", "Inhaled Exp Duration");
+            updateMetaLabel("label-treatment-duration", "Treatment Duration");
+            updateMetaLabel("label-strain-reported", "Reported Strain");
+            updateMetaLabel("label-strain-normalized", "Normalized Strain");
+            updateMetaLabel("label-outcomes", "Outcome Domains");
+            updateMetaLabel("label-cannabis-types", "Cannabis Type");
+            updateMetaLabel("label-pub-type", "Publication Type");
+            updateMetaLabel("label-study-design", "Study Design");
+            updateMetaLabel("label-sample-size", "Sample Size (N)");
+            updateMetaLabel("label-population-age", "Age Group");
+            updateMetaLabel("label-population-sex", "Sex");
+            updateMetaLabel("label-inclusion-criteria", "Inclusion Criteria");
+            updateMetaLabel("label-exclusion-criteria", "Exclusion Criteria");
 
             // Dynamically render cannabinoid profile and its locks
             renderCannabinoidProfile(paper);
@@ -5727,7 +5904,7 @@
                 .then(analyses => {
                     const tbody = document.getElementById("analyses-tbody");
                     if (analyses.length === 0) {
-                        tbody.innerHTML = '<tr><td colspan="3" style="text-align: center; color: var(--text-secondary); padding: 20px; font-size: 0.75rem;">No analyses yet. Click "Analyze Filtered Articles" to run one!</td></tr>';
+                        tbody.innerHTML = '<tr><td colspan="4" style="text-align: center; color: var(--text-secondary); padding: 20px; font-size: 0.75rem;">No analyses yet. Click "Analyze Filtered Articles" to run one!</td></tr>';
                         selectedAnalysisId = null;
                         currentAnalysisPapers = [];
                         updateExportCSVButtonState();
@@ -5743,12 +5920,10 @@
                         var rowClass = isSelected ? 'selected' : '';
                         const safeName = (a.name || 'Untitled').replace(/</g, '&lt;');
                         return '<tr class="' + rowClass + '" onclick="loadAnalysis(' + a.id + ')" data-id="' + a.id + '">'
+                            + '<td class="analysis-edit-cell"><button type="button" class="btn-sm-icon btn-edit-analysis" title="Rename" onclick="event.stopPropagation();startRename(' + a.id + ', this.closest(\'tr\').querySelector(\'.analysis-name-cell\'))">&#9998;</button></td>'
                             + '<td class="analysis-name-cell" style="font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="' + safeName + '">' + safeName + '</td>'
-                            + '<td style="font-weight:700;text-align:center;">' + a.paper_count + '</td>'
-                            + '<td><div class="analysis-row-actions">'
-                            + '<button type="button" class="btn-sm-icon" title="Rename" onclick="event.stopPropagation();startRename(' + a.id + ', this.closest(\'tr\').querySelector(\'.analysis-name-cell\'))">&#9998;</button>'
-                            + '<button type="button" class="btn-sm-icon" title="Delete" onclick="event.stopPropagation(); deleteAnalysis(' + a.id + ', event)">&#128465;</button>'
-                            + '</div></td>'
+                            + '<td class="analysis-count-cell">' + a.paper_count + '</td>'
+                            + '<td class="analysis-delete-cell"><button type="button" class="btn-sm-icon" title="Delete" onclick="event.stopPropagation(); deleteAnalysis(' + a.id + ', event)">&#128465;</button></td>'
                             + '</tr>';
                     }).join('');
                 });
@@ -7152,19 +7327,117 @@
             return Number.isFinite(num) ? num : null;
         }
 
+        function isMissingAnalysisValue(value) {
+            if (value === null || value === undefined) return true;
+            const s = String(value).trim().toLowerCase();
+            return !s || s === "not reported" || s === "unknown" || s === "not specified" || s === "n/a" || s === "—";
+        }
+
+        function convertDurationUnitToHours(amount, unitRaw) {
+            const unit = String(unitRaw || "").toLowerCase().replace(/\.$/, "");
+            if (unit.startsWith("sec") || unit === "us" || unit === "ns" || unit.startsWith("micro")) {
+                if (unit.startsWith("micro")) return amount / 3600000000;
+                if (unit === "us") return amount / 3600000000;
+                if (unit === "ns") return amount / 3600000000000;
+                return amount / 3600;
+            }
+            if (unit.startsWith("min")) return amount / 60;
+            if (unit.startsWith("h")) return amount;
+            if (unit.startsWith("d")) return amount * 24;
+            if (unit.startsWith("w")) return amount * 168;
+            if (unit.startsWith("mo")) return amount * 720;
+            if (unit.startsWith("y")) return amount * 8760;
+            return null;
+        }
+
+        function parseTreatmentDurationHours(value) {
+            if (isMissingAnalysisValue(value)) return null;
+            const s = String(value).toLowerCase().trim();
+            const rangeMatch = s.match(/^([\d.]+)\s*(?:to|-)\s*([\d.]+)\s*(second|minute|hour|day|week|month|year|minutes|hours|days|weeks|months|years)/);
+            if (rangeMatch) {
+                const low = parseFloat(rangeMatch[1]);
+                const high = parseFloat(rangeMatch[2]);
+                const hours = convertDurationUnitToHours((low + high) / 2, rangeMatch[3]);
+                return hours === null ? null : Math.round(hours * 100) / 100;
+            }
+            const singleMatch = s.match(/([\d.]+)\s*(second|minute|hour|day|week|month|year|minutes|hours|days|weeks|months|years|microsecond|microseconds|us|ns)/);
+            if (singleMatch) {
+                const hours = convertDurationUnitToHours(parseFloat(singleMatch[1]), singleMatch[2]);
+                return hours === null ? null : Math.round(hours * 100) / 100;
+            }
+            return null;
+        }
+
+        function medianOfSorted(values) {
+            const n = values.length;
+            if (!n) return null;
+            const mid = Math.floor(n / 2);
+            if (n % 2) return values[mid];
+            return Math.round(((values[mid - 1] + values[mid]) / 2) * 100) / 100;
+        }
+
+        function formatStatNumber(value, suffix) {
+            if (value === null || value === undefined) return "—";
+            const rounded = Math.round(Number(value) * 100) / 100;
+            return suffix ? rounded + suffix : String(rounded);
+        }
+
+        function extractStatsNumericValue(paper, col) {
+            const sourceKey = col.sourceKey || col.key;
+            const raw = paper[sourceKey];
+            if (col.extract === "treatment_hours") return parseTreatmentDurationHours(raw);
+            return numericFieldValue(raw);
+        }
+
+        function computeStatsTableColumns(papers) {
+            const columns = [];
+            ANALYSIS_STATS_COLUMNS.forEach(col => {
+                if (col.kind === "numeric") {
+                    const values = papers
+                        .map(p => extractStatsNumericValue(p, col))
+                        .filter(v => v !== null)
+                        .sort((a, b) => a - b);
+                    if (!values.length) return;
+                    columns.push({
+                        key: col.key,
+                        label: col.label,
+                        kind: "numeric",
+                        suffix: col.suffix || "",
+                        n: values.length,
+                        min: values[0],
+                        median: medianOfSorted(values),
+                        max: values[values.length - 1],
+                    });
+                } else {
+                    const values = papers
+                        .map(p => p[col.key])
+                        .filter(v => !isMissingAnalysisValue(v));
+                    if (!values.length) return;
+                    columns.push({
+                        key: col.key,
+                        label: col.label,
+                        kind: "categorical",
+                        n: values.length,
+                    });
+                }
+            });
+            return columns;
+        }
+
         function computeQuantitativeAggregates(papers) {
             const aggregates = {};
-            ANALYSIS_QUANTITATIVE_FIELDS.forEach(([fieldKey, label]) => {
-                const values = papers
-                    .map(p => numericFieldValue(p[fieldKey]))
-                    .filter(v => v !== null);
-                if (values.length) {
-                    aggregates[fieldKey] = {
-                        label,
-                        avg: Math.round((values.reduce((a, b) => a + b, 0) / values.length) * 100) / 100,
-                        count: values.length,
-                    };
-                }
+            computeStatsTableColumns(papers).forEach(col => {
+                aggregates[col.key] = {
+                    label: col.label,
+                    kind: col.kind,
+                    suffix: col.suffix || "",
+                    count: col.n,
+                    n: col.n,
+                    min: col.min,
+                    median: col.median,
+                    max: col.max,
+                    avg: col.median,
+                };
             });
             return aggregates;
         }
@@ -7172,20 +7445,164 @@
         function renderQuantitativeStatsRow(chartData, papers) {
             const row = document.getElementById("quantitative-stats-row");
             if (!row) return;
-            const quants = chartData.quantitative_aggregates || computeQuantitativeAggregates(papers || []);
-            const entries = Object.values(quants);
-            if (!entries.length) {
+            const columns = computeStatsTableColumns(papers || []);
+            if (!columns.length) {
                 row.innerHTML = '<span style="color: var(--text-secondary); font-size: 0.82rem;">No quantitative characteristics reported in this subset.</span>';
                 return;
             }
-            row.innerHTML = entries.map(item => {
-                const suffix = item.label.includes("%") ? "%" : "";
-                return '<div class="quant-stat-chip">'
-                    + '<span class="quant-label">' + item.label + '</span>'
-                    + '<span class="quant-value">' + item.avg + suffix + '</span>'
-                    + '<span class="quant-n">n=' + item.count + '</span>'
-                    + '</div>';
-            }).join("");
+            const headerCells = columns.map(col => '<th>' + col.label + '</th>').join("");
+            const naCell = '<td class="quant-stats-na">—</td>';
+            const nCells = columns.map(col => '<td>' + col.n + '</td>').join("");
+            const minCells = columns.map(col => col.kind === "numeric"
+                ? '<td>' + formatStatNumber(col.min, col.suffix) + '</td>'
+                : naCell).join("");
+            const medianCells = columns.map(col => col.kind === "numeric"
+                ? '<td>' + formatStatNumber(col.median, col.suffix) + '</td>'
+                : naCell).join("");
+            const maxCells = columns.map(col => col.kind === "numeric"
+                ? '<td>' + formatStatNumber(col.max, col.suffix) + '</td>'
+                : naCell).join("");
+            row.innerHTML = '<div class="quant-stats-table-wrap"><table class="quant-stats-table"><thead><tr><th></th>'
+                + headerCells + '</tr></thead><tbody>'
+                + '<tr><th>n</th>' + nCells + '</tr>'
+                + '<tr><th>min</th>' + minCells + '</tr>'
+                + '<tr><th>median</th>' + medianCells + '</tr>'
+                + '<tr><th>max</th>' + maxCells + '</tr>'
+                + '</tbody></table></div>';
+        }
+
+        function getAnalysisIncludeNotReported(checkboxId) {
+            const el = document.getElementById(checkboxId);
+            return el ? el.checked : false;
+        }
+
+        function filterBinKeysAndLabels(allKeys, allLabels, includeNotReported) {
+            if (includeNotReported) {
+                return { keys: allKeys.slice(), labels: allLabels.slice() };
+            }
+            const keys = allKeys.filter(k => k !== "notReported");
+            const labels = keys.map(k => allLabels[allKeys.indexOf(k)]);
+            return { keys, labels };
+        }
+
+        function filterCategoricalCountsForChart(counts, includeNotReported) {
+            if (includeNotReported) return counts;
+            const filtered = Object.assign({}, counts);
+            delete filtered[NOT_REPORTED_CATEGORICAL_LABEL];
+            return filtered;
+        }
+
+        function onCannabinoidIncludeNRChange() {
+            renderCannabinoidDistributionChart();
+        }
+
+        function onDurationIncludeNRChange() {
+            renderDurationChart();
+        }
+
+        function onPuffCountIncludeNRChange() {
+            renderPuffCountChart();
+        }
+
+        function onAdminFrequencyIncludeNRChange() {
+            renderAdminFrequencyChart();
+        }
+
+        function onPopulationSexIncludeNRChange() {
+            renderPopulationSexChart();
+        }
+
+        function onPopulationAgeIncludeNRChange() {
+            renderPopulationAgeChart();
+        }
+
+        function populateAnalysisChartJumpSelect() {
+            const sel = document.getElementById("select-analysis-chart-jump");
+            if (!sel) return;
+            const current = sel.value;
+            sel.innerHTML = '<option value="">Select a chart…</option>'
+                + ANALYSIS_CHART_JUMP_OPTIONS.map(opt =>
+                    '<option value="' + opt.id + '">' + opt.label + '</option>'
+                ).join("");
+            if (current && ANALYSIS_CHART_JUMP_OPTIONS.some(opt => opt.id === current)) {
+                sel.value = current;
+            }
+        }
+
+        function jumpToAnalysisChart(chartId) {
+            if (!chartId) return;
+            const card = document.getElementById("container-chart-" + chartId);
+            if (!card) return;
+            card.scrollIntoView({ behavior: "smooth", block: "start" });
+            selectAnalysisChart(chartId);
+            const sel = document.getElementById("select-analysis-chart-jump");
+            if (sel) sel.value = chartId;
+        }
+
+        function classifyStudyDurationBin(days) {
+            if (days === null || days === undefined) return "notReported";
+            if (days <= 7) return "upTo7";
+            if (days <= 30) return "upTo30";
+            if (days <= 90) return "upTo90";
+            if (days <= 365) return "upTo365";
+            return "over365";
+        }
+
+        function classifyTreatmentDurationBin(hours) {
+            if (hours === null || hours === undefined) return "notReported";
+            if (hours < 1) return "under1h";
+            if (hours <= 24) return "h1to24";
+            if (hours <= 168) return "d1to7";
+            if (hours <= 672) return "w1to4";
+            return "over4w";
+        }
+
+        function classifyPuffCountBin(value) {
+            if (value === null || value === undefined) return "notReported";
+            if (value === 0) return "zero";
+            if (value <= 5) return "low";
+            if (value <= 10) return "med";
+            if (value <= 20) return "high";
+            return "veryHigh";
+        }
+
+        function countCategoricalField(papers, field, notReportedLabel) {
+            const counts = {};
+            papers.forEach(p => {
+                const raw = p[field];
+                const key = isMissingAnalysisValue(raw)
+                    ? (notReportedLabel || "Not Reported")
+                    : String(raw).trim();
+                counts[key] = (counts[key] || 0) + 1;
+            });
+            return counts;
+        }
+
+        function formatCategoricalLabel(label) {
+            return String(label).split(/[\s_/]+/).map(w => w ? w.charAt(0).toUpperCase() + w.slice(1) : w).join(" ");
+        }
+
+        function computeDurationBins(papers, mode) {
+            const keys = mode === "study" ? STUDY_DURATION_BIN_KEYS : TREATMENT_DURATION_BIN_KEYS;
+            const bins = {};
+            keys.forEach(k => { bins[k] = 0; });
+            papers.forEach(p => {
+                if (mode === "study") {
+                    bins[classifyStudyDurationBin(numericFieldValue(p.duration_days))]++;
+                } else {
+                    bins[classifyTreatmentDurationBin(parseTreatmentDurationHours(p.treatment_duration))]++;
+                }
+            });
+            return bins;
+        }
+
+        function computePuffCountBins(papers) {
+            const bins = {};
+            PUFF_COUNT_BIN_KEYS.forEach(k => { bins[k] = 0; });
+            papers.forEach(p => {
+                bins[classifyPuffCountBin(numericFieldValue(p.puff_count))]++;
+            });
+            return bins;
         }
 
         function selectAnalysisChart(chartId) {
@@ -7193,6 +7610,8 @@
             document.querySelectorAll(".analysis-chart-card").forEach(card => {
                 card.classList.toggle("selected", card.dataset.chartId === chartId);
             });
+            const jumpSel = document.getElementById("select-analysis-chart-jump");
+            if (jumpSel && chartId) jumpSel.value = chartId;
         }
 
         function clearChartDrilldown() {
@@ -7280,6 +7699,12 @@
             renderExposureChart();
         }
 
+        function onDurationModeChange() {
+            const sel = document.getElementById("select-duration-mode");
+            if (sel) durationChartMode = sel.value;
+            renderDurationChart();
+        }
+
         function paperMatchesListField(paper, field, value) {
             const raw = paper[field];
             if (Array.isArray(raw)) return raw.includes(value);
@@ -7294,7 +7719,8 @@
                 return papers.filter(p => paperMatchesListField(p, "study_type", key));
             }
             if (chartKind === "cannabinoid-distribution") {
-                const binKey = THC_BIN_KEYS[index];
+                const binKeys = meta.binKeys || THC_BIN_KEYS;
+                const binKey = binKeys[index];
                 const compound = meta.compound || "thc";
                 const mode = meta.mode || cannabinoidViewMode;
                 return papers.filter(p => paperInCannabinoidBin(p, binKey, compound, mode));
@@ -7322,6 +7748,47 @@
             if (chartKind === "exposure") {
                 const key = meta.rawLabels[index];
                 return papers.filter(p => paperMatchesListField(p, "exposure_method", key));
+            }
+            if (chartKind === "duration") {
+                const mode = meta.mode || durationChartMode;
+                const allKeys = mode === "study" ? STUDY_DURATION_BIN_KEYS : TREATMENT_DURATION_BIN_KEYS;
+                const keys = meta.binKeys || allKeys;
+                const binKey = keys[index];
+                return papers.filter(p => {
+                    if (mode === "study") {
+                        return classifyStudyDurationBin(numericFieldValue(p.duration_days)) === binKey;
+                    }
+                    return classifyTreatmentDurationBin(parseTreatmentDurationHours(p.treatment_duration)) === binKey;
+                });
+            }
+            if (chartKind === "puff-count") {
+                const keys = meta.binKeys || PUFF_COUNT_BIN_KEYS;
+                const binKey = keys[index];
+                return papers.filter(p => classifyPuffCountBin(numericFieldValue(p.puff_count)) === binKey);
+            }
+            if (chartKind === "admin-frequency") {
+                const key = meta.rawLabels[index];
+                return papers.filter(p => {
+                    const raw = p.administration_frequency;
+                    const label = isMissingAnalysisValue(raw) ? "Not Reported" : String(raw).trim();
+                    return label === key;
+                });
+            }
+            if (chartKind === "population-sex") {
+                const key = meta.rawLabels[index];
+                return papers.filter(p => {
+                    const raw = p.population_sex;
+                    const label = isMissingAnalysisValue(raw) ? "Not Reported" : String(raw).trim();
+                    return label === key;
+                });
+            }
+            if (chartKind === "population-age") {
+                const key = meta.rawLabels[index];
+                return papers.filter(p => {
+                    const raw = p.population_age;
+                    const label = isMissingAnalysisValue(raw) ? "Not Reported" : String(raw).trim();
+                    return label === key;
+                });
             }
             return [];
         }
@@ -7366,13 +7833,22 @@
             const matched = filterPapersForChartSegment(chartKind, index, meta);
             let segmentLabel = "";
             if (chartKind === "cannabinoid-distribution") {
-                const labels = getCannabinoidBinLabels(meta.mode || cannabinoidViewMode);
+                const labels = meta.binLabels || getCannabinoidBinLabels(meta.mode || cannabinoidViewMode);
                 const compoundLabel = (meta.compound || "thc").toUpperCase();
-                segmentLabel = compoundLabel + " · " + (labels[index] || THC_BIN_KEYS[index]);
+                segmentLabel = compoundLabel + " · " + (labels[index] || (meta.binKeys || THC_BIN_KEYS)[index]);
             } else if (chartKind === "outcome") {
                 segmentLabel = OUTCOME_LABELS[meta.rawLabels[index]] || meta.rawLabels[index];
             } else if (chartKind === "timeline") {
                 segmentLabel = meta.sortedLabels[index];
+            } else if (chartKind === "duration") {
+                const labels = meta.binLabels || ((meta.mode || durationChartMode) === "study"
+                    ? STUDY_DURATION_BIN_LABELS
+                    : TREATMENT_DURATION_BIN_LABELS);
+                segmentLabel = labels[index] || (meta.binKeys || [])[index];
+            } else if (chartKind === "puff-count") {
+                segmentLabel = (meta.binLabels || PUFF_COUNT_BIN_LABELS)[index] || (meta.binKeys || [])[index];
+            } else if (chartKind === "admin-frequency" || chartKind === "population-sex" || chartKind === "population-age") {
+                segmentLabel = meta.displayLabels ? meta.displayLabels[index] : meta.rawLabels[index];
             } else {
                 segmentLabel = meta.displayLabels ? meta.displayLabels[index] : meta.rawLabels[index];
             }
@@ -7394,6 +7870,7 @@
             }
             currentChartDataRef = d;
             showAnalysisChartsUI(true);
+            populateAnalysisChartJumpSelect();
             document.getElementById("selection-count-badge").innerText = d.paper_count + " Articles";
             renderQuantitativeStatsRow(d, currentAnalysisPapers);
             clearChartDrilldown();
@@ -7409,6 +7886,11 @@
             renderExposureChart();
             renderCannabisTypeDoughnutChart(d.cannabis_type || {});
             renderOutcomeBarChart(d.outcome || {});
+            renderDurationChart();
+            renderPuffCountChart();
+            renderAdminFrequencyChart();
+            renderPopulationSexChart();
+            renderPopulationAgeChart();
             renderTimelineChart(d.timeline || {});
         }
 
@@ -7626,19 +8108,26 @@
             const ctx = document.getElementById('chart-cannabinoid-distribution').getContext('2d');
             const papers = currentAnalysisPapers || [];
             const { thcBins, cbdBins, labels } = computeCannabinoidBins(papers, cannabinoidViewMode);
-            const thcData = THC_BIN_KEYS.map(k => thcBins[k] || 0);
-            const cbdData = THC_BIN_KEYS.map(k => cbdBins[k] || 0);
+            const includeNR = getAnalysisIncludeNotReported('cb-cannabinoid-include-nr');
+            const { keys, labels: visibleLabels } = filterBinKeysAndLabels(THC_BIN_KEYS, labels, includeNR);
+            const thcData = keys.map(k => thcBins[k] || 0);
+            const cbdData = keys.map(k => cbdBins[k] || 0);
 
             if (chartCannabinoidDistribution) {
                 chartCannabinoidDistribution.destroy();
             }
 
-            const meta = { mode: cannabinoidViewMode, compound: "thc" };
+            const meta = {
+                mode: cannabinoidViewMode,
+                compound: "thc",
+                binKeys: keys,
+                binLabels: visibleLabels,
+            };
 
             chartCannabinoidDistribution = new Chart(ctx, {
                 type: 'bar',
                 data: {
-                    labels: labels,
+                    labels: visibleLabels,
                     datasets: [
                         {
                             label: 'THC',
@@ -7694,6 +8183,192 @@
                         }
                     }
                 }
+            });
+        }
+
+        function analysisBarChartOptions(chartKind, meta) {
+            return {
+                responsive: true,
+                maintainAspectRatio: false,
+                onClick: analysisChartClickHandler(chartKind, meta),
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        backgroundColor: 'rgba(12, 16, 27, 0.95)',
+                        titleColor: '#fff',
+                        bodyColor: '#eceff1',
+                        borderColor: 'rgba(255,255,255,0.08)',
+                        borderWidth: 1,
+                        titleFont: { family: 'Outfit', weight: '600' },
+                        bodyFont: { family: 'Inter' }
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        grid: { color: 'rgba(255, 255, 255, 0.05)' },
+                        ticks: { color: '#90a4ae', font: { family: 'Inter', size: 10 }, stepSize: 1 }
+                    },
+                    x: {
+                        grid: { display: false },
+                        ticks: { color: '#90a4ae', font: { family: 'Inter', size: 9 }, maxRotation: 45, minRotation: 0 }
+                    }
+                }
+            };
+        }
+
+        function renderDurationChart() {
+            const canvas = document.getElementById('chart-duration');
+            if (!canvas) return;
+            const papers = currentAnalysisPapers || [];
+            const mode = durationChartMode;
+            const allKeys = mode === 'study' ? STUDY_DURATION_BIN_KEYS : TREATMENT_DURATION_BIN_KEYS;
+            const allLabels = mode === 'study' ? STUDY_DURATION_BIN_LABELS : TREATMENT_DURATION_BIN_LABELS;
+            const includeNR = getAnalysisIncludeNotReported('cb-duration-include-nr');
+            const { keys, labels } = filterBinKeysAndLabels(allKeys, allLabels, includeNR);
+            const bins = computeDurationBins(papers, mode);
+            const data = keys.map(k => bins[k] || 0);
+            const meta = { rawLabels: keys, displayLabels: labels, binKeys: keys, binLabels: labels, mode };
+
+            if (chartDuration) chartDuration.destroy();
+            chartDuration = new Chart(canvas.getContext('2d'), {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Papers',
+                        data: data,
+                        backgroundColor: 'rgba(129, 140, 248, 0.45)',
+                        borderColor: '#818cf8',
+                        borderWidth: 1.5,
+                        borderRadius: 6
+                    }]
+                },
+                options: analysisBarChartOptions('duration', meta)
+            });
+        }
+
+        function renderPuffCountChart() {
+            const canvas = document.getElementById('chart-puff-count');
+            if (!canvas) return;
+            const papers = currentAnalysisPapers || [];
+            const includeNR = getAnalysisIncludeNotReported('cb-puff-count-include-nr');
+            const { keys, labels } = filterBinKeysAndLabels(PUFF_COUNT_BIN_KEYS, PUFF_COUNT_BIN_LABELS, includeNR);
+            const bins = computePuffCountBins(papers);
+            const data = keys.map(k => bins[k] || 0);
+            const meta = { rawLabels: keys, displayLabels: labels, binKeys: keys, binLabels: labels };
+
+            if (chartPuffCount) chartPuffCount.destroy();
+            chartPuffCount = new Chart(canvas.getContext('2d'), {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Papers',
+                        data: data,
+                        backgroundColor: 'rgba(255, 214, 0, 0.42)',
+                        borderColor: '#ffd600',
+                        borderWidth: 1.5,
+                        borderRadius: 6
+                    }]
+                },
+                options: analysisBarChartOptions('puff-count', meta)
+            });
+        }
+
+        function renderAdminFrequencyChart() {
+            const canvas = document.getElementById('chart-admin-frequency');
+            if (!canvas) return;
+            const papers = currentAnalysisPapers || [];
+            const includeNR = getAnalysisIncludeNotReported('cb-admin-frequency-include-nr');
+            const counts = filterCategoricalCountsForChart(
+                countCategoricalField(papers, 'administration_frequency'),
+                includeNR
+            );
+            const rawLabels = Object.keys(counts).filter(k => counts[k] > 0);
+            const displayLabels = rawLabels.map(formatCategoricalLabel);
+            const data = rawLabels.map(k => counts[k]);
+            const meta = { rawLabels, displayLabels };
+
+            if (chartAdminFrequency) chartAdminFrequency.destroy();
+            chartAdminFrequency = new Chart(canvas.getContext('2d'), {
+                type: 'bar',
+                data: {
+                    labels: displayLabels,
+                    datasets: [{
+                        label: 'Papers',
+                        data: data,
+                        backgroundColor: 'rgba(156, 39, 176, 0.42)',
+                        borderColor: '#9c27b0',
+                        borderWidth: 1.5,
+                        borderRadius: 6
+                    }]
+                },
+                options: analysisBarChartOptions('admin-frequency', meta)
+            });
+        }
+
+        function renderPopulationSexChart() {
+            const canvas = document.getElementById('chart-population-sex');
+            if (!canvas) return;
+            const papers = currentAnalysisPapers || [];
+            const includeNR = getAnalysisIncludeNotReported('cb-population-sex-include-nr');
+            const counts = filterCategoricalCountsForChart(
+                countCategoricalField(papers, 'population_sex'),
+                includeNR
+            );
+            const rawLabels = Object.keys(counts).filter(k => counts[k] > 0);
+            const displayLabels = rawLabels.map(formatCategoricalLabel);
+            const data = rawLabels.map(k => counts[k]);
+            const meta = { rawLabels, displayLabels };
+
+            if (chartPopulationSex) chartPopulationSex.destroy();
+            chartPopulationSex = new Chart(canvas.getContext('2d'), {
+                type: 'bar',
+                data: {
+                    labels: displayLabels,
+                    datasets: [{
+                        label: 'Papers',
+                        data: data,
+                        backgroundColor: 'rgba(233, 30, 99, 0.42)',
+                        borderColor: '#e91e63',
+                        borderWidth: 1.5,
+                        borderRadius: 6
+                    }]
+                },
+                options: analysisBarChartOptions('population-sex', meta)
+            });
+        }
+
+        function renderPopulationAgeChart() {
+            const canvas = document.getElementById('chart-population-age');
+            if (!canvas) return;
+            const papers = currentAnalysisPapers || [];
+            const includeNR = getAnalysisIncludeNotReported('cb-population-age-include-nr');
+            const counts = filterCategoricalCountsForChart(
+                countCategoricalField(papers, 'population_age'),
+                includeNR
+            );
+            const rawLabels = Object.keys(counts).filter(k => counts[k] > 0);
+            const displayLabels = rawLabels.map(formatCategoricalLabel);
+            const data = rawLabels.map(k => counts[k]);
+            const meta = { rawLabels, displayLabels };
+
+            if (chartPopulationAge) chartPopulationAge.destroy();
+            chartPopulationAge = new Chart(canvas.getContext('2d'), {
+                type: 'bar',
+                data: {
+                    labels: displayLabels,
+                    datasets: [{
+                        label: 'Papers',
+                        data: data,
+                        backgroundColor: 'rgba(3, 169, 244, 0.42)',
+                        borderColor: '#03a9f4',
+                        borderWidth: 1.5,
+                        borderRadius: 6
+                    }]
+                },
+                options: analysisBarChartOptions('population-age', meta)
             });
         }
 

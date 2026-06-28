@@ -19,6 +19,7 @@ from typing import Any, Dict, List, Literal, Optional, Set, Tuple
 import classifier
 import maude_confidence
 import paper_text_cache
+import subnode_field_scopes
 from calibration_pdf import has_direct_pdf_link, has_pmc_lookup_ids
 from db_health import postgres_configured, postgres_is_healthy, production_reingest_limits
 from db_manager import DatabaseManager, _SQL_ORIGINAL_RESEARCH, _TAB_SQL
@@ -79,6 +80,30 @@ CLASSIFICATION_FIELDS = [
     "outcome_domain",
 ]
 
+SUBNODE_EXTRA_TRACK_FIELDS = [
+    "ingestion_status",
+    "species",
+    "sample_size",
+    "publication_type",
+    "duration_days",
+    "treatment_duration",
+    "administration_frequency",
+    "inhaled_exposure_duration",
+    "repeat_exposure_count",
+    "exposure_regimen_bin",
+    "strain_reported",
+    "strain_normalized",
+    "dose_mg",
+    "multiple_doses",
+    "multiple_time_intervals",
+    "population_age",
+    "population_sex",
+    "inclusion_criteria",
+    "exclusion_criteria",
+    "summary",
+    "classification_confidence",
+]
+
 
 def parse_json_field(val):
     """Parse a JSON-encoded DB field into native Python values."""
@@ -129,6 +154,9 @@ class ReingestStats:
     cache_hits: int = 0
     cache_misses: int = 0
     written_paper_ids: Set[int] = field(default_factory=set)
+    pre_reingest_snapshots: Dict[int, Dict[str, Any]] = field(default_factory=dict)
+    regression_merges: int = 0
+    papers_skipped_tier_fast: int = 0
 
 
 def _locked_fields(paper: Dict[str, Any]) -> List[str]:
@@ -230,6 +258,38 @@ def _tabs_where_clause(tabs: List[str]) -> str:
             raise ValueError(f"Unknown tab {tab_key!r}; expected one of {sorted(_TAB_SQL)}")
         parts.append(f"({_TAB_SQL[tab_key]})")
     return f"({' OR '.join(parts)}) AND {_not_llm_clause()}"
+
+
+def track_fields_for_scope_subnode(scope_subnode: Optional[str]) -> List[str]:
+    """Return classification fields to diff-track for a golden subnode reingest."""
+    if not scope_subnode:
+        return list(TRACK_FIELDS)
+    scoped = list(subnode_field_scopes.SUBNODE_FIELD_SCOPES.get(scope_subnode, []))
+    seen: Set[str] = set()
+    ordered: List[str] = []
+    for field in scoped + list(TRACK_FIELDS) + SUBNODE_EXTRA_TRACK_FIELDS:
+        if field in seen:
+            continue
+        if field in UPDATE_COLUMNS or field in CLASSIFICATION_FIELDS:
+            seen.add(field)
+            ordered.append(field)
+    return ordered
+
+
+def _subnode_where_clause(scope_subnode: str) -> str:
+    """SQL WHERE fragment for all Maude/heuristic papers in a calibration subnode."""
+    corpus = _reingest_where_clause(only_heuristic=False, maude_and_heuristic=True)
+    if scope_subnode == "node2a":
+        return f"({_tabs_where_clause(['clinical'])})"
+    if scope_subnode == "node2b":
+        return (
+            f"({corpus}) AND (study_type LIKE '%Animal Models%') AND {_not_llm_clause()}"
+        )
+    if scope_subnode == "node2c":
+        return (
+            f"({corpus}) AND (study_type LIKE '%Cell Culture%') AND {_not_llm_clause()}"
+        )
+    raise ValueError(f"Unknown scope_subnode {scope_subnode!r}")
 
 
 def _reingest_where_clause(
@@ -347,6 +407,7 @@ def _where_for_pass(
     only_heuristic: bool,
     maude_and_heuristic: bool,
     tabs: Optional[List[str]] = None,
+    scope_subnode: Optional[str] = None,
     skip_current_version: bool = False,
     rules_version: Optional[str] = None,
     paper_ids: Optional[List[int]] = None,
@@ -355,6 +416,8 @@ def _where_for_pass(
     if paper_ids:
         id_list = sorted({int(pid) for pid in paper_ids})
         base = "id IN (" + ", ".join(str(pid) for pid in id_list) + ")"
+    elif scope_subnode:
+        base = _subnode_where_clause(scope_subnode)
     elif tabs:
         base = _tabs_where_clause(tabs)
     else:
@@ -376,6 +439,7 @@ def _fetch_target_papers(
     only_heuristic: bool,
     maude_and_heuristic: bool,
     tabs: Optional[List[str]] = None,
+    scope_subnode: Optional[str] = None,
     limit: Optional[int],
     skip_current_version: bool = False,
     rules_version: Optional[str] = None,
@@ -390,6 +454,7 @@ def _fetch_target_papers(
         only_heuristic=only_heuristic,
         maude_and_heuristic=maude_and_heuristic,
         tabs=tabs,
+        scope_subnode=scope_subnode,
         skip_current_version=skip_current_version,
         rules_version=rules_version,
         paper_ids=paper_ids,
@@ -469,6 +534,16 @@ def _classify_one_paper(
         abstract_only=abstract_only,
         text_source=resolved_source,
     )
+    from classification_regression_guard import merge_regression_safe
+
+    extracted, merge_meta = merge_regression_safe(
+        paper,
+        extracted,
+        title=paper.get("title") or "",
+        abstract=paper.get("abstract") or "",
+    )
+    if stats is not None and merge_meta.get("merged"):
+        stats.regression_merges += 1
     if stats is not None:
         stats.classify_seconds += time.time() - classify_start
     return extracted
@@ -569,16 +644,26 @@ def _record_classification_diffs(
     paper: Dict[str, Any],
     extracted: Dict[str, Any],
     field_change_counts: Counter,
+    *,
+    track_fields: Optional[List[str]] = None,
+    pre_reingest_snapshots: Optional[Dict[int, Dict[str, Any]]] = None,
 ) -> bool:
     """Track field-level diffs and return True when tracked fields changed."""
     locked = _locked_fields(paper)
     paper_changed = False
-    for field in TRACK_FIELDS:
+    for field in track_fields or TRACK_FIELDS:
         if field in locked:
             continue
         if norm(paper.get(field)) != norm(extracted.get(field)):
             field_change_counts[field] += 1
             paper_changed = True
+    if paper_changed and pre_reingest_snapshots is not None:
+        paper_id = int(paper["id"])
+        pre_reingest_snapshots[paper_id] = {
+            field: paper.get(field)
+            for field in (track_fields or TRACK_FIELDS)
+            if field not in locked
+        }
     return paper_changed
 
 
@@ -603,6 +688,7 @@ def _run_parallel_reingest(
     start: float,
     total: int,
     batch_pause_seconds: float = 0.0,
+    track_fields: Optional[List[str]] = None,
 ) -> Tuple[int, Any, Any]:
     """Classify papers in parallel and write through a dedicated writer thread."""
     memory_cache: Dict[str, Optional[str]] = {}
@@ -686,7 +772,13 @@ def _run_parallel_reingest(
 
                 version = str(extracted.get("classifier_version") or "")
                 source_counts[_source_bucket(version)] += 1
-                if _record_classification_diffs(paper, extracted, field_change_counts):
+                if _record_classification_diffs(
+                    paper,
+                    extracted,
+                    field_change_counts,
+                    track_fields=track_fields,
+                    pre_reingest_snapshots=stats.pre_reingest_snapshots,
+                ):
                     papers_changed += 1
                 if not dry_run:
                     write_queue.put((paper, extracted))
@@ -730,6 +822,7 @@ def _run_sequential_reingest(
     start: float,
     total: int,
     batch_pause_seconds: float = 0.0,
+    track_fields: Optional[List[str]] = None,
 ) -> Tuple[int, int, Any, Any]:
     """Classify and write papers sequentially (single worker)."""
     papers_changed = 0
@@ -758,7 +851,13 @@ def _run_sequential_reingest(
 
         version = str(extracted.get("classifier_version") or "")
         source_counts[_source_bucket(version)] += 1
-        if _record_classification_diffs(paper, extracted, field_change_counts):
+        if _record_classification_diffs(
+            paper,
+            extracted,
+            field_change_counts,
+            track_fields=track_fields,
+            pre_reingest_snapshots=stats.pre_reingest_snapshots,
+        ):
             papers_changed += 1
 
         if not dry_run:
@@ -798,6 +897,7 @@ def reingest_heuristic_papers(
     skip_current_version: bool = True,
     tabs: Optional[List[str]] = None,
     paper_ids: Optional[List[int]] = None,
+    scope_subnode: Optional[str] = None,
 ) -> dict:
     """Re-classify papers with the current Maude pipeline.
 
@@ -814,10 +914,13 @@ def reingest_heuristic_papers(
             for the pass tier.
         tabs: Optional UI tab keys (e.g. ``tangential``, ``unclassified_preclinical``).
         paper_ids: Optional explicit paper id list (overrides tab/heuristic filters).
+        scope_subnode: When set (``node2a``/``node2b``/``node2c``), re-classify all
+            papers in that calibration subnode from local SQLite.
 
     Returns:
         Summary statistics for the run.
     """
+    track_fields = track_fields_for_scope_subnode(scope_subnode)
     db = DatabaseManager()
     if postgres_configured():
         healthy, detail = postgres_is_healthy()
@@ -849,6 +952,7 @@ def reingest_heuristic_papers(
         only_heuristic=only_heuristic,
         maude_and_heuristic=maude_and_heuristic,
         tabs=tabs,
+        scope_subnode=scope_subnode,
         limit=limit,
         skip_current_version=skip_current_version,
         rules_version=rules_version if skip_current_version else None,
@@ -858,9 +962,22 @@ def reingest_heuristic_papers(
     if pass_mode == "slow":
         papers = [p for p in papers if paper_needs_slow_pass(p)]
 
+    tier_skipped = 0
+    if pass_mode == "fast":
+        from classification_regression_guard import should_skip_fast_pass_for_tier
+
+        kept: List[Dict[str, Any]] = []
+        for paper in papers:
+            if should_skip_fast_pass_for_tier(paper, rules_version):
+                tier_skipped += 1
+                continue
+            kept.append(paper)
+        papers = kept
+
     total = len(papers)
+    scope_label = scope_subnode or (",".join(tabs) if tabs else "default")
     print(
-        f"Starting Maude re-ingestion pass={pass_mode} for {total} papers "
+        f"Starting Maude re-ingestion pass={pass_mode} scope={scope_label} for {total} papers "
         f"(dry_run={dry_run}, workers={workers}, limit={limit}) "
         f"at {datetime.now().isoformat()}"
     )
@@ -868,6 +985,7 @@ def reingest_heuristic_papers(
     field_change_counts: Counter = Counter()
     source_counts: Counter = Counter()
     stats = ReingestStats()
+    stats.papers_skipped_tier_fast = tier_skipped
     start = time.time()
 
     if workers > 1:
@@ -884,6 +1002,7 @@ def reingest_heuristic_papers(
             start=start,
             total=total,
             batch_pause_seconds=batch_pause_seconds,
+            track_fields=track_fields,
         )
         papers_skipped = 0
     else:
@@ -901,6 +1020,7 @@ def reingest_heuristic_papers(
             start=start,
             total=total,
             batch_pause_seconds=batch_pause_seconds,
+            track_fields=track_fields,
         )
 
     if not dry_run and conn is not None:
@@ -927,9 +1047,16 @@ def reingest_heuristic_papers(
         "papers_per_second": round(total / elapsed, 2) if elapsed else 0,
         "source_counts": dict(source_counts),
         "field_change_counts": dict(field_change_counts),
+        "pre_reingest_snapshots": {
+            str(pid): snap for pid, snap in stats.pre_reingest_snapshots.items()
+        },
+        "track_fields": track_fields,
+        "scope_subnode": scope_subnode,
         "dry_run": dry_run,
         "rules_version": rules_version,
         "workers": workers,
+        "regression_merges": stats.regression_merges,
+        "papers_skipped_tier_fast": stats.papers_skipped_tier_fast,
     }
     print(f"Maude re-ingestion complete: {summary}")
     return summary
@@ -943,6 +1070,7 @@ def prewarm_slow_pass_cache(
     skip_current_version: bool = True,
     tabs: Optional[List[str]] = None,
     paper_ids: Optional[List[int]] = None,
+    scope_subnode: Optional[str] = None,
 ) -> dict:
     """Pre-fetch PDF/PMC text for slow-pass candidates into the disk cache."""
     db = db or DatabaseManager()
@@ -953,6 +1081,7 @@ def prewarm_slow_pass_cache(
         only_heuristic=False,
         maude_and_heuristic=True,
         tabs=tabs,
+        scope_subnode=scope_subnode,
         limit=limit,
         skip_current_version=skip_current_version,
         rules_version=rules_version if skip_current_version else None,
@@ -1013,6 +1142,7 @@ def run_two_pass_reingest(
     skip_current_version: bool = True,
     tabs: Optional[List[str]] = None,
     paper_ids: Optional[List[int]] = None,
+    scope_subnode: Optional[str] = None,
 ) -> dict:
     """Runs fast abstract-only pass then slow PDF/full-text pass on the non-LLM corpus.
 
@@ -1065,6 +1195,7 @@ def run_two_pass_reingest(
             skip_current_version=skip_current_version,
             tabs=tabs,
             paper_ids=paper_ids,
+            scope_subnode=scope_subnode,
         )
         combined["passes"].append(fast_summary)
         written_ids.update(fast_summary.get("written_paper_ids") or [])
@@ -1077,6 +1208,7 @@ def run_two_pass_reingest(
             skip_current_version=skip_current_version,
             tabs=tabs,
             paper_ids=paper_ids,
+            scope_subnode=scope_subnode,
         )
 
     if not fast_only:
@@ -1084,12 +1216,13 @@ def run_two_pass_reingest(
             dry_run=dry_run,
             batch_size=batch_size,
             limit=limit,
-            maude_and_heuristic=bool(tabs) or bool(paper_ids) or True,
+            maude_and_heuristic=bool(tabs) or bool(paper_ids) or bool(scope_subnode) or True,
             pass_mode="slow",
             workers=workers,
             skip_current_version=skip_current_version,
             tabs=tabs,
             paper_ids=paper_ids,
+            scope_subnode=scope_subnode,
         )
         combined["passes"].append(slow_summary)
         written_ids.update(slow_summary.get("written_paper_ids") or [])
@@ -1099,7 +1232,22 @@ def run_two_pass_reingest(
             batch_size=batch_size,
             paper_ids=None if refresh_maude_confidence_full else written_ids,
         )
+    combined_field_changes: Counter = Counter()
+    papers_processed = 0
+    for pass_summary in combined["passes"]:
+        combined_field_changes.update(pass_summary.get("field_change_counts") or {})
+        papers_processed = max(papers_processed, int(pass_summary.get("papers_processed") or 0))
     combined["written_paper_ids"] = sorted(written_ids)
+    combined["field_change_counts"] = dict(combined_field_changes)
+    combined_snapshots: Dict[str, Any] = {}
+    for pass_summary in combined["passes"]:
+        combined_snapshots.update(pass_summary.get("pre_reingest_snapshots") or {})
+    if combined_snapshots:
+        combined["pre_reingest_snapshots"] = combined_snapshots
+    combined["track_fields"] = track_fields_for_scope_subnode(scope_subnode)
+    combined["scope_subnode"] = scope_subnode
+    combined["papers_processed"] = papers_processed
+    combined["papers_written"] = len(written_ids)
     return combined
 
 
@@ -1269,6 +1417,12 @@ def main():
         help="Comma-separated paper ids to re-classify (scoped reingest).",
     )
     parser.add_argument(
+        "--scope-subnode",
+        default=None,
+        choices=("node2a", "node2b", "node2c"),
+        help="Re-classify all Maude/heuristic papers in this calibration subnode.",
+    )
+    parser.add_argument(
         "--confidence-only",
         action="store_true",
         help="Only refresh maude-* classification_confidence from node alignment (no re-ingest).",
@@ -1298,8 +1452,10 @@ def main():
             skip_current_version=skip_current,
             tabs=tab_list,
             paper_ids=paper_id_list,
+            scope_subnode=args.scope_subnode,
         )
         print(json.dumps(summary, indent=2, default=str))
+        print("GOLDEN_REINGEST_SUMMARY=" + json.dumps(summary, default=str))
         return
 
     summary = reingest_heuristic_papers(
@@ -1313,6 +1469,7 @@ def main():
         skip_current_version=skip_current,
         tabs=tab_list,
         paper_ids=paper_id_list,
+        scope_subnode=args.scope_subnode,
     )
     if args.refresh_maude_confidence or summary.get("papers_written", 0) > 0:
         written_ids = set(summary.get("written_paper_ids") or [])

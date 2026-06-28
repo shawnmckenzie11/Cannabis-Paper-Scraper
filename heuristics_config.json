@@ -325,6 +325,8 @@
         "\\bwomen\\s+and\\s+men\\b",
         "\\bmale\\s+and\\s+female\\b",
         "\\bfemale\\s+and\\s+male\\b",
+        "\\bmale\\s+or\\s+female\\b",
+        "\\bfemale\\s+or\\s+male\\b",
         "\\bmales\\s+and\\s+females\\b",
         "\\bfemales\\s+and\\s+males\\b",
         "\\bmixed[- ]sex\\b"

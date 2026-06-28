@@ -13,15 +13,18 @@
     },
     "cannabis_type_cues": {
       "synthetic_cb_agonists": ["CP-55940", "WIN55212", "HU-210", "JWH-018", "AM-2201"],
-      "pure_cannabinoid_vendors": ["Sigma-Aldrich", "Cayman Chemical", "THC isolate", "CBD isolate", "delta-9-THC (Sigma)", "delta-9-THC (Cayman)"],
+      "pure_cannabinoid_vendors": ["Sigma-Aldrich", "Cayman Chemical", "THC isolate", "CBD isolate", "delta-9-THC (Sigma)", "delta-9-THC (Cayman)", "THC Pharm GmbH"],
       "pure_cannabinoid_vendor_override": ["Sigma-Aldrich", "Cayman Chemical", "Tocris", "NIDA Drug Supply Program", "THC Pharm", "Lipomed"],
       "edibles_required_phrases": ["cannabis-infused", "edible product", "cannabis edible", "brownie", "cookie", "cannabis cookie", "infused brownie"],
       "do_not_infer_vape": true
     },
     "compound_provenance_vendors": ["Sigma-Aldrich", "Cayman Chemical", "Tocris", "NIDA Drug Supply Program", "THC Pharm", "Lipomed"],
     "dissolved_in_media_triggers": ["isolated tissue", "tissue bath", "organ bath", "bath application", "embryos were exposed to", "tank water contained", "dissolved in tank water", "immersion in", "superfusion"],
+    "slice_bath_exclusion_cues": ["brain slice", "acute slice", "electrophysiology", "patch clamp", "whole cell recording"],
+    "dual_arm_invitro_cues": ["similar experiments were also conducted in vitro in cultured", "in vitro in cultured", "injected in rats"],
+    "ecs_enzyme_inhibitor_compounds": ["PF3845", "JZL184", "OMDM169", "O-3841", "URB597", "FAAH inhibitor", "MAGL inhibitor", "DAGL inhibitor"],
     "zebrafish_waterborne_oral_cues": ["added directly into the water", "embryos were exposed to", "tank water", "water in the well", "waterborne"],
-    "oral_diet_protocol_cues": ["orally-delivered", "in drinking water", "gelatin cube", "mixed in diet", "HFCD", "high-fat diet", "containing CBD", "containing THC"],
+    "oral_diet_protocol_cues": ["orally-delivered", "in drinking water", "gelatin cube", "mixed in diet", "HFCD", "high-fat diet", "containing CBD", "containing THC", "dispensed daily", "mixed with some meat", "titrated to 5% in CBD"],
     "injection_route_guards": ["i.p.", "i.v.", "s.c.", "subcutaneous", "intraperitoneal", "intravenous", "intrathecal", "intracerebroventricular", "i.c.v."],
     "thc_synonyms": ["THC", "delta-9-THC", "delta-9-tetrahydrocannabinol", "Δ9-THC", "tetrahydrocannabinol"],
     "cbd_synonyms": ["CBD", "cannabidiol"],
@@ -53,8 +56,8 @@
     },
     "fields": {
       "cannabis_type": {
-        "pure_cannabinoid": ["mg/kg", "Sigma-Aldrich", "Cayman Chemical", "Tocris", "isolated THC", "isolated CBD", "pharmaceutical grade"],
-        "cb_receptor_agonist": ["cannabinoid agonist", "CB1 agonist", "CB2 agonist", "synthetic cannabinoid", "WIN 55", "O-1602", "CP-55940"],
+        "pure_cannabinoid": ["mg/kg", "Sigma-Aldrich", "Cayman Chemical", "Tocris", "isolated THC", "isolated CBD", "pharmaceutical grade", "cannabidiol (CBD)", "THC Pharm GmbH", "phytocannabinoids"],
+        "cb_receptor_agonist": ["cannabinoid agonist", "CB1 agonist", "CB2 agonist", "synthetic cannabinoid", "WIN 55", "O-1602", "CP-55940", "CB1 receptor activation", "FAAH inhibitor", "MAGL inhibitor", "PF3845", "JZL184"],
         "cb_receptor_antagonist": ["cannabinoid antagonist", "CB1 antagonist", "SR141716", "AM251", "rimonabant"],
         "dried_flower": ["vaporized cannabis plant matter", "cannabis plant matter", "smoked cannabis", "combusted cannabis flower"]
       },
@@ -263,7 +266,86 @@
         "organoid",
         "assay plate"
       ],
-      "learned_cues": []
+      "learned_cues": [
+        {
+          "cue": "sublingual solution",
+          "field": "exposure_method",
+          "source": "golden_node2a.clinical_rct.inhaled",
+          "explanation": "Positively identifies sublingual route; prevents inhaled/oral misassignment for oil/drop trials."
+        },
+        {
+          "cue": "vaporized cannabis",
+          "field": "cannabis_type",
+          "source": "golden_node2a.clinical_rct.inhaled",
+          "explanation": "Whole-plant vaporized cannabis maps to dried flower + vape pen, not pure cannabinoid."
+        },
+        {
+          "cue": "psychotomimetic symptoms",
+          "field": "outcome_domain",
+          "source": "golden_node2a.clinical_rct.inhaled",
+          "explanation": "Psychotomimetic outcomes map to anxiety domain, not addiction."
+        },
+        {
+          "cue": "women with fibromyalgia",
+          "field": "population_sex",
+          "source": "golden_node2a.clinical_rct.inhaled",
+          "explanation": "All-female cohort terminology maps population_sex to female."
+        },
+        {
+          "cue": "ingested the product",
+          "field": "exposure_method",
+          "source": "golden_node2a.clinical_rct.oral",
+          "explanation": "Signals oral ingestion; prevents unknown for tinctures taken by mouth."
+        },
+        {
+          "cue": "placebo tincture",
+          "field": "exposure_method",
+          "source": "golden_node2a.clinical_rct.oral",
+          "explanation": "Tincture ingested orally maps to oral, not sublingual or unknown."
+        },
+        {
+          "cue": "CBD oil.*mg/kg/day",
+          "field": "exposure_method",
+          "source": "golden_node2a.clinical_rct.oral",
+          "explanation": "Weight-based oral oil dosing without sublingual label resolves to oral."
+        },
+        {
+          "cue": "p\\.o\\.",
+          "field": "exposure_method",
+          "source": "golden_node2a.clinical_rct.oral",
+          "explanation": "Per os abbreviation is definitive oral route signal."
+        },
+        {
+          "cue": "oral CBD.*capsule",
+          "field": "cannabis_type",
+          "source": "golden_node2a.clinical_rct.oral",
+          "explanation": "Oral CBD capsule pretreatment is pure cannabinoid, not concentrates."
+        },
+        {
+          "cue": "Cannabis extract.*50% w/w",
+          "field": "cannabis_type",
+          "source": "golden_node2a.clinical_rct.oral",
+          "explanation": "Whole-plant extracts with defined profiles classify as concentrates."
+        },
+        {
+          "cue": "reinforcing.*subjective.*cognitive",
+          "field": "outcome_domain",
+          "source": "golden_node2a.clinical_rct.oral",
+          "explanation": "Multi-domain outcome language triggers addiction+cognition, not other."
+        },
+        {
+          "cue": "verbal memory test.*impairment app",
+          "field": "outcome_domain",
+          "source": "golden_node2a.clinical_rct.oral",
+          "explanation": "Memory and impairment instruments confirm cognition domain."
+        },
+        {
+          "cue": "male or female subjects",
+          "field": "population_sex",
+          "source": "golden_node2a.clinical_rct.oral",
+          "explanation": "Explicit both-sex eligibility phrase; do not default to female."
+        }
+      ]
     },
     "node2b_in_vivo": {
       "tree_label": "Node 2B \u00b7 In Vivo",
@@ -300,7 +382,71 @@
         "patient-reported outcome",
         "chart review"
       ],
-      "learned_cues": []
+      "learned_cues": [
+        {
+          "cue": "dispensed daily in olive oil",
+          "field": "exposure_method",
+          "source": "golden_node2b.animal_models_other.injection_cannabinoids",
+          "source_paper_id": 15181,
+          "explanation": "Flags oil-based oral delivery; prevents misclassification as injection."
+        },
+        {
+          "cue": "titrated to 5% in CBD",
+          "field": "exposure_method",
+          "source": "golden_node2b.animal_models_other.injection_cannabinoids",
+          "source_paper_id": 15181,
+          "explanation": "Oil-titrated CBD is oral administration, not injection."
+        },
+        {
+          "cue": "cannabidiol (CBD)",
+          "field": "cannabis_type",
+          "source": "golden_node2b.animal_models_other.injection_cannabinoids",
+          "source_paper_id": 15181,
+          "explanation": "Named pure cannabinoid; should map to pure_cannabinoid not unknown."
+        },
+        {
+          "cue": "THC Pharm GmbH",
+          "field": "cannabis_type",
+          "source": "golden_node2b.animal_models_other.injection_cannabinoids",
+          "source_paper_id": 20915,
+          "explanation": "Named commercial pure THC source; indicates pure_cannabinoid."
+        },
+        {
+          "cue": "CB1 receptor activation",
+          "field": "cannabis_type",
+          "source": "golden_node2b.animal_models_other.injection_cannabinoids",
+          "source_paper_id": 20915,
+          "explanation": "CB receptor agonist mechanism phrase."
+        },
+        {
+          "cue": "similar experiments were also conducted in vitro in cultured",
+          "field": "exposure_method",
+          "source": "golden_node2b.animal_models_rat.cannabinoids_dissolved_in_media",
+          "source_paper_id": 30495,
+          "explanation": "Dual-arm in vivo injection + in vitro cell culture; add cannabinoids dissolved in media."
+        },
+        {
+          "cue": "bath application of",
+          "field": "exposure_method",
+          "source": "golden_node2b.animal_models_rat.cannabinoids_dissolved_in_media",
+          "source_paper_id": 26824,
+          "explanation": "Slice electrophysiology bath perfusion is not cell-culture dissolved in media."
+        },
+        {
+          "cue": "fatty acid amide hydrolase (FAAH) inhibitor",
+          "field": "cannabis_type",
+          "source": "golden_node2b.animal_models_rat.cannabinoids_dissolved_in_media",
+          "source_paper_id": 26824,
+          "explanation": "FAAH inhibitors elevate endocannabinoids; map to CB receptor agonist."
+        },
+        {
+          "cue": "monoacylglycerol lipase (MAGL) inhibitor",
+          "field": "cannabis_type",
+          "source": "golden_node2b.animal_models_rat.cannabinoids_dissolved_in_media",
+          "source_paper_id": 30495,
+          "explanation": "MAGL inhibitors are endocannabinoid enzyme modulators; CB receptor agonist not pure cannabinoid alone."
+        }
+      ]
     },
     "node2c_in_vitro": {
       "tree_label": "Node 2C \u00b7 In Vitro",

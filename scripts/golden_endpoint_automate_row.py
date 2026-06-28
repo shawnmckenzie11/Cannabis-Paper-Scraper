@@ -7,6 +7,7 @@ import argparse
 import json
 import logging
 import os
+import re
 import subprocess
 import sys
 from pathlib import Path
@@ -17,7 +18,19 @@ if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
 from calibration_build import MAUDE_CLASSIFIER_BUILD_ID
-from golden_endpoint_status import prior_rows_guard_passed, update_endpoint_status
+from golden_endpoint_status import (
+    parse_fly_push_summary_from_log,
+    patch_from_cycle_report,
+    patch_from_guard_regression,
+    prior_rows_guard_passed,
+    status_for_endpoint,
+    status_patch_from_blast_radius,
+    update_endpoint_status,
+    _delta_count_from_push_summary,
+)
+import golden_dataset_paths
+import patch_blast_radius
+from feedback_audit_sync import sync_feedback_audit_from_postgres
 from scripts.golden_endpoint_cycle import (
     endpoint_block_from_golden,
     load_tree_path_golden,
@@ -38,6 +51,20 @@ def _row_index_for_endpoint(endpoint_id: str, endpoint_ids: list[str]) -> Option
         return endpoint_ids.index(endpoint_id)
     except ValueError:
         return None
+
+
+def _endpoint_pool_size(endpoint_id: str) -> int:
+    """Return PDF classification pool size for a golden table endpoint."""
+    block = endpoint_block_from_golden(load_tree_path_golden(), endpoint_id)
+    if not block:
+        return 0
+    return int(block.get("pool_size_pdf_classification") or 0)
+
+
+def _row_already_completed(endpoint_id: str) -> bool:
+    """Return True when an endpoint row finished with a passing golden guard."""
+    record = status_for_endpoint(endpoint_id)
+    return record.get("status") == "completed" and record.get("guard_passed") is True
 
 
 def _enforce_prior_rows_guard(
@@ -72,12 +99,15 @@ def _resolve_endpoint_id(
 
 
 def _latest_artifact_dir(endpoint_id: str) -> Optional[Path]:
-    """Return the newest cycle artifact directory for an endpoint."""
+    """Return the newest cycle artifact directory that has a cycle_report.json."""
     base = ROOT / "scratch/golden_dataset/cycles" / endpoint_id
     if not base.is_dir():
         return None
     candidates = sorted(base.glob(f"{endpoint_id}_*"), key=lambda p: p.name, reverse=True)
-    return candidates[0] if candidates else None
+    for candidate in candidates:
+        if (candidate / "cycle_report.json").is_file():
+            return candidate
+    return None
 
 
 def _run_shell(cmd: list[str], *, env: Optional[Dict[str, str]] = None) -> int:
@@ -146,32 +176,27 @@ def _write_delegation_bundle(endpoint_id: str, artifact_dir: Path, report: Dict[
 
 def _record_status(endpoint_id: str, report: Dict[str, Any]) -> None:
     """Update golden_endpoint_status.json from a cycle report."""
-    stages = report.get("stages") or {}
-    guard = stages.get("golden_guard") or {}
-    promote = stages.get("promote") or {}
-    push = stages.get("push") or {}
-    reingest = stages.get("reingest") or {}
-    llm = stages.get("llm") or {}
-    push_summary = push.get("stdout") or push.get("stdout_tail")
-    if isinstance(push_summary, str) and len(push_summary) > 120:
-        push_summary = push_summary[-120:].strip()
-    update_endpoint_status(
-        endpoint_id,
-        {
-            "status": report.get("status"),
-            "cycle_id": report.get("cycle_id"),
-            "scope_subnode": report.get("scope_subnode"),
-            "guard_passed": guard.get("passed"),
-            "batch_alignment_pct": guard.get("batch_alignment_pct"),
-            "guard_iterations": guard.get("iterations"),
-            "promoted_count": promote.get("promoted_count"),
-            "promoted_paper_ids": promote.get("paper_ids"),
-            "llm_classifier_version": llm.get("classifier_version"),
-            "reingest_paper_ids": reingest.get("paper_ids"),
-            "push_summary": push_summary,
-            "maude_build_id": MAUDE_CLASSIFIER_BUILD_ID,
-        },
-    )
+    patch = patch_from_cycle_report(report)
+    patch["maude_build_id"] = MAUDE_CLASSIFIER_BUILD_ID
+    update_endpoint_status(endpoint_id, patch)
+
+
+def _run_feedback_audit_preflight(*, sqlite_path: Optional[str] = None) -> None:
+    """Sync production feedback_audit corrections into local SQLite when Postgres is reachable."""
+    path = sqlite_path or os.getenv("DATABASE_PATH", "cannabis_papers.db")
+    if not os.getenv("DATABASE_URL"):
+        logger.info("Skipping feedback_audit preflight: DATABASE_URL not set")
+        return
+    try:
+        summary = sync_feedback_audit_from_postgres(path)
+        logger.info(
+            "feedback_audit preflight: inserted=%s papers_updated=%s pulled=%s",
+            summary.get("audit_rows_inserted"),
+            summary.get("papers_updated"),
+            (summary.get("pull_summary") or {}).get("pulled"),
+        )
+    except Exception as exc:
+        logger.warning("feedback_audit preflight failed: %s", exc)
 
 
 def run_phase_cycle(
@@ -198,6 +223,17 @@ def run_phase_cycle(
     }
     if row_index is not None:
         env["ROW_INDEX"] = str(row_index)
+
+    if pull and not os.getenv("DATABASE_URL") and not use_fly_proxy:
+        logger.warning(
+            "Skipping Postgres pull for %s: no DATABASE_URL (--no-fly-proxy)",
+            endpoint_id,
+        )
+        env["PULL"] = "0"
+        pull = False
+
+    if pull and os.getenv("DATABASE_URL"):
+        _run_feedback_audit_preflight()
 
     script = (
         "scripts/run_golden_endpoint_with_fly_proxy.sh"
@@ -234,6 +270,11 @@ def run_phase_finish(
     use_fly_proxy: bool,
 ) -> int:
     """Run reingest (+ optional push) and export HTML."""
+    if use_fly_proxy or os.getenv("DATABASE_URL"):
+        if use_fly_proxy and not os.getenv("DATABASE_URL"):
+            logger.info("feedback_audit preflight deferred to fly proxy wrapper")
+        else:
+            _run_feedback_audit_preflight()
     env = {
         "PULL": "0",
         "LLM": "0",
@@ -241,23 +282,95 @@ def run_phase_finish(
         "FEEDBACK": "0",
         "GOLDEN_GUARD": "0",
         "REINGEST": "1",
-        "PUSH": "1" if push else "0",
+        "PUSH": "0",
         "ENDPOINT_ID": endpoint_id,
+        "GOLDEN_FULL_SUBNODE_REINGEST": "1",
     }
     if row_index is not None:
         env["ROW_INDEX"] = str(row_index)
         if int(row_index) >= 3:
             env["GOLDEN_ROW_INDEX"] = str(int(row_index))
-    script = (
-        "scripts/run_golden_endpoint_with_fly_proxy.sh"
-        if use_fly_proxy and push
-        else "scripts/run_golden_endpoint_cycle.sh"
-    )
-    code = _run_shell(["bash", script], env=env)
-    if code != 0 and use_fly_proxy and push:
-        env["PULL"] = "0"
-        code = _run_shell(["bash", "scripts/run_golden_endpoint_cycle.sh"], env=env)
+    code = _run_shell(["bash", "scripts/run_golden_endpoint_cycle.sh"], env=env)
+    if code != 0:
+        return code
+    if push:
+        if use_fly_proxy and os.getenv("DATABASE_URL"):
+            proxy_env = {**env, "PUSH": "1"}
+            code = _run_shell(
+                ["bash", "scripts/run_golden_endpoint_with_fly_proxy.sh"], env=proxy_env
+            )
+            if code != 0:
+                logger.warning("Postgres proxy push failed; retrying via Fly SSH delta push")
+        if code != 0 or not (use_fly_proxy and os.getenv("DATABASE_URL")):
+            fly_code = _run_shell(["bash", "scripts/run_fly_push_deltas.sh"])
+            if fly_code != 0:
+                return fly_code
+            code = 0
+            push_summary = parse_fly_push_summary_from_log()
+            if push_summary:
+                update_endpoint_status(endpoint_id, {"push_summary": push_summary})
+                artifact_dir = _latest_artifact_dir(endpoint_id)
+                if artifact_dir:
+                    report_path = artifact_dir / "cycle_report.json"
+                    if report_path.is_file():
+                        report = _cycle_report(artifact_dir)
+                        stages = dict(report.get("stages") or {})
+                        stages["push"] = {
+                            "method": "fly_ssh",
+                            "stdout_tail": push_summary,
+                        }
+                        report["stages"] = stages
+                        report["status"] = report.get("status") or "completed"
+                        with open(report_path, "w", encoding="utf-8") as handle:
+                            json.dump(report, handle, indent=2, ensure_ascii=False)
     if code == 0:
+        artifact_dir = _latest_artifact_dir(endpoint_id)
+        if artifact_dir and (artifact_dir / "cycle_report.json").is_file():
+            report = _cycle_report(artifact_dir)
+            cycle_id = report.get("cycle_id") or artifact_dir.name
+            reingest = (report.get("stages") or {}).get("reingest") or {}
+            if not reingest.get("field_change_counts"):
+                reingest = patch_blast_radius.load_reingest_from_artifact(artifact_dir)
+            push_stage = (report.get("stages") or {}).get("push") or {}
+            push_summary: Optional[Dict[str, Any]] = push_stage if push_stage else None
+            if push_summary and push_summary.get("stdout_tail") and not push_summary.get("delta_count"):
+                delta = _delta_count_from_push_summary(str(push_summary.get("stdout_tail")))
+                if delta is not None:
+                    push_summary = {**push_summary, "delta_count": delta, "papers_pushed": delta}
+
+            scope_subnode = report.get("scope_subnode")
+            if not scope_subnode:
+                ep = golden_dataset_paths.endpoint_by_id(endpoint_id)
+                scope_subnode = ep.scope_subnode if ep else "node2a"
+
+            patch_id = cycle_id
+            try:
+                blast_payload = patch_blast_radius.run_finish_reporting(
+                    loop_type="golden_b",
+                    patch_id=patch_id,
+                    reingest_summary=reingest,
+                    scope_subnode=scope_subnode,
+                    endpoint_id=endpoint_id,
+                    push_summary=push_summary,
+                    sqlite_path=os.getenv("DATABASE_PATH", "cannabis_papers.db"),
+                )
+                status_patch = status_patch_from_blast_radius(blast_payload)
+                status_patch["maude_build_id"] = MAUDE_CLASSIFIER_BUILD_ID
+                update_endpoint_status(endpoint_id, status_patch)
+
+                stages = dict(report.get("stages") or {})
+                stages["blast_radius"] = {
+                    "report_paths": blast_payload.get("report_paths"),
+                    "papers_scanned": blast_payload.get("papers_scanned"),
+                    "papers_changed": blast_payload.get("papers_changed"),
+                    "papers_pushed": blast_payload.get("papers_pushed"),
+                }
+                report["stages"] = stages
+                with open(artifact_dir / "cycle_report.json", "w", encoding="utf-8") as handle:
+                    json.dump(report, handle, indent=2, ensure_ascii=False)
+            except Exception as exc:
+                logger.error("Blast-radius reporting failed for %s: %s", endpoint_id, exc)
+                return 1
         _run_shell(["python3", "scripts/export_golden_table_html.py"])
     return code
 
@@ -326,7 +439,8 @@ def run_single_row(
         push=push,
         use_fly_proxy=use_fly_proxy,
     )
-    _record_status(endpoint_id, _cycle_report(artifact_dir) or report)
+    if artifact_dir:
+        _record_status(endpoint_id, _cycle_report(artifact_dir))
     return finish_code
 
 
@@ -341,6 +455,17 @@ def main() -> None:
         "--auto-advance",
         action="store_true",
         help="Run rows sequentially from --row-index (or 0); stop when guard blocks or a prior row failed guard",
+    )
+    parser.add_argument(
+        "--min-pool-size",
+        type=int,
+        default=None,
+        help="With --auto-advance, stop before rows whose PDF classification pool is below this size.",
+    )
+    parser.add_argument(
+        "--skip-completed",
+        action="store_true",
+        help="With --auto-advance, skip endpoints that already passed golden guard.",
     )
     parser.add_argument(
         "--skip-prior-guard-check",
@@ -370,11 +495,31 @@ def main() -> None:
         if start_row < 0 or start_row >= len(endpoint_ids):
             raise SystemExit(f"row_index {start_row} out of range (0..{len(endpoint_ids) - 1})")
         for current_row in range(start_row, len(endpoint_ids)):
+            endpoint_id = endpoint_ids[current_row]
+            pool_size = _endpoint_pool_size(endpoint_id)
+            if args.min_pool_size is not None and pool_size < args.min_pool_size:
+                logger.info(
+                    "Stopping auto-advance at row %d (%s): pool %d < min %d",
+                    current_row,
+                    endpoint_id,
+                    pool_size,
+                    args.min_pool_size,
+                )
+                break
+            if args.skip_completed and _row_already_completed(endpoint_id):
+                logger.info(
+                    "Skipping completed row %d (%s, pool=%d)",
+                    current_row,
+                    endpoint_id,
+                    pool_size,
+                )
+                continue
             logger.info(
-                "=== golden row %d / %d: %s ===",
+                "=== golden row %d / %d: %s (pool=%d) ===",
                 current_row,
                 len(endpoint_ids) - 1,
-                endpoint_ids[current_row],
+                endpoint_id,
+                pool_size,
             )
             code = run_single_row(
                 current_row,
@@ -405,6 +550,17 @@ def main() -> None:
         report = _cycle_report(artifact_dir)
         if report:
             _record_status(endpoint_id, report)
+        regression_files = sorted(artifact_dir.glob("golden_regression_iter_*.json"))
+        if regression_files:
+            latest = regression_files[-1]
+            with open(latest, encoding="utf-8") as handle:
+                regression = json.load(handle)
+            attempt_match = re.search(r"_iter_(\d+)\.json$", latest.name)
+            iterations = int(attempt_match.group(1)) if attempt_match else None
+            update_endpoint_status(
+                endpoint_id,
+                patch_from_guard_regression(regression, iterations=iterations),
+            )
         raise SystemExit(code)
 
     if args.finish:

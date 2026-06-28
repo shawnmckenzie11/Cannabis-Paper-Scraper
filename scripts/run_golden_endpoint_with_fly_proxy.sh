@@ -164,11 +164,22 @@ PY
   )"
 fi
 
+echo "==> Preflight: sync feedback_audit from Postgres → local SQLite"
+python3 - <<'PY'
+import json
+from feedback_audit_sync import sync_feedback_audit_from_postgres
+print(json.dumps(sync_feedback_audit_from_postgres("cannabis_papers.db"), indent=2))
+PY
+
 if [[ -z "${ANTHROPIC_API_KEY:-}" ]]; then
   export ANTHROPIC_API_KEY="$(
     fly ssh console -a cannabis-paper-scraper -C "printenv ANTHROPIC_API_KEY" 2>/dev/null | \
       grep -v '^Connecting to ' | tail -1
   )"
+fi
+
+if [[ "$#" -gt 0 ]]; then
+  exec "$@"
 fi
 
 exec bash scripts/run_golden_endpoint_cycle.sh "$@"

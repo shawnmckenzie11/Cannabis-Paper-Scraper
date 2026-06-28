@@ -4,7 +4,7 @@ import os
 import json
 import re
 from datetime import datetime
-from typing import List, Dict, Any, Optional, Tuple
+from typing import List, Dict, Any, Optional, Tuple, Sequence
 import logging
 import time
 
@@ -1414,6 +1414,72 @@ class DatabaseManager:
                 (paper_id,),
             )
             return [dict(row) for row in cursor.fetchall()]
+        finally:
+            conn.close()
+
+    def fetch_feedback_audit_since(
+        self,
+        since_ts: str,
+        *,
+        expert_drawer_only: bool = True,
+        paper_ids: Optional[Sequence[int]] = None,
+    ) -> List[Dict[str, Any]]:
+        """Returns feedback_audit rows after a timestamp (expert drawer edits by default).
+
+        When expert_drawer_only is True, excludes auto-calibration rows (field_name LIKE 'maude:%').
+        Does not filter by paper classifier_version — Maude, LLM, and heuristic papers are included.
+        """
+        conn = self.get_connection()
+        cursor = conn.cursor()
+        clauses = ["timestamp > ?"]
+        params: List[Any] = [since_ts]
+        if expert_drawer_only:
+            clauses.append("field_name NOT LIKE 'maude:%'")
+        if paper_ids:
+            placeholders = ", ".join("?" for _ in paper_ids)
+            clauses.append(f"paper_id IN ({placeholders})")
+            params.extend(int(pid) for pid in paper_ids)
+        sql = f"""
+            SELECT id, paper_id, field_name, old_value, new_value, title, abstract,
+                   timestamp, confidence_before_review, classifier_version
+            FROM feedback_audit
+            WHERE {' AND '.join(clauses)}
+            ORDER BY timestamp ASC, id ASC
+        """
+        try:
+            cursor.execute(sql, tuple(params))
+            rows = cursor.fetchall()
+            return [dict(row) for row in rows]
+        finally:
+            conn.close()
+
+    def count_expert_edits_since(
+        self,
+        since_ts: str,
+        *,
+        expert_drawer_only: bool = True,
+    ) -> int:
+        """Counts distinct expert field corrections since a timestamp."""
+        conn = self.get_connection()
+        cursor = conn.cursor()
+        clauses = ["timestamp > ?"]
+        params: List[Any] = [since_ts]
+        if expert_drawer_only:
+            clauses.append("field_name NOT LIKE 'maude:%'")
+        sql = f"""
+            SELECT COUNT(*) AS total
+            FROM feedback_audit
+            WHERE {' AND '.join(clauses)}
+        """
+        try:
+            cursor.execute(sql, tuple(params))
+            row = cursor.fetchone()
+            if not row:
+                return 0
+            try:
+                return int(row["total"])
+            except Exception:
+                return int(row[0])
         finally:
             conn.close()
 

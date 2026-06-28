@@ -4,7 +4,7 @@
 from __future__ import annotations
 
 # Bump when extractor/maude_classifier handoffs land so RL runs can verify Fly image.
-MAUDE_CLASSIFIER_BUILD_ID = "20260627-node2c-golden-guard-v1"
+MAUDE_CLASSIFIER_BUILD_ID = "20260628-manual-edit-tracker-v2"
 
 
 def maude_build_info() -> dict:

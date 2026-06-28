@@ -24,7 +24,7 @@ import content_tiers
 import golden_confirmed_store
 import golden_dataset_paths
 import subnode_field_scopes
-from golden_endpoint_status import update_endpoint_status
+from golden_endpoint_status import patch_from_cycle_report, update_endpoint_status
 from golden_dataset_paths import TreePathEndpoint
 
 logger = logging.getLogger(__name__)
@@ -466,9 +466,9 @@ def run_reingest(
     batch_size: int = 50,
     workers: int = 4,
     row_index: Optional[int] = None,
+    full_subnode: bool = False,
 ) -> Dict[str, Any]:
     """Runs subnode-scoped local Maude two-pass reingest."""
-    tab = SUBNODE_TO_TAB.get(scope_subnode, "clinical")
     env = os.environ.copy()
     env.pop("DATABASE_URL", None)
     env["DATABASE_PATH"] = sqlite_path
@@ -490,11 +490,14 @@ def run_reingest(
         str(workers),
         "--refresh-maude-confidence",
     ]
-    if paper_ids:
+    if full_subnode:
+        cmd.extend(["--scope-subnode", scope_subnode])
+    elif paper_ids:
         cmd.extend(
             ["--paper-ids", ",".join(str(int(pid)) for pid in sorted(set(paper_ids)))],
         )
     else:
+        tab = SUBNODE_TO_TAB.get(scope_subnode, "clinical")
         cmd.extend(["--tabs", tab])
     proc = subprocess.run(cmd, env=env, capture_output=True, text=True)
     if proc.returncode != 0:
@@ -503,12 +506,22 @@ def run_reingest(
 
     summary: Dict[str, Any] = {"stdout_tail": proc.stdout[-4000:]}
     for line in proc.stdout.splitlines():
-        if line.strip().startswith("{") and "written_paper_ids" in line:
+        if line.startswith("GOLDEN_REINGEST_SUMMARY="):
             try:
-                summary = json.loads(line)
+                summary = json.loads(line.split("=", 1)[1])
                 break
             except json.JSONDecodeError:
                 pass
+    if "field_change_counts" not in summary:
+        for line in proc.stdout.splitlines():
+            if line.strip().startswith("{") and "written_paper_ids" in line:
+                try:
+                    summary = json.loads(line)
+                    break
+                except json.JSONDecodeError:
+                    pass
+    if full_subnode:
+        summary["full_subnode"] = True
     return summary
 
 
@@ -795,17 +808,22 @@ def run_cycle(
                 if p.get("endpoint_id") == resolved_endpoint_id and p.get("paper_id") is not None
             ]
         })
+        full_subnode = os.getenv("GOLDEN_FULL_SUBNODE_REINGEST", "1") == "1"
         reingest_summary = run_reingest(
             sqlite_path,
             endpoint.scope_subnode,
-            paper_ids=reingest_ids,
+            paper_ids=None if full_subnode else reingest_ids,
             row_index=(
                 row_index
                 if row_index is not None
                 else row_index_for_endpoint(resolved_endpoint_id, golden_path)
             ),
+            full_subnode=full_subnode,
         )
-        reingest_summary["paper_ids"] = reingest_ids
+        if not full_subnode:
+            reingest_summary["paper_ids"] = reingest_ids
+        else:
+            reingest_summary["scope_subnode"] = endpoint.scope_subnode
         report["stages"]["reingest"] = reingest_summary
 
     push_summary: Dict[str, Any] = {}
@@ -828,17 +846,6 @@ def run_cycle(
 
 def _record_endpoint_status(endpoint_id: str, report: Dict[str, Any]) -> None:
     """Updates golden_endpoint_status.json from a finished cycle report."""
-    stages = report.get("stages") or {}
-    guard = stages.get("golden_guard") or {}
-    promote = stages.get("promote") or {}
-    push = stages.get("push") or {}
-    reingest = stages.get("reingest") or {}
-    llm = stages.get("llm") or {}
-
-    push_summary = push.get("stdout") or push.get("stdout_tail")
-    if isinstance(push_summary, str) and len(push_summary) > 120:
-        push_summary = push_summary[-120:].strip()
-
     try:
         from calibration_build import MAUDE_CLASSIFIER_BUILD_ID
         build_id = MAUDE_CLASSIFIER_BUILD_ID
@@ -848,19 +855,7 @@ def _record_endpoint_status(endpoint_id: str, report: Dict[str, Any]) -> None:
     update_endpoint_status(
         endpoint_id,
         {
-            "status": report.get("status"),
-            "cycle_id": report.get("cycle_id"),
-            "scope_subnode": report.get("scope_subnode"),
-            "guard_passed": guard.get("passed"),
-            "batch_alignment_pct": guard.get("batch_alignment_pct"),
-            "guard_iterations": guard.get("iterations"),
-            "promoted_count": promote.get("promoted_count"),
-            "promoted_paper_ids": promote.get("paper_ids"),
-            "llm_classifier_version": llm.get("classifier_version"),
-            "reingest_paper_ids": reingest.get("paper_ids"),
-            "push_summary": push_summary or (
-                "102 deltas (fly)" if report.get("status") == "completed" and push else None
-            ),
+            **patch_from_cycle_report(report),
             "maude_build_id": build_id,
         },
     )

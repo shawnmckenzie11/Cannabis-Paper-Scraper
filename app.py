@@ -149,6 +149,31 @@ def daily_harvest_scheduler():
                     sched_logger.info(f"Daily scheduler: starting automated harvest for query '{query}' (today: {today_str}, last run: {last_run_date})")
                     db.set_metadata("last_daily_harvest_status", f"Running automated harvest since {datetime.now().strftime('%H:%M:%S')}...")
 
+                    try:
+                        import manual_edit_cycle
+                        if manual_edit_cycle.should_run_pre_harvest_cycle(db):
+                            since_ts = manual_edit_cycle.pre_harvest_processing_since(db)
+                            pending = db.count_expert_edits_since(since_ts, expert_drawer_only=True)
+                            sched_logger.info(
+                                "Pre-harvest: %s unprocessed expert edit(s) since last harvest/cycle; running manual edit cycle",
+                                pending,
+                            )
+                            edit_result = manual_edit_cycle.run_manual_edit_cycle(
+                                db,
+                                since=since_ts,
+                                dry_run=False,
+                                sqlite_path=os.getenv("SQLITE_PATH", "/data/cannabis_papers.db"),
+                            )
+                            sched_logger.info("Pre-harvest manual edit cycle: %s", edit_result)
+                        else:
+                            sched_logger.info(
+                                "Pre-harvest: no unprocessed expert edits since last daily harvest; skipping manual edit cycle"
+                            )
+                    except Exception as edit_err:
+                        sched_logger.error("Pre-harvest manual edit cycle failed: %s", edit_err)
+                        if os.getenv("MANUAL_EDIT_BLOCK_HARVEST", "0") == "1":
+                            raise
+
                     # Call the unified pipeline
                     success_count, skipped_count, filter_skipped, ingested_ids = harvest.run_harvest_pipeline(
                         query=query,
@@ -1280,6 +1305,7 @@ def api_harvest_status():
 @app.route("/api/scheduler/status", methods=["GET"])
 def api_scheduler_status():
     """Returns the daily background scheduler status from the metadata table."""
+    import manual_edit_cycle
     db = DatabaseManager()
     active = db.get_metadata("scheduler_active", "false")
     last_date = db.get_metadata("last_daily_harvest_date", "Never")
@@ -1290,8 +1316,47 @@ def api_scheduler_status():
         "last_run_date": last_date,
         "last_run_timestamp": last_timestamp,
         "last_run_status": last_status,
-        "query": "cannabis OR cannabinoid OR marijuana"
+        "query": "cannabis OR cannabinoid OR marijuana",
+        "manual_edit_cycle": {
+            "last_cycle_at": db.get_metadata("last_manual_edit_cycle_at"),
+            "pending_edits": manual_edit_cycle.pending_edit_count(db),
+            "last_report": manual_edit_cycle.load_last_cycle_report(db),
+        },
     })
+
+@app.route("/api/manual-edit-cycle/status", methods=["GET"])
+@admin_required
+def api_manual_edit_cycle_status():
+    """Returns manual edit cycle watermark, pending edits, and last run report."""
+    import manual_edit_cycle
+    db = DatabaseManager()
+    return jsonify({
+        "last_cycle_at": db.get_metadata(manual_edit_cycle.METADATA_LAST_CYCLE),
+        "pending_edits": manual_edit_cycle.pending_edit_count(db),
+        "last_report": manual_edit_cycle.load_last_cycle_report(db),
+    })
+
+
+@app.route("/api/manual-edit-cycle/run", methods=["POST"])
+@admin_required
+def api_manual_edit_cycle_run():
+    """Triggers the manual expert-edit RL cycle immediately (for testing or ops)."""
+    import manual_edit_cycle
+    db = DatabaseManager()
+    data = request.get_json(silent=True) or {}
+    since = data.get("since")
+    paper_ids = data.get("paper_ids")
+    dry_run = bool(data.get("dry_run", False))
+    result = manual_edit_cycle.run_manual_edit_cycle(
+        db,
+        since=since,
+        sqlite_path=data.get("sqlite_path") or os.getenv("SQLITE_PATH", "cannabis_papers.db"),
+        paper_ids=paper_ids,
+        dry_run=dry_run,
+        apply_cues=not bool(data.get("no_cues", False)),
+        bump_version=not bool(data.get("no_version_bump", False)),
+    )
+    return jsonify(result)
 
 def _calibration_output_dir() -> Path:
     """Returns the active calibration artifacts directory for this deployment."""
@@ -1499,7 +1564,7 @@ ANALYSIS_QUANTITATIVE_FIELDS = (
     ("sample_size", "Sample Size"),
     ("dose_mg", "Dose (mg)"),
     ("puff_count", "Puff Count"),
-    ("duration_days", "Duration (days)"),
+    ("duration_days", "Study Duration (days)"),
     ("thc_mg_kg", "THC (mg/kg)"),
     ("cbd_mg_kg", "CBD (mg/kg)"),
     ("thc_mg_ml", "THC (mg/mL)"),
@@ -1510,6 +1575,13 @@ ANALYSIS_QUANTITATIVE_FIELDS = (
     ("cbd_uM", "CBD (µM)"),
     ("repeat_exposure_count", "Repeat Exposures"),
     ("citation_count", "Citations"),
+)
+
+ANALYSIS_PAPER_EXTRA_FIELDS = (
+    "treatment_duration",
+    "administration_frequency",
+    "population_sex",
+    "population_age",
 )
 
 
@@ -1523,8 +1595,18 @@ def _numeric_field_value(value):
         return None
 
 
+def _median_value(values):
+    """Return the median of a non-empty numeric sequence."""
+    ordered = sorted(values)
+    count = len(ordered)
+    mid = count // 2
+    if count % 2:
+        return ordered[mid]
+    return round((ordered[mid - 1] + ordered[mid]) / 2, 2)
+
+
 def _compute_quantitative_aggregates(papers):
-    """Average and count for each numeric field with at least one reported value."""
+    """Min, median, max, and count for each numeric field with at least one reported value."""
     aggregates = {}
     for field_key, label in ANALYSIS_QUANTITATIVE_FIELDS:
         values = [
@@ -1532,10 +1614,16 @@ def _compute_quantitative_aggregates(papers):
             if (num := _numeric_field_value(p.get(field_key))) is not None
         ]
         if values:
+            values.sort()
             aggregates[field_key] = {
                 "label": label,
-                "avg": round(sum(values) / len(values), 2),
+                "kind": "numeric",
                 "count": len(values),
+                "n": len(values),
+                "min": values[0],
+                "median": _median_value(values),
+                "max": values[-1],
+                "avg": _median_value(values),
             }
     return aggregates
 
@@ -1553,6 +1641,8 @@ def _slim_paper_for_analysis(paper):
         "outcome_domain": paper.get("outcome_domain") or [],
     }
     for field_key, _label in ANALYSIS_QUANTITATIVE_FIELDS:
+        slim[field_key] = paper.get(field_key)
+    for field_key in ANALYSIS_PAPER_EXTRA_FIELDS:
         slim[field_key] = paper.get(field_key)
     return slim
 
