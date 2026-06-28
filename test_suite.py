@@ -4,9 +4,11 @@ import os
 import json
 import sqlite3
 from pathlib import Path
+from unittest.mock import patch
 from db_manager import DatabaseManager
 import extractor
 import classifier
+import reingest_heuristic_papers
 
 class TestHeuristicExtractor(unittest.TestCase):
     """Test cases for regex extractions and heuristics in extractor.py."""
@@ -258,6 +260,126 @@ class TestHeuristicExtractor(unittest.TestCase):
         self.assertIn("This is an animal study", summary_no)
         self.assertIn("pure cannabinoid cannabis administration", summary_no)
         self.assertIn("No specific strain was specified.", summary_no)
+
+
+class TestHeuristicReingestion(unittest.TestCase):
+    """Test cases for bounded heuristic re-ingestion script behavior."""
+
+    def setUp(self):
+        """Create an isolated SQLite catalog and deterministic classifier stub."""
+        self.test_db_path = "test_reingest_papers.db"
+        if os.path.exists(self.test_db_path):
+            os.remove(self.test_db_path)
+
+        self.env_patcher = patch.dict(os.environ, {"DATABASE_URL": ""})
+        self.env_patcher.start()
+        self.db = DatabaseManager(self.test_db_path)
+
+        self.original_manager = reingest_heuristic_papers.DatabaseManager
+        self.original_classifier = reingest_heuristic_papers.classifier.process_paper_metadata
+        def database_manager_stub():
+            """Return the isolated test database manager for script calls."""
+            return self.db
+
+        reingest_heuristic_papers.DatabaseManager = database_manager_stub
+        reingest_heuristic_papers.classifier.process_paper_metadata = self.classify_stub
+
+    def tearDown(self):
+        """Restore monkey patches and remove the isolated SQLite catalog."""
+        reingest_heuristic_papers.DatabaseManager = self.original_manager
+        reingest_heuristic_papers.classifier.process_paper_metadata = self.original_classifier
+        self.env_patcher.stop()
+        if os.path.exists(self.test_db_path):
+            os.remove(self.test_db_path)
+
+    def classify_stub(self, title, abstract, run_llm=False):
+        """Return stable heuristic metadata for bounded re-ingestion tests."""
+        return {
+            "study_type": ["Clinical (observational)"],
+            "exposure_method": ["unknown"],
+            "cannabis_type": ["unknown"],
+            "outcome_domain": ["addiction"],
+            "duration_days": 30.0,
+            "inhaled_exposure_duration": None,
+            "administration_frequency": None,
+            "treatment_duration": None,
+            "sample_size": None,
+            "thc_pct": None,
+            "cbd_pct": None,
+            "dose_mg": None,
+            "strain_reported": None,
+            "strain_normalized": None,
+            "publication_type": "original research",
+            "summary": f"Reclassified {title}",
+            "classification_confidence": 0.6,
+            "classification_timestamp": "2026-06-28T06:00:00",
+            "classifier_version": "heuristic-1.0.0",
+        }
+
+    def insert_reingestion_paper(self, title, classifier_version):
+        """Insert one paper with the minimum fields needed by re-ingestion."""
+        return self.db.insert_paper(
+            {
+                "title": title,
+                "abstract": "Cannabis intervention abstract.",
+                "study_type": ["review"],
+                "exposure_method": ["inhaled"],
+                "cannabis_type": ["dried flower"],
+                "outcome_domain": ["cognition"],
+                "classification_confidence": 0.95,
+                "classifier_version": classifier_version,
+                "expert_locked_fields": [],
+            }
+        )
+
+    def test_max_papers_limits_only_pending_reingestion(self):
+        """Only the oldest pending rows up to max_papers should be reclassified."""
+        first_id = self.insert_reingestion_paper(
+            "First pending paper", "heuristic-reclassify-1.0.0"
+        )
+        second_id = self.insert_reingestion_paper(
+            "Second pending paper", "heuristic-reclassify-1.0.0"
+        )
+        third_id = self.insert_reingestion_paper(
+            "Third pending paper", "heuristic-reclassify-1.0.0"
+        )
+        current_id = self.insert_reingestion_paper(
+            "Current heuristic paper", "heuristic-1.0.0"
+        )
+
+        summary = reingest_heuristic_papers.reingest_heuristic_papers(
+            batch_size=1,
+            only_pending=True,
+            max_papers=2,
+        )
+
+        conn = self.db.get_connection()
+        try:
+            rows = conn.execute(
+                "SELECT id, classifier_version, classification_confidence, summary "
+                "FROM papers ORDER BY id"
+            ).fetchall()
+        finally:
+            conn.close()
+
+        by_id = {row["id"]: dict(row) for row in rows}
+        self.assertEqual(summary["papers_processed"], 2)
+        self.assertEqual(summary["max_papers"], 2)
+        self.assertEqual(by_id[first_id]["classifier_version"], "heuristic-1.0.0")
+        self.assertEqual(by_id[second_id]["classifier_version"], "heuristic-1.0.0")
+        self.assertEqual(by_id[first_id]["classification_confidence"], 0.6)
+        self.assertEqual(by_id[second_id]["classification_confidence"], 0.6)
+        self.assertEqual(
+            by_id[third_id]["classifier_version"], "heuristic-reclassify-1.0.0"
+        )
+        self.assertEqual(by_id[third_id]["classification_confidence"], 0.95)
+        self.assertEqual(by_id[current_id]["classifier_version"], "heuristic-1.0.0")
+        self.assertEqual(by_id[current_id]["classification_confidence"], 0.95)
+
+    def test_max_papers_must_be_positive(self):
+        """A non-positive cap should fail before opening a database connection."""
+        with self.assertRaises(ValueError):
+            reingest_heuristic_papers.reingest_heuristic_papers(max_papers=0)
 
 
 class TestDatabaseManager(unittest.TestCase):
