@@ -3,10 +3,13 @@ import unittest
 import os
 import json
 import sqlite3
+import tempfile
 from pathlib import Path
+from unittest.mock import patch
 from db_manager import DatabaseManager
 import extractor
 import classifier
+import reingest_heuristic_papers
 
 class TestHeuristicExtractor(unittest.TestCase):
     """Test cases for regex extractions and heuristics in extractor.py."""
@@ -258,6 +261,110 @@ class TestHeuristicExtractor(unittest.TestCase):
         self.assertIn("This is an animal study", summary_no)
         self.assertIn("pure cannabinoid cannabis administration", summary_no)
         self.assertIn("No specific strain was specified.", summary_no)
+
+
+class TestHeuristicReingestion(unittest.TestCase):
+    """Tests for bounded heuristic re-ingestion runs."""
+
+    def test_max_papers_limits_only_pending_updates(self):
+        """Re-ingestion should update no more than the requested pending cap."""
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            db_path = Path(tmp_dir) / "papers.db"
+            conn = sqlite3.connect(db_path)
+            conn.execute(
+                """
+                CREATE TABLE papers (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    title TEXT,
+                    abstract TEXT,
+                    expert_locked_fields TEXT,
+                    study_type TEXT,
+                    exposure_method TEXT,
+                    cannabis_type TEXT,
+                    outcome_domain TEXT,
+                    duration_days REAL,
+                    inhaled_exposure_duration REAL,
+                    administration_frequency TEXT,
+                    treatment_duration TEXT,
+                    sample_size INTEGER,
+                    thc_pct REAL,
+                    cbd_pct REAL,
+                    dose_mg REAL,
+                    strain_reported TEXT,
+                    strain_normalized TEXT,
+                    publication_type TEXT,
+                    summary TEXT,
+                    classification_confidence REAL,
+                    classification_timestamp TEXT,
+                    classifier_version TEXT
+                )
+                """
+            )
+            conn.executemany(
+                """
+                INSERT INTO papers (
+                    title, abstract, expert_locked_fields, classification_confidence,
+                    classifier_version
+                ) VALUES (?, ?, ?, ?, ?)
+                """,
+                [
+                    ("Pending 1", "Cannabis study one", "[]", 0.9, "heuristic-reclassify-1.0.0"),
+                    ("Pending 2", "Cannabis study two", "[]", 0.9, "heuristic-reclassify-1.0.0"),
+                    ("Current", "Cannabis study three", "[]", 0.6, "heuristic-1.0.0"),
+                ],
+            )
+            conn.commit()
+            conn.close()
+
+            runtime_conn = sqlite3.connect(db_path)
+            runtime_conn.row_factory = sqlite3.Row
+            extracted = {
+                "study_type": ["Clinical (observational)"],
+                "exposure_method": ["unknown"],
+                "cannabis_type": ["unknown"],
+                "outcome_domain": ["other"],
+                "duration_days": None,
+                "inhaled_exposure_duration": None,
+                "administration_frequency": None,
+                "treatment_duration": None,
+                "sample_size": None,
+                "thc_pct": None,
+                "cbd_pct": None,
+                "dose_mg": None,
+                "strain_reported": None,
+                "strain_normalized": None,
+                "publication_type": "original research",
+                "summary": "Updated by bounded test.",
+                "classification_confidence": 0.6,
+                "classification_timestamp": "2026-06-29T00:00:00",
+                "classifier_version": "heuristic-1.0.0",
+            }
+            with patch("reingest_heuristic_papers.DatabaseManager") as db_manager_cls, patch(
+                "reingest_heuristic_papers.classifier.process_paper_metadata",
+                return_value=extracted,
+            ) as process_metadata:
+                db_manager_cls.return_value.get_connection.return_value = runtime_conn
+                summary = reingest_heuristic_papers.reingest_heuristic_papers(
+                    batch_size=1,
+                    only_pending=True,
+                    max_papers=1,
+                )
+
+            self.assertEqual(summary["papers_processed"], 1)
+            self.assertEqual(process_metadata.call_count, 1)
+
+            verify_conn = sqlite3.connect(db_path)
+            rows = verify_conn.execute(
+                "SELECT id, classifier_version, summary FROM papers ORDER BY id"
+            ).fetchall()
+            verify_conn.close()
+
+            self.assertEqual(rows[0][1], "heuristic-1.0.0")
+            self.assertEqual(rows[0][2], "Updated by bounded test.")
+            self.assertEqual(rows[1][1], "heuristic-reclassify-1.0.0")
+            self.assertIsNone(rows[1][2])
+            self.assertEqual(rows[2][1], "heuristic-1.0.0")
+            self.assertIsNone(rows[2][2])
 
 
 class TestDatabaseManager(unittest.TestCase):
