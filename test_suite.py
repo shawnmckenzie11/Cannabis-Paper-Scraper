@@ -3,6 +3,7 @@ import unittest
 import os
 import json
 import sqlite3
+from unittest.mock import patch
 from pathlib import Path
 from db_manager import DatabaseManager
 import extractor
@@ -1580,6 +1581,147 @@ class TestAdminRequiredEndpoints(unittest.TestCase):
         # For edit-classification, should return 404 since paper 99999 doesn't exist (proving decorator passed)
         res2 = self.client.post("/api/papers/99999/edit-classification", json={})
         self.assertEqual(res2.status_code, 404)
+
+
+class TestHeuristicReingestion(unittest.TestCase):
+    """Test cases for bounded heuristic re-ingestion safety controls."""
+
+    def _classified_metadata(self):
+        """Return a complete heuristic metadata payload for mocked re-ingestion."""
+        return {
+            "study_type": ["Clinical (observational)"],
+            "exposure_method": ["unknown"],
+            "cannabis_type": ["unknown"],
+            "outcome_domain": ["addiction"],
+            "duration_days": 30.0,
+            "inhaled_exposure_duration": None,
+            "administration_frequency": None,
+            "treatment_duration": None,
+            "sample_size": 122,
+            "thc_pct": None,
+            "cbd_pct": None,
+            "dose_mg": None,
+            "strain_reported": None,
+            "strain_normalized": None,
+            "publication_type": "original research",
+            "summary": "Mock heuristic summary.",
+            "classification_confidence": 0.6,
+            "classification_timestamp": "2026-06-30T00:00:00",
+            "classifier_version": "heuristic-1.0.0",
+        }
+
+    def test_max_papers_limits_only_pending_selection(self):
+        """The SELECT query should cap pending production-sized runs."""
+        import reingest_heuristic_papers
+
+        rows = [
+            {
+                "id": idx,
+                "title": f"Paper {idx}",
+                "abstract": "Cannabis use intervention study.",
+                "expert_locked_fields": None,
+                "study_type": '["Clinical (observational)"]',
+                "exposure_method": '["unknown"]',
+                "cannabis_type": '["unknown"]',
+                "outcome_domain": '["addiction"]',
+                "duration_days": 30.0,
+                "classification_confidence": 0.9,
+                "classifier_version": "heuristic-reclassify-1.0.0",
+            }
+            for idx in range(1, 4)
+        ]
+
+        class FakeCursor:
+            """Capture SQL and emulate LIMIT behavior for fetched rows."""
+
+            def __init__(self, source_rows):
+                """Store source rows and executed SQL for assertions."""
+                self.source_rows = source_rows
+                self.executed = []
+
+            def execute(self, sql, params=None):
+                """Record each executed SQL statement and its parameters."""
+                self.executed.append((sql, params or []))
+
+            def fetchall(self):
+                """Return rows capped by the last LIMIT parameter when present."""
+                sql, params = self.executed[-1]
+                if "LIMIT ?" in sql:
+                    return self.source_rows[: params[0]]
+                return self.source_rows
+
+        class FakeConnection:
+            """Provide the connection surface used by the re-ingestion script."""
+
+            def __init__(self, cursor):
+                """Store the cursor and row factory placeholder."""
+                self.cursor_obj = cursor
+                self.row_factory = None
+
+            def cursor(self):
+                """Return the fake cursor for query execution."""
+                return self.cursor_obj
+
+            def close(self):
+                """Match the database connection close API."""
+                pass
+
+        fake_cursor = FakeCursor(rows)
+        fake_connection = FakeConnection(fake_cursor)
+
+        class FakeDatabaseManager:
+            """Return the fake connection used by this unit test."""
+
+            def get_connection(self):
+                """Return a fake database connection."""
+                return fake_connection
+
+        with patch.object(
+            reingest_heuristic_papers, "DatabaseManager", FakeDatabaseManager
+        ), patch.object(
+            reingest_heuristic_papers.classifier,
+            "process_paper_metadata",
+            return_value=self._classified_metadata(),
+        ) as process_mock:
+            summary = reingest_heuristic_papers.reingest_heuristic_papers(
+                dry_run=True,
+                only_pending=True,
+                max_papers=2,
+            )
+
+        sql, params = fake_cursor.executed[0]
+        self.assertIn("classifier_version LIKE 'heuristic-reclassify%'", sql)
+        self.assertIn("ORDER BY id", sql)
+        self.assertIn("LIMIT ?", sql)
+        self.assertEqual(params, [2])
+        self.assertEqual(process_mock.call_count, 2)
+        self.assertEqual(summary["papers_processed"], 2)
+        self.assertEqual(summary["max_papers"], 2)
+
+    def test_cli_passes_max_papers_argument(self):
+        """The CLI should forward --max-papers to the re-ingestion function."""
+        import reingest_heuristic_papers
+
+        argv = [
+            "reingest_heuristic_papers.py",
+            "--dry-run",
+            "--only-pending",
+            "--batch-size",
+            "10",
+            "--max-papers",
+            "25",
+        ]
+        with patch("sys.argv", argv), patch.object(
+            reingest_heuristic_papers, "reingest_heuristic_papers"
+        ) as reingest_mock:
+            reingest_heuristic_papers.main()
+
+        reingest_mock.assert_called_once_with(
+            dry_run=True,
+            batch_size=10,
+            only_pending=True,
+            max_papers=25,
+        )
 
 
 if __name__ == "__main__":
