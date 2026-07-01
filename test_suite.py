@@ -3,10 +3,13 @@ import unittest
 import os
 import json
 import sqlite3
+import tempfile
 from pathlib import Path
+from unittest.mock import patch
 from db_manager import DatabaseManager
 import extractor
 import classifier
+import reingest_heuristic_papers
 
 class TestHeuristicExtractor(unittest.TestCase):
     """Test cases for regex extractions and heuristics in extractor.py."""
@@ -818,6 +821,66 @@ class TestDatabaseManager(unittest.TestCase):
         # Test default
         self.assertEqual(self.db.get_metadata("non_existent_key", "default_val"), "default_val")
         self.assertIsNone(self.db.get_metadata("non_existent_key"))
+
+
+class TestHeuristicReingestion(unittest.TestCase):
+    """Regression coverage for bounded heuristic re-ingestion batches."""
+
+    def setUp(self):
+        """Create an isolated database file for each re-ingestion test."""
+        self.temp_dir = tempfile.TemporaryDirectory()
+        self.db_path = os.path.join(self.temp_dir.name, "reingest_test.db")
+        self.db = DatabaseManager(self.db_path)
+
+    def tearDown(self):
+        """Remove the isolated database file and sidecar SQLite files."""
+        self.temp_dir.cleanup()
+
+    def test_max_papers_limits_pending_reingestion(self):
+        """Only the requested number of legacy pending rows should be updated."""
+        for index in range(3):
+            self.db.insert_paper({
+                "pmid": f"reingest-{index}",
+                "title": f"Cannabis intervention study {index}",
+                "abstract": (
+                    "A randomized clinical trial evaluated CBD oil for anxiety "
+                    "over a 30-day intervention."
+                ),
+                "year": 2026,
+                "study_type": ["review"],
+                "exposure_method": ["unknown"],
+                "outcome_domain": ["other"],
+                "classification_confidence": 0.95,
+                "classifier_version": "heuristic-reclassify-1.0.0",
+            })
+
+        with patch.object(reingest_heuristic_papers, "DatabaseManager", return_value=self.db):
+            summary = reingest_heuristic_papers.reingest_heuristic_papers(
+                batch_size=1,
+                only_pending=True,
+                max_papers=2,
+            )
+
+        conn = self.db.get_connection()
+        try:
+            cursor = conn.cursor()
+            cursor.execute(
+                "SELECT COUNT(*) AS total FROM papers "
+                "WHERE classifier_version LIKE 'heuristic-reclassify%'"
+            )
+            pending = cursor.fetchone()["total"]
+            cursor.execute(
+                "SELECT COUNT(*) AS total FROM papers "
+                "WHERE classifier_version = 'heuristic-1.0.0'"
+            )
+            reingested = cursor.fetchone()["total"]
+        finally:
+            conn.close()
+
+        self.assertEqual(summary["papers_processed"], 2)
+        self.assertEqual(summary["max_papers"], 2)
+        self.assertEqual(pending, 1)
+        self.assertEqual(reingested, 2)
 
 
 class TestFlaskSchedulerAPI(unittest.TestCase):
