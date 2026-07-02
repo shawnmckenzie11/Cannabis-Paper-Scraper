@@ -7,6 +7,7 @@ import sqlite3
 import time
 from collections import Counter
 from datetime import datetime
+from typing import Optional
 
 import classifier
 from db_manager import DatabaseManager
@@ -84,6 +85,7 @@ def reingest_heuristic_papers(
     dry_run: bool = False,
     batch_size: int = 100,
     only_pending: bool = False,
+    max_papers: Optional[int] = None,
 ) -> dict:
     """Re-run heuristic classification for all non-LLM, non-Maude papers.
 
@@ -91,6 +93,7 @@ def reingest_heuristic_papers(
         dry_run: When True, compute changes without writing to the database.
         batch_size: Commit interval for database writes.
         only_pending: When True, only reprocess legacy heuristic-reclassify records.
+        max_papers: Maximum number of eligible papers to process in this run.
 
     Returns:
         Summary statistics for the run.
@@ -99,6 +102,9 @@ def reingest_heuristic_papers(
     conn = db.get_connection()
     conn.row_factory = sqlite3.Row
     cur = conn.cursor()
+
+    if max_papers is not None and max_papers < 1:
+        raise ValueError("max_papers must be a positive integer when provided")
 
     if only_pending:
         where_clause = "classifier_version LIKE 'heuristic-reclassify%'"
@@ -109,8 +115,8 @@ def reingest_heuristic_papers(
             "OR classifier_version LIKE 'heuristic-reclassify%'"
         )
 
-    cur.execute(
-        f"""
+    params = []
+    query = f"""
         SELECT id, title, abstract, expert_locked_fields,
                study_type, exposure_method, cannabis_type, outcome_domain,
                duration_days, classification_confidence, classifier_version
@@ -118,12 +124,17 @@ def reingest_heuristic_papers(
         WHERE {where_clause}
         ORDER BY id
         """
-    )
+    if max_papers is not None:
+        query += "LIMIT ?"
+        params.append(max_papers)
+
+    cur.execute(query, params)
     papers = cur.fetchall()
     total = len(papers)
     print(
         f"Starting heuristic re-ingestion for {total} papers "
-        f"(dry_run={dry_run}, only_pending={only_pending}) at {datetime.now().isoformat()}"
+        f"(dry_run={dry_run}, only_pending={only_pending}, max_papers={max_papers}) "
+        f"at {datetime.now().isoformat()}"
     )
 
     field_change_counts = Counter()
@@ -200,6 +211,7 @@ def reingest_heuristic_papers(
         "auto_accept_after": confidence_after_high,
         "field_change_counts": dict(field_change_counts),
         "dry_run": dry_run,
+        "max_papers": max_papers,
     }
 
     print(f"Heuristic re-ingestion complete: {summary}")
@@ -227,11 +239,18 @@ def main():
         action="store_true",
         help="Only reprocess legacy heuristic-reclassify records.",
     )
+    parser.add_argument(
+        "--max-papers",
+        type=int,
+        default=None,
+        help="Maximum number of eligible papers to process in this run.",
+    )
     args = parser.parse_args()
     reingest_heuristic_papers(
         dry_run=args.dry_run,
         batch_size=args.batch_size,
         only_pending=args.only_pending,
+        max_papers=args.max_papers,
     )
 
 

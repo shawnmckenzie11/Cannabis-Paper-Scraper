@@ -3,6 +3,7 @@ import unittest
 import os
 import json
 import sqlite3
+import tempfile
 from pathlib import Path
 from db_manager import DatabaseManager
 import extractor
@@ -258,6 +259,85 @@ class TestHeuristicExtractor(unittest.TestCase):
         self.assertIn("This is an animal study", summary_no)
         self.assertIn("pure cannabinoid cannabis administration", summary_no)
         self.assertIn("No specific strain was specified.", summary_no)
+
+
+class TestHeuristicReingestion(unittest.TestCase):
+    """Test bounded heuristic re-ingestion behavior."""
+
+    def setUp(self):
+        """Create an isolated database and patch the script to use it."""
+        self.temp_dir = tempfile.TemporaryDirectory()
+        self.db_path = os.path.join(self.temp_dir.name, "reingest_test.db")
+        self.db = DatabaseManager(self.db_path)
+
+        import reingest_heuristic_papers
+
+        self.reingest_module = reingest_heuristic_papers
+        self.original_db_manager = reingest_heuristic_papers.DatabaseManager
+        reingest_heuristic_papers.DatabaseManager = self.build_reingest_db
+
+    def tearDown(self):
+        """Restore the script patch and remove the temporary database."""
+        self.reingest_module.DatabaseManager = self.original_db_manager
+        self.temp_dir.cleanup()
+
+    def build_reingest_db(self):
+        """Return a DatabaseManager bound to the isolated re-ingestion test DB."""
+        return DatabaseManager(self.db_path)
+
+    def insert_reingest_candidate(self, pmid, classifier_version):
+        """Insert one paper eligible for heuristic re-ingestion tests."""
+        return self.db.insert_paper(
+            {
+                "pmid": pmid,
+                "title": f"Cannabis clinical trial {pmid}",
+                "abstract": (
+                    "This randomized clinical trial evaluated oral CBD treatment "
+                    "for anxiety over 2 weeks."
+                ),
+                "study_type": ["review"],
+                "exposure_method": ["unknown"],
+                "cannabis_type": ["unknown"],
+                "outcome_domain": ["other"],
+                "classification_confidence": 0.9,
+                "classifier_version": classifier_version,
+            }
+        )
+
+    def test_max_papers_limits_pending_reingestion(self):
+        """Verify max_papers only updates the first pending records."""
+        first_id = self.insert_reingest_candidate("100001", "heuristic-reclassify-1.0.0")
+        second_id = self.insert_reingest_candidate("100002", "heuristic-reclassify-1.0.0")
+        untouched_id = self.insert_reingest_candidate("100003", "heuristic-reclassify-1.0.0")
+        non_pending_id = self.insert_reingest_candidate("100004", "heuristic-1.0.0")
+
+        summary = self.reingest_module.reingest_heuristic_papers(
+            batch_size=1,
+            only_pending=True,
+            max_papers=2,
+        )
+
+        self.assertEqual(summary["papers_processed"], 2)
+        self.assertEqual(summary["max_papers"], 2)
+
+        conn = self.db.get_connection()
+        try:
+            rows = conn.execute(
+                "SELECT id, classifier_version FROM papers ORDER BY id"
+            ).fetchall()
+        finally:
+            conn.close()
+
+        versions = {row["id"]: row["classifier_version"] for row in rows}
+        self.assertEqual(versions[first_id], "heuristic-1.0.0")
+        self.assertEqual(versions[second_id], "heuristic-1.0.0")
+        self.assertEqual(versions[untouched_id], "heuristic-reclassify-1.0.0")
+        self.assertEqual(versions[non_pending_id], "heuristic-1.0.0")
+
+    def test_max_papers_requires_positive_integer(self):
+        """Verify invalid max_papers values are rejected before DB work."""
+        with self.assertRaises(ValueError):
+            self.reingest_module.reingest_heuristic_papers(max_papers=0)
 
 
 class TestDatabaseManager(unittest.TestCase):
