@@ -3,10 +3,13 @@ import unittest
 import os
 import json
 import sqlite3
+import tempfile
 from pathlib import Path
+from unittest.mock import patch
 from db_manager import DatabaseManager
 import extractor
 import classifier
+import reingest_heuristic_papers as heuristic_reingestion
 
 class TestHeuristicExtractor(unittest.TestCase):
     """Test cases for regex extractions and heuristics in extractor.py."""
@@ -258,6 +261,114 @@ class TestHeuristicExtractor(unittest.TestCase):
         self.assertIn("This is an animal study", summary_no)
         self.assertIn("pure cannabinoid cannabis administration", summary_no)
         self.assertIn("No specific strain was specified.", summary_no)
+
+
+class TestHeuristicReingestion(unittest.TestCase):
+    """Test cases for bounded heuristic paper re-ingestion batches."""
+
+    def setUp(self):
+        """Create an isolated catalog for re-ingestion tests."""
+        self.temp_dir = tempfile.TemporaryDirectory()
+        self.test_db_path = os.path.join(self.temp_dir.name, "reingestion.db")
+        self.db = DatabaseManager(self.test_db_path)
+
+        for idx in range(1, 4):
+            self.db.insert_paper(
+                {
+                    "pmid": f"pending-{idx}",
+                    "title": f"Pending paper {idx}",
+                    "abstract": "Cannabis intervention abstract.",
+                    "study_type": ["Clinical (observational)"],
+                    "exposure_method": ["inhaled"],
+                    "cannabis_type": ["dried flower"],
+                    "outcome_domain": ["pain"],
+                    "expert_locked_fields": [],
+                    "classification_confidence": 0.95,
+                    "classifier_version": "heuristic-reclassify-1.0.0",
+                }
+            )
+
+        self.db.insert_paper(
+            {
+                "pmid": "already-current",
+                "title": "Already current paper",
+                "abstract": "Cannabis intervention abstract.",
+                "study_type": ["Clinical (observational)"],
+                "exposure_method": ["unknown"],
+                "cannabis_type": ["unknown"],
+                "outcome_domain": ["pain"],
+                "expert_locked_fields": [],
+                "classification_confidence": 0.6,
+                "classifier_version": "heuristic-1.0.0",
+            }
+        )
+
+    def tearDown(self):
+        """Remove the isolated catalog after re-ingestion tests."""
+        self.temp_dir.cleanup()
+
+    def _fetch_versions(self):
+        """Return classifier versions by PMID for assertions."""
+        conn = self.db.get_connection()
+        try:
+            cur = conn.cursor()
+            cur.execute("SELECT pmid, classifier_version FROM papers ORDER BY id")
+            return {row["pmid"]: row["classifier_version"] for row in cur.fetchall()}
+        finally:
+            conn.close()
+
+    def test_max_papers_limits_pending_reingestion_batch(self):
+        """Only the requested number of pending papers should be reprocessed."""
+        extracted = {
+            "study_type": ["Clinical (observational)"],
+            "exposure_method": ["unknown"],
+            "cannabis_type": ["unknown"],
+            "outcome_domain": ["pain"],
+            "duration_days": None,
+            "inhaled_exposure_duration": None,
+            "administration_frequency": None,
+            "treatment_duration": None,
+            "sample_size": None,
+            "thc_pct": None,
+            "cbd_pct": None,
+            "dose_mg": None,
+            "strain_reported": None,
+            "strain_normalized": None,
+            "publication_type": "original research",
+            "summary": "Heuristic summary.",
+            "classification_confidence": 0.6,
+            "classification_timestamp": "2026-07-03T00:00:00",
+            "classifier_version": "heuristic-1.0.0",
+        }
+
+        with patch.object(heuristic_reingestion, "DatabaseManager", return_value=self.db):
+            with patch.object(
+                heuristic_reingestion.classifier,
+                "process_paper_metadata",
+                return_value=extracted,
+            ) as process_paper_metadata:
+                summary = heuristic_reingestion.reingest_heuristic_papers(
+                    batch_size=1,
+                    only_pending=True,
+                    max_papers=2,
+                )
+
+        self.assertEqual(summary["papers_processed"], 2)
+        self.assertEqual(process_paper_metadata.call_count, 2)
+        self.assertEqual(
+            self._fetch_versions(),
+            {
+                "pending-1": "heuristic-1.0.0",
+                "pending-2": "heuristic-1.0.0",
+                "pending-3": "heuristic-reclassify-1.0.0",
+                "already-current": "heuristic-1.0.0",
+            },
+        )
+
+    def test_max_papers_rejects_non_positive_values(self):
+        """A non-positive cap should fail before opening a database connection."""
+        with self.assertRaises(ValueError):
+            heuristic_reingestion.reingest_heuristic_papers(max_papers=0)
 
 
 class TestDatabaseManager(unittest.TestCase):
