@@ -3,6 +3,7 @@ import unittest
 import os
 import json
 import sqlite3
+import tempfile
 from pathlib import Path
 from db_manager import DatabaseManager
 import extractor
@@ -1580,6 +1581,133 @@ class TestAdminRequiredEndpoints(unittest.TestCase):
         # For edit-classification, should return 404 since paper 99999 doesn't exist (proving decorator passed)
         res2 = self.client.post("/api/papers/99999/edit-classification", json={})
         self.assertEqual(res2.status_code, 404)
+
+
+class TestHeuristicReingestion(unittest.TestCase):
+    """Test bounded heuristic re-ingestion control flow."""
+
+    def test_max_papers_limits_pending_reingestion(self):
+        """Only the requested number of pending heuristic rows should be updated."""
+        import reingest_heuristic_papers as reingest
+
+        class TempDatabaseManager:
+            """DatabaseManager shim that points re-ingestion at a temp SQLite DB."""
+
+            def __init__(self, db_path):
+                self.db_path = db_path
+
+            def get_connection(self):
+                """Return a SQLite connection with row objects for the test database."""
+                conn = sqlite3.connect(self.db_path)
+                conn.row_factory = sqlite3.Row
+                return conn
+
+        def fake_process_paper_metadata(title, abstract, run_llm=False):
+            """Return deterministic heuristic metadata for test updates."""
+            return {
+                "study_type": ["Clinical (observational)"],
+                "exposure_method": ["unknown"],
+                "cannabis_type": ["unknown"],
+                "outcome_domain": ["addiction"],
+                "duration_days": 30.0,
+                "inhaled_exposure_duration": None,
+                "administration_frequency": None,
+                "treatment_duration": None,
+                "sample_size": None,
+                "thc_pct": None,
+                "cbd_pct": None,
+                "dose_mg": None,
+                "strain_reported": None,
+                "strain_normalized": None,
+                "publication_type": "original research",
+                "summary": "Test summary",
+                "classification_confidence": 0.6,
+                "classification_timestamp": "2026-07-04T06:00:00",
+                "classifier_version": "heuristic-1.0.0",
+            }
+
+        with tempfile.NamedTemporaryFile(suffix=".db") as tmp:
+            conn = sqlite3.connect(tmp.name)
+            conn.execute(
+                """
+                CREATE TABLE papers (
+                    id INTEGER PRIMARY KEY,
+                    title TEXT,
+                    abstract TEXT,
+                    expert_locked_fields TEXT,
+                    study_type TEXT,
+                    exposure_method TEXT,
+                    cannabis_type TEXT,
+                    outcome_domain TEXT,
+                    duration_days REAL,
+                    inhaled_exposure_duration TEXT,
+                    administration_frequency TEXT,
+                    treatment_duration TEXT,
+                    sample_size INTEGER,
+                    thc_pct REAL,
+                    cbd_pct REAL,
+                    dose_mg REAL,
+                    strain_reported TEXT,
+                    strain_normalized TEXT,
+                    publication_type TEXT,
+                    summary TEXT,
+                    classification_confidence REAL,
+                    classification_timestamp TEXT,
+                    classifier_version TEXT
+                )
+                """
+            )
+            for paper_id in range(1, 5):
+                conn.execute(
+                    """
+                    INSERT INTO papers (
+                        id, title, abstract, expert_locked_fields,
+                        classification_confidence, classifier_version
+                    ) VALUES (?, ?, ?, '[]', 0.9, 'heuristic-reclassify-1.0.0')
+                    """,
+                    (paper_id, f"Paper {paper_id}", "Cannabis use intervention."),
+                )
+            conn.commit()
+            conn.close()
+
+            original_db_manager = reingest.DatabaseManager
+            original_classifier = reingest.classifier.process_paper_metadata
+            try:
+                reingest.DatabaseManager = lambda: TempDatabaseManager(tmp.name)
+                reingest.classifier.process_paper_metadata = fake_process_paper_metadata
+
+                summary = reingest.reingest_heuristic_papers(
+                    batch_size=1,
+                    only_pending=True,
+                    max_papers=2,
+                )
+            finally:
+                reingest.DatabaseManager = original_db_manager
+                reingest.classifier.process_paper_metadata = original_classifier
+
+            conn = sqlite3.connect(tmp.name)
+            cur = conn.cursor()
+            cur.execute(
+                "SELECT COUNT(*) FROM papers WHERE classifier_version = 'heuristic-1.0.0'"
+            )
+            updated_count = cur.fetchone()[0]
+            cur.execute(
+                "SELECT COUNT(*) FROM papers WHERE classifier_version LIKE 'heuristic-reclassify%'"
+            )
+            pending_count = cur.fetchone()[0]
+            conn.close()
+
+        self.assertEqual(summary["papers_processed"], 2)
+        self.assertEqual(summary["max_papers"], 2)
+        self.assertEqual(updated_count, 2)
+        self.assertEqual(pending_count, 2)
+
+    def test_max_papers_requires_positive_integer(self):
+        """Non-positive max_papers values should fail before opening a DB connection."""
+        import reingest_heuristic_papers as reingest
+
+        with self.assertRaises(ValueError):
+            reingest.reingest_heuristic_papers(only_pending=True, max_papers=0)
 
 
 if __name__ == "__main__":
