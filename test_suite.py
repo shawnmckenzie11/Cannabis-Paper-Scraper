@@ -3,10 +3,13 @@ import unittest
 import os
 import json
 import sqlite3
+import tempfile
 from pathlib import Path
+from unittest.mock import patch
 from db_manager import DatabaseManager
 import extractor
 import classifier
+import reingest_heuristic_papers
 
 class TestHeuristicExtractor(unittest.TestCase):
     """Test cases for regex extractions and heuristics in extractor.py."""
@@ -818,6 +821,126 @@ class TestDatabaseManager(unittest.TestCase):
         # Test default
         self.assertEqual(self.db.get_metadata("non_existent_key", "default_val"), "default_val")
         self.assertIsNone(self.db.get_metadata("non_existent_key"))
+
+
+class TestHeuristicReingestion(unittest.TestCase):
+    """Test bounded heuristic re-ingestion behavior."""
+
+    def setUp(self):
+        """Create an isolated SQLite catalog for re-ingestion tests."""
+        self.temp_dir = tempfile.TemporaryDirectory()
+        self.db_path = os.path.join(self.temp_dir.name, "reingest_test.db")
+        self.original_initialized = DatabaseManager._initialized
+        DatabaseManager._initialized = False
+        self.db = DatabaseManager(self.db_path)
+
+        conn = self.db.get_connection()
+        for idx in range(3):
+            conn.execute(
+                """
+                INSERT INTO papers (
+                    pmid, title, abstract, date_harvested, expert_locked_fields,
+                    classification_confidence, classifier_version
+                )
+                VALUES (?, ?, ?, ?, ?, ?, ?)
+                """,
+                (
+                    f"cap-test-{idx}",
+                    f"Pending paper {idx}",
+                    "A cannabis paper abstract.",
+                    "2026-07-05",
+                    "[]",
+                    0.9,
+                    "heuristic-reclassify-1.0.0",
+                ),
+            )
+        conn.commit()
+        conn.close()
+
+    def tearDown(self):
+        """Remove the isolated SQLite catalog after each re-ingestion test."""
+        DatabaseManager._initialized = self.original_initialized
+        self.temp_dir.cleanup()
+
+    def _classifier_result(self):
+        """Return deterministic heuristic metadata for re-ingestion updates."""
+        return {
+            "study_type": ["Clinical (observational)"],
+            "exposure_method": ["unknown"],
+            "cannabis_type": ["unknown"],
+            "outcome_domain": ["other"],
+            "duration_days": None,
+            "inhaled_exposure_duration": None,
+            "administration_frequency": None,
+            "treatment_duration": None,
+            "sample_size": None,
+            "thc_pct": None,
+            "cbd_pct": None,
+            "dose_mg": None,
+            "strain_reported": None,
+            "strain_normalized": None,
+            "publication_type": "original research",
+            "summary": "Updated by bounded test.",
+            "classification_confidence": 0.6,
+            "classification_timestamp": "2026-07-05T06:00:00",
+            "classifier_version": "heuristic-1.0.0",
+        }
+
+    def _run_reingestion(self, max_papers=None):
+        """Run re-ingestion against the isolated catalog with mocked extraction."""
+        with patch(
+            "reingest_heuristic_papers.DatabaseManager",
+            lambda: DatabaseManager(self.db_path),
+        ), patch(
+            "reingest_heuristic_papers.classifier.process_paper_metadata",
+            return_value=self._classifier_result(),
+        ) as mock_process:
+            summary = reingest_heuristic_papers.reingest_heuristic_papers(
+                batch_size=1,
+                only_pending=True,
+                max_papers=max_papers,
+            )
+        return summary, mock_process
+
+    def test_max_papers_limits_pending_reingestion(self):
+        """A bounded run should process and update only the requested papers."""
+        summary, mock_process = self._run_reingestion(max_papers=2)
+
+        self.assertEqual(summary["papers_processed"], 2)
+        self.assertEqual(mock_process.call_count, 2)
+
+        conn = self.db.get_connection()
+        rows = conn.execute(
+            "SELECT classifier_version FROM papers ORDER BY id"
+        ).fetchall()
+        conn.close()
+
+        self.assertEqual(rows[0]["classifier_version"], "heuristic-1.0.0")
+        self.assertEqual(rows[1]["classifier_version"], "heuristic-1.0.0")
+        self.assertEqual(rows[2]["classifier_version"], "heuristic-reclassify-1.0.0")
+
+    def test_unbounded_pending_reingestion_keeps_existing_default(self):
+        """An unbounded run should preserve the prior all-pending behavior."""
+        summary, mock_process = self._run_reingestion()
+
+        self.assertEqual(summary["papers_processed"], 3)
+        self.assertEqual(mock_process.call_count, 3)
+
+        conn = self.db.get_connection()
+        pending = conn.execute(
+            "SELECT COUNT(*) AS c FROM papers WHERE classifier_version LIKE ?",
+            ("heuristic-reclassify%",),
+        ).fetchone()["c"]
+        conn.close()
+
+        self.assertEqual(pending, 0)
+
+    def test_invalid_max_papers_is_rejected(self):
+        """A non-positive cap should fail before opening a database connection."""
+        with patch("reingest_heuristic_papers.DatabaseManager") as mock_db:
+            with self.assertRaises(ValueError):
+                reingest_heuristic_papers.reingest_heuristic_papers(max_papers=0)
+        mock_db.assert_not_called()
 
 
 class TestFlaskSchedulerAPI(unittest.TestCase):
