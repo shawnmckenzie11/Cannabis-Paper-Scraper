@@ -1600,8 +1600,19 @@ class TestHeuristicReingestion(unittest.TestCase):
                 "abstract TEXT",
                 "expert_locked_fields TEXT",
             ]
+            numeric_columns = {
+                "duration_days",
+                "inhaled_exposure_duration",
+                "treatment_duration",
+                "sample_size",
+                "thc_pct",
+                "cbd_pct",
+                "dose_mg",
+                "classification_confidence",
+            }
             columns_sql.extend(
-                f"{column} TEXT" for column in reingest.UPDATE_COLUMNS
+                f"{column} {'REAL' if column in numeric_columns else 'TEXT'}"
+                for column in reingest.UPDATE_COLUMNS
             )
             setup_cur.execute(f"CREATE TABLE papers ({', '.join(columns_sql)})")
             setup_cur.executemany(
