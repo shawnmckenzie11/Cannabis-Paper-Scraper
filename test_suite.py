@@ -3,7 +3,9 @@ import unittest
 import os
 import json
 import sqlite3
+import tempfile
 from pathlib import Path
+from unittest.mock import Mock, patch
 from db_manager import DatabaseManager
 import extractor
 import classifier
@@ -1580,6 +1582,142 @@ class TestAdminRequiredEndpoints(unittest.TestCase):
         # For edit-classification, should return 404 since paper 99999 doesn't exist (proving decorator passed)
         res2 = self.client.post("/api/papers/99999/edit-classification", json={})
         self.assertEqual(res2.status_code, 404)
+
+
+class TestHeuristicReingestion(unittest.TestCase):
+    """Test cases for safe heuristic paper re-ingestion batches."""
+
+    def test_max_papers_limits_only_pending_updates(self):
+        """Bounded pending re-ingestion should update only capped legacy rows."""
+        import reingest_heuristic_papers as reingest
+
+        with tempfile.NamedTemporaryFile(suffix=".db") as db_file:
+            setup_conn = sqlite3.connect(db_file.name)
+            setup_cur = setup_conn.cursor()
+            columns_sql = [
+                "id INTEGER PRIMARY KEY",
+                "title TEXT",
+                "abstract TEXT",
+                "expert_locked_fields TEXT",
+            ]
+            columns_sql.extend(
+                f"{column} TEXT" for column in reingest.UPDATE_COLUMNS
+            )
+            setup_cur.execute(f"CREATE TABLE papers ({', '.join(columns_sql)})")
+            setup_cur.executemany(
+                """
+                INSERT INTO papers (
+                    id, title, abstract, expert_locked_fields,
+                    study_type, exposure_method, cannabis_type, outcome_domain,
+                    duration_days, classification_confidence, classifier_version
+                )
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """,
+                [
+                    (
+                        1,
+                        "Pending paper 1",
+                        "Clinical cannabis trial.",
+                        "[]",
+                        '["review"]',
+                        '["unknown"]',
+                        '["unknown"]',
+                        '["pain"]',
+                        None,
+                        "0.95",
+                        "heuristic-reclassify-1.0.0",
+                    ),
+                    (
+                        2,
+                        "Pending paper 2",
+                        "Clinical cannabis trial.",
+                        "[]",
+                        '["review"]',
+                        '["unknown"]',
+                        '["unknown"]',
+                        '["pain"]',
+                        None,
+                        "0.95",
+                        "heuristic-reclassify-1.0.0",
+                    ),
+                    (
+                        3,
+                        "Pending paper 3",
+                        "Clinical cannabis trial.",
+                        "[]",
+                        '["review"]',
+                        '["unknown"]',
+                        '["unknown"]',
+                        '["pain"]',
+                        None,
+                        "0.95",
+                        "heuristic-reclassify-1.0.0",
+                    ),
+                    (
+                        4,
+                        "Already reingested",
+                        "Clinical cannabis trial.",
+                        "[]",
+                        '["review"]',
+                        '["unknown"]',
+                        '["unknown"]',
+                        '["pain"]',
+                        None,
+                        "0.6",
+                        "heuristic-1.0.0",
+                    ),
+                ],
+            )
+            setup_conn.commit()
+            setup_conn.close()
+
+            db_manager = Mock()
+            db_manager.get_connection.return_value = sqlite3.connect(db_file.name)
+            extracted = {column: None for column in reingest.UPDATE_COLUMNS}
+            extracted.update(
+                {
+                    "study_type": ["Clinical (observational)"],
+                    "exposure_method": ["unknown"],
+                    "cannabis_type": ["unknown"],
+                    "outcome_domain": ["pain"],
+                    "duration_days": None,
+                    "classification_confidence": 0.6,
+                    "classification_timestamp": "2026-07-06T06:00:00",
+                    "classifier_version": "heuristic-1.0.0",
+                    "summary": "Updated heuristic summary.",
+                }
+            )
+
+            with (
+                patch.object(reingest, "DatabaseManager", return_value=db_manager),
+                patch.object(
+                    reingest.classifier,
+                    "process_paper_metadata",
+                    return_value=extracted,
+                ) as process_paper_metadata,
+            ):
+                summary = reingest.reingest_heuristic_papers(
+                    batch_size=1,
+                    only_pending=True,
+                    max_papers=2,
+                )
+
+            self.assertEqual(summary["papers_processed"], 2)
+            self.assertEqual(summary["max_papers"], 2)
+            self.assertEqual(process_paper_metadata.call_count, 2)
+
+            verify_conn = sqlite3.connect(db_file.name)
+            verify_cur = verify_conn.cursor()
+            verify_cur.execute(
+                "SELECT id, classifier_version FROM papers ORDER BY id"
+            )
+            versions = dict(verify_cur.fetchall())
+            verify_conn.close()
+
+            self.assertEqual(versions[1], "heuristic-1.0.0")
+            self.assertEqual(versions[2], "heuristic-1.0.0")
+            self.assertEqual(versions[3], "heuristic-reclassify-1.0.0")
+            self.assertEqual(versions[4], "heuristic-1.0.0")
 
 
 if __name__ == "__main__":
