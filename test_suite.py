@@ -260,6 +260,118 @@ class TestHeuristicExtractor(unittest.TestCase):
         self.assertIn("No specific strain was specified.", summary_no)
 
 
+class TestHeuristicReingestion(unittest.TestCase):
+    """Test bounded heuristic re-ingestion behavior."""
+
+    def setUp(self):
+        """Create an isolated database and patch re-ingestion dependencies."""
+        self.test_db_path = "test_reingest_papers.db"
+        if os.path.exists(self.test_db_path):
+            try:
+                os.remove(self.test_db_path)
+            except Exception:
+                pass
+
+        self.db = DatabaseManager(self.test_db_path)
+
+        import reingest_heuristic_papers
+        from db_manager import DatabaseManager as DBManagerClass
+
+        self.reingest_module = reingest_heuristic_papers
+        self.original_db_init = DBManagerClass.__init__
+        self.original_process = reingest_heuristic_papers.classifier.process_paper_metadata
+        test_db_path = self.test_db_path
+
+        def patched_init(self, db_path=None):
+            """Force re-ingestion DatabaseManager instances to use the test database."""
+            self.db_path = db_path if db_path is not None else test_db_path
+            self.init_db()
+
+        def patched_process_paper_metadata(title, abstract, run_llm=False):
+            """Return a stable heuristic classification for re-ingestion tests."""
+            return {
+                "study_type": ["Clinical (observational)"],
+                "exposure_method": ["unknown"],
+                "cannabis_type": ["unknown"],
+                "outcome_domain": ["addiction"],
+                "duration_days": 30.0,
+                "inhaled_exposure_duration": None,
+                "administration_frequency": None,
+                "treatment_duration": None,
+                "sample_size": None,
+                "thc_pct": None,
+                "cbd_pct": None,
+                "dose_mg": None,
+                "strain_reported": None,
+                "strain_normalized": None,
+                "publication_type": "original research",
+                "summary": f"Reprocessed {title}",
+                "classification_confidence": 0.6,
+                "classification_timestamp": "2026-07-07T06:00:00",
+                "classifier_version": "heuristic-1.0.0",
+            }
+
+        DBManagerClass.__init__ = patched_init
+        reingest_heuristic_papers.classifier.process_paper_metadata = patched_process_paper_metadata
+
+    def tearDown(self):
+        """Restore patched dependencies and remove the isolated database."""
+        from db_manager import DatabaseManager as DBManagerClass
+
+        DBManagerClass.__init__ = self.original_db_init
+        self.reingest_module.classifier.process_paper_metadata = self.original_process
+        if os.path.exists(self.test_db_path):
+            try:
+                os.remove(self.test_db_path)
+            except Exception:
+                pass
+
+    def test_max_papers_limits_only_pending_reingestion(self):
+        """Re-ingestion should update only the capped number of pending rows."""
+        pending_ids = []
+        for idx in range(3):
+            pending_ids.append(
+                self.db.insert_paper(
+                    {
+                        "pmid": f"pending-{idx}",
+                        "title": f"Pending Paper {idx}",
+                        "abstract": "This paper studies a cannabis intervention.",
+                        "classifier_version": "heuristic-reclassify-1.0.0",
+                        "classification_confidence": 0.9,
+                    }
+                )
+            )
+        already_current_id = self.db.insert_paper(
+            {
+                "pmid": "current-0",
+                "title": "Current Paper",
+                "abstract": "This paper studies a cannabis intervention.",
+                "classifier_version": "heuristic-1.0.0",
+                "classification_confidence": 0.6,
+            }
+        )
+
+        summary = self.reingest_module.reingest_heuristic_papers(
+            batch_size=1,
+            only_pending=True,
+            max_papers=2,
+        )
+
+        conn = self.db.get_connection()
+        try:
+            cursor = conn.cursor()
+            cursor.execute("SELECT id, classifier_version FROM papers ORDER BY id")
+            versions_by_id = {row["id"]: row["classifier_version"] for row in cursor.fetchall()}
+        finally:
+            conn.close()
+
+        self.assertEqual(summary["papers_processed"], 2)
+        self.assertEqual(versions_by_id[pending_ids[0]], "heuristic-1.0.0")
+        self.assertEqual(versions_by_id[pending_ids[1]], "heuristic-1.0.0")
+        self.assertEqual(versions_by_id[pending_ids[2]], "heuristic-reclassify-1.0.0")
+        self.assertEqual(versions_by_id[already_current_id], "heuristic-1.0.0")
+
+
 class TestDatabaseManager(unittest.TestCase):
     """Test cases for SQLite dynamic operations, FTS5 sync, and CRUD."""
 
