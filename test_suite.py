@@ -3,10 +3,13 @@ import unittest
 import os
 import json
 import sqlite3
+import tempfile
 from pathlib import Path
+from types import SimpleNamespace
 from db_manager import DatabaseManager
 import extractor
 import classifier
+import reingest_heuristic_papers
 
 class TestHeuristicExtractor(unittest.TestCase):
     """Test cases for regex extractions and heuristics in extractor.py."""
@@ -258,6 +261,162 @@ class TestHeuristicExtractor(unittest.TestCase):
         self.assertIn("This is an animal study", summary_no)
         self.assertIn("pure cannabinoid cannabis administration", summary_no)
         self.assertIn("No specific strain was specified.", summary_no)
+
+
+class TestHeuristicReingestion(unittest.TestCase):
+    """Test cases for bounded heuristic re-ingestion batches."""
+
+    def setUp(self):
+        """Create an isolated SQLite table and patch re-ingestion dependencies."""
+        self.temp_dir = tempfile.TemporaryDirectory()
+        self.db_path = os.path.join(self.temp_dir.name, "reingest.db")
+        self.processed_titles = []
+        self.original_database_manager = reingest_heuristic_papers.DatabaseManager
+        self.original_process_paper_metadata = (
+            reingest_heuristic_papers.classifier.process_paper_metadata
+        )
+
+        numeric_columns = {"duration_days", "classification_confidence", "thc_pct", "cbd_pct", "dose_mg"}
+        integer_columns = {"sample_size"}
+        column_defs = [
+            "id INTEGER PRIMARY KEY",
+            "title TEXT",
+            "abstract TEXT",
+            "expert_locked_fields TEXT",
+        ]
+        for column in reingest_heuristic_papers.UPDATE_COLUMNS:
+            if column in numeric_columns:
+                column_type = "REAL"
+            elif column in integer_columns:
+                column_type = "INTEGER"
+            else:
+                column_type = "TEXT"
+            column_defs.append(f"{column} {column_type}")
+
+        conn = sqlite3.connect(self.db_path)
+        conn.execute(f"CREATE TABLE papers ({', '.join(column_defs)});")
+        insert_columns = [
+            "id",
+            "title",
+            "abstract",
+            "expert_locked_fields",
+            "classifier_version",
+            "classification_confidence",
+            "study_type",
+            "exposure_method",
+            "cannabis_type",
+            "outcome_domain",
+            "duration_days",
+        ]
+        placeholders = ", ".join("?" for _ in insert_columns)
+        for paper_id, title, classifier_version in [
+            (1, "Already current", "heuristic-1.0.0"),
+            (2, "Pending 2", "heuristic-reclassify-1.0.0"),
+            (3, "Pending 3", "heuristic-reclassify-1.0.0"),
+            (4, "Pending 4", "heuristic-reclassify-1.0.0"),
+            (5, "Pending 5", "heuristic-reclassify-1.0.0"),
+        ]:
+            conn.execute(
+                f"INSERT INTO papers ({', '.join(insert_columns)}) VALUES ({placeholders})",
+                (
+                    paper_id,
+                    title,
+                    "Cannabis abstract.",
+                    None,
+                    classifier_version,
+                    0.9,
+                    '["old"]',
+                    '["old"]',
+                    '["old"]',
+                    '["old"]',
+                    99.0,
+                ),
+            )
+        conn.commit()
+        conn.close()
+
+        def build_test_db_manager():
+            """Return a DB manager facade bound to the temporary re-ingestion DB."""
+            manager = SimpleNamespace()
+
+            def get_connection():
+                """Open a row-aware SQLite connection for the temporary test DB."""
+                connection = sqlite3.connect(self.db_path)
+                connection.row_factory = sqlite3.Row
+                return connection
+
+            manager.get_connection = get_connection
+            return manager
+
+        def classify_for_test(title, abstract, run_llm=False):
+            """Return deterministic heuristic metadata for capped batch assertions."""
+            self.processed_titles.append(title)
+            return {
+                "study_type": ["review"],
+                "exposure_method": ["unknown"],
+                "cannabis_type": ["unknown"],
+                "outcome_domain": ["other"],
+                "duration_days": None,
+                "inhaled_exposure_duration": None,
+                "administration_frequency": None,
+                "treatment_duration": None,
+                "sample_size": None,
+                "thc_pct": None,
+                "cbd_pct": None,
+                "dose_mg": None,
+                "strain_reported": None,
+                "strain_normalized": None,
+                "publication_type": "review",
+                "summary": f"updated {title}",
+                "classification_confidence": 0.6,
+                "classification_timestamp": "2026-07-08T00:00:00",
+                "classifier_version": "heuristic-1.0.0",
+            }
+
+        reingest_heuristic_papers.DatabaseManager = build_test_db_manager
+        reingest_heuristic_papers.classifier.process_paper_metadata = classify_for_test
+
+    def tearDown(self):
+        """Restore patched dependencies and remove the temporary database."""
+        reingest_heuristic_papers.DatabaseManager = self.original_database_manager
+        reingest_heuristic_papers.classifier.process_paper_metadata = (
+            self.original_process_paper_metadata
+        )
+        self.temp_dir.cleanup()
+
+    def test_max_papers_limits_pending_only_updates(self):
+        """Re-ingestion should update only the capped pending rows in id order."""
+        summary = reingest_heuristic_papers.reingest_heuristic_papers(
+            batch_size=1,
+            only_pending=True,
+            max_papers=2,
+        )
+
+        self.assertEqual(summary["papers_processed"], 2)
+        self.assertEqual(self.processed_titles, ["Pending 2", "Pending 3"])
+
+        conn = sqlite3.connect(self.db_path)
+        conn.row_factory = sqlite3.Row
+        rows = conn.execute(
+            "SELECT id, classifier_version, summary FROM papers ORDER BY id"
+        ).fetchall()
+        conn.close()
+        by_id = {row["id"]: dict(row) for row in rows}
+
+        self.assertIsNone(by_id[1]["summary"])
+        self.assertEqual(by_id[2]["classifier_version"], "heuristic-1.0.0")
+        self.assertEqual(by_id[2]["summary"], "updated Pending 2")
+        self.assertEqual(by_id[3]["classifier_version"], "heuristic-1.0.0")
+        self.assertEqual(by_id[3]["summary"], "updated Pending 3")
+        self.assertEqual(by_id[4]["classifier_version"], "heuristic-reclassify-1.0.0")
+        self.assertIsNone(by_id[4]["summary"])
+        self.assertEqual(by_id[5]["classifier_version"], "heuristic-reclassify-1.0.0")
+        self.assertIsNone(by_id[5]["summary"])
+
+    def test_max_papers_must_be_positive(self):
+        """The re-ingestion cap should reject non-positive batch sizes."""
+        with self.assertRaises(ValueError):
+            reingest_heuristic_papers.reingest_heuristic_papers(max_papers=0)
 
 
 class TestDatabaseManager(unittest.TestCase):
