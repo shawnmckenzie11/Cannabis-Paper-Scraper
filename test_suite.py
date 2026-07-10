@@ -357,8 +357,10 @@ class TestHeuristicReingestion(unittest.TestCase):
             "classification_timestamp": "2026-07-10T00:00:00",
             "classifier_version": "heuristic-1.0.0",
         }
+        fake_conn = Mock(wraps=self.conn)
+        fake_conn.close = Mock()
         fake_db = Mock()
-        fake_db.get_connection.return_value = self.conn
+        fake_db.get_connection.return_value = fake_conn
 
         with patch.object(reingest, "DatabaseManager", return_value=fake_db), patch.object(
             reingest.classifier, "process_paper_metadata", return_value=metadata
