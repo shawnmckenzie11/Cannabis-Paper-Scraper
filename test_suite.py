@@ -3,10 +3,12 @@ import unittest
 import os
 import json
 import sqlite3
+from unittest import mock
 from pathlib import Path
 from db_manager import DatabaseManager
 import extractor
 import classifier
+import reingest_heuristic_papers
 
 class TestHeuristicExtractor(unittest.TestCase):
     """Test cases for regex extractions and heuristics in extractor.py."""
@@ -258,6 +260,111 @@ class TestHeuristicExtractor(unittest.TestCase):
         self.assertIn("This is an animal study", summary_no)
         self.assertIn("pure cannabinoid cannabis administration", summary_no)
         self.assertIn("No specific strain was specified.", summary_no)
+
+
+class TestHeuristicReingestion(unittest.TestCase):
+    """Test cases for bounded heuristic re-ingestion batches."""
+
+    def setUp(self):
+        """Create an isolated SQLite catalog for re-ingestion tests."""
+        self.db_path = "test_reingest_heuristic.db"
+        for suffix in ("", "-wal", "-shm"):
+            if os.path.exists(self.db_path + suffix):
+                os.remove(self.db_path + suffix)
+        self.db = DatabaseManager(self.db_path)
+        self.db.init_db()
+
+    def tearDown(self):
+        """Remove the isolated SQLite catalog after each test."""
+        for suffix in ("", "-wal", "-shm"):
+            if os.path.exists(self.db_path + suffix):
+                os.remove(self.db_path + suffix)
+
+    def insert_test_paper(self, title, classifier_version):
+        """Insert a minimal paper fixture with the requested classifier version."""
+        return self.db.insert_paper({
+            "pmid": f"reingest-{title}",
+            "title": title,
+            "abstract": "Participants used cannabis during a 30-day study.",
+            "authors": ["Test Author"],
+            "journal": "Test Journal",
+            "year": 2026,
+            "study_type": ["Clinical (observational)"],
+            "exposure_method": ["inhaled"],
+            "cannabis_type": ["dried flower"],
+            "outcome_domain": ["pain"],
+            "duration_days": 14.0,
+            "classification_confidence": 0.9,
+            "classification_timestamp": "2026-07-10T00:00:00",
+            "classifier_version": classifier_version,
+            "date_harvested": "2026-07-10T00:00:00",
+        })
+
+    def test_max_papers_limits_pending_reingestion(self):
+        """Only the bounded number of pending rows should be reprocessed."""
+        self.insert_test_paper("pending-1", "heuristic-reclassify-1.0.0")
+        self.insert_test_paper("pending-2", "heuristic-reclassify-1.0.0")
+        self.insert_test_paper("pending-3", "heuristic-reclassify-1.0.0")
+        self.insert_test_paper("current", "heuristic-1.0.0")
+
+        extracted = {
+            "study_type": ["Clinical (observational)"],
+            "exposure_method": ["unknown"],
+            "cannabis_type": ["unknown"],
+            "outcome_domain": ["addiction"],
+            "duration_days": 30.0,
+            "inhaled_exposure_duration": None,
+            "administration_frequency": None,
+            "treatment_duration": None,
+            "sample_size": None,
+            "thc_pct": None,
+            "cbd_pct": None,
+            "dose_mg": None,
+            "strain_reported": None,
+            "strain_normalized": None,
+            "publication_type": "original research",
+            "summary": "Updated heuristic summary.",
+            "classification_confidence": 0.6,
+            "classification_timestamp": "2026-07-11T00:00:00",
+            "classifier_version": "heuristic-1.0.0",
+        }
+
+        with mock.patch.object(
+            reingest_heuristic_papers, "DatabaseManager", return_value=self.db
+        ), mock.patch.object(
+            reingest_heuristic_papers.classifier,
+            "process_paper_metadata",
+            return_value=extracted,
+        ) as process_mock:
+            summary = reingest_heuristic_papers.reingest_heuristic_papers(
+                batch_size=1,
+                only_pending=True,
+                max_papers=2,
+            )
+
+        self.assertEqual(summary["papers_processed"], 2)
+        self.assertEqual(summary["max_papers"], 2)
+        self.assertEqual(process_mock.call_count, 2)
+
+        conn = self.db.get_connection()
+        try:
+            cur = conn.cursor()
+            cur.execute(
+                "SELECT title, classifier_version FROM papers ORDER BY id"
+            )
+            versions = {row["title"]: row["classifier_version"] for row in cur.fetchall()}
+        finally:
+            conn.close()
+
+        self.assertEqual(versions["pending-1"], "heuristic-1.0.0")
+        self.assertEqual(versions["pending-2"], "heuristic-1.0.0")
+        self.assertEqual(versions["pending-3"], "heuristic-reclassify-1.0.0")
+        self.assertEqual(versions["current"], "heuristic-1.0.0")
+
+    def test_max_papers_rejects_non_positive_values(self):
+        """Non-positive batch limits should fail before opening a database."""
+        with self.assertRaises(ValueError):
+            reingest_heuristic_papers.reingest_heuristic_papers(max_papers=0)
 
 
 class TestDatabaseManager(unittest.TestCase):
