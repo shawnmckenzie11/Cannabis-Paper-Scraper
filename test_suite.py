@@ -260,6 +260,132 @@ class TestHeuristicExtractor(unittest.TestCase):
         self.assertIn("No specific strain was specified.", summary_no)
 
 
+class TestHeuristicReingestion(unittest.TestCase):
+    """Test cases for bounded heuristic re-ingestion batches."""
+
+    def setUp(self):
+        """Create an isolated database and deterministic classifier patch."""
+        import reingest_heuristic_papers
+
+        self.test_db_path = "test_reingest_papers.db"
+        for suffix in ("", "-wal", "-shm"):
+            path = self.test_db_path + suffix
+            if os.path.exists(path):
+                os.remove(path)
+
+        self.original_initialized = DatabaseManager._initialized
+        DatabaseManager._initialized = False
+        self.db = DatabaseManager(self.test_db_path)
+        self.reingest_module = reingest_heuristic_papers
+        self.original_db_manager = reingest_heuristic_papers.DatabaseManager
+        self.original_process_paper_metadata = (
+            reingest_heuristic_papers.classifier.process_paper_metadata
+        )
+
+        def get_test_database_manager():
+            """Return the isolated database manager for re-ingestion tests."""
+            return self.db
+
+        reingest_heuristic_papers.DatabaseManager = get_test_database_manager
+
+        def fake_process_paper_metadata(title, abstract, run_llm=False):
+            """Return stable heuristic metadata for re-ingestion assertions."""
+            return {
+                "study_type": ["Clinical (observational)"],
+                "exposure_method": ["unknown"],
+                "cannabis_type": ["unknown"],
+                "outcome_domain": ["addiction"],
+                "duration_days": 30.0,
+                "inhaled_exposure_duration": None,
+                "administration_frequency": None,
+                "treatment_duration": None,
+                "sample_size": None,
+                "thc_pct": None,
+                "cbd_pct": None,
+                "dose_mg": None,
+                "strain_reported": None,
+                "strain_normalized": None,
+                "publication_type": "original research",
+                "summary": f"updated {title}",
+                "classification_confidence": 0.6,
+                "classification_timestamp": "2026-07-12T00:00:00",
+                "classifier_version": "heuristic-1.0.0",
+            }
+
+        reingest_heuristic_papers.classifier.process_paper_metadata = (
+            fake_process_paper_metadata
+        )
+
+    def tearDown(self):
+        """Restore patches and remove the isolated database files."""
+        self.reingest_module.DatabaseManager = self.original_db_manager
+        self.reingest_module.classifier.process_paper_metadata = (
+            self.original_process_paper_metadata
+        )
+        DatabaseManager._initialized = self.original_initialized
+        for suffix in ("", "-wal", "-shm"):
+            path = self.test_db_path + suffix
+            if os.path.exists(path):
+                os.remove(path)
+
+    def test_max_papers_limits_only_pending_updates(self):
+        """Only the capped number of legacy pending papers should update."""
+        for idx in range(1, 4):
+            self.db.insert_paper(
+                {
+                    "pmid": f"pending-{idx}",
+                    "title": f"Pending paper {idx}",
+                    "abstract": "Cannabis use intervention over several weeks.",
+                    "summary": "old",
+                    "classification_confidence": 0.95,
+                    "classifier_version": "heuristic-reclassify-1.0.0",
+                }
+            )
+        self.db.insert_paper(
+            {
+                "pmid": "already-current",
+                "title": "Already current paper",
+                "abstract": "Cannabis observational study.",
+                "summary": "current",
+                "classification_confidence": 0.6,
+                "classifier_version": "heuristic-1.0.0",
+            }
+        )
+
+        summary = self.reingest_module.reingest_heuristic_papers(
+            dry_run=False,
+            batch_size=1,
+            only_pending=True,
+            max_papers=2,
+        )
+
+        self.assertEqual(summary["papers_processed"], 2)
+        conn = self.db.get_connection()
+        try:
+            cursor = conn.cursor()
+            cursor.execute(
+                "SELECT pmid, summary, classifier_version FROM papers ORDER BY id"
+            )
+            rows = [dict(row) for row in cursor.fetchall()]
+        finally:
+            conn.close()
+
+        self.assertEqual(rows[0]["classifier_version"], "heuristic-1.0.0")
+        self.assertEqual(rows[1]["classifier_version"], "heuristic-1.0.0")
+        self.assertTrue(rows[0]["summary"].startswith("updated Pending paper 1"))
+        self.assertTrue(rows[1]["summary"].startswith("updated Pending paper 2"))
+        self.assertEqual(rows[2]["pmid"], "pending-3")
+        self.assertEqual(rows[2]["classifier_version"], "heuristic-reclassify-1.0.0")
+        self.assertEqual(rows[2]["summary"], "old")
+        self.assertEqual(rows[3]["pmid"], "already-current")
+        self.assertEqual(rows[3]["summary"], "current")
+
+    def test_max_papers_must_be_positive(self):
+        """Non-positive caps should fail before any database work starts."""
+        with self.assertRaises(ValueError):
+            self.reingest_module.reingest_heuristic_papers(max_papers=0)
+
+
 class TestDatabaseManager(unittest.TestCase):
     """Test cases for SQLite dynamic operations, FTS5 sync, and CRUD."""
 
