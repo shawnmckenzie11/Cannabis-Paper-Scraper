@@ -172,6 +172,95 @@ class TestHeuristicExtractor(unittest.TestCase):
         self.assertEqual(metadata["classifier_version"], "heuristic-1.0.0")
         self.assertLess(metadata["classification_confidence"], 0.85)
 
+    def test_sample_size(self):
+        text = "A sample size of 84 patients was recruited (n = 84)."
+        self.assertEqual(extractor.extract_sample_size(text), 84)
+
+    def test_strain_normalization(self):
+        text_chem1 = "Studies utilized the OG Kush strain."
+        reported1, normalized1 = extractor.extract_strain_info(text_chem1)
+        self.assertEqual(reported1, "OG Kush")
+        self.assertEqual(normalized1, "Chemotype I")
+
+        text_chem2 = "We selected Bediol for balanced outcomes."
+        reported2, normalized2 = extractor.extract_strain_info(text_chem2)
+        self.assertEqual(reported2, "Bediol")
+        self.assertEqual(normalized2, "Chemotype II")
+
+        text_chem3 = "We tested Charlotte's Web extracts."
+        reported3, normalized3 = extractor.extract_strain_info(text_chem3)
+        self.assertEqual(reported3, "Charlotte's Web")
+        self.assertEqual(normalized3, "Chemotype III")
+
+        # Quoted strain lookup
+        quoted = 'The strain "Solodiol" was analyzed.'
+        reported_q, normalized_q = extractor.extract_strain_info(quoted)
+        self.assertEqual(reported_q, "Solodiol")
+        self.assertEqual(normalized_q, "Chemotype III")
+
+    def test_methods_isolation(self):
+        title = "Acute Cannabis Administration Transiently Reduces Mitochondrial DNA in Young Adults: Findings from a Secondary Analysis of a Double-Blind, Placebo-Controlled, Randomized Clinical Trial"
+        abstract = "Background: Resurgence of research into the effects of plant-derived cannabinoids on mitochondrial health. In particular, a number of studies implicate mitochondrial-Δ9-THC interactions with altered memory, metabolism, and catalepsy in mice. Methods: Blood samples were obtained from a double-blind, placebo-controlled, randomized clinical trial in which adults who regularly use cannabis were randomized. Results: We found that active cannabis was associated with an acute reduction."
+        
+        study_type = extractor.infer_study_type(title, abstract)
+        
+        self.assertEqual(study_type, ["Clinical (RCT)"])
+
+    def test_animal_study_with_adult_keywords(self):
+        title = "Effects of cannabis smoke and oral Δ9THC on cognition in young adult and aged rats"
+        abstract = "OBJECTIVES: The current study was designed to determine how cannabis influences multiple forms of cognition in young adult and aged rats of both sexes... METHODS: Rats were exposed acutely to cannabis smoke..."
+        
+        study_type = extractor.infer_study_type(title, abstract)
+        
+        self.assertEqual(study_type, ["Animal Models (Rat)"])
+
+    def test_get_methods_text_restrictions(self):
+        title = "My Cannabis Study"
+        
+        # Case 1: Structured abstract with METHODS header -> should isolate METHODS
+        abstract_structured = "BACKGROUND: Intro text. METHODS: We vaped dry flower. RESULTS: Significant changes in cells. CONCLUSIONS: Vaping is bad."
+        methods_text = extractor.get_methods_text(title, abstract_structured)
+        self.assertNotIn("BACKGROUND: Intro text", methods_text)
+        self.assertIn("METHODS: We vaped dry flower", methods_text)
+        self.assertNotIn("RESULTS: Significant changes in cells", methods_text)
+        self.assertNotIn("CONCLUSIONS: Vaping is bad", methods_text)
+        
+        # Case 2: Structured abstract without METHODS header -> should fall back to BACKGROUND and RESULTS
+        abstract_no_methods = "BACKGROUND: Intro text. RESULTS: Significant changes in cells. CONCLUSIONS: Vaping is bad."
+        methods_text_no_methods = extractor.get_methods_text(title, abstract_no_methods)
+        self.assertIn("BACKGROUND: Intro text", methods_text_no_methods)
+        self.assertIn("RESULTS: Significant changes in cells", methods_text_no_methods)
+        self.assertNotIn("CONCLUSIONS: Vaping is bad", methods_text_no_methods)
+        
+        # Case 3: Unstructured abstract with conclusion -> should strip conclusion
+        abstract_unstructured = "We studied the effects of vaporized cannabinoids in cell cultures. In conclusion, vaping causes damage."
+        methods_text_unstructured = extractor.get_methods_text(title, abstract_unstructured)
+        self.assertIn("We studied the effects of vaporized cannabinoids in cell cultures", methods_text_unstructured)
+        self.assertNotIn("In conclusion, vaping causes damage", methods_text_unstructured)
+
+    def test_heuristic_summary(self):
+        data_with_strain = {
+            "study_type": "RCT",
+            "cannabis_type": "dried flower",
+            "exposure_method": "inhaled",
+            "strain_reported": "Sour Diesel",
+        }
+        summary_with = extractor.generate_heuristic_summary(data_with_strain)
+        self.assertIn("This is an RCT study", summary_with)
+        self.assertIn("dried flower cannabis administration", summary_with)
+        self.assertIn("Reported strain: Sour Diesel.", summary_with)
+
+        data_no_strain = {
+            "study_type": "animal",
+            "cannabis_type": "pure cannabinoid",
+            "exposure_method": "injection cannabinoids",
+            "strain_reported": None,
+        }
+        summary_no = extractor.generate_heuristic_summary(data_no_strain)
+        self.assertIn("This is an animal study", summary_no)
+        self.assertIn("pure cannabinoid cannabis administration", summary_no)
+        self.assertIn("No specific strain was specified.", summary_no)
+
 
 class TestHeuristicReingestion(unittest.TestCase):
     """Test cases for bounded heuristic re-ingestion batches."""
@@ -331,95 +420,6 @@ class TestHeuristicReingestion(unittest.TestCase):
 
         with self.assertRaises(ValueError):
             reingest_heuristic_papers.reingest_heuristic_papers(max_papers=0)
-
-    def test_sample_size(self):
-        text = "A sample size of 84 patients was recruited (n = 84)."
-        self.assertEqual(extractor.extract_sample_size(text), 84)
-
-    def test_strain_normalization(self):
-        text_chem1 = "Studies utilized the OG Kush strain."
-        reported1, normalized1 = extractor.extract_strain_info(text_chem1)
-        self.assertEqual(reported1, "OG Kush")
-        self.assertEqual(normalized1, "Chemotype I")
-
-        text_chem2 = "We selected Bediol for balanced outcomes."
-        reported2, normalized2 = extractor.extract_strain_info(text_chem2)
-        self.assertEqual(reported2, "Bediol")
-        self.assertEqual(normalized2, "Chemotype II")
-
-        text_chem3 = "We tested Charlotte's Web extracts."
-        reported3, normalized3 = extractor.extract_strain_info(text_chem3)
-        self.assertEqual(reported3, "Charlotte's Web")
-        self.assertEqual(normalized3, "Chemotype III")
-
-        # Quoted strain lookup
-        quoted = 'The strain "Solodiol" was analyzed.'
-        reported_q, normalized_q = extractor.extract_strain_info(quoted)
-        self.assertEqual(reported_q, "Solodiol")
-        self.assertEqual(normalized_q, "Chemotype III")
-
-    def test_methods_isolation(self):
-        title = "Acute Cannabis Administration Transiently Reduces Mitochondrial DNA in Young Adults: Findings from a Secondary Analysis of a Double-Blind, Placebo-Controlled, Randomized Clinical Trial"
-        abstract = "Background: Resurgence of research into the effects of plant-derived cannabinoids on mitochondrial health. In particular, a number of studies implicate mitochondrial-Δ9-THC interactions with altered memory, metabolism, and catalepsy in mice. Methods: Blood samples were obtained from a double-blind, placebo-controlled, randomized clinical trial in which adults who regularly use cannabis were randomized. Results: We found that active cannabis was associated with an acute reduction."
-        
-        study_type = extractor.infer_study_type(title, abstract)
-        
-        self.assertEqual(study_type, ["Clinical (RCT)"])
-
-    def test_animal_study_with_adult_keywords(self):
-        title = "Effects of cannabis smoke and oral Δ9THC on cognition in young adult and aged rats"
-        abstract = "OBJECTIVES: The current study was designed to determine how cannabis influences multiple forms of cognition in young adult and aged rats of both sexes... METHODS: Rats were exposed acutely to cannabis smoke..."
-        
-        study_type = extractor.infer_study_type(title, abstract)
-        
-        self.assertEqual(study_type, ["Animal Models (Rat)"])
-
-    def test_get_methods_text_restrictions(self):
-        title = "My Cannabis Study"
-        
-        # Case 1: Structured abstract with METHODS header -> should isolate METHODS
-        abstract_structured = "BACKGROUND: Intro text. METHODS: We vaped dry flower. RESULTS: Significant changes in cells. CONCLUSIONS: Vaping is bad."
-        methods_text = extractor.get_methods_text(title, abstract_structured)
-        self.assertNotIn("BACKGROUND: Intro text", methods_text)
-        self.assertIn("METHODS: We vaped dry flower", methods_text)
-        self.assertNotIn("RESULTS: Significant changes in cells", methods_text)
-        self.assertNotIn("CONCLUSIONS: Vaping is bad", methods_text)
-        
-        # Case 2: Structured abstract without METHODS header -> should fall back to BACKGROUND and RESULTS
-        abstract_no_methods = "BACKGROUND: Intro text. RESULTS: Significant changes in cells. CONCLUSIONS: Vaping is bad."
-        methods_text_no_methods = extractor.get_methods_text(title, abstract_no_methods)
-        self.assertIn("BACKGROUND: Intro text", methods_text_no_methods)
-        self.assertIn("RESULTS: Significant changes in cells", methods_text_no_methods)
-        self.assertNotIn("CONCLUSIONS: Vaping is bad", methods_text_no_methods)
-        
-        # Case 3: Unstructured abstract with conclusion -> should strip conclusion
-        abstract_unstructured = "We studied the effects of vaporized cannabinoids in cell cultures. In conclusion, vaping causes damage."
-        methods_text_unstructured = extractor.get_methods_text(title, abstract_unstructured)
-        self.assertIn("We studied the effects of vaporized cannabinoids in cell cultures", methods_text_unstructured)
-        self.assertNotIn("In conclusion, vaping causes damage", methods_text_unstructured)
-
-    def test_heuristic_summary(self):
-        data_with_strain = {
-            "study_type": "RCT",
-            "cannabis_type": "dried flower",
-            "exposure_method": "inhaled",
-            "strain_reported": "Sour Diesel",
-        }
-        summary_with = extractor.generate_heuristic_summary(data_with_strain)
-        self.assertIn("This is an RCT study", summary_with)
-        self.assertIn("dried flower cannabis administration", summary_with)
-        self.assertIn("Reported strain: Sour Diesel.", summary_with)
-
-        data_no_strain = {
-            "study_type": "animal",
-            "cannabis_type": "pure cannabinoid",
-            "exposure_method": "injection cannabinoids",
-            "strain_reported": None,
-        }
-        summary_no = extractor.generate_heuristic_summary(data_no_strain)
-        self.assertIn("This is an animal study", summary_no)
-        self.assertIn("pure cannabinoid cannabis administration", summary_no)
-        self.assertIn("No specific strain was specified.", summary_no)
 
 
 class TestDatabaseManager(unittest.TestCase):
