@@ -3,7 +3,9 @@ import unittest
 import os
 import json
 import sqlite3
+import tempfile
 from pathlib import Path
+from unittest.mock import patch
 from db_manager import DatabaseManager
 import extractor
 import classifier
@@ -169,6 +171,166 @@ class TestHeuristicExtractor(unittest.TestCase):
         metadata = classifier.process_paper_metadata(title, abstract, run_llm=False)
         self.assertEqual(metadata["classifier_version"], "heuristic-1.0.0")
         self.assertLess(metadata["classification_confidence"], 0.85)
+
+
+class TestHeuristicReingestion(unittest.TestCase):
+    """Test cases for bounded heuristic re-ingestion batches."""
+
+    def setUp(self):
+        """Create a temporary catalog database for each re-ingestion test."""
+        self.temp_dir = tempfile.TemporaryDirectory()
+        self.db_path = os.path.join(self.temp_dir.name, "reingest_test.db")
+        conn = sqlite3.connect(self.db_path)
+        try:
+            conn.execute(
+                """
+                CREATE TABLE papers (
+                    id INTEGER PRIMARY KEY,
+                    title TEXT,
+                    abstract TEXT,
+                    expert_locked_fields TEXT,
+                    study_type TEXT,
+                    exposure_method TEXT,
+                    cannabis_type TEXT,
+                    outcome_domain TEXT,
+                    duration_days REAL,
+                    classification_confidence REAL,
+                    classifier_version TEXT,
+                    inhaled_exposure_duration TEXT,
+                    administration_frequency TEXT,
+                    treatment_duration TEXT,
+                    sample_size INTEGER,
+                    thc_pct REAL,
+                    cbd_pct REAL,
+                    dose_mg REAL,
+                    strain_reported TEXT,
+                    strain_normalized TEXT,
+                    publication_type TEXT,
+                    summary TEXT,
+                    classification_timestamp TEXT
+                );
+                """
+            )
+            conn.commit()
+        finally:
+            conn.close()
+
+    def tearDown(self):
+        """Remove the temporary catalog database after each test."""
+        self.temp_dir.cleanup()
+
+    def open_connection(self):
+        """Open the temporary SQLite catalog for the re-ingestion script."""
+        conn = sqlite3.connect(self.db_path)
+        conn.row_factory = sqlite3.Row
+        return conn
+
+    def insert_paper(self, paper_id, title, classifier_version):
+        """Insert a minimal paper row into the temporary catalog."""
+        conn = self.open_connection()
+        try:
+            conn.execute(
+                """
+                INSERT INTO papers (
+                    id, title, abstract, expert_locked_fields, study_type,
+                    exposure_method, cannabis_type, outcome_domain, duration_days,
+                    classification_confidence, classifier_version
+                )
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+                """,
+                (
+                    paper_id,
+                    title,
+                    "Participants used cannabis during a 30-day trial.",
+                    "[]",
+                    json.dumps(["Clinical (observational)"]),
+                    json.dumps(["inhaled"]),
+                    json.dumps(["dried flower"]),
+                    json.dumps(["pain"]),
+                    14.0,
+                    0.95,
+                    classifier_version,
+                ),
+            )
+            conn.commit()
+        finally:
+            conn.close()
+
+    def heuristic_metadata(self, title, abstract, run_llm=False):
+        """Return deterministic heuristic metadata for patched classifier calls."""
+        return {
+            "study_type": ["Clinical (observational)"],
+            "exposure_method": ["unknown"],
+            "cannabis_type": ["unknown"],
+            "outcome_domain": ["addiction"],
+            "duration_days": 30.0,
+            "inhaled_exposure_duration": None,
+            "administration_frequency": None,
+            "treatment_duration": None,
+            "sample_size": None,
+            "thc_pct": None,
+            "cbd_pct": None,
+            "dose_mg": None,
+            "strain_reported": None,
+            "strain_normalized": None,
+            "publication_type": "original research",
+            "summary": f"Updated {title}",
+            "classification_confidence": 0.6,
+            "classification_timestamp": "2026-07-13T00:00:00",
+            "classifier_version": "heuristic-1.0.0",
+        }
+
+    def test_only_pending_max_papers_limits_updates(self):
+        """Bounded pending re-ingestion should update only the capped legacy rows."""
+        import reingest_heuristic_papers
+
+        self.insert_paper(1, "Legacy A", "heuristic-reclassify-1.0.0")
+        self.insert_paper(2, "Legacy B", "heuristic-reclassify-1.0.0")
+        self.insert_paper(3, "Legacy C", "heuristic-reclassify-1.0.0")
+        self.insert_paper(4, "Current D", "heuristic-1.0.0")
+
+        with (
+            patch("reingest_heuristic_papers.DatabaseManager") as database_manager,
+            patch(
+                "reingest_heuristic_papers.classifier.process_paper_metadata",
+                side_effect=self.heuristic_metadata,
+            ) as process_paper_metadata,
+        ):
+            database_manager.return_value.get_connection.side_effect = self.open_connection
+            summary = reingest_heuristic_papers.reingest_heuristic_papers(
+                batch_size=10,
+                only_pending=True,
+                max_papers=2,
+            )
+
+        self.assertEqual(summary["papers_processed"], 2)
+        self.assertEqual(summary["max_papers"], 2)
+        self.assertEqual(process_paper_metadata.call_count, 2)
+        self.assertEqual(
+            [call.args[0] for call in process_paper_metadata.call_args_list],
+            ["Legacy A", "Legacy B"],
+        )
+
+        conn = self.open_connection()
+        try:
+            rows = conn.execute(
+                "SELECT id, classifier_version FROM papers ORDER BY id;"
+            ).fetchall()
+        finally:
+            conn.close()
+
+        versions = {row["id"]: row["classifier_version"] for row in rows}
+        self.assertEqual(versions[1], "heuristic-1.0.0")
+        self.assertEqual(versions[2], "heuristic-1.0.0")
+        self.assertEqual(versions[3], "heuristic-reclassify-1.0.0")
+        self.assertEqual(versions[4], "heuristic-1.0.0")
+
+    def test_max_papers_must_be_positive(self):
+        """Non-positive max_papers values should be rejected before DB access."""
+        import reingest_heuristic_papers
+
+        with self.assertRaises(ValueError):
+            reingest_heuristic_papers.reingest_heuristic_papers(max_papers=0)
 
     def test_sample_size(self):
         text = "A sample size of 84 patients was recruited (n = 84)."
