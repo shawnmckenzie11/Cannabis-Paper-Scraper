@@ -1,0 +1,471 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Account Settings | McKenzian Research Catalog</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&family=Plus+Jakarta+Sans:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-color: #0b0f19;
+            --card-bg: rgba(255, 255, 255, 0.03);
+            --card-border: rgba(255, 255, 255, 0.08);
+            --primary: #6366f1;
+            --primary-glow: rgba(99, 102, 241, 0.15);
+            --accent: #06b6d4;
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --font-display: 'Outfit', sans-serif;
+            --font-sans: 'Plus Jakarta Sans', sans-serif;
+            --ok: #86efac;
+            --err: #f87171;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            font-family: var(--font-sans);
+            min-height: 100vh;
+            padding: 2rem 1.25rem 3rem;
+            position: relative;
+        }
+
+        body::before {
+            content: '';
+            position: fixed;
+            width: 480px;
+            height: 480px;
+            background: radial-gradient(circle, var(--primary-glow) 0%, transparent 70%);
+            z-index: -1;
+            top: 12%;
+            left: 50%;
+            transform: translateX(-50%);
+            pointer-events: none;
+        }
+
+        .shell {
+            max-width: 760px;
+            margin: 0 auto;
+        }
+
+        .topbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 1rem;
+            margin-bottom: 1.75rem;
+            flex-wrap: wrap;
+        }
+
+        .logo {
+            font-family: var(--font-display);
+            font-weight: 800;
+            font-size: 1.35rem;
+            letter-spacing: -0.4px;
+            background: linear-gradient(135deg, var(--text-main) 30%, var(--accent) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-decoration: none;
+        }
+
+        .top-links {
+            display: flex;
+            gap: 0.75rem;
+            align-items: center;
+        }
+
+        .top-links a {
+            color: var(--text-muted);
+            text-decoration: none;
+            font-size: 0.88rem;
+            font-weight: 500;
+        }
+
+        .top-links a:hover { color: var(--text-main); }
+
+        h1 {
+            font-family: var(--font-display);
+            font-size: 1.85rem;
+            font-weight: 700;
+            margin-bottom: 0.35rem;
+        }
+
+        .subtitle {
+            color: var(--text-muted);
+            margin-bottom: 1.5rem;
+            font-size: 0.95rem;
+        }
+
+        .flash {
+            padding: 0.8rem 1rem;
+            border-radius: 12px;
+            margin-bottom: 1rem;
+            font-size: 0.88rem;
+        }
+
+        .flash.ok {
+            background: rgba(34, 197, 94, 0.12);
+            border: 1px solid rgba(34, 197, 94, 0.28);
+            color: var(--ok);
+        }
+
+        .flash.err {
+            background: rgba(239, 68, 68, 0.12);
+            border: 1px solid rgba(239, 68, 68, 0.28);
+            color: var(--err);
+        }
+
+        .card {
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 18px;
+            padding: 1.35rem 1.4rem;
+            margin-bottom: 1rem;
+            backdrop-filter: blur(10px);
+        }
+
+        .card h2 {
+            font-family: var(--font-display);
+            font-size: 1.05rem;
+            font-weight: 600;
+            margin-bottom: 0.9rem;
+        }
+
+        .card p.help {
+            color: var(--text-muted);
+            font-size: 0.84rem;
+            line-height: 1.45;
+            margin-bottom: 1rem;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: 140px 1fr;
+            gap: 0.55rem 1rem;
+            font-size: 0.9rem;
+        }
+
+        .grid .label { color: var(--text-muted); }
+        .grid .value { color: var(--text-main); word-break: break-word; }
+
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.35rem;
+            padding: 0.2rem 0.55rem;
+            border-radius: 999px;
+            font-size: 0.72rem;
+            font-weight: 700;
+            letter-spacing: 0.02em;
+            border: 1px solid rgba(255,255,255,0.12);
+            background: rgba(255,255,255,0.04);
+            color: var(--accent);
+            text-transform: uppercase;
+        }
+
+        .badge.admin {
+            color: #fbbf24;
+            border-color: rgba(251, 191, 36, 0.35);
+        }
+
+        label {
+            display: block;
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            margin-bottom: 0.35rem;
+            font-weight: 500;
+        }
+
+        input[type="text"],
+        input[type="password"] {
+            width: 100%;
+            padding: 0.75rem 0.9rem;
+            border-radius: 12px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--card-border);
+            color: var(--text-main);
+            font-size: 0.95rem;
+            outline: none;
+            margin-bottom: 0.85rem;
+        }
+
+        input:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15);
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.4rem;
+            padding: 0.75rem 1.1rem;
+            border-radius: 12px;
+            border: none;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 0.92rem;
+            text-decoration: none;
+            transition: transform 0.15s ease, box-shadow 0.15s ease;
+        }
+
+        .btn-primary {
+            background: var(--primary);
+            color: #fff;
+            box-shadow: 0 4px 15px rgba(99, 102, 241, 0.3);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 6px 20px rgba(99, 102, 241, 0.45);
+        }
+
+        .btn-donate {
+            background: linear-gradient(135deg, #0ea5e9, #6366f1);
+            color: #fff;
+            width: 100%;
+            margin-top: 0.35rem;
+        }
+
+        .btn-secondary {
+            background: transparent;
+            color: var(--text-muted);
+            border: 1px solid var(--card-border);
+        }
+
+        .btn-secondary:hover { color: var(--text-main); }
+
+        .btn-danger {
+            background: rgba(239, 68, 68, 0.9);
+            color: #fff;
+            box-shadow: 0 4px 15px rgba(239, 68, 68, 0.25);
+        }
+
+        .btn-danger:hover {
+            transform: translateY(-1px);
+            background: #ef4444;
+        }
+
+        .freq-row {
+            display: flex;
+            gap: 0.65rem;
+            flex-wrap: wrap;
+            margin-bottom: 1rem;
+        }
+
+        .freq-row label.choice {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.4rem;
+            padding: 0.55rem 0.8rem;
+            border-radius: 10px;
+            border: 1px solid var(--card-border);
+            background: rgba(0,0,0,0.2);
+            cursor: pointer;
+            color: var(--text-main);
+            font-size: 0.86rem;
+            margin-bottom: 0;
+        }
+
+        .freq-row input { accent-color: var(--primary); }
+
+        .alert-row {
+            display: grid;
+            grid-template-columns: auto 1fr;
+            gap: 0.65rem;
+            align-items: center;
+            margin-bottom: 0.65rem;
+        }
+
+        .alert-row input[type="checkbox"] {
+            width: 1rem;
+            height: 1rem;
+            accent-color: var(--primary);
+        }
+
+        .alert-row input[type="text"] { margin-bottom: 0; }
+
+        .toggle-line {
+            display: flex;
+            align-items: center;
+            gap: 0.55rem;
+            margin: 0.75rem 0 1rem;
+            color: var(--text-main);
+            font-size: 0.9rem;
+        }
+
+        .danger-zone {
+            border-color: rgba(239, 68, 68, 0.35);
+        }
+
+        .danger-zone h2 { color: #fca5a5; }
+
+        @media (max-width: 640px) {
+            .grid { grid-template-columns: 1fr; gap: 0.15rem 0; }
+            .grid .label { margin-top: 0.45rem; }
+        }
+    </style>
+</head>
+<body>
+    <div class="shell">
+        <div class="topbar">
+            <a class="logo" href="/">McKenzian Solutions</a>
+            <div class="top-links">
+                <a href="/">← Back to catalog</a>
+                <a href="/logout">Sign out</a>
+            </div>
+        </div>
+
+        <h1>Account Settings</h1>
+        <p class="subtitle">Manage your profile, security, notifications, and support options.</p>
+
+        {% if flash_success %}
+        <div class="flash ok">{{ flash_success }}</div>
+        {% endif %}
+        {% if flash_error %}
+        <div class="flash err">{{ flash_error }}</div>
+        {% endif %}
+
+        <section class="card">
+            <h2>Account overview</h2>
+            <div class="grid">
+                <div class="label">Account type</div>
+                <div class="value">
+                    <span class="badge">{{ account_type }}</span>
+                    {% if is_admin %}<span class="badge admin">Admin</span>{% endif %}
+                </div>
+                <div class="label">Username</div>
+                <div class="value">{{ user.username }}</div>
+                <div class="label">Email</div>
+                <div class="value">{{ user.email }}</div>
+                <div class="label">Email status</div>
+                <div class="value">{{ "Verified" if user.is_verified else "Unverified" }}</div>
+                <div class="label">Member since</div>
+                <div class="value">{{ member_since }}</div>
+                <div class="label">Last login</div>
+                <div class="value">{{ last_login }}</div>
+                <div class="label">Saved analyses</div>
+                <div class="value">{{ analyses_count }}</div>
+            </div>
+        </section>
+
+        <section class="card">
+            <h2>Display name</h2>
+            <p class="help">This is the name shown in the top-right account menu.</p>
+            <form method="POST" action="/settings">
+                <input type="hidden" name="action" value="update_username">
+                <label for="username">Username</label>
+                <input type="text" id="username" name="username" value="{{ user.username }}" required minlength="2" maxlength="64" autocomplete="username">
+                <button type="submit" class="btn btn-primary">Save name</button>
+            </form>
+        </section>
+
+        <section class="card">
+            <h2>Password</h2>
+            {% if can_change_password %}
+            <p class="help">Update the password used for email sign-in.</p>
+            <form method="POST" action="/settings">
+                <input type="hidden" name="action" value="update_password">
+                <label for="current_password">Current password</label>
+                <input type="password" id="current_password" name="current_password" required autocomplete="current-password">
+                <label for="new_password">New password</label>
+                <input type="password" id="new_password" name="new_password" required minlength="8" autocomplete="new-password">
+                <label for="confirm_password">Confirm new password</label>
+                <input type="password" id="confirm_password" name="confirm_password" required minlength="8" autocomplete="new-password">
+                <button type="submit" class="btn btn-primary">Update password</button>
+            </form>
+            {% elif is_google %}
+            <p class="help">
+                This account signs in with Google. Manage your Google password in your
+                <a href="https://myaccount.google.com/security" target="_blank" rel="noopener" style="color: var(--accent);">Google Account security settings</a>.
+            </p>
+            {% else %}
+            <p class="help">Password management is unavailable for this account type.</p>
+            {% endif %}
+        </section>
+
+        <section class="card">
+            <h2>Notification preferences</h2>
+            <p class="help">
+                Choose how often to email you. Digests cover papers harvested in that window
+                (today / last 7 days / last 30 days).
+                {% if not email_configured %}
+                <br><strong style="color:#fca5a5;">Email delivery is not configured on the server yet, so digests cannot be sent until SMTP is available.</strong>
+                {% endif %}
+            </p>
+            <form method="POST" action="/settings">
+                <input type="hidden" name="action" value="update_notifications">
+                {% if notif_prefs.last_digest_sent_at %}
+                <input type="hidden" name="last_digest_sent_at" value="{{ notif_prefs.last_digest_sent_at }}">
+                {% endif %}
+
+                <label>Email frequency</label>
+                <div class="freq-row">
+                    {% for freq in ["daily", "weekly", "monthly"] %}
+                    <label class="choice">
+                        <input type="radio" name="frequency" value="{{ freq }}" {% if notif_prefs.frequency == freq %}checked{% endif %}>
+                        {{ freq|capitalize }}
+                    </label>
+                    {% endfor %}
+                </div>
+
+                <label>New paper alerts (up to 3 keywords)</label>
+                <p class="help">We’ll email you when newly harvested papers match a keyword.</p>
+                {% for alert in notif_prefs.keyword_alerts %}
+                <div class="alert-row">
+                    <input type="checkbox" name="alert_enabled_{{ loop.index0 }}" value="1" {% if alert.enabled %}checked{% endif %} title="Enable alert">
+                    <input type="text" name="alert_keyword_{{ loop.index0 }}" value="{{ alert.keyword }}" maxlength="120" placeholder="e.g. vaporized THC, anxiety, CBD oil">
+                </div>
+                {% endfor %}
+
+                <label class="toggle-line">
+                    <input type="checkbox" name="summaries_enabled" value="1" {% if notif_prefs.summaries_enabled %}checked{% endif %}>
+                    <span>Email catalog summaries for this timeframe</span>
+                </label>
+                <p class="help">
+                    Summaries use the same breakdown as Analyze Filtered Articles for all papers
+                    harvested in the period (counts by study design, exposure, cannabis type, outcomes, and sample titles).
+                </p>
+
+                <button type="submit" class="btn btn-primary">Save notification preferences</button>
+            </form>
+        </section>
+
+        <section class="card">
+            <h2>Support the project</h2>
+            <p class="help">
+                If this catalog helps your research or teaching, you can optionally donate to keep hosting,
+                harvesting, and classification improvements going. Thank you — every bit helps.
+            </p>
+            <a class="btn btn-donate" href="{{ donate_url }}" target="_blank" rel="noopener">Donate via PayPal</a>
+            <p class="help" style="margin-top: 0.85rem; margin-bottom: 0;">
+                Prefer another method? Email <a href="mailto:solutions@mckenzian.com" style="color: var(--accent);">solutions@mckenzian.com</a>.
+            </p>
+        </section>
+
+        <section class="card danger-zone">
+            <h2>Delete account</h2>
+            <p class="help">
+                Permanently deletes your account and saved analyses. This cannot be undone.
+                Papers in the shared catalog are not removed.
+            </p>
+            <form method="POST" action="/settings" onsubmit="return confirm('Delete your account permanently? This cannot be undone.');">
+                <input type="hidden" name="action" value="delete_account">
+                <label for="confirm_email">Type your email to confirm</label>
+                <input type="email" id="confirm_email" name="confirm_email" placeholder="{{ user.email }}" required autocomplete="off">
+                <label for="confirm_delete">Type DELETE</label>
+                <input type="text" id="confirm_delete" name="confirm_delete" placeholder="DELETE" required autocomplete="off">
+                {% if can_change_password %}
+                <label for="delete_password">Current password</label>
+                <input type="password" id="delete_password" name="delete_password" required autocomplete="current-password">
+                {% endif %}
+                <button type="submit" class="btn btn-danger">Delete my account</button>
+            </form>
+        </section>
+    </div>
+</body>
+</html>

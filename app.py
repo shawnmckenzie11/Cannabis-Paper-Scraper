@@ -12,10 +12,11 @@ from functools import wraps
 from flask import Flask, render_template, request, jsonify, session, redirect, url_for, send_file
 from dashboard_ui_config import build_dashboard_ui_config
 import random
-import smtplib
 import requests
-from email.mime.text import MIMEText
-from email.mime.multipart import MIMEMultipart
+
+from dotenv import load_dotenv
+
+load_dotenv()
 
 from db_manager import DatabaseManager
 import classifier
@@ -24,6 +25,7 @@ from extractor import is_cannabis_related
 from citation_graph import CitationGraph
 import calibration_metrics
 import maude_feedback
+import email_service
 
 app = Flask(__name__)
 app.secret_key = os.getenv("FLASK_SECRET_KEY", "mckenzian-secret-key-12345")
@@ -93,6 +95,34 @@ def _safe_next_url(next_url):
     if not next_url or not next_url.startswith("/") or next_url.startswith("//"):
         return None
     return next_url
+
+
+def _establish_user_session(user: Dict[str, Any], *, is_google: bool = False) -> None:
+    """Persist a logged-in Flask session and stamp last_login_at."""
+    session["logged_in"] = True
+    session["user_id"] = user["id"]
+    session["username"] = user["username"]
+    session["email"] = user["email"]
+    session["is_google"] = bool(is_google or user.get("google_id"))
+    session.permanent = True
+    try:
+        DatabaseManager().record_user_login(int(user["id"]))
+    except Exception:
+        pass
+
+
+def _donate_url() -> str:
+    """Public donation / support link for the Settings page."""
+    configured = (os.getenv("DONATE_URL") or "").strip()
+    if configured:
+        return configured
+    return (
+        "https://www.paypal.com/cgi-bin/webscr"
+        "?cmd=_donations"
+        "&business=solutions%40mckenzian.com"
+        "&item_name=McKenzian%20Research%20Catalog"
+        "&currency_code=CAD"
+    )
 
 
 def _get_session_user(db=None):
@@ -204,6 +234,13 @@ def daily_harvest_scheduler():
         try:
             scheduled_jobs.run_due_jobs(db)
             maude_reingest_watchdog.run_watchdog(db)
+            try:
+                import user_notifications
+                digest_result = user_notifications.run_due_notification_digests(db)
+                if digest_result.get("sent") or digest_result.get("errors"):
+                    sched_logger.info("Notification digests: %s", digest_result)
+            except Exception as notif_err:
+                sched_logger.error("Notification digest runner failed: %s", notif_err)
 
             current_hour = datetime.now().hour
             if last_harvest_check_hour != current_hour:
@@ -334,54 +371,8 @@ def bg_harvest_worker(query: str, max_results: int, update: bool, classify: bool
             harvest_state["error"] = str(e)
 
 def send_verification_email(recipient_email, username, code):
-    smtp_server = os.getenv("SMTP_SERVER")
-    smtp_port = os.getenv("SMTP_PORT", "587")
-    smtp_username = os.getenv("SMTP_USERNAME")
-    smtp_password = os.getenv("SMTP_PASSWORD")
-    smtp_sender = os.getenv("SMTP_SENDER", smtp_username)
-
-    if not smtp_server or not smtp_username or not smtp_password:
-        print(f"[SMTP WARNING] SMTP environment variables are not fully configured. Cannot send real email to {recipient_email}.")
-        print(f"[SMTP VERIFICATION CODE] Code for {username}: {code}")
-        return False
-
-    try:
-        msg = MIMEMultipart("alternative")
-        msg["Subject"] = "Email Verification | Cannabis Research Catalog"
-        msg["From"] = smtp_sender
-        msg["To"] = recipient_email
-
-        text = f"Hello {username},\n\nYour email verification code is: {code}\n\nPlease enter this code in the Cannabis Research Catalog portal to complete your registration."
-        html = f"""
-        <html>
-          <body style="font-family: Arial, sans-serif; background-color: #0b0f19; color: #f8fafc; padding: 20px;">
-            <div style="max-width: 500px; margin: 0 auto; background-color: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 12px; padding: 30px;">
-              <h2 style="color: #6366f1; font-family: 'Outfit', sans-serif;">Verify Your Email Address</h2>
-              <p style="color: #94a3b8;">Hello <strong>{username}</strong>,</p>
-              <p style="color: #94a3b8;">Thank you for registering. Please use the following code to verify your email address and activate your account:</p>
-              <div style="background-color: rgba(99, 102, 241, 0.1); border: 1px dashed #6366f1; padding: 15px; border-radius: 8px; font-size: 24px; font-weight: bold; letter-spacing: 4px; text-align: center; color: #f8fafc; margin: 25px 0;">
-                {code}
-              </div>
-              <p style="color: #94a3b8; font-size: 12px;">If you did not request this code, you can safely ignore this email.</p>
-            </div>
-          </body>
-        </html>
-        """
-        part1 = MIMEText(text, "plain")
-        part2 = MIMEText(html, "html")
-        msg.attach(part1)
-        msg.attach(part2)
-
-        server = smtplib.SMTP(smtp_server, int(smtp_port))
-        server.starttls()
-        server.login(smtp_username, smtp_password)
-        server.sendmail(smtp_sender, recipient_email, msg.as_string())
-        server.quit()
-        print(f"[SMTP INFO] Sent real verification email to {recipient_email}")
-        return True
-    except Exception as e:
-        print(f"[SMTP ERROR] Failed to send email to {recipient_email}: {e}")
-        return False
+    """Send a signup verification code via configured email provider."""
+    return email_service.send_verification_email(recipient_email, username, code)
 
 @app.before_request
 def require_login():
@@ -390,9 +381,11 @@ def require_login():
         '/login',
         '/signup',
         '/verify-email',
+        '/resend-verification',
         '/auth/google',
         '/auth/google/callback',
-        '/logout'
+        '/logout',
+        '/settings',
     ]
     if request.path in allowed_paths or request.path.startswith('/static/'):
         return
@@ -417,18 +410,23 @@ def login():
             if user["is_verified"] == 0:
                 return redirect(url_for("verify_email", username=user["username"]))
             else:
-                session["logged_in"] = True
-                session["user_id"] = user["id"]
-                session["username"] = user["username"]
-                session["email"] = user["email"]
-                session["is_google"] = False
-                session.permanent = True
+                _establish_user_session(user, is_google=False)
                 return redirect(next_url or url_for("index"))
         else:
             error = "Invalid username/email or password."
             
     google_client_id = os.getenv("GOOGLE_CLIENT_ID")
     return render_template("login.html", error=error, google_client_id=google_client_id, next_url=next_url)
+
+def _account_is_claimed(user: Optional[Dict[str, Any]]) -> bool:
+    """Return True when an account is verified by code or linked to Google."""
+    if not user:
+        return False
+    if user.get("google_id"):
+        return True
+    verified = user.get("is_verified")
+    return verified in (1, True, "1", "true", "True")
+
 
 @app.route("/signup", methods=["POST"])
 def signup():
@@ -440,29 +438,72 @@ def signup():
         return render_template("login.html", signup_error="All fields are required.", active_tab="signup")
         
     db = DatabaseManager()
-    
-    existing = db.get_user_by_username_or_email(username)
-    if existing:
-        return render_template("login.html", signup_error="Username already exists.", active_tab="signup")
-    existing_email = db.get_user_by_username_or_email(email)
-    if existing_email:
-        return render_template("login.html", signup_error="Email already registered.", active_tab="signup")
+
+    existing_email = db.get_user_by_email(email)
+    if existing_email and _account_is_claimed(existing_email):
+        return render_template(
+            "login.html",
+            signup_error="Email already registered. Sign in, or use a different email.",
+            active_tab="signup",
+            google_client_id=os.getenv("GOOGLE_CLIENT_ID"),
+        )
+
+    existing_username = db.get_user_by_username(username)
+    if existing_username and (
+        not existing_email
+        or int(existing_username["id"]) != int(existing_email["id"])
+    ):
+        # Username taken by someone else (verified or still-pending).
+        if _account_is_claimed(existing_username) or not existing_email:
+            return render_template(
+                "login.html",
+                signup_error="Username already exists.",
+                active_tab="signup",
+                google_client_id=os.getenv("GOOGLE_CLIENT_ID"),
+            )
+        # Pending email row exists, but username is owned by a different pending user.
+        return render_template(
+            "login.html",
+            signup_error="Username already exists.",
+            active_tab="signup",
+            google_client_id=os.getenv("GOOGLE_CLIENT_ID"),
+        )
+
+    if not email_service.is_email_delivery_configured():
+        return render_template(
+            "login.html",
+            signup_error=(
+                "Email verification is temporarily unavailable. "
+                "Please sign up with Google, or contact solutions@mckenzian.com."
+            ),
+            active_tab="signup",
+            google_client_id=os.getenv("GOOGLE_CLIENT_ID"),
+        )
         
     code = f"{random.randint(100000, 999999)}"
     password_hash = db.hash_password(password)
-    
-    success = db.create_user(
-        username=username,
-        email=email,
-        password_hash=password_hash,
-        google_id=None,
-        is_verified=0,
-        verification_code=code
-    )
+
+    if existing_email and not _account_is_claimed(existing_email):
+        # Resume / replace an unfinished email signup instead of blocking.
+        success = db.refresh_unverified_signup(
+            int(existing_email["id"]),
+            username=username,
+            password_hash=password_hash,
+            verification_code=code,
+        )
+    else:
+        success = db.create_user(
+            username=username,
+            email=email,
+            password_hash=password_hash,
+            google_id=None,
+            is_verified=0,
+            verification_code=code,
+        )
     
     if success:
-        send_verification_email(email, username, code)
-        return redirect(url_for("verify_email", username=username))
+        sent = send_verification_email(email, username, code)
+        return redirect(url_for("verify_email", username=username, sent=1 if sent else 0))
     else:
         return render_template("login.html", signup_error="Registration failed. Please try again.", active_tab="signup")
 
@@ -476,26 +517,63 @@ def verify_email():
     user = db.get_user_by_username_or_email(username)
     if not user:
         return redirect(url_for("login"))
+
+    if user.get("is_verified"):
+        return redirect(url_for("login"))
         
     error = None
+    info = None
     if request.method == "POST":
         entered_code = request.form.get("code", "").strip()
-        if entered_code == user["verification_code"]:
+        if entered_code and entered_code == str(user.get("verification_code") or ""):
             db.verify_user(username)
-            session["logged_in"] = True
-            session["user_id"] = user["id"]
-            session["username"] = user["username"]
-            session["email"] = user["email"]
-            session["is_google"] = False
-            session.permanent = True
+            _establish_user_session(user, is_google=False)
             return redirect(url_for("index"))
-        else:
-            error = "Invalid verification code. Please try again."
-            
-    smtp_configured = bool(os.getenv("SMTP_SERVER") and os.getenv("SMTP_USERNAME") and os.getenv("SMTP_PASSWORD"))
-    dev_code = user["verification_code"] if not smtp_configured else None
+        error = "Invalid verification code. Please try again."
+
+    sent_raw = request.args.get("sent")
+    sent = None if sent_raw is None else sent_raw in {"1", "true", "yes"}
+    if sent is True:
+        info = email_service.delivery_status_message(True)
+    elif sent is False:
+        error = error or email_service.delivery_status_message(False)
+
+    dev_code = None
+    if email_service.allow_dev_verification_code() and not email_service.is_email_delivery_configured():
+        dev_code = user.get("verification_code")
     
-    return render_template("verify.html", username=username, email=user["email"], error=error, dev_code=dev_code)
+    return render_template(
+        "verify.html",
+        username=username,
+        email=user["email"],
+        error=error,
+        info=info,
+        dev_code=dev_code,
+        email_configured=email_service.is_email_delivery_configured(),
+    )
+
+
+@app.route("/resend-verification", methods=["POST"])
+def resend_verification():
+    """Generate and email a fresh verification code for an unverified account."""
+    username = (request.form.get("username") or "").strip()
+    if not username:
+        return redirect(url_for("login"))
+
+    db = DatabaseManager()
+    user = db.get_user_by_username_or_email(username)
+    if not user:
+        return redirect(url_for("login"))
+    if user.get("is_verified"):
+        return redirect(url_for("login"))
+
+    if not email_service.is_email_delivery_configured():
+        return redirect(url_for("verify_email", username=username, sent=0))
+
+    code = f"{random.randint(100000, 999999)}"
+    db.set_verification_code(user["username"], code)
+    sent = send_verification_email(user["email"], user["username"], code)
+    return redirect(url_for("verify_email", username=user["username"], sent=1 if sent else 0))
 
 @app.route("/auth/google")
 def auth_google():
@@ -577,12 +655,7 @@ def auth_google_callback():
                     if not user:
                         return render_template("login.html", error="Google One Tap authentication failed: could not create or retrieve user account.")
 
-                    session["logged_in"] = True
-                    session["user_id"] = user["id"]
-                    session["username"] = user["username"]
-                    session["email"] = user["email"]
-                    session["is_google"] = True
-                    session.permanent = True
+                    _establish_user_session(user, is_google=True)
                     return _google_auth_redirect()
         except Exception as e:
             print(f"[GOOGLE ONE TAP AUTH ERROR] {e}")
@@ -612,12 +685,7 @@ def auth_google_callback():
                 db.create_user(username=name, email=email, google_id=google_id, is_verified=1)
                 user = db.get_user_by_google_id(google_id)
                 
-        session["logged_in"] = True
-        session["user_id"] = user["id"]
-        session["username"] = user["username"]
-        session["email"] = user["email"]
-        session["is_google"] = True
-        session.permanent = True
+        _establish_user_session(user, is_google=True)
         return _google_auth_redirect()
         
     code = request.args.get("code")
@@ -678,12 +746,7 @@ def auth_google_callback():
         if not user:
             return render_template("login.html", error="Google authentication failed: could not create or retrieve user account.")
 
-        session["logged_in"] = True
-        session["user_id"] = user["id"]
-        session["username"] = user["username"]
-        session["email"] = user["email"]
-        session["is_google"] = True
-        session.permanent = True
+        _establish_user_session(user, is_google=True)
         return _google_auth_redirect()
         
     except Exception as e:
@@ -700,6 +763,133 @@ def _google_auth_redirect():
 def logout():
     session.clear()
     return redirect(url_for("login"))
+
+
+def _format_account_timestamp(value: Any) -> str:
+    """Pretty-print stored account timestamps for the Settings page."""
+    if not value:
+        return "Never"
+    text = str(value).strip()
+    if not text:
+        return "Never"
+    try:
+        parsed = datetime.fromisoformat(text.replace("Z", "+00:00"))
+        return parsed.strftime("%b %d, %Y · %I:%M %p")
+    except Exception:
+        return text
+
+
+@app.route("/settings", methods=["GET", "POST"])
+def settings():
+    """Account settings page for signed-in users."""
+    if not session.get("logged_in"):
+        return redirect(url_for("login", next="/settings"))
+
+    import user_notifications
+
+    db = DatabaseManager()
+    user = _get_session_user(db)
+    if not user:
+        session.clear()
+        return redirect(url_for("login", next="/settings"))
+
+    flash_error = None
+    flash_success = None
+    is_google = bool(user.get("google_id"))
+    has_password = bool(user.get("password_hash"))
+    is_manual = has_password and not is_google
+    can_change_password = has_password
+    notif_prefs = user_notifications.normalize_notification_preferences(
+        db.get_user_notification_preferences(int(user["id"]))
+    )
+
+    if request.method == "POST":
+        action = (request.form.get("action") or "").strip()
+        if action == "update_username":
+            new_username = (request.form.get("username") or "").strip()
+            if len(new_username) < 2:
+                flash_error = "Username must be at least 2 characters."
+            elif new_username != user["username"]:
+                existing = db.get_user_by_username_or_email(new_username)
+                if existing and int(existing["id"]) != int(user["id"]):
+                    flash_error = "That username is already taken."
+                elif db.update_username(int(user["id"]), new_username):
+                    session["username"] = new_username
+                    user = db.get_user_by_id(int(user["id"])) or user
+                    flash_success = "Display name updated."
+                else:
+                    flash_error = "Could not update username."
+            else:
+                flash_success = "Display name unchanged."
+        elif action == "update_password":
+            if not can_change_password:
+                flash_error = "Password changes are only available for email/password accounts."
+            else:
+                current_password = request.form.get("current_password") or ""
+                new_password = request.form.get("new_password") or ""
+                confirm_password = request.form.get("confirm_password") or ""
+                if not db.check_password(current_password, user.get("password_hash") or ""):
+                    flash_error = "Current password is incorrect."
+                elif len(new_password) < 8:
+                    flash_error = "New password must be at least 8 characters."
+                elif new_password != confirm_password:
+                    flash_error = "New password and confirmation do not match."
+                elif db.update_user_password(int(user["id"]), db.hash_password(new_password)):
+                    flash_success = "Password updated successfully."
+                    user = db.get_user_by_id(int(user["id"])) or user
+                else:
+                    flash_error = "Could not update password."
+        elif action == "update_notifications":
+            updated = user_notifications.preferences_from_form(request.form)
+            updated["last_digest_sent_at"] = notif_prefs.get("last_digest_sent_at")
+            if db.set_user_notification_preferences(int(user["id"]), updated):
+                notif_prefs = updated
+                flash_success = "Notification preferences saved."
+            else:
+                flash_error = "Could not save notification preferences."
+        elif action == "delete_account":
+            confirm_email = (request.form.get("confirm_email") or "").strip().lower()
+            confirm_text = (request.form.get("confirm_delete") or "").strip().upper()
+            password = request.form.get("delete_password") or ""
+            if confirm_email != str(user.get("email") or "").strip().lower():
+                flash_error = "Type your account email exactly to confirm deletion."
+            elif confirm_text != "DELETE":
+                flash_error = "Type DELETE in capitals to confirm permanent removal."
+            elif can_change_password and not db.check_password(password, user.get("password_hash") or ""):
+                flash_error = "Password is incorrect."
+            elif db.delete_user_account(int(user["id"])):
+                session.clear()
+                return redirect(url_for("login"))
+            else:
+                flash_error = "Could not delete account. Please contact support."
+        else:
+            flash_error = "Unknown settings action."
+
+    account_type = "Google" if is_google and not has_password else (
+        "Google + email password" if is_google and has_password else "Email & password"
+    )
+    email = user.get("email") or ""
+    is_admin = email in ADMIN_EMAILS
+    analyses_count = db.count_user_analyses(int(user["id"]))
+
+    return render_template(
+        "settings.html",
+        user=user,
+        account_type=account_type,
+        is_google=is_google,
+        is_manual=is_manual,
+        can_change_password=can_change_password,
+        is_admin=is_admin,
+        analyses_count=analyses_count,
+        member_since=_format_account_timestamp(user.get("created_at")),
+        last_login=_format_account_timestamp(user.get("last_login_at")),
+        donate_url=_donate_url(),
+        notif_prefs=notif_prefs,
+        email_configured=email_service.is_email_delivery_configured(),
+        flash_error=flash_error,
+        flash_success=flash_success,
+    )
+
 
 @app.route("/")
 def index():

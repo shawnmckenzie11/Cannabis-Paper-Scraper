@@ -30,11 +30,12 @@ class TestFilterTierPolicy(unittest.TestCase):
         self.assertIn("has_pdf", GLOBAL_FILTER_PARAMS)
         self.assertIn("has_full_text", GLOBAL_FILTER_PARAMS)
 
-    def test_classification_details_is_tab_scoped(self):
-        """Classification Details belongs in sidebar profiles, not global params."""
+    def test_classification_details_removed_from_ui_profiles(self):
+        """Classification Model filter was removed from sidebar profiles (API param may remain)."""
         self.assertNotIn("classification_level", GLOBAL_FILTER_PARAMS)
-        for tab in ("all_original", "clinical", "preclinical", "review"):
-            self.assertIn("classification_details", sections_for_tab(tab))
+        self.assertIn("classification_details", FILTER_SECTION_REGISTRY)
+        for tab in ("all_original", "clinical", "preclinical", "review", "unclassified"):
+            self.assertNotIn("classification_details", sections_for_tab(tab))
 
     def test_review_tab_has_publication_type(self):
         """Review tab exposes publication_type (§5.2) filters."""

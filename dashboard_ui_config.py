@@ -209,7 +209,6 @@ DASHBOARD_TABS: List[Dict[str, str]] = [
 FILTER_PROFILES: Dict[str, Dict[str, Any]] = {
     "all_original": {
         "sections": [
-            "classification_details",
             "study_type_all",
             "exposure_all",
             "cannabis_type",
@@ -221,7 +220,6 @@ FILTER_PROFILES: Dict[str, Dict[str, Any]] = {
     "preclinical": {
         "node": "node2b+node2c",
         "sections": [
-            "classification_details",
             "study_type_animal",
             "study_type_cell",
             "exposure_in_vivo",
@@ -241,7 +239,6 @@ FILTER_PROFILES: Dict[str, Dict[str, Any]] = {
     "clinical": {
         "node": "node2a",
         "sections": [
-            "classification_details",
             "study_type_clinical",
             "exposure_clinical",
             "cannabis_type",
@@ -259,14 +256,12 @@ FILTER_PROFILES: Dict[str, Dict[str, Any]] = {
     "review": {
         "node": "node1b",
         "sections": [
-            "classification_details",
             "publication_type",
             "year",
         ],
     },
     "unclassified": {
         "sections": [
-            "classification_details",
             "year",
         ],
     },

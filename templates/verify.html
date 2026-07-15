@@ -165,6 +165,38 @@
             text-align: center;
         }
 
+        .info-message {
+            background: rgba(34, 197, 94, 0.1);
+            border: 1px solid rgba(34, 197, 94, 0.25);
+            color: #86efac;
+            padding: 0.75rem;
+            border-radius: 10px;
+            font-size: 0.85rem;
+            margin-bottom: 1.5rem;
+            text-align: center;
+            line-height: 1.4;
+        }
+
+        .btn-resend {
+            width: 100%;
+            margin-top: 0.75rem;
+            padding: 0.7rem;
+            border-radius: 12px;
+            background: transparent;
+            color: var(--text-muted);
+            font-weight: 600;
+            font-size: 0.9rem;
+            border: 1px solid var(--card-border);
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .btn-resend:hover {
+            color: var(--text-main);
+            border-color: rgba(255, 255, 255, 0.25);
+            background: rgba(255, 255, 255, 0.04);
+        }
+
         .dev-badge {
             margin-top: 1.5rem;
             padding: 12px;
@@ -199,6 +231,12 @@
             We've sent a 6-digit verification code to <br><span class="email-highlight">{{ email }}</span>.
         </div>
 
+        {% if info %}
+        <div class="info-message">
+            {{ info }}
+        </div>
+        {% endif %}
+
         {% if error %}
         <div class="error-message">
             {{ error }}
@@ -209,15 +247,22 @@
             <input type="hidden" name="username" value="{{ username }}">
             <div class="form-group">
                 <label for="code">Enter Verification Code</label>
-                <input type="text" id="code" name="code" placeholder="000000" maxlength="6" pattern="\d{6}" required autofocus autocomplete="off">
+                <input type="text" id="code" name="code" placeholder="000000" maxlength="6" pattern="\d{6}" required autofocus autocomplete="one-time-code" inputmode="numeric">
             </div>
             <button type="submit" class="btn-submit">Verify &amp; Log In</button>
         </form>
 
+        {% if email_configured %}
+        <form method="POST" action="/resend-verification">
+            <input type="hidden" name="username" value="{{ username }}">
+            <button type="submit" class="btn-resend">Resend verification code</button>
+        </form>
+        {% endif %}
+
         {% if dev_code %}
         <div class="dev-badge">
             <strong>Developer Mode Active</strong><br>
-            Real SMTP variables are not configured in your environment.<br>
+            ALLOW_DEV_VERIFICATION_CODE is enabled because email delivery is not configured.<br>
             Please use verification code: <strong style="text-decoration: underline; font-size: 0.9rem;">{{ dev_code }}</strong>
         </div>
         {% endif %}

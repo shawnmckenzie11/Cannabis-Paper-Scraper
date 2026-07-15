@@ -1138,14 +1138,30 @@
         }
 
         .sidebar-action-btn.analyze-btn {
-            background: rgba(0, 230, 118, 0.22);
-            border: 1px solid rgba(0, 230, 118, 0.35);
-            color: var(--text-primary);
+            background: #39ff14;
+            border: 1px solid #7CFF6B;
+            color: #041208;
+            font-weight: 700;
+            text-shadow: none;
+            box-shadow:
+                0 0 10px rgba(57, 255, 20, 0.65),
+                0 0 22px rgba(57, 255, 20, 0.35),
+                inset 0 1px 0 rgba(255, 255, 255, 0.35);
         }
 
         .sidebar-action-btn.analyze-btn:hover:not(:disabled) {
-            background: rgba(0, 230, 118, 0.3);
-            border-color: rgba(0, 230, 118, 0.5);
+            background: #5cff3d;
+            border-color: #b6ff9e;
+            box-shadow:
+                0 0 14px rgba(57, 255, 20, 0.8),
+                0 0 28px rgba(57, 255, 20, 0.45),
+                inset 0 1px 0 rgba(255, 255, 255, 0.45);
+        }
+
+        .sidebar-action-btn.analyze-btn:disabled {
+            opacity: 0.7;
+            cursor: wait;
+            filter: saturate(0.85);
         }
 
         #my-analyses-panel.guest-analysis-preview-active .analysis-col-charts,
@@ -1756,13 +1772,38 @@
         .analysis-col-charts {
             grid-column: 2;
             grid-row: 2;
-            overflow-y: auto;
+            overflow: hidden;
             min-height: 0;
             height: 100%;
             gap: 10px;
             background: transparent;
             border: none;
             padding: 0;
+        }
+
+        .analysis-charts-scroll {
+            flex: 1;
+            min-height: 0;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            padding-right: 2px;
+        }
+
+        .analysis-chart-jump-bar {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex-shrink: 0;
+            padding: 8px 12px;
+            background: #0c101b;
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            border-radius: 10px;
+            position: sticky;
+            top: 0;
+            z-index: 12;
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.75);
         }
 
         .analysis-col-drilldown {
@@ -1899,6 +1940,9 @@
             display: flex;
             flex-direction: column;
             gap: 10px;
+            flex: 1;
+            min-height: 0;
+            overflow: hidden;
         }
 
         .analysis-col-placeholder {
@@ -2184,20 +2228,6 @@
         .quant-stats-table .quant-stats-na {
             color: var(--text-secondary);
             opacity: 0.55;
-        }
-
-        .analysis-chart-jump-bar {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            padding: 8px 12px;
-            background: #0c101b;
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            border-radius: 10px;
-            position: sticky;
-            top: 0;
-            z-index: 5;
-            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.55);
         }
 
         .analysis-chart-jump-bar label {
@@ -2736,24 +2766,6 @@
 
             <!-- Filters Form (scrollable; reset button pinned below) -->
             <form id="filters-form" class="sidebar-filters-body" onsubmit="event.preventDefault(); triggerSearch();">
-
-                <div data-filter-section="classification_details all_original preclinical clinical review unclassified">
-                <div class="filter-header-row">
-                    <div class="filter-header">Classification Details</div>
-                </div>
-                <div class="form-group" style="margin-bottom: 15px;">
-                    <label for="filter-classification-level" style="font-size: 0.75rem; color: var(--text-secondary); display: block; margin-bottom: 4px;">Classification Model</label>
-                    <select id="filter-classification-level" onchange="scheduleSearch()"
-                        style="width: 100%; padding: 8px; background: #121621; border: 1px solid rgba(255,255,255,0.1); color: var(--text-primary); border-radius: 4px;">
-                        <option value="ALL">All Papers (No Model Filter)</option>
-                        <option value="maude">Maude Classifications (maude-*)</option>
-                        <option value="claude_abstract">Claude Abstract Classifications (llm-reclassify)</option>
-                        <option value="claude_pdf">Claude PDF Classifications (llm-pdf-reclassify)</option>
-                        <option value="manual">Manual Edit Classifications (expert locked)</option>
-                        <option value="optimal">Optimal Classifications (PDF / Manual Edits)</option>
-                    </select>
-                </div>
-                </div>
 
                 <div data-filter-section="publication_type review">
                 <div class="filter-header-row">
@@ -3314,13 +3326,14 @@
 
                     <div class="analysis-col analysis-col-charts" id="analysis-charts-column">
                         <div id="analysis-charts-placeholder" class="analysis-col-placeholder">Select a saved analysis to view charts</div>
-                        <div id="analysis-charts-content" style="display: none; flex-direction: column; gap: 10px;">
+                        <div id="analysis-charts-content" style="display: none; flex-direction: column; gap: 10px; min-height: 0; flex: 1;">
                             <div class="analysis-chart-jump-bar">
                                 <label for="select-analysis-chart-jump">Jump to chart</label>
                                 <select id="select-analysis-chart-jump" class="analysis-chart-jump-select" onchange="jumpToAnalysisChart(this.value)">
                                     <option value="">Select a chart…</option>
                                 </select>
                             </div>
+                            <div class="analysis-charts-scroll" id="analysis-charts-scroll">
                             <div class="analysis-chart-card" id="container-chart-study-design" data-chart-id="study-design" onclick="selectAnalysisChart('study-design')">
                                 <h4>Study Design Distribution</h4>
                                 <div class="chart-canvas-wrap"><canvas id="chart-study-design"></canvas></div>
@@ -3429,6 +3442,7 @@
                                         style="padding: 2px 10px; font-size: 0.72rem; background: rgba(0,240,255,0.06); border-color: rgba(0,240,255,0.2); color: var(--accent-blue); cursor: pointer; border-radius: 4px; font-weight: 600;">Timescale: Yearly</button>
                                 </div>
                                 <div class="chart-canvas-wrap" style="height: 200px;"><canvas id="chart-timeline"></canvas></div>
+                            </div>
                             </div>
                         </div>
                     </div>
@@ -4476,10 +4490,6 @@
         /** Collect sidebar tab-specific filter params (§5.2 routing + §5.3 extraction). */
         function collectTabFilterParams() {
             const params = {};
-            const classificationLevel = getFilterValue("filter-classification-level", "ALL");
-            if (classificationLevel && classificationLevel !== "ALL") {
-                params.classification_level = classificationLevel;
-            }
             const publicationTypes = Array.from(document.querySelectorAll('#filters-form input[name="publication_type"]:checked')).map(cb => cb.value).join(",");
             if (publicationTypes) {
                 params.publication_type = publicationTypes;
@@ -4612,9 +4622,6 @@
             form.querySelectorAll('input[type="checkbox"]').forEach(cb => {
                 cb.checked = false;
             });
-
-            const classificationSelect = document.getElementById("filter-classification-level");
-            if (classificationSelect) classificationSelect.value = "ALL";
 
             const rangeDefaults = {
                 "filter-thc-min": "0",
@@ -7000,18 +7007,17 @@
                             : ("Analysis failed: " + msg));
                         return;
                     }
-                    openMyAnalyses({ preserveCharts: true, skipLoadAnalysesList: true });
-                    renderChartsFromData(result.chart_data);
-                    currentAnalyzedPapers = result.chart_data;
-                    currentAnalysisPapers = result.papers || [];
+                    // Open My Analyses, then load the new analysis the same way a row
+                    // click does so quantitative stats and paper-derived charts paint fully.
                     selectedAnalysisId = result.id;
                     updateExportCSVButtonState();
+                    openMyAnalyses({ preserveCharts: true, skipLoadAnalysesList: true });
 
                     if (result.id == null) {
                         showGuestAnalysisPreview(result);
                     } else {
                         clearGuestAnalysisPreview();
-                        loadAnalysesList(result.id);
+                        loadAnalysesList(result.id).then(() => loadAnalysis(result.id));
                     }
                 })
                 .catch(err => {
@@ -7204,15 +7210,14 @@
                 clearPersistedGuestAnalysis();
                 clearGuestAnalysisPreview();
                 openMyAnalyses({ preserveCharts: true, skipLoadAnalysesList: true });
-                renderChartsFromData(result.chart_data);
                 currentAnalyzedPapers = result.chart_data;
                 selectedAnalysisId = result.id;
                 updateExportCSVButtonState();
                 await loadAnalysesList(result.id);
-
                 const papersResp = await fetch('/api/analyses/' + result.id + '/papers').then(r => r.json());
                 currentAnalysisPapers = papersResp.papers || [];
-                renderQuantitativeStatsRow(result.chart_data, currentAnalysisPapers);
+                renderChartsFromData(result.chart_data);
+                requestAnimationFrame(() => resizeAnalysisCharts());
             } catch (err) {
                 console.error('Guest analysis restore failed:', err);
                 alert('Could not restore your analysis. Please try running Analyze again.');
@@ -7225,8 +7230,11 @@
             persistGuestAnalysisForLogin(result);
             selectedAnalysisId = null;
             updateExportCSVButtonState();
+            currentAnalyzedPapers = result.chart_data;
+            currentAnalysisPapers = result.papers || [];
             renderGuestAnalysisListRow(result);
             renderChartsFromData(result.chart_data);
+            requestAnimationFrame(() => resizeAnalysisCharts());
             const panel = document.getElementById("my-analyses-panel");
             if (panel) panel.classList.add("guest-analysis-preview-active");
             const signInLink = document.getElementById('guest-analysis-sign-in-link');
@@ -7315,7 +7323,7 @@
         }
 
         function loadAnalysis(id) {
-            Promise.all([
+            return Promise.all([
                 fetch("/api/analyses/" + id).then(res => res.json()),
                 fetch("/api/analyses/" + id + "/papers").then(res => res.json())
             ])
@@ -7326,9 +7334,15 @@
                     document.querySelectorAll("#analyses-tbody tr").forEach(tr => tr.classList.remove("selected"));
                     const row = document.querySelector(`#analyses-tbody tr[data-id="${id}"]`);
                     if (row) row.classList.add("selected");
+                    // Papers must be set before renderChartsFromData so quantitative
+                    // stats and paper-derived charts populate on first paint.
                     currentAnalysisPapers = papersResp.papers || [];
-                    renderChartsFromData(analysis.chart_data);
                     currentAnalyzedPapers = analysis.chart_data;
+                    renderChartsFromData(analysis.chart_data);
+                    requestAnimationFrame(() => {
+                        resizeAnalysisCharts();
+                        requestAnimationFrame(() => resizeAnalysisCharts());
+                    });
                 });
         }
 
@@ -8890,10 +8904,41 @@
             if (!chartId) return;
             const card = document.getElementById("container-chart-" + chartId);
             if (!card) return;
-            card.scrollIntoView({ behavior: "smooth", block: "start" });
+            const scroller = document.getElementById("analysis-charts-scroll");
+            if (scroller) {
+                const y = card.getBoundingClientRect().top
+                    - scroller.getBoundingClientRect().top
+                    + scroller.scrollTop
+                    - 8;
+                scroller.scrollTo({ top: Math.max(0, y), behavior: "smooth" });
+            } else {
+                card.scrollIntoView({ behavior: "smooth", block: "start" });
+            }
             selectAnalysisChart(chartId);
             const sel = document.getElementById("select-analysis-chart-jump");
             if (sel) sel.value = chartId;
+        }
+
+        function resizeAnalysisCharts() {
+            const canvasIds = [
+                "chart-study-design",
+                "chart-cannabinoid-distribution",
+                "chart-exposure",
+                "chart-cannabis-type-doughnut",
+                "chart-outcome-bar",
+                "chart-duration",
+                "chart-puff-count",
+                "chart-admin-frequency",
+                "chart-population-sex",
+                "chart-population-age",
+                "chart-timeline",
+            ];
+            canvasIds.forEach(id => {
+                const canvas = document.getElementById(id);
+                if (!canvas || typeof Chart === "undefined" || !Chart.getChart) return;
+                const chart = Chart.getChart(canvas);
+                if (chart) chart.resize();
+            });
         }
 
         function classifyStudyDurationBin(days) {
@@ -10097,6 +10142,7 @@
                             <div style="font-size: 0.75rem; color: var(--text-secondary); word-break: break-all;">${CURRENT_USER.email}</div>
                             ${CURRENT_USER.is_google ? '<div style="font-size: 0.7rem; color: var(--accent-blue); margin-top: 4px;">Google Account</div>' : ''}
                         </div>
+                        <a href="/settings" class="btn-signout" style="text-decoration: none; margin-bottom: 8px; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08);">Settings</a>
                         <a href="/logout" class="btn-signout" style="text-decoration: none;">Sign Out</a>
                     </div>
                 `;

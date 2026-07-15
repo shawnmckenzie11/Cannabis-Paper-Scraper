@@ -700,6 +700,8 @@ class DatabaseManager:
                 except Exception as exc:
                     logger.error("Failed to add users.dashboard_preferences: %s", exc)
 
+            self._ensure_user_profile_columns(conn)
+
             for idx_stmt in self._PAPERS_SEARCH_INDEXES:
                 try:
                     conn.execute(idx_stmt)
@@ -730,6 +732,22 @@ class DatabaseManager:
                 return column_name in columns
         except Exception:
             return False
+
+    def _ensure_user_profile_columns(self, conn) -> None:
+        """Add optional profile columns used by the Settings page."""
+        pref_type = "JSONB DEFAULT '{}'::jsonb" if self.is_postgres else "TEXT DEFAULT '{}'"
+        migrations = [
+            ("last_login_at", "TEXT"),
+            ("notification_preferences", pref_type),
+        ]
+        for column_name, column_type in migrations:
+            if self.column_exists("users", column_name, conn):
+                continue
+            try:
+                conn.execute(f"ALTER TABLE users ADD COLUMN {column_name} {column_type};")
+                conn.commit()
+            except Exception as exc:
+                logger.error("Failed to add users.%s: %s", column_name, exc)
 
     def table_exists(self, table_name, conn):
         try:
@@ -925,6 +943,8 @@ class DatabaseManager:
                     conn.commit()
                 except Exception as e:
                     logger.error(f"Failed to add users.dashboard_preferences column: {e}")
+
+            self._ensure_user_profile_columns(conn)
 
             # Ensure analyses table exists
             self.init_analyses_table()
@@ -2722,6 +2742,150 @@ class DatabaseManager:
         test_hash = hashlib.sha256((password + salt).encode('utf-8')).hexdigest()
         return test_hash == pwd_hash
 
+    def record_user_login(self, user_id: int) -> None:
+        """Stamp the user's last successful login time."""
+        conn = self.get_connection()
+        try:
+            self._ensure_user_profile_columns(conn)
+            conn.execute(
+                "UPDATE users SET last_login_at = ? WHERE id = ?;",
+                (datetime.now().isoformat(timespec="seconds"), int(user_id)),
+            )
+            conn.commit()
+        except Exception as exc:
+            logger.warning("Failed to record last login for user %s: %s", user_id, exc)
+        finally:
+            conn.close()
+
+    def update_user_password(self, user_id: int, new_password_hash: str) -> bool:
+        """Update password hash for a manual (non-Google-only) account."""
+        conn = self.get_connection()
+        try:
+            cursor = conn.cursor()
+            cursor.execute(
+                "UPDATE users SET password_hash = ? WHERE id = ? AND password_hash IS NOT NULL;",
+                (new_password_hash, int(user_id)),
+            )
+            conn.commit()
+            return (cursor.rowcount or 0) > 0
+        except Exception:
+            return False
+        finally:
+            conn.close()
+
+    def update_username(self, user_id: int, new_username: str) -> bool:
+        """Rename a user when the username is still available."""
+        username = (new_username or "").strip()
+        if not username:
+            return False
+        conn = self.get_connection()
+        try:
+            cursor = conn.cursor()
+            cursor.execute(
+                "UPDATE users SET username = ? WHERE id = ?;",
+                (username, int(user_id)),
+            )
+            conn.commit()
+            return (cursor.rowcount or 0) > 0
+        except Exception:
+            return False
+        finally:
+            conn.close()
+
+    def get_user_notification_preferences(self, user_id: int) -> Dict[str, Any]:
+        """Return parsed notification preferences for a user."""
+        user = self.get_user_by_id(int(user_id))
+        if not user:
+            return {}
+        raw = user.get("notification_preferences")
+        if raw in (None, ""):
+            return {}
+        if isinstance(raw, dict):
+            return raw
+        try:
+            parsed = json.loads(raw)
+        except (TypeError, ValueError, json.JSONDecodeError):
+            return {}
+        return parsed if isinstance(parsed, dict) else {}
+
+    def set_user_notification_preferences(self, user_id: int, preferences: Dict[str, Any]) -> bool:
+        """Persist notification preferences JSON for a user."""
+        conn = self.get_connection()
+        try:
+            self._ensure_user_profile_columns(conn)
+            payload = json.dumps(preferences or {})
+            conn.execute(
+                "UPDATE users SET notification_preferences = ? WHERE id = ?;",
+                (payload, int(user_id)),
+            )
+            conn.commit()
+            return True
+        except Exception as exc:
+            logger.error("Failed to save notification preferences for user %s: %s", user_id, exc)
+            return False
+        finally:
+            conn.close()
+
+    def list_verified_users_for_notifications(self) -> List[Dict[str, Any]]:
+        """Return verified users that may receive notification digests."""
+        conn = self.get_connection()
+        try:
+            self._ensure_user_profile_columns(conn)
+            cursor = conn.cursor()
+            cursor.execute(
+                "SELECT id, username, email, notification_preferences, is_verified "
+                "FROM users WHERE is_verified = 1;"
+            )
+            rows = cursor.fetchall() or []
+            out = []
+            for row in rows:
+                out.append(dict(row) if not isinstance(row, dict) else row)
+            return out
+        except Exception as exc:
+            logger.error("Failed to list users for notifications: %s", exc)
+            return []
+        finally:
+            conn.close()
+
+    def delete_user_account(self, user_id: int) -> bool:
+        """Permanently delete a user and their saved analyses."""
+        conn = self.get_connection()
+        try:
+            cursor = conn.cursor()
+            if self.table_exists("analyses", conn):
+                cursor.execute("DELETE FROM analyses WHERE user_id = ?;", (int(user_id),))
+            cursor.execute("DELETE FROM users WHERE id = ?;", (int(user_id),))
+            conn.commit()
+            return (cursor.rowcount or 0) > 0
+        except Exception as exc:
+            logger.error("Failed to delete user %s: %s", user_id, exc)
+            try:
+                conn.rollback()
+            except Exception:
+                pass
+            return False
+        finally:
+            conn.close()
+
+    def count_user_analyses(self, user_id: int) -> int:
+        """Return how many saved analyses belong to a user."""
+        conn = self.get_connection()
+        try:
+            if not self.table_exists("analyses", conn):
+                return 0
+            cursor = conn.cursor()
+            cursor.execute("SELECT COUNT(*) AS total FROM analyses WHERE user_id = ?;", (int(user_id),))
+            row = cursor.fetchone()
+            if row is None:
+                return 0
+            if isinstance(row, dict):
+                return int(row.get("total") or 0)
+            return int(row[0] or 0)
+        except Exception:
+            return 0
+        finally:
+            conn.close()
+
     def get_user_by_id(self, user_id: int) -> Optional[Dict[str, Any]]:
         """Fetches a user by primary key id."""
         conn = self.get_connection()
@@ -2788,6 +2952,40 @@ class DatabaseManager:
         finally:
             conn.close()
 
+    def get_user_by_email(self, email: str) -> Optional[Dict[str, Any]]:
+        """Fetch a user by exact email (case-insensitive)."""
+        normalized = (email or "").strip()
+        if not normalized:
+            return None
+        conn = self.get_connection()
+        try:
+            cursor = conn.cursor()
+            cursor.execute(
+                "SELECT * FROM users WHERE LOWER(email) = LOWER(?) LIMIT 1;",
+                (normalized,),
+            )
+            row = cursor.fetchone()
+            return dict(row) if row else None
+        finally:
+            conn.close()
+
+    def get_user_by_username(self, username: str) -> Optional[Dict[str, Any]]:
+        """Fetch a user by exact username (case-insensitive)."""
+        normalized = (username or "").strip()
+        if not normalized:
+            return None
+        conn = self.get_connection()
+        try:
+            cursor = conn.cursor()
+            cursor.execute(
+                "SELECT * FROM users WHERE LOWER(username) = LOWER(?) LIMIT 1;",
+                (normalized,),
+            )
+            row = cursor.fetchone()
+            return dict(row) if row else None
+        finally:
+            conn.close()
+
     def get_user_by_google_id(self, google_id: str) -> Optional[Dict[str, Any]]:
         """Fetches a user by google_id."""
         conn = self.get_connection()
@@ -2815,6 +3013,31 @@ class DatabaseManager:
         finally:
             conn.close()
 
+    def refresh_unverified_signup(
+        self,
+        user_id: int,
+        *,
+        username: str,
+        password_hash: str,
+        verification_code: str,
+    ) -> bool:
+        """Replace credentials on an unverified, non-Google pending signup."""
+        conn = self.get_connection()
+        try:
+            cursor = conn.cursor()
+            cursor.execute(
+                "UPDATE users SET username = ?, password_hash = ?, verification_code = ?, "
+                "is_verified = 0, google_id = NULL WHERE id = ? AND is_verified = 0 "
+                "AND (google_id IS NULL OR google_id = '');",
+                (username, password_hash, verification_code, int(user_id)),
+            )
+            conn.commit()
+            return (cursor.rowcount or 0) > 0
+        except Exception:
+            return False
+        finally:
+            conn.close()
+
     def verify_user(self, username: str) -> bool:
         """Marks a user as verified."""
         conn = self.get_connection()
@@ -2822,6 +3045,22 @@ class DatabaseManager:
             conn.execute("UPDATE users SET is_verified = 1, verification_code = NULL WHERE username = ?;", (username,))
             conn.commit()
             return True
+        except Exception:
+            return False
+        finally:
+            conn.close()
+
+    def set_verification_code(self, username: str, code: str) -> bool:
+        """Store a new email verification code for an unverified user."""
+        conn = self.get_connection()
+        try:
+            cursor = conn.cursor()
+            cursor.execute(
+                "UPDATE users SET verification_code = ? WHERE username = ? AND is_verified = 0;",
+                (code, username),
+            )
+            conn.commit()
+            return (cursor.rowcount or 0) > 0
         except Exception:
             return False
         finally:
