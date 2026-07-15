@@ -8,6 +8,7 @@ from db_manager import DatabaseManager
 import extractor
 import classifier
 
+
 class TestHeuristicExtractor(unittest.TestCase):
     """Test cases for regex extractions and heuristics in extractor.py."""
 
@@ -258,6 +259,85 @@ class TestHeuristicExtractor(unittest.TestCase):
         self.assertIn("This is an animal study", summary_no)
         self.assertIn("pure cannabinoid cannabis administration", summary_no)
         self.assertIn("No specific strain was specified.", summary_no)
+
+
+class TestHeuristicReingestion(unittest.TestCase):
+    """Test cases for bounded heuristic re-ingestion batches."""
+
+    def setUp(self):
+        """Create an isolated SQLite catalog for re-ingestion tests."""
+        import tempfile
+
+        self.temp_dir = tempfile.TemporaryDirectory()
+        self.test_db_path = os.path.join(self.temp_dir.name, "reingest_test.db")
+        self.db = DatabaseManager(self.test_db_path)
+
+    def tearDown(self):
+        """Remove the isolated SQLite catalog after each test."""
+        self.temp_dir.cleanup()
+
+    def insert_reingestion_paper(self, title, classifier_version):
+        """Insert a minimal paper row for re-ingestion testing."""
+        return self.db.insert_paper(
+            {
+                "title": title,
+                "abstract": (
+                    "This clinical trial evaluated CBD oil for pain over a 4-week "
+                    "treatment period."
+                ),
+                "classification_confidence": 0.4,
+                "classifier_version": classifier_version,
+            }
+        )
+
+    def classifier_versions_by_id(self):
+        """Return classifier versions keyed by paper ID."""
+        conn = self.db.get_connection()
+        try:
+            cur = conn.cursor()
+            cur.execute("SELECT id, classifier_version FROM papers ORDER BY id")
+            return {row["id"]: row["classifier_version"] for row in cur.fetchall()}
+        finally:
+            conn.close()
+
+    def test_max_papers_limits_only_pending_reingestion(self):
+        """Only the first pending rows should be updated when max_papers is set."""
+        import reingest_heuristic_papers as reingest_module
+        from unittest.mock import patch
+
+        first_pending = self.insert_reingestion_paper(
+            "Pending CBD pain trial one", "heuristic-reclassify-1.0.0"
+        )
+        second_pending = self.insert_reingestion_paper(
+            "Pending CBD pain trial two", "heuristic-reclassify-1.0.0"
+        )
+        third_pending = self.insert_reingestion_paper(
+            "Pending CBD pain trial three", "heuristic-reclassify-1.0.0"
+        )
+        current_heuristic = self.insert_reingestion_paper(
+            "Already current CBD pain trial", "heuristic-1.0.0"
+        )
+
+        with patch.object(reingest_module, "DatabaseManager", lambda: self.db):
+            summary = reingest_module.reingest_heuristic_papers(
+                batch_size=1,
+                only_pending=True,
+                max_papers=2,
+            )
+
+        versions = self.classifier_versions_by_id()
+        self.assertEqual(summary["papers_processed"], 2)
+        self.assertEqual(versions[first_pending], "heuristic-1.0.0")
+        self.assertEqual(versions[second_pending], "heuristic-1.0.0")
+        self.assertEqual(versions[third_pending], "heuristic-reclassify-1.0.0")
+        self.assertEqual(versions[current_heuristic], "heuristic-1.0.0")
+
+    def test_max_papers_rejects_non_positive_values(self):
+        """Non-positive max_papers values should fail before opening a DB."""
+        import reingest_heuristic_papers as reingest_module
+
+        with self.assertRaises(ValueError):
+            reingest_module.reingest_heuristic_papers(max_papers=0)
 
 
 class TestDatabaseManager(unittest.TestCase):
