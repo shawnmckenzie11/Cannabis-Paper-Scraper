@@ -281,8 +281,14 @@ def classify_maude_for_calibration(
     rules_version: str,
     cache: Optional[MutableMapping[str, Optional[str]]] = None,
     use_disk_cache: bool = True,
+    text_source_hint: Optional[str] = None,
+    allow_network_fetch: Optional[bool] = None,
 ) -> Tuple[Dict[str, Any], bool]:
-    """Runs Maude using PDF/article full text when available, else abstract-only."""
+    """Runs Maude using PDF/article full text when available, else abstract-only.
+
+    Prefers ``scratch/paper_cache`` (see ``paper_text_cache``) over HTTP re-download.
+    Set ``SKIP_PDF_FETCH=1`` to force cache/reuse-only.
+    """
     import paper_text_cache
 
     resolved_text, source = paper_text_cache.resolve_paper_text(
@@ -293,6 +299,8 @@ def classify_maude_for_calibration(
         doi=doi,
         memory_cache=cache,
         use_disk_cache=use_disk_cache,
+        text_source_hint=text_source_hint,
+        allow_network_fetch=allow_network_fetch,
     )
 
     pdf_used = source == CLASSIFICATION_SOURCE_PDF
@@ -301,7 +309,7 @@ def classify_maude_for_calibration(
         abstract,
         full_text=resolved_text,
         rules_version=rules_version,
-        abstract_only_extraction=resolved_text is None,
+        abstract_only_extraction=False if resolved_text is not None else None,
     )
     maude_confidence.apply_maude_confidence(maude_out)
     maude_out["classifier_version"] = maude_classifier_version(source, rules_version)

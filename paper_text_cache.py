@@ -1,5 +1,12 @@
 # paper_text_cache.py
-"""Local on-disk cache for paper PDFs and resolved full text (not committed to git)."""
+"""Local on-disk cache for paper PDFs and resolved full text (not committed to git).
+
+Cache root: ``scratch/paper_cache/`` (override with ``PAPER_TEXT_CACHE_DIR``).
+Layout: ``text/{id}.txt``, ``pdfs/{id}.pdf``, ``meta/{id}.json``, ``manifest.json``.
+
+Force reuse (no HTTP): ``SKIP_PDF_FETCH=1``. Optional golden LLM fill: ``GOLDEN_LLM_FETCH_PDF=1``.
+See ``.cursor/rules/sqlite-postgres-caches.mdc``.
+"""
 
 from __future__ import annotations
 
@@ -14,6 +21,24 @@ logger = logging.getLogger(__name__)
 
 DEFAULT_CACHE_DIR = Path("scratch/paper_cache")
 MANIFEST_FILENAME = "manifest.json"
+# Title+abstract blobs from tree_path_golden / llm_results are typically <3k chars.
+# PDF/fulltext cache entries are much larger — only treat those as reusable full text.
+MIN_REUSABLE_FULLTEXT_CHARS = 5000
+
+
+def network_fetch_allowed(explicit: Optional[bool] = None) -> bool:
+    """Returns False when SKIP_PDF_FETCH=1 (force cache/reuse only; no HTTP PDF fetch)."""
+    if explicit is not None:
+        return bool(explicit)
+    import os
+
+    flag = (os.getenv("SKIP_PDF_FETCH") or "").strip().lower()
+    return flag not in {"1", "true", "yes", "on"}
+
+
+def is_substantial_full_text(text: Optional[str]) -> bool:
+    """True when text is long enough to be PDF/article body, not title+abstract only."""
+    return bool(text and len(str(text).strip()) >= MIN_REUSABLE_FULLTEXT_CHARS)
 
 
 def resolve_cache_dir(explicit: Optional[Path] = None) -> Path:
@@ -67,6 +92,31 @@ def save_manifest(manifest: Dict[str, Any], cache_dir: Optional[Path] = None) ->
     with open(path, "w", encoding="utf-8") as handle:
         json.dump(manifest, handle, indent=2, default=str)
     return path
+
+
+def read_cached_meta_light(
+    paper_id: int,
+    cache_dir: Optional[Path] = None,
+) -> Optional[Dict[str, Any]]:
+    """Return cache metadata without loading the full text body (fast stats path)."""
+    cache_dir = resolve_cache_dir(cache_dir)
+    meta_path = _meta_path(cache_dir, paper_id)
+    text_path = _text_path(cache_dir, paper_id)
+    if not meta_path.exists() or not text_path.exists():
+        return None
+    try:
+        with open(meta_path, encoding="utf-8") as handle:
+            meta = json.load(handle)
+    except Exception:
+        return None
+    try:
+        meta["char_count"] = int(meta.get("char_count") or text_path.stat().st_size)
+    except OSError:
+        return None
+    if meta["char_count"] <= 0:
+        return None
+    meta["has_pdf"] = _pdf_path(cache_dir, paper_id).exists()
+    return meta
 
 
 def read_cached_entry(
@@ -376,8 +426,13 @@ def store_paper_text_if_missing(
     pmid: Optional[str] = None,
     doi: Optional[str] = None,
     cache_dir: Optional[Path] = None,
+    fetch_pdf_bytes: bool = False,
 ) -> None:
-    """Writes resolved text to disk when no cache entry exists yet."""
+    """Writes resolved text to disk when no cache entry exists yet.
+
+    Does not re-download PDF bytes by default — text reuse is enough for RL/golden
+    speed. Set ``fetch_pdf_bytes=True`` only when a raw PDF file must be cached.
+    """
     cache_dir = resolve_cache_dir(cache_dir)
     if read_cached_entry(paper_id, cache_dir):
         return
@@ -386,7 +441,12 @@ def store_paper_text_if_missing(
 
     pdf_bytes: Optional[bytes] = None
     link = (full_text_link or "").strip()
-    if source == calibration_pdf.CLASSIFICATION_SOURCE_PDF and link:
+    if (
+        fetch_pdf_bytes
+        and source == calibration_pdf.CLASSIFICATION_SOURCE_PDF
+        and link
+        and network_fetch_allowed()
+    ):
         if not re.search(r"pubmed\.ncbi\.nlm\.nih\.gov/\d+/?$", link, re.IGNORECASE):
             pdf_bytes = download_pdf_bytes(link)
 
@@ -412,21 +472,63 @@ def resolve_paper_text(
     memory_cache: Optional[MutableMapping[str, Optional[str]]] = None,
     use_disk_cache: bool = True,
     cache_dir: Optional[Path] = None,
+    allow_network_fetch: Optional[bool] = None,
+    text_source_hint: Optional[str] = None,
 ) -> Tuple[Optional[str], str]:
-    """Resolves paper text for classification, reading/writing the local disk cache.
+    """Resolves paper text for classification, preferring local cache over HTTP.
 
-    When ``paper_id`` is set and ``use_disk_cache`` is true, cached text is returned
-    on hit. On miss, text is fetched via ``calibration_pdf`` and stored locally.
+    Resolution order:
+    1. ``scratch/paper_cache`` disk hit (``PAPER_TEXT_CACHE_DIR`` override)
+    2. Substantial caller-supplied ``full_text`` (or hint ``pdf`` / ``pdf_cache`` / ``fulltext``)
+    3. Network PDF/PMC/HTML fetch (skipped when ``SKIP_PDF_FETCH=1``)
+
+    Short title+abstract blobs must not block disk-cache reuse or trigger re-download.
     """
     import calibration_pdf
 
-    if full_text:
-        return full_text, calibration_pdf.CLASSIFICATION_SOURCE_FULLTEXT
+    allow_net = network_fetch_allowed(allow_network_fetch)
+    hint = (text_source_hint or "").strip().lower()
+    hint_is_full = hint in {
+        calibration_pdf.CLASSIFICATION_SOURCE_PDF,
+        calibration_pdf.CLASSIFICATION_SOURCE_FULLTEXT,
+        "pdf_cache",
+        "pdf",
+        "fulltext",
+        "ft",
+        "html",
+        "pmc",
+    }
 
     if paper_id is not None and use_disk_cache:
         cached_text, cached_source = lookup_cached_text_for_paper(paper_id, cache_dir)
         if cached_text:
             return cached_text, cached_source or calibration_pdf.CLASSIFICATION_SOURCE_PDF
+
+    if full_text and (is_substantial_full_text(full_text) or hint_is_full):
+        if hint in {calibration_pdf.CLASSIFICATION_SOURCE_PDF, "pdf", "pdf_cache"}:
+            source = calibration_pdf.CLASSIFICATION_SOURCE_PDF
+        elif hint_is_full:
+            source = calibration_pdf.CLASSIFICATION_SOURCE_FULLTEXT
+        else:
+            source = calibration_pdf.CLASSIFICATION_SOURCE_FULLTEXT
+        if paper_id is not None and use_disk_cache:
+            try:
+                store_paper_text_if_missing(
+                    paper_id,
+                    text=str(full_text),
+                    source=source,
+                    full_text_link=full_text_link,
+                    pmid=pmid,
+                    doi=doi,
+                    cache_dir=cache_dir,
+                    fetch_pdf_bytes=False,
+                )
+            except Exception as exc:
+                logger.debug("Failed to write paper text cache for %s: %s", paper_id, exc)
+        return str(full_text), source
+
+    if not allow_net:
+        return None, calibration_pdf.CLASSIFICATION_SOURCE_ABSTRACT
 
     text, source = calibration_pdf.resolve_classification_full_text(
         full_text_link=full_text_link,
@@ -445,6 +547,7 @@ def resolve_paper_text(
                 pmid=pmid,
                 doi=doi,
                 cache_dir=cache_dir,
+                fetch_pdf_bytes=False,
             )
         except Exception as exc:
             logger.debug("Failed to write paper text cache for %s: %s", paper_id, exc)

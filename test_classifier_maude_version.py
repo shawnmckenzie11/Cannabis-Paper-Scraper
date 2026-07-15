@@ -51,6 +51,28 @@ class ClassifierMaudeVersionTests(unittest.TestCase):
 
         self.assertEqual(result["classifier_version"], "maude-ft-2.6.0")
 
+    @patch("classifier.maude_classifier.classify_paper")
+    @patch("classifier.get_rules_version")
+    def test_classify_with_maude_allows_abstract_downstream_when_no_pdf(
+        self,
+        mock_rules,
+        mock_classify,
+    ):
+        """Without resolved text, defer abstract-only policy to classify_paper heuristics."""
+        mock_rules.return_value = "2.7.0"
+        mock_classify.return_value = {
+            "study_type": ["Animal Models (Rat)"],
+            "duration_days": 21.0,
+            "administration_frequency": "daily",
+        }
+
+        classifier.classify_with_maude(
+            "Cannabis oil in Wistar rats",
+            "CO was administered daily throughout the 3-week experimental period.",
+        )
+
+        self.assertIsNone(mock_classify.call_args.kwargs["abstract_only_extraction"])
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -22,6 +22,12 @@ class TestRulesVersion(unittest.TestCase):
         self.assertEqual(rules_version.bump_patch_version("2.6.0"), "2.6.1")
         self.assertEqual(rules_version.bump_patch_version("2.6.9"), "2.6.10")
 
+    def test_compare_semver(self):
+        """Semver ordering compares major, minor, then patch."""
+        self.assertEqual(rules_version.compare_semver("2.7.0", "2.6.1"), 1)
+        self.assertEqual(rules_version.compare_semver("2.6.1", "2.7.0"), -1)
+        self.assertEqual(rules_version.compare_semver("2.7.0", "2.7.0"), 0)
+
 
 class TestManualEditHelpers(unittest.TestCase):
     """Unit tests for manual edit batch construction helpers."""

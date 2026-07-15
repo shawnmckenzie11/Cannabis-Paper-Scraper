@@ -167,22 +167,33 @@ def build_golden_disagreement_batch(
 
         title = str(item.get("title") or "")
         text_blob = item.get("text")
+        text_source = str(item.get("text_source") or "")
         abstract = ""
-        if text_blob:
+        import paper_text_cache
+
+        substantial = paper_text_cache.is_substantial_full_text(text_blob) or text_source in {
+            "pdf_cache",
+            "pdf",
+            "fulltext",
+        }
+        if text_blob and not substantial:
             parts = str(text_blob).split("\n\n", 1)
             if len(parts) == 2:
                 title = parts[0].strip() or title
                 abstract = parts[1].strip()
 
+        # Reuse disk cache / substantial blobs; never treat short title_abstract as full_text
+        # (that previously forced full_text_link re-downloads on every disagreement/guard pass).
         maude_out, pdf_used = calibration_pdf.classify_maude_for_calibration(
             title,
             abstract,
-            full_text=text_blob if item.get("text_source") == "pdf_cache" else None,
+            full_text=str(text_blob) if substantial and text_blob else None,
             full_text_link=item.get("full_text_link"),
             pmid=item.get("pmid"),
             doi=item.get("doi"),
             paper_id=int(paper_id) if paper_id is not None else None,
             rules_version=rules_version,
+            text_source_hint=text_source or None,
         )
         content_tier = content_tiers.infer_content_tier({
             **llm,
@@ -246,7 +257,9 @@ def enrich_llm_results_with_text(
     llm_results: Dict[str, Any],
     endpoint_block: Dict[str, Any],
 ) -> Dict[str, Any]:
-    """Adds cached text blobs from tree_path_golden candidates to LLM results."""
+    """Adds text blobs from paper_cache first, then tree_path_golden candidates."""
+    import paper_text_cache
+
     text_by_id = {
         int(paper["paper_id"]): paper.get("text")
         for paper in endpoint_block.get("papers") or []
@@ -254,14 +267,21 @@ def enrich_llm_results_with_text(
     }
     for item in llm_results.get("results") or []:
         paper_id = item.get("paper_id")
-        if paper_id is not None and not item.get("text"):
-            item["text"] = text_by_id.get(int(paper_id))
-        if paper_id is not None:
-            for paper in endpoint_block.get("papers") or []:
-                if int(paper.get("paper_id")) == int(paper_id):
-                    item.setdefault("full_text_link", paper.get("full_text_link"))
-                    item.setdefault("doi", paper.get("doi"))
-                    break
+        if paper_id is None:
+            continue
+        pid = int(paper_id)
+        cached_text, cached_source = paper_text_cache.lookup_cached_text_for_paper(pid)
+        if cached_text:
+            item["text"] = cached_text
+            item["text_source"] = "pdf_cache"
+            item.setdefault("cached_text_source", cached_source)
+        elif not item.get("text"):
+            item["text"] = text_by_id.get(pid)
+        for paper in endpoint_block.get("papers") or []:
+            if int(paper.get("paper_id")) == pid:
+                item.setdefault("full_text_link", paper.get("full_text_link"))
+                item.setdefault("doi", paper.get("doi"))
+                break
     return llm_results
 
 
@@ -310,6 +330,7 @@ def promote_top_confirmed(
             "pmid": item.get("pmid"),
             "doi": item.get("doi"),
             "title": item.get("title"),
+            "abstract": item.get("abstract") or "",
             "endpoint_id": endpoint.id,
             "scope_subnode": endpoint.scope_subnode,
             "scope_key": endpoint.scope_key,
@@ -556,9 +577,14 @@ def run_golden_guard(
     scope_subnode: str,
     artifact_dir: Path,
     *,
+    endpoint_id: Optional[str] = None,
     max_iterations: int = GOLDEN_GUARD_MAX_ITERATIONS,
 ) -> Tuple[Dict[str, Any], int]:
-    """Runs golden regression once; tracks cumulative attempts across guard-only re-runs."""
+    """Runs golden regression once; tracks cumulative attempts across guard-only re-runs.
+
+    Defaults to endpoint-scoped checks when ``endpoint_id`` is provided so one endpoint's
+    cycle does not fail on unrelated confirmed papers in the same subnode.
+    """
     regression_script = ROOT / "scripts/golden_confirmed_regression.py"
     attempt_file = artifact_dir / "guard_attempts.json"
     attempts = 0
@@ -584,13 +610,20 @@ def run_golden_guard(
         "--min-alignment-pct",
         str(GOLDEN_MIN_ALIGNMENT_PCT),
     ]
-    proc = subprocess.run(cmd, capture_output=True, text=True)
+    if endpoint_id:
+        cmd.extend(["--endpoint-id", endpoint_id])
+    # Stream stdout/stderr (avoid capture_output deadlock on long PDF/cache runs).
+    logger.info("Golden guard attempt %s: %s", attempts, " ".join(cmd))
+    proc = subprocess.run(cmd, text=True)
     report: Dict[str, Any] = {}
     if out_path.exists():
         with open(out_path, encoding="utf-8") as handle:
             report = json.load(handle)
     else:
-        report = {"passed": False, "error": proc.stdout or proc.stderr}
+        report = {
+            "passed": False,
+            "error": f"guard output missing (exit {proc.returncode})",
+        }
 
     if not report.get("passed"):
         failures_path = artifact_dir / f"golden_regression_failures_iter_{attempts}.json"
@@ -693,6 +726,40 @@ def run_cycle(
         run_pull(sqlite_path, paper_ids)
         saved_database_url = os.environ.pop("DATABASE_URL", saved_database_url)
         report["stages"]["pull"] = {"ok": True, "paper_count": len(paper_ids)}
+    elif llm and paper_ids:
+        # Cycle always classifies against local SQLite (DATABASE_URL is popped).
+        # Fail fast when --no-pull points at an empty/stale DB instead of silent skips.
+        import sqlite3
+
+        missing: List[int] = []
+        try:
+            conn = sqlite3.connect(sqlite_path)
+            try:
+                for pid in paper_ids:
+                    row = conn.execute(
+                        "SELECT 1 FROM papers WHERE id = ?",
+                        (int(pid),),
+                    ).fetchone()
+                    if not row:
+                        missing.append(int(pid))
+            finally:
+                conn.close()
+        except sqlite3.Error as exc:
+            if saved_database_url:
+                os.environ["DATABASE_URL"] = saved_database_url
+            raise RuntimeError(
+                f"SQLite preflight failed for {sqlite_path}: {exc}. "
+                "Use --sqlite-path to a populated DB (e.g. /data/cannabis_papers.db) "
+                "or omit --no-pull so papers are pulled from Postgres."
+            ) from exc
+        if missing:
+            if saved_database_url:
+                os.environ["DATABASE_URL"] = saved_database_url
+            raise RuntimeError(
+                f"--no-pull but {len(missing)}/{len(paper_ids)} candidate paper ids "
+                f"missing from {sqlite_path} (e.g. {missing[:5]}). "
+                "Pass --sqlite-path /data/cannabis_papers.db on Fly, or enable pull."
+            )
 
     llm_results: Dict[str, Any] = {}
     if llm:
@@ -769,10 +836,12 @@ def run_cycle(
         guard_report, guard_iterations = run_golden_guard(
             endpoint.scope_subnode,
             artifact_dir,
+            endpoint_id=endpoint.id,
         )
         report["stages"]["golden_guard"] = {
             "passed": guard_report.get("passed"),
             "iterations": guard_iterations,
+            "endpoint_id": endpoint.id,
             "papers_checked": guard_report.get("papers_checked"),
             "papers_failed": guard_report.get("papers_failed"),
             "batch_alignment_pct": guard_report.get("batch_alignment_pct"),
@@ -918,7 +987,11 @@ def main() -> None:
         if scope_subnode is None and args.endpoint_id:
             raise SystemExit(f"Unknown endpoint-id: {args.endpoint_id}")
         subnode = scope_subnode.scope_subnode if scope_subnode else "node2a"
-        guard_report, attempts = run_golden_guard(subnode, artifact_dir)
+        guard_report, attempts = run_golden_guard(
+            subnode,
+            artifact_dir,
+            endpoint_id=args.endpoint_id,
+        )
         print(json.dumps({"guard": guard_report, "attempts": attempts}, indent=2))
         if not guard_report.get("passed"):
             if attempts >= GOLDEN_GUARD_MAX_ITERATIONS:

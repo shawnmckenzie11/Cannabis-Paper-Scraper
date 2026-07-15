@@ -168,7 +168,7 @@ class PatchNode2aGoldenGuardTests(unittest.TestCase):
         self.assertEqual(ex.extract_population_sex(abstract), "female")
 
     def test_vaporized_cannabis_dried_flower_vape_pen(self):
-        """Vaporized whole-plant cannabis maps to dried flower and vape pen."""
+        """Medical vaporizer flower maps to dried flower (not consumer vape pen)."""
         title = (
             "Cannabidiol (CBD) content in vaporized cannabis does not prevent "
             "tetrahydrocannabinol (THC)-induced impairment of driving and cognition"
@@ -181,7 +181,7 @@ class PatchNode2aGoldenGuardTests(unittest.TestCase):
             title, abstract, ["Clinical (RCT)"], ["inhaled"], full_text=abstract,
         )
         self.assertIn("dried flower", types)
-        self.assertIn("vape pen", types)
+        self.assertNotIn("vape pen", types)
         self.assertNotIn("pure cannabinoid", types)
 
     def test_psychotomimetic_outcomes_anxiety_not_addiction(self):

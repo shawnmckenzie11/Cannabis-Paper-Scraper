@@ -58,6 +58,10 @@ UPDATE_COLUMNS = [
     "publication_type",
     "ingestion_status",
     "species",
+    "population_age",
+    "population_sex",
+    "inclusion_criteria",
+    "exclusion_criteria",
     "summary",
     "classification_confidence",
     "classification_timestamp",
@@ -315,27 +319,33 @@ def _reingest_where_clause(
 
 
 def _slow_pass_extra_clause() -> str:
-    """SQL fragment for slow-pass eligibility (text source or sparse classification fields)."""
+    """SQL fragment for slow-pass eligibility (text source, OA, or sparse/unknown fields)."""
     text_source = (
         "((pmid IS NOT NULL AND TRIM(pmid) != '') "
         "OR (doi IS NOT NULL AND TRIM(doi) != '') "
         "OR (full_text_link IS NOT NULL AND TRIM(full_text_link) != '' "
         "AND full_text_link NOT LIKE '%pubmed.ncbi.nlm.nih.gov/%'))"
     )
+    open_access = "(open_access = 1)"
     sparse_fields = (
         "(study_type IS NULL OR TRIM(study_type) = '' OR study_type = '[]' "
+        "OR study_type LIKE '%unknown%' "
         "OR exposure_method IS NULL OR TRIM(exposure_method) = '' OR exposure_method = '[]' "
+        "OR exposure_method LIKE '%unknown%' "
         "OR cannabis_type IS NULL OR TRIM(cannabis_type) = '' OR cannabis_type = '[]' "
-        "OR outcome_domain IS NULL OR TRIM(outcome_domain) = '' OR outcome_domain = '[]')"
+        "OR cannabis_type LIKE '%unknown%' "
+        "OR outcome_domain IS NULL OR TRIM(outcome_domain) = '' OR outcome_domain = '[]' "
+        "OR outcome_domain LIKE '%unknown%')"
     )
-    return f"({text_source} OR {sparse_fields})"
+    return f"({text_source} OR {open_access} OR {sparse_fields})"
 
 
 def paper_has_sparse_classification_fields(paper: Dict[str, Any]) -> bool:
-    """Returns True when key Maude classification list fields are empty or missing."""
+    """Returns True when key Maude classification list fields are empty or unknown."""
+    from classification_regression_guard import is_field_empty
+
     for field in CLASSIFICATION_FIELDS:
-        val = parse_json_field(paper.get(field))
-        if val is None or val == "" or val == []:
+        if is_field_empty(paper.get(field)):
             return True
     return False
 
@@ -350,6 +360,8 @@ def paper_has_fulltext_source(paper: Dict[str, Any]) -> bool:
 
 def paper_needs_slow_pass(paper: Dict[str, Any]) -> bool:
     """Returns True when slow pass should attempt PDF/full-text Maude classification."""
+    if paper.get("open_access") in (1, True, "1"):
+        return True
     return paper_has_fulltext_source(paper) or paper_has_sparse_classification_fields(paper)
 
 

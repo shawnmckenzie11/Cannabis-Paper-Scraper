@@ -40,6 +40,40 @@ class ReingestTwoPassTests(unittest.TestCase):
         }
         self.assertFalse(rip.paper_needs_slow_pass(paper))
 
+    def test_paper_needs_slow_pass_unknown_fields(self):
+        """Unknown exposure/cannabis counts as sparse and qualifies for slow pass."""
+        paper = {
+            "pmid": None,
+            "doi": None,
+            "full_text_link": "https://pubmed.ncbi.nlm.nih.gov/999/",
+            "study_type": '["Clinical (observational)"]',
+            "exposure_method": '["unknown"]',
+            "cannabis_type": '["unknown"]',
+            "outcome_domain": '["pain"]',
+        }
+        self.assertTrue(rip.paper_has_sparse_classification_fields(paper))
+        self.assertTrue(rip.paper_needs_slow_pass(paper))
+
+    def test_paper_needs_slow_pass_open_access(self):
+        """Open-access papers always qualify for slow-pass PDF upgrade."""
+        paper = {
+            "pmid": None,
+            "doi": None,
+            "full_text_link": "https://pubmed.ncbi.nlm.nih.gov/999/",
+            "open_access": 1,
+            "study_type": '["Clinical Trial"]',
+            "exposure_method": '["oral"]',
+            "cannabis_type": '["THC"]',
+            "outcome_domain": '["pain"]',
+        }
+        self.assertTrue(rip.paper_needs_slow_pass(paper))
+
+    def test_slow_pass_extra_clause_mentions_unknown_and_oa(self):
+        """Slow pass SQL treats unknown labels and open_access as upgrade-eligible."""
+        clause = rip._slow_pass_extra_clause()
+        self.assertIn("unknown", clause)
+        self.assertIn("open_access", clause)
+
     def test_already_at_pass_tier_fast(self):
         """Fast pass skips papers already on current maude abstract tier."""
         rules = "2.6.0"

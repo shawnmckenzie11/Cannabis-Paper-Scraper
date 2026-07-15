@@ -188,13 +188,20 @@ def run_post_harvest_maude_upgrade(
     workers: int = 4,
     log_path: Optional[str] = None,
 ) -> Dict[str, Any]:
-    """Retry PDF/full-text Maude classification for papers ingested on the latest harvest."""
+    """Retry PDF/full-text Maude classification for papers ingested on the latest harvest.
+
+    Open-access ids are ordered first so the slow pass spends early capacity on papers
+    most likely to yield PDF/full-text upgrades.
+    """
     from db_health import postgres_configured, production_reingest_limits
     from maude_reingest_watchdog import REINGEST_LOG, start_detached_two_pass
 
     ids = sorted({int(pid) for pid in paper_ids if pid is not None})
     if not ids:
         return {"status": "skipped", "reason": "no_new_papers", "paper_count": 0}
+
+    prioritized_ids = _prioritize_open_access_paper_ids(ids)
+    oa_count = _count_open_access_among(ids)
 
     limits = production_reingest_limits() if postgres_configured() else {}
     if batch_size >= 50 and limits:
@@ -206,21 +213,90 @@ def run_post_harvest_maude_upgrade(
         batch_size=batch_size,
         workers=workers,
         log_path=log_path or REINGEST_LOG,
-        paper_ids=ids,
+        paper_ids=prioritized_ids,
         slow_only=True,
     )
     logger.info(
-        "Started post-harvest Maude PDF/full-text upgrade for %s papers (pid=%s)",
-        len(ids),
+        "Started post-harvest Maude PDF/full-text upgrade for %s papers "
+        "(%s open_access prioritized, pid=%s)",
+        len(prioritized_ids),
+        oa_count,
         pid,
     )
     return {
         "status": "started",
         "pid": pid,
-        "paper_count": len(ids),
+        "paper_count": len(prioritized_ids),
+        "open_access_count": oa_count,
         "pass_mode": "two-pass-slow-only",
         "log_path": log_path or REINGEST_LOG,
     }
+
+
+def _count_open_access_among(paper_ids: List[int]) -> int:
+    """Counts open_access papers among the given ids."""
+    if not paper_ids:
+        return 0
+    db = DatabaseManager()
+    conn = db.get_connection()
+    try:
+        cur = conn.cursor()
+        ph = "%s" if db.is_postgres else "?"
+        placeholders = ", ".join([ph] * len(paper_ids))
+        cur.execute(
+            f"SELECT COUNT(*) FROM papers WHERE id IN ({placeholders}) AND open_access = 1",
+            tuple(paper_ids),
+        )
+        row = cur.fetchone()
+        if row is None:
+            return 0
+        if hasattr(row, "keys"):
+            return int(list(row.values())[0])
+        return int(row[0])
+    except Exception as exc:
+        logger.warning("Could not count open_access papers for upgrade: %s", exc)
+        return 0
+    finally:
+        conn.close()
+
+
+def _prioritize_open_access_paper_ids(paper_ids: List[int]) -> List[int]:
+    """Returns paper ids with open_access first, preserving relative order within groups."""
+    if not paper_ids:
+        return []
+    db = DatabaseManager()
+    conn = db.get_connection()
+    try:
+        cur = conn.cursor()
+        ph = "%s" if db.is_postgres else "?"
+        placeholders = ", ".join([ph] * len(paper_ids))
+        cur.execute(
+            f"SELECT id, open_access FROM papers WHERE id IN ({placeholders})",
+            tuple(paper_ids),
+        )
+        rows = cur.fetchall()
+        oa_ids: List[int] = []
+        other_ids: List[int] = []
+        seen = set()
+        for row in rows:
+            if hasattr(row, "keys"):
+                pid = int(row["id"])
+                oa = row["open_access"]
+            else:
+                pid = int(row[0])
+                oa = row[1]
+            seen.add(pid)
+            if oa in (1, True, "1"):
+                oa_ids.append(pid)
+            else:
+                other_ids.append(pid)
+        missing = [pid for pid in paper_ids if pid not in seen]
+        return oa_ids + other_ids + missing
+    except Exception as exc:
+        logger.warning("Could not prioritize open_access papers; using input order: %s", exc)
+        return list(paper_ids)
+    finally:
+        conn.close()
 
 
 def run_maude_reingest_now(

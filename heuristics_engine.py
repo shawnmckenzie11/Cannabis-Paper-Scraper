@@ -76,7 +76,9 @@ FALLBACK_CONFIG = {
       "\\boverview paper\\b", "\\bsystematic review\\b", "\\bmeta-analysis\\b", "\\bmeta analysis\\b",
       "\\bnarrative synthesis\\b", "\\bnarrative review\\b", "\\bscoping review\\b", "\\bprogress report\\b",
       "\\bstate of the art\\b", "\\bmini-review\\b", "\\bminireview\\b", "\\bstudies reviewed here\\b",
-      "\\bliterature review\\b", "\\beditorial\\b", "\\bcommentary\\b", "\\bletter to the editor\\b"
+      "\\bliterature review\\b", "\\beditorial\\b", "\\bcommentary\\b", "\\bletter to the editor\\b",
+      "publication type:\\s*review", "publication type:\\s*meta-analysis",
+      "publication type:\\s*systematic review"
     ],
     "review_weak_title_cues": [
       "\\breview\\b", "\\bperspectives?\\b"
@@ -250,15 +252,15 @@ FALLBACK_CONFIG = {
       "pediatric_indicators": [
         "\\b(?:pediatric|child|adolescent|infant|teenager|youth|pediatrics)\\s+(?:patients|subjects|participants|cohort|population|group|users)\\b",
         "\\b(?:enrolled|recruited|included|studied)\\s+(?:children|adolescents|infants|teens|youths)\\b",
-        "\\bchildren\\s+(?:aged|ranging from|with)\\b",
-        "\\badolescents\\s+(?:aged|ranging from|with)\\b",
+        "\\bchildren\\s+(?:aged|ranging from|with|enrolled|recruited)\\b",
+        "\\badolescents\\s+(?:aged|ranging from|with|enrolled|recruited)\\b",
+        "\\b(?:of|among|in)\\s+children\\b",
+        "\\badolescent\\s+brain\\s+cognitive\\s+development\\b",
+        "\\bprenatal\\s+substance\\s+exposure\\b",
         "\\bunder\\s+18\\s*(?:years|yo)?\\b",
         "\\bage\\s+<\\s*18\\b",
         "\\bpediatric\\s+onset\\b",
-        "\\bchildren\\b",
-        "\\badolescents\\b",
-        "\\byouth\\b",
-        "\\byouths\\b"
+        "\\bpediatrics?\\b"
       ],
       "geriatric_indicators": [
         "\\bgeriatric\\w*\\b",
@@ -284,13 +286,19 @@ FALLBACK_CONFIG = {
         "\\bmale\\s+(?:subjects|patients|participants|volunteers|cohort|population|group)\\b",
         "\\b(?:subjects|patients|participants|volunteers)\\s+(?:were|consisted of|included)\\s+[^.]{0,40}?\\s*(?:males|men)\\b",
         "\\bonly\\s+male\\b",
-        "\\bmen\\s+(?:aged|were|diagnosed|\\([^)]+\\))\\b"
+        "\\bmen\\s+(?:aged|were|diagnosed|\\([^)]+\\))\\b",
+        "\\b(?:\\d+|one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve|thirteen|fourteen|fifteen|sixteen|seventeen|eighteen|nineteen|twenty)\\s+healthy\\s+men\\b",
+        "\\bhealthy\\s+men\\s+aged\\b",
+        "\\bchronic\\s+users\\s+of\\s+inhaled\\s+cannabis\\b.{0,40}\\bmen\\b|\\bmen\\b.{0,80}\\bchronic\\s+(?:and\\s+heavy\\s+)?users\\s+of\\s+inhaled\\b"
       ],
       "female_indicators": [
         "\\bfemale\\s+(?:subjects|patients|participants|volunteers|cohort|population|group)\\b",
         "\\b(?:subjects|patients|participants|volunteers)\\s+(?:were|consisted of|included)\\s+[^.]{0,40}?\\s*(?:females|women)\\b",
         "\\bonly\\s+female\\b",
-        "\\bwomen\\s+(?:aged|were|diagnosed|\\([^)]+\\))\\b"
+        "\\bwomen\\s+(?:aged|were|diagnosed|\\([^)]+\\))\\b",
+        "\\b(?:\\d+|one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve|thirteen|fourteen|fifteen|sixteen|seventeen|eighteen|nineteen|twenty)\\s+healthy\\s+women\\b",
+        "\\bhealthy\\s+women\\s+aged\\b",
+        "\\bfemale\\s+cannabis\\s+users\\b"
       ]
     }
   }
@@ -498,35 +506,56 @@ def seed_rules_config_to_db(config_dict: Dict[str, Any]) -> None:
         logger.warning(f"Failed to seed rules_config to database: {e}")
 
 def reload_rules_config() -> None:
-    """Reloads rules_config dynamically from DB -> file -> fallback."""
+    """Reloads rules_config from the newer of git-tracked file vs database, else fallback."""
     global _rules_config
+    file_config = load_rules_config_from_file()
     db_config = load_rules_config_from_db()
-    if db_config:
+
+    if file_config and db_config:
+        from rules_version import compare_semver
+
+        file_ver = str(file_config.get("version") or "0.0.0")
+        db_ver = str(db_config.get("version") or "0.0.0")
+        if compare_semver(file_ver, db_ver) >= 0:
+            _rules_config = file_config
+            if compare_semver(file_ver, db_ver) > 0:
+                seed_rules_config_to_db(_rules_config)
+            logger.info(
+                "Loaded rules_config from file (v%s >= db v%s).",
+                file_ver,
+                db_ver,
+            )
+        else:
+            _rules_config = db_config
+            logger.info(
+                "Loaded rules_config from database (v%s > file v%s).",
+                db_ver,
+                file_ver,
+            )
+    elif db_config:
         _rules_config = db_config
         logger.info("Loaded rules_config from database.")
+    elif file_config:
+        _rules_config = file_config
+        logger.info("Loaded rules_config from file. Seeding database...")
+        seed_rules_config_to_db(_rules_config)
     else:
-        file_config = load_rules_config_from_file()
-        if file_config:
-            _rules_config = file_config
-            logger.info("Loaded rules_config from file. Seeding database...")
-            seed_rules_config_to_db(_rules_config)
-        else:
-            # Build default fallback
-            _rules_config = {
-                "version": "1.0.0",
-                "confidence_thresholds": {
-                    "auto_accept": 0.85,
-                    "review_recommended": 0.60
-                },
-                "weights": {
-                    "self_consistency": 0.5,
-                    "retrieval_similarity": 0.3,
-                    "model_agreement": 0.2
-                },
-                "self_consistency_runs": 1,
-                "system_prompt": "Classify the attached cannabis/cannabinoid research paper..."
-            }
-            logger.warning("Using fallback rules_config configuration.")
+        # Build default fallback
+        _rules_config = {
+            "version": "1.0.0",
+            "confidence_thresholds": {
+                "auto_accept": 0.85,
+                "review_recommended": 0.60
+            },
+            "weights": {
+                "self_consistency": 0.5,
+                "retrieval_similarity": 0.3,
+                "model_agreement": 0.2
+            },
+            "self_consistency_runs": 1,
+            "system_prompt": "Classify the attached cannabis/cannabinoid research paper..."
+        }
+        logger.warning("Using fallback rules_config configuration.")
 
 def load_rules_config() -> Dict[str, Any]:
     """Exposes the active rules_config."""
@@ -579,47 +608,140 @@ def keyword_match(text: str, keywords: List[str]) -> bool:
 
 # --- Age & Sex Heuristic Extraction ---
 
-def extract_population_age(text: str) -> str:
-    """Heuristic extraction for population age (pediatric, adult, geriatric, both)."""
+def extract_population_age(text: str) -> Optional[str]:
+    """Heuristic extraction for population age (pediatric, adult, geriatric, both).
+
+    Returns None when age band is not explicit — avoids defaulting clinical papers to
+    ``adult`` (which over-fills vs LLM nulls on node2a holdouts). Healthy-volunteer /
+    aged-18+ cues still map to adult. Bare ``youth``/``adolescents`` in citations or
+    org names do not trigger pediatric.
+    """
     if not text:
-        return "adult"
+        return None
     text_lower = text.lower()
-    
-    # 1. Professional Survey Check
+
+    # Professional / policy surveys about youth are not pediatric cohorts.
     for pattern in patterns.professional_surveys:
         if pattern.search(text_lower):
-            return "adult"
-            
-    # 2. Check Pediatric and Geriatric Indicators
-    has_ped = any(pattern.search(text_lower) for pattern in patterns.pediatric_indicators)
-    has_ger = any(pattern.search(text_lower) for pattern in patterns.geriatric_indicators)
-    
+            return None
+
+    # Digital mental-health apps that mention youth without an age-banded clinical cohort.
+    if re.search(
+        r"(?i)\b(?:mobile(?:\s+phone)?|smartphone)\s+(?:app|application)\b|"
+        r"\b(?:app|application)\b.{0,40}\b(?:mental health|anxiety|depression)\b",
+        text_lower,
+    ) and not re.search(
+        r"(?i)\b(?:aged|ages|age)\s+\d+\s*(?:to|-|–)\s*\d+\s*(?:years|yo)?\b",
+        text_lower,
+    ):
+        return None
+
+    # Percent fragments (e.g. "PSE-tobacco in 13.2%") must never drive pediatric.
+    text_for_age = re.sub(r"\b\d+(?:\.\d+)?\s*%", " ", text_lower)
+
+    has_ped = any(pattern.search(text_for_age) for pattern in patterns.pediatric_indicators)
+    has_ger = any(pattern.search(text_for_age) for pattern in patterns.geriatric_indicators)
+
+    explicit_adult = bool(re.search(
+        r"(?i)\b(?:adult(?:s)?\s+(?:patients|participants|subjects|volunteers|cohort|population)|"
+        r"healthy\s+(?:volunteers|adults)|healthy\s+men\s+aged|healthy\s+women\s+aged|"
+        r"adults?\s+aged|adults?\s+ages|participants?\s+aged|patients?\s+aged|"
+        r"aged?\s*≥?\s*18|aged?\s*>\s*21|aged?\s*>=\s*18|"
+        r"18\s*years?\s*(?:of\s+age\s+)?(?:or\s+older|and\s+older)|"
+        r"18\s*(?:to|-|–)\s*\d+\s*(?:years|yo)?|"
+        r"aged?\s+between\s+18\s+and\s+\d+|"
+        r"\d{2}\s*(?:to|-|–)\s*\d{2}\s+years?\s+of\s+age|"
+        r"range\s*=\s*18\s*[–\-]\s*\d+|"
+        r"mean\s+age\s*=\s*(?:[3-9]\d|2[5-9])|"
+        r"trauma-exposed\s+civilians|"
+        r"patients?\s+aged\s+\d{2})\b",
+        text_for_age,
+    ))
+
     if has_ped and has_ger:
         return "both"
-    elif has_ped:
-        # Check for minor exclusion
+    if has_ped:
         exclusion_minor = False
-        if any(kw in text_lower for kw in ["under 18", "under-18", "age < 18", "age<18"]):
+        if any(kw in text_for_age for kw in ["under 18", "under-18", "age < 18", "age<18"]):
             for keyword in ["under 18", "under-18", "age < 18", "age<18"]:
-                idx = text_lower.find(keyword)
+                idx = text_for_age.find(keyword)
                 if idx != -1:
-                    window = text_lower[max(0, idx - 100):min(len(text_lower), idx + 100)]
+                    window = text_for_age[max(0, idx - 100):min(len(text_for_age), idx + 100)]
                     if "exclu" in window:
                         exclusion_minor = True
                         break
-        if exclusion_minor and not re.search(r"\bchildren\b", text_lower):
+        if exclusion_minor and not re.search(r"\bchildren\b", text_for_age):
+            # Explicit adult band after excluding minors.
+            if explicit_adult:
+                return "adult"
+            return None
+        # Mixed adolescent–adult primary-care / digital cohorts (e.g. aged 14–24).
+        if re.search(r"(?i)\baged?\s+14\s*(?:to|-|–)\s*24\b", text_for_age) and re.search(
+            r"(?i)\b(?:mobile|smartphone|app|application|primary care|general practice)\b",
+            text_for_age,
+        ):
+            return None
+        # Adult enrollment band wins over background pediatric citations.
+        if explicit_adult and not re.search(
+            r"(?i)\b(?:enrolled|recruited|included)\s+(?:children|adolescents)|"
+            r"\bchildren\s+aged|\badolescents\s+aged|"
+            r"\badolescent\s+brain\s+cognitive\s+development|"
+            r"\bprenatal\s+substance\s+exposure\b",
+            text_for_age,
+        ):
             return "adult"
         return "pediatric"
-    elif has_ger:
+    if has_ger:
         return "geriatric"
-        
-    return "adult"
 
-def extract_population_sex(text: str) -> str:
-    """Heuristic extraction for population sex (male, female, both) using co-occurrence logic."""
+    # Adult only when explicitly stated — never a silent clinical default.
+    if explicit_adult:
+        return "adult"
+    return None
+
+
+def extract_population_sex(text: str) -> Optional[str]:
+    """Heuristic extraction for population sex (male, female, both).
+
+    Returns None when sex is not explicit — avoids defaulting to ``both``.
+    Single-sex cohort phrases in Methods (e.g. ``twelve healthy men``) win over
+    ``men and women`` co-mentions in the reference list.
+    """
     if not text:
+        return None
+    # Prefer early Methods/abstract prose; demographics tables may sit later.
+    text_lower = text.lower()[:20000]
+    early = text_lower[:8000]
+
+    # Counted mixed-sex enrollment (demographics tables / participant profiles).
+    if re.search(
+        r"(?i)\b\d+\s*males?\s*,\s*\d+\s*females?\b|\b\d+\s*females?\s*,\s*\d+\s*males?\b|"
+        r"\b\d+\s*men\s+and\s+\d+\s*women\b|\b\d+\s*women\s+and\s+\d+\s*men\b|"
+        r"\(\d+(?:\.\d+)?%\s*female\)|\bfemale\s+\d+\s*\(\d+%\)",
+        text_lower,
+    ):
         return "both"
-    text_lower = text.lower()[:8000]
+
+    # Single-sex cohort phrases first (before mixed-sex reference bleed).
+    single_male = re.search(
+        r"(?i)\b(?:\d+|one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve|"
+        r"thirteen|fourteen|fifteen|sixteen|seventeen|eighteen|nineteen|twenty)\s+"
+        r"healthy\s+men\b|\bhealthy\s+men\s+aged\b|\bonly\s+(?:male|men)\b|"
+        r"\bmale\s+(?:subjects|patients|participants|volunteers)\s+only\b",
+        early,
+    )
+    single_female = re.search(
+        r"(?i)\b(?:\d+|one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve|"
+        r"thirteen|fourteen|fifteen|sixteen|seventeen|eighteen|nineteen|twenty)\s+"
+        r"healthy\s+women\b|\bhealthy\s+women\s+aged\b|\bonly\s+(?:female|women)\b|"
+        r"\bfemale\s+(?:subjects|patients|participants|volunteers)\s+only\b",
+        early,
+    )
+    if single_male and not single_female:
+        # Ignore bibliography "men and women" after an explicit all-male enrollment phrase.
+        return "male"
+    if single_female and not single_male:
+        return "female"
 
     if re.search(
         r"(?i)\b(?:male or female|female or male|men or women|women or men|"
@@ -638,38 +760,42 @@ def extract_population_sex(text: str) -> str:
     if women_with and not re.search(r"\b(?:\d+\s+)?men\s+with\b", text_lower):
         return "female"
 
-    # 1. Check explicit "both" indicators
+    # Restrict mixed-sex "men and women" to early cohort language, not references.
     for pattern in patterns.both_indicators:
-        if pattern.search(text_lower):
+        if pattern.search(early):
             return "both"
-            
-    # 2. Count occurrences of gender keywords
-    men_count = len(re.findall(r"\b(?:men|male|males)\b", text_lower))
-    women_count = len(re.findall(r"\b(?:women|female|females)\b", text_lower))
-    
-    # Ratio check
+
+    men_count = len(re.findall(r"\b(?:men|male|males)\b", early))
+    women_count = len(re.findall(r"\b(?:women|female|females)\b", early))
+
     if women_count > 3 and men_count <= 1:
         return "female"
     if men_count > 3 and women_count <= 1:
         return "male"
-        
-    # 3. Look for explicit co-occurrence in participant description
-    if patterns.men_women_cooccurrence.search(text_lower):
+
+    if patterns.men_women_cooccurrence.search(early):
         return "both"
-        
-    # 4. Check exclusive pattern matches
-    has_male = any(pattern.search(text_lower) for pattern in patterns.male_indicators)
-    has_female = any(pattern.search(text_lower) for pattern in patterns.female_indicators)
-    
+
+    has_male = any(pattern.search(early) for pattern in patterns.male_indicators)
+    has_female = any(pattern.search(early) for pattern in patterns.female_indicators)
+
     if has_male and not has_female and women_count < 4:
         return "male"
     if has_female and not has_male and men_count < 4:
         return "female"
-        
+
     if men_count > 1 and women_count > 1:
         return "both"
-        
-    return "both"
+
+    # Demographics tables / mixed enrollment without silent clinical default.
+    if re.search(
+        r"(?i)\b(?:%?\s*female|percent(?:age)?\s+female|females?\s*\d|males?\s+and\s+females?|"
+        r"both\s+(?:male|men)\s+and\s+(?:female|women))\b",
+        early,
+    ):
+        return "both"
+
+    return None
 
 # --- Config-Driven Matching and Routing ---
 

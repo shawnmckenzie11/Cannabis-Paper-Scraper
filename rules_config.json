@@ -1,5 +1,5 @@
 {
-  "version": "2.6.0",
+  "version": "2.7.0",
   "confidence_thresholds": {
     "auto_accept": 0.85,
     "review_recommended": 0.6

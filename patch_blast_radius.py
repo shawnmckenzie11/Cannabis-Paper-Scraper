@@ -34,6 +34,7 @@ PRE_EXISTING_TOP_CHANGED_FIELDS: Tuple[str, ...] = (
     "thc_mg_g",
     "cbd_mg_g",
     "dose_mg",
+    "population_age",
     "population_sex",
     "population_gender",
     "sample_size",

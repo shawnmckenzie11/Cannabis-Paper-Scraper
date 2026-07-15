@@ -9,6 +9,7 @@ from typing import Any, Dict, Optional, Tuple
 
 import classification_schema
 import handoff_learning_log
+from classification_regression_guard import is_field_empty
 
 # Maps infer_routing_subnode ids to RL sub-node ids used in handoff logs.
 ROUTING_TO_RL_SUBNODE: Dict[str, str] = {
@@ -35,6 +36,13 @@ DEFAULT_ALIGNMENT_PCT: Dict[str, float] = {
     "node1": 70.0,
     "node0": 85.0,
 }
+
+# Fields that should be filled for original-research Node 2 papers.
+_ORIGINAL_FILL_FIELDS: Tuple[str, ...] = (
+    "exposure_method",
+    "cannabis_type",
+    "outcome_domain",
+)
 
 
 def _read_handoff_payload(output_dir: Optional[Path] = None) -> Dict[str, Any]:
@@ -96,15 +104,64 @@ def alignment_pct_for_routing_subnode(routing_subnode: str) -> float:
     return DEFAULT_ALIGNMENT_PCT.get(rl_subnode, DEFAULT_ALIGNMENT_PCT["node1"])
 
 
+def real_fill_rate(extracted: Dict[str, Any], fields: Tuple[str, ...] = _ORIGINAL_FILL_FIELDS) -> float:
+    """Fraction of fields with real (non-empty, non-unknown) values."""
+    if not fields:
+        return 0.0
+    filled = sum(1 for field in fields if not is_field_empty(extracted.get(field)))
+    return filled / float(len(fields))
+
+
+def _tier_bonus(extracted: Dict[str, Any]) -> float:
+    """Small confidence bump when PDF/full-text or methods text was used."""
+    version = str(extracted.get("classifier_version") or "").lower()
+    meta = extracted.get("_maude_meta") or {}
+    bonus = 0.0
+    if version.startswith("maude-pdf-") or version.startswith("maude-ft-") or version.startswith("maude-fulltext-"):
+        bonus += 0.04
+    if meta.get("methods_used"):
+        bonus += 0.02
+    cue_score = meta.get("cue_score")
+    if isinstance(cue_score, (int, float)) and cue_score >= 0.6:
+        bonus += 0.03
+    elif isinstance(cue_score, (int, float)) and cue_score >= 0.4:
+        bonus += 0.015
+    return bonus
+
+
+def _fill_penalty(extracted: Dict[str, Any]) -> float:
+    """Penalty when original-research Node 2 fields are empty or unknown."""
+    pub = str(extracted.get("publication_type") or "").strip().lower()
+    if pub != "original research":
+        return 0.0
+    penalties = {
+        "exposure_method": 0.08,
+        "cannabis_type": 0.06,
+        "outcome_domain": 0.05,
+    }
+    total = 0.0
+    for field, amount in penalties.items():
+        if is_field_empty(extracted.get(field)):
+            total += amount
+    return total
+
+
 def confidence_for_classification(extracted: Dict[str, Any]) -> float:
-    """Maps a Maude classification to confidence using the node's latest RL alignment %."""
+    """Maps a Maude classification to confidence using alignment, fill rate, and cue coverage.
+
+    Base score is the node's latest RL alignment. Original-research papers lose confidence
+    when exposure/cannabis/outcome are empty or ``unknown``; PDF/methods/cue strength add
+    small bonuses so triage can prefer richer extractions.
+    """
     routing_subnode = routing_subnode_for_classification(extracted)
     pct = alignment_pct_for_routing_subnode(routing_subnode)
-    return round(max(0.0, min(1.0, pct / 100.0)), 3)
+    base = pct / 100.0
+    adjusted = base - _fill_penalty(extracted) + _tier_bonus(extracted)
+    return round(max(0.35, min(0.95, adjusted)), 3)
 
 
 def apply_maude_confidence(extracted: Dict[str, Any]) -> Dict[str, Any]:
-    """Overwrites classification_confidence on a Maude result using node alignment."""
+    """Overwrites classification_confidence on a Maude result using calibrated scoring."""
     extracted["classification_confidence"] = confidence_for_classification(extracted)
     return extracted
 

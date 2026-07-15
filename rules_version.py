@@ -31,6 +31,17 @@ def bump_patch_version(version: str) -> str:
     return format_semver(major, minor, patch + 1)
 
 
+def compare_semver(left: str, right: str) -> int:
+    """Return -1 if left < right, 0 if equal, 1 if left > right."""
+    a = parse_semver(left)
+    b = parse_semver(right)
+    if a < b:
+        return -1
+    if a > b:
+        return 1
+    return 0
+
+
 def read_rules_config_version(path: Path | None = None) -> str:
     """Returns the version field from rules_config.json."""
     config_path = path or RULES_CONFIG_PATH

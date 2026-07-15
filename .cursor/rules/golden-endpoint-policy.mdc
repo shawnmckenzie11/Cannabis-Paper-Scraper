@@ -1,0 +1,36 @@
+---
+description: Golden endpoint policy — sparse, gated; not the perpetual learner
+alwaysApply: true
+---
+
+# Golden endpoint policy (gated)
+
+Golden LLM cycles are a **sparse label-discovery** tool. Continuous corpus learning is Loop A + nightly Maude (see `rl-calibration.mdc`).
+
+## Do
+
+- One endpoint at a time after `node2a.clinical_observational.inhaled` stays ≥90% on trustworthy confirmed labels.
+- Prefer next node2a row: `node2a.clinical_observational.oral` (then other observational routes / case_study).
+- Always: `SKIP_PDF_FETCH=1`, `GOLDEN_FULL_SUBNODE_REINGEST=0`, `GOLDEN_HANDOFF_CLAUDE=0`, endpoint-scoped guard (`--endpoint-id`).
+- On Fly: `--sqlite-path /data/cannabis_papers.db` (or pull first). Populated SQLite only.
+- On guard fail: **stop** — audit labels (study_type / population_sex) before another Maude pass; do not blind-patch to match noisy LLM labels.
+- On guard ≥90% with audited labels: limited reingest + push only.
+
+## Do not
+
+- `AUTO_ADVANCE=1` across golden rows unattended
+- Default full-subnode reingest (`GOLDEN_FULL_SUBNODE_REINGEST=1`)
+- Parallel multi-endpoint golden runs
+- Promote RCT/prospective LLM labels onto observational endpoints without audit
+
+## Queue pointer
+
+Next queued endpoint (manual/agent session, not perpetual automation):
+
+```bash
+SKIP_PDF_FETCH=1 GOLDEN_FULL_SUBNODE_REINGEST=0 GOLDEN_HANDOFF_CLAUDE=0 \
+  ENDPOINT_ID=node2a.clinical_observational.oral \
+  ./scripts/run_golden_endpoint_row_automated.sh
+```
+
+(Or Fly equivalent with `--sqlite-path /data/cannabis_papers.db --no-pull` after copying `tree_path_golden.json`.)

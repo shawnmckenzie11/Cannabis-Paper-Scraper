@@ -47,6 +47,9 @@ if [ -f "$DB_PATH" ] && [ -z "$DATABASE_URL" ]; then
     nohup python3 ensure_tab_flags.py > /tmp/tab_flags_backfill.log 2>&1 &
 elif [ -n "$DATABASE_URL" ]; then
     echo "PostgreSQL mode: skipping startup tab backfill (run ensure_tab_flags.py manually during maintenance)."
+    echo "Scheduling stale daily-harvest Maude version upgrade in background..."
+    nohup python3 scripts/upgrade_stale_harvest_classifications.py --since-date 2026-06-01 \
+        > /tmp/upgrade_stale_harvest.log 2>&1 &
 fi
 
 # Run heuristic reclassification in background if needed (non-blocking)

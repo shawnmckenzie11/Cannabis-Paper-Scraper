@@ -685,9 +685,8 @@ def classify_with_maude(
         abstract,
         full_text=resolved_text,
         rules_version=rules_version,
-        abstract_only_extraction=resolved_text is None,
+        abstract_only_extraction=False if resolved_text is not None else None,
     )
-    result.pop("_maude_meta", None)
     if not result.get("summary"):
         result["summary"] = extractor.generate_heuristic_summary(result)
     result["classification_timestamp"] = datetime.now().isoformat()
@@ -701,7 +700,9 @@ def classify_with_maude(
     result["classifier_version"] = calibration_pdf.maude_classifier_version(
         source, rules_version, row_index=row_index,
     )
+    # Apply confidence before dropping meta so cue_score / methods_used can adjust it.
     maude_confidence.apply_maude_confidence(result)
+    result.pop("_maude_meta", None)
     logger.info(
         "Maude classification complete (build=%s rules=v%s source=%s version=%s).",
         calibration_build.MAUDE_CLASSIFIER_BUILD_ID,

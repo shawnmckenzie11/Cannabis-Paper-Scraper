@@ -88,6 +88,21 @@ def filter_by_scope_subnode(
     ]
 
 
+def filter_by_endpoint_id(
+    papers: Sequence[Dict[str, Any]],
+    endpoint_id: str,
+) -> List[Dict[str, Any]]:
+    """Returns confirmed papers whose endpoint_id matches the given endpoint."""
+    target = str(endpoint_id or "").strip()
+    if not target:
+        return list(papers)
+    return [
+        paper
+        for paper in papers
+        if str(paper.get("endpoint_id") or "").strip() == target
+    ]
+
+
 def append_papers(
     new_papers: Sequence[Dict[str, Any]],
     path: Optional[Path] = None,

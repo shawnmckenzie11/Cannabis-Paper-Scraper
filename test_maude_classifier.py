@@ -108,6 +108,48 @@ class TestMaudeClassifier(unittest.TestCase):
         self.assertEqual(pub, "original research")
         self.assertNotIn("node1b_reviews", nodes)
 
+    def test_strong_review_beats_fulltext_clinical_override(self):
+        """Systematic-review titles stay review even when PDF body quotes enrolled patients."""
+        title = (
+            "Effect of Cannabis Use on Revision Surgery After Lumbar Spine Fusion: "
+            "A Systematic Review and Meta-Analysis"
+        )
+        abstract = (
+            "OBJECTIVE: There is a scarcity of research on cannabis and lumbar arthrodesis. "
+            "METHODS: We searched PubMed. RESULTS: Cannabis users had higher revision rates."
+        )
+        full_text = abstract + (
+            " Patients were enrolled in the cohort study. Participants were surveyed. "
+            "n = 120 patients completed the questionnaire."
+        ) * 15
+        pub, subtype, nodes, _ = maude_classifier.route_publication_type(
+            title,
+            abstract,
+            routing_blob=f"{title} {full_text}",
+        )
+        self.assertEqual(pub, "review")
+        self.assertEqual(subtype, "systematic review")
+        self.assertIn("node1b_reviews", nodes)
+        result = maude_classifier.classify_paper(title, abstract, full_text=full_text)
+        self.assertEqual(result["publication_type"], "review")
+        self.assertIn("systematic review", result["study_type"])
+
+    def test_pubmed_review_prefix_beats_fulltext_clinical_override(self):
+        """PubMed Publication Type: Review prefix wins over full-text clinical cues."""
+        title = "Cannabis and chronic pain outcomes"
+        abstract = (
+            "Publication Type: Review. This article summarizes evidence on cannabis for pain. "
+            "Patients were enrolled across included trials."
+        )
+        full_text = abstract + " Participants were recruited and n = 200 patients completed surveys." * 10
+        pub, subtype, nodes, _ = maude_classifier.route_publication_type(
+            title,
+            abstract,
+            routing_blob=f"{title} {full_text}",
+        )
+        self.assertEqual(pub, "review")
+        self.assertIn("node1b_reviews", nodes)
+
     def test_perspective_in_abstract_does_not_route_to_review(self):
         """Harm-reduction perspective in abstract should not route when title lacks review cues."""
         result = maude_classifier.classify_paper(
@@ -162,6 +204,40 @@ class TestMaudeClassifier(unittest.TestCase):
         )
         self.assertFalse(result["_maude_meta"].get("abstract_only_extraction"))
         self.assertTrue(result.get("study_type"))
+
+    def test_structured_abstract_methods_used_without_full_text(self):
+        """Structured abstract METHODS should drive extraction when no PDF/full text."""
+        title = (
+            "Cannabis Oil Prevents Early Hepatic Fibrosis in a Sucrose-Rich Diet-Induced "
+            "MASLD Model"
+        )
+        abstract = (
+            "INTRODUCTION: MASLD is a growing health concern. "
+            "METHODS: Male Wistar rats were assigned to three groups. "
+            "CO was administered daily throughout the 3-week experimental period. "
+            "RESULTS: SRD induced significant hepatic fibrosis."
+        )
+        result = maude_classifier.classify_paper(title, abstract, full_text=None)
+        self.assertEqual(result["study_type"], ["Animal Models (Rat)"])
+        self.assertFalse(result["_maude_meta"].get("abstract_only_extraction"))
+        self.assertTrue(result["_maude_meta"].get("methods_used"))
+        self.assertEqual(result.get("duration_days"), 21.0)
+        self.assertEqual(result.get("administration_frequency"), "daily")
+
+    def test_resolve_methods_prefers_pdf_over_abstract(self):
+        """PDF Methods section wins when both PDF text and structured abstract exist."""
+        abstract = "METHODS: Rats received placebo only."
+        pdf_body = (
+            "Introduction text. Materials and Methods Male rats received THC 5 mg/kg daily "
+            "for 14 days. Results showed changes."
+        )
+        resolved = maude_classifier.resolve_classification_methods_text(
+            pdf_body,
+            "THC in rats",
+            abstract,
+        )
+        self.assertIn("Materials and Methods", resolved)
+        self.assertNotIn("placebo only", resolved)
 
     def test_compare_maude_llm_flags_disagreements(self):
         """Disagreement detector should flag publication_type mismatches."""

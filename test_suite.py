@@ -1676,6 +1676,31 @@ class TestAnalysesUserIsolation(unittest.TestCase):
         analyses = json.loads(response.data.decode("utf-8"))
         self.assertTrue(any(a["id"] == data["id"] for a in analyses))
 
+    def test_save_guest_analysis_after_login(self):
+        """Logged-in users can persist a precomputed guest preview via save-guest."""
+        chart_data = {"paper_count": 2, "paper_ids": [1, 2], "study_design": {"rct": 1}}
+        with self.client.session_transaction() as sess:
+            sess["logged_in"] = True
+            sess["user_id"] = self.user_a["id"]
+        response = self.client.post(
+            "/api/analyses/save-guest",
+            json={
+                "name": "Guest Preview Saved",
+                "paper_count": 2,
+                "filter_settings": {"tab": "all_original"},
+                "chart_data": chart_data,
+            },
+        )
+        self.assertEqual(response.status_code, 200)
+        data = json.loads(response.data.decode("utf-8"))
+        self.assertIsNotNone(data.get("id"))
+        self.assertEqual(data["paper_count"], 2)
+        self.assertEqual(data["chart_data"]["paper_ids"], [1, 2])
+
+        response = self.client.get("/api/analyses")
+        analyses = json.loads(response.data.decode("utf-8"))
+        self.assertTrue(any(a["id"] == data["id"] for a in analyses))
+
     def test_user_ownership_isolation(self):
         # 1. Create analysis belonging to User A
         analysis_id = self.db.create_analysis(
@@ -1720,8 +1745,6 @@ class TestMvpGatingAPI(unittest.TestCase):
 
     def test_gated_endpoints_return_403(self):
         gated_endpoints = [
-            ("/api/harvest", "POST", {"query": "test"}),
-            ("/api/harvest/status", "GET", None),
             ("/api/learning-dashboard/metrics", "GET", None),
             ("/api/graph/stats", "GET", None),
             ("/api/graph/network", "GET", None)

@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "updated_at": "2026-06-20T09:31:35.210273",
+  "updated_at": "2026-07-10T19:53:00.000000",
   "description": "Maude routing cues: base phrases, PubMed metadata rules, and dashboard-learned cues.",
   "extraction_cues": {
     "shared_subnodes": ["node2a", "node2b", "node2c"],
@@ -55,11 +55,58 @@
       "animal_species_terms": ["rat", "mouse", "mice", "rodent", "rabbit", "monkey", "primate", "zebrafish", "canine", "dog"]
     },
     "fields": {
+      "population_age": {
+        "explicit_only": true,
+        "no_silent_adult_default": true,
+        "pediatric_indicators": ["children aged", "adolescents aged", "under 18", "prenatal substance exposure", "adolescent brain cognitive development"],
+        "adult_indicators": ["adult patients", "adults aged", "aged 18", "18 years or older", "healthy volunteers", "healthy adults", "participants aged", "trauma-exposed civilians"],
+        "suppress_bare_youth_adolescents": true,
+        "suppress_percent_fragments": true,
+        "suppress_digital_youth_app": ["mobile phone application", "youth mental health", "aged 14 to 24"]
+      },
+      "population_sex": {
+        "explicit_only": true,
+        "no_silent_both_default": true,
+        "both_indicators": ["men and women", "males and females", "both sexes"],
+        "male_indicators": ["male subjects", "only male", "men aged", "twelve healthy men", "healthy men aged"],
+        "female_indicators": ["female subjects", "only female", "women aged", "healthy women aged", "female cannabis users"]
+      },
+      "inclusion_criteria": {
+        "strong_triggers_only": ["inclusion criteria", "eligibility criteria", "eligible if"],
+        "return_null_when_absent": true
+      },
+      "exclusion_criteria": {
+        "strong_triggers_only": ["exclusion criteria", "participants were excluded if"],
+        "return_null_for_none_string": true
+      },
+      "outcome_domain": {
+        "social_exclusion_biomarker": ["addiction", "anxiety"],
+        "cnr1_association": ["addiction", "cognition"],
+        "make_cannabis_safer": ["cognition", "anxiety"],
+        "review_synthesis_ecs": ["neuroprotection", "other"],
+        "digital_mental_health_app": ["anxiety"],
+        "sleep_cues": ["sleep", "insomnia", "sleep disorder", "sleep disorders", "sleep problems", "sleep quality"],
+        "suppress_spurious_neuroprotection_addiction_without_primary": true,
+        "light_cannabis_substitution": ["anxiety", "pain", "addiction"]
+      },
+      "exposure_method": {
+        "digital_mental_health_app": ["unknown"],
+        "iv_cannula_blood_draw_not_injection": true,
+        "volcano_flower_vapor_not_vape_pen": true,
+        "review_synthesis_animal_invitro": ["injection cannabinoids", "cannabinoids dissolved in media"],
+        "epidemiological_without_route": ["unknown"],
+        "epi_negative_evidence": ["past 30-day use", "use disorder", "PSE-marijuana", "THC in urine", "prenatal substance exposure", "self-report"]
+      },
       "cannabis_type": {
         "pure_cannabinoid": ["mg/kg", "Sigma-Aldrich", "Cayman Chemical", "Tocris", "isolated THC", "isolated CBD", "pharmaceutical grade", "cannabidiol (CBD)", "THC Pharm GmbH", "phytocannabinoids"],
         "cb_receptor_agonist": ["cannabinoid agonist", "CB1 agonist", "CB2 agonist", "synthetic cannabinoid", "WIN 55", "O-1602", "CP-55940", "CB1 receptor activation", "FAAH inhibitor", "MAGL inhibitor", "PF3845", "JZL184"],
         "cb_receptor_antagonist": ["cannabinoid antagonist", "CB1 antagonist", "SR141716", "AM251", "rimonabant"],
-        "dried_flower": ["vaporized cannabis plant matter", "cannabis plant matter", "smoked cannabis", "combusted cannabis flower"]
+        "dried_flower": ["vaporized cannabis plant matter", "cannabis plant matter", "smoked cannabis", "combusted cannabis flower", "chronic users of inhaled cannabis"],
+        "vaporized_flower_cbd_thc": ["dried flower", "pure cannabinoid"],
+        "cb1_pet_imaging_unknown": true,
+        "epidemiological_without_route": ["unknown"],
+        "light_cannabis_liberalization": ["pure cannabinoid"],
+        "digital_mental_health_unknown": true
       },
       "strain_reported": ["cultivar", "chemovar", "Skywalker", "Treasure Island", "isolated from"],
       "administration_frequency": ["once daily", "twice daily", "every other day", "alternating days", "days on", "days off"],

@@ -88,9 +88,6 @@
 
         body {
             background-color: var(--bg-color);
-            background-image:
-                radial-gradient(circle at 10% 20%, rgba(0, 240, 255, 0.03) 0%, transparent 40%),
-                radial-gradient(circle at 80% 80%, rgba(0, 230, 118, 0.02) 0%, transparent 45%);
             color: var(--text-primary);
             font-family: var(--font-body);
             font-size: 14px;
@@ -146,7 +143,23 @@
 
         .top-banner h1 span {
             color: var(--accent-blue);
-            text-shadow: 0 0 10px var(--accent-blue-glow);
+        }
+
+        .banner-nav-btn {
+            padding: 8px 16px;
+            font-size: 0.85rem;
+            background: rgba(0, 240, 255, 0.1);
+            border: 1px solid rgba(0, 240, 255, 0.3);
+            color: var(--accent-blue);
+            display: inline-flex;
+            align-items: center;
+            box-shadow: none;
+            background-image: none;
+        }
+
+        .banner-nav-btn:hover {
+            background: rgba(0, 240, 255, 0.16);
+            border-color: rgba(0, 240, 255, 0.4);
         }
 
         .banner-actions {
@@ -274,7 +287,6 @@
         input[type="number"]:focus,
         select:focus {
             border-color: var(--accent-blue);
-            box-shadow: 0 0 8px rgba(0, 240, 255, 0.15);
         }
 
         /* --- Range Sliders --- */
@@ -296,7 +308,6 @@
             height: 16px;
             border-radius: 50%;
             background: var(--accent-blue);
-            box-shadow: 0 0 8px var(--accent-blue-glow);
             cursor: pointer;
             transition: transform 0.1s ease;
         }
@@ -324,12 +335,9 @@
         .btn-primary {
             background: var(--accent-blue);
             color: #05070a;
-            box-shadow: 0 4px 15px rgba(0, 240, 255, 0.25);
         }
 
         .btn-primary:hover {
-            transform: translateY(-1px);
-            box-shadow: 0 6px 20px rgba(0, 240, 255, 0.4);
             filter: brightness(1.05);
         }
 
@@ -1130,10 +1138,192 @@
         }
 
         .sidebar-action-btn.analyze-btn {
-            background: linear-gradient(135deg, rgba(0, 240, 255, 0.2) 0%, rgba(0, 240, 255, 0.05) 100%);
-            border: 1px solid rgba(0, 240, 255, 0.3);
+            background: rgba(0, 230, 118, 0.22);
+            border: 1px solid rgba(0, 230, 118, 0.35);
+            color: var(--text-primary);
+        }
+
+        .sidebar-action-btn.analyze-btn:hover:not(:disabled) {
+            background: rgba(0, 230, 118, 0.3);
+            border-color: rgba(0, 230, 118, 0.5);
+        }
+
+        #my-analyses-panel.guest-analysis-preview-active .analysis-col-charts,
+        #my-analyses-panel.guest-analysis-preview-active .analysis-col-drilldown,
+        #my-analyses-panel.guest-analysis-preview-active .analysis-stats-span {
+            filter: blur(1.5px);
+            opacity: 0.94;
+            pointer-events: none;
+            user-select: none;
+        }
+
+        #guest-analysis-overlay {
+            display: none;
+            position: absolute;
+            inset: 0;
+            z-index: 30;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+            gap: 14px;
+            padding: 24px;
+            text-align: center;
+            background: rgba(8, 11, 20, 0.45);
+        }
+
+        #my-analyses-panel.guest-analysis-preview-active #guest-analysis-overlay {
+            display: flex;
+        }
+
+        #guest-analysis-overlay p {
+            margin: 0;
+            max-width: 360px;
+            font-size: 1rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            line-height: 1.5;
+        }
+
+        .pagination-section-stats {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px 16px;
+            margin-top: 4px;
+            font-size: 0.78rem;
+            color: var(--text-secondary);
+        }
+
+        .pagination-section-stats span strong {
+            color: var(--accent-green);
+            font-weight: 700;
+        }
+
+        .add-papers-tabs {
+            display: flex;
+            gap: 8px;
+            margin-top: 4px;
+        }
+
+        .add-papers-tab {
+            flex: 1;
+            padding: 8px 12px;
+            border-radius: 8px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            background: rgba(255, 255, 255, 0.03);
+            color: var(--text-secondary);
+            font-size: 0.82rem;
+            font-weight: 600;
+            cursor: pointer;
+            font-family: var(--font-display);
+        }
+
+        .add-papers-tab.active {
+            border-color: rgba(0, 240, 255, 0.35);
+            background: rgba(0, 240, 255, 0.1);
             color: var(--accent-blue);
-            box-shadow: 0 0 10px rgba(0, 240, 255, 0.1);
+        }
+
+        .add-papers-panel {
+            display: none;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .add-papers-panel.active {
+            display: flex;
+        }
+
+        .pdf-upload-dropzone {
+            border: 1px dashed rgba(0, 240, 255, 0.25);
+            border-radius: 10px;
+            padding: 18px;
+            text-align: center;
+            color: var(--text-secondary);
+            font-size: 0.85rem;
+            background: rgba(0, 240, 255, 0.03);
+            cursor: pointer;
+        }
+
+        .pdf-upload-dropzone.dragover {
+            border-color: rgba(0, 230, 118, 0.45);
+            background: rgba(0, 230, 118, 0.06);
+        }
+
+        .pdf-upload-results {
+            display: none;
+            margin-top: 12px;
+            padding: 12px 14px;
+            border-radius: 10px;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            background: rgba(0, 0, 0, 0.22);
+            max-height: 220px;
+            overflow-y: auto;
+        }
+
+        .pdf-upload-results.visible {
+            display: block;
+        }
+
+        .pdf-upload-results h5 {
+            margin: 0 0 8px 0;
+            font-size: 0.78rem;
+            font-weight: 600;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.4px;
+        }
+
+        .pdf-upload-result-item {
+            font-size: 0.8rem;
+            line-height: 1.45;
+            padding: 8px 10px;
+            border-radius: 8px;
+            margin-bottom: 6px;
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            background: rgba(255, 255, 255, 0.02);
+        }
+
+        .pdf-upload-result-item:last-child {
+            margin-bottom: 0;
+        }
+
+        .pdf-upload-result-item.success {
+            border-color: rgba(0, 230, 118, 0.25);
+            background: rgba(0, 230, 118, 0.06);
+        }
+
+        .pdf-upload-result-item.updated {
+            border-color: rgba(0, 240, 255, 0.22);
+            background: rgba(0, 240, 255, 0.05);
+        }
+
+        .pdf-upload-result-item.warning {
+            border-color: rgba(255, 193, 7, 0.28);
+            background: rgba(255, 193, 7, 0.07);
+        }
+
+        .pdf-upload-result-item.error {
+            border-color: rgba(239, 68, 68, 0.28);
+            background: rgba(239, 68, 68, 0.07);
+        }
+
+        .pdf-upload-result-filename {
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 2px;
+        }
+
+        .pdf-upload-result-detail {
+            color: var(--text-secondary);
+            font-size: 0.76rem;
+        }
+
+        .pdf-upload-results-summary {
+            margin-top: 8px;
+            padding-top: 8px;
+            border-top: 1px solid rgba(255, 255, 255, 0.08);
+            font-size: 0.76rem;
+            color: var(--text-secondary);
         }
 
         /* --- Column editor modal --- */
@@ -1535,6 +1725,7 @@
             min-height: 0;
             gap: 0;
             padding: 16px 24px 20px;
+            position: relative;
         }
 
         #my-analyses-panel.visible {
@@ -1658,10 +1849,45 @@
         }
 
         .analyses-table-wrap.analyses-table-compact .analysis-delete-cell {
-            width: 42px;
-            min-width: 42px;
-            padding: 6px 6px;
+            width: 48px;
+            min-width: 48px;
+            max-width: 48px;
+            padding: 4px 4px;
             text-align: center;
+            overflow: visible;
+        }
+
+        .analyses-table-wrap.analyses-table-compact .analysis-delete-cell .btn-sm-icon,
+        .analyses-table-wrap.analyses-table-compact .analysis-delete-cell .btn-delete-analysis {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 28px;
+            min-height: 26px;
+            padding: 2px 6px;
+            font-size: 0.85rem;
+            line-height: 1;
+            box-sizing: border-box;
+        }
+
+        .analyses-table-wrap.analyses-table-compact table {
+            table-layout: fixed;
+            min-width: 100%;
+        }
+
+        .analysis-col-list .analyses-table-wrap.analyses-table-compact {
+            overflow-x: auto;
+            overflow-y: auto;
+        }
+
+        .analyses-table-wrap.analyses-table-compact tr.selected td.analysis-edit-cell,
+        .analyses-table-wrap.analyses-table-compact tr.selected td.analysis-delete-cell,
+        .analyses-table-wrap.analyses-table-compact tr.selected td.analysis-count-cell {
+            border-left: none;
+        }
+
+        .analyses-table-wrap.analyses-table-compact tr.selected td.analysis-name-cell {
+            border-left: 3px solid var(--accent-blue);
         }
 
         .analysis-row-actions .btn-sm-icon {
@@ -2124,7 +2350,318 @@
 
         #connectivity-panel input:focus {
             border-color: rgba(99, 102, 241, 0.5) !important;
-            box-shadow: 0 0 15px rgba(99, 102, 241, 0.15) !important;
+        }
+
+        /* Flat theme: remove decorative glows and gradients */
+        .btn,
+        .sidebar-action-btn,
+        .tab-btn,
+        .glass-panel,
+        .harvest-modal,
+        .column-editor-modal-panel,
+        .drawer-header,
+        .modal-content {
+            box-shadow: none !important;
+            background-image: none !important;
+        }
+
+        .harvest-modal.review-mode {
+            max-width: min(96vw, 1120px);
+            width: 96%;
+        }
+
+        .pdf-review-panel {
+            display: none;
+            margin-top: 12px;
+            padding: 14px;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 10px;
+            background: rgba(255, 255, 255, 0.02);
+        }
+
+        .pdf-review-panel.active {
+            display: block;
+        }
+
+        .pdf-review-intro {
+            font-size: 0.84rem;
+            color: var(--text-secondary);
+            margin-bottom: 10px;
+            line-height: 1.45;
+        }
+
+        .pdf-review-table-head,
+        .pdf-review-row {
+            display: grid;
+            grid-template-columns: 1fr 1.35fr 1.35fr 1.1fr;
+            gap: 8px;
+            align-items: stretch;
+        }
+
+        .pdf-review-table-head {
+            font-size: 0.68rem;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.35px;
+            margin-bottom: 6px;
+            padding: 0 4px;
+        }
+
+        .pdf-review-rows {
+            max-height: 48vh;
+            overflow: auto;
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            border-radius: 8px;
+            background: rgba(0, 0, 0, 0.18);
+        }
+
+        .pdf-review-row {
+            padding: 8px 10px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            font-size: 0.76rem;
+            background: rgba(10, 12, 18, 0.92);
+        }
+
+        .pdf-review-row:last-child {
+            border-bottom: none;
+        }
+
+        .pdf-review-row.row-new {
+            background: rgba(0, 120, 60, 0.28);
+        }
+
+        .pdf-review-row.row-conflict {
+            background: rgba(140, 30, 30, 0.32);
+        }
+
+        .pdf-review-row.row-unchanged,
+        .pdf-review-row.row-empty {
+            background: rgba(8, 10, 14, 0.95);
+        }
+
+        .pdf-review-field-label {
+            font-weight: 600;
+            color: var(--text-primary);
+            padding-top: 6px;
+        }
+
+        .pdf-review-choice {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            padding: 6px 8px;
+            border-radius: 8px;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            background: rgba(0, 0, 0, 0.2);
+            color: var(--text-secondary);
+            line-height: 1.35;
+            word-break: break-word;
+            cursor: pointer;
+            transition: border-color 0.15s, background 0.15s, box-shadow 0.15s;
+            min-height: 42px;
+            font: inherit;
+            text-align: left;
+            width: 100%;
+            box-sizing: border-box;
+        }
+
+        .pdf-review-choice:hover {
+            border-color: rgba(255, 255, 255, 0.22);
+            background: rgba(255, 255, 255, 0.04);
+        }
+
+        .pdf-review-choice.selected {
+            border-color: rgba(0, 240, 255, 0.55);
+            background: rgba(0, 240, 255, 0.1);
+            box-shadow: inset 0 0 0 1px rgba(0, 240, 255, 0.2);
+            color: var(--text-primary);
+        }
+
+        .pdf-review-choice-label {
+            font-size: 0.62rem;
+            text-transform: uppercase;
+            letter-spacing: 0.35px;
+            opacity: 0.75;
+        }
+
+        .pdf-review-choice-value {
+            font-size: 0.76rem;
+            color: inherit;
+        }
+
+        .pdf-review-custom-input {
+            width: 100%;
+            box-sizing: border-box;
+            margin-top: 2px;
+            padding: 4px 6px;
+            border-radius: 6px;
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            background: rgba(0, 0, 0, 0.25);
+            color: var(--text-primary);
+            font-size: 0.72rem;
+            display: none;
+            font: inherit;
+        }
+
+        .pdf-review-choice.selected .pdf-review-custom-input,
+        .pdf-review-custom-input.visible {
+            display: block;
+        }
+
+        select.pdf-review-custom-input {
+            min-height: 28px;
+        }
+
+        select.pdf-review-custom-input[multiple] {
+            min-height: 84px;
+        }
+
+        textarea.pdf-review-custom-input {
+            min-height: 56px;
+            resize: vertical;
+        }
+
+        .pdf-review-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 8px;
+            margin-top: 12px;
+        }
+
+        .pdf-review-legend {
+            display: flex;
+            gap: 14px;
+            flex-wrap: wrap;
+            font-size: 0.72rem;
+            color: var(--text-secondary);
+            margin-bottom: 8px;
+        }
+
+        .pdf-review-legend span {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .pdf-review-legend .swatch {
+            width: 10px;
+            height: 10px;
+            border-radius: 2px;
+            display: inline-block;
+        }
+
+        .pdf-review-legend .swatch.new {
+            background: rgba(0, 180, 90, 0.85);
+        }
+
+        .pdf-review-legend .swatch.conflict {
+            background: rgba(200, 50, 50, 0.85);
+        }
+
+        .pdf-review-legend .swatch.base {
+            background: rgba(20, 22, 28, 0.95);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .pdf-match-panel {
+            display: none;
+            margin-top: 12px;
+            padding: 14px;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 10px;
+            background: rgba(255, 255, 255, 0.02);
+        }
+
+        .pdf-match-panel.active {
+            display: block;
+        }
+
+        .pdf-match-intro {
+            font-size: 0.84rem;
+            color: var(--text-secondary);
+            margin-bottom: 10px;
+            line-height: 1.45;
+        }
+
+        .pdf-match-detected {
+            font-size: 0.8rem;
+            color: var(--text-primary);
+            margin-bottom: 10px;
+            padding: 8px 10px;
+            border-radius: 8px;
+            background: rgba(0, 0, 0, 0.22);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+        }
+
+        .pdf-match-list {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            max-height: 42vh;
+            overflow-y: auto;
+        }
+
+        .pdf-match-option {
+            display: grid;
+            grid-template-columns: auto 1fr auto;
+            gap: 10px;
+            align-items: start;
+            padding: 10px 12px;
+            border-radius: 8px;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            background: rgba(0, 0, 0, 0.22);
+            cursor: pointer;
+            text-align: left;
+            color: inherit;
+            font: inherit;
+            width: 100%;
+            box-sizing: border-box;
+        }
+
+        .pdf-match-option:hover {
+            border-color: rgba(0, 240, 255, 0.35);
+            background: rgba(0, 240, 255, 0.06);
+        }
+
+        .pdf-match-option.selected {
+            border-color: rgba(0, 240, 255, 0.55);
+            background: rgba(0, 240, 255, 0.1);
+            box-shadow: inset 0 0 0 1px rgba(0, 240, 255, 0.18);
+        }
+
+        .pdf-match-rank {
+            font-size: 0.72rem;
+            font-weight: 700;
+            color: var(--accent-blue);
+            min-width: 1.4rem;
+        }
+
+        .pdf-match-title {
+            font-size: 0.82rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            line-height: 1.35;
+        }
+
+        .pdf-match-meta {
+            font-size: 0.72rem;
+            color: var(--text-secondary);
+            margin-top: 3px;
+        }
+
+        .pdf-match-score {
+            font-size: 0.72rem;
+            font-weight: 700;
+            color: var(--text-secondary);
+            white-space: nowrap;
+        }
+
+        .pdf-match-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 8px;
+            margin-top: 12px;
+            flex-wrap: wrap;
         }
     </style>
     <!-- Chart.js for premium dynamic subset visualizations -->
@@ -2141,18 +2678,10 @@
         <div class="banner-left">
             <h1><span>Cannabis</span> Scraper</h1>
             <div class="banner-actions">
-                <button class="btn btn-secondary" onclick="closeMyAnalyses()" id="btn-database"
-                    style="padding: 8px 16px; font-size: 0.85rem; background: rgba(0, 240, 255, 0.1); border-color: rgba(0, 240, 255, 0.3); color: var(--accent-blue); display: inline-flex; align-items: center; gap: 6px;">
-                    <span>🗄️</span> Database
-                </button>
-                <button class="btn btn-secondary" onclick="showMvpLockModal('Harvest Papers')" id="btn-harvest-trigger"
-                    style="padding: 8px 16px; font-size: 0.85rem; background: rgba(239, 68, 68, 0.05); border-color: rgba(239, 68, 68, 0.2); color: var(--text-secondary); display: inline-flex; align-items: center; gap: 6px; opacity: 0.65;">
-                    <span>🔒</span> Harvest Papers
-                </button>
-                <button class="btn btn-secondary" onclick="openMyAnalyses()"
-                    style="padding: 8px 16px; font-size: 0.85rem; background: rgba(0, 240, 255, 0.1); border-color: rgba(0, 240, 255, 0.3); color: var(--accent-blue); display: inline-flex; align-items: center; gap: 6px;">
-                    <span>📊</span> My Analyses
-                </button>
+                <button class="btn btn-secondary banner-nav-btn" onclick="closeMyAnalyses()" id="btn-database">Database</button>
+                <button class="btn btn-secondary banner-nav-btn" onclick="openMyAnalyses()">My Analyses</button>
+                <button class="btn btn-secondary banner-nav-btn" onclick="openAddPapersModal()" id="btn-harvest-trigger"
+                    style="display: none;">Add Papers</button>
             </div>
         </div>
         <div class="banner-right">
@@ -2194,8 +2723,8 @@
         </div>
         <div style="display: flex; gap: 10px; align-items: center;">
             <button type="button" class="btn" id="edit-columns-btn" onclick="openColumnEditorModal(event)"
-                style="padding: 6px 14px; font-size: 0.85rem; border-radius: 8px; font-family: var(--font-display); background: linear-gradient(135deg, rgba(0, 240, 255, 0.2) 0%, rgba(0, 240, 255, 0.05) 100%); border: 1px solid rgba(0, 240, 255, 0.3); color: var(--accent-blue); cursor: pointer; box-shadow: 0 0 10px rgba(0, 240, 255, 0.1); display: inline-flex; align-items: center; gap: 6px;">
-                ⚙️ Edit Columns
+                style="padding: 6px 14px; font-size: 0.85rem; border-radius: 8px; font-family: var(--font-display); background: rgba(0, 240, 255, 0.2); border: 1px solid rgba(0, 240, 255, 0.3); color: var(--accent-blue); cursor: pointer; display: inline-flex; align-items: center; gap: 6px;">
+                Edit Columns
             </button>
         </div>
     </div>
@@ -2738,6 +3267,10 @@
                     style="display: flex; align-items: center; justify-content: space-between; padding: 12px 30px; border-top: 1px solid rgba(255, 255, 255, 0.08); background: rgba(0, 0, 0, 0.15);">
                     <div class="pagination-info" style="color: var(--text-secondary); font-size: 0.9rem;">
                         Showing <span id="pagination-range">0-0 of 0</span> papers
+                        <div class="pagination-section-stats" id="pagination-section-stats" style="display: none;">
+                            <span>Methods section: <strong id="section-stats-methods">—</strong></span>
+                            <span>Results section: <strong id="section-stats-results">—</strong></span>
+                        </div>
                     </div>
                     <div class="pagination-controls" style="display: flex; gap: 12px; align-items: center;">
                         <button class="btn btn-secondary btn-sm" id="btn-page-prev" onclick="changePage(-1)"
@@ -2753,6 +3286,10 @@
 
             <!-- MY ANALYSES PANEL -->
             <section id="my-analyses-panel">
+                <div id="guest-analysis-overlay">
+                    <p>Log in to save and view analysis results</p>
+                    <a id="guest-analysis-sign-in-link" href="/login?next=%2F%3Frestore_guest_analysis%3D1" class="btn btn-primary" style="padding: 8px 18px; border-radius: 10px; text-decoration: none; font-weight: 600;">Sign In</a>
+                </div>
                 <div class="analysis-three-col">
                     <div class="analysis-col analysis-col-list">
                         <h4>Saved Analyses</h4>
@@ -2763,7 +3300,7 @@
                                         <th style="width: 30px;"></th>
                                         <th>Name</th>
                                         <th style="width: 44px; text-align: center;">#</th>
-                                        <th style="width: 42px;"></th>
+                                        <th style="width: 48px; text-align: center;"></th>
                                     </tr>
                                 </thead>
                                 <tbody id="analyses-tbody">
@@ -3781,37 +4318,109 @@
         </div>
     </aside>
 
-    <!-- HARVEST MODAL OVERLAY -->
+    <!-- ADD PAPERS MODAL OVERLAY -->
     <div class="harvest-overlay" id="harvest-overlay" onclick="closeHarvestModal()"></div>
 
-    <!-- HARVEST CONTROLS MODAL -->
+    <!-- ADD PAPERS CONTROLS MODAL -->
     <div class="harvest-modal" id="harvest-modal">
         <div class="drawer-header" style="border-bottom: 1px solid rgba(255, 255, 255, 0.06); padding-bottom: 15px;">
             <div class="drawer-title-group">
                 <h3
-                    style="font-family: var(--font-display); font-size: 18px; font-weight: 700; color: var(--text-primary); display: flex; align-items: center; gap: 8px;">
-                    <span>📥</span> Harvest New Papers
+                    style="font-family: var(--font-display); font-size: 18px; font-weight: 700; color: var(--text-primary);">
+                    Add Papers
                 </h3>
             </div>
             <button class="btn-close" onclick="closeHarvestModal()">&times;</button>
         </div>
 
-        <div class="form-group" style="margin-top: 10px;">
-            <label for="harvest-query" style="font-size: 0.85rem; font-weight: 600; color: var(--text-primary);">NCBI
-                PubMed Search Query</label>
-            <input type="text" id="harvest-query"
-                placeholder="e.g. 'cannabis RCT vaporized anxiety' or 'CBD neuropathic pain'">
+        <div class="add-papers-tabs">
+            <button type="button" class="add-papers-tab active" id="add-papers-tab-pubmed" onclick="switchAddPapersTab('pubmed')">PubMed Search</button>
+            <button type="button" class="add-papers-tab" id="add-papers-tab-upload" onclick="switchAddPapersTab('upload')">Upload PDF</button>
         </div>
 
-        <div style="display: flex; align-items: center; justify-content: space-between; margin-top: 10px;">
-            <label class="checkbox-item" title="Run Claude 3.5 Sonnet classification pass"
-                style="display: inline-flex; align-items: center; gap: 6px; cursor: pointer;">
-                <input type="checkbox" id="harvest-classify"> Claude LLM Classification
-            </label>
-            <button class="btn btn-primary" onclick="triggerHarvest()">Start Harvest</button>
+        <div class="add-papers-panel active" id="add-papers-panel-pubmed">
+            <div class="form-group" style="margin-top: 0;">
+                <label for="harvest-query" style="font-size: 0.85rem; font-weight: 600; color: var(--text-primary);">NCBI
+                    PubMed Search Query</label>
+                <input type="text" id="harvest-query"
+                    placeholder="e.g. 'cannabis RCT vaporized anxiety' or 'CBD neuropathic pain'">
+            </div>
+
+            <div style="display: flex; justify-content: flex-end; margin-top: 8px;">
+                <button class="btn btn-primary" onclick="triggerHarvest()">Start Harvest</button>
+            </div>
+
+            <!-- Daily Background Auto-Scan Scheduler Status (PubMed only) -->
+            <div class="scheduler-status-row" id="scheduler-status-row"
+                style="margin-top: 15px; display: flex; align-items: center; justify-content: space-between; font-size: 0.8rem; padding: 12px 15px; background: rgba(255, 255, 255, 0.02); border: 1px solid rgba(255, 255, 255, 0.05); border-radius: 8px; color: var(--text-secondary);">
+                <div style="display: flex; align-items: center; gap: 8px;">
+                    <span
+                        style="display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: #90a4ae;"
+                        id="scheduler-pulse"></span>
+                    <span>Daily Background Auto-Scan
+                        <span class="help-tooltip-container">ⓘ
+                            <span class="help-tooltip-text">
+                                <strong>Daily Automated Harvest & Cleanse</strong><br>
+                                Searches PubMed and Semantic Scholar every 24 hours using query:
+                                <code>cannabis OR cannabinoid OR marijuana</code>.
+                            </span>
+                        </span>:
+                        <strong id="scheduler-status-text" style="color: var(--text-primary);">Checking...</strong>
+                    </span>
+                </div>
+                <div id="scheduler-run-details" style="font-size: 0.75rem; text-align: right; max-width: 60%;">
+                    Status: <span id="scheduler-last-run"
+                        style="font-family: var(--font-mono); color: var(--text-primary);">Checking...</span>
+                </div>
+            </div>
         </div>
 
-        <!-- Harvest Loading Progress Bar -->
+        <div class="add-papers-panel" id="add-papers-panel-upload">
+            <div class="pdf-upload-dropzone" id="pdf-upload-dropzone" onclick="document.getElementById('pdf-upload-input').click()">
+                <div>Drop PDF(s) here or click to browse</div>
+                <div id="pdf-upload-filename" style="margin-top: 8px; color: var(--accent-blue); font-weight: 600;"></div>
+            </div>
+            <input type="file" id="pdf-upload-input" accept="application/pdf,.pdf" multiple style="display: none;">
+            <button class="btn btn-primary" id="btn-upload-pdf" onclick="triggerPdfUpload()" disabled style="margin-top: 10px;">Upload &amp; Classify</button>
+
+            <div class="pdf-upload-results" id="pdf-upload-results">
+                <h5>Upload results</h5>
+                <div id="pdf-upload-results-list"></div>
+                <div class="pdf-upload-results-summary" id="pdf-upload-results-summary"></div>
+            </div>
+
+            <div class="pdf-match-panel" id="pdf-match-panel">
+                <div class="pdf-match-intro">
+                    Select the best matching paper already in the database, or continue as a new paper if none are correct.
+                </div>
+                <div class="pdf-match-detected" id="pdf-match-detected"></div>
+                <div class="pdf-match-list" id="pdf-match-list"></div>
+                <div class="pdf-match-actions">
+                    <button type="button" class="btn btn-secondary" onclick="cancelPdfMatchSelection()">Cancel</button>
+                    <button type="button" class="btn btn-secondary" onclick="confirmPdfMatchSelection('new')">None of these — new paper</button>
+                    <button type="button" class="btn btn-primary" id="btn-pdf-match-continue" onclick="confirmPdfMatchSelection()" disabled>Compare selected</button>
+                </div>
+            </div>
+
+            <div class="pdf-review-panel" id="pdf-review-panel">
+                <div class="pdf-review-intro" id="pdf-review-intro"></div>
+                <div class="pdf-review-legend">
+                    <span><i class="swatch new"></i> New / from PDF</span>
+                    <span><i class="swatch conflict"></i> Conflicts with database</span>
+                    <span><i class="swatch base"></i> Unchanged</span>
+                </div>
+                <div class="pdf-review-table-head">
+                    <span>Field</span><span>Database</span><span>Uploaded PDF</span><span>Other</span>
+                </div>
+                <div class="pdf-review-rows" id="pdf-review-rows"></div>
+                <div class="pdf-review-actions">
+                    <button type="button" class="btn btn-secondary" onclick="cancelPdfReview()">Cancel review</button>
+                    <button type="button" class="btn btn-primary" onclick="confirmPdfReview()">Save paper</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Ingest Loading Progress Bar -->
         <div class="harvest-status-bar" id="harvest-status-bar" style="display: none; margin-top: 15px;">
             <div class="progress-text"
                 style="display: flex; justify-content: space-between; font-size: 0.85rem; margin-bottom: 6px;">
@@ -3821,34 +4430,6 @@
             </div>
             <div class="progress-meter">
                 <div class="progress-fill" id="harvest-progress-fill"></div>
-            </div>
-        </div>
-
-        <!-- Daily Background Auto-Scan Scheduler Status -->
-        <div class="scheduler-status-row" id="scheduler-status-row"
-            style="margin-top: 15px; display: flex; align-items: center; justify-content: space-between; font-size: 0.8rem; padding: 12px 15px; background: rgba(255, 255, 255, 0.02); border: 1px solid rgba(255, 255, 255, 0.05); border-radius: 8px; color: var(--text-secondary);">
-            <div style="display: flex; align-items: center; gap: 8px;">
-                <span
-                    style="display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: #90a4ae; box-shadow: 0 0 8px #90a4ae;"
-                    id="scheduler-pulse"></span>
-                <span>Daily Background Auto-Scan
-                    <span class="help-tooltip-container">ⓘ
-                        <span class="help-tooltip-text">
-                            <strong>Daily Automated Harvest & Cleanse</strong><br>
-                            Searches PubMed and Semantic Scholar every 24 hours using query:
-                            <code>cannabis OR cannabinoid OR marijuana</code>.<br><br>
-                            Runs a post-scan filter to automatically purge unrelated acronym collisions like
-                            <em>Common Bile Duct (CBD)</em>, <em>Corticobasal Degeneration (CBD)</em>, or
-                            <em>Central Business District (CBD)</em> unless they have explicit overrides (e.g.
-                            <code>cannabi*</code>, <code>hemp*</code>, <code>thc</code>).
-                        </span>
-                    </span>:
-                    <strong id="scheduler-status-text" style="color: var(--text-primary);">Checking...</strong>
-                </span>
-            </div>
-            <div id="scheduler-run-details" style="font-size: 0.75rem; text-align: right; max-width: 60%;">
-                Status: <span id="scheduler-last-run"
-                    style="font-family: var(--font-mono); color: var(--text-primary);">Checking...</span>
             </div>
         </div>
     </div>
@@ -4148,6 +4729,16 @@
         let lastFilterFingerprint = "";
         let tableSearchInFlight = false;
         let harvestPollInterval = null;
+        let guestAnalysisPreview = null;
+        const GUEST_ANALYSIS_STORAGE_KEY = 'cannabis_pending_guest_analysis';
+        const GUEST_ANALYSIS_LOGIN_NEXT = '/?restore_guest_analysis=1';
+        let selectedPdfUploadFile = null;
+        let selectedPdfUploadFiles = [];
+        let pendingPdfMerge = null;
+        let pendingPdfMatch = null;
+        let selectedPdfMatchId = null;
+        let pdfUploadQueue = [];
+        let pdfUploadResults = [];
         let currentPage = 1;
         const pageSize = 50;
         let currentTab = DASHBOARD_CONFIG.default_tab || 'all_original';
@@ -4516,12 +5107,20 @@
             await loadColumnPreferences();
             updateAnalyzeButtonVisibility(currentTab);
             updateSliderValues();
-            triggerSearch(true);
+            const restoringGuestAnalysis = IS_LOGGED_IN
+                && new URLSearchParams(window.location.search).get('restore_guest_analysis') === '1';
+            if (!restoringGuestAnalysis) {
+                triggerSearch(true);
+            }
             updateSchedulerStatus();
             setInterval(updateSchedulerStatus, 60000);
             
             initializeUserWidget();
             setupAuthInterceptors();
+            setupPdfUploadControls();
+            if (restoringGuestAnalysis) {
+                await maybeRestoreGuestAnalysisAfterLogin();
+            }
             
             // Register change event listeners for dynamic cannabis type edit form
             document.querySelectorAll('input[name="edit_cannabis_type"]').forEach(cb => {
@@ -4643,6 +5242,7 @@
                     updatePagination(totalCount, data.page || currentPage, data.limit || pageSize);
                     lastKnownTotal = totalCount;
                     lastFilterFingerprint = fingerprint;
+                    fetchSectionStats(filterParams, activeTab, requestId);
                 })
                 .catch(err => {
                     if (err && err.name === "AbortError") return;
@@ -4683,6 +5283,48 @@
             // Enable/disable page buttons
             document.getElementById("btn-page-prev").disabled = tableSearchInFlight || safePage <= 1;
             document.getElementById("btn-page-next").disabled = tableSearchInFlight || safePage >= totalPages;
+        }
+
+        function updateSectionStatsDisplay(stats) {
+            const container = document.getElementById("pagination-section-stats");
+            const methodsEl = document.getElementById("section-stats-methods");
+            const resultsEl = document.getElementById("section-stats-results");
+            if (!container || !methodsEl || !resultsEl) return;
+
+            if (!stats || !stats.total_count) {
+                container.style.display = "none";
+                methodsEl.textContent = "—";
+                resultsEl.textContent = "—";
+                return;
+            }
+
+            methodsEl.textContent = `${stats.methods_pct}%`;
+            resultsEl.textContent = `${stats.results_pct}%`;
+            container.style.display = "flex";
+        }
+
+        function fetchSectionStats(filterParams, activeTab, requestId) {
+            const params = [];
+            Object.entries(filterParams).forEach(([key, value]) => {
+                if (key === "tab" || key === "sort_by" || key === "sort_dir") return;
+                if (key === "method") {
+                    params.push(`method=${encodeURIComponent(value)}`);
+                    return;
+                }
+                params.push(`${encodeURIComponent(key)}=${encodeURIComponent(value)}`);
+            });
+            if (activeTab) params.push(`tab=${activeTab}`);
+
+            fetch(`/api/search/section-stats?${params.join("&")}`)
+                .then(res => res.ok ? res.json() : Promise.reject(new Error(`Section stats failed (${res.status})`)))
+                .then(stats => {
+                    if (requestId !== activeSearchRequestId) return;
+                    updateSectionStatsDisplay(stats);
+                })
+                .catch(err => {
+                    console.error("Section stats fetch failed:", err);
+                    updateSectionStatsDisplay(null);
+                });
         }
 
         // Change current page in pagination
@@ -5527,6 +6169,19 @@
             document.getElementById("drawer-overlay").classList.remove("open");
         }
 
+        // Open Add Papers Modal (admin only)
+        function openAddPapersModal() {
+            if (!IS_LOGGED_IN) {
+                showAuthModal();
+                return;
+            }
+            if (!IS_ADMIN) {
+                alert("Add Papers is restricted to administrators.");
+                return;
+            }
+            openHarvestModal();
+        }
+
         // Open Harvest Modal
         function openHarvestModal() {
             document.getElementById("harvest-modal").classList.add("open");
@@ -5536,15 +6191,586 @@
         // Close Harvest Modal
         function closeHarvestModal() {
             document.getElementById("harvest-modal").classList.remove("open");
+            document.getElementById("harvest-modal").classList.remove("review-mode");
             document.getElementById("harvest-overlay").classList.remove("open");
+            cancelPdfReview();
+            pdfUploadQueue = [];
         }
 
-        // Trigger crawler harvesting pass
+        function switchAddPapersTab(tabName) {
+            const pubmedTab = document.getElementById("add-papers-tab-pubmed");
+            const uploadTab = document.getElementById("add-papers-tab-upload");
+            const pubmedPanel = document.getElementById("add-papers-panel-pubmed");
+            const uploadPanel = document.getElementById("add-papers-panel-upload");
+            const schedulerRow = document.getElementById("scheduler-status-row");
+            const isPubmed = tabName === "pubmed";
+            if (pubmedTab) pubmedTab.classList.toggle("active", isPubmed);
+            if (uploadTab) uploadTab.classList.toggle("active", !isPubmed);
+            if (pubmedPanel) pubmedPanel.classList.toggle("active", isPubmed);
+            if (uploadPanel) uploadPanel.classList.toggle("active", !isPubmed);
+            if (schedulerRow) schedulerRow.style.display = isPubmed ? "flex" : "none";
+            if (!isPubmed) {
+                const bar = document.getElementById("harvest-status-bar");
+                if (bar) bar.style.display = "none";
+            }
+        }
+
+        function cancelPdfMatchSelection() {
+            pendingPdfMatch = null;
+            selectedPdfMatchId = null;
+            const panel = document.getElementById("pdf-match-panel");
+            const list = document.getElementById("pdf-match-list");
+            const detected = document.getElementById("pdf-match-detected");
+            const continueBtn = document.getElementById("btn-pdf-match-continue");
+            if (panel) panel.classList.remove("active");
+            if (list) list.innerHTML = "";
+            if (detected) detected.textContent = "";
+            if (continueBtn) continueBtn.disabled = true;
+        }
+
+        function cancelPdfReview() {
+            pendingPdfMerge = null;
+            cancelPdfMatchSelection();
+            const panel = document.getElementById("pdf-review-panel");
+            const rows = document.getElementById("pdf-review-rows");
+            const modal = document.getElementById("harvest-modal");
+            if (panel) panel.classList.remove("active");
+            if (rows) rows.innerHTML = "";
+            if (modal) modal.classList.remove("review-mode");
+        }
+
+        function cancelPdfMerge() {
+            cancelPdfReview();
+        }
+
+        function showPdfMatchPanel(data, file) {
+            pendingPdfMatch = {
+                merge_token: data.merge_token,
+                title: data.title || "",
+                filename: file ? file.name : (data.filename || ""),
+                candidates: data.candidates || [],
+            };
+            selectedPdfMatchId = null;
+
+            const panel = document.getElementById("pdf-match-panel");
+            const list = document.getElementById("pdf-match-list");
+            const detected = document.getElementById("pdf-match-detected");
+            const continueBtn = document.getElementById("btn-pdf-match-continue");
+            const reviewPanel = document.getElementById("pdf-review-panel");
+            const modal = document.getElementById("harvest-modal");
+            if (!panel || !list) return;
+
+            if (reviewPanel) reviewPanel.classList.remove("active");
+            if (modal) modal.classList.add("review-mode");
+            if (continueBtn) continueBtn.disabled = true;
+
+            if (detected) {
+                detected.textContent = `Detected title: ${pendingPdfMatch.title || "(unknown)"}`
+                    + (pendingPdfMatch.filename ? ` — from ${pendingPdfMatch.filename}` : "");
+            }
+
+            const candidates = pendingPdfMatch.candidates || [];
+            if (!candidates.length) {
+                list.innerHTML = `<div class="pdf-match-meta" style="padding:8px 2px;">No close title matches found. Choose “None of these — new paper” to continue.</div>`;
+            } else {
+                list.innerHTML = candidates.map((c, idx) => {
+                    const pct = c.similarity != null ? `${Math.round(Number(c.similarity) * 100)}%` : "—";
+                    const metaParts = [];
+                    if (c.year) metaParts.push(String(c.year));
+                    if (c.journal) metaParts.push(String(c.journal));
+                    if (c.publication_type) metaParts.push(String(c.publication_type));
+                    metaParts.push(`#${c.id}`);
+                    return `
+                    <button type="button" class="pdf-match-option" data-id="${escapeHtml(c.id)}" onclick="selectPdfMatchCandidate(${Number(c.id)})">
+                        <span class="pdf-match-rank">${idx + 1}.</span>
+                        <span>
+                            <div class="pdf-match-title">${escapeHtml(c.title || "Untitled")}</div>
+                            <div class="pdf-match-meta">${escapeHtml(metaParts.join(" · "))}</div>
+                        </span>
+                        <span class="pdf-match-score">${escapeHtml(pct)}</span>
+                    </button>`;
+                }).join("");
+            }
+
+            panel.classList.add("active");
+            panel.scrollIntoView({ behavior: "smooth", block: "nearest" });
+        }
+
+        function selectPdfMatchCandidate(paperId) {
+            selectedPdfMatchId = Number(paperId);
+            document.querySelectorAll(".pdf-match-option").forEach(el => {
+                el.classList.toggle("selected", Number(el.dataset.id) === selectedPdfMatchId);
+            });
+            const continueBtn = document.getElementById("btn-pdf-match-continue");
+            if (continueBtn) continueBtn.disabled = !selectedPdfMatchId;
+        }
+
+        function confirmPdfMatchSelection(forcedChoice) {
+            if (!pendingPdfMatch || !pendingPdfMatch.merge_token) return;
+            const choice = forcedChoice === "new"
+                ? "new"
+                : (selectedPdfMatchId != null ? String(selectedPdfMatchId) : null);
+            if (!choice) {
+                alert("Select a database match, or choose “None of these — new paper”.");
+                return;
+            }
+
+            const bar = document.getElementById("harvest-status-bar");
+            const uploadBtn = document.getElementById("btn-upload-pdf");
+            if (bar) bar.style.display = "block";
+            if (uploadBtn) uploadBtn.disabled = true;
+            document.getElementById("harvest-progress-msg").innerText = "Building field comparison…";
+            document.getElementById("harvest-progress-fill").style.width = "45%";
+
+            const formData = new FormData();
+            formData.append("merge_token", pendingPdfMatch.merge_token);
+            formData.append("match_choice", choice);
+
+            fetch("/api/papers/upload-pdf", { method: "POST", body: formData })
+                .then(async res => {
+                    const data = await res.json().catch(() => ({}));
+                    if (!res.ok || data.error) {
+                        throw new Error(data.error || "Could not build review.");
+                    }
+                    if (data.status !== "review_required") {
+                        throw new Error("Unexpected response after match selection.");
+                    }
+                    cancelPdfMatchSelection();
+                    if (bar) bar.style.display = "none";
+                    if (uploadBtn) uploadBtn.disabled = false;
+                    showPdfReviewPanel(data, selectedPdfUploadFile);
+                })
+                .catch(err => {
+                    if (bar) bar.style.display = "none";
+                    if (uploadBtn) uploadBtn.disabled = selectedPdfUploadFiles.length === 0;
+                    appendPdfUploadResult({
+                        filename: pendingPdfMatch?.filename || selectedPdfUploadFile?.name || "PDF",
+                        kind: "error",
+                        message: err.message || "Match selection failed.",
+                    });
+                });
+        }
+
+        function selectPdfReviewChoice(field, pick, event) {
+            if (event) {
+                event.preventDefault();
+                event.stopPropagation();
+            }
+            const row = document.querySelector(`.pdf-review-row[data-field="${field}"]`);
+            if (!row) return;
+            row.querySelectorAll(".pdf-review-choice").forEach(el => {
+                el.classList.toggle("selected", el.dataset.pick === pick);
+            });
+            const customInput = row.querySelector(`.pdf-review-custom-input[data-field="${field}"]`);
+            if (customInput) {
+                if (pick === "custom") {
+                    customInput.classList.add("visible");
+                    if (typeof customInput.focus === "function") customInput.focus();
+                } else {
+                    customInput.classList.remove("visible");
+                }
+            }
+        }
+
+        function buildPdfReviewOtherControl(field, schema) {
+            const safeField = escapeHtml(field);
+            const inputMeta = (schema && schema[field]) || { input_type: "text" };
+            const commonAttrs = `class="pdf-review-custom-input" data-field="${safeField}" onclick="event.stopPropagation(); selectPdfReviewChoice('${String(field).replace(/'/g, "\\'")}', 'custom', event)"`;
+
+            if (inputMeta.input_type === "enum") {
+                const options = (inputMeta.options || []).map(opt =>
+                    `<option value="${escapeHtml(opt)}">${escapeHtml(opt)}</option>`
+                ).join("");
+                if (inputMeta.multiple) {
+                    return `<select ${commonAttrs} multiple size="4"><option value="">—</option>${options}</select>`;
+                }
+                return `<select ${commonAttrs}><option value="">—</option>${options}</select>`;
+            }
+
+            if (inputMeta.input_type === "number") {
+                const step = inputMeta.integer ? "1" : "any";
+                return `<input type="number" ${commonAttrs} min="0" step="${step}" inputmode="decimal" placeholder="≥ 0">`;
+            }
+
+            if (inputMeta.input_type === "textarea") {
+                return `<textarea ${commonAttrs} rows="2" placeholder="Type a custom value…"></textarea>`;
+            }
+
+            return `<input type="text" ${commonAttrs} placeholder="Type a custom value…">`;
+        }
+
+        function showPdfReviewPanel(data, file) {
+            cancelPdfMatchSelection();
+            pendingPdfMerge = {
+                merge_token: data.merge_token,
+                paper_id: data.paper_id,
+                rows: data.rows || [],
+                is_new_paper: !!data.is_new_paper,
+                filename: file ? file.name : "",
+                field_inputs: data.field_inputs || {},
+            };
+
+            const panel = document.getElementById("pdf-review-panel");
+            const rowsEl = document.getElementById("pdf-review-rows");
+            const introEl = document.getElementById("pdf-review-intro");
+            const modal = document.getElementById("harvest-modal");
+            if (!panel || !rowsEl) return;
+
+            if (modal) modal.classList.add("review-mode");
+
+            if (introEl) {
+                if (data.is_new_paper) {
+                    introEl.textContent = `New paper from "${file ? file.name : "PDF"}". Click a value in each row to keep it (green = new). Use Other for a dropdown/number/custom value.`;
+                } else if (data.similarity != null && data.similarity < 0.999) {
+                    introEl.textContent = `Matched existing paper #${data.paper_id} (${Math.round(data.similarity * 100)}% title similarity). Click Database, PDF, or Other for each field.`;
+                } else {
+                    introEl.textContent = `Paper already in database (#${data.paper_id}). Click Database, PDF, or Other for each field. Red = conflict, green = new from PDF.`;
+                }
+            }
+
+            rowsEl.innerHTML = (pendingPdfMerge.rows || []).map(row => {
+                const rowClass = row.row_status === "conflict"
+                    ? "row-conflict"
+                    : (row.row_status === "new" ? "row-new" : (row.row_status === "unchanged" ? "row-unchanged" : "row-empty"));
+                const defaultPick = row.default_pick || (pendingPdfMerge.is_new_paper ? "uploaded" : "existing");
+                const showExisting = !pendingPdfMerge.is_new_paper;
+                const field = String(row.field).replace(/'/g, "\\'");
+                const otherControl = buildPdfReviewOtherControl(row.field, pendingPdfMerge.field_inputs);
+                return `
+                <div class="pdf-review-row ${rowClass}" data-field="${escapeHtml(row.field)}" data-pick="${defaultPick}">
+                    <div class="pdf-review-field-label">${escapeHtml(row.label)}</div>
+                    ${showExisting ? `
+                    <button type="button" class="pdf-review-choice ${defaultPick === "existing" ? "selected" : ""}" data-pick="existing" onclick="selectPdfReviewChoice('${field}', 'existing', event)">
+                        <span class="pdf-review-choice-label">Database</span>
+                        <span class="pdf-review-choice-value">${escapeHtml(row.existing || "—")}</span>
+                    </button>` : `<div class="pdf-review-choice" style="cursor:default;opacity:0.45;"><span class="pdf-review-choice-label">Database</span><span class="pdf-review-choice-value">—</span></div>`}
+                    <button type="button" class="pdf-review-choice ${defaultPick === "uploaded" ? "selected" : ""}" data-pick="uploaded" onclick="selectPdfReviewChoice('${field}', 'uploaded', event)">
+                        <span class="pdf-review-choice-label">PDF</span>
+                        <span class="pdf-review-choice-value">${escapeHtml(row.uploaded || "—")}</span>
+                    </button>
+                    <button type="button" class="pdf-review-choice ${defaultPick === "custom" ? "selected" : ""}" data-pick="custom" onclick="selectPdfReviewChoice('${field}', 'custom', event)">
+                        <span class="pdf-review-choice-label">Other</span>
+                        ${otherControl}
+                    </button>
+                </div>`;
+            }).join("");
+
+            panel.classList.add("active");
+            panel.scrollIntoView({ behavior: "smooth", block: "nearest" });
+        }
+
+        function showPdfMergePanel(data) {
+            showPdfReviewPanel(data, selectedPdfUploadFile);
+        }
+
+        function readPdfReviewCustomValue(field) {
+            const input = document.querySelector(`.pdf-review-custom-input[data-field="${field}"]`);
+            if (!input) return "";
+            if (input.tagName === "SELECT" && input.multiple) {
+                return Array.from(input.selectedOptions)
+                    .map(opt => opt.value)
+                    .filter(Boolean);
+            }
+            if (input.tagName === "SELECT") {
+                return input.value || "";
+            }
+            if (input.type === "number") {
+                const raw = String(input.value || "").trim();
+                if (!raw) return "";
+                const num = Number(raw);
+                if (!Number.isFinite(num) || num < 0) return "";
+                return String(num);
+            }
+            return input.value || "";
+        }
+
+        function collectPdfReviewSelections() {
+            const selections = {};
+            const customValues = {};
+            (pendingPdfMerge?.rows || []).forEach(row => {
+                const rowEl = document.querySelector(`.pdf-review-row[data-field="${row.field}"]`);
+                const selected = rowEl && rowEl.querySelector(".pdf-review-choice.selected");
+                selections[row.field] = selected
+                    ? selected.dataset.pick
+                    : (pendingPdfMerge.is_new_paper ? "uploaded" : "existing");
+                if (selections[row.field] === "custom") {
+                    customValues[row.field] = readPdfReviewCustomValue(row.field);
+                }
+            });
+            return { selections, customValues };
+        }
+
+        function collectPdfMergeSelections() {
+            return collectPdfReviewSelections().selections;
+        }
+
+        function escapeHtml(text) {
+            return String(text || "")
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;");
+        }
+
+        function clearPdfUploadResults() {
+            pdfUploadResults = [];
+            const panel = document.getElementById("pdf-upload-results");
+            const list = document.getElementById("pdf-upload-results-list");
+            const summary = document.getElementById("pdf-upload-results-summary");
+            if (list) list.innerHTML = "";
+            if (summary) summary.textContent = "";
+            if (panel) panel.classList.remove("visible");
+        }
+
+        function appendPdfUploadResult(entry) {
+            pdfUploadResults.push(entry);
+            const panel = document.getElementById("pdf-upload-results");
+            const list = document.getElementById("pdf-upload-results-list");
+            const summary = document.getElementById("pdf-upload-results-summary");
+            if (!panel || !list) return;
+
+            panel.classList.add("visible");
+            const item = document.createElement("div");
+            item.className = `pdf-upload-result-item ${entry.kind || "success"}`;
+            item.innerHTML = `<div class="pdf-upload-result-filename">${escapeHtml(entry.filename || "PDF")}</div>`
+                + `<div class="pdf-upload-result-detail">${escapeHtml(entry.message || "")}</div>`;
+            list.appendChild(item);
+
+            if (summary) {
+                const created = pdfUploadResults.filter(r => r.kind === "success").length;
+                const updated = pdfUploadResults.filter(r => r.kind === "updated").length;
+                const warnings = pdfUploadResults.filter(r => r.kind === "warning").length;
+                const errors = pdfUploadResults.filter(r => r.kind === "error").length;
+                const parts = [];
+                if (created) parts.push(`${created} added`);
+                if (updated) parts.push(`${updated} updated`);
+                if (warnings) parts.push(`${warnings} need review`);
+                if (errors) parts.push(`${errors} failed`);
+                summary.textContent = parts.length
+                    ? `Summary: ${parts.join(", ")}.`
+                    : "";
+            }
+        }
+
+        function formatPdfUploadSuccessMessage(data, filename) {
+            const title = data.title || filename || "Untitled";
+            const paperId = data.paper_id != null ? `#${data.paper_id}` : "";
+            if (data.action === "created") {
+                return {
+                    kind: "success",
+                    message: `Added as a new paper ${paperId}: ${title}`,
+                };
+            }
+            const matchType = data.match_type || (data.similarity === 1 ? "exact_title" : "fuzzy_title");
+            if (matchType === "exact_title") {
+                return {
+                    kind: "updated",
+                    message: `Already in database — updated existing paper ${paperId}: ${title}`,
+                };
+            }
+            const pct = data.similarity != null ? `${Math.round(data.similarity * 100)}% title match` : "similar title";
+            const existingTitle = data.existing_title ? ` (was: ${data.existing_title})` : "";
+            return {
+                kind: "updated",
+                message: `Merged into existing paper ${paperId} (${pct})${existingTitle}. Saved title: ${title}`,
+            };
+        }
+
+        function uploadSinglePdfFile(file, mergePayload) {
+            const bar = document.getElementById("harvest-status-bar");
+            const uploadBtn = document.getElementById("btn-upload-pdf");
+            if (bar) bar.style.display = "block";
+            if (uploadBtn) uploadBtn.disabled = true;
+            document.getElementById("harvest-progress-msg").innerText =
+                mergePayload ? `Applying merge for ${file.name}…` : `Processing ${file.name}…`;
+            document.getElementById("harvest-progress-fill").style.width = mergePayload ? "60%" : "35%";
+
+            const formData = new FormData();
+            if (mergePayload) {
+                formData.append("merge_token", mergePayload.merge_token);
+                if (mergePayload.paper_id != null) {
+                    formData.append("paper_id", String(mergePayload.paper_id));
+                }
+                formData.append("merge_selections", JSON.stringify(mergePayload.merge_selections));
+                formData.append("custom_values", JSON.stringify(mergePayload.custom_values || {}));
+            } else {
+                formData.append("pdf", file);
+            }
+
+            return fetch("/api/papers/upload-pdf", { method: "POST", body: formData })
+                .then(async res => {
+                    const data = await res.json().catch(() => ({}));
+                    return { ok: res.ok, status: res.status, data };
+                })
+                .then(({ ok, status, data }) => {
+                    if (data.status === "match_selection_required") {
+                        return { status: "match_selection_required", data, file };
+                    }
+                    if (data.status === "review_required") {
+                        return { status: "review_required", data, file };
+                    }
+                    if (!ok || data.error) {
+                        throw new Error(data.error || "Upload failed");
+                    }
+                    document.getElementById("harvest-progress-fill").style.width = "100%";
+                    document.getElementById("harvest-progress-msg").innerText = `Finished ${file.name}`;
+                    cancelPdfReview();
+                    const formatted = formatPdfUploadSuccessMessage(data, file.name);
+                    appendPdfUploadResult({
+                        filename: file.name,
+                        kind: formatted.kind,
+                        message: formatted.message,
+                    });
+                    return { status: "success", data };
+                })
+                .catch(err => {
+                    document.getElementById("harvest-progress-fill").style.width = "0%";
+                    appendPdfUploadResult({
+                        filename: file.name,
+                        kind: "error",
+                        message: err.message || "Upload failed.",
+                    });
+                    return { status: "error", error: err };
+                });
+        }
+
+        async function processPdfUploadQueue() {
+            const bar = document.getElementById("harvest-status-bar");
+            const uploadBtn = document.getElementById("btn-upload-pdf");
+            let needsSearchRefresh = false;
+
+            while (pdfUploadQueue.length > 0) {
+                const file = pdfUploadQueue.shift();
+                selectedPdfUploadFile = file;
+                const outcome = await uploadSinglePdfFile(file);
+
+                if (outcome.status === "match_selection_required") {
+                    // Do NOT re-queue this file — match/review confirm owns the next step.
+                    if (bar) bar.style.display = "none";
+                    if (uploadBtn) uploadBtn.disabled = false;
+                    showPdfMatchPanel(outcome.data, file);
+                    return;
+                }
+                if (outcome.status === "review_required") {
+                    // Do NOT re-queue this file — confirm/cancel owns the next step.
+                    if (bar) bar.style.display = "none";
+                    if (uploadBtn) uploadBtn.disabled = false;
+                    showPdfReviewPanel(outcome.data, file);
+                    return;
+                }
+                if (outcome.status === "success") {
+                    needsSearchRefresh = true;
+                }
+            }
+
+            selectedPdfUploadFile = null;
+            if (bar) bar.style.display = "none";
+            if (uploadBtn) uploadBtn.disabled = selectedPdfUploadFiles.length === 0;
+            if (needsSearchRefresh) {
+                triggerSearch(true);
+            }
+        }
+
+        function confirmPdfReview() {
+            if (!pendingPdfMerge || !selectedPdfUploadFile) return;
+
+            const fileBeingSaved = selectedPdfUploadFile;
+            const { selections, customValues } = collectPdfReviewSelections();
+            const mergePayload = {
+                merge_token: pendingPdfMerge.merge_token,
+                paper_id: pendingPdfMerge.paper_id,
+                merge_selections: selections,
+                custom_values: customValues,
+            };
+            cancelPdfReview();
+
+            uploadSinglePdfFile(fileBeingSaved, mergePayload)
+                .then(outcome => {
+                    if (outcome.status === "success") {
+                        triggerSearch(true);
+                    }
+                    // Continue only with remaining files (this file was not re-queued).
+                    processPdfUploadQueue();
+                });
+        }
+
+        function confirmPdfMerge() {
+            confirmPdfReview();
+        }
+
+        function setSelectedPdfUploadFiles(files) {
+            selectedPdfUploadFiles = Array.from(files || []).filter(f => f && f.name);
+            selectedPdfUploadFile = selectedPdfUploadFiles[0] || null;
+            cancelPdfReview();
+            const filenameEl = document.getElementById("pdf-upload-filename");
+            const uploadBtn = document.getElementById("btn-upload-pdf");
+            if (filenameEl) {
+                if (selectedPdfUploadFiles.length === 0) {
+                    filenameEl.textContent = "";
+                } else if (selectedPdfUploadFiles.length === 1) {
+                    filenameEl.textContent = selectedPdfUploadFiles[0].name;
+                } else {
+                    filenameEl.textContent = `${selectedPdfUploadFiles.length} files selected`;
+                }
+            }
+            if (uploadBtn) {
+                uploadBtn.disabled = selectedPdfUploadFiles.length === 0;
+            }
+        }
+
+        function setSelectedPdfUploadFile(file) {
+            setSelectedPdfUploadFiles(file ? [file] : []);
+        }
+
+        function setupPdfUploadControls() {
+            const input = document.getElementById("pdf-upload-input");
+            const dropzone = document.getElementById("pdf-upload-dropzone");
+            if (!input || !dropzone) return;
+
+            input.addEventListener("change", () => {
+                setSelectedPdfUploadFiles(input.files || []);
+            });
+
+            dropzone.addEventListener("dragover", (event) => {
+                event.preventDefault();
+                dropzone.classList.add("dragover");
+            });
+            dropzone.addEventListener("dragleave", () => dropzone.classList.remove("dragover"));
+            dropzone.addEventListener("drop", (event) => {
+                event.preventDefault();
+                dropzone.classList.remove("dragover");
+                const files = event.dataTransfer && event.dataTransfer.files;
+                if (files && files.length) {
+                    setSelectedPdfUploadFiles(files);
+                    input.files = files;
+                }
+            });
+        }
+
+        function triggerPdfUpload() {
+            if (!selectedPdfUploadFiles.length) {
+                alert("Please choose at least one PDF file first.");
+                return;
+            }
+
+            cancelPdfReview();
+            clearPdfUploadResults();
+            const seen = new Set();
+            pdfUploadQueue = selectedPdfUploadFiles.filter(file => {
+                const key = `${file.name}:${file.size}:${file.lastModified || 0}`;
+                if (seen.has(key)) return false;
+                seen.add(key);
+                return true;
+            });
+            processPdfUploadQueue();
+        }
+
+        // Trigger crawler harvesting pass (always uses internal Maude classifier)
         function triggerHarvest() {
             const query = document.getElementById("harvest-query").value;
-            const limit = 100; // Automatic optimal default results cap
-            const update = true; // Automatically skip pre-existing papers to speed up operations
-            const classify = document.getElementById("harvest-classify").checked;
+            const limit = 100;
+            const update = true;
+            const classify = false;
 
             if (!query) {
                 alert("Please enter a PubMed search string first.");
@@ -5704,13 +6930,11 @@
                         statusText.innerText = "Active";
                         statusText.style.color = "#4caf50";
                         pulse.style.background = "#4caf50";
-                        pulse.style.boxShadow = "0 0 8px #4caf50";
-                        pulse.style.animation = "pulse-green 2s infinite";
+                        pulse.style.animation = "none";
                     } else {
                         statusText.innerText = "Inactive";
                         statusText.style.color = "var(--accent-red)";
                         pulse.style.background = "var(--accent-red)";
-                        pulse.style.boxShadow = "0 0 8px var(--accent-red)";
                         pulse.style.animation = "none";
                     }
 
@@ -5718,8 +6942,7 @@
                         lastRun.innerText = data.last_run_status;
                         if (data.last_run_status.startsWith("Running")) {
                             pulse.style.background = "#ffeb3b";
-                            pulse.style.boxShadow = "0 0 8px #ffeb3b";
-                            pulse.style.animation = "pulse-yellow 1s infinite";
+                            pulse.style.animation = "none";
                             statusText.innerText = "Running Scan...";
                             statusText.style.color = "#ffeb3b";
                         }
@@ -5764,7 +6987,10 @@
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ filters: filters })
             })
-                .then(res => res.json().then(data => ({ ok: res.ok, status: res.status, data })))
+                .then(async res => {
+                    const data = await res.json().catch(() => ({}));
+                    return { ok: res.ok, status: res.status, data };
+                })
                 .then(({ ok, status, data: result }) => {
                     if (!ok || result.error) {
                         const msg = result.error || ("Request failed (" + status + ")");
@@ -5774,22 +7000,23 @@
                             : ("Analysis failed: " + msg));
                         return;
                     }
+                    openMyAnalyses({ preserveCharts: true, skipLoadAnalysesList: true });
                     renderChartsFromData(result.chart_data);
                     currentAnalyzedPapers = result.chart_data;
                     currentAnalysisPapers = result.papers || [];
                     selectedAnalysisId = result.id;
                     updateExportCSVButtonState();
 
-                    // Show the My Analyses panel with the new analysis selected
-                    openMyAnalyses();
-                    loadAnalysesList(result.id);
-
                     if (result.id == null) {
-                        alert("Analysis charts are ready. Log in to save them under My Analyses.");
+                        showGuestAnalysisPreview(result);
+                    } else {
+                        clearGuestAnalysisPreview();
+                        loadAnalysesList(result.id);
                     }
                 })
                 .catch(err => {
                     console.error("Subset Analysis Failed: ", err);
+                    alert("Analysis failed. Please try again or refresh the page.");
                 })
                 .finally(() => {
                     btn.disabled = false;
@@ -5799,7 +7026,7 @@
 
         /* ─── Panel Switching / View Management ─── */
 
-        function showView(viewName) {
+        function showView(viewName, options = {}) {
             // 1. Hide all views and overlays first
             document.querySelector('.sidebar').style.display = 'none';
             document.getElementById('global-filters-bar').style.display = 'none';
@@ -5809,7 +7036,9 @@
 
             document.getElementById("my-analyses-panel").classList.remove("visible");
             document.getElementById("btn-export-analysis-csv").classList.remove("visible");
-            hideAnalysisCharts();
+            if (!options.preserveCharts) {
+                hideAnalysisCharts();
+            }
             document.getElementById("learning-dashboard-panel").style.display = "none";
             document.getElementById("connectivity-panel").style.display = "none";
             const heurPanel = document.getElementById("heuristics-panel");
@@ -5819,6 +7048,7 @@
             if (viewName !== 'my-analyses') {
                 selectedAnalysisId = null;
                 updateExportCSVButtonState();
+                clearGuestAnalysisPreview();
             }
 
             // Set scrolling behavior on main-content: only database view is fixed
@@ -5837,7 +7067,9 @@
             } else if (viewName === 'my-analyses') {
                 document.getElementById("my-analyses-panel").classList.add("visible");
                 document.getElementById("btn-export-analysis-csv").classList.add("visible");
-                loadAnalysesList();
+                if (!options.skipLoadAnalysesList) {
+                    loadAnalysesList();
+                }
             } else if (viewName === 'learning-dashboard') {
                 document.getElementById("learning-dashboard-panel").style.display = "flex";
                 refreshDashboardMetrics();
@@ -5852,8 +7084,8 @@
 
         /* ─── My Analyses ─── */
 
-        function openMyAnalyses() {
-            showView('my-analyses');
+        function openMyAnalyses(options = {}) {
+            showView('my-analyses', options);
         }
 
         function closeMyAnalyses() {
@@ -5898,12 +7130,136 @@
             window.location.href = `/api/analyses/${selectedAnalysisId}/export-csv`;
         }
 
+        function clearGuestAnalysisPreview() {
+            guestAnalysisPreview = null;
+            const panel = document.getElementById("my-analyses-panel");
+            if (panel) panel.classList.remove("guest-analysis-preview-active");
+        }
+
+        /** Login URL that returns to My Analyses and restores the guest preview after sign-in. */
+        function getGuestSignInUrl() {
+            return '/login?next=' + encodeURIComponent(GUEST_ANALYSIS_LOGIN_NEXT);
+        }
+
+        /** Persist guest analysis in sessionStorage so it survives the login redirect. */
+        function persistGuestAnalysisForLogin(result) {
+            if (!result || IS_LOGGED_IN) return;
+            try {
+                sessionStorage.setItem(GUEST_ANALYSIS_STORAGE_KEY, JSON.stringify({
+                    name: result.name,
+                    filter_settings: result.filter_settings,
+                    paper_count: result.paper_count,
+                    chart_data: result.chart_data,
+                }));
+            } catch (err) {
+                console.warn('Could not persist guest analysis for login:', err);
+            }
+        }
+
+        function clearPersistedGuestAnalysis() {
+            try {
+                sessionStorage.removeItem(GUEST_ANALYSIS_STORAGE_KEY);
+            } catch (_) {}
+        }
+
+        /** After login, save the pending guest analysis and open it unblurred. */
+        async function maybeRestoreGuestAnalysisAfterLogin() {
+            if (!IS_LOGGED_IN) return;
+            const params = new URLSearchParams(window.location.search);
+            if (params.get('restore_guest_analysis') !== '1') return;
+
+            params.delete('restore_guest_analysis');
+            const cleanSearch = params.toString();
+            window.history.replaceState({}, '', window.location.pathname + (cleanSearch ? '?' + cleanSearch : ''));
+
+            const raw = sessionStorage.getItem(GUEST_ANALYSIS_STORAGE_KEY);
+            if (!raw) {
+                openMyAnalyses();
+                return;
+            }
+
+            let pending;
+            try {
+                pending = JSON.parse(raw);
+            } catch (_) {
+                clearPersistedGuestAnalysis();
+                openMyAnalyses();
+                return;
+            }
+
+            try {
+                const resp = await fetch('/api/analyses/save-guest', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(pending),
+                });
+                const result = await resp.json().catch(() => ({}));
+                if (!resp.ok) {
+                    console.error('Failed to save guest analysis after login:', result.error);
+                    alert(result.error || 'Could not save your analysis. Please try running Analyze again.');
+                    openMyAnalyses();
+                    return;
+                }
+
+                clearPersistedGuestAnalysis();
+                clearGuestAnalysisPreview();
+                openMyAnalyses({ preserveCharts: true, skipLoadAnalysesList: true });
+                renderChartsFromData(result.chart_data);
+                currentAnalyzedPapers = result.chart_data;
+                selectedAnalysisId = result.id;
+                updateExportCSVButtonState();
+                await loadAnalysesList(result.id);
+
+                const papersResp = await fetch('/api/analyses/' + result.id + '/papers').then(r => r.json());
+                currentAnalysisPapers = papersResp.papers || [];
+                renderQuantitativeStatsRow(result.chart_data, currentAnalysisPapers);
+            } catch (err) {
+                console.error('Guest analysis restore failed:', err);
+                alert('Could not restore your analysis. Please try running Analyze again.');
+                openMyAnalyses();
+            }
+        }
+
+        function showGuestAnalysisPreview(result) {
+            guestAnalysisPreview = result;
+            persistGuestAnalysisForLogin(result);
+            selectedAnalysisId = null;
+            updateExportCSVButtonState();
+            renderGuestAnalysisListRow(result);
+            renderChartsFromData(result.chart_data);
+            const panel = document.getElementById("my-analyses-panel");
+            if (panel) panel.classList.add("guest-analysis-preview-active");
+            const signInLink = document.getElementById('guest-analysis-sign-in-link');
+            if (signInLink) signInLink.href = getGuestSignInUrl();
+        }
+
+        function renderGuestAnalysisListRow(result) {
+            const tbody = document.getElementById("analyses-tbody");
+            if (!tbody || !result) return;
+            const safeName = (result.name || "Filtered Analysis Preview").replace(/</g, "&lt;");
+            tbody.innerHTML = '<tr class="selected" data-id="guest-preview">'
+                + '<td class="analysis-edit-cell"></td>'
+                + '<td class="analysis-name-cell" style="font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="' + safeName + '">' + safeName + '</td>'
+                + '<td class="analysis-count-cell">' + (result.paper_count || 0) + '</td>'
+                + '<td class="analysis-delete-cell"></td>'
+                + '</tr>';
+        }
+
         function loadAnalysesList(selectId) {
-            fetch("/api/analyses?_t=" + Date.now())
+            if (!IS_LOGGED_IN && guestAnalysisPreview) {
+                renderGuestAnalysisListRow(guestAnalysisPreview);
+                return Promise.resolve();
+            }
+
+            return fetch("/api/analyses?_t=" + Date.now())
                 .then(res => res.json())
                 .then(analyses => {
                     const tbody = document.getElementById("analyses-tbody");
                     if (analyses.length === 0) {
+                        if (!IS_LOGGED_IN && guestAnalysisPreview) {
+                            renderGuestAnalysisListRow(guestAnalysisPreview);
+                            return;
+                        }
                         tbody.innerHTML = '<tr><td colspan="4" style="text-align: center; color: var(--text-secondary); padding: 20px; font-size: 0.75rem;">No analyses yet. Click "Analyze Filtered Articles" to run one!</td></tr>';
                         selectedAnalysisId = null;
                         currentAnalysisPapers = [];
@@ -5911,6 +7267,7 @@
                         renderChartsFromData(null);
                         return;
                     }
+                    clearGuestAnalysisPreview();
                     if (selectId !== undefined) {
                         selectedAnalysisId = selectId;
                     }
@@ -5923,7 +7280,7 @@
                             + '<td class="analysis-edit-cell"><button type="button" class="btn-sm-icon btn-edit-analysis" title="Rename" onclick="event.stopPropagation();startRename(' + a.id + ', this.closest(\'tr\').querySelector(\'.analysis-name-cell\'))">&#9998;</button></td>'
                             + '<td class="analysis-name-cell" style="font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="' + safeName + '">' + safeName + '</td>'
                             + '<td class="analysis-count-cell">' + a.paper_count + '</td>'
-                            + '<td class="analysis-delete-cell"><button type="button" class="btn-sm-icon" title="Delete" onclick="event.stopPropagation(); deleteAnalysis(' + a.id + ', event)">&#128465;</button></td>'
+                            + '<td class="analysis-delete-cell"><button type="button" class="btn-sm-icon btn-delete-analysis" title="Delete" onclick="event.stopPropagation(); deleteAnalysis(' + a.id + ', event)">&#10005;</button></td>'
                             + '</tr>';
                     }).join('');
                 });
@@ -8720,6 +10077,11 @@
         function initializeUserWidget() {
             const container = document.getElementById("user-header-widget");
             if (!container) return;
+
+            const addPapersBtn = document.getElementById("btn-harvest-trigger");
+            if (addPapersBtn) {
+                addPapersBtn.style.display = (IS_LOGGED_IN && IS_ADMIN) ? "inline-flex" : "none";
+            }
             
             if (IS_LOGGED_IN) {
                 const name = CURRENT_USER.username || CURRENT_USER.email || "User";
@@ -8909,7 +10271,7 @@
         <div class="glass-panel" style="max-width: 400px; width: 90%; padding: 30px; text-align: center; border-radius: 20px; border: 1px solid rgba(255,255,255,0.08); background: rgba(15, 20, 32, 0.95); box-shadow: 0 20px 50px rgba(0,0,0,0.6);">
             <div style="font-size: 3rem; margin-bottom: 15px;">🔒</div>
             <h3 style="font-family: var(--font-display); font-size: 1.4rem; font-weight: 700; margin-bottom: 10px; color: var(--text-primary);">Authentication Required</h3>
-            <p style="font-size: 0.9rem; color: var(--text-muted); margin-bottom: 25px; line-height: 1.5;">You must be signed in to perform this action. Sign in to harvest papers, analyze datasets, edit display columns, or modify catalog records.</p>
+            <p style="font-size: 0.9rem; color: var(--text-muted); margin-bottom: 25px; line-height: 1.5;">You must be signed in to perform this action. Sign in to add papers, analyze datasets, edit display columns, or modify catalog records.</p>
             <div style="display: flex; gap: 10px; justify-content: center;">
                 <button type="button" class="btn btn-secondary" onclick="closeAuthModal()" style="padding: 10px 20px; border-radius: 10px; font-weight: 600; font-family: var(--font-sans);">Cancel</button>
                 <a href="/login" class="btn btn-primary" style="padding: 10px 20px; border-radius: 10px; text-decoration: none; display: inline-block; font-weight: 600; font-family: var(--font-sans); background: var(--primary); box-shadow: 0 4px 15px rgba(99, 102, 241, 0.3); color: #fff;">Sign In</a>

@@ -113,6 +113,54 @@ def matches_review_route(title: str, abstract: str) -> bool:
     return heuristics_engine.matches_review_route(title, abstract)
 
 
+def has_strong_review_signal(title: str, abstract: str) -> bool:
+    """True when title/abstract alone justify review over full-text primary-data overrides.
+
+    Systematic reviews and meta-analyses often quote enrolled-patient language from
+    included studies in the PDF body. Those cues must not flip Node 1 to original.
+    """
+    title_text = title or ""
+    abstract_text = abstract or ""
+    blob = f"{title_text} {abstract_text}"
+    if not blob.strip():
+        return False
+    # Chart/record reviews are primary observational work, not literature reviews.
+    if any(
+        re.search(pattern, blob, re.IGNORECASE)
+        for pattern in (
+            r"\bchart review\b",
+            r"\bretrospective review\b",
+            r"\brecord review\b",
+            r"\breview of (?:patient|medical) records\b",
+        )
+    ):
+        return False
+    if re.search(
+        r"Publication Type:\s*(?:Review|Meta-Analysis|Systematic Review)\b",
+        abstract_text,
+        re.IGNORECASE,
+    ):
+        return True
+    if re.search(
+        r"\b(?:systematic review|meta[- ]analysis|scoping review|narrative review|"
+        r"literature review|mini[- ]?review)\b",
+        title_text,
+        re.IGNORECASE,
+    ):
+        return True
+    subtype = _detect_review_subtype(blob)
+    if subtype in {"systematic review", "meta-analysis"}:
+        return True
+    return matches_review_route(title_text, abstract_text) and bool(
+        re.search(
+            r"\b(?:systematic review|meta[- ]analysis|scoping review|narrative review|"
+            r"literature review|overview paper|state of the art)\b",
+            blob,
+            re.IGNORECASE,
+        )
+    )
+
+
 def load_maude_tree(path: Path = MAUDE_TREE_FILE) -> Dict[str, Any]:
     """Loads compiled Maude decision tree JSON."""
     if path.exists():
@@ -132,11 +180,174 @@ def extract_methods_section(full_text: Optional[str]) -> str:
     """Returns Methods-like section text from full paper text when available."""
     if not full_text:
         return ""
-    match = re.search(
-        r"(?is)\b(methods|materials and methods|experimental procedures)\b(.*?)(?=\b(results|discussion|references)\b|$)",
-        full_text,
+    patterns = (
+        r"(?is)\b(materials?\s+and\s+methods?|methods?|methodology|experimental\s+procedures?|study\s+design|patients?\s+and\s+methods?)\b(.*?)(?=\b(results?|findings|discussion|conclusions?|references)\b|$)",
+        r"(?is)(?:^|\n)\s*(?:\d+[\.\)]\s*)?(materials?\s+and\s+methods?|methods?|methodology|experimental\s+(?:section|procedures|design|methods?)|study\s+design)\b[^\n]*\n(.*?)(?=\n\s*(?:\d+[\.\)]\s*)?(?:results?|findings|discussion|conclusions?|references)\b|\Z)",
     )
-    return match.group(0) if match else ""
+    for pattern in patterns:
+        match = re.search(pattern, full_text)
+        if match:
+            return match.group(0)
+    return ""
+
+
+def extract_results_section(full_text: Optional[str]) -> str:
+    """Returns Results-like section text from full paper text when available."""
+    if not full_text:
+        return ""
+    patterns = (
+        r"(?is)\b(results?|findings)\b(.*?)(?=\b(discussion|conclusions?|references)\b|$)",
+        r"(?is)(?:^|\n)\s*(?:\d+[\.\)]\s*)?(results?|findings)\b[^\n]*\n(.*?)(?=\n\s*(?:\d+[\.\)]\s*)?(?:discussion|conclusions?|references)\b|\Z)",
+    )
+    for pattern in patterns:
+        match = re.search(pattern, full_text)
+        if match:
+            return match.group(0)
+    return ""
+
+
+_NON_RESEARCH_TITLE_PATTERN = re.compile(
+    r"\b(commentary|editorial|correction to|^\s*correction\b|erratum|letter to the editor|perspective)\b",
+    re.IGNORECASE,
+)
+
+_METHODS_BODY_CUES = (
+    "participants were",
+    "subjects were",
+    "we conducted",
+    "inclusion criteria",
+    "exclusion criteria",
+    "statistical analysis",
+    "ethics approval",
+    "irb approval",
+    "study protocol",
+    "data collection",
+)
+
+_RESULTS_BODY_CUES = (
+    "we found",
+    "our results",
+    "significant difference",
+    "p <",
+    "p=",
+    "confidence interval",
+    "compared with",
+    "primary outcome",
+    "secondary outcome",
+)
+
+
+def _title_is_non_research(title: str) -> bool:
+    """True for titles that typically lack formal Methods/Results sections."""
+    return bool(_NON_RESEARCH_TITLE_PATTERN.search(title or ""))
+
+
+def _full_text_has_methods_cues(full_text: str) -> bool:
+    """Broader methods detection when explicit section headers are missing."""
+    if not full_text or len(full_text.strip()) < 5000:
+        return False
+    low = full_text.lower()
+    return any(cue in low for cue in _METHODS_BODY_CUES)
+
+
+def _full_text_has_results_cues(full_text: str) -> bool:
+    """Broader results detection when explicit section headers are missing."""
+    if not full_text or len(full_text.strip()) < 5000:
+        return False
+    low = full_text.lower()
+    return any(cue in low for cue in _RESULTS_BODY_CUES)
+
+
+def _abstract_has_isolated_methods_section(abstract: str) -> bool:
+    """True when the abstract contains a parseable Methods (or equivalent) header."""
+    if not abstract:
+        return False
+    return bool(
+        re.search(
+            r"\b(method|methods|methodology|materials and methods|patients and methods)\b\s*[:\.]",
+            abstract,
+            re.IGNORECASE,
+        )
+    )
+
+
+def _abstract_has_isolated_results_section(abstract: str) -> bool:
+    """True when the abstract contains a parseable Results (or equivalent) header."""
+    if not abstract:
+        return False
+    return bool(
+        re.search(
+            r"\b(results?|findings)\b\s*[:\.]",
+            abstract,
+            re.IGNORECASE,
+        )
+    )
+
+
+def paper_has_methods_section(
+    full_text: Optional[str],
+    title: str,
+    abstract: str,
+) -> bool:
+    """True when methods-like content is present in full text or structured abstract."""
+    if extract_methods_section(full_text).strip():
+        return True
+    if full_text and _full_text_has_methods_cues(full_text):
+        return True
+    return _abstract_has_isolated_methods_section(abstract)
+
+
+def paper_has_results_section(
+    full_text: Optional[str],
+    abstract: str,
+) -> bool:
+    """True when results-like content is present in full text or structured abstract."""
+    if extract_results_section(full_text).strip():
+        return True
+    if full_text and _full_text_has_results_cues(full_text):
+        return True
+    return _abstract_has_isolated_results_section(abstract)
+
+
+def paper_has_direct_pdf_link(full_text_link: Optional[str]) -> bool:
+    """True when the stored link points at a PDF asset."""
+    link = (full_text_link or "").strip().lower()
+    if not link:
+        return False
+    return link.endswith(".pdf") or ".pdf?" in link or "/pdf/" in link or "pdf=render" in link
+
+
+def paper_classified_from_pdf_body(classifier_version: Optional[str]) -> bool:
+    """True when classification used PDF/full-text body rather than abstract-only."""
+    version = (classifier_version or "").strip().lower()
+    if not version:
+        return False
+    return any(
+        token in version
+        for token in ("maude-pdf", "maude-ft", "llm-pdf", "llm-pdf-reclassify")
+    )
+
+
+def resolve_classification_methods_text(
+    full_text: Optional[str],
+    title: str,
+    abstract: str,
+) -> str:
+    """
+    Return the best available methods-like text for routing and extraction.
+
+    Priority: PDF/full-text Methods section, then structured abstract Methods
+    (via ``extractor.get_methods_text``), then abstract-focused blob when no
+    full text is available.
+    """
+    pdf_methods = extract_methods_section(full_text)
+    if pdf_methods and pdf_methods.strip():
+        return pdf_methods.strip()
+    if full_text:
+        return ""
+    if not abstract:
+        return ""
+    return extractor.get_methods_text(title, abstract).strip()
 
 
 def _cue_regex(cue: str, variant: bool = False) -> re.Pattern:
@@ -596,6 +807,8 @@ def should_extract_downstream_fields(
         return not abstract_only_extraction
     if full_text and full_text.strip():
         return True
+    if _abstract_has_isolated_methods_section(abstract):
+        return True
     return _abstract_allows_downstream_extraction(title, abstract)
 
 
@@ -748,6 +961,23 @@ def route_from_metadata(title: str, abstract: str) -> Optional[Tuple[str, Option
     return None
 
 
+def _review_route_from_subtype(
+    subtype: str,
+    *,
+    base_score: float,
+) -> Tuple[str, str, List[str], float]:
+    """Builds a Node 1B/3* review route tuple from a detected review subtype."""
+    nodes = ["node1b_reviews"]
+    score = base_score
+    if subtype == "systematic review":
+        return "review", subtype, nodes + ["node3a"], score + 0.15
+    if subtype == "meta-analysis":
+        return "review", subtype, nodes + ["node3b"], score + 0.15
+    if subtype in {"editorial", "comment", "letter to the editor", "perspectives paper"}:
+        return "review", subtype, nodes + ["node3c"], score + 0.1
+    return "review", subtype or "review", nodes, score + 0.1
+
+
 def route_publication_type(
     title: str,
     abstract: str,
@@ -760,9 +990,16 @@ def route_publication_type(
         return metadata_route
 
     title_abstract = f"{title} {abstract}"
+    score = 0.2
+
+    # Title/abstract review signals beat full-text clinical/animal overrides. PDF bodies of
+    # systematic reviews often contain "patients were enrolled" language from included studies.
+    if has_strong_review_signal(title, abstract):
+        subtype = _detect_review_subtype(title_abstract)
+        return _review_route_from_subtype(subtype, base_score=score + 0.35)
+
     text = routing_blob or title_abstract
     nodes: List[str] = []
-    score = 0.2
     case_patterns = get_case_routing_patterns()
     original_negative_patterns = get_original_negative_patterns()
 
@@ -783,16 +1020,8 @@ def route_publication_type(
         return "original research", None, nodes, score + 0.25
 
     if matches_review_route(title, abstract):
-        nodes.append("node1b_reviews")
-        score += 0.35
         subtype = _detect_review_subtype(title_abstract)
-        if subtype == "systematic review":
-            return "review", subtype, nodes + ["node3a"], score + 0.15
-        if subtype == "meta-analysis":
-            return "review", subtype, nodes + ["node3b"], score + 0.15
-        if subtype in {"editorial", "comment", "letter to the editor", "perspectives paper"}:
-            return "review", subtype, nodes + ["node3c"], score + 0.1
-        return "review", "review", nodes, score + 0.1
+        return _review_route_from_subtype(subtype, base_score=score + 0.35)
 
     for pattern in case_patterns:
         if re.search(pattern, title_abstract, re.IGNORECASE):
@@ -837,10 +1066,10 @@ def classify_paper(
     maude_cfg = load_maude_config()
     tree = load_maude_tree()
     routing_text = f"{title} {abstract}"
-    methods_text = extract_methods_section(full_text)
+    methods_text = resolve_classification_methods_text(full_text, title, abstract or "")
     if methods_text:
         routing_text = f"{routing_text} {methods_text[:12000]}"
-        if len(methods_text.strip()) < 1500 and full_text:
+        if full_text and len(methods_text.strip()) < 1500:
             routing_text = f"{routing_text} {full_text[:12000]}"
     elif full_text:
         routing_text = f"{routing_text} {full_text[:12000]}"

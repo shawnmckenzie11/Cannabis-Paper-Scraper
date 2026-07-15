@@ -28,12 +28,18 @@ class PatchNode2aStudyPopTests(unittest.TestCase):
         self.assertEqual(ex.extract_population_age(text), "both")
 
     def test_extract_population_age_adult(self):
-        """Default clinical population is mapped to adult, especially with minor exclusion."""
+        """Explicit adult age bands map to adult; silent clinical text stays unset."""
         text = "Patients aged 18 to 60 years were included in this trial."
         self.assertEqual(ex.extract_population_age(text), "adult")
 
-        text_exclusion = "Patients with chronic pain were studied. Individuals under 18 years were excluded."
+        text_exclusion = (
+            "Adult patients with chronic pain were studied. "
+            "Individuals under 18 years were excluded."
+        )
         self.assertEqual(ex.extract_population_age(text_exclusion), "adult")
+
+        text_silent = "Patients with chronic pain were studied in this cohort."
+        self.assertIsNone(ex.extract_population_age(text_silent))
 
     def test_extract_population_sex_male(self):
         """Exclusively male cohorts are mapped to male."""
@@ -46,20 +52,23 @@ class PatchNode2aStudyPopTests(unittest.TestCase):
         self.assertEqual(ex.extract_population_sex(text), "female")
 
     def test_extract_population_sex_both(self):
-        """Mixed sex cohorts are mapped to both."""
+        """Mixed sex cohorts are mapped to both; silent text stays unset."""
         text = "We enrolled both men and women in the study."
         self.assertEqual(ex.extract_population_sex(text), "both")
 
         text_nums = "The study population consisted of 15 males and 18 females."
         self.assertEqual(ex.extract_population_sex(text_nums), "both")
 
+        text_silent = "Patients with chronic pain were studied in this cohort."
+        self.assertIsNone(ex.extract_population_sex(text_silent))
+
     def test_extract_inclusion_criteria(self):
-        """Inclusion criteria is extracted from various trigger patterns."""
+        """Inclusion criteria is extracted from strong eligibility triggers only."""
         text = "Inclusion criteria were chronic neuropathic pain for more than 6 months."
         self.assertEqual(ex.extract_inclusion_criteria(text), "Chronic neuropathic pain for more than 6 months")
 
         text_passive = "Patients with severe treatment-resistant epilepsy were included in the trial."
-        self.assertEqual(ex.extract_inclusion_criteria(text_passive), "Severe treatment-resistant epilepsy")
+        self.assertIsNone(ex.extract_inclusion_criteria(text_passive))
 
     def test_extract_exclusion_criteria(self):
         """Exclusion criteria is extracted or defaults to None."""
@@ -67,12 +76,15 @@ class PatchNode2aStudyPopTests(unittest.TestCase):
         self.assertEqual(ex.extract_exclusion_criteria(text), "Pregnancy, history of psychosis, or cardiac disease")
 
         text_none = "No subjects were excluded during the trial."
-        self.assertEqual(ex.extract_exclusion_criteria(text_none), "None")
+        self.assertIsNone(ex.extract_exclusion_criteria(text_none))
 
     def test_all_heuristics_integration(self):
         """extract_all_heuristics correctly returns the study population fields for clinical papers."""
         title = "Efficacy of CBD on anxiety in adults"
-        abstract = "Inclusion criteria: generalized anxiety disorder. Exclusion criteria: pregnancy. We enrolled 40 men and women."
+        abstract = (
+            "Adult patients aged 18 to 65 years. Inclusion criteria: generalized anxiety disorder. "
+            "Exclusion criteria: pregnancy. We enrolled 40 men and women."
+        )
         
         # We override study_type to Clinical (RCT) to trigger the clinical flag
         result = ex.extract_all_heuristics(title, abstract, study_type_override=["Clinical (RCT)"])

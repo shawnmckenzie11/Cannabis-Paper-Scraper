@@ -18,31 +18,6 @@ except ImportError:
 
 DATABASE_FILE = os.getenv("DATABASE_PATH", "cannabis_papers.db")
 SCHEMA_FILE = "schema.sql"
-_DEBUG_LOG_PATH = os.path.join(
-    os.path.dirname(os.path.abspath(__file__)),
-    ".cursor",
-    "debug-65a066.log",
-)
-
-
-def _agent_debug_log(hypothesis_id: str, location: str, message: str, data: Optional[Dict[str, Any]] = None) -> None:
-    """Append one NDJSON debug line for agent diagnostics (session 65a066)."""
-    # #region agent log
-    try:
-        payload = {
-            "sessionId": "65a066",
-            "hypothesisId": hypothesis_id,
-            "location": location,
-            "message": message,
-            "data": data or {},
-            "timestamp": int(datetime.now().timestamp() * 1000),
-        }
-        os.makedirs(os.path.dirname(_DEBUG_LOG_PATH), exist_ok=True)
-        with open(_DEBUG_LOG_PATH, "a", encoding="utf-8") as handle:
-            handle.write(json.dumps(payload) + "\n")
-    except Exception:
-        pass
-    # #endregion
 
 _SQL_ORIGINAL_RESEARCH = (
     "("
@@ -553,12 +528,6 @@ class DatabaseManager:
                     unwrapped_conn.commit()
                     DatabaseManager._postgres_compat_ready = True
                     conn_check.close()
-                    _agent_debug_log(
-                        "C",
-                        "db_manager.__init__",
-                        "postgres_compat_functions_ready",
-                        {"compat_ready": True},
-                    )
                 conn_check = self.get_connection()
                 unwrapped_conn = conn_check.conn
                 cursor = unwrapped_conn.cursor()
@@ -567,12 +536,6 @@ class DatabaseManager:
                 )
                 row = cursor.fetchone()
                 db_exists = list(row.values())[0] if isinstance(row, dict) else row[0]
-                _agent_debug_log(
-                    "A",
-                    "db_manager.__init__",
-                    "postgres_papers_table_probe",
-                    {"db_exists": bool(db_exists)},
-                )
 
                 if db_exists:
                     pass  # FTS GIN index: run via init_db or manual migration only — not on worker boot.
@@ -580,12 +543,6 @@ class DatabaseManager:
                 conn_check.close()
             except Exception as e:
                 logger.error(f"Postgres connection check/compat functions failed: {e}")
-                _agent_debug_log(
-                    "B",
-                    "db_manager.__init__",
-                    "postgres_check_failed_assume_exists",
-                    {"error": str(e), "skip_init_db": True},
-                )
                 db_exists = True
         else:
             if os.path.exists(self.db_path) and os.path.getsize(self.db_path) > 0:
@@ -600,14 +557,7 @@ class DatabaseManager:
                     pass
 
         if not db_exists:
-            if self.is_postgres:
-                _agent_debug_log(
-                    "B",
-                    "db_manager.__init__",
-                    "postgres_missing_papers_table_no_autoinit",
-                    {"init_db_skipped": True},
-                )
-            else:
+            if not self.is_postgres:
                 self.init_db()
             DatabaseManager._initialized = True
         elif not DatabaseManager._initialized:
@@ -1811,12 +1761,13 @@ class DatabaseManager:
         finally:
             conn.close()
 
-    def insert_paper(self, paper: Dict[str, Any]) -> int:
+    def insert_paper(self, paper: Dict[str, Any], *, force_id: Optional[int] = None) -> int:
         """Inserts a paper into the database. If conflicts on DOI/PMID/Semantic Scholar ID, handles updates gracefully.
-        
+
         Args:
             paper: Dictionary containing all field values to store.
-            
+            force_id: When set, always update this paper id (used by PDF upload review).
+
         Returns:
             The row ID of the inserted or updated paper.
         """
@@ -1867,10 +1818,10 @@ class DatabaseManager:
                 paper_copy.get("abstract") or ""
             )
 
-        # Check if the paper already exists in DB to prevent unique constraint failures and instead update
-        existing_id = None
-        
-        if paper_copy.get("pmid"):
+        # Prefer an explicit target id (PDF review confirm) over identifier lookup.
+        existing_id = int(force_id) if force_id is not None else None
+
+        if not existing_id and paper_copy.get("pmid"):
             cursor.execute("SELECT id FROM papers WHERE pmid = ?", (paper_copy["pmid"],))
             row = cursor.fetchone()
             if row:
@@ -1884,6 +1835,15 @@ class DatabaseManager:
                 
         if not existing_id and paper_copy.get("semantic_scholar_id"):
             cursor.execute("SELECT id FROM papers WHERE semantic_scholar_id = ?", (paper_copy["semantic_scholar_id"],))
+            row = cursor.fetchone()
+            if row:
+                existing_id = row["id"]
+
+        if not existing_id and paper_copy.get("title"):
+            cursor.execute(
+                "SELECT id FROM papers WHERE LOWER(TRIM(title)) = LOWER(TRIM(?)) LIMIT 1",
+                (paper_copy["title"],),
+            )
             row = cursor.fetchone()
             if row:
                 existing_id = row["id"]
@@ -1924,6 +1884,183 @@ class DatabaseManager:
         except Exception as e:
             conn.rollback()
             raise RuntimeError(f"Database error during insert/update: {e}")
+        finally:
+            conn.close()
+
+    def find_paper_id_by_title(self, title: str) -> Optional[int]:
+        """Return the paper id for an exact title match (case-insensitive), if any."""
+        normalized = (title or "").strip()
+        if not normalized:
+            return None
+        conn = self.get_connection()
+        cursor = conn.cursor()
+        try:
+            cursor.execute(
+                "SELECT id FROM papers WHERE LOWER(TRIM(title)) = LOWER(TRIM(?)) LIMIT 1",
+                (normalized,),
+            )
+            row = cursor.fetchone()
+            return int(row["id"]) if row else None
+        finally:
+            conn.close()
+
+    def find_fuzzy_paper_by_title(
+        self,
+        title: str,
+        *,
+        min_ratio: float = 0.82,
+    ) -> Tuple[Optional[int], float]:
+        """Return (paper_id, similarity) for the best title match at or above min_ratio."""
+        matches = self.find_top_title_matches(title, limit=1, min_ratio=min_ratio)
+        if not matches:
+            # Still report best ratio below threshold when useful for diagnostics.
+            soft = self.find_top_title_matches(title, limit=1, min_ratio=0.0)
+            if soft:
+                return None, float(soft[0]["similarity"])
+            return None, 0.0
+        return int(matches[0]["id"]), float(matches[0]["similarity"])
+
+    def find_top_title_matches(
+        self,
+        title: str,
+        *,
+        limit: int = 5,
+        min_ratio: float = 0.35,
+    ) -> List[Dict[str, Any]]:
+        """Return up to `limit` candidate papers ranked by title similarity.
+
+        Candidate retrieval uses punctuation-tolerant token AND patterns so
+        titles like "COVID-19" still match queries normalized to "covid 19",
+        then scores and collapses near-duplicate rows.
+        """
+        import pdf_upload_merge
+
+        normalized = (title or "").strip()
+        if not normalized:
+            return []
+
+        cleaned = pdf_upload_merge.clean_title_for_matching(normalized)
+        query_for_match = cleaned or normalized
+        exact_id = self.find_paper_id_by_title(normalized)
+        if exact_id is None and cleaned and cleaned != normalized:
+            exact_id = self.find_paper_id_by_title(cleaned)
+
+        tokens = pdf_upload_merge.significant_title_tokens(query_for_match, limit=8)
+        if not tokens:
+            seed = pdf_upload_merge.normalize_title(query_for_match)
+            tokens = [seed.split()[0]] if seed.split() else []
+
+        select_cols = (
+            "id, title, year, journal, publication_type, pmid, doi, full_text_link"
+        )
+        rows_by_id: Dict[int, Dict[str, Any]] = {}
+
+        conn = self.get_connection()
+        cursor = conn.cursor()
+        try:
+            if exact_id is not None:
+                cursor.execute(
+                    f"SELECT {select_cols} FROM papers WHERE id = ?",
+                    (exact_id,),
+                )
+                row = cursor.fetchone()
+                if row:
+                    rows_by_id[int(row["id"])] = dict(row)
+
+            # Strongest retrieval: require several content tokens in order-insensitive AND.
+            # Using %token% between tokens ignores commas/hyphens in stored titles.
+            and_tokens = tokens[:6]
+            if len(and_tokens) >= 3:
+                clauses = " AND ".join(["LOWER(title) LIKE ?" for _ in and_tokens])
+                cursor.execute(
+                    f"SELECT {select_cols} FROM papers WHERE {clauses} LIMIT 80",
+                    tuple(f"%{tok[:28]}%" for tok in and_tokens),
+                )
+                for row in cursor.fetchall():
+                    rows_by_id[int(row["id"])] = dict(row)
+
+            # Mid-strength: punctuation-tolerant full-token phrase pattern.
+            pattern = pdf_upload_merge.title_token_like_pattern(query_for_match, max_tokens=8)
+            if pattern and pattern != "%%":
+                cursor.execute(
+                    f"SELECT {select_cols} FROM papers WHERE LOWER(title) LIKE ? LIMIT 80",
+                    (pattern,),
+                )
+                for row in cursor.fetchall():
+                    rows_by_id[int(row["id"])] = dict(row)
+
+            # Shorter leading phrase (first 5–6 normalized tokens) for long titles.
+            phrase_tokens = pdf_upload_merge.normalize_title(query_for_match).split()[:6]
+            if len(phrase_tokens) >= 4:
+                short_pattern = "%" + "%".join(phrase_tokens) + "%"
+                cursor.execute(
+                    f"SELECT {select_cols} FROM papers WHERE LOWER(title) LIKE ? LIMIT 80",
+                    (short_pattern,),
+                )
+                for row in cursor.fetchall():
+                    rows_by_id[int(row["id"])] = dict(row)
+
+            # Fallback: rarest/longest individual tokens (avoid flooding with "cannabis").
+            for token in and_tokens[:4]:
+                cursor.execute(
+                    f"SELECT {select_cols} FROM papers WHERE LOWER(title) LIKE ? LIMIT 120",
+                    (f"%{token[:28]}%",),
+                )
+                for row in cursor.fetchall():
+                    rows_by_id[int(row["id"])] = dict(row)
+        finally:
+            conn.close()
+
+        scored: List[Dict[str, Any]] = []
+        for row in rows_by_id.values():
+            ratio = pdf_upload_merge.title_similarity(normalized, row.get("title") or "")
+            if ratio < min_ratio and (exact_id is None or int(row["id"]) != exact_id):
+                continue
+            scored.append(
+                {
+                    "id": int(row["id"]),
+                    "title": row.get("title") or "",
+                    "year": row.get("year"),
+                    "journal": row.get("journal") or "",
+                    "publication_type": row.get("publication_type") or "",
+                    "pmid": row.get("pmid"),
+                    "doi": row.get("doi"),
+                    "full_text_link": row.get("full_text_link") or "",
+                    "similarity": round(ratio, 3),
+                }
+            )
+
+        return pdf_upload_merge.collapse_title_match_rows(
+            scored,
+            query_title=normalized,
+            limit=limit,
+        )
+
+    def search_papers_minimal_for_section_stats(
+        self,
+        filters: Dict[str, Any],
+    ) -> List[Dict[str, Any]]:
+        """Return id/title/abstract rows for all papers matching filters (no pagination)."""
+        conn = self.get_connection()
+        cursor = conn.cursor()
+        query_val = filters.get("query")
+        if query_val:
+            select_sql = (
+                "SELECT papers.id, papers.title, papers.abstract, papers.full_text_link, papers.classifier_version "
+                "FROM papers JOIN papers_fts ON papers.id = papers_fts.rowid"
+            )
+        else:
+            select_sql = (
+                "SELECT papers.id, papers.title, papers.abstract, papers.full_text_link, papers.classifier_version "
+                "FROM papers"
+            )
+        where_clauses, params = self._build_filter_clauses(filters)
+        sql = select_sql
+        if where_clauses:
+            sql += " WHERE " + " AND ".join(where_clauses)
+        try:
+            cursor.execute(sql, params)
+            return [dict(row) for row in cursor.fetchall()]
         finally:
             conn.close()
 

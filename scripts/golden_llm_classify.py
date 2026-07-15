@@ -69,15 +69,30 @@ def _parse_locked_fields(raw: Any) -> List[str]:
     return []
 
 
-def _resolve_text_for_paper(paper: Dict[str, Any], cache_dir: Optional[Path]) -> tuple[str, str]:
-    """Returns (full_text_or_none, text_source label) for classification."""
+def _resolve_text_for_paper(paper: Dict[str, Any], cache_dir: Optional[Path]) -> tuple:
+    """Returns (full_text_or_none, text_source label) for classification.
+
+    Prefers ``scratch/paper_cache`` (or ``PAPER_TEXT_CACHE_DIR``). Does not HTTP-fetch
+    during LLM classify — set ``GOLDEN_LLM_FETCH_PDF=1`` to allow one-time cache fill.
+    """
+    import os
+
     paper_id = paper.get("id")
+    allow_fetch = (os.getenv("GOLDEN_LLM_FETCH_PDF") or "").strip().lower() in {
+        "1", "true", "yes", "on",
+    }
     if paper_id is not None:
-        cached_text, source = paper_text_cache.lookup_cached_text_for_paper(int(paper_id))
-        if cached_text:
-            return cached_text, "pdf_cache"
-    title = str(paper.get("title") or "").strip()
-    abstract = str(paper.get("abstract") or "").strip()
+        text, source = paper_text_cache.resolve_paper_text(
+            paper_id=int(paper_id),
+            full_text_link=paper.get("full_text_link"),
+            pmid=paper.get("pmid"),
+            doi=paper.get("doi"),
+            cache_dir=cache_dir,
+            allow_network_fetch=allow_fetch,
+        )
+        if text:
+            label = "pdf_cache" if source in {"pdf", "fulltext"} else (source or "pdf_cache")
+            return text, label
     return None, "title_abstract"
 
 
@@ -108,20 +123,30 @@ def classify_papers_for_endpoint(
 
     db = DatabaseManager(db_path=sqlite_path) if sqlite_path else DatabaseManager()
     conn = db.get_connection()
-    conn.row_factory = sqlite3.Row
+    if not db.is_postgres:
+        conn.row_factory = sqlite3.Row
     cursor = conn.cursor()
+    ph = "%s" if db.is_postgres else "?"
+
+    def _row_to_dict(row: Any) -> Dict[str, Any]:
+        """Normalize a DB row to a plain dict for SQLite and Postgres drivers."""
+        if row is None:
+            return {}
+        if hasattr(row, "keys"):
+            return dict(row)
+        return {}
 
     results: List[Dict[str, Any]] = []
     updated_ids: List[int] = []
 
     try:
         for paper_id in paper_ids:
-            cursor.execute("SELECT * FROM papers WHERE id = ?", (int(paper_id),))
+            cursor.execute(f"SELECT * FROM papers WHERE id = {ph}", (int(paper_id),))
             row = cursor.fetchone()
             if not row:
-                logger.warning("Paper id %s not found in SQLite; skipping.", paper_id)
+                logger.warning("Paper id %s not found in database; skipping.", paper_id)
                 continue
-            paper = dict(row)
+            paper = _row_to_dict(row)
             title = paper.get("title") or ""
             abstract = paper.get("abstract") or ""
             locked_fields = _parse_locked_fields(paper.get("expert_locked_fields"))
@@ -150,27 +175,27 @@ def classify_papers_for_endpoint(
             set_clauses = []
             params: List[Any] = []
             for key, value in update_data.items():
-                set_clauses.append(f"{key} = ?")
+                set_clauses.append(f"{key} = {ph}")
                 if isinstance(value, (list, dict)):
                     params.append(json.dumps(value))
                 else:
                     params.append(value)
 
-            set_clauses.append("classifier_version = ?")
+            set_clauses.append(f"classifier_version = {ph}")
             params.append(classifier_version)
-            set_clauses.append("classification_timestamp = ?")
+            set_clauses.append(f"classification_timestamp = {ph}")
             params.append(datetime.now().isoformat())
-            set_clauses.append("classification_confidence = ?")
+            set_clauses.append(f"classification_confidence = {ph}")
             params.append(confidence)
             params.append(int(paper_id))
 
             cursor.execute(
-                f"UPDATE papers SET {', '.join(set_clauses)} WHERE id = ?",
+                f"UPDATE papers SET {', '.join(set_clauses)} WHERE id = {ph}",
                 params,
             )
 
-            cursor.execute("SELECT * FROM papers WHERE id = ?", (int(paper_id),))
-            updated_row = dict(cursor.fetchone())
+            cursor.execute(f"SELECT * FROM papers WHERE id = {ph}", (int(paper_id),))
+            updated_row = _row_to_dict(cursor.fetchone())
             char_count = sum(
                 1
                 for field in scope_fields
@@ -188,7 +213,9 @@ def classify_papers_for_endpoint(
             result = {
                 "paper_id": int(paper_id),
                 "pmid": updated_row.get("pmid"),
+                "doi": updated_row.get("doi"),
                 "title": updated_row.get("title"),
+                "abstract": updated_row.get("abstract") or abstract,
                 "endpoint_id": endpoint_id,
                 "scope_subnode": endpoint.scope_subnode,
                 "scope_key": endpoint.scope_key,
@@ -204,7 +231,10 @@ def classify_papers_for_endpoint(
                     if field in ground_truth
                 },
                 "ground_truth": ground_truth,
+                "full_text_link": updated_row.get("full_text_link") or paper.get("full_text_link"),
             }
+            if full_text:
+                result["text"] = full_text
             results.append(result)
             updated_ids.append(int(paper_id))
 

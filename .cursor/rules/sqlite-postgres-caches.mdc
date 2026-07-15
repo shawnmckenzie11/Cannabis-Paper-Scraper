@@ -1,0 +1,37 @@
+---
+description: Local SQLite vs Fly SQLite vs Postgres; PDF/text cache reuse; golden observational.inhaled gate
+alwaysApply: true
+---
+
+# Databases + text caches (golden / RL)
+
+## Three stores (do not conflate)
+
+| Store | Path / env | Role |
+|-------|------------|------|
+| **Local SQLite** | `cannabis_papers.db` or `--sqlite-path` | Dev + golden cycle after `DATABASE_URL` is popped |
+| **Fly volume SQLite** | `/data/cannabis_papers.db` | Populated production-like SQLite on the app VM |
+| **Postgres** | `DATABASE_URL` | Live Fly Postgres; pull/push only |
+
+Empty `/app/cannabis_papers.db` is **not** the corpus. Always pass a populated `--sqlite-path` (local `cannabis_papers.db` after pull, or `/data/cannabis_papers.db` on Fly).
+
+## Why golden pops `DATABASE_URL`
+
+`scripts/golden_endpoint_cycle.py` pops `DATABASE_URL` so LLM / promote / guard / reingest hit **SQLite** (`DATABASE_PATH`), not Postgres. Pull/push briefly restore `DATABASE_URL`. Never assume default empty SQLite has candidate papers — pull first or point `--sqlite-path` at a populated DB.
+
+## PDF / text cache reuse (avoid re-download)
+
+| Cache | Location |
+|-------|----------|
+| Paper text/PDF | `scratch/paper_cache/` (`text/`, `pdfs/`, `meta/`) — override with `PAPER_TEXT_CACHE_DIR` |
+| Golden candidate blobs | `scratch/golden_dataset/tree_path_golden.json` |
+| Confirmed text | `scratch/golden_dataset/golden_confirmed.json` |
+
+`paper_text_cache.resolve_paper_text` prefers disk cache over HTTP. Force reuse-only: `SKIP_PDF_FETCH=1`. Optional LLM cache fill: `GOLDEN_LLM_FETCH_PDF=1`.
+
+## Golden gate
+
+- Endpoint-scoped guard only (`--endpoint-id`).
+- Limited reingest (`GOLDEN_FULL_SUBNODE_REINGEST=0`), not full corpus.
+- `node2a.clinical_observational.inhaled` cleared ≥90% (July 2026, build `20260711-node2a-golden-obs-inhaled-v2`) — **Loop A perpetual is allowed**.
+- Golden rows remain **gated** (one at a time, no `AUTO_ADVANCE`); see `.cursor/rules/golden-endpoint-policy.mdc`.

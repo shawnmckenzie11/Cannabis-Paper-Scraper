@@ -4,7 +4,9 @@ import json
 import re
 import threading
 import logging
-from datetime import datetime, date
+import uuid
+from datetime import date, datetime
+from typing import Any, Dict, List, Optional, Tuple
 from pathlib import Path
 from functools import wraps
 from flask import Flask, render_template, request, jsonify, session, redirect, url_for, send_file
@@ -52,6 +54,22 @@ def mvp_gate(f):
     @wraps(f)
     def decorated_function(*args, **kwargs):
         return jsonify({"error": "This feature is locked in the MVP release."}), 403
+    return decorated_function
+
+
+def login_required(f):
+    """Require a signed-in session for the wrapped route."""
+
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if not session.get("logged_in"):
+            return jsonify({
+                "error": "Authentication required.",
+                "login_required": True,
+                "login_url": url_for("login", next=request.path),
+            }), 401
+        return f(*args, **kwargs)
+
     return decorated_function
 
 ADMIN_EMAILS = {"shawnmckenzie11.sm@gmail.com", "solutions@mckenzian.com", "nadiadalim@gmail.com"}
@@ -112,6 +130,55 @@ harvest_state = {
     "error": None,         # Error message
     "start_time": None
 }
+
+_pending_pdf_uploads: Dict[str, Dict[str, Any]] = {}
+_pending_pdf_lock = threading.Lock()
+
+
+def _store_pending_pdf_upload(
+    pdf_bytes: bytes,
+    filename: str,
+    *,
+    proposed_paper: Optional[Dict[str, Any]] = None,
+    existing_row: Optional[Dict[str, Any]] = None,
+    is_new_paper: bool = True,
+    paper_id: Optional[int] = None,
+) -> str:
+    """Store uploaded PDF bytes and review context temporarily for user confirmation."""
+    token = str(uuid.uuid4())
+    with _pending_pdf_lock:
+        _pending_pdf_uploads[token] = {
+            "pdf_bytes": pdf_bytes,
+            "filename": filename,
+            "proposed_paper": proposed_paper or {},
+            "existing_row": existing_row or {},
+            "is_new_paper": bool(is_new_paper),
+            "paper_id": paper_id,
+        }
+    return token
+
+
+def _get_pending_pdf_upload(token: str) -> Optional[Dict[str, Any]]:
+    """Retrieve a pending PDF upload without removing it."""
+    with _pending_pdf_lock:
+        pending = _pending_pdf_uploads.get(token)
+        return dict(pending) if pending else None
+
+
+def _update_pending_pdf_upload(token: str, **updates: Any) -> Optional[Dict[str, Any]]:
+    """Update fields on an existing pending PDF upload."""
+    with _pending_pdf_lock:
+        pending = _pending_pdf_uploads.get(token)
+        if not pending:
+            return None
+        pending.update(updates)
+        return dict(pending)
+
+
+def _pop_pending_pdf_upload(token: str) -> Optional[Dict[str, Any]]:
+    """Retrieve and remove a pending PDF upload by token."""
+    with _pending_pdf_lock:
+        return _pending_pdf_uploads.pop(token, None)
 
 def daily_harvest_scheduler():
     """Background scheduler for one-shot jobs and the daily harvest pipeline."""
@@ -657,12 +724,9 @@ def api_tab_counts():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
-@app.route("/api/search", methods=["GET"])
-def api_search():
-    """API endpoint to query, dynamic filter, and sort papers."""
-    db = DatabaseManager()
-    
-    # Retrieve dynamic filters from HTTP query args
+
+def _build_dashboard_filters_from_request():
+    """Parse dashboard search filter query args into a db_manager filter dict."""
     query = request.args.get("query")
     year_min = request.args.get("year_min")
     year_max = request.args.get("year_max")
@@ -713,21 +777,7 @@ def api_search():
     cbd_max = request.args.get("cbd_max")
     has_pdf = request.args.get("has_pdf")
     has_full_text = request.args.get("has_full_text")
-    
-    page = request.args.get("page", 1)
-    limit = request.args.get("limit", 50)
-    skip_count = request.args.get("skip_count", "").lower() in ("1", "true", "yes")
-    known_total = request.args.get("known_total")
-    try:
-        page = int(page)
-    except (ValueError, TypeError):
-        page = 1
-    try:
-        limit = int(limit)
-    except (ValueError, TypeError):
-        limit = 50
 
-    # Clean filters
     clean_filters = {}
     if query:
         clean_filters["query"] = query
@@ -800,11 +850,47 @@ def api_search():
         clean_filters["has_pdf"] = True
     if has_full_text and has_full_text.lower() in ("true", "1", "yes"):
         clean_filters["has_full_text"] = True
-        
+
     clean_filters["cannabis_logic"] = cannabis_logic
     clean_filters["exposure_logic"] = method_logic
     clean_filters["outcome_logic"] = outcome_logic
     clean_filters["study_logic"] = study_logic
+    return clean_filters
+
+
+@app.route("/api/search/section-stats", methods=["GET"])
+def api_search_section_stats():
+    """Return methods/results section coverage for the current filtered dataset."""
+    import section_stats
+
+    db = DatabaseManager()
+    try:
+        papers = db.search_papers_minimal_for_section_stats(_build_dashboard_filters_from_request())
+        stats = section_stats.compute_section_stats(papers)
+        return jsonify(stats)
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route("/api/search", methods=["GET"])
+def api_search():
+    """API endpoint to query, dynamic filter, and sort papers."""
+    db = DatabaseManager()
+    
+    page = request.args.get("page", 1)
+    limit = request.args.get("limit", 50)
+    skip_count = request.args.get("skip_count", "").lower() in ("1", "true", "yes")
+    known_total = request.args.get("known_total")
+    try:
+        page = int(page)
+    except (ValueError, TypeError):
+        page = 1
+    try:
+        limit = int(limit)
+    except (ValueError, TypeError):
+        limit = 50
+
+    clean_filters = _build_dashboard_filters_from_request()
         
     import time
     search_started = time.perf_counter()
@@ -832,7 +918,7 @@ def api_search():
                 paper["newly_harvested"] = paper_harvested >= last_harvest_ts
             else:
                 paper["newly_harvested"] = False
-                
+
         return jsonify({
             "papers": results,
             "total_count": total_count,
@@ -1248,7 +1334,7 @@ def api_reclassify_llm(paper_id):
         return jsonify({"error": str(e)}), 500
 
 @app.route("/api/harvest", methods=["POST"])
-@mvp_gate
+@admin_required
 def api_harvest():
     """Triggers an asynchronous background search & ingest run."""
     global harvest_state
@@ -1262,6 +1348,8 @@ def api_harvest():
     query = data.get("query")
     update = bool(data.get("update", True))
     classify = bool(data.get("classify", False))
+    # Manual harvest always uses internal Maude/heuristic classification.
+    classify = False
     force = bool(data.get("force", False))
     max_results = data.get("max_results")
     
@@ -1296,11 +1384,136 @@ def api_harvest():
     return jsonify({"message": "Background harvest started successfully.", "status": "success"})
 
 @app.route("/api/harvest/status", methods=["GET"])
-@mvp_gate
+@admin_required
 def api_harvest_status():
     """Returns the real-time status and logs of the background harvest worker."""
     with harvest_lock:
         return jsonify(harvest_state)
+
+@app.route("/api/papers/upload-pdf", methods=["POST"])
+@admin_required
+def api_upload_pdf():
+    """Ingest or update a paper from an uploaded PDF using the Maude/heuristic pipeline."""
+    merge_token = (request.form.get("merge_token") or "").strip()
+    match_choice = (request.form.get("match_choice") or "").strip()
+    merge_selections = None
+    custom_values = None
+    force_paper_id = None
+    proposed_paper = None
+    review_existing_row = None
+    is_new_paper = None
+    filename = "upload.pdf"
+    pdf_bytes: bytes
+
+    if merge_token and match_choice:
+        pending = _get_pending_pdf_upload(merge_token)
+        if not pending:
+            return jsonify({"error": "Upload session expired. Please re-upload the PDF."}), 400
+        proposed_paper = pending.get("proposed_paper") or {}
+        force_new = match_choice.lower() in {"new", "none", "create"}
+        selected_id = None
+        if not force_new:
+            try:
+                selected_id = int(match_choice)
+            except (TypeError, ValueError):
+                return jsonify({"error": "Invalid match_choice. Use a paper id or 'new'."}), 400
+        try:
+            result = harvest.build_pdf_upload_review(
+                proposed_paper,
+                selected_paper_id=selected_id,
+                force_new=force_new,
+            )
+        except ValueError as exc:
+            return jsonify({"error": str(exc)}), 400
+
+        _update_pending_pdf_upload(
+            merge_token,
+            existing_row=result.get("existing_row") or {},
+            is_new_paper=result.get("is_new_paper", True),
+            paper_id=result.get("paper_id"),
+        )
+        payload = dict(result)
+        payload["merge_token"] = merge_token
+        payload.pop("proposed_paper", None)
+        payload.pop("existing_row", None)
+        return jsonify(payload)
+
+    if merge_token:
+        pending = _pop_pending_pdf_upload(merge_token)
+        if not pending:
+            return jsonify({"error": "Upload session expired. Please re-upload the PDF."}), 400
+        pdf_bytes = pending["pdf_bytes"]
+        filename = pending.get("filename") or filename
+        proposed_paper = pending.get("proposed_paper") or {}
+        review_existing_row = pending.get("existing_row") or {}
+        is_new_paper = pending.get("is_new_paper", True)
+        force_paper_id = pending.get("paper_id")
+        try:
+            merge_selections = json.loads(request.form.get("merge_selections") or "{}")
+        except json.JSONDecodeError:
+            return jsonify({"error": "Invalid merge selections payload."}), 400
+        try:
+            custom_values = json.loads(request.form.get("custom_values") or "{}")
+        except json.JSONDecodeError:
+            return jsonify({"error": "Invalid custom values payload."}), 400
+        paper_id_raw = request.form.get("paper_id")
+        if paper_id_raw:
+            try:
+                force_paper_id = int(paper_id_raw)
+            except (TypeError, ValueError):
+                return jsonify({"error": "Invalid paper_id for merge."}), 400
+    else:
+        upload = request.files.get("pdf") or request.files.get("file")
+        if not upload or not upload.filename:
+            return jsonify({"error": "A PDF file is required (field name: pdf)."}), 400
+
+        filename = upload.filename or "upload.pdf"
+        if not filename.lower().endswith(".pdf"):
+            return jsonify({"error": "Only PDF uploads are supported."}), 400
+
+        pdf_bytes = upload.read()
+
+    max_bytes = 25 * 1024 * 1024
+    if len(pdf_bytes) > max_bytes:
+        return jsonify({"error": "PDF exceeds the 25 MB upload limit."}), 400
+    if not pdf_bytes:
+        return jsonify({"error": "Uploaded PDF is empty."}), 400
+
+    try:
+        result = harvest.ingest_uploaded_pdf(
+            pdf_bytes,
+            filename=filename,
+            merge_selections=merge_selections,
+            custom_values=custom_values,
+            force_paper_id=force_paper_id,
+            proposed_paper=proposed_paper,
+            review_existing_row=review_existing_row,
+            is_new_paper=is_new_paper,
+        )
+        if result.get("status") in {"match_selection_required", "review_required"}:
+            result["merge_token"] = _store_pending_pdf_upload(
+                pdf_bytes,
+                filename,
+                proposed_paper=result.get("proposed_paper"),
+                existing_row=result.get("existing_row"),
+                is_new_paper=result.get("is_new_paper", True),
+                paper_id=result.get("paper_id"),
+            )
+            payload = dict(result)
+            payload.pop("proposed_paper", None)
+            payload.pop("existing_row", None)
+            return jsonify(payload)
+
+        return jsonify({
+            "status": "success",
+            "message": f"Paper {result['action']} successfully.",
+            **result,
+        })
+    except ValueError as exc:
+        return jsonify({"error": str(exc)}), 400
+    except Exception as exc:
+        app.logger.error("PDF upload failed: %s", exc)
+        return jsonify({"error": str(exc)}), 500
 
 @app.route("/api/scheduler/status", methods=["GET"])
 def api_scheduler_status():
@@ -1868,6 +2081,45 @@ def api_set_dashboard_preferences():
     if not db.set_user_dashboard_preferences(user["id"], merged):
         return jsonify({"error": "Failed to save preferences"}), 500
     return jsonify({"success": True, "visible_columns": visible_columns})
+
+
+@app.route("/api/analyses/save-guest", methods=["POST"])
+def api_save_guest_analysis():
+    """Persist a guest preview analysis to the logged-in user's account."""
+    user = _get_session_user()
+    if not user:
+        return jsonify({"error": "Unauthorized", "login_required": True}), 401
+
+    data = request.get_json() or {}
+    chart_data = data.get("chart_data")
+    if not isinstance(chart_data, dict):
+        return jsonify({"error": "Missing or invalid chart_data"}), 400
+
+    filter_settings = data.get("filter_settings") or {}
+    if not isinstance(filter_settings, dict):
+        return jsonify({"error": "Invalid filter_settings"}), 400
+
+    name = (data.get("name") or "").strip() or f"Analysis {datetime.now().strftime('%b %d %Y %H:%M')}"
+    paper_count = int(data.get("paper_count") or chart_data.get("paper_count") or 0)
+
+    db = DatabaseManager()
+    db.init_analyses_table()
+    analysis_id = db.create_analysis(
+        name=name,
+        filter_settings=json.dumps(filter_settings, default=str),
+        paper_count=paper_count,
+        chart_data=json.dumps(chart_data, default=str),
+        user_id=user["id"],
+    )
+
+    return jsonify({
+        "id": analysis_id,
+        "name": name,
+        "paper_count": paper_count,
+        "filter_settings": filter_settings,
+        "chart_data": chart_data,
+        "created_at": datetime.now().isoformat(),
+    })
 
 
 @app.route("/api/analyses", methods=["GET"])

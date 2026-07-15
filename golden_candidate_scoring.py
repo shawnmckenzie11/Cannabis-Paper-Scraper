@@ -7,7 +7,10 @@ from typing import Any, Dict, List, Tuple
 import calibration_metrics
 import golden_dataset_paths
 
-CLINICAL_REQUIRED_GATE_FIELDS = ("population_age", "population_sex")
+CLINICAL_REQUIRED_GATE_FIELDS: Tuple[str, ...] = ()
+# population_age / population_sex used to be hard gates, but Maude now leaves them null
+# unless the abstract/PDF states them explicitly. Requiring them emptied clinical golden
+# pools after the 20260710 demographics patch. Keep them as scored ranking features only.
 
 THC_PCT_FIELDS = ("thc_pct",)
 CBD_PCT_FIELDS = ("cbd_pct",)

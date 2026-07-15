@@ -14,11 +14,28 @@ When the user asks to run a batch, patch, handoff, or RL cycle on a sub-node, ex
 3. **Implement** — `extractor.py`, `maude_classifier.py`, `maude_cues.json` (+ `test_patch_*.py`)
 4. **Bump** — `calibration_build.py` → new `MAUDE_CLASSIFIER_BUILD_ID`
 5. **Deploy** — `fly deploy --remote-only -a cannabis-paper-scraper`
-6. **Re-measure** — same holdout: `python3 calibration_agent.py --refresh-maude-from-batch scratch/calibration_runs/{batch}.json`
+6. **Re-measure** — same holdout: `SKIP_PDF_FETCH=1 python3 calibration_agent.py --refresh-maude-from-batch scratch/calibration_runs/{batch}.json`
 7. **Log** — append `scratch/calibration_runs/handoff_learning_log.json`
 8. **Finish** — subnode reingest + blast-radius report: `SUBNODE=node2b ./scripts/run_loop_a_finish.sh` (optional `ENDPOINT_ID=` for cohort validation; set `PUSH=1` to push deltas)
 
 **Not a completed cycle:** verification-only refresh, feedback without code, or a new paper sample without user request.
+
+## Perpetual low-cost Loop A (allowed unattended)
+
+Continuous learning across **node2b → node2c → node2a** uses the cheap Loop A path — **not** golden LLM:
+
+```bash
+MAX_CALLS=10 SKIP_PDF_FETCH=1 DEPLOY_FIRST=0 RUN_FEEDBACK=1 LOCAL_FEEDBACK=1 \
+  AUTO_IMPLEMENT=1 ./scripts/run_perpetual_loop_a_cycle.sh
+```
+
+Caps: `MAX_CALLS≤10`, `LOCAL_FEEDBACK=1`, one subnode per run, push only when same-holdout alignment does not regress. Cursor Automation prompt: `scripts/perpetual_loop_a_automation_prompt.md`.
+
+Always-on $0 corpus refresh: Fly nightly Maude+heuristic reingest (`scheduled_jobs.py schedule-maude-reingest`) + post-harvest OA PDF upgrade.
+
+## Golden endpoints (gated — not perpetual)
+
+See `.cursor/rules/golden-endpoint-policy.mdc`. Do **not** unattended `AUTO_ADVANCE` golden rows. Obs.inhaled ≥90% trustworthy is the trust gate for *starting* a single next golden row — Loop A perpetual runs do not require waiting on golden.
 
 ## Always pin in prompts / reports
 

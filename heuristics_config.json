@@ -299,15 +299,15 @@
       "pediatric_indicators": [
         "\\b(?:pediatric|child|adolescent|infant|teenager|youth|pediatrics)\\s+(?:patients|subjects|participants|cohort|population|group|users)\\b",
         "\\b(?:enrolled|recruited|included|studied)\\s+(?:children|adolescents|infants|teens|youths)\\b",
-        "\\bchildren\\s+(?:aged|ranging from|with)\\b",
-        "\\badolescents\\s+(?:aged|ranging from|with)\\b",
+        "\\bchildren\\s+(?:aged|ranging from|with|enrolled|recruited)\\b",
+        "\\badolescents\\s+(?:aged|ranging from|with|enrolled|recruited)\\b",
+        "\\b(?:of|among|in)\\s+children\\b",
+        "\\badolescent\\s+brain\\s+cognitive\\s+development\\b",
+        "\\bprenatal\\s+substance\\s+exposure\\b",
         "\\bunder\\s+18\\s*(?:years|yo)?\\b",
         "\\bage\\s+<\\s*18\\b",
         "\\bpediatric\\s+onset\\b",
-        "\\bchildren\\b",
-        "\\badolescents\\b",
-        "\\byouth\\b",
-        "\\byouths\\b"
+        "\\bpediatrics?\\b"
       ],
       "geriatric_indicators": [
         "\\bgeriatric\\w*\\b",
@@ -335,13 +335,18 @@
         "\\bmale\\s+(?:subjects|patients|participants|volunteers|cohort|population|group)\\b",
         "\\b(?:subjects|patients|participants|volunteers)\\s+(?:were|consisted of|included)\\s+[^.]{0,40}?\\s*(?:males|men)\\b",
         "\\bonly\\s+male\\b",
-        "\\bmen\\s+(?:aged|were|diagnosed|\\([^)]+\\))\\b"
+        "\\bmen\\s+(?:aged|were|diagnosed|\\([^)]+\\))\\b",
+        "\\b(?:\\d+|one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve|thirteen|fourteen|fifteen|sixteen|seventeen|eighteen|nineteen|twenty)\\s+healthy\\s+men\\b",
+        "\\bhealthy\\s+men\\s+aged\\b"
       ],
       "female_indicators": [
         "\\bfemale\\s+(?:subjects|patients|participants|volunteers|cohort|population|group)\\b",
         "\\b(?:subjects|patients|participants|volunteers)\\s+(?:were|consisted of|included)\\s+[^.]{0,40}?\\s*(?:females|women)\\b",
         "\\bonly\\s+female\\b",
-        "\\bwomen\\s+(?:aged|were|diagnosed|\\([^)]+\\))\\b"
+        "\\bwomen\\s+(?:aged|were|diagnosed|\\([^)]+\\))\\b",
+        "\\b(?:\\d+|one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve|thirteen|fourteen|fifteen|sixteen|seventeen|eighteen|nineteen|twenty)\\s+healthy\\s+women\\b",
+        "\\bhealthy\\s+women\\s+aged\\b",
+        "\\bfemale\\s+cannabis\\s+users\\b"
       ]
     }
   }

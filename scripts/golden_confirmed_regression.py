@@ -132,24 +132,37 @@ def classify_paper_maude(
     cache_dir: Optional[Path] = None,
 ) -> Dict[str, Any]:
     """Runs local Maude classification for one golden confirmed paper record."""
+    import paper_text_cache
+
     title = str(paper.get("title") or "")
-    abstract = ""
+    abstract = str(paper.get("abstract") or "")
     text_blob = paper.get("text")
-    full_text: Optional[str] = None
-    if text_blob:
+    text_source = str(paper.get("text_source") or "")
+    content_tier = str(paper.get("content_tier") or "")
+    # Length/source wins over stale content_tier=abstract_only when PDF text is present.
+    substantial = paper_text_cache.is_substantial_full_text(text_blob) or text_source in {
+        "pdf_cache",
+        "pdf",
+        "fulltext",
+    }
+    if (
+        content_tier in ("abstract_only", "abstract_reclassify")
+        and not paper_text_cache.is_substantial_full_text(text_blob)
+        and text_source not in {"pdf_cache", "pdf", "fulltext"}
+    ):
+        substantial = False
+
+    if text_blob and not substantial:
+        # Title+abstract candidate blob (tree_path_golden style).
         parts = str(text_blob).split("\n\n", 1)
         if len(parts) == 2:
             title = parts[0].strip() or title
-            abstract = parts[1].strip()
-        else:
+            abstract = abstract or parts[1].strip()
+        elif not abstract:
             abstract = str(text_blob)
 
-    text_source = str(paper.get("text_source") or "")
-    content_tier = str(paper.get("content_tier") or "")
-    if text_source == "pdf_cache" and content_tier not in ("abstract_only", "abstract_reclassify"):
-        full_text = str(text_blob) if text_blob else None
-    else:
-        full_text = None
+    # Substantial PDF/fulltext: keep record title/abstract; text is full_text only.
+    full_text = str(text_blob) if substantial and text_blob else None
 
     paper_id = paper.get("paper_id")
     maude_out, _ = calibration_pdf.classify_maude_for_calibration(
@@ -162,6 +175,7 @@ def classify_paper_maude(
         paper_id=int(paper_id) if paper_id is not None else None,
         rules_version=rules_version,
         use_disk_cache=True,
+        text_source_hint=text_source or None,
     )
     return maude_out
 
@@ -169,17 +183,24 @@ def classify_paper_maude(
 def run_golden_regression(
     scope_subnode: str,
     *,
+    endpoint_id: Optional[str] = None,
     confirmed_path: Optional[Path] = None,
     rules_version: Optional[str] = None,
     cache_dir: Optional[Path] = None,
     min_alignment_pct: float = GOLDEN_MIN_ALIGNMENT_PCT,
 ) -> Dict[str, Any]:
-    """Runs subnode-scoped golden regression against all matching confirmed papers."""
+    """Runs golden regression against confirmed papers for a subnode (optionally one endpoint).
+
+    When ``endpoint_id`` is set, only that endpoint's confirmed papers are checked. This
+    prevents cross-endpoint regression loops during per-endpoint RL cycles.
+    """
     store = golden_confirmed_store.load_confirmed(confirmed_path)
     papers = golden_confirmed_store.filter_by_scope_subnode(
         store.get("papers") or [],
         scope_subnode,
     )
+    if endpoint_id:
+        papers = golden_confirmed_store.filter_by_endpoint_id(papers, endpoint_id)
 
     if rules_version is None:
         rules_path = ROOT / "rules_config.json"
@@ -255,6 +276,7 @@ def run_golden_regression(
 
     return {
         "scope_subnode": scope_subnode,
+        "endpoint_id": endpoint_id,
         "rules_version": rules_version,
         "papers_checked": len(papers),
         "papers_with_alignment": len(paper_alignments),
@@ -286,6 +308,11 @@ def build_parser() -> argparse.ArgumentParser:
         help="Optional path for golden_regression_failures.json.",
     )
     parser.add_argument(
+        "--endpoint-id",
+        default=None,
+        help="Optional endpoint id to scope the guard (avoids cross-endpoint interference).",
+    )
+    parser.add_argument(
         "--min-alignment-pct",
         type=float,
         default=GOLDEN_MIN_ALIGNMENT_PCT,
@@ -309,6 +336,7 @@ def main() -> None:
 
     report = run_golden_regression(
         args.scope_subnode,
+        endpoint_id=args.endpoint_id,
         confirmed_path=Path(args.confirmed_path),
         min_alignment_pct=min_alignment_pct,
     )

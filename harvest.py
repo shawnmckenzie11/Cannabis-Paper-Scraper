@@ -16,6 +16,7 @@ from db_manager import DatabaseManager
 import classifier
 from extractor import is_cannabis_related
 from pubmed_metadata import build_publication_type_prefix
+from calibration_pdf import has_direct_pdf_link
 
 # Set up logging
 logging.basicConfig(
@@ -31,6 +32,24 @@ load_dotenv()
 ENTREZ_EMAIL = os.getenv("ENTREZ_EMAIL", "miladn1@mcmaster.ca")
 Entrez.email = ENTREZ_EMAIL
 Entrez.tool = "CannabisResearchScraper"
+
+# When false, non-OA papers classify abstract-only at ingest; OA/direct-PDF still sync.
+HARVEST_SYNC_PDF = os.getenv("HARVEST_SYNC_PDF", "1").strip().lower() not in {"0", "false", "no"}
+
+
+def harvest_should_attempt_sync_pdf(paper: Dict[str, Any]) -> bool:
+    """True when harvest should resolve PDF/full text synchronously before insert.
+
+    Open-access papers and direct (non-PubMed-landing) full-text links are upgraded
+    at ingest time. Paywalled / PubMed-landing papers stay abstract-only and rely on
+    the post-harvest slow pass.
+    """
+    if not HARVEST_SYNC_PDF:
+        return False
+    if paper.get("open_access") in (1, True, "1"):
+        return True
+    return has_direct_pdf_link(paper.get("full_text_link"))
+
 
 def get_pubmed_count(query: str) -> int:
     """Checks the total count of papers matching a search query on PubMed without fetching the IDs."""
@@ -521,6 +540,14 @@ def run_harvest_pipeline(
     Returns:
         tuple: (success_count, skipped_count_pubmed, filter_skipped, ingested_paper_ids)
     """
+    import heuristics_engine
+
+    heuristics_engine.reload_rules_config()
+    rules_version_label = classifier.get_rules_version()
+    logger.info("Harvest pipeline using Maude rules v%s.", rules_version_label)
+    # Golden Loop B sets GOLDEN_ROW_INDEX for tagged classifier labels; harvest must not inherit it.
+    os.environ.pop("GOLDEN_ROW_INDEX", None)
+
     db = DatabaseManager()
     harvest_batch_id = f"harvest_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
     
@@ -611,7 +638,9 @@ def run_harvest_pipeline(
             progress_callback(f"Ingesting ({idx+1}/{total_to_process}): '{title[:45]}...' [Maude Classification]")
         
         try:
-            # Classify via Maude (default) or Claude when --classify / AUTO_HARVEST_CLASSIFY is set
+            # OA / direct-PDF: sync PDF/full-text Maude at ingest. Others: abstract-only
+            # for speed; scheduled_jobs.run_post_harvest_maude_upgrade retries PDF/PMC.
+            sync_pdf = harvest_should_attempt_sync_pdf(paper)
             extracted = classifier.process_paper_metadata(
                 title=title,
                 abstract=abstract,
@@ -619,6 +648,7 @@ def run_harvest_pipeline(
                 full_text_link=paper.get("full_text_link"),
                 pmid=paper.get("pmid"),
                 doi=paper.get("doi"),
+                abstract_only=not sync_pdf,
             )
             
             # Merge extracted data back into our main paper record
@@ -632,15 +662,236 @@ def run_harvest_pipeline(
             ingested_paper_ids.append(int(row_id))
             version = extracted.get("classifier_version", "unknown")
             logger.info(
-                "  -> Saved paper successfully (DB ID: %s, classifier: %s)",
+                "  -> Saved paper successfully (DB ID: %s, classifier: %s, sync_pdf=%s)",
                 row_id,
                 version,
+                sync_pdf,
             )
             
         except Exception as e:
             logger.error(f"  -> Failed to process paper '{title[:40]}...': {e}")
             
     return success_count, skipped_count_pubmed, filter_skipped, ingested_paper_ids
+
+
+def extract_title_from_pdf_text(full_text: str, fallback_filename: str = "") -> str:
+    """Infer a paper title from the upload filename and/or extracted PDF text.
+
+    Filename titles (after stripping ``Author - `` prefixes) are preferred when
+    they look more complete than the first PDF line, which is often a running
+    header, journal name, or truncated banner.
+    """
+    import pdf_upload_merge
+
+    def _from_filename(name: str) -> str:
+        stem = (name or "").rsplit("/", 1)[-1]
+        if stem.lower().endswith(".pdf"):
+            stem = stem[:-4]
+        stem = pdf_upload_merge.clean_title_for_matching(stem)
+        stem = stem.replace("_", " ").strip()
+        stem = re.sub(r"\s+", " ", stem)
+        return stem[:500]
+
+    def _looks_like_author_line(line: str) -> bool:
+        lowered = line.lower()
+        if "et al" in lowered:
+            return True
+        if re.search(r"\b(md|phd|msc|bsc)\b", lowered):
+            return True
+        # Many commas / short tokens → likely author list
+        parts = [p.strip() for p in re.split(r"[,;]", line) if p.strip()]
+        if len(parts) >= 3 and all(len(p.split()) <= 4 for p in parts[:4]):
+            return True
+        return False
+
+    filename_title = _from_filename(fallback_filename)
+    pdf_title = ""
+    text = (full_text or "").strip()
+    if text:
+        for line in text.splitlines()[:12]:
+            candidate = line.strip()
+            if len(candidate) < 12 or len(candidate) > 300:
+                continue
+            lowered = candidate.lower()
+            if lowered in {"abstract", "introduction", "background", "keywords"}:
+                continue
+            if re.match(r"^(doi|https?://|www\.|vol\.|volume\b|pp\.)", lowered):
+                continue
+            if _looks_like_author_line(candidate):
+                continue
+            pdf_title = candidate[:500]
+            break
+
+    if filename_title and pdf_title:
+        # Prefer the longer, more complete title when they clearly refer to the same paper.
+        sim = pdf_upload_merge.title_similarity(filename_title, pdf_title)
+        if sim >= 0.7:
+            return filename_title if len(filename_title) >= len(pdf_title) else pdf_title
+        # Filename often carries the real title when the PDF banner is junk.
+        if len(filename_title) >= 40 and len(filename_title) > len(pdf_title) + 15:
+            return filename_title
+        return pdf_title
+    return filename_title or pdf_title or "Uploaded PDF"
+
+
+def ingest_uploaded_pdf(
+    pdf_bytes: bytes,
+    *,
+    filename: str = "",
+    title_override: Optional[str] = None,
+    merge_selections: Optional[Dict[str, str]] = None,
+    custom_values: Optional[Dict[str, str]] = None,
+    force_paper_id: Optional[int] = None,
+    proposed_paper: Optional[Dict[str, Any]] = None,
+    review_existing_row: Optional[Dict[str, Any]] = None,
+    is_new_paper: Optional[bool] = None,
+) -> Dict[str, Any]:
+    """Classify an uploaded PDF and either return a full review diff or commit user picks."""
+    import paper_text_cache
+    import pdf_upload_merge
+
+    if not pdf_bytes or not pdf_bytes.startswith(b"%PDF"):
+        raise ValueError("Uploaded file is not a valid PDF.")
+
+    db = DatabaseManager()
+
+    if merge_selections is not None and proposed_paper is not None:
+        existing_row = review_existing_row or {}
+        if force_paper_id is not None and not existing_row:
+            existing_row = db.get_paper(force_paper_id) or {}
+        new_paper = bool(is_new_paper if is_new_paper is not None else force_paper_id is None)
+        paper = pdf_upload_merge.apply_review_selections(
+            existing_row,
+            proposed_paper,
+            merge_selections,
+            custom_values,
+            is_new_paper=new_paper,
+        )
+        if not new_paper and force_paper_id is not None:
+            paper["title"] = existing_row.get("title") or paper.get("title")
+        paper["abstract"] = paper.get("abstract") or proposed_paper.get("abstract") or existing_row.get("abstract") or ""
+
+        # Guard against duplicate inserts: if marked new but a close title exists, update it.
+        commit_force_id = None if new_paper else force_paper_id
+        if new_paper:
+            fuzzy_id, fuzzy_ratio = db.find_fuzzy_paper_by_title(paper.get("title") or "")
+            if fuzzy_id is not None and fuzzy_ratio >= 0.82:
+                commit_force_id = fuzzy_id
+                existing_row = db.get_paper(fuzzy_id) or existing_row
+                new_paper = False
+                paper["title"] = existing_row.get("title") or paper.get("title")
+
+        row_id = db.insert_paper(paper, force_id=commit_force_id)
+        action = "created" if new_paper else "updated"
+        similarity = None if new_paper else pdf_upload_merge.title_similarity(
+            proposed_paper.get("title") or "",
+            existing_row.get("title") or "",
+        )
+        match_type = "new" if new_paper else ("exact_title" if similarity and similarity >= 0.999 else "fuzzy_title")
+
+        full_text = paper_text_cache._extract_pdf_text_from_bytes(pdf_bytes)
+        if full_text:
+            paper_text_cache.write_cached_entry(
+                int(row_id),
+                text=full_text,
+                source="pdf",
+                full_text_link=paper.get("full_text_link"),
+                pdf_bytes=pdf_bytes,
+            )
+
+        return {
+            "status": "success",
+            "paper_id": int(row_id),
+            "action": action,
+            "match_type": match_type,
+            "title": paper.get("title") or proposed_paper.get("title"),
+            "existing_title": existing_row.get("title") if action == "updated" else None,
+            "classifier_version": paper.get("classifier_version"),
+            "similarity": similarity,
+        }
+
+    full_text = paper_text_cache._extract_pdf_text_from_bytes(pdf_bytes)
+    if not full_text or not full_text.strip():
+        raise ValueError("Could not extract text from the uploaded PDF.")
+
+    title = (title_override or "").strip() or extract_title_from_pdf_text(full_text, filename)
+    abstract = ""
+    abstract_match = re.search(
+        r"(?is)\babstract\b[:\s]*(.*?)(?=\b(introduction|background|keywords|methods)\b|$)",
+        full_text,
+    )
+    if abstract_match:
+        abstract = abstract_match.group(1).strip()[:4000]
+
+    extracted = classifier.process_paper_metadata(
+        title=title,
+        abstract=abstract,
+        run_llm=False,
+        full_text=full_text,
+        text_source="pdf",
+    )
+
+    paper: Dict[str, Any] = {
+        "title": title,
+        "abstract": abstract,
+        "full_text_link": f"upload://{filename or 'manual.pdf'}",
+        "date_harvested": datetime.now().isoformat(),
+        "_harvest_batch_id": f"upload_{datetime.now().strftime('%Y%m%d_%H%M%S')}",
+    }
+    paper.update(extracted)
+
+    candidates = db.find_top_title_matches(title, limit=5, min_ratio=0.35)
+    return {
+        "status": "match_selection_required",
+        "title": title,
+        "filename": filename,
+        "candidates": candidates,
+        "proposed_paper": paper,
+        "existing_row": {},
+        "is_new_paper": True,
+        "paper_id": None,
+    }
+
+
+def build_pdf_upload_review(
+    proposed_paper: Dict[str, Any],
+    *,
+    selected_paper_id: Optional[int] = None,
+    force_new: bool = False,
+) -> Dict[str, Any]:
+    """Build the field-level review payload after the user chooses a match."""
+    import pdf_upload_merge
+
+    db = DatabaseManager()
+    is_new = bool(force_new) or selected_paper_id is None
+    existing_row: Dict[str, Any] = {}
+    similarity = None
+    if not is_new and selected_paper_id is not None:
+        existing_row = db.get_paper(int(selected_paper_id)) or {}
+        if not existing_row:
+            raise ValueError(f"Selected paper #{selected_paper_id} was not found.")
+        similarity = pdf_upload_merge.title_similarity(
+            proposed_paper.get("title") or "",
+            existing_row.get("title") or "",
+        )
+
+    rows = pdf_upload_merge.build_review_field_rows(
+        existing_row,
+        proposed_paper,
+        is_new_paper=is_new,
+    )
+    return {
+        "status": "review_required",
+        "is_new_paper": is_new,
+        "paper_id": None if is_new else int(selected_paper_id),
+        "title": proposed_paper.get("title") or "",
+        "similarity": round(similarity, 3) if similarity is not None else None,
+        "existing_title": existing_row.get("title") if not is_new else None,
+        "rows": rows,
+        "field_inputs": pdf_upload_merge.get_review_field_input_schema(),
+        "proposed_paper": proposed_paper,
+        "existing_row": existing_row,
+    }
 
 
 def main():
