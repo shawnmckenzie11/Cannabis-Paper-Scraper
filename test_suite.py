@@ -4,9 +4,11 @@ import os
 import json
 import sqlite3
 from pathlib import Path
+from unittest.mock import patch
 from db_manager import DatabaseManager
 import extractor
 import classifier
+import reingest_heuristic_papers
 
 class TestHeuristicExtractor(unittest.TestCase):
     """Test cases for regex extractions and heuristics in extractor.py."""
@@ -258,6 +260,143 @@ class TestHeuristicExtractor(unittest.TestCase):
         self.assertIn("This is an animal study", summary_no)
         self.assertIn("pure cannabinoid cannabis administration", summary_no)
         self.assertIn("No specific strain was specified.", summary_no)
+
+
+class TestHeuristicReingestion(unittest.TestCase):
+    """Test cases for bounded heuristic re-ingestion batches."""
+
+    def setUp(self):
+        """Create an isolated catalog DB and patch re-ingestion dependencies."""
+        self.test_db_path = "test_reingest_heuristic_papers.db"
+        self.processed_titles = []
+        if os.path.exists(self.test_db_path):
+            os.remove(self.test_db_path)
+        self.create_test_schema()
+        self.db_patcher = patch.object(
+            reingest_heuristic_papers, "DatabaseManager", return_value=self
+        )
+        self.classifier_patcher = patch.object(
+            reingest_heuristic_papers.classifier,
+            "process_paper_metadata",
+            side_effect=self.process_paper_metadata,
+        )
+        self.db_patcher.start()
+        self.classifier_patcher.start()
+
+    def tearDown(self):
+        """Remove dependency patches and the temporary catalog DB."""
+        self.classifier_patcher.stop()
+        self.db_patcher.stop()
+        if os.path.exists(self.test_db_path):
+            os.remove(self.test_db_path)
+
+    def get_connection(self):
+        """Return a fresh SQLite connection for the patched DatabaseManager."""
+        return sqlite3.connect(self.test_db_path)
+
+    def create_test_schema(self):
+        """Create a minimal papers table with columns used by re-ingestion."""
+        conn = sqlite3.connect(self.test_db_path)
+        conn.execute(
+            """
+            CREATE TABLE papers (
+                id INTEGER PRIMARY KEY,
+                title TEXT,
+                abstract TEXT,
+                expert_locked_fields TEXT,
+                study_type TEXT,
+                exposure_method TEXT,
+                cannabis_type TEXT,
+                outcome_domain TEXT,
+                duration_days REAL,
+                inhaled_exposure_duration TEXT,
+                administration_frequency TEXT,
+                treatment_duration TEXT,
+                sample_size INTEGER,
+                thc_pct REAL,
+                cbd_pct REAL,
+                dose_mg REAL,
+                strain_reported TEXT,
+                strain_normalized TEXT,
+                publication_type TEXT,
+                summary TEXT,
+                classification_confidence REAL,
+                classification_timestamp TEXT,
+                classifier_version TEXT
+            )
+            """
+        )
+        conn.executemany(
+            """
+            INSERT INTO papers (
+                id, title, abstract, expert_locked_fields,
+                classification_confidence, classifier_version
+            )
+            VALUES (?, ?, ?, ?, ?, ?)
+            """,
+            [
+                (1, "Pending 1", "Cannabis study one", "[]", 0.9, "heuristic-reclassify-1.0.0"),
+                (2, "Pending 2", "Cannabis study two", "[]", 0.9, "heuristic-reclassify-1.0.0"),
+                (3, "Pending 3", "Cannabis study three", "[]", 0.9, "heuristic-reclassify-1.0.0"),
+                (4, "Current", "Current cannabis study", "[]", 0.6, "heuristic-1.0.0"),
+            ],
+        )
+        conn.commit()
+        conn.close()
+
+    def process_paper_metadata(self, title, abstract, run_llm=False):
+        """Return deterministic heuristic metadata for re-ingestion tests."""
+        self.processed_titles.append(title)
+        return {
+            "study_type": ["Clinical (observational)"],
+            "exposure_method": ["unknown"],
+            "cannabis_type": ["unknown"],
+            "outcome_domain": ["other"],
+            "duration_days": None,
+            "inhaled_exposure_duration": None,
+            "administration_frequency": None,
+            "treatment_duration": None,
+            "sample_size": None,
+            "thc_pct": None,
+            "cbd_pct": None,
+            "dose_mg": None,
+            "strain_reported": None,
+            "strain_normalized": None,
+            "publication_type": "original research",
+            "summary": f"Reclassified {title}",
+            "classification_confidence": 0.6,
+            "classification_timestamp": "2026-01-01T00:00:00",
+            "classifier_version": "heuristic-1.0.0",
+        }
+
+    def test_max_papers_limits_pending_reingestion(self):
+        """Only the requested number of pending papers should be processed."""
+        summary = reingest_heuristic_papers.reingest_heuristic_papers(
+            batch_size=1,
+            only_pending=True,
+            max_papers=2,
+        )
+
+        conn = sqlite3.connect(self.test_db_path)
+        pending_count = conn.execute(
+            "SELECT COUNT(*) FROM papers WHERE classifier_version LIKE 'heuristic-reclassify%'"
+        ).fetchone()[0]
+        reingested_titles = [
+            row[0]
+            for row in conn.execute(
+                """
+                SELECT title FROM papers
+                WHERE summary LIKE 'Reclassified%'
+                ORDER BY id
+                """
+            ).fetchall()
+        ]
+        conn.close()
+
+        self.assertEqual(summary["papers_processed"], 2)
+        self.assertEqual(self.processed_titles, ["Pending 1", "Pending 2"])
+        self.assertEqual(reingested_titles, ["Pending 1", "Pending 2"])
+        self.assertEqual(pending_count, 1)
 
 
 class TestDatabaseManager(unittest.TestCase):
