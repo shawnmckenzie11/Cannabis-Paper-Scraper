@@ -398,6 +398,15 @@ class TestHeuristicReingestion(unittest.TestCase):
         self.assertEqual(reingested_titles, ["Pending 1", "Pending 2"])
         self.assertEqual(pending_count, 1)
 
+    def test_max_papers_rejects_non_positive_values(self):
+        """Non-positive max_papers values should fail before processing papers."""
+        with self.assertRaises(ValueError):
+            reingest_heuristic_papers.reingest_heuristic_papers(
+                only_pending=True,
+                max_papers=0,
+            )
+        self.assertEqual(self.processed_titles, [])
+
 
 class TestDatabaseManager(unittest.TestCase):
     """Test cases for SQLite dynamic operations, FTS5 sync, and CRUD."""
