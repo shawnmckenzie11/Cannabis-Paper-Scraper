@@ -3,10 +3,12 @@ import unittest
 import os
 import json
 import sqlite3
+import tempfile
 from pathlib import Path
 from db_manager import DatabaseManager
 import extractor
 import classifier
+import reingest_heuristic_papers
 
 class TestHeuristicExtractor(unittest.TestCase):
     """Test cases for regex extractions and heuristics in extractor.py."""
@@ -818,6 +820,94 @@ class TestDatabaseManager(unittest.TestCase):
         # Test default
         self.assertEqual(self.db.get_metadata("non_existent_key", "default_val"), "default_val")
         self.assertIsNone(self.db.get_metadata("non_existent_key"))
+
+
+class TestHeuristicReingestion(unittest.TestCase):
+    """Test cases for bounded heuristic re-ingestion batches."""
+
+    def setUp(self):
+        """Initialize an isolated SQLite database for re-ingestion tests."""
+        self.temp_dir = tempfile.TemporaryDirectory()
+        self.test_db_path = str(Path(self.temp_dir.name) / "test_reingest_papers.db")
+        self.original_init = reingest_heuristic_papers.DatabaseManager.__init__
+        test_db_path = self.test_db_path
+
+        def patched_init(db_self, db_path=None):
+            """Route re-ingestion DatabaseManager instances to the test database."""
+            self.original_init(db_self, test_db_path)
+
+        reingest_heuristic_papers.DatabaseManager.__init__ = patched_init
+        self.db = DatabaseManager(self.test_db_path)
+
+    def tearDown(self):
+        """Restore DatabaseManager initialization and remove temporary files."""
+        reingest_heuristic_papers.DatabaseManager.__init__ = self.original_init
+        self.temp_dir.cleanup()
+
+    def insert_reingestion_candidate(self, pmid, classifier_version):
+        """Insert a minimal paper row with a caller-controlled classifier version."""
+        return self.db.insert_paper(
+            {
+                "pmid": pmid,
+                "title": f"CBD anxiety trial {pmid}",
+                "abstract": (
+                    "This randomized clinical trial administered CBD oil for "
+                    "30 days to patients with anxiety."
+                ),
+                "authors": ["Test Author"],
+                "journal": "Test Journal",
+                "year": 2026,
+                "study_type": ["review"],
+                "exposure_method": ["inhaled"],
+                "cannabis_type": ["unknown"],
+                "outcome_domain": ["other"],
+                "classification_confidence": 0.95,
+                "classifier_version": classifier_version,
+            }
+        )
+
+    def test_only_pending_max_papers_limits_updates(self):
+        """Bounded pending re-ingestion should update only the first capped rows."""
+        self.insert_reingestion_candidate("pending-1", "heuristic-reclassify-1.0.0")
+        self.insert_reingestion_candidate("pending-2", "heuristic-reclassify-1.0.0")
+        self.insert_reingestion_candidate("pending-3", "heuristic-reclassify-1.0.0")
+        self.insert_reingestion_candidate("current-1", "heuristic-1.0.0")
+
+        summary = reingest_heuristic_papers.reingest_heuristic_papers(
+            batch_size=1,
+            only_pending=True,
+            max_papers=2,
+        )
+
+        conn = self.db.get_connection()
+        cur = conn.cursor()
+        cur.execute("SELECT pmid, classifier_version FROM papers ORDER BY id")
+        versions = {row["pmid"]: row["classifier_version"] for row in cur.fetchall()}
+        conn.close()
+
+        self.assertEqual(summary["papers_processed"], 2)
+        self.assertEqual(versions["pending-1"], "heuristic-1.0.0")
+        self.assertEqual(versions["pending-2"], "heuristic-1.0.0")
+        self.assertEqual(versions["pending-3"], "heuristic-reclassify-1.0.0")
+        self.assertEqual(versions["current-1"], "heuristic-1.0.0")
+
+    def test_max_papers_must_be_positive_before_database_access(self):
+        """Invalid caps should fail before a production database connection is opened."""
+        original_manager = reingest_heuristic_papers.DatabaseManager
+
+        class FailingDatabaseManager:
+            """Sentinel manager that fails if validation opens the database."""
+
+            def __init__(self):
+                """Raise when constructed so validation order is observable."""
+                raise AssertionError("DatabaseManager should not be constructed")
+
+        reingest_heuristic_papers.DatabaseManager = FailingDatabaseManager
+        try:
+            with self.assertRaises(ValueError):
+                reingest_heuristic_papers.reingest_heuristic_papers(max_papers=0)
+        finally:
+            reingest_heuristic_papers.DatabaseManager = original_manager
 
 
 class TestFlaskSchedulerAPI(unittest.TestCase):
