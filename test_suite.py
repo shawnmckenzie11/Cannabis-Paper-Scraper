@@ -3,10 +3,13 @@ import unittest
 import os
 import json
 import sqlite3
+import tempfile
 from pathlib import Path
+from unittest import mock
 from db_manager import DatabaseManager
 import extractor
 import classifier
+import reingest_heuristic_papers
 
 class TestHeuristicExtractor(unittest.TestCase):
     """Test cases for regex extractions and heuristics in extractor.py."""
@@ -1580,6 +1583,167 @@ class TestAdminRequiredEndpoints(unittest.TestCase):
         # For edit-classification, should return 404 since paper 99999 doesn't exist (proving decorator passed)
         res2 = self.client.post("/api/papers/99999/edit-classification", json={})
         self.assertEqual(res2.status_code, 404)
+
+
+class TestHeuristicReingestion(unittest.TestCase):
+    """Test cases for bounded heuristic paper re-ingestion."""
+
+    def setUp(self):
+        """Create an isolated SQLite database path for each re-ingestion test."""
+        handle = tempfile.NamedTemporaryFile(suffix=".db", delete=False)
+        self.db_path = handle.name
+        handle.close()
+        self._create_schema()
+
+    def tearDown(self):
+        """Remove the isolated SQLite database after each re-ingestion test."""
+        if os.path.exists(self.db_path):
+            os.remove(self.db_path)
+
+    def _connect(self):
+        """Open a connection to the isolated re-ingestion test database."""
+        conn = sqlite3.connect(self.db_path)
+        conn.row_factory = sqlite3.Row
+        return conn
+
+    def _create_schema(self):
+        """Create the minimal papers table needed by the re-ingestion script."""
+        columns = [
+            "id INTEGER PRIMARY KEY",
+            "title TEXT",
+            "abstract TEXT",
+            "expert_locked_fields TEXT",
+            "study_type TEXT",
+            "exposure_method TEXT",
+            "cannabis_type TEXT",
+            "outcome_domain TEXT",
+            "duration_days REAL",
+            "inhaled_exposure_duration TEXT",
+            "administration_frequency TEXT",
+            "treatment_duration TEXT",
+            "sample_size INTEGER",
+            "thc_pct REAL",
+            "cbd_pct REAL",
+            "dose_mg REAL",
+            "strain_reported TEXT",
+            "strain_normalized TEXT",
+            "publication_type TEXT",
+            "summary TEXT",
+            "classification_confidence REAL",
+            "classification_timestamp TEXT",
+            "classifier_version TEXT",
+        ]
+        conn = self._connect()
+        conn.execute(f"CREATE TABLE papers ({', '.join(columns)})")
+        conn.commit()
+        conn.close()
+
+    def _insert_paper(self, paper_id, classifier_version):
+        """Insert one paper row with the requested classifier version."""
+        conn = self._connect()
+        conn.execute(
+            """
+            INSERT INTO papers (
+                id, title, abstract, expert_locked_fields, exposure_method,
+                cannabis_type, outcome_domain, duration_days,
+                classification_confidence, classifier_version
+            )
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """,
+            (
+                paper_id,
+                f"Paper {paper_id}",
+                "Cannabis methods abstract.",
+                "[]",
+                json.dumps(["legacy"]),
+                json.dumps(["legacy"]),
+                json.dumps(["legacy"]),
+                10.0,
+                0.9,
+                classifier_version,
+            ),
+        )
+        conn.commit()
+        conn.close()
+
+    def _fetch_versions(self):
+        """Return classifier versions keyed by paper id for assertions."""
+        conn = self._connect()
+        rows = conn.execute(
+            "SELECT id, classifier_version FROM papers ORDER BY id"
+        ).fetchall()
+        conn.close()
+        return {row["id"]: row["classifier_version"] for row in rows}
+
+    def _mock_metadata(self, title, abstract, run_llm=False):
+        """Return deterministic metadata for re-ingestion classifier calls."""
+        return {
+            "study_type": ["Clinical (observational)"],
+            "exposure_method": ["unknown"],
+            "cannabis_type": ["unknown"],
+            "outcome_domain": ["unknown"],
+            "duration_days": None,
+            "inhaled_exposure_duration": None,
+            "administration_frequency": None,
+            "treatment_duration": None,
+            "sample_size": None,
+            "thc_pct": None,
+            "cbd_pct": None,
+            "dose_mg": None,
+            "strain_reported": None,
+            "strain_normalized": None,
+            "publication_type": "original research",
+            "summary": f"Updated {title}",
+            "classification_confidence": 0.6,
+            "classification_timestamp": "2026-07-20T06:00:00",
+            "classifier_version": "heuristic-1.0.0",
+        }
+
+    def test_only_pending_max_papers_limits_processed_rows(self):
+        """Only the first pending rows up to max_papers should be re-ingested."""
+        self._insert_paper(1, "heuristic-reclassify-1.0.0")
+        self._insert_paper(2, "heuristic-reclassify-1.0.0")
+        self._insert_paper(3, "heuristic-reclassify-1.0.0")
+        self._insert_paper(4, "heuristic-1.0.0")
+        manager = mock.Mock()
+        manager.get_connection.side_effect = self._connect
+
+        with mock.patch.object(
+            reingest_heuristic_papers,
+            "DatabaseManager",
+            return_value=manager,
+        ), mock.patch.object(
+            reingest_heuristic_papers.classifier,
+            "process_paper_metadata",
+            side_effect=self._mock_metadata,
+        ) as classifier_mock:
+            summary = reingest_heuristic_papers.reingest_heuristic_papers(
+                batch_size=1,
+                only_pending=True,
+                max_papers=2,
+            )
+
+        self.assertEqual(summary["papers_processed"], 2)
+        self.assertEqual(classifier_mock.call_count, 2)
+        self.assertEqual(
+            self._fetch_versions(),
+            {
+                1: "heuristic-1.0.0",
+                2: "heuristic-1.0.0",
+                3: "heuristic-reclassify-1.0.0",
+                4: "heuristic-1.0.0",
+            },
+        )
+
+    def test_max_papers_rejects_non_positive_before_db_open(self):
+        """Invalid max_papers values should fail before opening a database."""
+        with mock.patch.object(
+            reingest_heuristic_papers, "DatabaseManager"
+        ) as manager_mock:
+            with self.assertRaises(ValueError):
+                reingest_heuristic_papers.reingest_heuristic_papers(max_papers=0)
+
+        manager_mock.assert_not_called()
 
 
 if __name__ == "__main__":
