@@ -1705,11 +1705,13 @@ class TestHeuristicReingestion(unittest.TestCase):
         self._insert_paper(2, "heuristic-reclassify-1.0.0")
         self._insert_paper(3, "heuristic-reclassify-1.0.0")
         self._insert_paper(4, "heuristic-1.0.0")
+        manager = mock.Mock()
+        manager.get_connection.side_effect = self._connect
 
         with mock.patch.object(
             reingest_heuristic_papers,
             "DatabaseManager",
-            return_value=DatabaseManager(self.db_path),
+            return_value=manager,
         ), mock.patch.object(
             reingest_heuristic_papers.classifier,
             "process_paper_metadata",
