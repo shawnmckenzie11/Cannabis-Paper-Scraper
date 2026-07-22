@@ -260,6 +260,95 @@ class TestHeuristicExtractor(unittest.TestCase):
         self.assertIn("No specific strain was specified.", summary_no)
 
 
+class TestHeuristicReingestion(unittest.TestCase):
+    """Test cases for bounded heuristic re-ingestion batches."""
+
+    def setUp(self):
+        """Create an isolated SQLite catalog for re-ingestion tests."""
+        self.test_db_path = "test_reingest_papers.db"
+        if os.path.exists(self.test_db_path):
+            try:
+                os.remove(self.test_db_path)
+            except Exception:
+                pass
+        self.db = DatabaseManager(self.test_db_path)
+
+    def tearDown(self):
+        """Remove the temporary SQLite catalog after each test."""
+        if os.path.exists(self.test_db_path):
+            try:
+                os.remove(self.test_db_path)
+            except Exception:
+                pass
+
+    def insert_reingestion_candidate(self, pmid, classifier_version):
+        """Insert a paper row suitable for heuristic re-ingestion tests."""
+        return self.db.insert_paper({
+            "pmid": pmid,
+            "title": f"Bounded cannabis trial {pmid}",
+            "abstract": (
+                "This randomized clinical trial evaluated oral CBD oil over "
+                "30 days for anxiety outcomes."
+            ),
+            "study_type": ["review"],
+            "exposure_method": ["unknown"],
+            "cannabis_type": ["unknown"],
+            "outcome_domain": ["unknown"],
+            "classification_confidence": 0.9,
+            "classifier_version": classifier_version,
+            "expert_locked_fields": [],
+        })
+
+    def test_only_pending_max_papers_limits_updates(self):
+        """Only the first pending rows up to max_papers should be reprocessed."""
+        import reingest_heuristic_papers
+
+        for idx in range(3):
+            self.insert_reingestion_candidate(
+                f"legacy-{idx}",
+                "heuristic-reclassify-1.0.0",
+            )
+        self.insert_reingestion_candidate("current-0", "heuristic-1.0.0")
+
+        original_db_manager = reingest_heuristic_papers.DatabaseManager
+        try:
+            reingest_heuristic_papers.DatabaseManager = lambda: self.db
+            summary = reingest_heuristic_papers.reingest_heuristic_papers(
+                batch_size=1,
+                only_pending=True,
+                max_papers=2,
+            )
+        finally:
+            reingest_heuristic_papers.DatabaseManager = original_db_manager
+
+        conn = self.db.get_connection()
+        try:
+            rows = conn.execute(
+                "SELECT pmid, classifier_version FROM papers ORDER BY id"
+            ).fetchall()
+        finally:
+            conn.close()
+
+        versions_by_pmid = {row["pmid"]: row["classifier_version"] for row in rows}
+        self.assertEqual(summary["papers_processed"], 2)
+        self.assertEqual(versions_by_pmid["legacy-0"], "heuristic-1.0.0")
+        self.assertEqual(versions_by_pmid["legacy-1"], "heuristic-1.0.0")
+        self.assertEqual(versions_by_pmid["legacy-2"], "heuristic-reclassify-1.0.0")
+        self.assertEqual(versions_by_pmid["current-0"], "heuristic-1.0.0")
+
+    def test_max_papers_must_be_positive_before_db_connection(self):
+        """Invalid max_papers values should fail before DatabaseManager is created."""
+        import reingest_heuristic_papers
+
+        original_db_manager = reingest_heuristic_papers.DatabaseManager
+        try:
+            reingest_heuristic_papers.DatabaseManager = self.fail
+            with self.assertRaises(ValueError):
+                reingest_heuristic_papers.reingest_heuristic_papers(max_papers=0)
+        finally:
+            reingest_heuristic_papers.DatabaseManager = original_db_manager
+
+
 class TestDatabaseManager(unittest.TestCase):
     """Test cases for SQLite dynamic operations, FTS5 sync, and CRUD."""
 
