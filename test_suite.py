@@ -3,10 +3,12 @@ import unittest
 import os
 import json
 import sqlite3
+from unittest import mock
 from pathlib import Path
 from db_manager import DatabaseManager
 import extractor
 import classifier
+import reingest_heuristic_papers
 
 class TestHeuristicExtractor(unittest.TestCase):
     """Test cases for regex extractions and heuristics in extractor.py."""
@@ -258,6 +260,101 @@ class TestHeuristicExtractor(unittest.TestCase):
         self.assertIn("This is an animal study", summary_no)
         self.assertIn("pure cannabinoid cannabis administration", summary_no)
         self.assertIn("No specific strain was specified.", summary_no)
+
+
+class TestHeuristicReingestion(unittest.TestCase):
+    """Test cases for bounded heuristic re-ingestion batches."""
+
+    def setUp(self):
+        """Create an isolated SQLite database for re-ingestion tests."""
+        self.original_database_url = os.environ.pop("DATABASE_URL", None)
+        self.original_initialized = DatabaseManager._initialized
+        DatabaseManager._initialized = False
+        self.test_db_path = "test_reingest_heuristic_papers.db"
+        if os.path.exists(self.test_db_path):
+            try:
+                os.remove(self.test_db_path)
+            except Exception:
+                pass
+
+        self.original_init = DatabaseManager.__init__
+        original_init = self.original_init
+        test_db_path = self.test_db_path
+
+        def patched_init(instance, db_path=None):
+            """Force script-created DatabaseManager instances onto the test DB."""
+            original_init(instance, db_path if db_path is not None else test_db_path)
+
+        DatabaseManager.__init__ = patched_init
+        self.db = DatabaseManager(self.test_db_path)
+
+    def tearDown(self):
+        """Restore database globals and remove the isolated SQLite file."""
+        DatabaseManager.__init__ = self.original_init
+        DatabaseManager._initialized = self.original_initialized
+        if self.original_database_url is not None:
+            os.environ["DATABASE_URL"] = self.original_database_url
+        else:
+            os.environ.pop("DATABASE_URL", None)
+        if os.path.exists(self.test_db_path):
+            try:
+                os.remove(self.test_db_path)
+            except Exception:
+                pass
+
+    def test_only_pending_max_papers_limits_reingestion(self):
+        """Only the first capped pending papers should be reclassified."""
+        for idx in range(3):
+            self.db.insert_paper(
+                {
+                    "pmid": f"pending-{idx}",
+                    "title": f"CBD intervention trial {idx}",
+                    "abstract": (
+                        "This randomized controlled trial administered oral CBD oil "
+                        "for 7 days to adults with anxiety."
+                    ),
+                    "study_type": ["review"],
+                    "exposure_method": ["unknown"],
+                    "classification_confidence": 0.9,
+                    "classifier_version": "heuristic-reclassify-1.0.0",
+                }
+            )
+        self.db.insert_paper(
+            {
+                "pmid": "current-0",
+                "title": "Already current CBD review",
+                "abstract": "This review summarizes CBD studies.",
+                "classifier_version": "heuristic-1.0.0",
+            }
+        )
+
+        summary = reingest_heuristic_papers.reingest_heuristic_papers(
+            only_pending=True,
+            max_papers=2,
+            batch_size=1,
+        )
+
+        self.assertEqual(summary["papers_processed"], 2)
+        conn = self.db.get_connection()
+        try:
+            cur = conn.cursor()
+            cur.execute("SELECT pmid, classifier_version FROM papers ORDER BY id")
+            versions = {row["pmid"]: row["classifier_version"] for row in cur.fetchall()}
+        finally:
+            conn.close()
+
+        self.assertEqual(versions["pending-0"], "heuristic-1.0.0")
+        self.assertEqual(versions["pending-1"], "heuristic-1.0.0")
+        self.assertEqual(versions["pending-2"], "heuristic-reclassify-1.0.0")
+        self.assertEqual(versions["current-0"], "heuristic-1.0.0")
+
+    def test_rejects_non_positive_max_before_database_initialization(self):
+        """Invalid caps should fail before a run opens a database connection."""
+        with mock.patch("reingest_heuristic_papers.DatabaseManager") as db_class:
+            with self.assertRaisesRegex(ValueError, "positive integer"):
+                reingest_heuristic_papers.reingest_heuristic_papers(max_papers=0)
+
+        db_class.assert_not_called()
 
 
 class TestDatabaseManager(unittest.TestCase):
