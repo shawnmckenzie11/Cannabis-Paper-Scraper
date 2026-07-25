@@ -3,10 +3,13 @@ import unittest
 import os
 import json
 import sqlite3
+import tempfile
 from pathlib import Path
+from unittest.mock import patch
 from db_manager import DatabaseManager
 import extractor
 import classifier
+import reingest_heuristic_papers as heuristic_reingestion
 
 class TestHeuristicExtractor(unittest.TestCase):
     """Test cases for regex extractions and heuristics in extractor.py."""
@@ -1580,6 +1583,80 @@ class TestAdminRequiredEndpoints(unittest.TestCase):
         # For edit-classification, should return 404 since paper 99999 doesn't exist (proving decorator passed)
         res2 = self.client.post("/api/papers/99999/edit-classification", json={})
         self.assertEqual(res2.status_code, 404)
+
+
+class TestHeuristicReingestion(unittest.TestCase):
+    """Test cases for bounded heuristic re-ingestion batch safety."""
+
+    def test_only_pending_max_papers_limits_processed_rows(self):
+        """A capped pending run should update only the requested legacy rows."""
+        with tempfile.TemporaryDirectory() as temp_dir:
+            db_path = os.path.join(temp_dir, "test_reingestion.db")
+            db = DatabaseManager(db_path)
+            for idx in range(3):
+                db.insert_paper({
+                    "pmid": f"pending-{idx}",
+                    "title": f"Pending cannabis paper {idx}",
+                    "authors": [],
+                    "abstract": "Participants used cannabis in a 30-day study.",
+                    "study_type": ["legacy"],
+                    "exposure_method": ["inhaled"],
+                    "cannabis_type": ["dried flower"],
+                    "outcome_domain": ["cognition"],
+                    "expert_locked_fields": [],
+                    "classification_confidence": 0.95,
+                    "classifier_version": "heuristic-reclassify-1.0.0",
+                })
+            db.insert_paper({
+                "pmid": "already-current",
+                "title": "Already current cannabis paper",
+                "authors": [],
+                "abstract": "Participants used cannabis in a 30-day study.",
+                "expert_locked_fields": [],
+                "classification_confidence": 0.6,
+                "classifier_version": "heuristic-1.0.0",
+            })
+
+            with patch.object(
+                heuristic_reingestion,
+                "DatabaseManager",
+                lambda: DatabaseManager(db_path),
+            ):
+                summary = heuristic_reingestion.reingest_heuristic_papers(
+                    batch_size=1,
+                    only_pending=True,
+                    max_papers=2,
+                )
+
+            conn = db.get_connection()
+            try:
+                cur = conn.cursor()
+                cur.execute(
+                    "SELECT COUNT(*) AS c FROM papers "
+                    "WHERE classifier_version LIKE 'heuristic-reclassify%'"
+                )
+                pending_count = cur.fetchone()["c"]
+                cur.execute(
+                    "SELECT COUNT(*) AS c FROM papers "
+                    "WHERE classifier_version = 'heuristic-1.0.0'"
+                )
+                current_count = cur.fetchone()["c"]
+            finally:
+                conn.close()
+
+        self.assertEqual(summary["papers_processed"], 2)
+        self.assertEqual(pending_count, 1)
+        self.assertEqual(current_count, 3)
+
+    def test_invalid_max_papers_fails_before_database_initialization(self):
+        """Invalid max_papers values should fail without touching any database."""
+        with patch.object(
+            heuristic_reingestion,
+            "DatabaseManager",
+            side_effect=AssertionError("DatabaseManager should not initialize"),
+        ):
+            with self.assertRaises(ValueError):
+                heuristic_reingestion.reingest_heuristic_papers(max_papers=0)
 
 
 if __name__ == "__main__":
