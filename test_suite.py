@@ -260,6 +260,129 @@ class TestHeuristicExtractor(unittest.TestCase):
         self.assertIn("No specific strain was specified.", summary_no)
 
 
+class TestHeuristicReingestion(unittest.TestCase):
+    """Test bounded heuristic re-ingestion behavior."""
+
+    def setUp(self):
+        """Create an isolated SQLite database for each re-ingestion test."""
+        self.test_db_path = "test_reingest_heuristic.db"
+        if os.path.exists(self.test_db_path):
+            os.remove(self.test_db_path)
+
+        from db_manager import DatabaseManager as DBManagerClass
+
+        DBManagerClass._initialized = False
+        self.db = DBManagerClass(self.test_db_path)
+        self.original_reingest_db_manager = None
+
+    def tearDown(self):
+        """Restore patched state and remove the test database files."""
+        if self.original_reingest_db_manager is not None:
+            import reingest_heuristic_papers
+
+            reingest_heuristic_papers.DatabaseManager = self.original_reingest_db_manager
+
+        from db_manager import DatabaseManager as DBManagerClass
+
+        DBManagerClass._initialized = False
+        for suffix in ("", "-wal", "-shm"):
+            path = f"{self.test_db_path}{suffix}"
+            if os.path.exists(path):
+                try:
+                    os.remove(path)
+                except Exception:
+                    pass
+
+    def _patch_reingestion_database(self):
+        """Force the re-ingestion script to use this test database."""
+        import reingest_heuristic_papers
+        from db_manager import DatabaseManager as DBManagerClass
+
+        self.original_reingest_db_manager = reingest_heuristic_papers.DatabaseManager
+        test_db_path = self.test_db_path
+
+        class TestDatabaseManager(DBManagerClass):
+            """Database manager bound to the test database path."""
+
+            def __init__(self, db_path=None):
+                """Initialize with the test database regardless of caller input."""
+                super().__init__(test_db_path)
+
+        reingest_heuristic_papers.DatabaseManager = TestDatabaseManager
+        return reingest_heuristic_papers
+
+    def _insert_reingestion_paper(self, title, classifier_version):
+        """Insert one paper fixture for re-ingestion tests."""
+        return self.db.insert_paper(
+            {
+                "pmid": title.replace(" ", "-").lower(),
+                "title": title,
+                "abstract": "This randomized clinical trial evaluated oral CBD for pain over 4 weeks.",
+                "study_type": ["review"],
+                "exposure_method": ["unknown"],
+                "cannabis_type": ["unknown"],
+                "outcome_domain": ["other"],
+                "classification_confidence": 0.95,
+                "classifier_version": classifier_version,
+            }
+        )
+
+    def test_max_papers_limits_pending_reingestion(self):
+        """Bounded pending re-ingestion should update only the requested rows."""
+        paper_ids = [
+            self._insert_reingestion_paper(f"Pending CBD Trial {idx}", "heuristic-reclassify-1.0.0")
+            for idx in range(3)
+        ]
+        non_pending_id = self._insert_reingestion_paper(
+            "Current CBD Trial",
+            "heuristic-1.0.0",
+        )
+        reingest_heuristic_papers = self._patch_reingestion_database()
+
+        summary = reingest_heuristic_papers.reingest_heuristic_papers(
+            batch_size=1,
+            only_pending=True,
+            max_papers=2,
+        )
+
+        self.assertEqual(summary["papers_processed"], 2)
+
+        conn = self.db.get_connection()
+        try:
+            cur = conn.cursor()
+            cur.execute(
+                "SELECT id, classifier_version FROM papers ORDER BY id"
+            )
+            versions = {row["id"]: row["classifier_version"] for row in cur.fetchall()}
+        finally:
+            conn.close()
+
+        self.assertEqual(versions[paper_ids[0]], "heuristic-1.0.0")
+        self.assertEqual(versions[paper_ids[1]], "heuristic-1.0.0")
+        self.assertEqual(versions[paper_ids[2]], "heuristic-reclassify-1.0.0")
+        self.assertEqual(versions[non_pending_id], "heuristic-1.0.0")
+
+    def test_max_papers_must_be_positive_before_db_init(self):
+        """Invalid max_papers values should fail before opening the database."""
+        import reingest_heuristic_papers
+
+        original_db_manager = reingest_heuristic_papers.DatabaseManager
+
+        class FailingDatabaseManager:
+            """Database manager sentinel that should never be constructed."""
+
+            def __init__(self):
+                """Fail if validation does not happen before DB initialization."""
+                raise AssertionError("DatabaseManager should not initialize")
+
+        reingest_heuristic_papers.DatabaseManager = FailingDatabaseManager
+        try:
+            with self.assertRaises(ValueError):
+                reingest_heuristic_papers.reingest_heuristic_papers(max_papers=0)
+        finally:
+            reingest_heuristic_papers.DatabaseManager = original_db_manager
+
+
 class TestDatabaseManager(unittest.TestCase):
     """Test cases for SQLite dynamic operations, FTS5 sync, and CRUD."""
 
