@@ -7,6 +7,7 @@ from pathlib import Path
 from db_manager import DatabaseManager
 import extractor
 import classifier
+import reingest_heuristic_papers
 
 class TestHeuristicExtractor(unittest.TestCase):
     """Test cases for regex extractions and heuristics in extractor.py."""
@@ -258,6 +259,98 @@ class TestHeuristicExtractor(unittest.TestCase):
         self.assertIn("This is an animal study", summary_no)
         self.assertIn("pure cannabinoid cannabis administration", summary_no)
         self.assertIn("No specific strain was specified.", summary_no)
+
+
+class TestHeuristicReingestion(unittest.TestCase):
+    """Test cases for bounded heuristic re-ingestion safety controls."""
+
+    def setUp(self):
+        """Create an isolated SQLite database for re-ingestion tests."""
+        self.test_db_path = "test_reingest_papers.db"
+        for path in (
+            self.test_db_path,
+            f"{self.test_db_path}-shm",
+            f"{self.test_db_path}-wal",
+        ):
+            if os.path.exists(path):
+                os.remove(path)
+
+        self.db = DatabaseManager(self.test_db_path)
+        self.original_reingest_db_manager = reingest_heuristic_papers.DatabaseManager
+        test_db_path = self.test_db_path
+
+        def patched_database_manager(db_path=None):
+            """Return a DatabaseManager bound to the isolated test database."""
+            return DatabaseManager(db_path or test_db_path)
+
+        reingest_heuristic_papers.DatabaseManager = patched_database_manager
+
+    def tearDown(self):
+        """Restore the re-ingestion DB manager and remove temporary files."""
+        reingest_heuristic_papers.DatabaseManager = self.original_reingest_db_manager
+        for path in (
+            self.test_db_path,
+            f"{self.test_db_path}-shm",
+            f"{self.test_db_path}-wal",
+        ):
+            if os.path.exists(path):
+                os.remove(path)
+
+    def test_max_papers_limits_only_pending_reingestion(self):
+        """Only the capped number of legacy pending rows should be reprocessed."""
+        for index in range(4):
+            self.db.insert_paper(
+                {
+                    "pmid": f"pending-{index}",
+                    "title": f"CBD sleep study {index}",
+                    "abstract": "A clinical trial administered CBD oil for sleep quality.",
+                    "classification_confidence": 0.9,
+                    "classifier_version": "heuristic-reclassify-1.0.0",
+                    "expert_locked_fields": [],
+                }
+            )
+
+        current_id = self.db.insert_paper(
+            {
+                "pmid": "current-paper",
+                "title": "Current CBD review",
+                "abstract": "A review of CBD for sleep quality.",
+                "classification_confidence": 0.6,
+                "classifier_version": "heuristic-1.0.0",
+                "expert_locked_fields": [],
+            }
+        )
+
+        summary = reingest_heuristic_papers.reingest_heuristic_papers(
+            batch_size=1,
+            only_pending=True,
+            max_papers=2,
+        )
+
+        conn = self.db.get_connection()
+        cur = conn.cursor()
+        cur.execute(
+            "SELECT COUNT(*) AS c FROM papers WHERE classifier_version LIKE 'heuristic-reclassify%'"
+        )
+        pending_count = cur.fetchone()["c"]
+        cur.execute("SELECT classifier_version FROM papers WHERE id = ?", (current_id,))
+        current_version = cur.fetchone()["classifier_version"]
+        conn.close()
+
+        self.assertEqual(summary["papers_processed"], 2)
+        self.assertEqual(pending_count, 2)
+        self.assertEqual(current_version, "heuristic-1.0.0")
+
+    def test_max_papers_must_be_positive_before_db_init(self):
+        """Invalid caps should fail before a database connection is opened."""
+        def failing_database_manager(db_path=None):
+            """Fail if validation allows DatabaseManager initialization."""
+            raise AssertionError("DatabaseManager should not be initialized")
+
+        reingest_heuristic_papers.DatabaseManager = failing_database_manager
+
+        with self.assertRaises(ValueError):
+            reingest_heuristic_papers.reingest_heuristic_papers(max_papers=0)
 
 
 class TestDatabaseManager(unittest.TestCase):
