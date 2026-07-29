@@ -4,9 +4,11 @@ import os
 import json
 import sqlite3
 from pathlib import Path
+from unittest.mock import patch
 from db_manager import DatabaseManager
 import extractor
 import classifier
+import reingest_heuristic_papers as heuristic_reingestion
 
 class TestHeuristicExtractor(unittest.TestCase):
     """Test cases for regex extractions and heuristics in extractor.py."""
@@ -258,6 +260,82 @@ class TestHeuristicExtractor(unittest.TestCase):
         self.assertIn("This is an animal study", summary_no)
         self.assertIn("pure cannabinoid cannabis administration", summary_no)
         self.assertIn("No specific strain was specified.", summary_no)
+
+
+class TestHeuristicReingestion(unittest.TestCase):
+    """Test bounded heuristic paper re-ingestion safeguards."""
+
+    def setUp(self):
+        """Create an isolated database for re-ingestion tests."""
+        self.test_db_path = "test_reingest_papers.db"
+        if os.path.exists(self.test_db_path):
+            os.remove(self.test_db_path)
+        self.db = DatabaseManager(self.test_db_path)
+
+    def tearDown(self):
+        """Remove the isolated database after each re-ingestion test."""
+        if os.path.exists(self.test_db_path):
+            os.remove(self.test_db_path)
+
+    def _insert_pending_paper(self, pmid: str) -> int:
+        """Insert a legacy heuristic paper that is eligible for re-ingestion."""
+        return self.db.insert_paper({
+            "pmid": pmid,
+            "title": f"Mobile intervention for cannabis use {pmid}",
+            "authors": ["Test Author"],
+            "journal": "Test Journal",
+            "year": 2026,
+            "abstract": (
+                "OBJECTIVE: Reduce cannabis use among emerging adults. "
+                "METHODS: Participants received smartphone prompts during a 30-day trial."
+            ),
+            "study_type": ["review"],
+            "exposure_method": ["inhaled"],
+            "cannabis_type": ["dried flower"],
+            "outcome_domain": ["cognition"],
+            "classification_confidence": 0.95,
+            "classifier_version": "heuristic-reclassify-1.0.0",
+            "expert_locked_fields": [],
+        })
+
+    def test_max_papers_limits_pending_reingestion(self):
+        """Only the requested number of pending papers should be updated."""
+        for idx in range(3):
+            self._insert_pending_paper(f"reingest-{idx}")
+
+        with patch.object(heuristic_reingestion, "DatabaseManager", return_value=self.db):
+            summary = heuristic_reingestion.reingest_heuristic_papers(
+                batch_size=1,
+                only_pending=True,
+                max_papers=2,
+            )
+
+        conn = self.db.get_connection()
+        cur = conn.cursor()
+        cur.execute(
+            "SELECT COUNT(*) AS c FROM papers WHERE classifier_version LIKE 'heuristic-reclassify%'"
+        )
+        legacy_remaining = dict(cur.fetchone())["c"]
+        cur.execute(
+            "SELECT COUNT(*) AS c FROM papers WHERE classifier_version = 'heuristic-1.0.0'"
+        )
+        updated = dict(cur.fetchone())["c"]
+        conn.close()
+
+        self.assertEqual(summary["papers_processed"], 2)
+        self.assertEqual(legacy_remaining, 1)
+        self.assertEqual(updated, 2)
+
+    def test_max_papers_must_be_positive_before_database_init(self):
+        """Invalid caps should fail before the production database is opened."""
+        with patch.object(heuristic_reingestion, "DatabaseManager") as db_manager:
+            with self.assertRaises(ValueError):
+                heuristic_reingestion.reingest_heuristic_papers(
+                    only_pending=True,
+                    max_papers=0,
+                )
+
+        db_manager.assert_not_called()
 
 
 class TestDatabaseManager(unittest.TestCase):
