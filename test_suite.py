@@ -3,10 +3,13 @@ import unittest
 import os
 import json
 import sqlite3
+import tempfile
 from pathlib import Path
+from unittest.mock import patch
 from db_manager import DatabaseManager
 import extractor
 import classifier
+import reingest_heuristic_papers
 
 class TestHeuristicExtractor(unittest.TestCase):
     """Test cases for regex extractions and heuristics in extractor.py."""
@@ -1580,6 +1583,145 @@ class TestAdminRequiredEndpoints(unittest.TestCase):
         # For edit-classification, should return 404 since paper 99999 doesn't exist (proving decorator passed)
         res2 = self.client.post("/api/papers/99999/edit-classification", json={})
         self.assertEqual(res2.status_code, 404)
+
+
+class TestHeuristicReingestion(unittest.TestCase):
+    """Test cases for bounded heuristic paper re-ingestion."""
+
+    def setUp(self):
+        """Create a temporary SQLite catalog for re-ingestion tests."""
+        self.db_file = tempfile.NamedTemporaryFile(delete=False)
+        self.db_file.close()
+        conn = sqlite3.connect(self.db_file.name)
+        try:
+            conn.execute(
+                """
+                CREATE TABLE papers (
+                    id INTEGER PRIMARY KEY,
+                    title TEXT,
+                    abstract TEXT,
+                    expert_locked_fields TEXT,
+                    study_type TEXT,
+                    exposure_method TEXT,
+                    cannabis_type TEXT,
+                    outcome_domain TEXT,
+                    duration_days REAL,
+                    inhaled_exposure_duration TEXT,
+                    administration_frequency TEXT,
+                    treatment_duration TEXT,
+                    sample_size INTEGER,
+                    thc_pct REAL,
+                    cbd_pct REAL,
+                    dose_mg REAL,
+                    strain_reported TEXT,
+                    strain_normalized TEXT,
+                    publication_type TEXT,
+                    summary TEXT,
+                    classification_confidence REAL,
+                    classification_timestamp TEXT,
+                    classifier_version TEXT
+                )
+                """
+            )
+            rows = [
+                (1, "Legacy paper 1", "Abstract 1", "heuristic-reclassify-1.0.0"),
+                (2, "Legacy paper 2", "Abstract 2", "heuristic-reclassify-1.0.0"),
+                (3, "Legacy paper 3", "Abstract 3", "heuristic-reclassify-1.0.0"),
+                (4, "Current paper", "Abstract 4", "heuristic-1.0.0"),
+            ]
+            conn.executemany(
+                """
+                INSERT INTO papers (
+                    id, title, abstract, expert_locked_fields, classifier_version
+                ) VALUES (?, ?, ?, '[]', ?)
+                """,
+                rows,
+            )
+            conn.commit()
+        finally:
+            conn.close()
+
+    def tearDown(self):
+        """Remove the temporary SQLite catalog."""
+        os.remove(self.db_file.name)
+
+    def test_max_papers_limits_pending_updates(self):
+        """Bounded re-ingestion should update only the selected pending rows."""
+
+        class TempDatabaseManager:
+            """DatabaseManager stand-in that opens the temporary SQLite catalog."""
+
+            def get_connection(self):
+                """Return a new SQLite connection to the temporary catalog."""
+                return sqlite3.connect(self_path)
+
+        def fake_process_paper_metadata(title, abstract, run_llm=False):
+            """Return deterministic heuristic metadata for a test paper."""
+            return {
+                "study_type": ["Clinical (observational)"],
+                "exposure_method": ["unknown"],
+                "cannabis_type": ["unknown"],
+                "outcome_domain": ["other"],
+                "duration_days": None,
+                "inhaled_exposure_duration": None,
+                "administration_frequency": None,
+                "treatment_duration": None,
+                "sample_size": None,
+                "thc_pct": None,
+                "cbd_pct": None,
+                "dose_mg": None,
+                "strain_reported": None,
+                "strain_normalized": None,
+                "publication_type": "original research",
+                "summary": title,
+                "classification_confidence": 0.6,
+                "classification_timestamp": "2026-07-30T00:00:00",
+                "classifier_version": "heuristic-1.0.0",
+            }
+
+        self_path = self.db_file.name
+        with patch.object(reingest_heuristic_papers, "DatabaseManager", TempDatabaseManager), patch.object(
+            reingest_heuristic_papers.classifier,
+            "process_paper_metadata",
+            side_effect=fake_process_paper_metadata,
+        ):
+            summary = reingest_heuristic_papers.reingest_heuristic_papers(
+                batch_size=1,
+                only_pending=True,
+                max_papers=2,
+            )
+
+        conn = sqlite3.connect(self.db_file.name)
+        try:
+            pending = conn.execute(
+                "SELECT COUNT(*) FROM papers WHERE classifier_version LIKE 'heuristic-reclassify%'"
+            ).fetchone()[0]
+            current = conn.execute(
+                "SELECT COUNT(*) FROM papers WHERE classifier_version = 'heuristic-1.0.0'"
+            ).fetchone()[0]
+        finally:
+            conn.close()
+
+        self.assertEqual(summary["papers_processed"], 2)
+        self.assertEqual(pending, 1)
+        self.assertEqual(current, 3)
+
+    def test_max_papers_rejects_non_positive_before_db_connection(self):
+        """Invalid caps should fail without opening a database connection."""
+
+        class FailingDatabaseManager:
+            """DatabaseManager stand-in that fails if initialized."""
+
+            def __init__(self):
+                """Raise if validation happens after database initialization."""
+                raise AssertionError("DatabaseManager should not initialize")
+
+        with patch.object(reingest_heuristic_papers, "DatabaseManager", FailingDatabaseManager):
+            with self.assertRaises(ValueError):
+                reingest_heuristic_papers.reingest_heuristic_papers(
+                    only_pending=True,
+                    max_papers=0,
+                )
 
 
 if __name__ == "__main__":
