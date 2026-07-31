@@ -3,10 +3,12 @@ import unittest
 import os
 import json
 import sqlite3
+from unittest.mock import Mock, patch
 from pathlib import Path
 from db_manager import DatabaseManager
 import extractor
 import classifier
+import reingest_heuristic_papers
 
 class TestHeuristicExtractor(unittest.TestCase):
     """Test cases for regex extractions and heuristics in extractor.py."""
@@ -258,6 +260,139 @@ class TestHeuristicExtractor(unittest.TestCase):
         self.assertIn("This is an animal study", summary_no)
         self.assertIn("pure cannabinoid cannabis administration", summary_no)
         self.assertIn("No specific strain was specified.", summary_no)
+
+
+class TestHeuristicReingestion(unittest.TestCase):
+    """Test cases for safe bounded heuristic paper re-ingestion."""
+
+    def tearDown(self):
+        """Remove the temporary re-ingestion database after each test."""
+        test_db_path = getattr(self, "test_db_path", None)
+        if test_db_path and os.path.exists(test_db_path):
+            try:
+                os.remove(test_db_path)
+            except Exception:
+                pass
+
+    def _create_reingestion_test_db(self):
+        """Create a minimal papers table for re-ingestion tests."""
+        self.test_db_path = "test_reingestion_papers.db"
+        if os.path.exists(self.test_db_path):
+            os.remove(self.test_db_path)
+
+        conn = sqlite3.connect(self.test_db_path)
+        conn.execute(
+            """
+            CREATE TABLE papers (
+                id INTEGER PRIMARY KEY,
+                title TEXT,
+                abstract TEXT,
+                expert_locked_fields TEXT,
+                study_type TEXT,
+                exposure_method TEXT,
+                cannabis_type TEXT,
+                outcome_domain TEXT,
+                duration_days REAL,
+                inhaled_exposure_duration REAL,
+                administration_frequency TEXT,
+                treatment_duration TEXT,
+                sample_size INTEGER,
+                thc_pct REAL,
+                cbd_pct REAL,
+                dose_mg REAL,
+                strain_reported TEXT,
+                strain_normalized TEXT,
+                publication_type TEXT,
+                summary TEXT,
+                classification_confidence REAL,
+                classification_timestamp TEXT,
+                classifier_version TEXT
+            )
+            """
+        )
+        rows = [
+            (1, "Legacy paper 1", "Abstract 1", "heuristic-reclassify-1.0.0"),
+            (2, "Legacy paper 2", "Abstract 2", "heuristic-reclassify-1.0.0"),
+            (3, "Legacy paper 3", "Abstract 3", "heuristic-reclassify-1.0.0"),
+            (4, "Already current", "Abstract 4", "heuristic-1.0.0"),
+        ]
+        conn.executemany(
+            """
+            INSERT INTO papers (id, title, abstract, expert_locked_fields, classifier_version)
+            VALUES (?, ?, ?, '[]', ?)
+            """,
+            rows,
+        )
+        conn.commit()
+        conn.close()
+
+    def test_only_pending_max_papers_caps_reingestion(self):
+        """Bounded pending re-ingestion should update only the requested rows."""
+        self._create_reingestion_test_db()
+        metadata = {
+            "study_type": ["Clinical (observational)"],
+            "exposure_method": ["unknown"],
+            "cannabis_type": ["unknown"],
+            "outcome_domain": ["unknown"],
+            "duration_days": None,
+            "inhaled_exposure_duration": None,
+            "administration_frequency": None,
+            "treatment_duration": None,
+            "sample_size": None,
+            "thc_pct": None,
+            "cbd_pct": None,
+            "dose_mg": None,
+            "strain_reported": None,
+            "strain_normalized": None,
+            "publication_type": "original research",
+            "summary": "Updated heuristic summary.",
+            "classification_confidence": 0.6,
+            "classification_timestamp": "2026-07-31T06:00:00",
+            "classifier_version": "heuristic-1.0.0",
+        }
+        conn = sqlite3.connect(self.test_db_path)
+        mock_db = Mock()
+        mock_db.get_connection.return_value = conn
+
+        with patch.object(reingest_heuristic_papers, "DatabaseManager", return_value=mock_db):
+            with patch.object(
+                reingest_heuristic_papers.classifier,
+                "process_paper_metadata",
+                return_value=metadata,
+            ) as classifier_mock:
+                summary = reingest_heuristic_papers.reingest_heuristic_papers(
+                    batch_size=1,
+                    only_pending=True,
+                    max_papers=2,
+                )
+
+        self.assertEqual(summary["papers_processed"], 2)
+        self.assertEqual(classifier_mock.call_count, 2)
+
+        verify_conn = sqlite3.connect(self.test_db_path)
+        versions = {
+            row[0]: row[1]
+            for row in verify_conn.execute(
+                "SELECT id, classifier_version FROM papers ORDER BY id"
+            ).fetchall()
+        }
+        verify_conn.close()
+
+        self.assertEqual(versions[1], "heuristic-1.0.0")
+        self.assertEqual(versions[2], "heuristic-1.0.0")
+        self.assertEqual(versions[3], "heuristic-reclassify-1.0.0")
+        self.assertEqual(versions[4], "heuristic-1.0.0")
+
+    def test_max_papers_requires_positive_value(self):
+        """Non-positive paper caps should fail before opening a DB connection."""
+        with patch.object(reingest_heuristic_papers, "DatabaseManager") as db_manager_mock:
+            with self.assertRaisesRegex(ValueError, "max_papers must be a positive integer"):
+                reingest_heuristic_papers.reingest_heuristic_papers(
+                    only_pending=True,
+                    max_papers=0,
+                )
+
+        db_manager_mock.assert_not_called()
 
 
 class TestDatabaseManager(unittest.TestCase):
