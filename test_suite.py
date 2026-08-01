@@ -3,10 +3,12 @@ import unittest
 import os
 import json
 import sqlite3
+from unittest import mock
 from pathlib import Path
 from db_manager import DatabaseManager
 import extractor
 import classifier
+import reingest_heuristic_papers
 
 class TestHeuristicExtractor(unittest.TestCase):
     """Test cases for regex extractions and heuristics in extractor.py."""
@@ -258,6 +260,144 @@ class TestHeuristicExtractor(unittest.TestCase):
         self.assertIn("This is an animal study", summary_no)
         self.assertIn("pure cannabinoid cannabis administration", summary_no)
         self.assertIn("No specific strain was specified.", summary_no)
+
+
+class TestHeuristicReingestion(unittest.TestCase):
+    """Test cases for bounded heuristic re-ingestion batches."""
+
+    def setUp(self):
+        """Create an isolated papers table for re-ingestion tests."""
+        self.test_db_path = "test_reingest_heuristic.db"
+        if os.path.exists(self.test_db_path):
+            os.remove(self.test_db_path)
+
+        conn = sqlite3.connect(self.test_db_path)
+        try:
+            conn.execute(
+                """
+                CREATE TABLE papers (
+                    id INTEGER PRIMARY KEY,
+                    title TEXT,
+                    abstract TEXT,
+                    expert_locked_fields TEXT,
+                    study_type TEXT,
+                    exposure_method TEXT,
+                    cannabis_type TEXT,
+                    outcome_domain TEXT,
+                    duration_days REAL,
+                    inhaled_exposure_duration TEXT,
+                    administration_frequency TEXT,
+                    treatment_duration TEXT,
+                    sample_size INTEGER,
+                    thc_pct REAL,
+                    cbd_pct REAL,
+                    dose_mg REAL,
+                    strain_reported TEXT,
+                    strain_normalized TEXT,
+                    publication_type TEXT,
+                    summary TEXT,
+                    classification_confidence REAL,
+                    classification_timestamp TEXT,
+                    classifier_version TEXT
+                )
+                """
+            )
+            rows = [
+                (1, "Pending A", "Abstract A", "heuristic-reclassify-1.0.0"),
+                (2, "Pending B", "Abstract B", "heuristic-reclassify-1.0.0"),
+                (3, "Pending C", "Abstract C", "heuristic-reclassify-1.0.0"),
+                (4, "Done D", "Abstract D", "heuristic-1.0.0"),
+            ]
+            conn.executemany(
+                """
+                INSERT INTO papers (
+                    id, title, abstract, expert_locked_fields, study_type,
+                    exposure_method, cannabis_type, outcome_domain,
+                    duration_days, classification_confidence, classifier_version
+                )
+                VALUES (?, ?, ?, '[]', '["old"]', '["old"]', '["old"]',
+                        '["old"]', 10, 0.9, ?)
+                """,
+                rows,
+            )
+            conn.commit()
+        finally:
+            conn.close()
+
+    def tearDown(self):
+        """Remove the isolated re-ingestion test database."""
+        if os.path.exists(self.test_db_path):
+            os.remove(self.test_db_path)
+
+    def test_only_pending_max_papers_limits_updates(self):
+        """Bounded pending re-ingestion updates only the requested legacy rows."""
+        extracted = {
+            "study_type": ["Clinical (observational)"],
+            "exposure_method": ["unknown"],
+            "cannabis_type": ["unknown"],
+            "outcome_domain": ["addiction"],
+            "duration_days": 30.0,
+            "inhaled_exposure_duration": None,
+            "administration_frequency": None,
+            "treatment_duration": None,
+            "sample_size": None,
+            "thc_pct": None,
+            "cbd_pct": None,
+            "dose_mg": None,
+            "strain_reported": None,
+            "strain_normalized": None,
+            "publication_type": "original research",
+            "summary": "Heuristic summary",
+            "classification_confidence": 0.6,
+            "classification_timestamp": "2026-08-01T00:00:00",
+            "classifier_version": "heuristic-1.0.0",
+        }
+
+        with mock.patch.object(
+            reingest_heuristic_papers, "DatabaseManager"
+        ) as manager_cls, mock.patch.object(
+            reingest_heuristic_papers.classifier,
+            "process_paper_metadata",
+            return_value=extracted,
+        ) as process_metadata:
+            manager_cls.return_value.get_connection.return_value = sqlite3.connect(
+                self.test_db_path
+            )
+
+            summary = reingest_heuristic_papers.reingest_heuristic_papers(
+                batch_size=1,
+                only_pending=True,
+                max_papers=2,
+            )
+
+        self.assertEqual(summary["papers_processed"], 2)
+        self.assertEqual(process_metadata.call_count, 2)
+
+        conn = sqlite3.connect(self.test_db_path)
+        try:
+            cur = conn.execute(
+                """
+                SELECT id, classifier_version, classification_confidence
+                FROM papers
+                ORDER BY id
+                """
+            )
+            rows = cur.fetchall()
+        finally:
+            conn.close()
+
+        self.assertEqual(rows[0], (1, "heuristic-1.0.0", 0.6))
+        self.assertEqual(rows[1], (2, "heuristic-1.0.0", 0.6))
+        self.assertEqual(rows[2], (3, "heuristic-reclassify-1.0.0", 0.9))
+        self.assertEqual(rows[3], (4, "heuristic-1.0.0", 0.9))
+
+    def test_max_papers_requires_positive_integer_before_db_connection(self):
+        """Non-positive batch caps fail before the script opens any DB connection."""
+        with mock.patch.object(reingest_heuristic_papers, "DatabaseManager") as manager_cls:
+            with self.assertRaisesRegex(ValueError, "--max-papers"):
+                reingest_heuristic_papers.reingest_heuristic_papers(max_papers=0)
+
+        manager_cls.assert_not_called()
 
 
 class TestDatabaseManager(unittest.TestCase):
