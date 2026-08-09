@@ -3,10 +3,12 @@ import unittest
 import os
 import json
 import sqlite3
+import tempfile
 from pathlib import Path
 from db_manager import DatabaseManager
 import extractor
 import classifier
+import reingest_heuristic_papers
 
 class TestHeuristicExtractor(unittest.TestCase):
     """Test cases for regex extractions and heuristics in extractor.py."""
@@ -258,6 +260,154 @@ class TestHeuristicExtractor(unittest.TestCase):
         self.assertIn("This is an animal study", summary_no)
         self.assertIn("pure cannabinoid cannabis administration", summary_no)
         self.assertIn("No specific strain was specified.", summary_no)
+
+
+class TestHeuristicReingestion(unittest.TestCase):
+    """Test cases for bounded heuristic re-ingestion safety controls."""
+
+    def setUp(self):
+        """Create an isolated paper table and deterministic classifier patch."""
+        self.temp_dir = tempfile.TemporaryDirectory()
+        self.db_path = os.path.join(self.temp_dir.name, "papers.db")
+        self._create_test_database()
+
+        self.original_database_manager = reingest_heuristic_papers.DatabaseManager
+        self.original_process_paper_metadata = (
+            reingest_heuristic_papers.classifier.process_paper_metadata
+        )
+
+        db_path = self.db_path
+
+        class TestDatabaseManager:
+            """Minimal DatabaseManager replacement for re-ingestion tests."""
+
+            def get_connection(self):
+                """Return a connection to the temporary SQLite database."""
+                return sqlite3.connect(db_path)
+
+        def fake_process_paper_metadata(title, abstract, run_llm=False):
+            """Return deterministic heuristic metadata for test rows."""
+            return {
+                "study_type": ["Clinical (observational)"],
+                "exposure_method": ["unknown"],
+                "cannabis_type": ["unknown"],
+                "outcome_domain": ["other"],
+                "duration_days": 14.0,
+                "inhaled_exposure_duration": None,
+                "administration_frequency": None,
+                "treatment_duration": "14 days",
+                "sample_size": 42,
+                "thc_pct": None,
+                "cbd_pct": None,
+                "dose_mg": None,
+                "strain_reported": None,
+                "strain_normalized": None,
+                "publication_type": "original research",
+                "summary": f"Updated {title}",
+                "classification_confidence": 0.6,
+                "classification_timestamp": "2026-08-09T06:00:00",
+                "classifier_version": "heuristic-1.0.0",
+            }
+
+        reingest_heuristic_papers.DatabaseManager = TestDatabaseManager
+        reingest_heuristic_papers.classifier.process_paper_metadata = (
+            fake_process_paper_metadata
+        )
+
+    def tearDown(self):
+        """Restore patches and remove temporary database files."""
+        reingest_heuristic_papers.DatabaseManager = self.original_database_manager
+        reingest_heuristic_papers.classifier.process_paper_metadata = (
+            self.original_process_paper_metadata
+        )
+        self.temp_dir.cleanup()
+
+    def _create_test_database(self):
+        """Create a small papers table containing pending and non-pending rows."""
+        columns = """
+            id INTEGER PRIMARY KEY,
+            title TEXT,
+            abstract TEXT,
+            expert_locked_fields TEXT,
+            study_type TEXT,
+            exposure_method TEXT,
+            cannabis_type TEXT,
+            outcome_domain TEXT,
+            duration_days REAL,
+            inhaled_exposure_duration TEXT,
+            administration_frequency TEXT,
+            treatment_duration TEXT,
+            sample_size INTEGER,
+            thc_pct REAL,
+            cbd_pct REAL,
+            dose_mg REAL,
+            strain_reported TEXT,
+            strain_normalized TEXT,
+            publication_type TEXT,
+            summary TEXT,
+            classification_confidence REAL,
+            classification_timestamp TEXT,
+            classifier_version TEXT
+        """
+        conn = sqlite3.connect(self.db_path)
+        try:
+            conn.execute(f"CREATE TABLE papers ({columns})")
+            rows = [
+                (1, "Pending one", "Abstract", "[]", "heuristic-reclassify-1.0.0"),
+                (2, "Pending two", "Abstract", "[]", "heuristic-reclassify-1.0.0"),
+                (3, "Pending three", "Abstract", "[]", "heuristic-reclassify-1.0.0"),
+                (4, "Current row", "Abstract", "[]", "heuristic-1.0.0"),
+            ]
+            conn.executemany(
+                """
+                INSERT INTO papers (
+                    id, title, abstract, expert_locked_fields, classifier_version
+                ) VALUES (?, ?, ?, ?, ?)
+                """,
+                rows,
+            )
+            conn.commit()
+        finally:
+            conn.close()
+
+    def test_max_papers_limits_pending_updates(self):
+        """Only the requested number of pending records should be re-ingested."""
+        summary = reingest_heuristic_papers.reingest_heuristic_papers(
+            batch_size=1,
+            only_pending=True,
+            max_papers=2,
+        )
+
+        self.assertEqual(summary["papers_processed"], 2)
+        conn = sqlite3.connect(self.db_path)
+        conn.row_factory = sqlite3.Row
+        try:
+            rows = conn.execute(
+                "SELECT id, classifier_version FROM papers ORDER BY id"
+            ).fetchall()
+        finally:
+            conn.close()
+
+        versions = {row["id"]: row["classifier_version"] for row in rows}
+        self.assertEqual(versions[1], "heuristic-1.0.0")
+        self.assertEqual(versions[2], "heuristic-1.0.0")
+        self.assertEqual(versions[3], "heuristic-reclassify-1.0.0")
+        self.assertEqual(versions[4], "heuristic-1.0.0")
+
+    def test_non_positive_max_papers_rejected_before_db_open(self):
+        """Invalid caps should fail before creating a DatabaseManager."""
+
+        class FailingDatabaseManager:
+            """DatabaseManager replacement that fails if validation is too late."""
+
+            def __init__(self):
+                """Raise if the re-ingestion code tries to open the database."""
+                raise AssertionError("DatabaseManager should not be initialized")
+
+        reingest_heuristic_papers.DatabaseManager = FailingDatabaseManager
+
+        with self.assertRaises(ValueError):
+            reingest_heuristic_papers.reingest_heuristic_papers(max_papers=0)
 
 
 class TestDatabaseManager(unittest.TestCase):
