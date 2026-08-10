@@ -3,10 +3,12 @@ import unittest
 import os
 import json
 import sqlite3
+import tempfile
 from pathlib import Path
 from db_manager import DatabaseManager
 import extractor
 import classifier
+import reingest_heuristic_papers as reingest_script
 
 class TestHeuristicExtractor(unittest.TestCase):
     """Test cases for regex extractions and heuristics in extractor.py."""
@@ -258,6 +260,102 @@ class TestHeuristicExtractor(unittest.TestCase):
         self.assertIn("This is an animal study", summary_no)
         self.assertIn("pure cannabinoid cannabis administration", summary_no)
         self.assertIn("No specific strain was specified.", summary_no)
+
+
+class TestHeuristicReingestion(unittest.TestCase):
+    """Test cases for safe bounded heuristic re-ingestion batches."""
+
+    def setUp(self):
+        """Create an isolated SQLite database for re-ingestion tests."""
+        self.temp_dir = tempfile.TemporaryDirectory()
+        self.test_db_path = str(Path(self.temp_dir.name) / "reingest.db")
+        self.original_initialized = DatabaseManager._initialized
+        DatabaseManager._initialized = False
+        self.db = DatabaseManager(self.test_db_path)
+        self.original_reingest_db_manager = reingest_script.DatabaseManager
+
+        def db_factory():
+            """Return the isolated database manager used by this test."""
+            return self.db
+
+        self.db_factory = db_factory
+        reingest_script.DatabaseManager = self.db_factory
+
+    def tearDown(self):
+        """Restore patched database state after each re-ingestion test."""
+        reingest_script.DatabaseManager = self.original_reingest_db_manager
+        DatabaseManager._initialized = self.original_initialized
+        self.temp_dir.cleanup()
+
+    def insert_reingestion_candidate(self, pmid, classifier_version):
+        """Insert one minimal paper row for bounded re-ingestion tests."""
+        return self.db.insert_paper({
+            "pmid": pmid,
+            "title": f"Cannabis intervention candidate {pmid}",
+            "abstract": "Clinical trial participants received CBD oil for anxiety outcomes.",
+            "study_type": ["review"],
+            "exposure_method": ["unknown"],
+            "cannabis_type": ["unknown"],
+            "outcome_domain": ["anxiety"],
+            "classification_confidence": 0.91,
+            "classifier_version": classifier_version,
+        })
+
+    def get_candidate_versions(self):
+        """Return paper classifier versions ordered by insertion id."""
+        conn = self.db.get_connection()
+        try:
+            cur = conn.cursor()
+            cur.execute("SELECT pmid, classifier_version FROM papers ORDER BY id")
+            return [(row["pmid"], row["classifier_version"]) for row in cur.fetchall()]
+        finally:
+            conn.close()
+
+    def test_only_pending_max_papers_limits_updates(self):
+        """Bounded pending re-ingestion should update only the requested rows."""
+        self.insert_reingestion_candidate("pending-1", "heuristic-reclassify-1.0.0")
+        self.insert_reingestion_candidate("pending-2", "heuristic-reclassify-1.0.0")
+        self.insert_reingestion_candidate("pending-3", "heuristic-reclassify-1.0.0")
+        self.insert_reingestion_candidate("current-1", "heuristic-1.0.0")
+
+        summary = reingest_script.reingest_heuristic_papers(
+            dry_run=False,
+            batch_size=1,
+            only_pending=True,
+            max_papers=2,
+        )
+
+        self.assertEqual(summary["papers_processed"], 2)
+        self.assertEqual(summary["max_papers"], 2)
+        self.assertEqual(
+            self.get_candidate_versions(),
+            [
+                ("pending-1", "heuristic-1.0.0"),
+                ("pending-2", "heuristic-1.0.0"),
+                ("pending-3", "heuristic-reclassify-1.0.0"),
+                ("current-1", "heuristic-1.0.0"),
+            ],
+        )
+
+    def test_max_papers_must_be_positive_before_db_init(self):
+        """Invalid caps should fail before opening a database connection."""
+        calls = []
+
+        def failing_db_factory():
+            """Record accidental database initialization attempts."""
+            calls.append(True)
+            raise AssertionError("DatabaseManager should not be initialized")
+
+        reingest_script.DatabaseManager = failing_db_factory
+
+        with self.assertRaises(ValueError):
+            reingest_script.reingest_heuristic_papers(
+                dry_run=True,
+                only_pending=True,
+                max_papers=0,
+            )
+
+        self.assertEqual(calls, [])
 
 
 class TestDatabaseManager(unittest.TestCase):
