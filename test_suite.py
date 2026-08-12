@@ -3,10 +3,13 @@ import unittest
 import os
 import json
 import sqlite3
+import tempfile
 from pathlib import Path
+from unittest.mock import patch
 from db_manager import DatabaseManager
 import extractor
 import classifier
+import reingest_heuristic_papers as reingest_heuristic
 
 class TestHeuristicExtractor(unittest.TestCase):
     """Test cases for regex extractions and heuristics in extractor.py."""
@@ -258,6 +261,130 @@ class TestHeuristicExtractor(unittest.TestCase):
         self.assertIn("This is an animal study", summary_no)
         self.assertIn("pure cannabinoid cannabis administration", summary_no)
         self.assertIn("No specific strain was specified.", summary_no)
+
+
+class TestHeuristicReingestion(unittest.TestCase):
+    """Test bounded heuristic re-ingestion batch behavior."""
+
+    def setUp(self):
+        """Create an isolated SQLite database with re-ingestion columns."""
+        self.temp_dir = tempfile.TemporaryDirectory()
+        self.db_path = os.path.join(self.temp_dir.name, "reingest_heuristic.db")
+        conn = sqlite3.connect(self.db_path)
+        conn.execute(
+            """
+            CREATE TABLE papers (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                title TEXT,
+                abstract TEXT,
+                expert_locked_fields TEXT,
+                study_type TEXT,
+                exposure_method TEXT,
+                cannabis_type TEXT,
+                outcome_domain TEXT,
+                duration_days REAL,
+                inhaled_exposure_duration TEXT,
+                administration_frequency TEXT,
+                treatment_duration TEXT,
+                sample_size INTEGER,
+                thc_pct REAL,
+                cbd_pct REAL,
+                dose_mg REAL,
+                strain_reported TEXT,
+                strain_normalized TEXT,
+                publication_type TEXT,
+                summary TEXT,
+                classification_confidence REAL,
+                classification_timestamp TEXT,
+                classifier_version TEXT
+            )
+            """
+        )
+        conn.commit()
+        conn.close()
+
+    def tearDown(self):
+        """Remove the isolated SQLite database directory."""
+        self.temp_dir.cleanup()
+
+    def test_only_pending_max_papers_limits_updates(self):
+        """Only the capped number of pending rows should be re-ingested."""
+        rows = [
+            (
+                "Pending one",
+                "This clinical trial evaluated CBD oil for pain over 14 days.",
+                "heuristic-reclassify-1.0.0",
+            ),
+            (
+                "Pending two",
+                "This randomized trial evaluated vaporized cannabis for anxiety.",
+                "heuristic-reclassify-1.0.0",
+            ),
+            (
+                "Pending three",
+                "This rat study evaluated injected THC for inflammation.",
+                "heuristic-reclassify-1.0.0",
+            ),
+            (
+                "Already current",
+                "This review summarizes cannabinoid studies.",
+                "heuristic-1.0.0",
+            ),
+        ]
+        conn = sqlite3.connect(self.db_path)
+        conn.executemany(
+            """
+            INSERT INTO papers (title, abstract, classifier_version, classification_confidence)
+            VALUES (?, ?, ?, 0.9)
+            """,
+            rows,
+        )
+        conn.commit()
+        conn.close()
+
+        db_path = self.db_path
+
+        class FakeDatabaseManager:
+            """Provide isolated SQLite connections for re-ingestion tests."""
+
+            def get_connection(self):
+                """Return a SQLite connection to the test database."""
+                return sqlite3.connect(db_path)
+
+        with patch.object(reingest_heuristic, "DatabaseManager", FakeDatabaseManager):
+            summary = reingest_heuristic.reingest_heuristic_papers(
+                batch_size=1,
+                only_pending=True,
+                max_papers=2,
+            )
+
+        conn = sqlite3.connect(self.db_path)
+        versions = [
+            row[0]
+            for row in conn.execute(
+                "SELECT classifier_version FROM papers ORDER BY id"
+            ).fetchall()
+        ]
+        conn.close()
+
+        self.assertEqual(summary["papers_processed"], 2)
+        self.assertEqual(summary["max_papers"], 2)
+        self.assertEqual(versions[:2], ["heuristic-1.0.0", "heuristic-1.0.0"])
+        self.assertEqual(versions[2], "heuristic-reclassify-1.0.0")
+        self.assertEqual(versions[3], "heuristic-1.0.0")
+
+    def test_invalid_max_papers_rejected_before_db_initialization(self):
+        """Invalid caps should fail before any database connection is attempted."""
+        with patch.object(
+            reingest_heuristic,
+            "DatabaseManager",
+            side_effect=AssertionError("DatabaseManager should not be initialized"),
+        ):
+            with self.assertRaises(ValueError):
+                reingest_heuristic.reingest_heuristic_papers(
+                    only_pending=True,
+                    max_papers=0,
+                )
 
 
 class TestDatabaseManager(unittest.TestCase):
