@@ -4,6 +4,7 @@ import os
 import json
 import sqlite3
 from pathlib import Path
+from unittest.mock import patch
 from db_manager import DatabaseManager
 import extractor
 import classifier
@@ -258,6 +259,125 @@ class TestHeuristicExtractor(unittest.TestCase):
         self.assertIn("This is an animal study", summary_no)
         self.assertIn("pure cannabinoid cannabis administration", summary_no)
         self.assertIn("No specific strain was specified.", summary_no)
+
+
+class TestHeuristicReingestion(unittest.TestCase):
+    """Test cases for bounded heuristic re-ingestion batches."""
+
+    def setUp(self):
+        """Create an isolated SQLite database for re-ingestion tests."""
+        self._database_url = os.environ.pop("DATABASE_URL", None)
+        DatabaseManager._initialized = False
+        self.test_db_path = "test_reingest_heuristic_papers.db"
+        self._remove_test_db_files()
+        self.db = DatabaseManager(self.test_db_path)
+
+    def tearDown(self):
+        """Remove the isolated database and restore environment state."""
+        self._remove_test_db_files()
+        if self._database_url is not None:
+            os.environ["DATABASE_URL"] = self._database_url
+        DatabaseManager._initialized = False
+
+    def _remove_test_db_files(self):
+        """Delete SQLite database files created by this test case."""
+        for suffix in ("", "-wal", "-shm"):
+            path = f"{self.test_db_path}{suffix}"
+            if os.path.exists(path):
+                os.remove(path)
+
+    def _insert_paper(self, pmid, classifier_version):
+        """Insert a minimal paper row for re-ingestion selection tests."""
+        conn = self.db.get_connection()
+        try:
+            conn.execute(
+                """
+                INSERT INTO papers (
+                    pmid, title, abstract, classifier_version,
+                    classification_confidence, expert_locked_fields,
+                    date_harvested
+                ) VALUES (?, ?, ?, ?, ?, ?, ?)
+                """,
+                (
+                    pmid,
+                    f"Bounded reingestion paper {pmid}",
+                    "Participants used cannabis in a short clinical study.",
+                    classifier_version,
+                    0.9,
+                    "[]",
+                    "2026-08-13T00:00:00",
+                ),
+            )
+            conn.commit()
+        finally:
+            conn.close()
+
+    def test_max_papers_limits_pending_reingestion(self):
+        """Only the first pending rows up to max_papers should be updated."""
+        import reingest_heuristic_papers as reingest_module
+
+        for idx in range(4):
+            self._insert_paper(f"pending-{idx}", "heuristic-reclassify-1.0.0")
+        self._insert_paper("already-current", "heuristic-1.0.0")
+
+        extracted = {
+            "study_type": ["Clinical (observational)"],
+            "exposure_method": ["unknown"],
+            "cannabis_type": ["unknown"],
+            "outcome_domain": ["other"],
+            "duration_days": 30.0,
+            "inhaled_exposure_duration": None,
+            "administration_frequency": None,
+            "treatment_duration": None,
+            "sample_size": None,
+            "thc_pct": None,
+            "cbd_pct": None,
+            "dose_mg": None,
+            "strain_reported": None,
+            "strain_normalized": None,
+            "publication_type": "original research",
+            "summary": "Updated bounded re-ingestion summary.",
+            "classification_confidence": 0.6,
+            "classification_timestamp": "2026-08-13T00:00:00",
+            "classifier_version": "heuristic-1.0.0",
+        }
+
+        with patch.object(
+            reingest_module,
+            "DatabaseManager",
+            return_value=DatabaseManager(self.test_db_path),
+        ), patch.object(
+            reingest_module.classifier,
+            "process_paper_metadata",
+            return_value=extracted,
+        ):
+            summary = reingest_module.reingest_heuristic_papers(
+                batch_size=1,
+                only_pending=True,
+                max_papers=2,
+            )
+
+        conn = self.db.get_connection()
+        try:
+            cur = conn.cursor()
+            cur.execute(
+                """
+                SELECT pmid, classifier_version
+                FROM papers
+                ORDER BY id
+                """
+            )
+            versions = {row["pmid"]: row["classifier_version"] for row in cur.fetchall()}
+        finally:
+            conn.close()
+
+        self.assertEqual(summary["papers_processed"], 2)
+        self.assertEqual(summary["max_papers"], 2)
+        self.assertEqual(versions["pending-0"], "heuristic-1.0.0")
+        self.assertEqual(versions["pending-1"], "heuristic-1.0.0")
+        self.assertEqual(versions["pending-2"], "heuristic-reclassify-1.0.0")
+        self.assertEqual(versions["pending-3"], "heuristic-reclassify-1.0.0")
+        self.assertEqual(versions["already-current"], "heuristic-1.0.0")
 
 
 class TestDatabaseManager(unittest.TestCase):
