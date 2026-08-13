@@ -294,8 +294,9 @@ class TestHeuristicReingestion(unittest.TestCase):
                 """
                 INSERT INTO papers (
                     pmid, title, abstract, classifier_version,
-                    classification_confidence, expert_locked_fields
-                ) VALUES (?, ?, ?, ?, ?, ?)
+                    classification_confidence, expert_locked_fields,
+                    date_harvested
+                ) VALUES (?, ?, ?, ?, ?, ?, ?)
                 """,
                 (
                     pmid,
@@ -304,6 +305,7 @@ class TestHeuristicReingestion(unittest.TestCase):
                     classifier_version,
                     0.9,
                     "[]",
+                    "2026-08-13T00:00:00",
                 ),
             )
             conn.commit()
