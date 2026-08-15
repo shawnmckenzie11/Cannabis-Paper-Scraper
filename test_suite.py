@@ -3,10 +3,13 @@ import unittest
 import os
 import json
 import sqlite3
+import tempfile
 from pathlib import Path
+from unittest.mock import patch
 from db_manager import DatabaseManager
 import extractor
 import classifier
+import reingest_heuristic_papers
 
 class TestHeuristicExtractor(unittest.TestCase):
     """Test cases for regex extractions and heuristics in extractor.py."""
@@ -258,6 +261,78 @@ class TestHeuristicExtractor(unittest.TestCase):
         self.assertIn("This is an animal study", summary_no)
         self.assertIn("pure cannabinoid cannabis administration", summary_no)
         self.assertIn("No specific strain was specified.", summary_no)
+
+
+class TestHeuristicReingestion(unittest.TestCase):
+    """Test cases for bounded heuristic re-ingestion batches."""
+
+    def setUp(self):
+        """Create an isolated SQLite database for re-ingestion tests."""
+        self.temp_dir = tempfile.TemporaryDirectory()
+        self.db_path = os.path.join(self.temp_dir.name, "reingest.db")
+        self.db = DatabaseManager(self.db_path)
+
+    def tearDown(self):
+        """Clean up the temporary SQLite database."""
+        self.temp_dir.cleanup()
+
+    def test_only_pending_max_papers_limits_updates(self):
+        """Bounded pending re-ingestion should only update the capped rows."""
+        for idx in range(3):
+            self.db.insert_paper(
+                {
+                    "pmid": f"pending-{idx}",
+                    "title": f"CBD sleep trial pending {idx}",
+                    "abstract": "Participants received CBD for 5 days and reported sleep outcomes.",
+                    "study_type": ["review"],
+                    "exposure_method": ["unknown"],
+                    "classification_confidence": 0.9,
+                    "classifier_version": "heuristic-reclassify-1.0.0",
+                }
+            )
+        self.db.insert_paper(
+            {
+                "pmid": "already-current",
+                "title": "CBD sleep trial current",
+                "abstract": "Participants received CBD for 5 days and reported sleep outcomes.",
+                "study_type": ["Clinical (observational)"],
+                "exposure_method": ["oral administration"],
+                "classification_confidence": 0.6,
+                "classifier_version": "heuristic-1.0.0",
+            }
+        )
+
+        with patch(
+            "reingest_heuristic_papers.DatabaseManager",
+            return_value=DatabaseManager(self.db_path),
+        ):
+            summary = reingest_heuristic_papers.reingest_heuristic_papers(
+                batch_size=1,
+                only_pending=True,
+                max_papers=2,
+            )
+
+        conn = self.db.get_connection()
+        cursor = conn.cursor()
+        cursor.execute("SELECT pmid, classifier_version FROM papers ORDER BY id")
+        versions = {row["pmid"]: row["classifier_version"] for row in cursor.fetchall()}
+        conn.close()
+
+        self.assertEqual(summary["papers_processed"], 2)
+        self.assertEqual(summary["max_papers"], 2)
+        self.assertEqual(versions["pending-0"], "heuristic-1.0.0")
+        self.assertEqual(versions["pending-1"], "heuristic-1.0.0")
+        self.assertEqual(versions["pending-2"], "heuristic-reclassify-1.0.0")
+        self.assertEqual(versions["already-current"], "heuristic-1.0.0")
+
+    def test_max_papers_must_be_positive_before_db_access(self):
+        """Invalid bounds should fail before opening a database connection."""
+        with patch(
+            "reingest_heuristic_papers.DatabaseManager",
+            side_effect=AssertionError("Database should not be initialized"),
+        ):
+            with self.assertRaises(ValueError):
+                reingest_heuristic_papers.reingest_heuristic_papers(max_papers=0)
 
 
 class TestDatabaseManager(unittest.TestCase):
