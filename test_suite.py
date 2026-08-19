@@ -7,6 +7,7 @@ from pathlib import Path
 from db_manager import DatabaseManager
 import extractor
 import classifier
+import reingest_heuristic_papers as reingest
 
 class TestHeuristicExtractor(unittest.TestCase):
     """Test cases for regex extractions and heuristics in extractor.py."""
@@ -258,6 +259,101 @@ class TestHeuristicExtractor(unittest.TestCase):
         self.assertIn("This is an animal study", summary_no)
         self.assertIn("pure cannabinoid cannabis administration", summary_no)
         self.assertIn("No specific strain was specified.", summary_no)
+
+
+class TestHeuristicReingestion(unittest.TestCase):
+    """Test cases for bounded heuristic re-ingestion batches."""
+
+    def setUp(self):
+        """Create an isolated SQLite database for re-ingestion tests."""
+        self.original_database_url = os.environ.pop("DATABASE_URL", None)
+        self.test_db_path = "test_reingest_papers.db"
+        for path in [self.test_db_path, f"{self.test_db_path}-wal", f"{self.test_db_path}-shm"]:
+            if os.path.exists(path):
+                os.remove(path)
+        DatabaseManager._initialized = False
+        self.db = DatabaseManager(self.test_db_path)
+
+    def tearDown(self):
+        """Remove the isolated database and restore the prior environment."""
+        for path in [self.test_db_path, f"{self.test_db_path}-wal", f"{self.test_db_path}-shm"]:
+            if os.path.exists(path):
+                try:
+                    os.remove(path)
+                except Exception:
+                    pass
+        if self.original_database_url is not None:
+            os.environ["DATABASE_URL"] = self.original_database_url
+        DatabaseManager._initialized = False
+
+    def _insert_reingest_paper(self, pmid, classifier_version):
+        """Insert a simple paper record for re-ingestion batch tests."""
+        return self.db.insert_paper(
+            {
+                "pmid": pmid,
+                "title": f"Clinical cannabis trial {pmid}",
+                "abstract": (
+                    "This randomized clinical trial evaluated vaporized THC for pain "
+                    "over 7 days in 42 participants."
+                ),
+                "study_type": ["review"],
+                "exposure_method": ["unknown"],
+                "cannabis_type": ["unknown"],
+                "outcome_domain": ["pain"],
+                "classification_confidence": 0.92,
+                "classifier_version": classifier_version,
+                "expert_locked_fields": [],
+            }
+        )
+
+    def test_build_paper_selection_applies_limit(self):
+        """The selected re-ingestion query should push max_papers into SQL."""
+        query, params = reingest.build_paper_selection(
+            only_pending=True,
+            max_papers=25,
+        )
+
+        self.assertIn("classifier_version LIKE 'heuristic-reclassify%'", query)
+        self.assertIn("LIMIT ?", query)
+        self.assertEqual(params, [25])
+
+    def test_reingestion_respects_max_papers(self):
+        """A capped pending run should update only the requested legacy rows."""
+        for idx in range(3):
+            self._insert_reingest_paper(f"pending-{idx}", "heuristic-reclassify-1.0.0")
+        self._insert_reingest_paper("already-current", "heuristic-1.0.0")
+
+        original_manager = reingest.DatabaseManager
+        try:
+            reingest.DatabaseManager = lambda: self.db
+            summary = reingest.reingest_heuristic_papers(
+                batch_size=1,
+                only_pending=True,
+                max_papers=2,
+            )
+        finally:
+            reingest.DatabaseManager = original_manager
+
+        conn = self.db.get_connection()
+        try:
+            cur = conn.cursor()
+            cur.execute(
+                "SELECT COUNT(*) AS c FROM papers "
+                "WHERE classifier_version LIKE 'heuristic-reclassify%'"
+            )
+            pending = cur.fetchone()["c"]
+            cur.execute(
+                "SELECT COUNT(*) AS c FROM papers "
+                "WHERE classifier_version = 'heuristic-1.0.0'"
+            )
+            current = cur.fetchone()["c"]
+        finally:
+            conn.close()
+
+        self.assertEqual(summary["papers_processed"], 2)
+        self.assertEqual(summary["max_papers"], 2)
+        self.assertEqual(pending, 1)
+        self.assertEqual(current, 3)
 
 
 class TestDatabaseManager(unittest.TestCase):
