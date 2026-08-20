@@ -3,6 +3,7 @@ import unittest
 import os
 import json
 import sqlite3
+from unittest import mock
 from pathlib import Path
 from db_manager import DatabaseManager
 import extractor
@@ -258,6 +259,120 @@ class TestHeuristicExtractor(unittest.TestCase):
         self.assertIn("This is an animal study", summary_no)
         self.assertIn("pure cannabinoid cannabis administration", summary_no)
         self.assertIn("No specific strain was specified.", summary_no)
+
+
+class TestHeuristicReingestion(unittest.TestCase):
+    """Test bounded heuristic paper re-ingestion behavior."""
+
+    def setUp(self):
+        """Create an isolated SQLite database for re-ingestion tests."""
+        self.test_db_path = "test_reingest_heuristic.db"
+        self.original_database_url = os.environ.pop("DATABASE_URL", None)
+        if os.path.exists(self.test_db_path):
+            os.remove(self.test_db_path)
+        self.db = DatabaseManager(self.test_db_path)
+
+    def tearDown(self):
+        """Restore environment and remove the isolated test database."""
+        if self.original_database_url is not None:
+            os.environ["DATABASE_URL"] = self.original_database_url
+        if os.path.exists(self.test_db_path):
+            try:
+                os.remove(self.test_db_path)
+            except Exception:
+                pass
+
+    def _insert_legacy_paper(self, pmid):
+        """Insert one legacy heuristic-reclassify paper into the test database."""
+        return self.db.insert_paper(
+            {
+                "pmid": pmid,
+                "title": f"Legacy cannabis study {pmid}",
+                "abstract": "This clinical study evaluated cannabidiol treatment for anxiety.",
+                "study_type": ["Clinical (observational)"],
+                "exposure_method": ["unknown"],
+                "cannabis_type": ["CBD"],
+                "outcome_domain": ["anxiety"],
+                "duration_days": None,
+                "classification_confidence": 0.92,
+                "classifier_version": "heuristic-reclassify-1.0.0",
+            }
+        )
+
+    def test_only_pending_max_papers_limits_updates(self):
+        """Bounded pending re-ingestion should update only the capped number of rows."""
+        import reingest_heuristic_papers
+
+        for pmid in ("900001", "900002", "900003"):
+            self._insert_legacy_paper(pmid)
+
+        def fake_metadata(title, abstract, run_llm=False):
+            return {
+                "study_type": ["Clinical (observational)"],
+                "exposure_method": ["unknown"],
+                "cannabis_type": ["CBD"],
+                "outcome_domain": ["anxiety"],
+                "duration_days": 30.0,
+                "inhaled_exposure_duration": None,
+                "administration_frequency": None,
+                "treatment_duration": 30.0,
+                "sample_size": None,
+                "thc_pct": None,
+                "cbd_pct": None,
+                "dose_mg": None,
+                "strain_reported": None,
+                "strain_normalized": None,
+                "publication_type": "original research",
+                "summary": "Updated heuristic summary.",
+                "classification_confidence": 0.6,
+                "classification_timestamp": "2026-08-20T06:00:00",
+                "classifier_version": "heuristic-1.0.0",
+            }
+
+        with mock.patch.object(
+            reingest_heuristic_papers, "DatabaseManager", return_value=self.db
+        ), mock.patch.object(
+            reingest_heuristic_papers.classifier,
+            "process_paper_metadata",
+            side_effect=fake_metadata,
+        ):
+            summary = reingest_heuristic_papers.reingest_heuristic_papers(
+                only_pending=True,
+                max_papers=2,
+            )
+
+        self.assertEqual(summary["papers_processed"], 2)
+        self.assertEqual(summary["max_papers"], 2)
+
+        conn = self.db.get_connection()
+        try:
+            cur = conn.cursor()
+            cur.execute(
+                """
+                SELECT classifier_version, COUNT(*) AS c
+                FROM papers
+                GROUP BY classifier_version
+                ORDER BY classifier_version
+                """
+            )
+            counts = {row["classifier_version"]: row["c"] for row in cur.fetchall()}
+        finally:
+            conn.close()
+
+        self.assertEqual(counts["heuristic-1.0.0"], 2)
+        self.assertEqual(counts["heuristic-reclassify-1.0.0"], 1)
+
+    def test_max_papers_rejects_non_positive_before_database_init(self):
+        """Invalid caps should fail before opening a database connection."""
+        import reingest_heuristic_papers
+
+        with mock.patch.object(
+            reingest_heuristic_papers,
+            "DatabaseManager",
+            side_effect=AssertionError("Database should not be initialized"),
+        ):
+            with self.assertRaises(ValueError):
+                reingest_heuristic_papers.reingest_heuristic_papers(max_papers=0)
 
 
 class TestDatabaseManager(unittest.TestCase):
