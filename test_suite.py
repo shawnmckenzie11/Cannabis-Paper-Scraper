@@ -4,9 +4,11 @@ import os
 import json
 import sqlite3
 from pathlib import Path
+from unittest import mock
 from db_manager import DatabaseManager
 import extractor
 import classifier
+import reingest_heuristic_papers
 
 class TestHeuristicExtractor(unittest.TestCase):
     """Test cases for regex extractions and heuristics in extractor.py."""
@@ -258,6 +260,91 @@ class TestHeuristicExtractor(unittest.TestCase):
         self.assertIn("This is an animal study", summary_no)
         self.assertIn("pure cannabinoid cannabis administration", summary_no)
         self.assertIn("No specific strain was specified.", summary_no)
+
+
+class TestHeuristicReingestion(unittest.TestCase):
+    """Test cases for bounded heuristic paper re-ingestion."""
+
+    def setUp(self):
+        """Create an isolated SQLite catalog for re-ingestion tests."""
+        self.test_db_path = "test_reingest_heuristic.db"
+        if os.path.exists(self.test_db_path):
+            os.remove(self.test_db_path)
+        self.db = DatabaseManager(self.test_db_path)
+
+    def tearDown(self):
+        """Remove the isolated SQLite catalog after each test."""
+        if os.path.exists(self.test_db_path):
+            os.remove(self.test_db_path)
+
+    def _insert_test_paper(self, pmid, classifier_version):
+        """Insert one minimally viable paper for re-ingestion."""
+        return self.db.insert_paper(
+            {
+                "pmid": pmid,
+                "title": f"CBD trial {pmid}",
+                "abstract": "This randomized trial evaluated oral CBD for sleep.",
+                "study_type": ["review"],
+                "exposure_method": ["unknown"],
+                "classification_confidence": 0.9,
+                "classifier_version": classifier_version,
+            }
+        )
+
+    def test_only_pending_max_papers_limits_updates(self):
+        """Only the first pending rows up to max_papers should be reclassified."""
+        pending_ids = [
+            self._insert_test_paper(f"pending-{idx}", "heuristic-reclassify-1.0.0")
+            for idx in range(3)
+        ]
+        llm_id = self._insert_test_paper("llm-row", "llm-reclassify-2.1.0")
+        extracted = {
+            "study_type": ["Clinical (RCT)"],
+            "exposure_method": ["oral administration"],
+            "cannabis_type": ["CBD"],
+            "outcome_domain": ["sleep"],
+            "duration_days": 30.0,
+            "classification_confidence": 0.6,
+            "classifier_version": "heuristic-1.0.0",
+        }
+
+        with mock.patch.object(
+            reingest_heuristic_papers, "DatabaseManager", return_value=self.db
+        ), mock.patch.object(
+            reingest_heuristic_papers.classifier,
+            "process_paper_metadata",
+            return_value=extracted,
+        ) as process_mock:
+            summary = reingest_heuristic_papers.reingest_heuristic_papers(
+                only_pending=True,
+                batch_size=1,
+                max_papers=2,
+            )
+
+        self.assertEqual(summary["papers_processed"], 2)
+        self.assertEqual(process_mock.call_count, 2)
+        updated_versions = [
+            self.db.get_paper(paper_id)["classifier_version"] for paper_id in pending_ids
+        ]
+        self.assertEqual(updated_versions[:2], ["heuristic-1.0.0", "heuristic-1.0.0"])
+        self.assertEqual(updated_versions[2], "heuristic-reclassify-1.0.0")
+        self.assertEqual(
+            self.db.get_paper(llm_id)["classifier_version"],
+            "llm-reclassify-2.1.0",
+        )
+
+    def test_invalid_max_papers_rejects_before_database_connection(self):
+        """Non-positive max_papers values should fail before opening the database."""
+        with mock.patch.object(
+            reingest_heuristic_papers,
+            "DatabaseManager",
+            side_effect=AssertionError("DatabaseManager should not be initialized"),
+        ):
+            with self.assertRaises(ValueError):
+                reingest_heuristic_papers.reingest_heuristic_papers(
+                    only_pending=True,
+                    max_papers=0,
+                )
 
 
 class TestDatabaseManager(unittest.TestCase):
