@@ -260,6 +260,121 @@ class TestHeuristicExtractor(unittest.TestCase):
         self.assertIn("No specific strain was specified.", summary_no)
 
 
+class TestHeuristicReingestion(unittest.TestCase):
+    """Tests for safe bounded heuristic re-ingestion batches."""
+
+    def test_max_papers_limits_pending_reingestion(self):
+        """Only the requested number of pending papers should be reprocessed."""
+        import tempfile
+        import reingest_heuristic_papers as reingest_module
+
+        with tempfile.TemporaryDirectory() as temp_dir:
+            db_path = os.path.join(temp_dir, "bounded_reingest.db")
+            conn = sqlite3.connect(db_path)
+            conn.execute(
+                """
+                CREATE TABLE papers (
+                    id INTEGER PRIMARY KEY,
+                    title TEXT,
+                    abstract TEXT,
+                    expert_locked_fields TEXT,
+                    study_type TEXT,
+                    exposure_method TEXT,
+                    cannabis_type TEXT,
+                    outcome_domain TEXT,
+                    duration_days REAL,
+                    inhaled_exposure_duration TEXT,
+                    administration_frequency TEXT,
+                    treatment_duration TEXT,
+                    sample_size INTEGER,
+                    thc_pct REAL,
+                    cbd_pct REAL,
+                    dose_mg REAL,
+                    strain_reported TEXT,
+                    strain_normalized TEXT,
+                    publication_type TEXT,
+                    summary TEXT,
+                    classification_confidence REAL,
+                    classification_timestamp TEXT,
+                    classifier_version TEXT
+                )
+                """
+            )
+            conn.executemany(
+                """
+                INSERT INTO papers (
+                    id, title, abstract, expert_locked_fields, classifier_version,
+                    classification_confidence
+                )
+                VALUES (?, ?, ?, ?, ?, ?)
+                """,
+                [
+                    (
+                        1,
+                        "Cannabis intervention one",
+                        "Participants received cannabis counseling for anxiety.",
+                        "[]",
+                        "heuristic-reclassify-1.0.0",
+                        0.9,
+                    ),
+                    (
+                        2,
+                        "Cannabis intervention two",
+                        "Participants received cannabis counseling for pain.",
+                        "[]",
+                        "heuristic-reclassify-1.0.0",
+                        0.9,
+                    ),
+                    (
+                        3,
+                        "Cannabis intervention three",
+                        "Participants received cannabis counseling for sleep.",
+                        "[]",
+                        "heuristic-reclassify-1.0.0",
+                        0.9,
+                    ),
+                ],
+            )
+            conn.commit()
+            conn.close()
+
+            class TempDatabaseManager:
+                """Minimal database manager bound to the temporary SQLite file."""
+
+                def get_connection(self):
+                    """Return a SQLite connection to the bounded re-ingestion fixture."""
+                    return sqlite3.connect(db_path)
+
+            original_manager = reingest_module.DatabaseManager
+            reingest_module.DatabaseManager = TempDatabaseManager
+            try:
+                summary = reingest_module.reingest_heuristic_papers(
+                    only_pending=True,
+                    batch_size=1,
+                    max_papers=2,
+                )
+            finally:
+                reingest_module.DatabaseManager = original_manager
+
+            conn = sqlite3.connect(db_path)
+            cur = conn.cursor()
+            cur.execute(
+                "SELECT COUNT(*) FROM papers WHERE classifier_version = ?",
+                ("heuristic-1.0.0",),
+            )
+            updated_count = cur.fetchone()[0]
+            cur.execute(
+                "SELECT COUNT(*) FROM papers WHERE classifier_version LIKE ?",
+                ("heuristic-reclassify%",),
+            )
+            pending_count = cur.fetchone()[0]
+            conn.close()
+
+        self.assertEqual(summary["papers_processed"], 2)
+        self.assertEqual(updated_count, 2)
+        self.assertEqual(pending_count, 1)
+
+
 class TestDatabaseManager(unittest.TestCase):
     """Test cases for SQLite dynamic operations, FTS5 sync, and CRUD."""
 
