@@ -32,13 +32,29 @@ This serves `cannabis_papers.db` on `127.0.0.1:8080` with `DATABASE_URL` unset
 (so leftover Fly Postgres in `.env` cannot win). One gunicorn worker keeps the
 in-process daily PubMed harvest thread alive.
 
-Confirm locally:
+Launchd cannot read `~/Documents`. The agent is a **60-second watchdog** (not
+`KeepAlive` on `open`): if port 8080 is down it opens Terminal.app on a
+`.command` wrapper. If curl to `:8080` fails after install, start gunicorn in
+the current Terminal (this process can read Documents):
+
+```bash
+unset DATABASE_URL
+export DATABASE_PATH="$PWD/cannabis_papers.db"
+./scripts/macos/run_local_site.sh
+```
+
+Leave that window open. Confirm locally:
 
 ```bash
 curl -sS -o /dev/null -w "%{http_code}\n" http://127.0.0.1:8080/
 ```
 
-Expect `200`. Logs: `logs/macos_site.error.log`.
+Expect `200`. If you still get `curl: (7) Failed to connect`, gunicorn never
+bound: this Terminal can read Documents, so leave `run_local_site.sh` running
+in the foreground. Also check `logs/macos_site.error.log` and
+`logs/macos_site.launchd.err.log` (missing `venv/bin/gunicorn` is the other
+common cause). After `git pull`, re-run `./scripts/macos/install_macos_site.sh`
+so launchd uses the 60s watchdog instead of executing the repo script directly.
 
 Uninstall: `./scripts/macos/install_macos_site.sh --uninstall`
 

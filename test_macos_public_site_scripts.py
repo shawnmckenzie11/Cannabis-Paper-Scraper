@@ -5,6 +5,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent
 SITE = ROOT / "scripts" / "macos" / "run_local_site.sh"
+ENSURE = ROOT / "scripts" / "macos" / "ensure_local_site.sh"
 INSTALL_SITE = ROOT / "scripts" / "macos" / "install_macos_site.sh"
 INSTALL_TUNNEL = ROOT / "scripts" / "macos" / "install_macos_cloudflared.sh"
 EXAMPLE = ROOT / "scripts" / "macos" / "cloudflared-config.yml.example"
@@ -29,6 +30,17 @@ class MacosPublicSiteScriptsTests(unittest.TestCase):
         self.assertIn("caffeinate", text)
         self.assertIn("com.mckenzian.cannabis-site", text)
         self.assertIn("Darwin", text)
+        self.assertIn("Terminal", text)
+        self.assertIn("StartInterval", text)
+        self.assertNotIn("<key>KeepAlive</key>", text)
+
+    def test_watchdog_opens_terminal_only_when_port_down(self):
+        """Watchdog must no-op on :8080 and must not KeepAlive-spawn Terminal."""
+        text = ENSURE.read_text(encoding="utf-8")
+        self.assertIn("127.0.0.1:8080", text)
+        self.assertIn("pgrep", text)
+        self.assertIn("open -gj -a Terminal", text)
+        self.assertIn("MACOS_SITE_WRAPPER", text)
 
     def test_installers_refuse_non_darwin(self):
         """Cloud Linux must not attempt launchctl."""
