@@ -1,5 +1,6 @@
 # test_suite.py
 import unittest
+from unittest import mock
 import os
 import json
 import sqlite3
@@ -1005,6 +1006,47 @@ class TestFlaskSchedulerAPI(unittest.TestCase):
         self.assertIn("last_run_timestamp", data)
         self.assertIn("last_run_status", data)
         self.assertEqual(data["query"], "cannabis OR cannabinoid OR marijuana")
+        self.assertFalse(data["inprocess_harvest"])
+
+    def test_run_cycle_requires_configured_token(self):
+        """Unset SCHEDULER_RUN_TOKEN must not leave the trigger public."""
+        previous = os.environ.pop("SCHEDULER_RUN_TOKEN", None)
+        try:
+            response = self.client.post("/api/scheduler/run-cycle")
+            self.assertEqual(response.status_code, 503)
+        finally:
+            if previous is not None:
+                os.environ["SCHEDULER_RUN_TOKEN"] = previous
+
+    def test_run_cycle_rejects_wrong_token(self):
+        """Wrong shared secret is unauthorized."""
+        os.environ["SCHEDULER_RUN_TOKEN"] = "expected-token"
+        try:
+            response = self.client.post(
+                "/api/scheduler/run-cycle",
+                headers={"X-Scheduler-Token": "wrong-token"},
+            )
+            self.assertEqual(response.status_code, 401)
+        finally:
+            os.environ.pop("SCHEDULER_RUN_TOKEN", None)
+
+    def test_run_cycle_invokes_scheduled_cycle_with_token(self):
+        """Matching token runs one cycle and returns its JSON payload."""
+        os.environ["SCHEDULER_RUN_TOKEN"] = "expected-token"
+        payload = {"ok": True, "status": "completed", "harvest": {"status": "skipped"}}
+        try:
+            with mock.patch(
+                "app.run_scheduled_cycle", return_value=payload
+            ) as mock_cycle:
+                response = self.client.post(
+                    "/api/scheduler/run-cycle",
+                    headers={"X-Scheduler-Token": "expected-token"},
+                )
+            self.assertEqual(response.status_code, 200, response.data)
+            self.assertEqual(json.loads(response.data)["status"], "completed")
+            mock_cycle.assert_called_once()
+        finally:
+            os.environ.pop("SCHEDULER_RUN_TOKEN", None)
 
 
 class TestIntelligentHarvest(unittest.TestCase):

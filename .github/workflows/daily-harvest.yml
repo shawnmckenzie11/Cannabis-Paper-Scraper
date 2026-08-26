@@ -1,0 +1,39 @@
+# Wake the Fly web machine and run one harvest + due-jobs + watchdog + digest
+# cycle. POST is required: Fly autostart only reacts to inbound HTTP, not a
+# bare `fly ssh` / cron on a stopped machine.
+name: Daily PubMed harvest
+
+on:
+  schedule:
+    # 10:00 Eastern (EDT). Harvest itself still runs at most once per calendar day.
+    - cron: "0 14 * * *"
+    # Hourly ping so 11pm one-shot jobs and the Maude watchdog are not delayed a day.
+    - cron: "12 * * * *"
+  workflow_dispatch:
+
+jobs:
+  harvest:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    env:
+      SCHEDULER_RUN_URL: ${{ secrets.SCHEDULER_RUN_URL }}
+      SCHEDULER_RUN_TOKEN: ${{ secrets.SCHEDULER_RUN_TOKEN }}
+    steps:
+      - name: Trigger one scheduled cycle on Fly
+        run: |
+          set -euo pipefail
+          if [ -z "${SCHEDULER_RUN_TOKEN}" ]; then
+            echo "SCHEDULER_RUN_TOKEN GitHub secret is not set."
+            echo "Generate a token, set it as a Fly secret (SCHEDULER_RUN_TOKEN),"
+            echo "and add the same value as this repository secret."
+            exit 1
+          fi
+          URL="${SCHEDULER_RUN_URL:-https://cannabis-paper-scraper.fly.dev/api/scheduler/run-cycle}"
+          echo "POST ${URL}"
+          curl -fsS --retry 8 --retry-delay 15 --retry-all-errors \
+            --connect-timeout 30 --max-time 3300 \
+            -X POST \
+            -H "X-Scheduler-Token: ${SCHEDULER_RUN_TOKEN}" \
+            -H "Content-Type: application/json" \
+            --data '{}' \
+            "${URL}"
