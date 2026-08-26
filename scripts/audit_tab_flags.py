@@ -6,7 +6,7 @@ from __future__ import annotations
 import argparse
 import sys
 from pathlib import Path
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 
 ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
@@ -40,6 +40,11 @@ def build_parser() -> argparse.ArgumentParser:
         default=20,
         help="Number of orphan/mismatch rows to print in audit mode (default: 20).",
     )
+    parser.add_argument(
+        "--since-harvested",
+        default=None,
+        help="Only audit/repair papers with date_harvested on or after this ISO date (YYYY-MM-DD).",
+    )
     return parser
 
 
@@ -70,11 +75,22 @@ def is_orphaned(row: Dict[str, Any]) -> bool:
     return all(int(row.get(column) or 0) == 0 for column in TAB_FLAG_FIELDS.values())
 
 
-def audit(db: DatabaseManager, sample: int) -> Dict[str, Any]:
+def _harvest_since_clause(since_harvested: Optional[str]) -> tuple:
+    """Return SQL fragment and params limiting to papers harvested on/after a date."""
+    if not since_harvested:
+        return "", []
+    start = str(since_harvested).strip()
+    if "T" not in start:
+        start = start + "T00:00:00"
+    return " AND date_harvested >= %s", [start]
+
+
+def audit(db: DatabaseManager, sample: int, since_harvested: Optional[str] = None) -> Dict[str, Any]:
     """Summarize orphan and mismatch counts."""
     conn = db.get_connection()
     cur = conn.cursor()
-    cur.execute("SELECT COUNT(*) as total FROM papers")
+    extra_sql, extra_params = _harvest_since_clause(since_harvested)
+    cur.execute(f"SELECT COUNT(*) as total FROM papers WHERE 1=1{extra_sql}", extra_params)
     total = int(cur.fetchone()["total"])
 
     tab_cols = ", ".join(TAB_FLAG_FIELDS.values())
@@ -82,7 +98,9 @@ def audit(db: DatabaseManager, sample: int) -> Dict[str, Any]:
         f"""
         SELECT id, publication_type, study_type, ingestion_status, {tab_cols}
         FROM papers
-        """
+        WHERE 1=1{extra_sql}
+        """,
+        extra_params,
     )
     orphans: List[Dict[str, Any]] = []
     mismatches: List[Dict[str, Any]] = []
@@ -122,19 +140,23 @@ def repair(
     *,
     force_all: bool,
     mismatched_only: bool,
+    since_harvested: Optional[str] = None,
 ) -> Dict[str, int]:
     """Recompute tab flags for papers and persist updates."""
     conn = db.get_connection()
     cur = conn.cursor()
     tab_columns = list(TAB_FLAG_FIELDS.values())
     set_clause = ", ".join(f"{column} = %s" for column in tab_columns)
+    extra_sql, extra_params = _harvest_since_clause(since_harvested)
 
     cur.execute(
         f"""
         SELECT id, publication_type, study_type, ingestion_status, {", ".join(tab_columns)}
         FROM papers
+        WHERE 1=1{extra_sql}
         ORDER BY id
-        """
+        """,
+        extra_params,
     )
     rows = [dict(row) for row in cur.fetchall()]
     updated = 0
@@ -190,12 +212,13 @@ def main() -> None:
             db,
             force_all=args.force_all,
             mismatched_only=args.mismatched_only and not args.force_all,
+            since_harvested=args.since_harvested,
         )
         print(f"repair_scanned={summary['scanned']} repair_updated={summary['updated']}")
-        audit(db, sample=args.sample)
+        audit(db, sample=args.sample, since_harvested=args.since_harvested)
         return
 
-    audit(db, sample=args.sample)
+    audit(db, sample=args.sample, since_harvested=args.since_harvested)
 
 
 if __name__ == "__main__":

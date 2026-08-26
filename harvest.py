@@ -35,6 +35,42 @@ Entrez.tool = "CannabisResearchScraper"
 
 # When false, non-OA papers classify abstract-only at ingest; OA/direct-PDF still sync.
 HARVEST_SYNC_PDF = os.getenv("HARVEST_SYNC_PDF", "1").strip().lower() not in {"0", "false", "no"}
+HARVEST_ABSOLUTE_MAX = int(os.getenv("HARVEST_ABSOLUTE_MAX", "50000"))
+
+
+def pubmed_date(value: Optional[str]) -> Optional[str]:
+    """Normalize ISO or slash dates to PubMed YYYY/MM/DD."""
+    if not value:
+        return None
+    return str(value).strip().replace("-", "/")[:10]
+
+
+def apply_pubmed_edat_filter(
+    query: str,
+    mindate: Optional[str] = None,
+    maxdate: Optional[str] = None,
+) -> str:
+    """AND a PubMed Entrez-date range onto ``query``.
+
+    NCBI's esearch ``mindate`` kwargs are ignored for this database; the
+    ``YYYY/MM/DD:YYYY/MM/DD[edat]`` term syntax is the reliable filter.
+    """
+    start = pubmed_date(mindate)
+    end = pubmed_date(maxdate)
+    if not start and not end:
+        return query
+    if start and not end:
+        end = datetime.now().strftime("%Y/%m/%d")
+    if end and not start:
+        start = "1900/01/01"
+    return f"({query}) AND ({start}:{end}[edat])"
+
+
+def pubmed_fetch_limit(max_results: Optional[int], count: int) -> int:
+    """Resolve how many PubMed hits to fetch; 0/None means the full window."""
+    if max_results is None or max_results <= 0:
+        return min(count, HARVEST_ABSOLUTE_MAX)
+    return min(count, max_results, HARVEST_ABSOLUTE_MAX)
 
 
 def harvest_should_attempt_sync_pdf(paper: Dict[str, Any]) -> bool:
@@ -66,7 +102,7 @@ def search_pubmed(query: str, max_results: int) -> List[str]:
     """Queries PubMed directly and returns a list of PMIDs matching the search query (up to 9999)."""
     logger.info(f"Searching PubMed directly for query: '{query}' (limit: {max_results})")
     try:
-        limit = min(max_results, 9999)
+        limit = pubmed_fetch_limit(max_results, 9999)
         handle = Entrez.esearch(db="pubmed", term=query, retmax=limit)
         record = Entrez.read(handle)
         handle.close()
@@ -102,7 +138,7 @@ def fetch_pubmed_papers_via_history(
             logger.warning("Entrez did not return WebEnv or QueryKey. Falling back to direct search.")
             return [], 0
             
-        total_to_fetch = min(count, max_results)
+        total_to_fetch = pubmed_fetch_limit(max_results, count)
         msg = f"PubMed search matched {count} total papers. Fetching details for up to {total_to_fetch} papers in batches..."
         logger.info(msg)
         if progress_callback:
@@ -524,18 +560,24 @@ def run_harvest_pipeline(
     max_results: int, 
     update: bool, 
     classify: bool, 
-    progress_callback=None
-) -> tuple[int, int, int]:
+    progress_callback=None,
+    mindate: Optional[str] = None,
+    maxdate: Optional[str] = None,
+    include_semantic_scholar: Optional[bool] = None,
+) -> tuple:
     """Runs the full harvesting pipeline (PubMed + Semantic Scholar),
     performs acronym relevance pre-filtering, Maude classification (or optional LLM pass),
-    and stores records in the SQLite database.
+    and stores records in the catalog DatabaseManager resolves (Postgres when DATABASE_URL is set).
 
     Args:
         query: Search query
-        max_results: Max papers to harvest
+        max_results: Max papers to harvest; 0/None fetches the full date window
         update: Skip existing cataloged PMIDs
         classify: True to run Claude LLM pass instead of Maude; False uses Maude (default)
         progress_callback: Optional callable for live progress text updates
+        mindate: Inclusive PubMed Entrez-date start (YYYY-MM-DD)
+        maxdate: Inclusive PubMed Entrez-date end (YYYY-MM-DD)
+        include_semantic_scholar: When None, skipped automatically if mindate is set
         
     Returns:
         tuple: (success_count, skipped_count_pubmed, filter_skipped, ingested_paper_ids)
@@ -550,7 +592,10 @@ def run_harvest_pipeline(
 
     db = DatabaseManager()
     harvest_batch_id = f"harvest_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
-    
+    pubmed_query = apply_pubmed_edat_filter(query, mindate=mindate, maxdate=maxdate)
+    if include_semantic_scholar is None:
+        include_semantic_scholar = mindate is None
+
     # 1. Skip Check setup
     existing_pmids = set()
     if update:
@@ -561,9 +606,9 @@ def run_harvest_pipeline(
         
     # 2. Search PubMed using history fetch
     if progress_callback:
-        progress_callback(f"Searching PubMed for query '{query}'...")
+        progress_callback(f"Searching PubMed for query '{pubmed_query}'...")
     pubmed_papers, skipped_count_pubmed = fetch_pubmed_papers_via_history(
-        query, 
+        pubmed_query, 
         max_results, 
         existing_pmids if update else set(),
         progress_callback=progress_callback
@@ -573,7 +618,7 @@ def run_harvest_pipeline(
         logger.warning("History-based fetching empty or failed. Falling back to direct PubMed query...")
         if progress_callback:
             progress_callback("History fetch empty. Falling back to direct PubMed search...")
-        pmids = search_pubmed(query, max_results)
+        pmids = search_pubmed(pubmed_query, max_results)
         new_pmids = [pmid for pmid in pmids if pmid not in existing_pmids] if update else pmids
         skipped_count_pubmed = len(pmids) - len(new_pmids)
         pubmed_papers = fetch_pubmed_details(new_pmids)
@@ -584,18 +629,21 @@ def run_harvest_pipeline(
     logger.info("Enriching PubMed papers with citation counts and direct PDF links via batch API...")
     enriched_pubmed_papers = enrich_papers_batch_semantic_scholar(pubmed_papers)
         
-    # 3. Search Semantic Scholar directly for query to broaden corpus
-    if progress_callback:
-        progress_callback("Searching Semantic Scholar to expand corpus...")
-    s2_papers = search_semantic_scholar(query, max_results)
-    
-    # Filter Semantic Scholar papers by PMID check
     new_s2_papers = []
-    for paper in s2_papers:
-        pmid = paper.get("pmid")
-        if update and pmid and pmid in existing_pmids:
-            continue
-        new_s2_papers.append(paper)
+    if include_semantic_scholar:
+        # 3. Search Semantic Scholar directly for query to broaden corpus
+        if progress_callback:
+            progress_callback("Searching Semantic Scholar to expand corpus...")
+        s2_papers = search_semantic_scholar(query, max_results if max_results and max_results > 0 else 100)
+        
+        # Filter Semantic Scholar papers by PMID check
+        for paper in s2_papers:
+            pmid = paper.get("pmid")
+            if update and pmid and pmid in existing_pmids:
+                continue
+            new_s2_papers.append(paper)
+    else:
+        logger.info("Skipping Semantic Scholar search for date-windowed harvest.")
         
     # 4. Merge results
     if progress_callback:
@@ -897,7 +945,9 @@ def build_pdf_upload_review(
 def main():
     parser = argparse.ArgumentParser(description="Harvest and catalog research papers from PubMed & Semantic Scholar.")
     parser.add_argument("--query", type=str, required=True, help="Search string (e.g. 'cannabis vaporized RCT')")
-    parser.add_argument("--max-results", type=int, default=500, help="Maximum number of papers to harvest")
+    parser.add_argument("--max-results", type=int, default=500, help="Maximum number of papers to harvest; 0 fetches the full date window")
+    parser.add_argument("--mindate", type=str, default=None, help="Inclusive PubMed Entrez date start YYYY-MM-DD")
+    parser.add_argument("--maxdate", type=str, default=None, help="Inclusive PubMed Entrez date end YYYY-MM-DD")
     parser.add_argument("--update", action="store_true", help="Skip papers already cataloged in the database")
     parser.add_argument("--classify", action="store_true", help="Perform LLM classification pass using Anthropic API")
     
@@ -907,7 +957,9 @@ def main():
         query=args.query,
         max_results=args.max_results,
         update=args.update,
-        classify=args.classify
+        classify=args.classify,
+        mindate=args.mindate,
+        maxdate=args.maxdate,
     )
     
     logger.info(f"\nHarvesting complete! Processed and saved {success_count} papers. "

@@ -5,7 +5,7 @@ import re
 import threading
 import logging
 import uuid
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
 from typing import Any, Dict, List, Optional, Tuple
 from pathlib import Path
 from functools import wraps
@@ -220,6 +220,11 @@ def daily_harvest_scheduler():
     sched_logger = logging.getLogger("scheduler")
     sched_logger.info("Daily background scheduler thread starting...")
     db = DatabaseManager()
+    try:
+        repaired = db.sync_orphan_tab_flags_since("2026-07-17")
+        sched_logger.info("Startup tab-flag repair updated %s recently harvested papers", repaired)
+    except Exception as repair_err:
+        sched_logger.error("Startup tab-flag repair failed: %s", repair_err)
 
     # Store initial info
     db.set_metadata("scheduler_active", "true")
@@ -227,21 +232,15 @@ def daily_harvest_scheduler():
         db.set_metadata("last_daily_harvest_status", "Never run")
 
     query = "cannabis OR cannabinoid OR marijuana"
-    max_results = 200
     last_harvest_check_hour = None
 
     while True:
         try:
-            scheduled_jobs.run_due_jobs(db)
-            maude_reingest_watchdog.run_watchdog(db)
-            try:
-                import user_notifications
-                digest_result = user_notifications.run_due_notification_digests(db)
-                if digest_result.get("sent") or digest_result.get("errors"):
-                    sched_logger.info("Notification digests: %s", digest_result)
-            except Exception as notif_err:
-                sched_logger.error("Notification digest runner failed: %s", notif_err)
+            # Heartbeat first so /api/scheduler/status can tell a live loop from a stale flag.
+            db.set_metadata("scheduler_heartbeat_at", datetime.now().isoformat())
 
+            # Harvest before due jobs. A synchronous Maude re-ingest can run for days and
+            # would otherwise starve daily PubMed ingest.
             current_hour = datetime.now().hour
             if last_harvest_check_hour != current_hour:
                 last_harvest_check_hour = current_hour
@@ -278,13 +277,26 @@ def daily_harvest_scheduler():
                         if os.getenv("MANUAL_EDIT_BLOCK_HARVEST", "0") == "1":
                             raise
 
-                    # Call the unified pipeline
+                    since_date = last_run_date
+                    if not since_date or since_date == "Never":
+                        since_date = (date.today() - timedelta(days=3)).isoformat()
                     success_count, skipped_count, filter_skipped, ingested_ids = harvest.run_harvest_pipeline(
                         query=query,
-                        max_results=max_results,
+                        max_results=0,
                         update=True,
-                        classify=classify
+                        classify=classify,
+                        mindate=since_date,
                     )
+
+                    for paper_id in ingested_ids or []:
+                        try:
+                            db.sync_tab_flags_for_paper(int(paper_id))
+                        except Exception as flag_err:
+                            sched_logger.error(
+                                "Daily scheduler: tab flag sync failed for paper %s: %s",
+                                paper_id,
+                                flag_err,
+                            )
 
                     if ingested_ids:
                         try:
@@ -315,6 +327,21 @@ def daily_harvest_scheduler():
                     db.set_metadata("last_daily_harvest_date", today_str)
                     db.set_metadata("last_daily_harvest_timestamp", date_str)
                     db.set_metadata("last_daily_harvest_status", status_msg)
+                    try:
+                        db.set_metadata("dashboard_tab_counts_json", "")
+                        db.set_metadata("dashboard_tab_counts_cached_at", "0")
+                    except Exception:
+                        pass
+
+            scheduled_jobs.run_due_jobs(db)
+            maude_reingest_watchdog.run_watchdog(db)
+            try:
+                import user_notifications
+                digest_result = user_notifications.run_due_notification_digests(db)
+                if digest_result.get("sent") or digest_result.get("errors"):
+                    sched_logger.info("Notification digests: %s", digest_result)
+            except Exception as notif_err:
+                sched_logger.error("Notification digest runner failed: %s", notif_err)
 
         except Exception as e:
             err_msg = f"Background scheduler failed: {e}"
