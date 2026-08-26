@@ -1,6 +1,7 @@
 # app.py
 import os
 import json
+import hmac
 import re
 import threading
 import logging
@@ -19,6 +20,11 @@ from dotenv import load_dotenv
 load_dotenv()
 
 from db_manager import DatabaseManager
+from daily_harvest_config import (
+    DAILY_HARVEST_QUERY,
+    inprocess_daily_harvest_enabled,
+    resolve_harvest_mindate,
+)
 import classifier
 import harvest
 from extractor import is_cannabis_related
@@ -231,7 +237,7 @@ def daily_harvest_scheduler():
     if not db.get_metadata("last_daily_harvest_status"):
         db.set_metadata("last_daily_harvest_status", "Never run")
 
-    query = "cannabis OR cannabinoid OR marijuana"
+    query = DAILY_HARVEST_QUERY
     last_harvest_check_hour = None
 
     while True:
@@ -277,9 +283,7 @@ def daily_harvest_scheduler():
                         if os.getenv("MANUAL_EDIT_BLOCK_HARVEST", "0") == "1":
                             raise
 
-                    since_date = last_run_date
-                    if not since_date or since_date == "Never":
-                        since_date = (date.today() - timedelta(days=3)).isoformat()
+                    since_date = resolve_harvest_mindate(last_run_date)
                     success_count, skipped_count, filter_skipped, ingested_ids = harvest.run_harvest_pipeline(
                         query=query,
                         max_results=0,
@@ -1746,13 +1750,51 @@ def api_scheduler_status():
         "last_run_date": last_date,
         "last_run_timestamp": last_timestamp,
         "last_run_status": last_status,
-        "query": "cannabis OR cannabinoid OR marijuana",
+        "query": DAILY_HARVEST_QUERY,
+        "inprocess_harvest": inprocess_daily_harvest_enabled(),
         "manual_edit_cycle": {
             "last_cycle_at": db.get_metadata("last_manual_edit_cycle_at"),
             "pending_edits": manual_edit_cycle.pending_edit_count(db),
             "last_report": manual_edit_cycle.load_last_cycle_report(db),
         },
     })
+
+
+@app.route("/api/catalog/reload", methods=["POST"])
+def api_catalog_reload():
+    """Swap the live SQLite file for a harvested copy (VPS + GitHub Actions)."""
+    import catalog_reload
+
+    expected = (os.getenv("CATALOG_RELOAD_TOKEN") or "").strip()
+    provided = (request.headers.get("X-Catalog-Reload-Token") or "").strip()
+    try:
+        authorized = bool(expected) and hmac.compare_digest(provided, expected)
+    except Exception:
+        authorized = False
+    if not authorized:
+        return jsonify({"error": "Unauthorized."}), 401
+
+    db = DatabaseManager()
+    if db.is_postgres:
+        return jsonify({"error": "Catalog reload is SQLite-only; unset DATABASE_URL."}), 400
+
+    payload = request.get_json(silent=True) or {}
+    live_path = os.getenv("DATABASE_PATH") or db.db_path
+    staging = payload.get("staging_path")
+    try:
+        if payload.get("pull_from_r2"):
+            staging = os.getenv("CATALOG_STAGING_PATH") or f"{live_path}.new"
+            catalog_reload.download_from_r2_env(staging)
+        if not staging:
+            return jsonify({"error": "staging_path or pull_from_r2 is required."}), 400
+        replaced = catalog_reload.replace_sqlite_catalog(live_path, staging)
+    except catalog_reload.CatalogReloadError as exc:
+        return jsonify({"error": str(exc)}), 400
+    except Exception as exc:
+        app.logger.error("Catalog reload failed: %s", exc)
+        return jsonify({"error": str(exc)}), 500
+    return jsonify({"ok": True, "path": replaced})
+
 
 @app.route("/api/manual-edit-cycle/status", methods=["GET"])
 @admin_required
@@ -3445,11 +3487,20 @@ def api_get_task_status(task_id):
         conn.close()
 
 
-# Start the background daily scheduler thread, protected against debug reloader double-runs and unit tests
+# Start the background daily scheduler thread only when explicitly enabled.
+# Production harvest runs in GitHub Actions (see .github/workflows/daily-harvest.yml).
 import sys
-if (not app.debug or os.environ.get("WERKZEUG_RUN_MAIN") == "true") and "unittest" not in sys.modules:
+if (
+    inprocess_daily_harvest_enabled()
+    and (not app.debug or os.environ.get("WERKZEUG_RUN_MAIN") == "true")
+    and "unittest" not in sys.modules
+):
     logging.getLogger("scheduler").info("Launching daily automatic harvest scheduler thread...")
     threading.Thread(target=daily_harvest_scheduler, daemon=True).start()
+elif "unittest" not in sys.modules:
+    logging.getLogger("scheduler").info(
+        "Skipping in-process harvest thread (set INPROCESS_DAILY_HARVEST=1 to enable)."
+    )
 
 if __name__ == "__main__":
     # Start server on local network port 5001 to bypass macOS default AirPlay port conflict (5000)
