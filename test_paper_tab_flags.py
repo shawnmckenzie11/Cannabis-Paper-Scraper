@@ -1,6 +1,9 @@
 """Tests for indexed database UI tab membership helpers."""
 import json
+import os
+import tempfile
 import unittest
+from datetime import datetime
 
 from paper_tab_flags import (
     LEGACY_TAB_SQL,
@@ -109,7 +112,80 @@ class TestPaperTabFlags(unittest.TestCase):
         self.assertTrue(legacy_tab_sql_for("all_original"))
         self.assertTrue(legacy_tab_sql_for("unclassified"))
 
-    def test_recent_range_sql_returns_clause_and_params(self):
+    def test_insert_paper_sets_preclinical_tab_flag(self):
+        """Harvested original research must land on indexed dashboard tabs."""
+        old_path = os.environ.get("DATABASE_PATH")
+        old_url = os.environ.pop("DATABASE_URL", None)
+        tmp = tempfile.NamedTemporaryFile(suffix=".db", delete=False)
+        tmp.close()
+        os.environ["DATABASE_PATH"] = tmp.name
+        DatabaseManager._initialized = False
+        DatabaseManager._tab_flags_ready_cache = None
+        try:
+            db = DatabaseManager(db_path=tmp.name)
+            paper_id = db.insert_paper({
+                "title": "Mouse THC study",
+                "abstract": "We treated mice with THC.",
+                "publication_type": "original research",
+                "study_type": ["Animal Models (Mouse)"],
+                "ingestion_status": "relevant",
+                "pmid": "9000101",
+                "date_harvested": datetime.now().strftime("%Y-%m-%d") + "T14:00:00",
+            })
+            conn = db.get_connection()
+            row = conn.execute(
+                "SELECT tab_preclinical, tab_clinical, tab_review FROM papers WHERE id = ?",
+                (paper_id,),
+            ).fetchone()
+            conn.close()
+            self.assertEqual(int(row["tab_preclinical"]), 1)
+            self.assertEqual(int(row["tab_clinical"]), 0)
+            self.assertEqual(int(row["tab_review"]), 0)
+            papers, total = db.search_papers(
+                {"tab": "all_original", "recent_range": "today", "limit": 10, "offset": 0},
+                include_total=True,
+            )
+            self.assertGreaterEqual(total, 1)
+            self.assertTrue(any(int(p["id"]) == int(paper_id) for p in papers))
+
+            orphan_id = db.insert_paper({
+                "title": "Orphan mouse paper",
+                "abstract": "Mice received THC.",
+                "publication_type": "original research",
+                "study_type": ["Animal Models (Mouse)"],
+                "ingestion_status": "relevant",
+                "pmid": "9000102",
+                "date_harvested": datetime.now().strftime("%Y-%m-%d") + "T14:00:00",
+            })
+            conn = db.get_connection()
+            conn.execute(
+                "UPDATE papers SET tab_preclinical = 0, tab_clinical = 0, "
+                "tab_unclassified_preclinical = 0, tab_tangential = 0, tab_review = 0 "
+                "WHERE id = ?",
+                (orphan_id,),
+            )
+            conn.commit()
+            conn.close()
+            repaired = db.sync_orphan_tab_flags_since(datetime.now().strftime("%Y-%m-%d"))
+            self.assertGreaterEqual(repaired, 1)
+            conn = db.get_connection()
+            row = conn.execute(
+                "SELECT tab_preclinical FROM papers WHERE id = ?",
+                (orphan_id,),
+            ).fetchone()
+            conn.close()
+            self.assertEqual(int(row["tab_preclinical"]), 1)
+        finally:
+            if old_path is None:
+                os.environ.pop("DATABASE_PATH", None)
+            else:
+                os.environ["DATABASE_PATH"] = old_path
+            if old_url is not None:
+                os.environ["DATABASE_URL"] = old_url
+            DatabaseManager._initialized = False
+            DatabaseManager._tab_flags_ready_cache = None
+            if os.path.exists(tmp.name):
+                os.unlink(tmp.name)
         """Recency filter helper returns a SQL fragment and bound params."""
         clause, params = recent_range_sql("week")
         self.assertIn("date_harvested", clause)

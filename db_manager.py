@@ -1900,6 +1900,19 @@ class DatabaseManager:
                     cursor=cursor
                 )
             conn.commit()
+            # Dashboard tabs filter on tab_* flags, not publication_type/study_type.
+            # New harvests must set those columns or they vanish from every tab.
+            try:
+                self.sync_tab_flags_for_paper(
+                    int(row_id),
+                    conn=conn,
+                    publication_type=paper_copy.get("publication_type"),
+                    study_type=paper.get("study_type", paper_copy.get("study_type")),
+                    ingestion_status=paper_copy.get("ingestion_status"),
+                )
+                conn.commit()
+            except Exception as flag_exc:
+                logger.error("Tab flag sync failed for paper %s: %s", row_id, flag_exc)
             return row_id
         except Exception as e:
             conn.rollback()
@@ -3262,6 +3275,63 @@ class DatabaseManager:
         finally:
             if own_conn:
                 conn.close()
+
+    def sync_orphan_tab_flags_since(self, since_date: str) -> int:
+        """Assign dashboard tab flags for recently harvested papers that have none.
+
+        Harvest used to insert rows with tab_* defaulting to 0, which hid them from
+        every dashboard tab even though date_harvested was set.
+        """
+        from paper_tab_flags import TAB_FLAG_FIELDS
+
+        if not self._tab_flag_columns_exist():
+            return 0
+        start = str(since_date).strip()
+        if start and "T" not in start:
+            start = f"{start}T00:00:00"
+        zero_clause = " AND ".join(
+            f"COALESCE({column}, 0) = 0" for column in TAB_FLAG_FIELDS.values()
+        )
+        conn = self.get_connection()
+        cursor = conn.cursor()
+        updated = 0
+        try:
+            cursor.execute(
+                f"""
+                SELECT id, publication_type, study_type, ingestion_status
+                FROM papers
+                WHERE date_harvested >= ?
+                  AND ({zero_clause})
+                """,
+                (start,),
+            )
+            rows = cursor.fetchall()
+            for row in rows:
+                if hasattr(row, "keys"):
+                    paper_id = row["id"]
+                    publication_type = row["publication_type"]
+                    study_type = row["study_type"]
+                    ingestion_status = row["ingestion_status"]
+                else:
+                    paper_id, publication_type, study_type, ingestion_status = row
+                self.sync_tab_flags_for_paper(
+                    int(paper_id),
+                    conn=conn,
+                    publication_type=publication_type,
+                    study_type=study_type,
+                    ingestion_status=ingestion_status,
+                )
+                updated += 1
+            conn.commit()
+        finally:
+            conn.close()
+        if updated:
+            try:
+                self.set_metadata("dashboard_tab_counts_json", "")
+                self.set_metadata("dashboard_tab_counts_cached_at", "0")
+            except Exception:
+                logger.debug("Could not clear tab count cache after orphan repair")
+        return updated
 
     def _tab_flag_columns_exist(self, conn=None) -> bool:
         """Return True when indexed tab membership columns are present."""

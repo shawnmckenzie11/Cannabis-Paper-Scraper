@@ -46,7 +46,9 @@ if [ -f "$DB_PATH" ] && [ -z "$DATABASE_URL" ]; then
     echo "Scheduling indexed tab membership backfill in background (local SQLite only)..."
     nohup python3 ensure_tab_flags.py > /tmp/tab_flags_backfill.log 2>&1 &
 elif [ -n "$DATABASE_URL" ]; then
-    echo "PostgreSQL mode: skipping startup tab backfill (run ensure_tab_flags.py manually during maintenance)."
+    echo "PostgreSQL mode: repairing recent harvest tab flags in background..."
+    nohup python3 scripts/repair_recent_tab_flags.py --since-harvested 2026-07-17 \
+        > /tmp/repair_recent_tab_flags.log 2>&1 &
     echo "Scheduling stale daily-harvest Maude version upgrade in background..."
     nohup python3 scripts/upgrade_stale_harvest_classifications.py --since-date 2026-06-01 \
         > /tmp/upgrade_stale_harvest.log 2>&1 &
