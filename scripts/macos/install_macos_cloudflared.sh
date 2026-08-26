@@ -3,6 +3,15 @@
 # Requires a free Cloudflare account. DNS for miladlab.com stays at GoDaddy (CNAME only).
 set -euo pipefail
 
+if [[ "$(uname -s)" != "Darwin" ]]; then
+  echo "This installer only runs on your Mac (needs launchctl and cloudflared)." >&2
+  echo "This shell is $(uname -s) ($(hostname)), not macOS." >&2
+  echo "On the Mac, open Terminal.app (not Cursor Cloud) and run:" >&2
+  echo "  cd \"\$HOME/Documents/Cannabis Paper Scraper\"" >&2
+  echo "  ./scripts/macos/install_macos_cloudflared.sh" >&2
+  exit 1
+fi
+
 REPO_ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
 HOSTNAME="${MACOS_TUNNEL_HOSTNAME:-paperscraper.miladlab.com}"
 TUNNEL_NAME="${MACOS_TUNNEL_NAME:-paperscraper-miladlab}"

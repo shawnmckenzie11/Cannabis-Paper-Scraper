@@ -28,6 +28,12 @@ class MacosPublicSiteScriptsTests(unittest.TestCase):
         self.assertIn("Application Support/cannabis-paper-scraper", text)
         self.assertIn("caffeinate", text)
         self.assertIn("com.mckenzian.cannabis-site", text)
+        self.assertIn("Darwin", text)
+
+    def test_installers_refuse_non_darwin(self):
+        """Cloud Linux must not attempt launchctl."""
+        self.assertIn("Darwin", INSTALL_SITE.read_text(encoding="utf-8"))
+        self.assertIn("Darwin", INSTALL_TUNNEL.read_text(encoding="utf-8"))
 
     def test_cloudflared_example_routes_hostname(self):
         """Tunnel ingress must send paperscraper.miladlab.com to local gunicorn."""

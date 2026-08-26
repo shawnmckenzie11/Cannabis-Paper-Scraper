@@ -7,6 +7,11 @@ DNS-only (one CNAME). Fly is not used.
 The Mac must stay **on and awake**. Sleep or power-off takes the site and daily
 harvest down.
 
+**Do not run the LaunchAgent installers in Cursor Cloud** (`workspace $` on Linux).
+Those commands need `launchctl` on the physical Mac. Use **Terminal.app** on the
+Mac, with the repo under `Documents` (or wherever your full `cannabis_papers.db`
+and `venv` already exist).
+
 ## 1. One-time tab-flag repair
 
 From the repo root (so harvested papers appear on dashboard tabs):

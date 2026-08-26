@@ -4,6 +4,17 @@
 # under ~/Library/Application Support.
 set -euo pipefail
 
+if [[ "$(uname -s)" != "Darwin" ]]; then
+  echo "This installer only runs on your Mac (needs launchctl)." >&2
+  echo "This shell is $(uname -s) ($(hostname)), not macOS." >&2
+  echo "On the Mac, open Terminal.app and:" >&2
+  echo "  cd \"\$HOME/Documents/Cannabis Paper Scraper\"" >&2
+  echo "  git checkout cursor/macos-cloudflare-tunnel-d7e6 && git pull" >&2
+  echo "  ./scripts/macos/install_macos_site.sh" >&2
+  echo "Do not use the Cursor Cloud 'workspace \$' terminal for LaunchAgents." >&2
+  exit 1
+fi
+
 REPO_ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
 LABEL="com.mckenzian.cannabis-site"
 PLIST_DIR="${HOME}/Library/LaunchAgents"
