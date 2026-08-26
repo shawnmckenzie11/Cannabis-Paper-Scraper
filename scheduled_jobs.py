@@ -3,11 +3,13 @@
 from __future__ import annotations
 
 import argparse
+import hmac
 import json
 import logging
 import os
+import threading
 import uuid
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
 from typing import Any, Dict, List, Optional
 
 from zoneinfo import ZoneInfo
@@ -17,6 +19,12 @@ from db_manager import DatabaseManager
 logger = logging.getLogger("scheduler.jobs")
 JOB_METADATA_KEY = "scheduled_jobs"
 DEFAULT_TIMEZONE = os.getenv("SCHEDULER_TIMEZONE", "America/Toronto")
+DAILY_HARVEST_QUERY = "cannabis OR cannabinoid OR marijuana"
+SCHEDULER_TOKEN_ENV = "SCHEDULER_RUN_TOKEN"
+SCHEDULER_TOKEN_HEADER = "X-Scheduler-Token"
+
+# One in-process cycle at a time (HTTP handler and overlapping cron pings).
+_cycle_lock = threading.Lock()
 
 
 def _now_iso() -> str:
@@ -364,10 +372,243 @@ def run_due_jobs(db: Optional[DatabaseManager] = None) -> List[Dict[str, Any]]:
     return completed
 
 
+def scheduler_token_is_authorized(
+    provided: Optional[str],
+    expected: Optional[str] = None,
+) -> bool:
+    """Return True when the caller token matches SCHEDULER_RUN_TOKEN.
+
+    Fails closed when the expected secret is missing or empty so the
+    HTTP trigger cannot be invoked publicly by accident.
+    """
+    expected_token = (expected if expected is not None else os.getenv(SCHEDULER_TOKEN_ENV) or "").strip()
+    provided_token = (provided or "").strip()
+    if provided_token.lower().startswith("bearer "):
+        provided_token = provided_token[7:].strip()
+    if not expected_token:
+        return False
+    try:
+        return hmac.compare_digest(provided_token, expected_token)
+    except Exception:
+        return False
+
+
+def _maybe_run_daily_harvest(db: DatabaseManager) -> Dict[str, Any]:
+    """Run the once-per-day PubMed harvest branch when it has not yet succeeded today.
+
+    Harvest logic is unchanged from the former in-process scheduler loop:
+    pre-harvest manual-edit cycle, incremental ingest, tab-flag sync,
+    post-harvest Maude upgrade, and purge_unrelated.
+    """
+    import harvest
+
+    classify = os.getenv("AUTO_HARVEST_CLASSIFY", "false").lower() == "true"
+    today_str = date.today().isoformat()
+    last_run_date = db.get_metadata("last_daily_harvest_date")
+    result: Dict[str, Any] = {
+        "status": "skipped",
+        "reason": "already_ran_today",
+        "today": today_str,
+        "last_run_date": last_run_date,
+    }
+    if last_run_date == today_str:
+        return result
+
+    logger.info(
+        "Daily scheduler: starting automated harvest for query %r (today: %s, last run: %s)",
+        DAILY_HARVEST_QUERY,
+        today_str,
+        last_run_date,
+    )
+    db.set_metadata(
+        "last_daily_harvest_status",
+        f"Running automated harvest since {datetime.now().strftime('%H:%M:%S')}...",
+    )
+
+    try:
+        import manual_edit_cycle
+
+        if manual_edit_cycle.should_run_pre_harvest_cycle(db):
+            since_ts = manual_edit_cycle.pre_harvest_processing_since(db)
+            pending = db.count_expert_edits_since(since_ts, expert_drawer_only=True)
+            logger.info(
+                "Pre-harvest: %s unprocessed expert edit(s) since last harvest/cycle; running manual edit cycle",
+                pending,
+            )
+            edit_result = manual_edit_cycle.run_manual_edit_cycle(
+                db,
+                since=since_ts,
+                dry_run=False,
+                sqlite_path=os.getenv("SQLITE_PATH", "/data/cannabis_papers.db"),
+            )
+            logger.info("Pre-harvest manual edit cycle: %s", edit_result)
+            result["pre_harvest_edit_cycle"] = edit_result
+        else:
+            logger.info(
+                "Pre-harvest: no unprocessed expert edits since last daily harvest; skipping manual edit cycle"
+            )
+    except Exception as edit_err:
+        logger.error("Pre-harvest manual edit cycle failed: %s", edit_err)
+        result["pre_harvest_edit_error"] = str(edit_err)
+        if os.getenv("MANUAL_EDIT_BLOCK_HARVEST", "0") == "1":
+            raise
+
+    since_date = last_run_date
+    if not since_date or since_date == "Never":
+        since_date = (date.today() - timedelta(days=3)).isoformat()
+    success_count, skipped_count, filter_skipped, ingested_ids = harvest.run_harvest_pipeline(
+        query=DAILY_HARVEST_QUERY,
+        max_results=0,
+        update=True,
+        classify=classify,
+        mindate=since_date,
+    )
+
+    for paper_id in ingested_ids or []:
+        try:
+            db.sync_tab_flags_for_paper(int(paper_id))
+        except Exception as flag_err:
+            logger.error(
+                "Daily scheduler: tab flag sync failed for paper %s: %s",
+                paper_id,
+                flag_err,
+            )
+
+    if ingested_ids:
+        try:
+            upgrade = run_post_harvest_maude_upgrade(ingested_ids)
+            logger.info("Daily scheduler: post-harvest Maude upgrade: %s", upgrade)
+            result["maude_upgrade"] = upgrade
+        except Exception as upgrade_err:
+            logger.error("Daily scheduler: post-harvest Maude upgrade failed: %s", upgrade_err)
+            result["maude_upgrade_error"] = str(upgrade_err)
+
+    logger.info("Daily scheduler: Running purge_unrelated to clean up acronym-collision outliers...")
+    try:
+        import purge_unrelated
+
+        purge_unrelated.run_purger(dry_run=False)
+        logger.info("Daily scheduler: Cleanse completed successfully.")
+        result["purge_ok"] = True
+    except Exception as purge_err:
+        logger.error("Daily scheduler: Purge process failed: %s", purge_err)
+        result["purge_ok"] = False
+        result["purge_error"] = str(purge_err)
+
+    date_str = datetime.now().isoformat()
+    status_msg = (
+        f"Success! Harvest complete. Ingested {success_count} papers "
+        f"(skipped {skipped_count} pre-existing, filtered {filter_skipped} unrelated) "
+        f"at {datetime.now().strftime('%H:%M:%S')}."
+    )
+    logger.info("Daily scheduler status: %s", status_msg)
+    db.set_metadata("last_daily_harvest_date", today_str)
+    db.set_metadata("last_daily_harvest_timestamp", date_str)
+    db.set_metadata("last_daily_harvest_status", status_msg)
+    try:
+        db.set_metadata("dashboard_tab_counts_json", "")
+        db.set_metadata("dashboard_tab_counts_cached_at", "0")
+    except Exception:
+        pass
+
+    result.update(
+        {
+            "status": "ran",
+            "reason": None,
+            "success_count": success_count,
+            "skipped_count": skipped_count,
+            "filter_skipped": filter_skipped,
+            "ingested_ids": list(ingested_ids or []),
+            "mindate": since_date,
+            "message": status_msg,
+        }
+    )
+    return result
+
+
+def run_scheduled_cycle(db: Optional[DatabaseManager] = None) -> Dict[str, Any]:
+    """Run one harvest + due-jobs + watchdog + notification-digest cycle and return.
+
+    This is the body of the former in-process ``while True`` poll loop, callable
+    from CLI (``python scheduled_jobs.py --run-cycle``) or
+    ``POST /api/scheduler/run-cycle`` so the Fly web machine can autostop
+    between triggers.
+    """
+    import maude_reingest_watchdog
+
+    if not _cycle_lock.acquire(blocking=False):
+        logger.info("Scheduled cycle already running; skipping overlapping trigger.")
+        return {"ok": False, "status": "already_running"}
+
+    db = db or DatabaseManager()
+    summary: Dict[str, Any] = {
+        "ok": True,
+        "status": "completed",
+        "harvest": None,
+        "due_jobs": [],
+        "watchdog": None,
+        "notification_digests": None,
+    }
+    try:
+        try:
+            repaired = db.sync_orphan_tab_flags_since("2026-07-17")
+            logger.info("Tab-flag repair updated %s recently harvested papers", repaired)
+            summary["tab_flags_repaired"] = repaired
+        except Exception as repair_err:
+            logger.error("Tab-flag repair failed: %s", repair_err)
+            summary["tab_flags_repair_error"] = str(repair_err)
+
+        db.set_metadata("scheduler_active", "true")
+        db.set_metadata("scheduler_trigger", "external")
+        if not db.get_metadata("last_daily_harvest_status"):
+            db.set_metadata("last_daily_harvest_status", "Never run")
+        db.set_metadata("scheduler_heartbeat_at", datetime.now().isoformat())
+
+        summary["harvest"] = _maybe_run_daily_harvest(db)
+        summary["due_jobs"] = run_due_jobs(db)
+        summary["watchdog"] = maude_reingest_watchdog.run_watchdog(db)
+        try:
+            import user_notifications
+
+            digest_result = user_notifications.run_due_notification_digests(db)
+            summary["notification_digests"] = digest_result
+            if digest_result.get("sent") or digest_result.get("errors"):
+                logger.info("Notification digests: %s", digest_result)
+        except Exception as notif_err:
+            logger.error("Notification digest runner failed: %s", notif_err)
+            summary["notification_digests"] = {"error": str(notif_err)}
+        return summary
+    except Exception as exc:
+        err_msg = f"Background scheduler failed: {exc}"
+        logger.error(err_msg)
+        try:
+            db.set_metadata(
+                "last_daily_harvest_status",
+                f"Error at {datetime.now().strftime('%H:%M:%S')}: {exc}",
+            )
+        except Exception:
+            pass
+        summary["ok"] = False
+        summary["status"] = "error"
+        summary["error"] = str(exc)
+        return summary
+    finally:
+        _cycle_lock.release()
+
+
 def main() -> None:
-    """CLI for scheduling and inspecting one-shot background jobs."""
+    """CLI for scheduling jobs and running one external scheduler cycle."""
     parser = argparse.ArgumentParser(description="Schedule one-shot background jobs.")
+    parser.add_argument(
+        "--run-cycle",
+        action="store_true",
+        help="Run one harvest + due-jobs + watchdog + digest cycle and exit.",
+    )
     sub = parser.add_subparsers(dest="command")
+    sub.add_parser(
+        "run-cycle",
+        help="Run one harvest + due-jobs + watchdog + digest cycle and exit.",
+    )
 
     schedule_parser = sub.add_parser(
         "schedule-maude-reingest",
@@ -427,6 +668,12 @@ def main() -> None:
     cancel_parser.add_argument("job_id")
 
     args = parser.parse_args()
+    if args.run_cycle or args.command == "run-cycle":
+        logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
+        result = run_scheduled_cycle(DatabaseManager())
+        print(json.dumps(result, indent=2, default=str))
+        raise SystemExit(0 if result.get("ok") or result.get("status") == "already_running" else 1)
+
     if args.command == "schedule-maude-reingest":
         record = schedule_maude_reingest(
             at_time=args.at,

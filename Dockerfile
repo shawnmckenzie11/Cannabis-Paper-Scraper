@@ -29,4 +29,4 @@ EXPOSE 8080
 
 # Configure entrypoint and startup command
 ENTRYPOINT ["./entrypoint.sh"]
-CMD ["gunicorn", "--workers", "1", "--timeout", "120", "--bind", "0.0.0.0:8080", "app:app"]
+CMD ["gunicorn", "--workers", "1", "--timeout", "3600", "--bind", "0.0.0.0:8080", "app:app"]

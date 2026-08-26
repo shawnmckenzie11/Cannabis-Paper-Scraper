@@ -5,7 +5,7 @@ import re
 import threading
 import logging
 import uuid
-from datetime import date, datetime, timedelta
+from datetime import datetime
 from typing import Any, Dict, List, Optional, Tuple
 from pathlib import Path
 from functools import wraps
@@ -19,6 +19,12 @@ from dotenv import load_dotenv
 load_dotenv()
 
 from db_manager import DatabaseManager
+from scheduled_jobs import (
+    DAILY_HARVEST_QUERY,
+    SCHEDULER_TOKEN_HEADER,
+    run_scheduled_cycle,
+    scheduler_token_is_authorized,
+)
 import classifier
 import harvest
 from extractor import is_cannabis_related
@@ -209,147 +215,6 @@ def _pop_pending_pdf_upload(token: str) -> Optional[Dict[str, Any]]:
     """Retrieve and remove a pending PDF upload by token."""
     with _pending_pdf_lock:
         return _pending_pdf_uploads.pop(token, None)
-
-def daily_harvest_scheduler():
-    """Background scheduler for one-shot jobs and the daily harvest pipeline."""
-    import time
-
-    import scheduled_jobs
-    import maude_reingest_watchdog
-
-    sched_logger = logging.getLogger("scheduler")
-    sched_logger.info("Daily background scheduler thread starting...")
-    db = DatabaseManager()
-    try:
-        repaired = db.sync_orphan_tab_flags_since("2026-07-17")
-        sched_logger.info("Startup tab-flag repair updated %s recently harvested papers", repaired)
-    except Exception as repair_err:
-        sched_logger.error("Startup tab-flag repair failed: %s", repair_err)
-
-    # Store initial info
-    db.set_metadata("scheduler_active", "true")
-    if not db.get_metadata("last_daily_harvest_status"):
-        db.set_metadata("last_daily_harvest_status", "Never run")
-
-    query = "cannabis OR cannabinoid OR marijuana"
-    last_harvest_check_hour = None
-
-    while True:
-        try:
-            # Heartbeat first so /api/scheduler/status can tell a live loop from a stale flag.
-            db.set_metadata("scheduler_heartbeat_at", datetime.now().isoformat())
-
-            # Harvest before due jobs. A synchronous Maude re-ingest can run for days and
-            # would otherwise starve daily PubMed ingest.
-            current_hour = datetime.now().hour
-            if last_harvest_check_hour != current_hour:
-                last_harvest_check_hour = current_hour
-                classify = os.getenv("AUTO_HARVEST_CLASSIFY", "false").lower() == "true"
-                today_str = date.today().isoformat()  # YYYY-MM-DD
-                last_run_date = db.get_metadata("last_daily_harvest_date")
-
-                if last_run_date != today_str:
-                    sched_logger.info(f"Daily scheduler: starting automated harvest for query '{query}' (today: {today_str}, last run: {last_run_date})")
-                    db.set_metadata("last_daily_harvest_status", f"Running automated harvest since {datetime.now().strftime('%H:%M:%S')}...")
-
-                    try:
-                        import manual_edit_cycle
-                        if manual_edit_cycle.should_run_pre_harvest_cycle(db):
-                            since_ts = manual_edit_cycle.pre_harvest_processing_since(db)
-                            pending = db.count_expert_edits_since(since_ts, expert_drawer_only=True)
-                            sched_logger.info(
-                                "Pre-harvest: %s unprocessed expert edit(s) since last harvest/cycle; running manual edit cycle",
-                                pending,
-                            )
-                            edit_result = manual_edit_cycle.run_manual_edit_cycle(
-                                db,
-                                since=since_ts,
-                                dry_run=False,
-                                sqlite_path=os.getenv("SQLITE_PATH", "/data/cannabis_papers.db"),
-                            )
-                            sched_logger.info("Pre-harvest manual edit cycle: %s", edit_result)
-                        else:
-                            sched_logger.info(
-                                "Pre-harvest: no unprocessed expert edits since last daily harvest; skipping manual edit cycle"
-                            )
-                    except Exception as edit_err:
-                        sched_logger.error("Pre-harvest manual edit cycle failed: %s", edit_err)
-                        if os.getenv("MANUAL_EDIT_BLOCK_HARVEST", "0") == "1":
-                            raise
-
-                    since_date = last_run_date
-                    if not since_date or since_date == "Never":
-                        since_date = (date.today() - timedelta(days=3)).isoformat()
-                    success_count, skipped_count, filter_skipped, ingested_ids = harvest.run_harvest_pipeline(
-                        query=query,
-                        max_results=0,
-                        update=True,
-                        classify=classify,
-                        mindate=since_date,
-                    )
-
-                    for paper_id in ingested_ids or []:
-                        try:
-                            db.sync_tab_flags_for_paper(int(paper_id))
-                        except Exception as flag_err:
-                            sched_logger.error(
-                                "Daily scheduler: tab flag sync failed for paper %s: %s",
-                                paper_id,
-                                flag_err,
-                            )
-
-                    if ingested_ids:
-                        try:
-                            upgrade = scheduled_jobs.run_post_harvest_maude_upgrade(ingested_ids)
-                            sched_logger.info(
-                                "Daily scheduler: post-harvest Maude upgrade: %s",
-                                upgrade,
-                            )
-                        except Exception as upgrade_err:
-                            sched_logger.error(
-                                "Daily scheduler: post-harvest Maude upgrade failed: %s",
-                                upgrade_err,
-                            )
-
-                    # Run the purger to clean up any accidentally added unrelated papers
-                    sched_logger.info("Daily scheduler: Running purge_unrelated to clean up acronym-collision outliers...")
-                    try:
-                        import purge_unrelated
-                        purge_unrelated.run_purger(dry_run=False)
-                        sched_logger.info("Daily scheduler: Cleanse completed successfully.")
-                    except Exception as purge_err:
-                        sched_logger.error(f"Daily scheduler: Purge process failed: {purge_err}")
-
-                    # Mark as successful
-                    date_str = datetime.now().isoformat()
-                    status_msg = f"Success! Harvest complete. Ingested {success_count} papers (skipped {skipped_count} pre-existing, filtered {filter_skipped} unrelated) at {datetime.now().strftime('%H:%M:%S')}."
-                    sched_logger.info(f"Daily scheduler status: {status_msg}")
-                    db.set_metadata("last_daily_harvest_date", today_str)
-                    db.set_metadata("last_daily_harvest_timestamp", date_str)
-                    db.set_metadata("last_daily_harvest_status", status_msg)
-                    try:
-                        db.set_metadata("dashboard_tab_counts_json", "")
-                        db.set_metadata("dashboard_tab_counts_cached_at", "0")
-                    except Exception:
-                        pass
-
-            scheduled_jobs.run_due_jobs(db)
-            maude_reingest_watchdog.run_watchdog(db)
-            try:
-                import user_notifications
-                digest_result = user_notifications.run_due_notification_digests(db)
-                if digest_result.get("sent") or digest_result.get("errors"):
-                    sched_logger.info("Notification digests: %s", digest_result)
-            except Exception as notif_err:
-                sched_logger.error("Notification digest runner failed: %s", notif_err)
-
-        except Exception as e:
-            err_msg = f"Background scheduler failed: {e}"
-            sched_logger.error(err_msg)
-            db.set_metadata("last_daily_harvest_status", f"Error at {datetime.now().strftime('%H:%M:%S')}: {e}")
-
-        # Poll frequently enough for one-shot scheduled jobs (e.g. 11pm re-ingest).
-        time.sleep(60)
 
 def bg_harvest_worker(query: str, max_results: int, update: bool, classify: bool):
     """Asynchronous background worker that runs the harvest pipeline and updates progress state."""
@@ -1746,13 +1611,42 @@ def api_scheduler_status():
         "last_run_date": last_date,
         "last_run_timestamp": last_timestamp,
         "last_run_status": last_status,
-        "query": "cannabis OR cannabinoid OR marijuana",
+        "query": DAILY_HARVEST_QUERY,
+        "inprocess_harvest": False,
+        "trigger": db.get_metadata("scheduler_trigger", "external"),
+        "heartbeat_at": db.get_metadata("scheduler_heartbeat_at"),
         "manual_edit_cycle": {
             "last_cycle_at": db.get_metadata("last_manual_edit_cycle_at"),
             "pending_edits": manual_edit_cycle.pending_edit_count(db),
             "last_report": manual_edit_cycle.load_last_cycle_report(db),
         },
     })
+
+
+@app.route("/api/scheduler/run-cycle", methods=["POST"])
+def api_scheduler_run_cycle():
+    """Run one harvest + due-jobs + watchdog + digest cycle.
+
+    GitHub Actions (or any cron) POSTs here so the request both wakes a
+    stopped Fly machine and performs the work that used to live in the
+    in-process 60s poll loop. Guarded by SCHEDULER_RUN_TOKEN.
+    """
+    expected = (os.getenv("SCHEDULER_RUN_TOKEN") or "").strip()
+    provided = (request.headers.get(SCHEDULER_TOKEN_HEADER) or "").strip()
+    if not provided:
+        provided = (request.headers.get("Authorization") or "").strip()
+    if not expected:
+        return jsonify({"error": "Scheduler token is not configured."}), 503
+    if not scheduler_token_is_authorized(provided, expected=expected):
+        return jsonify({"error": "Unauthorized."}), 401
+
+    db = DatabaseManager()
+    result = run_scheduled_cycle(db)
+    if result.get("status") == "already_running":
+        return jsonify(result), 409
+    if not result.get("ok"):
+        return jsonify(result), 500
+    return jsonify(result)
 
 @app.route("/api/manual-edit-cycle/status", methods=["GET"])
 @admin_required
@@ -3445,12 +3339,9 @@ def api_get_task_status(task_id):
         conn.close()
 
 
-# Start the background daily scheduler thread, protected against debug reloader double-runs and unit tests
-import sys
-if (not app.debug or os.environ.get("WERKZEUG_RUN_MAIN") == "true") and "unittest" not in sys.modules:
-    logging.getLogger("scheduler").info("Launching daily automatic harvest scheduler thread...")
-    threading.Thread(target=daily_harvest_scheduler, daemon=True).start()
-
+# Daily harvest + due jobs run via POST /api/scheduler/run-cycle (GitHub Actions
+# cron) or `python scheduled_jobs.py --run-cycle`. Do not start an in-process
+# poll loop here: Fly autostop only tracks HTTP traffic.
 if __name__ == "__main__":
     # Start server on local network port 5001 to bypass macOS default AirPlay port conflict (5000)
     app.run(debug=True, port=5001)
