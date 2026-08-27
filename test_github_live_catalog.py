@@ -111,10 +111,24 @@ class WorkflowAndScriptContractTests(unittest.TestCase):
     def test_docs_cover_domain_and_abandon_mac(self):
         live = DOCS.read_text(encoding="utf-8")
         abandoned = MACOS_DOCS.read_text(encoding="utf-8")
-        self.assertIn("paperscraper.miladlab.ca", live)
+        self.assertIn("Render", live)
         self.assertIn("ci_daily_harvest.py", live)
+        self.assertNotIn("Fly.io is used", live)
         self.assertIn("abandoned", abandoned.lower())
         self.assertIn("github-live-catalog.md", abandoned)
+
+    def test_render_and_start_script_avoid_fly(self):
+        """Public host boots SQLite via start_web.sh; Fly Postgres is never required."""
+        start = (ROOT / "scripts" / "start_web.sh").read_text(encoding="utf-8")
+        render = (ROOT / "render.yaml").read_text(encoding="utf-8")
+        docker = (ROOT / "Dockerfile").read_text(encoding="utf-8")
+        self.assertIn("unset DATABASE_URL", start)
+        self.assertIn("ensure_local_catalog", start)
+        self.assertIn("gunicorn", start)
+        self.assertIn("plan: free", render)
+        self.assertIn("scripts/start_web.sh", render)
+        self.assertIn("start_web.sh", docker)
+        self.assertNotIn("ENTRYPOINT", docker)
 
 
 class CatalogReloadTests(unittest.TestCase):
@@ -136,6 +150,45 @@ class CatalogReloadTests(unittest.TestCase):
             self.assertEqual(row[0], 2)
             self.assertFalse(Path(str(live) + "-wal").exists())
             self.assertFalse(staging.exists())
+
+    def test_catalog_needs_seed_detects_missing_and_tiny_files(self):
+        import catalog_reload
+
+        with tempfile.TemporaryDirectory() as tmp:
+            missing = Path(tmp) / "no.db"
+            self.assertTrue(catalog_reload.catalog_needs_seed(missing, min_bytes=10))
+            tiny = Path(tmp) / "tiny.db"
+            tiny.write_bytes(b"x")
+            self.assertTrue(catalog_reload.catalog_needs_seed(tiny, min_bytes=10))
+            ok = Path(tmp) / "ok.db"
+            _tiny_catalog(ok)
+            self.assertFalse(catalog_reload.catalog_needs_seed(ok, min_bytes=1))
+
+    def test_ensure_local_catalog_downloads_when_missing(self):
+        import catalog_reload
+        import shutil
+
+        with tempfile.TemporaryDirectory() as tmp:
+            dest = Path(tmp) / "live.db"
+            remote = Path(tmp) / "remote.db"
+            _tiny_catalog(remote, paper_id=7)
+
+            def fake_download(dest_path):
+                shutil.copy2(remote, dest_path)
+
+            previous_cwd = os.getcwd()
+            os.chdir(tmp)
+            try:
+                with patch.dict(os.environ, {"MIN_CATALOG_BYTES": "1"}, clear=False):
+                    with patch("catalog_reload.download_from_r2_env", side_effect=fake_download):
+                        path = catalog_reload.ensure_local_catalog(dest)
+            finally:
+                os.chdir(previous_cwd)
+            conn = sqlite3.connect(path)
+            row = conn.execute("SELECT id FROM papers").fetchone()
+            conn.close()
+            self.assertEqual(row[0], 7)
+            self.assertFalse(Path(str(dest) + ".download").exists())
 
     def test_reload_endpoint_requires_token_and_swaps(self):
         os.environ["CATALOG_RELOAD_TOKEN"] = "test-reload-token"

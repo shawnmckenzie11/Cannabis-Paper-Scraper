@@ -7,26 +7,24 @@ WORKDIR /app
 # Set environment variables
 ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1
-ENV DATABASE_PATH=/data/cannabis_papers.db
+ENV DATABASE_PATH=/app/data/cannabis_papers.db
 
-# Install system dependencies
+# Install system dependencies (curl for health; awscli comes from pip in start/build)
 RUN apt-get update && apt-get install -y --no-install-recommends \
     curl \
     && rm -rf /var/lib/apt/lists/*
 
 # Install python dependencies
 COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+RUN pip install --no-cache-dir -r requirements.txt awscli
 
 # Copy project files
 COPY . .
 
-# Make entrypoint executable
-RUN chmod +x entrypoint.sh
+# Make start scripts executable
+RUN chmod +x entrypoint.sh scripts/start_web.sh
 
-# Expose port (Fly.io defaults to 8080)
 EXPOSE 8080
 
-# Configure entrypoint and startup command
-ENTRYPOINT ["./entrypoint.sh"]
-CMD ["gunicorn", "--workers", "1", "--timeout", "120", "--bind", "0.0.0.0:8080", "app:app"]
+# Production start: SQLite from R2, never Fly Postgres.
+CMD ["./scripts/start_web.sh"]

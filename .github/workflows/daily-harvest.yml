@@ -52,7 +52,7 @@ jobs:
           CATALOG_RELOAD_TOKEN: ${{ secrets.CATALOG_RELOAD_TOKEN }}
         run: |
           if [ -z "${CATALOG_RELOAD_URL}" ] || [ -z "${CATALOG_RELOAD_TOKEN}" ]; then
-            echo "CATALOG_RELOAD_URL not set; skip VPS POST /api/catalog/reload"
+            echo "CATALOG_RELOAD_URL not set; skip web-host POST /api/catalog/reload"
             exit 0
           fi
           curl -fsS -X POST \

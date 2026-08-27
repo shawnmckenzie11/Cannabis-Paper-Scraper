@@ -84,3 +84,41 @@ def download_from_r2_env(dest: str | Path) -> None:
     if completed.returncode != 0:
         err = (completed.stderr or completed.stdout or "").strip()
         raise CatalogReloadError(f"R2 download failed: {err}")
+
+
+MIN_CATALOG_BYTES = 50_000_000
+
+
+def catalog_needs_seed(path: str | Path, min_bytes: int = MIN_CATALOG_BYTES) -> bool:
+    """Return True when the SQLite catalog is missing or too small to be the corpus."""
+    db_path = Path(path)
+    return (not db_path.is_file()) or db_path.stat().st_size < min_bytes
+
+
+def ensure_local_catalog(db_path: str | Path | None = None) -> str:
+    """Return a usable SQLite catalog path, downloading from R2 when needed.
+
+    Production hosting (Render, a VPS, Docker) must not use Fly ``DATABASE_URL``.
+    The canonical corpus lives in Cloudflare R2; this pulls it onto disk at boot
+    when ``DATABASE_PATH`` is empty or is the tiny repo placeholder.
+    """
+    path = Path(db_path or os.getenv("DATABASE_PATH") or "cannabis_papers.db")
+    min_bytes = int(os.getenv("MIN_CATALOG_BYTES") or MIN_CATALOG_BYTES)
+    if not catalog_needs_seed(path, min_bytes=min_bytes):
+        validate_catalog_sqlite(path)
+        return str(path.resolve())
+
+    seed = Path("cannabis_papers.db")
+    if seed.is_file() and seed.resolve() != path.resolve() and seed.stat().st_size >= min_bytes:
+        import shutil
+
+        path.parent.mkdir(parents=True, exist_ok=True)
+        staging = Path(str(path) + ".seed")
+        shutil.copy2(seed, staging)
+        replace_sqlite_catalog(path, staging)
+        return str(path.resolve())
+
+    staging = Path(str(path) + ".download")
+    download_from_r2_env(staging)
+    replace_sqlite_catalog(path, staging)
+    return str(path.resolve())
