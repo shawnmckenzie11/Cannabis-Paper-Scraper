@@ -1,0 +1,38 @@
+# Free public host for the paperscraper Flask app. No Fly.io.
+#
+# After merge: Render Dashboard → New → Blueprint → this repo.
+# Choose the Free instance type. Set the R2 / catalog env vars listed below.
+# First boot downloads cannabis_papers.db from R2 (a few hundred MB).
+
+previewsEnabled: false
+
+services:
+  - type: web
+    name: paperscraper
+    runtime: python
+    plan: free
+    buildCommand: pip install -r requirements.txt awscli
+    startCommand: bash scripts/start_web.sh
+    envVars:
+      - key: PYTHON_VERSION
+        value: "3.12.3"
+      - key: AWS_DEFAULT_REGION
+        value: auto
+      - key: DATABASE_PATH
+        value: /opt/render/project/src/data/cannabis_papers.db
+      - key: R2_ENDPOINT
+        sync: false
+      - key: R2_BUCKET
+        sync: false
+      - key: R2_OBJECT
+        value: cannabis_papers.db
+      - key: AWS_ACCESS_KEY_ID
+        sync: false
+      - key: AWS_SECRET_ACCESS_KEY
+        sync: false
+      - key: CATALOG_RELOAD_TOKEN
+        sync: false
+      - key: ACCESS_PASSWORD
+        sync: false
+      - key: FLASK_SECRET_KEY
+        generateValue: true

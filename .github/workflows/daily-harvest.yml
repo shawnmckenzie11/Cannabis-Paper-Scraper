@@ -1,0 +1,62 @@
+# Daily PubMed harvest into Cloudflare R2 SQLite. Does not deploy Fly and does
+# not use DATABASE_URL / Managed Postgres.
+name: Daily PubMed harvest
+
+on:
+  schedule:
+    # 10:00 Eastern (EDT). Adjust if you need EST-only winter timing.
+    - cron: "0 14 * * *"
+  workflow_dispatch:
+
+jobs:
+  harvest:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    env:
+      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      AWS_DEFAULT_REGION: auto
+      R2_ENDPOINT: ${{ secrets.R2_ENDPOINT }}
+      R2_BUCKET: ${{ secrets.R2_BUCKET }}
+      R2_OBJECT: cannabis_papers.db
+      ENTREZ_EMAIL: ${{ secrets.ENTREZ_EMAIL }}
+      NCBI_API_KEY: ${{ secrets.NCBI_API_KEY }}
+      DATABASE_PATH: ${{ github.workspace }}/cannabis_papers.db
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Install AWS CLI
+        run: |
+          python -m pip install --upgrade pip
+          pip install awscli
+
+      - name: Install app dependencies
+        run: pip install -r requirements.txt
+
+      - name: Refuse Postgres and run harvest
+        run: |
+          unset DATABASE_URL
+          export DATABASE_PATH="${DATABASE_PATH}"
+          python3 scripts/ci_daily_harvest.py --sqlite-path "${DATABASE_PATH}"
+
+      - name: Ask the live site to reload SQLite
+        env:
+          CATALOG_RELOAD_URL: ${{ secrets.CATALOG_RELOAD_URL }}
+          CATALOG_RELOAD_TOKEN: ${{ secrets.CATALOG_RELOAD_TOKEN }}
+        run: |
+          if [ -z "${CATALOG_RELOAD_URL}" ] || [ -z "${CATALOG_RELOAD_TOKEN}" ]; then
+            echo "CATALOG_RELOAD_URL not set; skip web-host POST /api/catalog/reload"
+            exit 0
+          fi
+          curl -fsS -X POST \
+            -H "X-Catalog-Reload-Token: ${CATALOG_RELOAD_TOKEN}" \
+            -H "Content-Type: application/json" \
+            --data '{"pull_from_r2": true}' \
+            "${CATALOG_RELOAD_URL}"

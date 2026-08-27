@@ -32,6 +32,9 @@ load_dotenv()
 ENTREZ_EMAIL = os.getenv("ENTREZ_EMAIL", "miladn1@mcmaster.ca")
 Entrez.email = ENTREZ_EMAIL
 Entrez.tool = "CannabisResearchScraper"
+_NCBI_API_KEY = (os.getenv("NCBI_API_KEY") or "").strip()
+if _NCBI_API_KEY:
+    Entrez.api_key = _NCBI_API_KEY
 
 # When false, non-OA papers classify abstract-only at ingest; OA/direct-PDF still sync.
 HARVEST_SYNC_PDF = os.getenv("HARVEST_SYNC_PDF", "1").strip().lower() not in {"0", "false", "no"}
