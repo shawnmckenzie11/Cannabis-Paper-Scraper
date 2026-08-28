@@ -126,6 +126,23 @@ class DailyHarvestTests(unittest.TestCase):
         mock_purge.assert_called_once_with(dry_run=False)
         self.assertEqual(db.get_metadata(daily_harvest.LOCK_METADATA_KEY), "")
 
+    @mock.patch("purge_unrelated.run_purger")
+    @mock.patch("manual_edit_cycle.should_run_pre_harvest_cycle", return_value=False)
+    @mock.patch("scheduled_jobs.run_post_harvest_maude_upgrade", return_value={"status": "started"})
+    @mock.patch("harvest.run_harvest_pipeline", return_value=(2, 1, 0, [10, 11]))
+    def test_cheap_ops_skips_full_catalog_purge(
+        self, mock_harvest, mock_upgrade, _mock_edits, mock_purge
+    ):
+        """CHEAP_OPS harvests new papers but does not scan-delete the whole catalog."""
+        os.environ["CHEAP_OPS"] = "1"
+        db = FakeHarvestDb({"last_daily_harvest_date": "2026-08-20"})
+        result = daily_harvest.run_daily_harvest_if_due(db)
+        self.assertEqual(result["status"], "ran")
+        self.assertTrue(result.get("purge_skipped"))
+        mock_harvest.assert_called_once()
+        mock_upgrade.assert_not_called()
+        mock_purge.assert_not_called()
+
     @mock.patch("user_notifications.run_due_notification_digests", return_value={"sent": 0})
     @mock.patch("maude_reingest_watchdog.run_watchdog")
     @mock.patch("scheduled_jobs.run_due_jobs")
@@ -202,14 +219,18 @@ class CheapOpsConfigTests(unittest.TestCase):
         self.assertIn("CHEAP_OPS", text)
         self.assertIn("upgrade_stale_harvest_classifications.py", text)
 
-    def test_daily_harvest_workflow_uses_fly_ssh(self):
-        """Actions cron starts the Fly machine and runs python -m daily_harvest."""
+    def test_daily_harvest_workflow_uses_hub_store(self):
+        """Actions cron harvests SQLite and reloads the Hugging Face Space."""
         text = (ROOT / ".github" / "workflows" / "daily-harvest.yml").read_text(encoding="utf-8")
         self.assertIn('cron: "0 11 * * *"', text)
         self.assertIn("workflow_dispatch", text)
-        self.assertIn("FLY_API_TOKEN", text)
-        self.assertIn("python3 -m daily_harvest", text)
-        self.assertIn("machine start", text)
+        self.assertIn("scripts/ci_daily_harvest.py", text)
+        self.assertIn("unset DATABASE_URL", text)
+        self.assertIn("/api/catalog/reload", text)
+        self.assertIn("HF_TOKEN", text)
+        self.assertIn("continue-on-error: true", text)
+        self.assertNotIn("flyctl", text)
+        self.assertNotIn("FLY_API_TOKEN", text)
 
 
 if __name__ == "__main__":

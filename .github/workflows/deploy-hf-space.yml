@@ -1,0 +1,44 @@
+# Push this repo to the Hugging Face Docker Space on main.
+# Does not deploy Fly.
+name: Deploy Hugging Face Space
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      HF_TOKEN: ${{ secrets.HF_TOKEN }}
+      CATALOG_RELOAD_TOKEN: ${{ secrets.CATALOG_RELOAD_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Require HF_TOKEN
+        run: |
+          if [ -z "${HF_TOKEN}" ]; then
+            echo "Add repository secret HF_TOKEN (write token for mckenziansolutions)."
+            exit 1
+          fi
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install huggingface_hub
+        run: pip install huggingface_hub
+
+      - name: Deploy Space
+        run: |
+          set +e
+          python3 scripts/deploy_hf_space.py
+          code=$?
+          if [ "$code" = "3" ]; then
+            echo "::warning::Hugging Face PRO is required to create the Docker Space. Catalog dataset harvest can still run."
+            exit 0
+          fi
+          exit "$code"

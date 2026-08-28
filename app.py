@@ -5,6 +5,7 @@ import re
 import threading
 import logging
 import uuid
+import hmac
 from datetime import datetime
 from typing import Any, Dict, List, Optional, Tuple
 from pathlib import Path
@@ -213,9 +214,9 @@ def _pop_pending_pdf_upload(token: str) -> Optional[Dict[str, Any]]:
 def daily_harvest_scheduler():
     """Fallback hourly harvest loop while the web process happens to be awake.
 
-    Primary daily ingest is GitHub Actions (`python3 -m daily_harvest` over Fly SSH).
-    This thread is idempotent with that job and does not keep the Fly machine running:
-    autostop only tracks HTTP idle. CHEAP_OPS=1 skips bulk Maude re-ingest.
+    Primary daily ingest is GitHub Actions (`scripts/ci_daily_harvest.py`) against
+    the Hub dataset (or R2), followed by POST /api/catalog/reload. This thread stays
+    off unless INPROCESS_DAILY_HARVEST=1.
     """
     import time
 
@@ -1643,6 +1644,7 @@ def api_upload_pdf():
 def api_scheduler_status():
     """Returns the daily background scheduler status from the metadata table."""
     import daily_harvest
+    import hf_space_config
     import manual_edit_cycle
     db = DatabaseManager()
     active = db.get_metadata("scheduler_active", "false")
@@ -1656,9 +1658,9 @@ def api_scheduler_status():
         "last_run_timestamp": last_timestamp,
         "last_run_status": last_status,
         "query": daily_harvest.DAILY_HARVEST_QUERY,
-        "inprocess_harvest": True,
+        "inprocess_harvest": hf_space_config.inprocess_daily_harvest_enabled(),
         "cheap_ops": daily_harvest.cheap_ops_enabled(),
-        "trigger": db.get_metadata("scheduler_trigger", "inprocess"),
+        "trigger": db.get_metadata("scheduler_trigger", "external"),
         "heartbeat_at": heartbeat_at,
         "manual_edit_cycle": {
             "last_cycle_at": db.get_metadata("last_manual_edit_cycle_at"),
@@ -1666,6 +1668,43 @@ def api_scheduler_status():
             "last_report": manual_edit_cycle.load_last_cycle_report(db),
         },
     })
+
+
+@app.route("/api/catalog/reload", methods=["POST"])
+def api_catalog_reload():
+    """Swap the live SQLite file for a harvested copy (Space + GitHub Actions)."""
+    import catalog_reload
+    import catalog_store
+
+    expected = (os.getenv("CATALOG_RELOAD_TOKEN") or "").strip()
+    provided = (request.headers.get("X-Catalog-Reload-Token") or "").strip()
+    try:
+        authorized = bool(expected) and hmac.compare_digest(provided, expected)
+    except Exception:
+        authorized = False
+    if not authorized:
+        return jsonify({"error": "Unauthorized."}), 401
+
+    db = DatabaseManager()
+    if db.is_postgres:
+        return jsonify({"error": "Catalog reload is SQLite-only; unset DATABASE_URL."}), 400
+
+    payload = request.get_json(silent=True) or {}
+    live_path = os.getenv("DATABASE_PATH") or db.db_path
+    staging = payload.get("staging_path")
+    try:
+        if payload.get("pull_from_store") or payload.get("pull_from_r2"):
+            staging = os.getenv("CATALOG_STAGING_PATH") or f"{live_path}.new"
+            catalog_store.download_catalog(staging)
+        if not staging:
+            return jsonify({"error": "staging_path or pull_from_store is required."}), 400
+        replaced = catalog_reload.replace_sqlite_catalog(live_path, staging)
+    except (catalog_reload.CatalogReloadError, catalog_store.CatalogStoreError) as exc:
+        return jsonify({"error": str(exc)}), 400
+    except Exception as exc:
+        app.logger.error("Catalog reload failed: %s", exc)
+        return jsonify({"error": str(exc)}), 500
+    return jsonify({"ok": True, "path": replaced})
 
 @app.route("/api/manual-edit-cycle/status", methods=["GET"])
 @admin_required
@@ -3358,11 +3397,21 @@ def api_get_task_status(task_id):
         conn.close()
 
 
-# Start the background daily scheduler thread, protected against debug reloader double-runs and unit tests
+# Daily harvest runs in GitHub Actions. The in-process thread stays off on
+# Hugging Face Spaces unless INPROCESS_DAILY_HARVEST=1.
 import sys
-if (not app.debug or os.environ.get("WERKZEUG_RUN_MAIN") == "true") and "unittest" not in sys.modules:
+import hf_space_config
+if (
+    hf_space_config.inprocess_daily_harvest_enabled()
+    and (not app.debug or os.environ.get("WERKZEUG_RUN_MAIN") == "true")
+    and "unittest" not in sys.modules
+):
     logging.getLogger("scheduler").info("Launching daily automatic harvest scheduler thread...")
     threading.Thread(target=daily_harvest_scheduler, daemon=True).start()
+elif "unittest" not in sys.modules:
+    logging.getLogger("scheduler").info(
+        "Skipping in-process harvest thread (set INPROCESS_DAILY_HARVEST=1 to enable)."
+    )
 
 if __name__ == "__main__":
     # Start server on local network port 5001 to bypass macOS default AirPlay port conflict (5000)

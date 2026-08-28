@@ -85,6 +85,7 @@ def run_daily_harvest_if_due(
     *,
     force: bool = False,
     classify: Optional[bool] = None,
+    skip_purge: Optional[bool] = None,
 ) -> Dict[str, Any]:
     """Run the once-per-day PubMed harvest when it has not yet succeeded today.
 
@@ -96,6 +97,9 @@ def run_daily_harvest_if_due(
         db: Optional DatabaseManager; constructed if omitted.
         force: When True, harvest even if last_daily_harvest_date is today.
         classify: Override AUTO_HARVEST_CLASSIFY (True = Claude LLM).
+        skip_purge: When True, skip the full-catalog purge. When None, CHEAP_OPS
+            skips purge because GitHub Actions harvests into a Hub copy that
+            must not be wiped if abstracts are still being backfilled.
 
     Returns:
         Status dict with ``status`` of skipped, ran, locked, or error.
@@ -185,7 +189,7 @@ def run_daily_harvest_if_due(
             except Exception as flag_err:
                 logger.error("Tab flag sync failed for paper %s: %s", paper_id, flag_err)
 
-        if ingested_ids:
+        if ingested_ids and not cheap_ops_enabled():
             try:
                 import scheduled_jobs
 
@@ -195,17 +199,27 @@ def run_daily_harvest_if_due(
             except Exception as upgrade_err:
                 logger.error("Post-harvest Maude upgrade failed: %s", upgrade_err)
                 result["maude_upgrade_error"] = str(upgrade_err)
+        elif ingested_ids:
+            logger.info("CHEAP_OPS: skipping post-harvest Maude PDF upgrade")
+            result["maude_upgrade"] = {"status": "skipped", "reason": "cheap_ops"}
 
-        logger.info("Running purge_unrelated after daily harvest")
-        try:
-            import purge_unrelated
-
-            purge_unrelated.run_purger(dry_run=False)
+        if skip_purge is None:
+            skip_purge = cheap_ops_enabled()
+        if skip_purge:
+            logger.info("Skipping full-catalog purge_unrelated (CHEAP_OPS or skip_purge)")
             result["purge_ok"] = True
-        except Exception as purge_err:
-            logger.error("Purge process failed: %s", purge_err)
-            result["purge_ok"] = False
-            result["purge_error"] = str(purge_err)
+            result["purge_skipped"] = True
+        else:
+            logger.info("Running purge_unrelated after daily harvest")
+            try:
+                import purge_unrelated
+
+                purge_unrelated.run_purger(dry_run=False)
+                result["purge_ok"] = True
+            except Exception as purge_err:
+                logger.error("Purge process failed: %s", purge_err)
+                result["purge_ok"] = False
+                result["purge_error"] = str(purge_err)
 
         date_str = datetime.now().isoformat()
         status_msg = (
@@ -257,6 +271,7 @@ def run_scheduled_cycle(
     *,
     force_harvest: bool = False,
     harvest_only: bool = False,
+    skip_purge: Optional[bool] = None,
     trigger: str = "external",
 ) -> Dict[str, Any]:
     """Run one harvest cycle plus (unless CHEAP_OPS) due jobs and the watchdog.
@@ -265,6 +280,7 @@ def run_scheduled_cycle(
         db: Optional DatabaseManager.
         force_harvest: Pass through to ``run_daily_harvest_if_due``.
         harvest_only: Skip due jobs, watchdog, and notification digests.
+        skip_purge: Pass through to ``run_daily_harvest_if_due``.
         trigger: Value stored in ``scheduler_trigger`` metadata (external vs inprocess).
 
     Returns:
@@ -294,7 +310,9 @@ def run_scheduled_cycle(
             db.set_metadata("last_daily_harvest_status", "Never run")
         db.set_metadata("scheduler_heartbeat_at", datetime.now().isoformat())
 
-        summary["harvest"] = run_daily_harvest_if_due(db, force=force_harvest)
+        summary["harvest"] = run_daily_harvest_if_due(
+            db, force=force_harvest, skip_purge=skip_purge
+        )
         harvest_status = (summary["harvest"] or {}).get("status")
         if harvest_status == "error":
             summary["ok"] = False
