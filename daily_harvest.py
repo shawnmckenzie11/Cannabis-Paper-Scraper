@@ -189,7 +189,7 @@ def run_daily_harvest_if_due(
             except Exception as flag_err:
                 logger.error("Tab flag sync failed for paper %s: %s", paper_id, flag_err)
 
-        if ingested_ids:
+        if ingested_ids and not cheap_ops_enabled():
             try:
                 import scheduled_jobs
 
@@ -199,6 +199,9 @@ def run_daily_harvest_if_due(
             except Exception as upgrade_err:
                 logger.error("Post-harvest Maude upgrade failed: %s", upgrade_err)
                 result["maude_upgrade_error"] = str(upgrade_err)
+        elif ingested_ids:
+            logger.info("CHEAP_OPS: skipping post-harvest Maude PDF upgrade")
+            result["maude_upgrade"] = {"status": "skipped", "reason": "cheap_ops"}
 
         if skip_purge is None:
             skip_purge = cheap_ops_enabled()

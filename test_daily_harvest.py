@@ -140,7 +140,7 @@ class DailyHarvestTests(unittest.TestCase):
         self.assertEqual(result["status"], "ran")
         self.assertTrue(result.get("purge_skipped"))
         mock_harvest.assert_called_once()
-        mock_upgrade.assert_called_once()
+        mock_upgrade.assert_not_called()
         mock_purge.assert_not_called()
 
     @mock.patch("user_notifications.run_due_notification_digests", return_value={"sent": 0})
