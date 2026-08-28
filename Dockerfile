@@ -24,9 +24,11 @@ COPY . .
 # Make entrypoint executable
 RUN chmod +x entrypoint.sh
 
-# Expose port (Fly.io defaults to 8080)
-EXPOSE 8080
+# Fly uses 8080; Hugging Face Docker Spaces use 7860 via PORT.
+ENV PORT=8080
+ENV CHEAP_OPS=1
+EXPOSE 8080 7860
 
 # Configure entrypoint and startup command
 ENTRYPOINT ["./entrypoint.sh"]
-CMD ["gunicorn", "--workers", "1", "--timeout", "120", "--bind", "0.0.0.0:8080", "app:app"]
+CMD ["sh", "-c", "exec gunicorn --workers 1 --timeout 180 --bind 0.0.0.0:${PORT:-8080} app:app"]

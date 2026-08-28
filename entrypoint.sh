@@ -1,6 +1,18 @@
 #!/bin/sh
 set -e
 
+# Hugging Face Docker Spaces must bind 7860. The image default is Fly's 8080.
+if [ -n "${SPACE_ID:-}" ]; then
+    export PORT=7860
+    if [ -z "${DATABASE_PATH:-}" ] || [ "$DATABASE_PATH" = "/data/cannabis_papers.db" ]; then
+        export DATABASE_PATH=/tmp/cannabis_papers.db
+    fi
+    export CHEAP_OPS="${CHEAP_OPS:-1}"
+    export CATALOG_DATASET_ID="${CATALOG_DATASET_ID:-mckenziansolutions/cannabis-papers-catalog}"
+    export INPROCESS_DAILY_HARVEST="${INPROCESS_DAILY_HARVEST:-0}"
+    echo "Hugging Face Space runtime: PORT=$PORT DATABASE_PATH=$DATABASE_PATH"
+fi
+
 DB_PATH=${DATABASE_PATH:-/data/cannabis_papers.db}
 SEED_SOURCE="cannabis_papers.db"
 CALIBRATION_ARTIFACT_DIR="/data/calibration_runs"
@@ -10,8 +22,20 @@ echo "Checking database status..."
 mkdir -p "$(dirname "$DB_PATH")"
 mkdir -p "$CALIBRATION_ARTIFACT_DIR"
 
+# Hugging Face Space (and optional R2): pull the catalog before serving.
+if [ -n "${SPACE_ID:-}" ] || [ -n "${CATALOG_DATASET_ID:-}" ] || [ -n "${R2_BUCKET:-}" ]; then
+    echo "Pulling catalog from remote store into $DB_PATH..."
+    if python3 -c "from catalog_store import ensure_local_catalog; ensure_local_catalog()"; then
+        echo "Catalog pull succeeded."
+        SKIP_TINY_DELETE=1
+    else
+        echo "Warning: catalog pull failed; continuing with local file if present."
+    fi
+fi
+
 # If database exists but is incomplete (less than 50MB), delete it so we can re-seed
-if [ -f "$DB_PATH" ]; then
+# Skip this wipe on Spaces — a freshly pulled Hub catalog may be rebuilt in stages.
+if [ -f "$DB_PATH" ] && [ "${SKIP_TINY_DELETE:-0}" != "1" ]; then
     # Cross-platform file size retrieval (Linux/macOS)
     FILESIZE=$(stat -c%s "$DB_PATH" 2>/dev/null || stat -f%z "$DB_PATH" 2>/dev/null || echo 0)
     echo "Found existing database at $DB_PATH ($FILESIZE bytes)."
@@ -29,7 +53,9 @@ if [ -f "$SEED_SOURCE" ] && [ ! -f "$DB_PATH" ]; then
     echo "Database seeded successfully."
 fi
 
-if [ -f "$DB_PATH" ]; then
+if [ -n "${SPACE_ID:-}" ]; then
+    echo "Hugging Face Space: skipping Alembic (SQLite catalog uses schema.sql)."
+elif [ -f "$DB_PATH" ]; then
     echo "Running database schema migrations via Alembic..."
     if ! python3 -m alembic upgrade head; then
         echo "Warning: database migrations did not complete; continuing startup."

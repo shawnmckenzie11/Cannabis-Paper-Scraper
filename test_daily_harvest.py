@@ -202,14 +202,17 @@ class CheapOpsConfigTests(unittest.TestCase):
         self.assertIn("CHEAP_OPS", text)
         self.assertIn("upgrade_stale_harvest_classifications.py", text)
 
-    def test_daily_harvest_workflow_uses_fly_ssh(self):
-        """Actions cron starts the Fly machine and runs python -m daily_harvest."""
+    def test_daily_harvest_workflow_uses_hub_store(self):
+        """Actions cron harvests SQLite and reloads the Hugging Face Space."""
         text = (ROOT / ".github" / "workflows" / "daily-harvest.yml").read_text(encoding="utf-8")
         self.assertIn('cron: "0 11 * * *"', text)
         self.assertIn("workflow_dispatch", text)
-        self.assertIn("FLY_API_TOKEN", text)
-        self.assertIn("python3 -m daily_harvest", text)
-        self.assertIn("machine start", text)
+        self.assertIn("scripts/ci_daily_harvest.py", text)
+        self.assertIn("unset DATABASE_URL", text)
+        self.assertIn("/api/catalog/reload", text)
+        self.assertIn("HF_TOKEN", text)
+        self.assertNotIn("flyctl", text)
+        self.assertNotIn("FLY_API_TOKEN", text)
 
 
 if __name__ == "__main__":
