@@ -88,6 +88,62 @@ def bulk_insert_papers(conn: sqlite3.Connection, rows: Sequence[Dict[str, Any]])
     return len(payload)
 
 
+def fill_missing_abstracts(conn: sqlite3.Connection, batch_size: int = 100) -> int:
+    """Fetch PubMed abstracts for rows that the public search API omitted.
+
+    Returns:
+        Number of rows updated with an abstract.
+    """
+    import harvest
+
+    api_key = (os.getenv("NCBI_API_KEY") or "").strip()
+    if api_key:
+        from Bio import Entrez
+
+        Entrez.api_key = api_key
+    rows = conn.execute(
+        """
+        SELECT pmid FROM papers
+        WHERE pmid IS NOT NULL AND TRIM(pmid) != ''
+          AND (abstract IS NULL OR TRIM(abstract) = '')
+        """
+    ).fetchall()
+    pmids = [str(row[0]) for row in rows]
+    logger.info("Filling abstracts for %s papers from PubMed", len(pmids))
+    updated = 0
+    for start in range(0, len(pmids), batch_size):
+        batch = pmids[start : start + batch_size]
+        papers = harvest.fetch_pubmed_details(batch)
+        for paper in papers:
+            pmid = paper.get("pmid")
+            abstract = (paper.get("abstract") or "").strip()
+            if not pmid or not abstract:
+                continue
+            journal = paper.get("journal") or ""
+            authors = paper.get("authors")
+            if isinstance(authors, list):
+                authors = json.dumps(authors)
+            conn.execute(
+                """
+                UPDATE papers
+                SET abstract = ?,
+                    journal = CASE WHEN journal IS NULL OR TRIM(journal) = '' THEN ? ELSE journal END,
+                    authors = CASE WHEN authors IS NULL OR TRIM(authors) = '' THEN ? ELSE authors END
+                WHERE pmid = ?
+                """,
+                (abstract, journal, authors or "", pmid),
+            )
+            updated += 1
+        conn.commit()
+        logger.info(
+            "Filled abstracts through %s / %s (%s updated)",
+            min(start + batch_size, len(pmids)),
+            len(pmids),
+            updated,
+        )
+    return updated
+
+
 def copy_scheduler_metadata(db, status: Dict[str, Any]) -> None:
     """Copy harvest watermarks so the next daily run is incremental, not historical."""
     mapping = {
@@ -148,6 +204,11 @@ def main(argv: list[str] | None = None) -> int:
         action="store_true",
         help="Upload the built SQLite file to the configured catalog store.",
     )
+    parser.add_argument(
+        "--skip-abstracts",
+        action="store_true",
+        help="Do not backfill abstracts from PubMed (list metadata only).",
+    )
     args = parser.parse_args(argv)
 
     os.environ.pop("DATABASE_URL", None)
@@ -183,6 +244,14 @@ def main(argv: list[str] | None = None) -> int:
         conn.commit()
     finally:
         conn.close()
+
+    if not args.skip_abstracts:
+        conn = db.get_connection()
+        try:
+            filled = fill_missing_abstracts(conn)
+            logger.info("Filled %s abstracts from PubMed", filled)
+        finally:
+            conn.close()
 
     try:
         status_resp = session.get(f"{args.base_url.rstrip('/')}/api/scheduler/status", timeout=30)

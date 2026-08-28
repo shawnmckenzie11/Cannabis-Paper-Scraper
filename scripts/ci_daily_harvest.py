@@ -67,7 +67,8 @@ def main(argv: list[str] | None = None) -> int:
 
     summary = daily_harvest.run_scheduled_cycle(
         force_harvest=args.force,
-        harvest_only=args.no_purge,
+        harvest_only=True,
+        skip_purge=True if args.no_purge else None,
         trigger="external",
     )
     harvest = summary.get("harvest") or {}

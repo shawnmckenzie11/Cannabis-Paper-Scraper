@@ -126,6 +126,23 @@ class DailyHarvestTests(unittest.TestCase):
         mock_purge.assert_called_once_with(dry_run=False)
         self.assertEqual(db.get_metadata(daily_harvest.LOCK_METADATA_KEY), "")
 
+    @mock.patch("purge_unrelated.run_purger")
+    @mock.patch("manual_edit_cycle.should_run_pre_harvest_cycle", return_value=False)
+    @mock.patch("scheduled_jobs.run_post_harvest_maude_upgrade", return_value={"status": "started"})
+    @mock.patch("harvest.run_harvest_pipeline", return_value=(2, 1, 0, [10, 11]))
+    def test_cheap_ops_skips_full_catalog_purge(
+        self, mock_harvest, mock_upgrade, _mock_edits, mock_purge
+    ):
+        """CHEAP_OPS harvests new papers but does not scan-delete the whole catalog."""
+        os.environ["CHEAP_OPS"] = "1"
+        db = FakeHarvestDb({"last_daily_harvest_date": "2026-08-20"})
+        result = daily_harvest.run_daily_harvest_if_due(db)
+        self.assertEqual(result["status"], "ran")
+        self.assertTrue(result.get("purge_skipped"))
+        mock_harvest.assert_called_once()
+        mock_upgrade.assert_called_once()
+        mock_purge.assert_not_called()
+
     @mock.patch("user_notifications.run_due_notification_digests", return_value={"sent": 0})
     @mock.patch("maude_reingest_watchdog.run_watchdog")
     @mock.patch("scheduled_jobs.run_due_jobs")
