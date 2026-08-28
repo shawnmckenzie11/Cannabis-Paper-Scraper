@@ -1,0 +1,73 @@
+# Wake the Fly web machine and run one incremental PubMed harvest.
+# Does not deploy. Relies on repository secret FLY_API_TOKEN (same as Fly Deploy).
+name: Daily PubMed harvest
+
+on:
+  schedule:
+    # 07:00 America/Toronto (EDT = UTC-4). Harvest itself still runs at most once per calendar day.
+    - cron: "0 11 * * *"
+  workflow_dispatch:
+
+jobs:
+  harvest:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
+      FLY_APP: cannabis-paper-scraper
+    steps:
+      - uses: superfly/flyctl-actions/setup-flyctl@master
+
+      - name: Start Fly machine, harvest, leave autostop
+        run: |
+          set -euo pipefail
+          if [ -z "${FLY_API_TOKEN:-}" ]; then
+            echo "FLY_API_TOKEN GitHub secret is not set."
+            exit 1
+          fi
+
+          MACHINE_JSON=$(flyctl machines list -a "$FLY_APP" --json)
+          MACHINE_ID=$(python3 -c "
+          import json, sys
+          machines = json.loads(sys.argv[1])
+          if not machines:
+              sys.exit('No Fly machines found for app')
+          print(machines[0]['id'])
+          " "$MACHINE_JSON")
+          echo "Using machine ${MACHINE_ID}"
+
+          flyctl machine start "$MACHINE_ID" -a "$FLY_APP"
+
+          echo "Waiting for HTTP..."
+          ok=0
+          i=0
+          while [ "$i" -lt 36 ]; do
+            i=$((i + 1))
+            if curl -fsS --max-time 15 \
+              "https://${FLY_APP}.fly.dev/api/scheduler/status" >/tmp/scheduler_status.json; then
+              echo "Scheduler status:"
+              cat /tmp/scheduler_status.json
+              ok=1
+              break
+            fi
+            echo "Attempt ${i}: site not ready yet"
+            sleep 5
+          done
+          if [ "$ok" != "1" ]; then
+            echo "Timed out waiting for ${FLY_APP} to serve HTTP"
+            exit 1
+          fi
+
+          flyctl ssh console -a "$FLY_APP" -C "sh -c 'cd /app && python3 -m daily_harvest'"
+
+          echo "Post-harvest scheduler status:"
+          curl -fsS --max-time 30 "https://${FLY_APP}.fly.dev/api/scheduler/status" | tee /tmp/scheduler_status_after.json
+          python3 -c "
+          import json, sys
+          data = json.load(open('/tmp/scheduler_status_after.json'))
+          status = data.get('last_run_status') or ''
+          print('last_run_date=', data.get('last_run_date'))
+          print('last_run_status=', status)
+          if status.startswith('Error'):
+              sys.exit('Harvest status is Error')
+          "

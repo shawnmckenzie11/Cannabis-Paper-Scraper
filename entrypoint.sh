@@ -4,6 +4,7 @@ set -e
 DB_PATH=${DATABASE_PATH:-/data/cannabis_papers.db}
 SEED_SOURCE="cannabis_papers.db"
 CALIBRATION_ARTIFACT_DIR="/data/calibration_runs"
+CHEAP_OPS_NORM=$(printf '%s' "${CHEAP_OPS:-0}" | tr '[:upper:]' '[:lower:]')
 
 echo "Checking database status..."
 mkdir -p "$(dirname "$DB_PATH")"
@@ -42,33 +43,37 @@ GUNICORN_PID=$!
 # Give gunicorn a moment to bind the port before proceeding
 sleep 2
 
-if [ -f "$DB_PATH" ] && [ -z "$DATABASE_URL" ]; then
-    echo "Scheduling indexed tab membership backfill in background (local SQLite only)..."
-    nohup python3 ensure_tab_flags.py > /tmp/tab_flags_backfill.log 2>&1 &
-elif [ -n "$DATABASE_URL" ]; then
-    echo "PostgreSQL mode: repairing recent harvest tab flags in background..."
-    nohup python3 scripts/repair_recent_tab_flags.py --since-harvested 2026-07-17 \
-        > /tmp/repair_recent_tab_flags.log 2>&1 &
-    echo "Scheduling stale daily-harvest Maude version upgrade in background..."
-    nohup python3 scripts/upgrade_stale_harvest_classifications.py --since-date 2026-06-01 \
-        > /tmp/upgrade_stale_harvest.log 2>&1 &
-fi
+if [ "$CHEAP_OPS_NORM" = "1" ] || [ "$CHEAP_OPS_NORM" = "true" ] || [ "$CHEAP_OPS_NORM" = "yes" ] || [ "$CHEAP_OPS_NORM" = "on" ]; then
+    echo "CHEAP_OPS: skipping tab-flag backfill, stale harvest upgrade, and heuristic reclassify."
+else
+    if [ -f "$DB_PATH" ] && [ -z "$DATABASE_URL" ]; then
+        echo "Scheduling indexed tab membership backfill in background (local SQLite only)..."
+        nohup python3 ensure_tab_flags.py > /tmp/tab_flags_backfill.log 2>&1 &
+    elif [ -n "$DATABASE_URL" ]; then
+        echo "PostgreSQL mode: repairing recent harvest tab flags in background..."
+        nohup python3 scripts/repair_recent_tab_flags.py --since-harvested 2026-07-17 \
+            > /tmp/repair_recent_tab_flags.log 2>&1 &
+        echo "Scheduling stale daily-harvest Maude version upgrade in background..."
+        nohup python3 scripts/upgrade_stale_harvest_classifications.py --since-date 2026-06-01 \
+            > /tmp/upgrade_stale_harvest.log 2>&1 &
+    fi
 
-# Run heuristic reclassification in background if needed (non-blocking)
-if [ -f "$DB_PATH" ]; then
-    echo "Checking if heuristic reclassification is needed..."
-    RECLASSIFIED=$(python3 -c "
+    # Run heuristic reclassification in background if needed (non-blocking)
+    if [ -f "$DB_PATH" ]; then
+        echo "Checking if heuristic reclassification is needed..."
+        RECLASSIFIED=$(python3 -c "
 import sqlite3
 conn = sqlite3.connect('$DB_PATH')
 count = conn.execute(\"SELECT COUNT(*) FROM papers WHERE classifier_version LIKE 'heuristic-reclassify-%'\").fetchone()[0]
 conn.close()
 print(count)
 ")
-    if [ "$RECLASSIFIED" = "0" ]; then
-        echo "Database needs reclassification. Reclassifying in background..."
-        nohup python3 reclassify_metadata.py > /tmp/reclassify.log 2>&1 &
-    else
-        echo "Database already reclassified. Skipping."
+        if [ "$RECLASSIFIED" = "0" ]; then
+            echo "Database needs reclassification. Reclassifying in background..."
+            nohup python3 reclassify_metadata.py > /tmp/reclassify.log 2>&1 &
+        else
+            echo "Database already reclassified. Skipping."
+        fi
     fi
 fi
 
