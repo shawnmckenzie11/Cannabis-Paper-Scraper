@@ -1004,6 +1004,7 @@ class TestFlaskSchedulerAPI(unittest.TestCase):
         self.assertIn("last_run_date", data)
         self.assertIn("last_run_timestamp", data)
         self.assertIn("last_run_status", data)
+        self.assertIn("heartbeat_at", data)
         self.assertEqual(data["query"], "cannabis OR cannabinoid OR marijuana")
 
 

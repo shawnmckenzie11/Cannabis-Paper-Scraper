@@ -8,21 +8,25 @@ primary_region = 'yyz'
 
 [build]
 
+[env]
+  CHEAP_OPS = '1'
+  AUTO_HARVEST_CLASSIFY = 'false'
+
 [http_service]
   internal_port = 8080
   force_https = true
-  # Keep the VM up so the in-process daily harvest thread actually runs.
-  # auto_stop=stop only watches HTTP idle; background ingest does not count as traffic.
-  auto_stop_machines = 'off'
+  # Daily harvest is GitHub Actions (fly machine start + SSH). Autostop is safe:
+  # background ingest no longer requires a 24/7 VM. First HTTP request auto-starts.
+  auto_stop_machines = 'stop'
   auto_start_machines = true
-  min_machines_running = 1
+  min_machines_running = 0
   processes = ['app']
 
 [[vm]]
-  memory = '1gb'
+  memory = '256mb'
   cpu_kind = 'shared'
   cpus = 1
-  memory_mb = 1024
+  memory_mb = 256
 
 [[mounts]]
   source = "mckenzian_db_volume"
