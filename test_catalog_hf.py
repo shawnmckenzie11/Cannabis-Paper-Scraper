@@ -148,6 +148,7 @@ class CatalogStoreTests(unittest.TestCase):
         text = (ROOT / ".github" / "workflows" / "deploy-hf-space.yml").read_text(encoding="utf-8")
         self.assertIn("scripts/deploy_hf_space.py", text)
         self.assertIn("HF_TOKEN", text)
+        self.assertIn("code\" = \"3\"", text)
 
     def test_readme_declares_docker_space(self):
         text = (ROOT / "README.md").read_text(encoding="utf-8")

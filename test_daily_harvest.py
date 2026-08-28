@@ -228,6 +228,7 @@ class CheapOpsConfigTests(unittest.TestCase):
         self.assertIn("unset DATABASE_URL", text)
         self.assertIn("/api/catalog/reload", text)
         self.assertIn("HF_TOKEN", text)
+        self.assertIn("continue-on-error: true", text)
         self.assertNotIn("flyctl", text)
         self.assertNotIn("FLY_API_TOKEN", text)
 

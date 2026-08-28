@@ -33,4 +33,12 @@ jobs:
         run: pip install huggingface_hub
 
       - name: Deploy Space
-        run: python3 scripts/deploy_hf_space.py
+        run: |
+          set +e
+          python3 scripts/deploy_hf_space.py
+          code=$?
+          if [ "$code" = "3" ]; then
+            echo "::warning::Hugging Face PRO is required to create the Docker Space. Catalog dataset harvest can still run."
+            exit 0
+          fi
+          exit "$code"
