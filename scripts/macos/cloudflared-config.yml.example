@@ -1,0 +1,13 @@
+# Example cloudflared config for paperscraper.miladlab.com.
+# Copy to ~/.cloudflared/config.yml and replace TUNNEL_UUID.
+#
+# DNS at GoDaddy (do not move nameservers):
+#   CNAME paperscraper -> TUNNEL_UUID.cfargotunnel.com
+
+tunnel: TUNNEL_UUID
+credentials-file: /Users/REPLACE_ME/.cloudflared/TUNNEL_UUID.json
+
+ingress:
+  - hostname: paperscraper.miladlab.com
+    service: http://127.0.0.1:8080
+  - service: http_status:404
