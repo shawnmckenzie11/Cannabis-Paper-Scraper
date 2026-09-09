@@ -66,12 +66,7 @@ jobs:
             flyctl ssh console -a "$FLY_APP" -C "sh -c 'cd /app && python3 -m daily_harvest --harvest-only'" \
               | tee /tmp/harvest_out.json
             ssh_rc=${PIPESTATUS[0]}
-            set -e
-            if [ "$ssh_rc" != "0" ]; then
-              echo "ssh harvest exited ${ssh_rc}"
-              exit "$ssh_rc"
-            fi
-            if python3 -c "
+            python3 -c "
           import json, sys
           text = open('/tmp/harvest_out.json').read()
           start = text.find('{')
@@ -84,12 +79,18 @@ jobs:
               sys.exit(10)
           if data.get('status') in {'error', 'already_running'} or harvest.get('status') == 'error':
               sys.exit(1)
-          "; then
+          "
+            parse_rc=$?
+            set -e
+            if [ "$ssh_rc" != "0" ]; then
+              echo "ssh harvest exited ${ssh_rc}"
+              exit "$ssh_rc"
+            fi
+            if [ "$parse_rc" = "0" ]; then
               break
             fi
-            rc=$?
-            if [ "$rc" != "10" ]; then
-              exit "$rc"
+            if [ "$parse_rc" != "10" ]; then
+              exit "$parse_rc"
             fi
             echo "Harvest still locked; sleeping 60s"
             sleep 60
