@@ -211,6 +211,15 @@ class CheapOpsConfigTests(unittest.TestCase):
         self.assertIn("python3 -m daily_harvest", text)
         self.assertIn("machine start", text)
 
+    def test_fly_deploy_workflow_can_redeploy_and_checks_import(self):
+        """Manual Fly redeploy must be possible without a dummy main commit."""
+        text = (ROOT / ".github" / "workflows" / "fly-deploy.yml").read_text(encoding="utf-8")
+        self.assertIn("workflow_dispatch", text)
+        self.assertIn("FLY_API_TOKEN", text)
+        self.assertIn("flyctl deploy --remote-only", text)
+        self.assertIn("import daily_harvest", text)
+        self.assertNotIn("cursor/fly-redeploy-daily-harvest-21f3", text)
+
 
 if __name__ == "__main__":
     unittest.main()
