@@ -218,6 +218,7 @@ class CheapOpsConfigTests(unittest.TestCase):
         self.assertIn("FLY_API_TOKEN", text)
         self.assertIn("flyctl deploy --remote-only", text)
         self.assertIn("import daily_harvest", text)
+        self.assertNotIn("cursor/fly-redeploy-daily-harvest-21f3", text)
 
 
 if __name__ == "__main__":

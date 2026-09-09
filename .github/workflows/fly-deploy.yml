@@ -5,8 +5,6 @@ on:
   push:
     branches:
       - main
-      # One-shot billing-recovery redeploy of current main (same image contents).
-      - cursor/fly-redeploy-daily-harvest-21f3
   workflow_dispatch:
 jobs:
   deploy:
@@ -22,7 +20,7 @@ jobs:
         env:
           FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
 
-      - name: Verify daily_harvest on Fly
+      - name: Confirm daily_harvest is importable on Fly
         env:
           FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
           FLY_APP: cannabis-paper-scraper
@@ -66,20 +64,3 @@ jobs:
 
           echo "Confirming daily_harvest is importable..."
           flyctl ssh console -a "$FLY_APP" -C "sh -c 'cd /app && python3 -c \"import daily_harvest; print(daily_harvest.__file__)\"'"
-
-          # Full harvest only on this recovery branch / manual dispatch, not every main push.
-          if [ "${GITHUB_REF}" != "refs/heads/main" ] || [ "${GITHUB_EVENT_NAME}" = "workflow_dispatch" ]; then
-            echo "Running due harvest cycle (--harvest-only)..."
-            flyctl ssh console -a "$FLY_APP" -C "sh -c 'cd /app && python3 -m daily_harvest --harvest-only'"
-            echo "Post-harvest scheduler status:"
-            curl -fsS --max-time 30 "https://${FLY_APP}.fly.dev/api/scheduler/status" | tee /tmp/scheduler_status_after.json
-            python3 -c "
-          import json, sys
-          data = json.load(open('/tmp/scheduler_status_after.json'))
-          status = data.get('last_run_status') or ''
-          print('last_run_date=', data.get('last_run_date'))
-          print('last_run_status=', status)
-          if status.startswith('Error'):
-              sys.exit('Harvest status is Error')
-          "
-          fi
