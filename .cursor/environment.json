@@ -1,0 +1,17 @@
+{
+  "name": "Cannabis Paper Scraper",
+  "install": "bash .cursor/install.sh",
+  "terminals": [
+    {
+      "name": "web",
+      "command": "./.venv/bin/gunicorn --workers 1 --bind 0.0.0.0:8080 app:app",
+      "description": "Flask web dashboard served by gunicorn on port 8080. Uses a local SQLite database (auto-initialized from schema.sql on first request)."
+    }
+  ],
+  "ports": [
+    {
+      "name": "web",
+      "port": 8080
+    }
+  ]
+}
