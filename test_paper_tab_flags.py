@@ -272,6 +272,8 @@ class TestDashboardSearchFilters(unittest.TestCase):
         """Mouse species filter should match preclinical papers via study_type."""
         db = DatabaseManager()
         _, unfiltered_total = db.search_papers({"tab": "preclinical", "limit": 1}, include_total=True)
+        if unfiltered_total == 0:
+            self.skipTest("default catalog is empty; species filter needs a populated corpus")
         _, filtered_total = db.search_papers(
             {"tab": "preclinical", "species": "mouse", "limit": 1},
             include_total=True,

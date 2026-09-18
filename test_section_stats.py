@@ -92,16 +92,17 @@ class TestPdfUploadHelpers(unittest.TestCase):
         self.assertEqual(title, "Cannabis and Anxiety in Adults")
 
     @unittest.skipUnless(
-        __import__("importlib").util.find_spec("requests"),
-        "requests not installed",
+        __import__("importlib").util.find_spec("requests")
+        and __import__("importlib").util.find_spec("Bio"),
+        "harvest dependencies unavailable",
     )
     @patch("harvest.paper_text_cache.write_cached_entry")
     @patch("harvest.paper_text_cache._extract_pdf_text_from_bytes")
     @patch("harvest.classifier.process_paper_metadata")
-    @patch("harvest.DatabaseManager")
+    @patch("harvest.get_papers_repository")
     def test_ingest_uploaded_pdf_updates_existing_title(
         self,
-        mock_db_cls,
+        mock_repo_fn,
         mock_process,
         mock_extract,
         _mock_cache_write,
@@ -109,13 +110,14 @@ class TestPdfUploadHelpers(unittest.TestCase):
         from harvest import ingest_uploaded_pdf
 
         mock_extract.return_value = "Sample Paper Title\nAbstract\nMethods and results."
-        mock_db = mock_db_cls.return_value
-        mock_db.find_paper_id_by_title.return_value = 42
-        mock_db.get_paper.return_value = {
-            "title": "Sample Paper Title",
-            "study_type": ["clinical_observational"],
-        }
-        mock_db.insert_paper.return_value = 42
+        mock_repo = mock_repo_fn.return_value
+        mock_repo.find_top_title_matches.return_value = [
+            {
+                "id": 42,
+                "title": "Sample Paper Title",
+                "similarity": 0.99,
+            }
+        ]
         mock_process.return_value = {
             "study_type": ["clinical_rct"],
             "classifier_version": "maude-2.6.0",
@@ -123,13 +125,11 @@ class TestPdfUploadHelpers(unittest.TestCase):
 
         with patch("harvest.paper_text_cache.write_cached_entry"):
             result = ingest_uploaded_pdf(b"%PDF-1.4 sample", filename="paper.pdf")
-        self.assertEqual(result["status"], "review_required")
-        self.assertFalse(result["is_new_paper"])
-        self.assertEqual(result["paper_id"], 42)
-        self.assertTrue(any(row["field"] == "study_type" for row in result["rows"]))
+        self.assertEqual(result["status"], "match_selection_required")
+        self.assertEqual(result["candidates"][0]["id"], 42)
         mock_process.assert_called_once()
         self.assertFalse(mock_process.call_args.kwargs.get("run_llm"))
-        mock_db.insert_paper.assert_not_called()
+        mock_repo.insert_paper.assert_not_called()
 
 
 if __name__ == "__main__":

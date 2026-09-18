@@ -11,8 +11,8 @@ from typing import Dict, Any, List, Set, Optional
 from Bio import Entrez
 from dotenv import load_dotenv
 
-# Import database manager, extractor, and classifier
-from db_manager import DatabaseManager
+# Import repository (backend-neutral), extractor, and classifier
+from repository import get_papers_repository
 import classifier
 from extractor import is_cannabis_related
 from pubmed_metadata import build_publication_type_prefix
@@ -567,7 +567,7 @@ def run_harvest_pipeline(
 ) -> tuple:
     """Runs the full harvesting pipeline (PubMed + Semantic Scholar),
     performs acronym relevance pre-filtering, Maude classification (or optional LLM pass),
-    and stores records in the catalog DatabaseManager resolves (Postgres when DATABASE_URL is set).
+    and stores records via the papers repository (Postgres when DATABASE_URL is set).
 
     Args:
         query: Search query
@@ -590,7 +590,7 @@ def run_harvest_pipeline(
     # Golden Loop B sets GOLDEN_ROW_INDEX for tagged classifier labels; harvest must not inherit it.
     os.environ.pop("GOLDEN_ROW_INDEX", None)
 
-    db = DatabaseManager()
+    papers_repo = get_papers_repository()
     harvest_batch_id = f"harvest_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
     pubmed_query = apply_pubmed_edat_filter(query, mindate=mindate, maxdate=maxdate)
     if include_semantic_scholar is None:
@@ -601,7 +601,7 @@ def run_harvest_pipeline(
     if update:
         if progress_callback:
             progress_callback("Checking database for already-cataloged papers...")
-        existing_pmids = db.get_all_pmids()
+        existing_pmids = papers_repo.get_all_pmids()
         logger.info(f"Loaded {len(existing_pmids)} existing PMIDs from database.")
         
     # 2. Search PubMed using history fetch
@@ -705,7 +705,7 @@ def run_harvest_pipeline(
             paper["_harvest_batch_id"] = harvest_batch_id
             
             # Write to Database
-            row_id = db.insert_paper(paper)
+            row_id = papers_repo.insert_paper(paper)
             success_count += 1
             ingested_paper_ids.append(int(row_id))
             version = extracted.get("classifier_version", "unknown")
@@ -801,12 +801,12 @@ def ingest_uploaded_pdf(
     if not pdf_bytes or not pdf_bytes.startswith(b"%PDF"):
         raise ValueError("Uploaded file is not a valid PDF.")
 
-    db = DatabaseManager()
+    papers_repo = get_papers_repository()
 
     if merge_selections is not None and proposed_paper is not None:
         existing_row = review_existing_row or {}
         if force_paper_id is not None and not existing_row:
-            existing_row = db.get_paper(force_paper_id) or {}
+            existing_row = papers_repo.get_paper(force_paper_id) or {}
         new_paper = bool(is_new_paper if is_new_paper is not None else force_paper_id is None)
         paper = pdf_upload_merge.apply_review_selections(
             existing_row,
@@ -822,14 +822,14 @@ def ingest_uploaded_pdf(
         # Guard against duplicate inserts: if marked new but a close title exists, update it.
         commit_force_id = None if new_paper else force_paper_id
         if new_paper:
-            fuzzy_id, fuzzy_ratio = db.find_fuzzy_paper_by_title(paper.get("title") or "")
+            fuzzy_id, fuzzy_ratio = papers_repo.find_fuzzy_paper_by_title(paper.get("title") or "")
             if fuzzy_id is not None and fuzzy_ratio >= 0.82:
                 commit_force_id = fuzzy_id
-                existing_row = db.get_paper(fuzzy_id) or existing_row
+                existing_row = papers_repo.get_paper(fuzzy_id) or existing_row
                 new_paper = False
                 paper["title"] = existing_row.get("title") or paper.get("title")
 
-        row_id = db.insert_paper(paper, force_id=commit_force_id)
+        row_id = papers_repo.insert_paper(paper, force_id=commit_force_id)
         action = "created" if new_paper else "updated"
         similarity = None if new_paper else pdf_upload_merge.title_similarity(
             proposed_paper.get("title") or "",
@@ -888,7 +888,7 @@ def ingest_uploaded_pdf(
     }
     paper.update(extracted)
 
-    candidates = db.find_top_title_matches(title, limit=5, min_ratio=0.35)
+    candidates = papers_repo.find_top_title_matches(title, limit=5, min_ratio=0.35)
     return {
         "status": "match_selection_required",
         "title": title,
@@ -910,12 +910,12 @@ def build_pdf_upload_review(
     """Build the field-level review payload after the user chooses a match."""
     import pdf_upload_merge
 
-    db = DatabaseManager()
+    papers_repo = get_papers_repository()
     is_new = bool(force_new) or selected_paper_id is None
     existing_row: Dict[str, Any] = {}
     similarity = None
     if not is_new and selected_paper_id is not None:
-        existing_row = db.get_paper(int(selected_paper_id)) or {}
+        existing_row = papers_repo.get_paper(int(selected_paper_id)) or {}
         if not existing_row:
             raise ValueError(f"Selected paper #{selected_paper_id} was not found.")
         similarity = pdf_upload_merge.title_similarity(

@@ -964,9 +964,9 @@ class TestDatabaseManager(unittest.TestCase):
             review_pmids = {p["pmid"] for p in self.db.search_papers({"tab": "review"})}
             self.assertEqual(review_pmids, {"tab008"})
 
-            # Legacy alias still routes to preclinical
-            legacy_preclinical_pmids = {p["pmid"] for p in self.db.search_papers({"tab": "original"})}
-            self.assertEqual(legacy_preclinical_pmids, preclinical_pmids)
+            # Legacy alias "original" maps to all_original (clinical + preclinical + unclassified).
+            legacy_original_pmids = {p["pmid"] for p in self.db.search_papers({"tab": "original"})}
+            self.assertEqual(legacy_original_pmids, {"tab001", "tab002", "tab003", "tab004"})
         finally:
             for paper_id in inserted_ids.values():
                 self.db.delete_paper(paper_id)

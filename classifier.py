@@ -205,24 +205,9 @@ def compile_system_prompt(config: Dict[str, Any]) -> str:
 
 def get_historical_corrections() -> List[Dict[str, Any]]:
     """Fetches unique corrected papers from the feedback_audit table."""
-    from db_manager import DatabaseManager
-    db = DatabaseManager()
-    conn = db.get_connection()
-    cursor = conn.cursor()
-    try:
-        cursor.execute(
-            """
-            SELECT paper_id, title, abstract
-            FROM feedback_audit
-            GROUP BY paper_id, title, abstract
-            """
-        )
-        return [dict(row) for row in cursor.fetchall()]
-    except Exception as e:
-        logger.error(f"Failed to fetch historical corrections: {e}")
-        return []
-    finally:
-        conn.close()
+    from repository import get_classify_repository
+
+    return get_classify_repository().get_historical_corrections()
 
 
 def _format_few_shot_examples(paper_examples: List[Dict[str, Any]]) -> str:
@@ -230,8 +215,6 @@ def _format_few_shot_examples(paper_examples: List[Dict[str, Any]]) -> str:
     if not paper_examples:
         return ""
 
-    from db_manager import DatabaseManager
-    db = DatabaseManager()
     few_shot_str = "\n\nExpert Guidance & Corrections:\n"
     few_shot_str += "Here are examples of how domain experts corrected previous classifications. Adhere strictly to these patterns:\n\n"
 
@@ -256,14 +239,16 @@ def retrieve_few_shot_context(
     Returns:
         tuple: (few_shot_string, max_similarity_score, bm25_retrieval_used, example_count)
     """
-    from db_manager import DatabaseManager
+    from repository import get_classify_repository
 
-    db = DatabaseManager()
+    classify_repo = get_classify_repository()
     query_text = f"{title or ''} {abstract or ''}".strip()
     if not query_text:
         return "", 1.0, False, 0
 
-    ranked_rows = db.search_feedback_corrections_bm25(query_text, limit=max(10, max_examples * 4))
+    ranked_rows = classify_repo.search_feedback_corrections_bm25(
+        query_text, limit=max(10, max_examples * 4)
+    )
     if not ranked_rows:
         return "", 1.0, False, 0
 
@@ -281,7 +266,7 @@ def retrieve_few_shot_context(
             "paper_id": paper_id,
             "title": row.get("title"),
             "abstract": row.get("abstract"),
-            "field_changes": db.get_feedback_audit_for_paper(paper_id),
+            "field_changes": classify_repo.get_feedback_audit_for_paper(paper_id),
         })
         if len(selected_papers) >= max_examples:
             break
