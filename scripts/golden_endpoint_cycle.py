@@ -21,6 +21,7 @@ import calibration_feedback_agent as cfa
 import calibration_pdf
 import classification_schema
 import content_tiers
+import corpus_guard
 import golden_confirmed_store
 import golden_dataset_paths
 import subnode_field_scopes
@@ -710,6 +711,15 @@ def run_cycle(
     artifact_dir.mkdir(parents=True, exist_ok=True)
 
     paper_ids = candidate_paper_ids(endpoint_block)
+    try:
+        corpus_guard.assert_corpus_ready(
+            profile="golden",
+            sqlite_path=sqlite_path,
+            require_postgres=bool(pull or push),
+            allow_empty_sqlite=bool(pull),
+        )
+    except corpus_guard.CorpusGuardError as exc:
+        raise RuntimeError(str(exc)) from exc
     saved_database_url = os.environ.pop("DATABASE_URL", None)
     report: Dict[str, Any] = {
         "cycle_id": cycle_id,
@@ -725,6 +735,17 @@ def run_cycle(
             os.environ["DATABASE_URL"] = saved_database_url
         run_pull(sqlite_path, paper_ids)
         saved_database_url = os.environ.pop("DATABASE_URL", saved_database_url)
+        try:
+            corpus_guard.assert_corpus_ready(
+                profile="golden",
+                sqlite_path=sqlite_path,
+                require_postgres=False,
+                allow_empty_sqlite=False,
+            )
+        except corpus_guard.CorpusGuardError as exc:
+            if saved_database_url:
+                os.environ["DATABASE_URL"] = saved_database_url
+            raise RuntimeError(str(exc)) from exc
         report["stages"]["pull"] = {"ok": True, "paper_count": len(paper_ids)}
     elif llm and paper_ids:
         # Cycle always classifies against local SQLite (DATABASE_URL is popped).

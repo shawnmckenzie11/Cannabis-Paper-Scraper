@@ -1,8 +1,13 @@
 #!/usr/bin/env python3
-"""Quick Fly.io production database status check for calibration runs."""
+"""Quick Fly.io production database status check for calibration runs.
+
+Prints classifier-version counts, then refuses to continue when the
+configured DB is empty or is the image-default SQLite (corpus_guard).
+"""
 
 import os
 
+import corpus_guard
 from calibration_build import maude_build_info
 from db_manager import DatabaseManager
 
@@ -59,6 +64,7 @@ def main() -> None:
     print("heuristic_1_0_0:", heuristic)
     for key, value in maude_build_info().items():
         print(f"{key}:", value)
+    corpus_guard.require_corpus_or_exit(profile="rl")
 
 
 if __name__ == "__main__":

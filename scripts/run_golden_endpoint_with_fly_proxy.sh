@@ -164,6 +164,10 @@ PY
   )"
 fi
 
+echo "==> Corpus guard (golden, Postgres required; empty local SQLite OK before pull)"
+python3 corpus_guard.py --profile golden --require-postgres --allow-empty-sqlite \
+  --sqlite-path "${SQLITE_PATH:-${DATABASE_PATH:-cannabis_papers.db}}"
+
 echo "==> Preflight: sync feedback_audit from Postgres → local SQLite"
 python3 - <<'PY'
 import json

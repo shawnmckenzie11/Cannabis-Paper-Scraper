@@ -18,6 +18,7 @@ if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
 from calibration_build import MAUDE_CLASSIFIER_BUILD_ID
+import corpus_guard
 from golden_endpoint_status import (
     parse_fly_push_summary_from_log,
     patch_from_cycle_report,
@@ -479,6 +480,21 @@ def main() -> None:
 
     logging.basicConfig(level=logging.INFO, format="%(levelname)s %(message)s")
 
+    sqlite_path = os.getenv("DATABASE_PATH", "cannabis_papers.db")
+    use_proxy = not args.no_fly_proxy
+    pull = not args.no_pull
+    push = not args.no_push
+    try:
+        corpus_guard.assert_corpus_ready(
+            profile="golden",
+            sqlite_path=sqlite_path,
+            require_postgres=bool(pull and args.no_fly_proxy),
+            allow_empty_sqlite=bool(pull),
+        )
+    except corpus_guard.CorpusGuardError as exc:
+        logger.error("%s", exc)
+        raise SystemExit(1) from exc
+
     endpoint_ids = _endpoint_ids_in_row_order()
     endpoint_id = _resolve_endpoint_id(args.row_index, args.endpoint_id, endpoint_ids)
     row_index = (
@@ -486,9 +502,6 @@ def main() -> None:
         if args.row_index is not None
         else _row_index_for_endpoint(endpoint_id, endpoint_ids)
     )
-    use_proxy = not args.no_fly_proxy
-    pull = not args.no_pull
-    push = not args.no_push
 
     if args.auto_advance:
         start_row = args.row_index if args.row_index is not None else 0

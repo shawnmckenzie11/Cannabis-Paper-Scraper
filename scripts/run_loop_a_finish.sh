@@ -12,6 +12,9 @@ ENDPOINT_ID="${ENDPOINT_ID:-}"
 PUSH="${PUSH:-0}"
 DRY_RUN="${DRY_RUN:-0}"
 
+echo "==> Corpus guard (rl)"
+python3 corpus_guard.py --profile rl --sqlite-path "$SQLITE_PATH"
+
 if [[ -n "${DATABASE_URL:-}" ]]; then
   echo "==> Preflight: sync feedback_audit from Postgres → local SQLite"
   python3 - <<PY

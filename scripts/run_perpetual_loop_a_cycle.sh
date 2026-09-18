@@ -22,6 +22,9 @@ if [[ ! -x ./venv/bin/python ]]; then
   exit 1
 fi
 
+echo "==> Corpus guard (rl)"
+./venv/bin/python corpus_guard.py --profile rl
+
 MAX_CALLS="${MAX_CALLS:-10}"
 if (( MAX_CALLS > 10 )); then
   echo "Capping MAX_CALLS=${MAX_CALLS} → 10 (perpetual budget)" >&2

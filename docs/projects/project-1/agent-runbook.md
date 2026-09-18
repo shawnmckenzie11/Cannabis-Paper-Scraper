@@ -8,7 +8,7 @@ Operator reference for Cursor agents running RL calibration and ops on a **clien
 fly ssh console -a [client-app] -C "sh -c 'cd /app && python3 fly_db_check.py'"
 ```
 
-Abort if paper count or `DATABASE_URL` / volume path does not match the intended production target.
+Abort if paper count or `DATABASE_URL` / volume path does not match the intended production target. `fly_db_check.py` fails closed via `corpus_guard` when the DB is empty or is the image-default SQLite. Backup/restore: [`docs/ops/postgres-backup-restore.md`](../../ops/postgres-backup-restore.md).
 
 ## Full RL cycle (node2b example)
 

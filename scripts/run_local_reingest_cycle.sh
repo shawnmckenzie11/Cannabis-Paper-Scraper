@@ -27,6 +27,9 @@ if [[ -z "${DATABASE_URL:-}" ]]; then
   exit 1
 fi
 
+echo "==> Corpus guard (rl, Postgres required)"
+python3 corpus_guard.py --profile rl --require-postgres --allow-empty-sqlite --sqlite-path "$SQLITE_PATH"
+
 SAVED_DATABASE_URL="$DATABASE_URL"
 
 echo "=== local reingest cycle started $(date -Iseconds) ===" | tee -a "$LOG"
