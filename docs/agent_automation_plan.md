@@ -8,7 +8,7 @@ Expert decision-tree feedback has been received. This plan turns that chart into
 
 | Environment | Path / target | Use |
 | --- | --- | --- |
-| **Production (Fly.io)** | `DATABASE_URL` (Postgres) when set; else `DATABASE_PATH=/data/cannabis_papers.db` on volume `mckenzian_db_volume` | **All ingestion, calibration, reclassification, expert edits, eval runs, and schema migrations that mutate `papers` / logs** |
+| **Production (Fly.io)** | `DATABASE_URL` (Postgres on **cannabis-papers-db**) | **Sole production source of truth** for ingestion, calibration, reclassification, expert edits, eval runs, and Alembic schema changes |
 | **Production artifacts** | `/data/calibration_runs/` on the same Fly volume | Calibration JSON + walkthroughs (persistent; auto-selected by `calibration_agent.resolve_calibration_output_dir()`) |
 | **Local dev** | `./cannabis_papers.db` (repo root) | Read-only inspection, tests, and dry-runs only — **never** apply calibration or bulk classification updates locally |
 
@@ -22,7 +22,7 @@ Run on the Fly machine and confirm you are on production:
 fly ssh console -a cannabis-paper-scraper -C "cd /app && python3 fly_db_check.py"
 ```
 
-Expect `DATABASE_URL set: True` (Postgres) or `DATABASE_PATH: /data/cannabis_papers.db`, and a paper count consistent with production (~21k+). **Abort if the count looks like a dev copy.**
+Expect `DATABASE_URL set: True` (Postgres is the sole production source of truth) and a paper count consistent with production (~21k+). `fly_db_check.py` now exits non-zero when `corpus_guard` sees an empty or image-default SQLite (`/app/cannabis_papers.db`). **Abort if the count looks like a dev copy.** Backup/restore drill: [`docs/ops/postgres-backup-restore.md`](ops/postgres-backup-restore.md).
 
 ### How agents run write operations on Fly
 

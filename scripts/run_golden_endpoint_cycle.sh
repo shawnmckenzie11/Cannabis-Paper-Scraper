@@ -23,6 +23,20 @@ LOG="${LOG:-scratch/golden_dataset/golden_endpoint_cycle.log}"
 
 mkdir -p "$(dirname "$LOG")"
 
+GUARD_CMD=(
+  python3 corpus_guard.py
+  --profile golden
+  --sqlite-path "$SQLITE_PATH"
+)
+if [[ "$GUARD_ONLY" != "1" && ( "$PULL" == "1" || "$PUSH" == "1" ) ]]; then
+  GUARD_CMD+=(--require-postgres)
+fi
+if [[ "$GUARD_ONLY" != "1" && "$PULL" == "1" ]]; then
+  GUARD_CMD+=(--allow-empty-sqlite)
+fi
+echo "corpus_guard: ${GUARD_CMD[*]}" | tee -a "$LOG"
+"${GUARD_CMD[@]}"
+
 if [[ "$GUARD_ONLY" == "1" ]]; then
   ARGS=(python3 scripts/golden_endpoint_cycle.py --guard-only)
   if [[ -n "$ENDPOINT_ID" ]]; then

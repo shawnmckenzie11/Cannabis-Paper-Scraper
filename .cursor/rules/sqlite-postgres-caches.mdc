@@ -15,6 +15,8 @@ alwaysApply: true
 
 Empty `/app/cannabis_papers.db` is **not** the corpus. Always pass a populated `--sqlite-path` (local `cannabis_papers.db` after pull, or `/data/cannabis_papers.db` on Fly).
 
+Golden/RL jobs call `corpus_guard.py` and **fail closed** on an empty/wrong SQLite or a missing Postgres URL. See `docs/ops/postgres-backup-restore.md`.
+
 ## Why golden pops `DATABASE_URL`
 
 `scripts/golden_endpoint_cycle.py` pops `DATABASE_URL` so LLM / promote / guard / reingest hit **SQLite** (`DATABASE_PATH`), not Postgres. Pull/push briefly restore `DATABASE_URL`. Never assume default empty SQLite has candidate papers — pull first or point `--sqlite-path` at a populated DB.

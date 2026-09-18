@@ -166,3 +166,6 @@ cert.pem
 
 # Local paper PDF/full-text cache (not for git)
 scratch/paper_cache/
+
+# Logical Postgres dumps (pg_dump); keep backups off git
+scratch/postgres_backups/

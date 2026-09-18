@@ -57,11 +57,14 @@ def subnode_passes_gate(subnode: str, rules_config: Optional[Dict[str, Any]] = N
 
 
 def run_preflight() -> None:
-    """Runs fly_db_check.py when available (no-op locally if script missing)."""
+    """Fail closed if Fly/local corpus is empty or the wrong SQLite file."""
+    import corpus_guard
+
+    corpus_guard.require_corpus_or_exit(profile="rl")
     script = Path(__file__).resolve().parent / "fly_db_check.py"
     if not script.exists():
         return
-    subprocess.run([sys.executable, str(script)], check=False)
+    subprocess.run([sys.executable, str(script)], check=True)
 
 
 def run_orchestrator(args: argparse.Namespace) -> Dict[str, Any]:

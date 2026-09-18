@@ -9,6 +9,7 @@ from typing import Any, Dict, List, Optional, Sequence, Tuple
 
 from db_manager import DatabaseManager
 import classifier
+import corpus_guard
 import maude_classifier
 import classification_schema
 import calibration_coordinator
@@ -1715,6 +1716,10 @@ def main() -> None:
     """Runs the calibration command and prints artifact locations."""
     parser = build_arg_parser()
     args = parser.parse_args()
+    try:
+        corpus_guard.assert_corpus_ready(profile="rl")
+    except corpus_guard.CorpusGuardError as exc:
+        raise SystemExit(f"ERROR: {exc}") from exc
     if args.refresh_maude_from_batch:
         json_path, walkthrough_path = refresh_maude_batch(
             Path(args.refresh_maude_from_batch),
