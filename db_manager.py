@@ -16,168 +16,35 @@ try:
 except ImportError:
     psycopg2 = None
 
+from repository.constants import (
+    DASHBOARD_TAB_KEYS as _DASHBOARD_TAB_KEYS,
+    SQL_CLINICAL_STUDY as _SQL_CLINICAL_STUDY,
+    SQL_HAS_FULL_TEXT_LINK as _SQL_HAS_FULL_TEXT_LINK,
+    SQL_HAS_PDF_LINK as _SQL_HAS_PDF_LINK,
+    SQL_INGESTION_IRRELEVANT as _SQL_INGESTION_IRRELEVANT,
+    SQL_INGESTION_NOT_CANNABIS as _SQL_INGESTION_NOT_CANNABIS,
+    SQL_INGESTION_ROUTED as _SQL_INGESTION_ROUTED,
+    SQL_INGESTION_TANGENTIAL as _SQL_INGESTION_TANGENTIAL,
+    SQL_ORIGINAL_RESEARCH as _SQL_ORIGINAL_RESEARCH,
+    SQL_PRECLINICAL_STUDY as _SQL_PRECLINICAL_STUDY,
+    SQL_REVIEW_PUBLICATION as _SQL_REVIEW_PUBLICATION,
+    TABLE_LIST_COLUMNS,
+    TAB_SQL as _TAB_SQL,
+)
+
 DATABASE_FILE = os.getenv("DATABASE_PATH", "cannabis_papers.db")
 SCHEMA_FILE = "schema.sql"
 
-_SQL_ORIGINAL_RESEARCH = (
-    "("
-    "  papers.publication_type = 'original research'"
-    "  OR"
-    "  (papers.publication_type IS NULL AND ("
-    "    (json_valid(papers.study_type) AND json_type(papers.study_type) = 'array' AND NOT EXISTS ("
-    "        SELECT 1 FROM json_each(papers.study_type) WHERE json_each.value IN ('review', 'meta-analysis', 'case study', 'editorial')"
-    "    ))"
-    "    OR"
-    "    ((NOT json_valid(papers.study_type) OR json_type(papers.study_type) != 'array') AND (papers.study_type IS NULL OR papers.study_type NOT IN ('review', 'meta-analysis', 'case study', 'editorial')))"
-    "  ))"
-    ")"
-)
-
-_SQL_REVIEW_PUBLICATION = (
-    "("
-    "  (papers.publication_type IS NOT NULL AND papers.publication_type != 'original research')"
-    "  OR"
-    "  (papers.publication_type IS NULL AND ("
-    "    (json_valid(papers.study_type) AND json_type(papers.study_type) = 'array' AND EXISTS ("
-    "        SELECT 1 FROM json_each(papers.study_type) WHERE json_each.value IN ('review', 'meta-analysis', 'case study', 'editorial')"
-    "    ))"
-    "    OR"
-    "    (papers.study_type IN ('review', 'meta-analysis', 'case study', 'editorial'))"
-    "  ))"
-    ")"
-)
-
-_SQL_INGESTION_NOT_CANNABIS = (
-    "LOWER(COALESCE(papers.ingestion_status, '')) IN ('not_cannabis_related', 'not cannabis-related')"
-)
-
-_SQL_INGESTION_IRRELEVANT = "LOWER(COALESCE(papers.ingestion_status, '')) = 'irrelevant'"
-
-_SQL_INGESTION_TANGENTIAL = "LOWER(COALESCE(papers.ingestion_status, '')) = 'tangential'"
-
-_SQL_HAS_PDF_LINK = (
-    "(papers.full_text_link IS NOT NULL AND TRIM(papers.full_text_link) != ''"
-    " AND LOWER(papers.full_text_link) LIKE '%.pdf')"
-)
-
-_SQL_HAS_FULL_TEXT_LINK = (
-    "(papers.full_text_link IS NOT NULL AND TRIM(papers.full_text_link) != ''"
-    " AND LOWER(papers.full_text_link) NOT LIKE '%pubmed.ncbi.nlm.nih.gov/%')"
-)
-
-_SQL_INGESTION_ROUTED = (
-    "("
-    f"  {_SQL_INGESTION_NOT_CANNABIS}"
-    "  OR "
-    f"  {_SQL_INGESTION_IRRELEVANT}"
-    "  OR "
-    f"  {_SQL_INGESTION_TANGENTIAL}"
-    ")"
-)
-
-_SQL_CLINICAL_STUDY = (
-    "("
-    "  LOWER(COALESCE(papers.study_type, '')) LIKE '%clinical%'"
-    "  OR LOWER(COALESCE(papers.study_type, '')) LIKE '%rct%'"
-    "  OR LOWER(COALESCE(papers.study_type, '')) LIKE '%prospective%'"
-    "  OR LOWER(COALESCE(papers.study_type, '')) LIKE '%retrospective%'"
-    "  OR LOWER(COALESCE(papers.study_type, '')) LIKE '%observational%'"
-    ")"
-)
-
-_SQL_PRECLINICAL_STUDY = (
-    "("
-    "  LOWER(COALESCE(papers.study_type, '')) LIKE '%animal%'"
-    "  OR LOWER(COALESCE(papers.study_type, '')) LIKE '%mouse%'"
-    "  OR LOWER(COALESCE(papers.study_type, '')) LIKE '%rat%'"
-    "  OR LOWER(COALESCE(papers.study_type, '')) LIKE '%rodent%'"
-    "  OR LOWER(COALESCE(papers.study_type, '')) LIKE '%in vivo%'"
-    "  OR LOWER(COALESCE(papers.study_type, '')) LIKE '%cell culture%'"
-    "  OR LOWER(COALESCE(papers.study_type, '')) LIKE '%vitro%'"
-    "  OR LOWER(COALESCE(papers.study_type, '')) LIKE '%organoid%'"
-    ")"
-)
-
-_TAB_SQL = {
-    "all_original": (
-        f"({_SQL_ORIGINAL_RESEARCH} AND NOT {_SQL_INGESTION_ROUTED})"
-    ),
-    "preclinical": (
-        f"({_SQL_ORIGINAL_RESEARCH} AND NOT {_SQL_INGESTION_ROUTED} AND {_SQL_PRECLINICAL_STUDY})"
-    ),
-    "clinical": (
-        f"({_SQL_ORIGINAL_RESEARCH} AND NOT {_SQL_INGESTION_ROUTED} AND {_SQL_CLINICAL_STUDY})"
-    ),
-    "unclassified_preclinical": (
-        f"({_SQL_ORIGINAL_RESEARCH} AND NOT {_SQL_INGESTION_ROUTED}"
-        f" AND NOT {_SQL_CLINICAL_STUDY} AND NOT {_SQL_PRECLINICAL_STUDY})"
-    ),
-    "unclassified": (
-        f"({_SQL_INGESTION_TANGENTIAL}) OR "
-        f"({_SQL_ORIGINAL_RESEARCH} AND NOT {_SQL_INGESTION_ROUTED}"
-        f" AND NOT {_SQL_CLINICAL_STUDY} AND NOT {_SQL_PRECLINICAL_STUDY})"
-    ),
-    "tangential": f"({_SQL_INGESTION_TANGENTIAL})",
-    "review": f"({_SQL_REVIEW_PUBLICATION} AND NOT {_SQL_INGESTION_ROUTED})",
-}
-
-_DASHBOARD_TAB_KEYS = (
-    "all_original",
-    "preclinical",
-    "clinical",
-    "review",
-    "unclassified",
-)
-
-TABLE_LIST_COLUMNS = (
-    "papers.id",
-    "papers.pmid",
-    "papers.doi",
-    "papers.title",
-    "papers.authors",
-    "papers.journal",
-    "papers.year",
-    "papers.full_text_link",
-    "papers.study_type",
-    "papers.publication_type",
-    "papers.exposure_method",
-    "papers.cannabis_type",
-    "papers.thc_pct",
-    "papers.cbd_pct",
-    "papers.dose_mg",
-    "papers.puff_count",
-    "papers.thc_mg_ml",
-    "papers.thc_mg_g",
-    "papers.thc_mg_kg",
-    "papers.cbd_mg_ml",
-    "papers.cbd_mg_g",
-    "papers.cbd_mg_kg",
-    "papers.thc_uM",
-    "papers.cbd_uM",
-    "papers.strain_reported",
-    "papers.strain_normalized",
-    "papers.duration_days",
-    "papers.inhaled_exposure_duration",
-    "papers.administration_frequency",
-    "papers.treatment_duration",
-    "papers.repeat_exposure_count",
-    "papers.exposure_regimen_bin",
-    "papers.sample_size",
-    "papers.outcome_domain",
-    "papers.open_access",
-    "papers.citation_count",
-    "papers.date_harvested",
-    "papers.expert_locked_fields",
-    "papers.classification_confidence",
-    "papers.classifier_version",
-    "papers.ingestion_status",
-    "papers.species",
-    "papers.population_age",
-    "papers.population_sex",
-)
-
 
 class PostgresCursorWrapper:
+    """DEPRECATED temporary bridge for unmigrated scripts.
+
+    Harvest, classify, and catalog search/list use ``repository.PapersRepository``
+    / ``repository.ClassifyRepository`` and must not go through this rewriter.
+    New call sites should emit dialect-aware SQL via ``repository.dialect`` and
+    execute it with SQLAlchemy Core. This wrapper remains only for user/auth,
+    analyses, heuristics-editor, and sync scripts that still issue raw SQLite SQL.
+    """
     def __init__(self, cursor):
         self.cursor = cursor
         self.lastrowid_value = None
@@ -570,8 +437,35 @@ class DatabaseManager:
                 self.init_db()
             DatabaseManager._initialized = True
 
+    def _papers_repo(self):
+        """Return the SQLAlchemy Core papers repository for this manager."""
+        from repository.papers import PapersRepository
+
+        repo = getattr(self, "_papers_repository", None)
+        if repo is None:
+            repo = PapersRepository(
+                db_path=self.db_path,
+                tab_columns_exist=self._tab_flag_columns_exist,
+            )
+            self._papers_repository = repo
+        return repo
+
+    def _classify_repo(self):
+        """Return the SQLAlchemy Core classify/feedback repository."""
+        from repository.classify import ClassifyRepository
+
+        repo = getattr(self, "_classify_repository", None)
+        if repo is None:
+            repo = ClassifyRepository(db_path=self.db_path)
+            self._classify_repository = repo
+        return repo
+
     def get_connection(self, retries: int = 3):
-        """Returns a connection wrapper supporting standard operations."""
+        """DEPRECATED for harvest/classify/catalog search.
+
+        Unmigrated callers (user auth, analyses, heuristics editor, sync scripts)
+        still use this wrapper. New request-path code should use ``_papers_repo()``.
+        """
         if self.is_postgres:
             if psycopg2 is None:
                 raise ImportError("PostgreSQL connection requested but psycopg2 is not installed.")
@@ -1264,31 +1158,8 @@ class DatabaseManager:
     @staticmethod
     def build_bm25_query(text: str, max_terms: int = 8) -> str:
         """Builds an FTS-friendly OR query from free text for correction retrieval."""
-        if not text:
-            return ""
-        tokens = re.findall(r"[a-z0-9]+", text.lower())
-        stopwords = {
-            "the", "a", "an", "of", "in", "with", "after", "were", "was", "we", "and", "to",
-            "for", "this", "that", "using", "used", "from", "by", "on", "at", "as", "is", "are",
-            "be", "been", "being", "have", "has", "had", "do", "does", "did", "will", "would",
-            "should", "could", "may", "might", "must", "can", "into", "through", "during",
-            "before", "between", "out", "off", "over", "under", "again", "further", "then",
-            "once", "here", "there", "when", "where", "why", "how", "all", "each", "few",
-            "more", "most", "other", "some", "such", "no", "nor", "not", "only", "own", "same",
-            "so", "than", "too", "very", "just", "also", "our", "their", "its", "it", "they",
-        }
-        selected: List[str] = []
-        seen = set()
-        for token in tokens:
-            if len(token) <= 2 or token in stopwords or token in seen:
-                continue
-            seen.add(token)
-            selected.append(token)
-            if len(selected) >= max_terms:
-                break
-        if not selected:
-            return ""
-        return " OR ".join(selected)
+        from repository.classify import build_bm25_query
+        return build_bm25_query(text, max_terms=max_terms)
 
     def search_feedback_corrections_bm25(
         self,
@@ -1296,96 +1167,11 @@ class DatabaseManager:
         limit: int = 5,
     ) -> List[Dict[str, Any]]:
         """Retrieves feedback audit rows ranked by BM25/full-text relevance to a query."""
-        cleaned_query = self.build_bm25_query(query_text)
-        if not cleaned_query:
-            return []
-
-        conn = self.get_connection()
-        cursor = conn.cursor()
-        try:
-            if self.is_postgres:
-                pg_query = cleaned_query.replace(" OR ", " | ")
-                cursor.execute(
-                    """
-                    SELECT
-                        id,
-                        paper_id,
-                        field_name,
-                        old_value,
-                        new_value,
-                        title,
-                        abstract,
-                        ts_rank_cd(
-                            to_tsvector(
-                                'english',
-                                coalesce(title, '') || ' ' || coalesce(abstract, '') || ' ' ||
-                                coalesce(field_name, '') || ' ' || coalesce(old_value, '') || ' ' || coalesce(new_value, '')
-                            ),
-                            to_tsquery('english', %s)
-                        ) AS bm25_score
-                    FROM feedback_audit
-                    WHERE to_tsvector(
-                        'english',
-                        coalesce(title, '') || ' ' || coalesce(abstract, '') || ' ' ||
-                        coalesce(field_name, '') || ' ' || coalesce(old_value, '') || ' ' || coalesce(new_value, '')
-                    ) @@ to_tsquery('english', %s)
-                    ORDER BY bm25_score DESC
-                    LIMIT %s
-                    """,
-                    (pg_query, pg_query, limit),
-                )
-            else:
-                if not self.table_exists("feedback_audit_fts", conn):
-                    return []
-                cursor.execute(
-                    """
-                    SELECT
-                        fa.id,
-                        fa.paper_id,
-                        fa.field_name,
-                        fa.old_value,
-                        fa.new_value,
-                        fa.title,
-                        fa.abstract,
-                        bm25(feedback_audit_fts) AS bm25_score
-                    FROM feedback_audit_fts
-                    JOIN feedback_audit fa ON fa.id = feedback_audit_fts.rowid
-                    WHERE feedback_audit_fts MATCH ?
-                    ORDER BY bm25_score
-                    LIMIT ?
-                    """,
-                    (cleaned_query, limit),
-                )
-            rows = [dict(row) for row in cursor.fetchall()]
-            for row in rows:
-                score = float(row.get("bm25_score") or 0.0)
-                if self.is_postgres:
-                    row["retrieval_similarity"] = max(0.0, min(1.0, score))
-                else:
-                    row["retrieval_similarity"] = max(0.0, min(1.0, 1.0 / (1.0 + abs(score))))
-            return rows
-        except Exception:
-            return []
-        finally:
-            conn.close()
+        return self._classify_repo().search_feedback_corrections_bm25(query_text, limit=limit)
 
     def get_feedback_audit_for_paper(self, paper_id: int) -> List[Dict[str, Any]]:
         """Returns all feedback audit field corrections for one paper."""
-        conn = self.get_connection()
-        cursor = conn.cursor()
-        try:
-            cursor.execute(
-                """
-                SELECT field_name, old_value, new_value
-                FROM feedback_audit
-                WHERE paper_id = ?
-                ORDER BY id ASC
-                """,
-                (paper_id,),
-            )
-            return [dict(row) for row in cursor.fetchall()]
-        finally:
-            conn.close()
+        return self._classify_repo().get_feedback_audit_for_paper(paper_id)
 
     def fetch_feedback_audit_since(
         self,
@@ -1782,160 +1568,12 @@ class DatabaseManager:
             conn.close()
 
     def insert_paper(self, paper: Dict[str, Any], *, force_id: Optional[int] = None) -> int:
-        """Inserts a paper into the database. If conflicts on DOI/PMID/Semantic Scholar ID, handles updates gracefully.
-
-        Args:
-            paper: Dictionary containing all field values to store.
-            force_id: When set, always update this paper id (used by PDF upload review).
-
-        Returns:
-            The row ID of the inserted or updated paper.
-        """
-        conn = self.get_connection()
-        cursor = conn.cursor()
-        
-        # Build fields dynamically
-        fields = [
-            "pmid", "doi", "semantic_scholar_id", "title", "authors", "journal", "year",
-            "abstract", "full_text_link", "study_type", "exposure_method", "thc_pct",
-            "cbd_pct", "dose_mg", "puff_count", "thc_mg_ml", "thc_mg_g", "thc_mg_kg",
-            "cbd_mg_ml", "cbd_mg_g", "cbd_mg_kg", "thc_uM", "cbd_uM", "strain_reported", "strain_normalized", "duration_days",
-            "inhaled_exposure_duration", "administration_frequency", "treatment_duration",
-            "sample_size", "outcome_domain",
-            "open_access", "citation_count", "date_harvested", "publication_date", "cannabis_type",
-            "summary", "publication_type", "ingestion_status", "species",
-            "population_age", "population_sex",
-            "inclusion_criteria", "exclusion_criteria",
-            "expert_locked_fields", "classification_confidence",
-            "classification_timestamp", "classifier_version"
-        ]
-        
-        # Ensure array fields are stored as JSON strings
-        paper_copy = paper.copy()
-        llm_metrics = paper_copy.pop("_llm_call_metrics", None)
-        harvest_batch_id = paper_copy.pop("_harvest_batch_id", None)
-        for list_field in ["authors", "outcome_domain", "study_type", "exposure_method", "cannabis_type", "expert_locked_fields"]:
-            if list_field in paper_copy and not isinstance(paper_copy[list_field], str):
-                paper_copy[list_field] = json.dumps(paper_copy[list_field])
-            
-        # Ensure open_access is integer 0 or 1
-        if "open_access" in paper_copy:
-            paper_copy["open_access"] = 1 if paper_copy["open_access"] else 0
-            
-        if "date_harvested" not in paper_copy or not paper_copy["date_harvested"]:
-            paper_copy["date_harvested"] = datetime.now().isoformat()
-            
-        if "publication_date" not in paper_copy or not paper_copy["publication_date"]:
-            if paper_copy.get("year"):
-                paper_copy["publication_date"] = f"{paper_copy['year']}-01-01"
-            else:
-                paper_copy["publication_date"] = paper_copy["date_harvested"][:10]
-
-        if "publication_type" not in paper_copy or not paper_copy["publication_type"]:
-            import extractor
-            paper_copy["publication_type"] = extractor.infer_publication_type(
-                paper_copy.get("title") or "",
-                paper_copy.get("abstract") or ""
-            )
-
-        # Prefer an explicit target id (PDF review confirm) over identifier lookup.
-        existing_id = int(force_id) if force_id is not None else None
-
-        if not existing_id and paper_copy.get("pmid"):
-            cursor.execute("SELECT id FROM papers WHERE pmid = ?", (paper_copy["pmid"],))
-            row = cursor.fetchone()
-            if row:
-                existing_id = row["id"]
-                
-        if not existing_id and paper_copy.get("doi"):
-            cursor.execute("SELECT id FROM papers WHERE doi = ?", (paper_copy["doi"],))
-            row = cursor.fetchone()
-            if row:
-                existing_id = row["id"]
-                
-        if not existing_id and paper_copy.get("semantic_scholar_id"):
-            cursor.execute("SELECT id FROM papers WHERE semantic_scholar_id = ?", (paper_copy["semantic_scholar_id"],))
-            row = cursor.fetchone()
-            if row:
-                existing_id = row["id"]
-
-        if not existing_id and paper_copy.get("title"):
-            cursor.execute(
-                "SELECT id FROM papers WHERE LOWER(TRIM(title)) = LOWER(TRIM(?)) LIMIT 1",
-                (paper_copy["title"],),
-            )
-            row = cursor.fetchone()
-            if row:
-                existing_id = row["id"]
-
-        try:
-            if existing_id:
-                # Update existing record
-                update_pairs = []
-                values = []
-                for field in fields:
-                    if field in paper_copy:
-                        update_pairs.append(f"{field} = ?")
-                        values.append(paper_copy[field])
-                
-                values.append(existing_id)
-                query = f"UPDATE papers SET {', '.join(update_pairs)} WHERE id = ?"
-                cursor.execute(query, values)
-                row_id = existing_id
-            else:
-                # Insert new record
-                present_fields = [f for f in fields if f in paper_copy]
-                placeholders = [f"?{i+1}" for i in range(len(present_fields))]
-                values = [paper_copy[f] for f in present_fields]
-                
-                query = f"INSERT INTO papers ({', '.join(present_fields)}) VALUES ({', '.join(placeholders)})"
-                cursor.execute(query, values)
-                row_id = cursor.lastrowid
-                
-            if llm_metrics:
-                self.log_llm_call(
-                    paper_id=row_id,
-                    metrics=llm_metrics,
-                    batch_id=harvest_batch_id or "harvest",
-                    cursor=cursor
-                )
-            conn.commit()
-            # Dashboard tabs filter on tab_* flags, not publication_type/study_type.
-            # New harvests must set those columns or they vanish from every tab.
-            try:
-                self.sync_tab_flags_for_paper(
-                    int(row_id),
-                    conn=conn,
-                    publication_type=paper_copy.get("publication_type"),
-                    study_type=paper.get("study_type", paper_copy.get("study_type")),
-                    ingestion_status=paper_copy.get("ingestion_status"),
-                )
-                conn.commit()
-            except Exception as flag_exc:
-                logger.error("Tab flag sync failed for paper %s: %s", row_id, flag_exc)
-            return row_id
-        except Exception as e:
-            conn.rollback()
-            raise RuntimeError(f"Database error during insert/update: {e}")
-        finally:
-            conn.close()
+        """Insert or update a paper via the backend-neutral repository layer."""
+        return self._papers_repo().insert_paper(paper, force_id=force_id)
 
     def find_paper_id_by_title(self, title: str) -> Optional[int]:
         """Return the paper id for an exact title match (case-insensitive), if any."""
-        normalized = (title or "").strip()
-        if not normalized:
-            return None
-        conn = self.get_connection()
-        cursor = conn.cursor()
-        try:
-            cursor.execute(
-                "SELECT id FROM papers WHERE LOWER(TRIM(title)) = LOWER(TRIM(?)) LIMIT 1",
-                (normalized,),
-            )
-            row = cursor.fetchone()
-            return int(row["id"]) if row else None
-        finally:
-            conn.close()
+        return self._papers_repo().find_paper_id_by_title(title)
 
     def find_fuzzy_paper_by_title(
         self,
@@ -1944,14 +1582,7 @@ class DatabaseManager:
         min_ratio: float = 0.82,
     ) -> Tuple[Optional[int], float]:
         """Return (paper_id, similarity) for the best title match at or above min_ratio."""
-        matches = self.find_top_title_matches(title, limit=1, min_ratio=min_ratio)
-        if not matches:
-            # Still report best ratio below threshold when useful for diagnostics.
-            soft = self.find_top_title_matches(title, limit=1, min_ratio=0.0)
-            if soft:
-                return None, float(soft[0]["similarity"])
-            return None, 0.0
-        return int(matches[0]["id"]), float(matches[0]["similarity"])
+        return self._papers_repo().find_fuzzy_paper_by_title(title, min_ratio=min_ratio)
 
     def find_top_title_matches(
         self,
@@ -1960,114 +1591,8 @@ class DatabaseManager:
         limit: int = 5,
         min_ratio: float = 0.35,
     ) -> List[Dict[str, Any]]:
-        """Return up to `limit` candidate papers ranked by title similarity.
-
-        Candidate retrieval uses punctuation-tolerant token AND patterns so
-        titles like "COVID-19" still match queries normalized to "covid 19",
-        then scores and collapses near-duplicate rows.
-        """
-        import pdf_upload_merge
-
-        normalized = (title or "").strip()
-        if not normalized:
-            return []
-
-        cleaned = pdf_upload_merge.clean_title_for_matching(normalized)
-        query_for_match = cleaned or normalized
-        exact_id = self.find_paper_id_by_title(normalized)
-        if exact_id is None and cleaned and cleaned != normalized:
-            exact_id = self.find_paper_id_by_title(cleaned)
-
-        tokens = pdf_upload_merge.significant_title_tokens(query_for_match, limit=8)
-        if not tokens:
-            seed = pdf_upload_merge.normalize_title(query_for_match)
-            tokens = [seed.split()[0]] if seed.split() else []
-
-        select_cols = (
-            "id, title, year, journal, publication_type, pmid, doi, full_text_link"
-        )
-        rows_by_id: Dict[int, Dict[str, Any]] = {}
-
-        conn = self.get_connection()
-        cursor = conn.cursor()
-        try:
-            if exact_id is not None:
-                cursor.execute(
-                    f"SELECT {select_cols} FROM papers WHERE id = ?",
-                    (exact_id,),
-                )
-                row = cursor.fetchone()
-                if row:
-                    rows_by_id[int(row["id"])] = dict(row)
-
-            # Strongest retrieval: require several content tokens in order-insensitive AND.
-            # Using %token% between tokens ignores commas/hyphens in stored titles.
-            and_tokens = tokens[:6]
-            if len(and_tokens) >= 3:
-                clauses = " AND ".join(["LOWER(title) LIKE ?" for _ in and_tokens])
-                cursor.execute(
-                    f"SELECT {select_cols} FROM papers WHERE {clauses} LIMIT 80",
-                    tuple(f"%{tok[:28]}%" for tok in and_tokens),
-                )
-                for row in cursor.fetchall():
-                    rows_by_id[int(row["id"])] = dict(row)
-
-            # Mid-strength: punctuation-tolerant full-token phrase pattern.
-            pattern = pdf_upload_merge.title_token_like_pattern(query_for_match, max_tokens=8)
-            if pattern and pattern != "%%":
-                cursor.execute(
-                    f"SELECT {select_cols} FROM papers WHERE LOWER(title) LIKE ? LIMIT 80",
-                    (pattern,),
-                )
-                for row in cursor.fetchall():
-                    rows_by_id[int(row["id"])] = dict(row)
-
-            # Shorter leading phrase (first 5–6 normalized tokens) for long titles.
-            phrase_tokens = pdf_upload_merge.normalize_title(query_for_match).split()[:6]
-            if len(phrase_tokens) >= 4:
-                short_pattern = "%" + "%".join(phrase_tokens) + "%"
-                cursor.execute(
-                    f"SELECT {select_cols} FROM papers WHERE LOWER(title) LIKE ? LIMIT 80",
-                    (short_pattern,),
-                )
-                for row in cursor.fetchall():
-                    rows_by_id[int(row["id"])] = dict(row)
-
-            # Fallback: rarest/longest individual tokens (avoid flooding with "cannabis").
-            for token in and_tokens[:4]:
-                cursor.execute(
-                    f"SELECT {select_cols} FROM papers WHERE LOWER(title) LIKE ? LIMIT 120",
-                    (f"%{token[:28]}%",),
-                )
-                for row in cursor.fetchall():
-                    rows_by_id[int(row["id"])] = dict(row)
-        finally:
-            conn.close()
-
-        scored: List[Dict[str, Any]] = []
-        for row in rows_by_id.values():
-            ratio = pdf_upload_merge.title_similarity(normalized, row.get("title") or "")
-            if ratio < min_ratio and (exact_id is None or int(row["id"]) != exact_id):
-                continue
-            scored.append(
-                {
-                    "id": int(row["id"]),
-                    "title": row.get("title") or "",
-                    "year": row.get("year"),
-                    "journal": row.get("journal") or "",
-                    "publication_type": row.get("publication_type") or "",
-                    "pmid": row.get("pmid"),
-                    "doi": row.get("doi"),
-                    "full_text_link": row.get("full_text_link") or "",
-                    "similarity": round(ratio, 3),
-                }
-            )
-
-        return pdf_upload_merge.collapse_title_match_rows(
-            scored,
-            query_title=normalized,
-            limit=limit,
-        )
+        """Return up to `limit` candidate papers ranked by title similarity."""
+        return self._papers_repo().find_top_title_matches(title, limit=limit, min_ratio=min_ratio)
 
     def search_papers_minimal_for_section_stats(
         self,
@@ -2075,73 +1600,11 @@ class DatabaseManager:
         limit: Optional[int] = None,
     ) -> List[Dict[str, Any]]:
         """Return lightweight rows for section-stats (optional hard cap)."""
-        conn = self.get_connection()
-        cursor = conn.cursor()
-        query_val = filters.get("query")
-        if query_val:
-            select_sql = (
-                "SELECT papers.id, papers.title, papers.abstract, papers.full_text_link, papers.classifier_version "
-                "FROM papers JOIN papers_fts ON papers.id = papers_fts.rowid"
-            )
-        else:
-            select_sql = (
-                "SELECT papers.id, papers.title, papers.abstract, papers.full_text_link, papers.classifier_version "
-                "FROM papers"
-            )
-        where_clauses, params = self._build_filter_clauses(filters)
-        sql = select_sql
-        if where_clauses:
-            sql += " WHERE " + " AND ".join(where_clauses)
-        if limit is not None:
-            sql += " LIMIT ?"
-            params.append(int(limit))
-        try:
-            cursor.execute(sql, params)
-            return [dict(row) for row in cursor.fetchall()]
-        finally:
-            conn.close()
+        return self._papers_repo().search_papers_minimal_for_section_stats(filters, limit=limit)
 
     def search_papers_by_ids(self, paper_ids: List[Any]) -> List[Dict[str, Any]]:
         """Return list-column rows for the given paper ids, preserving id order."""
-        ids: List[int] = []
-        for raw in paper_ids:
-            try:
-                ids.append(int(raw))
-            except (TypeError, ValueError):
-                continue
-        if not ids:
-            return []
-
-        conn = self.get_connection()
-        cursor = conn.cursor()
-        list_columns_sql = ", ".join(TABLE_LIST_COLUMNS)
-        placeholders = ",".join(["?"] * len(ids))
-        sql = f"SELECT {list_columns_sql} FROM papers WHERE papers.id IN ({placeholders})"
-        try:
-            cursor.execute(sql, ids)
-            by_id: Dict[int, Dict[str, Any]] = {}
-            for row in cursor.fetchall():
-                res = dict(row)
-                for json_field in ["authors", "outcome_domain"]:
-                    if res.get(json_field):
-                        try:
-                            res[json_field] = json.loads(res[json_field])
-                        except Exception:
-                            res[json_field] = []
-                    else:
-                        res[json_field] = []
-                for json_field in ["study_type", "exposure_method", "cannabis_type", "expert_locked_fields"]:
-                    if res.get(json_field):
-                        try:
-                            val = res[json_field]
-                            if isinstance(val, str) and val.startswith("[") and val.endswith("]"):
-                                res[json_field] = json.loads(val)
-                        except Exception:
-                            pass
-                by_id[int(res["id"])] = res
-            return [by_id[i] for i in ids if i in by_id]
-        finally:
-            conn.close()
+        return self._papers_repo().search_papers_by_ids(paper_ids)
 
     def log_llm_call(self, paper_id: Optional[int], metrics: Dict[str, Any], batch_id: Optional[str] = None, cursor = None):
         """Logs an LLM API call's token usage, model, and cost to the database."""
@@ -2186,605 +1649,45 @@ class DatabaseManager:
 
     def get_paper(self, paper_id: int) -> Optional[Dict[str, Any]]:
         """Retrieves a single paper by its database ID."""
-        conn = self.get_connection()
-        cursor = conn.cursor()
-        try:
-            cursor.execute("SELECT * FROM papers WHERE id = ?", (paper_id,))
-            row = cursor.fetchone()
-            if row:
-                res = dict(row)
-                # Parse JSON fields
-                for json_field in ["authors", "outcome_domain", "study_type", "exposure_method", "cannabis_type", "expert_locked_fields"]:
-                    if res.get(json_field):
-                        try:
-                            val = res[json_field].strip()
-                            if val.startswith("[") and val.endswith("]"):
-                                res[json_field] = json.loads(res[json_field])
-                        except Exception:
-                            pass
-                return res
-            return None
-        finally:
-            conn.close()
+        return self._papers_repo().get_paper(paper_id)
 
     def delete_paper(self, paper_id: int) -> bool:
         """Deletes a paper by database ID."""
-        conn = self.get_connection()
-        cursor = conn.cursor()
-        try:
-            cursor.execute("DELETE FROM papers WHERE id = ?", (paper_id,))
-            conn.commit()
-            return cursor.rowcount > 0
-        except Exception as e:
-            conn.rollback()
-            raise RuntimeError(f"Failed to delete paper: {e}")
-        finally:
-            conn.close()
+        return self._papers_repo().delete_paper(paper_id)
 
     @staticmethod
     def clean_fts_query(query: str) -> str:
-        """Cleans and sanitizes a query string for SQLite FTS5 to prevent syntax and 'no such column' errors."""
-        if not query:
-            return ""
-        # Split by whitespace into individual tokens/terms
-        terms = query.split()
-        cleaned_terms = []
-        for term in terms:
-            # If term is already quoted, leave it as is
-            if (term.startswith('"') and term.endswith('"')) or (term.startswith("'") and term.endswith("'")):
-                cleaned_terms.append(term)
-                continue
-            
-            # Check if the term has FTS5 special characters that need escaping/quoting
-            # We allow * at the end for prefix searches, but quote if there are other specials like - or :
-            has_wildcard = term.endswith('*')
-            clean_term = term[:-1] if has_wildcard else term
-            
-            # If the term contains special characters like - or : or /
-            if any(c in clean_term for c in ('-', ':', '/', '\\', '+', '~')):
-                escaped_term = clean_term.replace('"', '""')
-                if has_wildcard:
-                    cleaned_terms.append(f'"{escaped_term}"*')
-                else:
-                    cleaned_terms.append(f'"{escaped_term}"')
-            else:
-                cleaned_terms.append(term)
-                
-        return " ".join(cleaned_terms)
+        """Cleans and sanitizes a query string for SQLite FTS5 / Postgres websearch."""
+        from repository.filters import clean_fts_query
+        return clean_fts_query(query)
 
     def _build_filter_clauses(self, filters: Dict[str, Any]) -> Tuple[List[str], List[Any]]:
-        """Common helper to build SQL where clauses and extract bind parameters."""
-        where_clauses = []
-        params = []
-        
-        query_val = filters.get("query")
-        if query_val:
-            where_clauses.append("papers_fts MATCH ?")
-            params.append(self.clean_fts_query(query_val))
-            
-        # 2. Dynamic Filters
-        if filters.get("year_min") is not None:
-            where_clauses.append("papers.year >= ?")
-            params.append(int(filters["year_min"]))
-            
-        if filters.get("year_max") is not None:
-            where_clauses.append("papers.year <= ?")
-            params.append(int(filters["year_max"]))
-            
-        study_types = filters.get("study_type")
-        if study_types:
-            if isinstance(study_types, str):
-                study_types = [s.strip() for s in study_types.split(",") if s.strip()]
-            if study_types:
-                # Expand any legacy category terms into their constituent Stage 2 types
-                expanded_study_types = []
-                for s in study_types:
-                    if s == "RCT":
-                        expanded_study_types.extend(["Clinical (RCT)", "RCT"])
-                    elif s == "observational":
-                        expanded_study_types.extend(["Clinical (prospective)", "Clinical (observational)", "Clinical (retrospective)", "observational"])
-                    elif s == "animal":
-                        expanded_study_types.extend(["Animal Models (Mouse)", "Animal Models (Rat)", "Animal Models (Other Rodents)", "Animal Models (Non-Human Primates)", "Animal Models (Other)", "animal"])
-                    elif s == "in vitro":
-                        expanded_study_types.extend(["Cell Culture (Primary Cells)", "Cell Culture (Cell Lines)", "Cell Culture (Organoids)", "Cell Culture (Co-Culture)", "Cell Culture (PCLS)", "Cell Culture (Other In Vitro)", "in vitro"])
-                    else:
-                        expanded_study_types.append(s)
-                
-                if filters.get("study_logic", "or").lower() == "and":
-                    for s_type in expanded_study_types:
-                        where_clauses.append(
-                            "((json_valid(papers.study_type) AND json_type(papers.study_type) = 'array' AND EXISTS ("
-                            "SELECT 1 FROM json_each(papers.study_type) WHERE json_each.value = ?"
-                            ")) OR (papers.study_type = ?))"
-                        )
-                        params.extend([s_type, s_type])
-                else:
-                    placeholders = ",".join(["?"] * len(expanded_study_types))
-                    where_clauses.append(
-                        f"((json_valid(papers.study_type) AND json_type(papers.study_type) = 'array' AND EXISTS ("
-                        f"SELECT 1 FROM json_each(papers.study_type) WHERE json_each.value IN ({placeholders})"
-                        f")) OR (papers.study_type IN ({placeholders})))"
-                    )
-                    params.extend(expanded_study_types)
-                    params.extend(expanded_study_types)
-            
-
- 
-        # Filter on minimum citation count
-        if filters.get("citations_min") is not None:
-            where_clauses.append("papers.citation_count >= ?")
-            params.append(int(filters["citations_min"]))
- 
-        # Filter on cannabis types (supports comma-separated list or single value)
-        cannabis_types = filters.get("cannabis_type")
-        if cannabis_types:
-            if isinstance(cannabis_types, str):
-                cannabis_types = [c.strip() for c in cannabis_types.split(",") if c.strip()]
-            if cannabis_types:
-                if filters.get("cannabis_logic", "or").lower() == "and":
-                    for c_type in cannabis_types:
-                        where_clauses.append(
-                            "((json_valid(papers.cannabis_type) AND json_type(papers.cannabis_type) = 'array' AND EXISTS ("
-                            "SELECT 1 FROM json_each(papers.cannabis_type) WHERE json_each.value = ?"
-                            ")) OR (papers.cannabis_type = ?))"
-                        )
-                        params.extend([c_type, c_type])
-                else:
-                    placeholders = ",".join(["?"] * len(cannabis_types))
-                    where_clauses.append(
-                        f"((json_valid(papers.cannabis_type) AND json_type(papers.cannabis_type) = 'array' AND EXISTS ("
-                        f"SELECT 1 FROM json_each(papers.cannabis_type) WHERE json_each.value IN ({placeholders})"
-                        f")) OR (papers.cannabis_type IN ({placeholders})))"
-                    )
-                    params.extend(cannabis_types)
-                    params.extend(cannabis_types)
- 
-        # Filter on exposure methods (supports comma-separated list or single value)
-        exposure_methods = filters.get("exposure_method")
-        if exposure_methods:
-            if isinstance(exposure_methods, str):
-                exposure_methods = [m.strip() for m in exposure_methods.split(",") if m.strip()]
-            if exposure_methods:
-                if filters.get("exposure_logic", "or").lower() == "and":
-                    for exp_method in exposure_methods:
-                        where_clauses.append(
-                            "((json_valid(papers.exposure_method) AND json_type(papers.exposure_method) = 'array' AND EXISTS ("
-                            "SELECT 1 FROM json_each(papers.exposure_method) WHERE json_each.value = ?"
-                            ")) OR (papers.exposure_method = ?))"
-                        )
-                        params.extend([exp_method, exp_method])
-                else:
-                    placeholders = ",".join(["?"] * len(exposure_methods))
-                    where_clauses.append(
-                        f"((json_valid(papers.exposure_method) AND json_type(papers.exposure_method) = 'array' AND EXISTS ("
-                        f"SELECT 1 FROM json_each(papers.exposure_method) WHERE json_each.value IN ({placeholders})"
-                        f")) OR (papers.exposure_method IN ({placeholders})))"
-                    )
-                    params.extend(exposure_methods)
-                    params.extend(exposure_methods)
-            
-        if filters.get("thc_min") is not None:
-            where_clauses.append("papers.thc_pct >= ?")
-            params.append(float(filters["thc_min"]))
-            
-        if filters.get("thc_max") is not None:
-            where_clauses.append("papers.thc_pct <= ?")
-            params.append(float(filters["thc_max"]))
-
-        if filters.get("cbd_min") is not None:
-            where_clauses.append("papers.cbd_pct >= ?")
-            params.append(float(filters["cbd_min"]))
-
-        if filters.get("cbd_max") is not None:
-            where_clauses.append("papers.cbd_pct <= ?")
-            params.append(float(filters["cbd_max"]))
-
-        has_pdf = filters.get("has_pdf")
-        has_full_text = filters.get("has_full_text")
-        if has_pdf is not None or has_full_text is not None:
-            if isinstance(has_pdf, str):
-                has_pdf = has_pdf.lower() in ("true", "1", "yes")
-            if isinstance(has_full_text, str):
-                has_full_text = has_full_text.lower() in ("true", "1", "yes")
-            pdf_active = bool(has_pdf)
-            full_text_active = bool(has_full_text)
-            if pdf_active and full_text_active:
-                where_clauses.append(f"({_SQL_HAS_PDF_LINK} OR {_SQL_HAS_FULL_TEXT_LINK})")
-            elif pdf_active:
-                where_clauses.append(_SQL_HAS_PDF_LINK)
-            elif full_text_active:
-                where_clauses.append(_SQL_HAS_FULL_TEXT_LINK)
-            
-            
-        if filters.get("open_access") is not None:
-            val = filters["open_access"]
-            if isinstance(val, str):
-                val = 1 if val.lower() in ("true", "1", "yes") else 0
-            else:
-                val = 1 if val else 0
-            where_clauses.append("papers.open_access = ?")
-            params.append(val)
-            
-        # Tab-based filtering (clinical/preclinical may overlap; recents stacks via recent_range)
-        tab = filters.get("tab")
-        if tab == "original":
-            tab = "all_original"
-        if tab == "recent":
-            tab = None
-        tab_sql = self._resolve_tab_sql(tab)
-        if tab_sql:
-            where_clauses.append(tab_sql)
-
-        recent_range = filters.get("recent_range")
-        if recent_range or filters.get("recent"):
-            from paper_tab_flags import recent_range_sql
-
-            recent_clause, recent_params = recent_range_sql(recent_range or "180d")
-            where_clauses.append(recent_clause)
-            params.extend(recent_params)
-
-        # Numeric / sub-node scoped filters (read-only on existing columns)
-        _NUMERIC_RANGE_FILTERS = (
-            ("sample_size_min", "papers.sample_size", ">="),
-            ("sample_size_max", "papers.sample_size", "<="),
-            ("dose_mg_min", "papers.dose_mg", ">="),
-            ("dose_mg_max", "papers.dose_mg", "<="),
-            ("duration_days_min", "papers.duration_days", ">="),
-            ("duration_days_max", "papers.duration_days", "<="),
-            ("thc_mg_kg_min", "papers.thc_mg_kg", ">="),
-            ("thc_mg_kg_max", "papers.thc_mg_kg", "<="),
-            ("cbd_mg_kg_min", "papers.cbd_mg_kg", ">="),
-            ("cbd_mg_kg_max", "papers.cbd_mg_kg", "<="),
-            ("thc_mg_ml_min", "papers.thc_mg_ml", ">="),
-            ("thc_mg_ml_max", "papers.thc_mg_ml", "<="),
-            ("cbd_mg_ml_min", "papers.cbd_mg_ml", ">="),
-            ("cbd_mg_ml_max", "papers.cbd_mg_ml", "<="),
-            ("thc_uM_min", "papers.thc_uM", ">="),
-            ("thc_uM_max", "papers.thc_uM", "<="),
-            ("cbd_uM_min", "papers.cbd_uM", ">="),
-            ("cbd_uM_max", "papers.cbd_uM", "<="),
-            ("puff_count_min", "papers.puff_count", ">="),
-        )
-        for filter_key, column, operator in _NUMERIC_RANGE_FILTERS:
-            raw = filters.get(filter_key)
-            if raw is not None and raw != "":
-                where_clauses.append(f"{column} {operator} ?")
-                params.append(float(raw))
-
-        population_age = filters.get("population_age")
-        if population_age:
-            if isinstance(population_age, str):
-                population_age = [a.strip() for a in population_age.split(",") if a.strip()]
-            if population_age:
-                placeholders = ",".join(["?"] * len(population_age))
-                where_clauses.append(f"LOWER(COALESCE(papers.population_age, '')) IN ({placeholders})")
-                params.extend([a.lower() for a in population_age])
-
-        population_sex = filters.get("population_sex")
-        if population_sex:
-            if isinstance(population_sex, str):
-                population_sex = [s.strip() for s in population_sex.split(",") if s.strip()]
-            if population_sex:
-                placeholders = ",".join(["?"] * len(population_sex))
-                where_clauses.append(f"LOWER(COALESCE(papers.population_sex, '')) IN ({placeholders})")
-                params.extend([s.lower() for s in population_sex])
-
-        species_values = filters.get("species")
-        if species_values:
-            if isinstance(species_values, str):
-                species_values = [s.strip() for s in species_values.split(",") if s.strip()]
-            if species_values:
-                species_clauses = []
-                for species in species_values:
-                    clause, clause_params = _species_ui_match_clause(species)
-                    species_clauses.append(clause)
-                    params.extend(clause_params)
-                where_clauses.append("(" + " OR ".join(species_clauses) + ")")
-
-        regimen_values = filters.get("exposure_regimen_bin")
-        if regimen_values:
-            if isinstance(regimen_values, str):
-                regimen_values = [r.strip() for r in regimen_values.split(",") if r.strip()]
-            if regimen_values:
-                placeholders = ",".join(["?"] * len(regimen_values))
-                where_clauses.append(
-                    f"LOWER(COALESCE(papers.exposure_regimen_bin, '')) IN ({placeholders})"
-                )
-                params.extend([value.lower() for value in regimen_values])
-
-        # Outcome domain filters (JSON list)
-        outcomes = filters.get("outcome")
-        if outcomes:
-            if isinstance(outcomes, str):
-                outcomes = [o.strip() for o in outcomes.split(",") if o.strip()]
-            if outcomes:
-                if filters.get("outcome_logic", "or").lower() == "and":
-                    for outcome in outcomes:
-                        where_clauses.append("EXISTS (SELECT 1 FROM json_each(papers.outcome_domain) WHERE value = ?)")
-                        params.append(outcome)
-                else:
-                    placeholders = ",".join(["?"] * len(outcomes))
-                    where_clauses.append(f"EXISTS (SELECT 1 FROM json_each(papers.outcome_domain) WHERE value IN ({placeholders}))")
-                    params.extend(outcomes)
-                
-        # Claude classified filter (classifier_version starts with llm-) - retained for backwards compatibility
-        if filters.get("claude_classified"):
-            where_clauses.append("papers.classifier_version LIKE 'llm-%'")
-            
-        # Filter on publication types (§5.2 — sidebar review tab)
-        publication_types = filters.get("publication_type")
-        if publication_types:
-            if isinstance(publication_types, str):
-                publication_types = [p.strip() for p in publication_types.split(",") if p.strip()]
-            if publication_types:
-                if filters.get("publication_type_logic", "or").lower() == "and":
-                    for pub_type in publication_types:
-                        where_clauses.append("LOWER(papers.publication_type) = LOWER(?)")
-                        params.append(pub_type)
-                else:
-                    placeholders = ",".join(["?"] * len(publication_types))
-                    where_clauses.append(
-                        f"LOWER(papers.publication_type) IN ({','.join(['LOWER(?)'] * len(publication_types))})"
-                    )
-                    params.extend(publication_types)
-
-        # Classification level filter (§5.2 — sidebar Classification Details)
-        class_level = filters.get("classification_level")
-        if class_level and class_level != "ALL":
-            if class_level == "claude_abstract":
-                where_clauses.append(
-                    "(papers.classifier_version LIKE 'llm-reclassify-%' AND papers.classifier_version NOT LIKE 'llm-pdf-%')"
-                )
-            elif class_level == "claude_pdf":
-                where_clauses.append("papers.classifier_version LIKE 'llm-pdf-reclassify-%'")
-            elif class_level == "manual":
-                where_clauses.append("(papers.expert_locked_fields IS NOT NULL AND papers.expert_locked_fields != '[]' AND papers.expert_locked_fields != '')")
-            elif class_level == "optimal":
-                where_clauses.append("(papers.classifier_version LIKE 'llm-pdf-reclassify-%' OR (papers.expert_locked_fields IS NOT NULL AND papers.expert_locked_fields != '[]' AND papers.expert_locked_fields != ''))")
-            elif class_level == "maude":
-                where_clauses.append("papers.classifier_version LIKE 'maude-%'")
-
-        content_tier = filters.get("content_tier")
-        if content_tier and content_tier not in ("any", "all"):
-            import content_tiers
-
-            tier_clause, tier_params = content_tiers.content_tier_sql_clause(content_tier)
-            if tier_clause:
-                where_clauses.append(tier_clause)
-                params.extend(tier_params)
-                    
-        return where_clauses, params
+        """Build SQL WHERE clauses via the dialect-aware repository filter layer."""
+        return self._papers_repo().build_filter_clauses(filters)
 
     def search_papers(
         self,
         filters: Dict[str, Any],
         include_total: bool = False,
     ):
-        """Queries the database dynamically using filters.
-        
-        Supported filters:
-            query: Free-text match query (against title & abstract FTS5)
-            year_min: Minimum publication year
-            year_max: Maximum publication year
-            study_type: exact study type string
-            exposure_method: exact exposure method string
-            thc_min: minimum numeric THC%
-            outcome: outcome domains to search (comma-separated string or list)
-            open_access: boolean or int (0/1) for open access
-            sort_by: year, citations, or quality_score
-            
-        Returns:
-            List of dictionaries containing matched papers.
-        """
-        conn = self.get_connection()
-        cursor = conn.cursor()
-        
-        query_val = filters.get("query")
-        
-        list_columns_sql = ", ".join(TABLE_LIST_COLUMNS)
-        # 1. Base Select
-        if query_val:
-            # Join with FTS table
-            select_sql = (
-                f"SELECT {list_columns_sql}, papers_fts.rank "
-                f"FROM papers JOIN papers_fts ON papers.id = papers_fts.rowid"
-            )
-        else:
-            select_sql = f"SELECT {list_columns_sql} FROM papers"
-            
-        where_clauses, params = self._build_filter_clauses(filters)
-
-        # 3. Assemble Where Clauses
-        sql = select_sql
-        if where_clauses:
-            sql += " WHERE " + " AND ".join(where_clauses)
-            
-        # 4. Sorting & Ordering
-        sort_by = filters.get("sort_by")
-        sort_dir = filters.get("sort_dir", "DESC").upper()
-        if sort_dir not in ("ASC", "DESC"):
-            sort_dir = "DESC"
-
-        collate_clause = ' COLLATE "C"' if self.is_postgres else ''
-        if sort_by == "year":
-            sql += f" ORDER BY papers.year {sort_dir}, papers.id DESC"
-        elif sort_by == "citations":
-            sql += f" ORDER BY papers.citation_count {sort_dir}, papers.year DESC"
-        elif sort_by == "title":
-            sql += f" ORDER BY papers.title{collate_clause} {sort_dir}, papers.year DESC"
-        elif sort_by == "duration":
-            sql += f" ORDER BY papers.duration_days {sort_dir}, papers.year DESC"
-        elif sort_by == "study_type":
-            sql += f" ORDER BY papers.study_type{collate_clause} {sort_dir}, papers.year DESC"
-        elif sort_by == "exposure_method":
-            sql += f" ORDER BY papers.exposure_method{collate_clause} {sort_dir}, papers.year DESC"
-        elif sort_by == "population_age":
-            sql += f" ORDER BY papers.population_age{collate_clause} {sort_dir}, papers.year DESC"
-        elif sort_by == "population_sex":
-            sql += f" ORDER BY papers.population_sex{collate_clause} {sort_dir}, papers.year DESC"
-        elif sort_by == "publication_type":
-            sql += f" ORDER BY papers.publication_type{collate_clause} {sort_dir}, papers.year DESC"
-        elif sort_by == "cannabis_type":
-            sql += f" ORDER BY papers.cannabis_type{collate_clause} {sort_dir}, papers.year DESC"
-        elif sort_by == "outcome_domain":
-            sql += f" ORDER BY papers.outcome_domain{collate_clause} {sort_dir}, papers.year DESC"
-        elif sort_by == "dose_mg":
-            sql += f" ORDER BY papers.dose_mg {sort_dir}, papers.year DESC"
-        elif sort_by == "puff_count":
-            sql += f" ORDER BY papers.puff_count {sort_dir}, papers.year DESC"
-        elif sort_by == "administration_frequency":
-            sql += f" ORDER BY papers.administration_frequency{collate_clause} {sort_dir}, papers.year DESC"
-        elif sort_by == "thc_mg_ml":
-            sql += f" ORDER BY papers.thc_mg_ml {sort_dir}, papers.year DESC"
-        elif sort_by == "cbd_mg_ml":
-            sql += f" ORDER BY papers.cbd_mg_ml {sort_dir}, papers.year DESC"
-        elif sort_by == "thc_mg_kg":
-            sql += f" ORDER BY papers.thc_mg_kg {sort_dir}, papers.year DESC"
-        elif sort_by == "cbd_mg_kg":
-            sql += f" ORDER BY papers.cbd_mg_kg {sort_dir}, papers.year DESC"
-        elif sort_by == "thc_uM":
-            sql += f" ORDER BY papers.thc_uM {sort_dir}, papers.year DESC"
-        elif sort_by == "cbd_uM":
-            sql += f" ORDER BY papers.cbd_uM {sort_dir}, papers.year DESC"
-        elif sort_by == "treatment_duration":
-            sql += f" ORDER BY papers.treatment_duration{collate_clause} {sort_dir}, papers.year DESC"
-        elif sort_by == "strain_reported":
-            sql += f" ORDER BY papers.strain_reported{collate_clause} {sort_dir}, papers.year DESC"
-        elif sort_by == "strain_normalized":
-            sql += f" ORDER BY papers.strain_normalized{collate_clause} {sort_dir}, papers.year DESC"
-        else:
-            # Default sorting: Rank (relevance) or Year DESC
-            if query_val:
-                sql += " ORDER BY rank ASC"
-            else:
-                sql += " ORDER BY papers.year DESC, papers.id DESC"
-
-        # 5. Limit & Offset (Pagination)
-        limit = filters.get("limit")
-        offset = filters.get("offset")
-        if limit is not None:
-            sql += " LIMIT ?"
-            params.append(int(limit))
-            if offset is not None:
-                sql += " OFFSET ?"
-                params.append(int(offset))
-                
-        try:
-            cursor.execute(sql, params)
-            rows = cursor.fetchall()
-            
-            results = []
-            for row in rows:
-                res = dict(row)
-                # Parse JSON fields
-                for json_field in ["authors", "outcome_domain"]:
-                    if res.get(json_field):
-                        try:
-                            res[json_field] = json.loads(res[json_field])
-                        except Exception:
-                            res[json_field] = []
-                    else:
-                        res[json_field] = []
-
-                for json_field in ["study_type", "exposure_method", "cannabis_type", "expert_locked_fields"]:
-                    if res.get(json_field):
-                        try:
-                            val = res[json_field].strip()
-                            if val.startswith("[") and val.endswith("]"):
-                                res[json_field] = json.loads(res[json_field])
-                        except Exception:
-                            pass
-                results.append(res)
-
-            if include_total:
-                count_filters = {
-                    key: value
-                    for key, value in filters.items()
-                    if key not in ("limit", "offset")
-                }
-                return results, self.count_papers(count_filters)
-
-            return results
-        finally:
-            conn.close()
+        """Query the catalog using backend-neutral repository SQL."""
+        return self._papers_repo().search_papers(filters, include_total=include_total)
 
     def search_papers_for_analysis(self, filters: Dict[str, Any]) -> List[Dict[str, Any]]:
-        """Returns all papers matching analysis filter settings (no pagination cap beyond caller limit)."""
-        return self.search_papers(filters)
+        """Returns all papers matching analysis filter settings."""
+        return self._papers_repo().search_papers_for_analysis(filters)
 
     def count_papers(self, filters: Dict[str, Any]) -> int:
-        """Counts total papers matching the filters by executing the query with COUNT(*)."""
-        conn = self.get_connection()
-        cursor = conn.cursor()
-        
-        query_val = filters.get("query")
-        
-        # 1. Base Select
-        if query_val:
-            select_sql = "SELECT COUNT(*) as total FROM papers JOIN papers_fts ON papers.id = papers_fts.rowid"
-        else:
-            select_sql = "SELECT COUNT(*) as total FROM papers"
-            
-        where_clauses, params = self._build_filter_clauses(filters)
-                    
-        sql = select_sql
-        if where_clauses:
-            sql += " WHERE " + " AND ".join(where_clauses)
-            
-        try:
-            cursor.execute(sql, params)
-            row = cursor.fetchone()
-            return row["total"] if row else 0
-        finally:
-            conn.close()
+        """Counts total papers matching the filters."""
+        return self._papers_repo().count_papers(filters)
 
     def get_tab_counts(self) -> Dict[str, int]:
         """Return paper counts for each primary dashboard tab using indexed tab SQL."""
-        cache_key = "dashboard_tab_counts_json"
-        cache_at_key = "dashboard_tab_counts_cached_at"
-        cache_ttl = int(os.getenv("TAB_COUNTS_CACHE_SECONDS", "120"))
-        try:
-            cached_raw = self.get_metadata(cache_key)
-            cached_at_raw = self.get_metadata(cache_at_key)
-            if cached_raw and cached_at_raw:
-                age = time.time() - float(cached_at_raw)
-                if age < cache_ttl:
-                    parsed = json.loads(cached_raw)
-                    if isinstance(parsed, dict):
-                        return {str(k): int(v) for k, v in parsed.items()}
-        except (TypeError, ValueError, json.JSONDecodeError):
-            pass
-
-        counts: Dict[str, int] = {}
-        conn = self.get_connection()
-        cursor = conn.cursor()
-        try:
-            for tab_key in _DASHBOARD_TAB_KEYS:
-                tab_sql = self._resolve_tab_sql(tab_key)
-                if not tab_sql:
-                    counts[tab_key] = 0
-                    continue
-                cursor.execute(f"SELECT COUNT(*) as total FROM papers WHERE {tab_sql}")
-                row = cursor.fetchone()
-                counts[tab_key] = row["total"] if row else 0
-            try:
-                self.set_metadata(cache_key, json.dumps(counts))
-                self.set_metadata(cache_at_key, str(time.time()))
-            except Exception as exc:
-                logger.debug("Tab count cache write failed: %s", exc)
-            return counts
-        finally:
-            conn.close()
+        return self._papers_repo().get_tab_counts()
 
     def get_all_pmids(self) -> set:
         """Returns a set of all PMIDs currently stored in the database for skip checks."""
-        conn = self.get_connection()
-        cursor = conn.cursor()
-        try:
-            cursor.execute("SELECT pmid FROM papers WHERE pmid IS NOT NULL")
-            return {row["pmid"] for row in cursor.fetchall()}
-        finally:
-            conn.close()
+        return self._papers_repo().get_all_pmids()
 
     def hash_password(self, password: str) -> str:
         import hashlib
