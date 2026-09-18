@@ -26,6 +26,7 @@ from citation_graph import CitationGraph
 import calibration_metrics
 import maude_feedback
 import email_service
+import background_jobs
 
 app = Flask(__name__)
 app.secret_key = os.getenv("FLASK_SECRET_KEY", "mckenzian-secret-key-12345")
@@ -155,10 +156,12 @@ def _get_unique_username(base_name):
 # Core global state to track active background harvesting progress
 harvest_lock = threading.Lock()
 harvest_state = {
-    "status": "idle",      # idle, running, success, error
+    "status": "idle",      # idle, running, prompt, success, error
     "progress": "",        # Real-time text output
     "error": None,         # Error message
-    "start_time": None
+    "start_time": None,
+    "total_count": None,   # PubMed hit count (filled in the worker)
+    "query": None,
 }
 
 _pending_pdf_uploads: Dict[str, Dict[str, Any]] = {}
@@ -258,21 +261,55 @@ def daily_harvest_scheduler():
 
         time.sleep(60)
 
-def bg_harvest_worker(query: str, max_results: int, update: bool, classify: bool):
-    """Asynchronous background worker that runs the harvest pipeline and updates progress state."""
+def _reset_harvest_state_for_start(query: str) -> None:
+    """Mark harvest as running before the worker thread starts (avoids a double-submit race)."""
     global harvest_state
-    
-    with harvest_lock:
-        harvest_state["status"] = "running"
-        harvest_state["progress"] = "Initializing background harvester..."
-        harvest_state["error"] = None
-        harvest_state["start_time"] = datetime.now().strftime("%H:%M:%S")
+    harvest_state["status"] = "running"
+    harvest_state["progress"] = "Queued. Counting PubMed matches..."
+    harvest_state["error"] = None
+    harvest_state["start_time"] = datetime.now().strftime("%H:%M:%S")
+    harvest_state["total_count"] = None
+    harvest_state["query"] = query
+
+
+def bg_harvest_worker(
+    query: str,
+    max_results: Optional[int],
+    update: bool,
+    classify: bool,
+    force: bool = False,
+):
+    """Count PubMed hits, optionally pause for confirmation, then run the harvest pipeline.
+
+    NCBI ``esearch`` used to run on the Flask request thread in ``api_harvest``.
+    That froze the only sync Gunicorn worker. Count here, then ingest.
+    """
+    global harvest_state
 
     try:
         def update_progress(msg):
             with harvest_lock:
                 harvest_state["progress"] = msg
-                
+
+        if not force:
+            update_progress("Counting matching papers on PubMed...")
+            total_count = harvest.get_pubmed_count(query)
+            with harvest_lock:
+                harvest_state["total_count"] = total_count
+            if total_count > background_jobs.HARVEST_PROMPT_THRESHOLD:
+                with harvest_lock:
+                    harvest_state["status"] = "prompt"
+                    harvest_state["progress"] = (
+                        f"Query matches {total_count} papers on PubMed "
+                        f"(over the {background_jobs.HARVEST_PROMPT_THRESHOLD} threshold)."
+                    )
+                return
+            max_results = total_count if total_count > 0 else 50
+
+        with harvest_lock:
+            harvest_state["status"] = "running"
+            harvest_state["progress"] = "Initializing background harvester..."
+
         success_count, skipped_count, filter_skipped, ingested_ids = harvest.run_harvest_pipeline(
             query=query,
             max_results=max_results,
@@ -984,13 +1021,26 @@ def _build_dashboard_filters_from_request():
 
 @app.route("/api/search/section-stats", methods=["GET"])
 def api_search_section_stats():
-    """Return methods/results section coverage for the current filtered dataset."""
+    """Return methods/results section coverage for a sample of the filtered set.
+
+    The previous unpaginated load of every matching abstract blocked the only
+    sync Gunicorn worker. Stats are computed from at most
+    ``SECTION_STATS_SAMPLE_LIMIT`` rows.
+    """
     import section_stats
 
     db = DatabaseManager()
     try:
-        papers = db.search_papers_minimal_for_section_stats(_build_dashboard_filters_from_request())
+        sample_limit = background_jobs.SECTION_STATS_SAMPLE_LIMIT
+        papers = db.search_papers_minimal_for_section_stats(
+            _build_dashboard_filters_from_request(),
+            limit=sample_limit + 1,
+        )
+        sampled = len(papers) > sample_limit
+        papers = papers[:sample_limit]
         stats = section_stats.compute_section_stats(papers)
+        stats["sampled"] = sampled
+        stats["sample_limit"] = sample_limit
         return jsonify(stats)
     except Exception as e:
         return jsonify({"error": str(e)}), 500
@@ -1460,52 +1510,48 @@ def api_reclassify_llm(paper_id):
 @app.route("/api/harvest", methods=["POST"])
 @admin_required
 def api_harvest():
-    """Triggers an asynchronous background search & ingest run."""
+    """Queue a harvest. NCBI count and ingest run in a worker thread.
+
+    Returns 202 immediately. Poll ``GET /api/harvest/status``:
+    - ``running`` — counting or ingesting
+    - ``prompt`` — more than 500 PubMed hits; POST again with ``force`` + ``max_results``
+    - ``success`` / ``error`` — finished
+    """
     global harvest_state
-    
-    with harvest_lock:
-        if harvest_state["status"] == "running":
-            return jsonify({"error": "A harvesting process is already actively running."}), 400
-            
-    # Read payload parameters
+
     data = request.get_json() or {}
     query = data.get("query")
     update = bool(data.get("update", True))
-    classify = bool(data.get("classify", False))
     # Manual harvest always uses internal Maude/heuristic classification.
     classify = False
     force = bool(data.get("force", False))
     max_results = data.get("max_results")
-    
+
     if not query:
         return jsonify({"error": "Search query is required."}), 400
-        
-    if not force:
-        # Fetch the total number of matching papers on PubMed
-        total_count = harvest.get_pubmed_count(query)
-        if total_count > 500:
-            return jsonify({
-                "status": "prompt",
-                "total_count": total_count
-            })
-        else:
-            # If total_count is under 500, ingest them all automatically
-            max_results = total_count if total_count > 0 else 50
-    else:
+
+    if force:
         try:
             max_results = int(max_results)
         except (ValueError, TypeError):
             max_results = 500
-        
-    # Start thread
+
+    with harvest_lock:
+        if harvest_state["status"] == "running":
+            return jsonify({"error": "A harvesting process is already actively running."}), 400
+        _reset_harvest_state_for_start(query)
+
     thread = threading.Thread(
         target=bg_harvest_worker,
-        args=(query, max_results, update, classify)
+        args=(query, max_results, update, classify, force),
+        daemon=True,
     )
-    thread.daemon = True
     thread.start()
-    
-    return jsonify({"message": "Background harvest started successfully.", "status": "success"})
+
+    return jsonify({
+        "message": "Background harvest queued. Poll /api/harvest/status.",
+        "status": "accepted",
+    }), 202
 
 @app.route("/api/harvest/status", methods=["GET"])
 @admin_required
@@ -1517,7 +1563,12 @@ def api_harvest_status():
 @app.route("/api/papers/upload-pdf", methods=["POST"])
 @admin_required
 def api_upload_pdf():
-    """Ingest or update a paper from an uploaded PDF using the Maude/heuristic pipeline."""
+    """Ingest or update a paper from an uploaded PDF using the Maude/heuristic pipeline.
+
+    The initial parse/classify/title-match returns 202 + ``task_id``; poll
+    ``GET /api/tasks/<id>`` for ``match_selection_required``. Match choice and
+    merge save stay synchronous.
+    """
     merge_token = (request.form.get("merge_token") or "").strip()
     match_choice = (request.form.get("match_choice") or "").strip()
     merge_selections = None
@@ -1603,6 +1654,26 @@ def api_upload_pdf():
     if not pdf_bytes:
         return jsonify({"error": "Uploaded PDF is empty."}), 400
 
+    # Initial parse/classify/title-match is the expensive path. Queue it so the
+    # sync Gunicorn worker can keep serving /api/search. Match-choice and merge
+    # save stay on the request (they reuse already-parsed state).
+    if merge_selections is None and proposed_paper is None:
+        if not pdf_bytes.startswith(b"%PDF"):
+            return jsonify({"error": "Uploaded file is not a valid PDF."}), 400
+        pending_token = _store_pending_pdf_upload(pdf_bytes, filename)
+        try:
+            task_id = background_jobs.create_task("pdf_upload")
+        except Exception as exc:
+            _pop_pending_pdf_upload(pending_token)
+            app.logger.error("Failed to enqueue PDF upload task: %s", exc)
+            return jsonify({"error": str(exc)}), 500
+        background_jobs.submit_background(async_pdf_upload_task, task_id, pending_token)
+        return jsonify({
+            "task_id": task_id,
+            "status": "pending",
+            "message": "PDF queued for parse/classify. Poll GET /api/tasks/<task_id>.",
+        }), 202
+
     try:
         result = harvest.ingest_uploaded_pdf(
             pdf_bytes,
@@ -1638,6 +1709,43 @@ def api_upload_pdf():
     except Exception as exc:
         app.logger.error("PDF upload failed: %s", exc)
         return jsonify({"error": str(exc)}), 500
+
+
+def async_pdf_upload_task(task_id: str, pending_token: str) -> None:
+    """Parse/classify an uploaded PDF and store the match-selection payload."""
+    try:
+        background_jobs.update_task(task_id, status="running")
+        pending = _get_pending_pdf_upload(pending_token)
+        if not pending:
+            raise ValueError("Upload session expired. Please re-upload the PDF.")
+        result = harvest.ingest_uploaded_pdf(
+            pending["pdf_bytes"],
+            filename=pending.get("filename") or "upload.pdf",
+        )
+        if result.get("status") in {"match_selection_required", "review_required"}:
+            _update_pending_pdf_upload(
+                pending_token,
+                proposed_paper=result.get("proposed_paper") or {},
+                existing_row=result.get("existing_row") or {},
+                is_new_paper=result.get("is_new_paper", True),
+                paper_id=result.get("paper_id"),
+            )
+            payload = dict(result)
+            payload["merge_token"] = pending_token
+            payload.pop("proposed_paper", None)
+            payload.pop("existing_row", None)
+        else:
+            _pop_pending_pdf_upload(pending_token)
+            payload = {
+                "status": "success",
+                "message": f"Paper {result.get('action')} successfully.",
+                **result,
+            }
+        background_jobs.set_task_result(task_id, payload)
+        background_jobs.update_task(task_id, status="completed", processed_papers=1, total_papers=1)
+    except Exception as exc:
+        _pop_pending_pdf_upload(pending_token)
+        background_jobs.mark_task_failed(task_id, exc)
 
 @app.route("/api/scheduler/status", methods=["GET"])
 def api_scheduler_status():
@@ -2109,58 +2217,125 @@ def _compute_analysis_chart_data(papers):
     }
 
 
-@app.route("/api/analyze", methods=["POST"])
-def api_analyze():
-    """Accepts filter params, fetches matching papers, computes chart data, saves analysis to DB if logged in."""
-    data = request.get_json() or {}
-    filters = data.get("filters", {})
-    name = data.get("name", f"Analysis {datetime.now().strftime('%b %d %Y %H:%M')}")
+def _build_analyze_result(
+    *,
+    filters: Dict[str, Any],
+    name: str,
+    user_id: Optional[int],
+) -> Dict[str, Any]:
+    """Load a capped paper set, compute charts, and optionally persist the analysis.
 
+    Does not return the full paper list in the first payload. Drill-down uses
+    ``GET /api/analyses/<id>/papers`` (logged-in) or a small sample for guests.
+    """
     db = DatabaseManager()
     db.init_analyses_table()
 
-    try:
-        filters = dict(filters)
-        filters["limit"] = 100000
-        filters["offset"] = 0
-        papers = db.search_papers_for_analysis(filters)
+    work_filters = dict(filters)
+    work_filters["limit"] = background_jobs.ANALYZE_PAPER_CAP + 1
+    work_filters["offset"] = 0
+    papers = db.search_papers_for_analysis(work_filters)
+    truncated = len(papers) > background_jobs.ANALYZE_PAPER_CAP
+    papers = papers[: background_jobs.ANALYZE_PAPER_CAP]
 
-        chart_data = _compute_analysis_chart_data(papers)
-        chart_data["paper_ids"] = [p["id"] for p in papers]
-        analysis_papers = [_slim_paper_for_analysis(p) for p in papers]
-
-        user = _get_session_user(db)
-        if not user:
-            return jsonify({
-                "id": None,
-                "name": name,
-                "paper_count": chart_data["paper_count"],
-                "filter_settings": filters,
-                "chart_data": chart_data,
-                "papers": analysis_papers,
-                "created_at": datetime.now().isoformat(),
-            })
-
-        analysis_id = db.create_analysis(
-            name=name,
-            filter_settings=json.dumps(filters, default=str),
-            paper_count=chart_data["paper_count"],
-            chart_data=json.dumps(chart_data, default=str),
-            user_id=user["id"],
+    chart_data = _compute_analysis_chart_data(papers)
+    chart_data["paper_ids"] = [p["id"] for p in papers]
+    chart_data["truncated"] = truncated
+    chart_data["analyzed_count"] = len(papers)
+    if truncated:
+        chart_data["cap_message"] = (
+            f"Charts from the first {background_jobs.ANALYZE_PAPER_CAP} matching papers. "
+            "Narrow filters to include the rest."
         )
 
-        return jsonify({
-            "id": analysis_id,
-            "name": name,
-            "paper_count": chart_data["paper_count"],
-            "filter_settings": filters,
-            "chart_data": chart_data,
-            "papers": analysis_papers,
-            "created_at": datetime.now().isoformat(),
-        })
-    except Exception as e:
-        app.logger.error(f"Analysis failed: {e}")
-        return jsonify({"error": str(e)}), 500
+    analysis_id = None
+    if user_id:
+        analysis_id = db.create_analysis(
+            name=name,
+            filter_settings=json.dumps(work_filters, default=str),
+            paper_count=chart_data["paper_count"],
+            chart_data=json.dumps(chart_data, default=str),
+            user_id=user_id,
+        )
+
+    drilldown = [
+        _slim_paper_for_analysis(p)
+        for p in papers[: background_jobs.ANALYZE_DRILLDOWN_CAP]
+    ]
+    return {
+        "id": analysis_id,
+        "name": name,
+        "paper_count": chart_data["paper_count"],
+        "filter_settings": work_filters,
+        "chart_data": chart_data,
+        "papers": drilldown,
+        "truncated": truncated,
+        "analyzed_count": len(papers),
+        "cap": background_jobs.ANALYZE_PAPER_CAP,
+        "created_at": datetime.now().isoformat(),
+    }
+
+
+def async_analyze_task(
+    task_id: str,
+    filters: Dict[str, Any],
+    name: str,
+    user_id: Optional[int],
+) -> None:
+    """Compute analysis charts off the request thread."""
+    try:
+        background_jobs.update_task(task_id, status="running")
+        result = _build_analyze_result(filters=filters, name=name, user_id=user_id)
+        background_jobs.set_task_result(task_id, result)
+        background_jobs.update_task(
+            task_id,
+            status="completed",
+            total_papers=result.get("analyzed_count") or 0,
+            processed_papers=result.get("analyzed_count") or 0,
+        )
+    except Exception as exc:
+        background_jobs.mark_task_failed(task_id, exc)
+
+
+@app.route("/api/analyze", methods=["POST"])
+def api_analyze():
+    """Queue chart computation for the current filters. Poll ``/api/analyze/status/<id>``.
+
+    Previously loaded up to 100k list rows and returned them as JSON on the
+    only sync worker. Work now runs in ``task_executor`` with a hard cap.
+    """
+    data = request.get_json() or {}
+    filters = data.get("filters", {}) or {}
+    if not isinstance(filters, dict):
+        return jsonify({"error": "filters must be an object."}), 400
+    name = data.get("name", f"Analysis {datetime.now().strftime('%b %d %Y %H:%M')}")
+
+    user = _get_session_user()
+    user_id = int(user["id"]) if user else None
+
+    try:
+        task_id = background_jobs.create_task("analyze")
+    except Exception as exc:
+        app.logger.error("Failed to enqueue analyze task: %s", exc)
+        return jsonify({"error": str(exc)}), 500
+
+    background_jobs.submit_background(async_analyze_task, task_id, dict(filters), name, user_id)
+    return jsonify({
+        "task_id": task_id,
+        "status": "pending",
+        "message": "Analysis queued. Poll GET /api/analyze/status/<task_id>.",
+    }), 202
+
+
+@app.route("/api/analyze/status/<task_id>", methods=["GET"])
+def api_analyze_status(task_id):
+    """Poll an analyze job. ``task_id`` is an unguessable capability token."""
+    payload = background_jobs.get_task(task_id)
+    if not payload:
+        return jsonify({"error": "Task not found."}), 404
+    if payload.get("task_type") != "analyze":
+        return jsonify({"error": "Task is not an analyze job."}), 404
+    return jsonify(payload)
 
 
 DASHBOARD_VISIBLE_COLUMN_KEYS = frozenset({
@@ -2270,47 +2445,29 @@ def api_list_analyses():
     return jsonify(analyses)
 
 
-def _fetch_analysis_papers(db, chart_data, filter_settings):
-    """Load slim paper rows for an analysis from stored paper_ids."""
-    paper_ids = chart_data.get("paper_ids") or filter_settings.get("paper_ids") or []
+def _fetch_analysis_papers(db, chart_data, filter_settings, *, limit=None, offset=0):
+    """Load slim paper rows for an analysis from stored paper_ids (paged)."""
+    paper_ids = list(chart_data.get("paper_ids") or filter_settings.get("paper_ids") or [])
+    total = len(paper_ids)
     if not paper_ids:
-        return []
-    import sqlite3
-    conn = db.get_connection()
-    conn.row_factory = sqlite3.Row
-    cursor = conn.cursor()
-    try:
-        placeholders = ",".join(["?"] * len(paper_ids))
-        cursor.execute(f"SELECT * FROM papers WHERE id IN ({placeholders})", paper_ids)
-        rows = cursor.fetchall()
-        papers = []
-        for row in rows:
-            res = dict(row)
-            for json_field in ["authors", "outcome_domain"]:
-                if res.get(json_field):
-                    try:
-                        res[json_field] = json.loads(res[json_field])
-                    except Exception:
-                        res[json_field] = []
-                else:
-                    res[json_field] = []
-            for json_field in ["study_type", "exposure_method", "cannabis_type"]:
-                if res.get(json_field):
-                    try:
-                        val = res[json_field].strip()
-                        if val.startswith("[") and val.endswith("]"):
-                            res[json_field] = json.loads(res[json_field])
-                    except Exception:
-                        pass
-            papers.append(_slim_paper_for_analysis(res))
-        return papers
-    finally:
-        conn.close()
+        return [], 0
+    if limit is not None:
+        paper_ids = paper_ids[int(offset): int(offset) + int(limit)]
+    if not paper_ids:
+        return [], total
+
+    papers = db.search_papers_by_ids(paper_ids)
+    slim = [_slim_paper_for_analysis(p) for p in papers]
+    return slim, total
 
 
 @app.route("/api/analyses/<int:analysis_id>/papers", methods=["GET"])
 def api_get_analysis_papers(analysis_id):
-    """Returns slim paper rows for chart drill-down on a saved analysis."""
+    """Return slim paper rows for chart drill-down on a saved analysis.
+
+    Supports ``page`` / ``limit`` so opening an analysis does not dump the
+    full id list as one JSON blob. Default page is the analyze cap.
+    """
     user = _get_session_user()
     if not user:
         return jsonify({"error": "Unauthorized", "login_required": True}), 401
@@ -2331,7 +2488,23 @@ def api_get_analysis_papers(analysis_id):
     except (json.JSONDecodeError, TypeError):
         chart_data = {}
 
-    return jsonify({"papers": _fetch_analysis_papers(db, chart_data, filter_settings)})
+    page = coerce_positive_int(request.args.get("page"), 1, 100000)
+    limit = coerce_positive_int(
+        request.args.get("limit"),
+        background_jobs.ANALYZE_PAPER_CAP,
+        background_jobs.ANALYZE_PAPER_CAP,
+    )
+    offset = (page - 1) * limit
+    papers, total = _fetch_analysis_papers(
+        db, chart_data, filter_settings, limit=limit, offset=offset
+    )
+    return jsonify({
+        "papers": papers,
+        "page": page,
+        "limit": limit,
+        "total_count": total,
+        "truncated": total > limit,
+    })
 
 
 @app.route("/api/analyses/<int:analysis_id>", methods=["GET"])
@@ -2983,14 +3156,13 @@ def api_paper_cited_by(paper_id):
 # --- Phase 2 Automation Systems: Heuristics & Asynchronous Backpopulation ---
 
 from typing import Dict, Any, List, Tuple
-from concurrent.futures import ThreadPoolExecutor
 import uuid
 import time
 import extractor
 import heuristics_engine
 
-# Global thread pool for asynchronous backpopulation (max 2 threads)
-task_executor = ThreadPoolExecutor(max_workers=2)
+# Shared pool lives in background_jobs (backpopulate, PDF upload, analyze).
+task_executor = background_jobs.task_executor
 
 def _eval_list_match(extracted: Any, ground_truth: Any) -> bool:
     """Helper to compare list-valued fields as sets (case-insensitive)."""
@@ -3295,67 +3467,25 @@ def api_save_heuristics_rules():
 @admin_required
 def api_trigger_backpopulate():
     """Trigger asynchronous database backpopulation."""
-    db = DatabaseManager()
-    conn = db.get_connection()
-    cursor = conn.cursor()
-    
-    is_postgres = "DATABASE_URL" in os.environ
-    param = "%s" if is_postgres else "?"
-    
     try:
-        task_id = str(uuid.uuid4())
-        
-        # Insert pending task
-        cursor.execute(
-            f"INSERT INTO background_tasks (task_id, sa_task_type, status, total_papers, processed_papers) "
-            f"VALUES ({param}, {param}, {param}, {param}, {param})",
-            (task_id, "backpopulation", "pending", 0, 0)
-        )
-        conn.commit()
-        
-        # Dispatch to thread pool
-        task_executor.submit(async_backpopulate_task, task_id)
-        
+        task_id = background_jobs.create_task("backpopulation")
+        background_jobs.submit_background(async_backpopulate_task, task_id)
         return jsonify({"task_id": task_id, "status": "pending"}), 202
     except Exception as e:
         return jsonify({"error": str(e)}), 500
-    finally:
-        conn.close()
 
 
 @app.route("/api/tasks/<task_id>", methods=["GET"])
 @admin_required
 def api_get_task_status(task_id):
     """Retrieve real-time status and progress of a background task."""
-    db = DatabaseManager()
-    conn = db.get_connection()
-    cursor = conn.cursor()
-    
-    is_postgres = "DATABASE_URL" in os.environ
-    param = "%s" if is_postgres else "?"
-    
     try:
-        cursor.execute(
-            f"SELECT sa_task_type, status, total_papers, processed_papers, error_message FROM background_tasks WHERE task_id = {param}",
-            (task_id,)
-        )
-        row = cursor.fetchone()
-        if not row:
+        payload = background_jobs.get_task(task_id)
+        if not payload:
             return jsonify({"error": "Task not found."}), 404
-            
-        res = {
-            "task_id": task_id,
-            "task_type": row[0] if isinstance(row, tuple) else row["sa_task_type"],
-            "status": row[1] if isinstance(row, tuple) else row["status"],
-            "total_papers": row[2] if isinstance(row, tuple) else row["total_papers"],
-            "processed_papers": row[3] if isinstance(row, tuple) else row["processed_papers"],
-            "error_message": row[4] if isinstance(row, tuple) else row["error_message"]
-        }
-        return jsonify(res)
+        return jsonify(payload)
     except Exception as e:
         return jsonify({"error": str(e)}), 500
-    finally:
-        conn.close()
 
 
 # Start the background daily scheduler thread, protected against debug reloader double-runs and unit tests

@@ -6583,6 +6583,33 @@
             };
         }
 
+        function pollBackgroundTask(url, intervalMs) {
+            const interval = intervalMs || 400;
+            return new Promise((resolve, reject) => {
+                const tick = () => {
+                    fetch(url)
+                        .then(res => res.json().then(data => ({ ok: res.ok, data })))
+                        .then(({ ok, data }) => {
+                            if (!ok && data && data.error && !data.status) {
+                                reject(new Error(data.error));
+                                return;
+                            }
+                            if (data.status === "completed") {
+                                resolve(data);
+                                return;
+                            }
+                            if (data.status === "failed") {
+                                reject(new Error(data.error_message || data.error || "Task failed"));
+                                return;
+                            }
+                            setTimeout(tick, interval);
+                        })
+                        .catch(reject);
+                };
+                tick();
+            });
+        }
+
         function uploadSinglePdfFile(file, mergePayload) {
             const bar = document.getElementById("harvest-status-bar");
             const uploadBtn = document.getElementById("btn-upload-pdf");
@@ -6608,6 +6635,17 @@
                 .then(async res => {
                     const data = await res.json().catch(() => ({}));
                     return { ok: res.ok, status: res.status, data };
+                })
+                .then(({ ok, status, data }) => {
+                    if (status === 202 && data.task_id) {
+                        document.getElementById("harvest-progress-msg").innerText =
+                            `Parsing ${file.name} in the background…`;
+                        return pollBackgroundTask("/api/tasks/" + data.task_id).then(task => {
+                            const result = task.result || {};
+                            return { ok: true, status: 200, data: result };
+                        });
+                    }
+                    return { ok, status, data };
                 })
                 .then(({ ok, status, data }) => {
                     if (data.status === "match_selection_required") {
@@ -6804,70 +6842,64 @@
                     classify: classify
                 })
             })
-                .then(res => res.json())
-                .then(data => {
+                .then(res => res.json().then(data => ({ ok: res.ok, status: res.status, data })))
+                .then(({ data }) => {
                     if (data.error) {
                         document.getElementById("harvest-progress-msg").innerText = data.error;
                         document.getElementById("harvest-status-bar").style.display = "none";
                         return;
                     }
 
-                    if (data.status === "prompt") {
-                        // Hide progress bar during prompt
-                        document.getElementById("harvest-status-bar").style.display = "none";
+                    // Count now happens in the worker. Always poll; "prompt" arrives via status.
+                    document.getElementById("harvest-progress-msg").innerText = "Counting PubMed matches...";
+                    startPollingHarvestStatus();
+                })
+                .catch(err => {
+                    document.getElementById("harvest-progress-msg").innerText = "Ingest connection failed.";
+                });
+        }
 
-                        const confirmedCount = prompt(
-                            `Your search query matches ${data.total_count} papers on PubMed. This exceeds the 500 threshold.\n\n` +
-                            `How many papers would you like to ingest? (Enter any number up to ${data.total_count}):`,
-                            "500"
-                        );
+        function confirmForcedHarvest(totalCount) {
+            const query = document.getElementById("harvest-query").value;
+            const confirmedCount = prompt(
+                `Your search query matches ${totalCount} papers on PubMed. This exceeds the 500 threshold.\n\n` +
+                `How many papers would you like to ingest? (Enter any number up to ${totalCount}):`,
+                "500"
+            );
 
-                        if (confirmedCount === null) {
-                            // User cancelled
-                            return;
-                        }
+            if (confirmedCount === null) {
+                return;
+            }
 
-                        const parsedCount = parseInt(confirmedCount);
-                        if (isNaN(parsedCount) || parsedCount <= 0) {
-                            alert("Invalid number entered. Aborting harvest.");
-                            return;
-                        }
+            const parsedCount = parseInt(confirmedCount);
+            if (isNaN(parsedCount) || parsedCount <= 0) {
+                alert("Invalid number entered. Aborting harvest.");
+                return;
+            }
 
-                        // Restore progress bar and send the forced request
-                        document.getElementById("harvest-status-bar").style.display = "block";
-                        document.getElementById("harvest-progress-msg").innerText = `Queuing ingest for ${parsedCount} papers...`;
+            document.getElementById("harvest-status-bar").style.display = "block";
+            document.getElementById("harvest-progress-msg").innerText = `Queuing ingest for ${parsedCount} papers...`;
 
-                        fetch("/api/harvest", {
-                            method: "POST",
-                            headers: {
-                                "Content-Type": "application/json"
-                            },
-                            body: JSON.stringify({
-                                query: query,
-                                max_results: parsedCount,
-                                update: update,
-                                classify: classify,
-                                force: true
-                            })
-                        })
-                            .then(res => res.json())
-                            .then(forceData => {
-                                if (forceData.error) {
-                                    document.getElementById("harvest-progress-msg").innerText = forceData.error;
-                                    return;
-                                }
-                                document.getElementById("harvest-progress-msg").innerText = "Background harvester started...";
-                                startPollingHarvestStatus();
-                            })
-                            .catch(err => {
-                                document.getElementById("harvest-progress-msg").innerText = "Ingest connection failed.";
-                            });
-
+            fetch("/api/harvest", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({
+                    query: query,
+                    max_results: parsedCount,
+                    update: true,
+                    classify: false,
+                    force: true
+                })
+            })
+                .then(res => res.json())
+                .then(forceData => {
+                    if (forceData.error) {
+                        document.getElementById("harvest-progress-msg").innerText = forceData.error;
                         return;
                     }
-
-                    // Success start. Trigger recursive polling
-                    document.getElementById("harvest-progress-msg").innerText = " harvester started...";
+                    document.getElementById("harvest-progress-msg").innerText = "Background harvester started...";
                     startPollingHarvestStatus();
                 })
                 .catch(err => {
@@ -6887,12 +6919,17 @@
 
                         msg.innerText = status.progress || "Crawling database...";
 
-                        if (status.status === "running") {
+                        if (status.status === "prompt") {
+                            clearInterval(harvestPollInterval);
+                            document.getElementById("harvest-status-bar").style.display = "none";
+                            confirmForcedHarvest(status.total_count);
+                        } else if (status.status === "running") {
                             // Deduce dynamic percentage mapping based on active text to show beautiful meter
                             let percent = "20%";
-                            if (status.progress.includes("Enriching")) percent = "50%";
-                            else if (status.progress.includes("Merging")) percent = "70%";
-                            else if (status.progress.includes("Ingesting")) percent = "85%";
+                            if ((status.progress || "").includes("Counting")) percent = "10%";
+                            else if ((status.progress || "").includes("Enriching")) percent = "50%";
+                            else if ((status.progress || "").includes("Merging")) percent = "70%";
+                            else if ((status.progress || "").includes("Ingesting")) percent = "85%";
                             fill.style.width = percent;
                         } else if (status.status === "success") {
                             clearInterval(harvestPollInterval);
@@ -6998,6 +7035,16 @@
                     const data = await res.json().catch(() => ({}));
                     return { ok: res.ok, status: res.status, data };
                 })
+                .then(({ ok, status, data }) => {
+                    if (status === 202 && data.task_id) {
+                        btn.innerHTML = "⌛ Analyzing in background...";
+                        return pollBackgroundTask("/api/analyze/status/" + data.task_id).then(task => {
+                            const result = task.result || {};
+                            return { ok: true, status: 200, data: result };
+                        });
+                    }
+                    return { ok, status, data };
+                })
                 .then(({ ok, status, data: result }) => {
                     if (!ok || result.error) {
                         const msg = result.error || ("Request failed (" + status + ")");
@@ -7006,6 +7053,9 @@
                             ? "Please log in to save analyses to My Analyses."
                             : ("Analysis failed: " + msg));
                         return;
+                    }
+                    if (result.truncated && result.chart_data && result.chart_data.cap_message) {
+                        alert(result.chart_data.cap_message);
                     }
                     // Open My Analyses, then load the new analysis the same way a row
                     // click does so quantitative stats and paper-derived charts paint fully.

@@ -1631,6 +1631,8 @@ class TestAnalysesUserIsolation(unittest.TestCase):
         from app import app
         app.config["TESTING"] = True
         self.client = app.test_client()
+        from test_worker_unblocking import ensure_background_tasks_table
+        ensure_background_tasks_table()
 
     def tearDown(self):
         conn = self.db.get_connection()
@@ -1641,11 +1643,28 @@ class TestAnalysesUserIsolation(unittest.TestCase):
         finally:
             conn.close()
 
+    def _wait_for_analyze_result(self, task_id, timeout_s=8):
+        """Poll the public analyze status endpoint until the worker finishes."""
+        import time
+        deadline = time.time() + timeout_s
+        last = None
+        while time.time() < deadline:
+            response = self.client.get(f"/api/analyze/status/{task_id}")
+            self.assertEqual(response.status_code, 200)
+            last = json.loads(response.data.decode("utf-8"))
+            if last.get("status") == "completed":
+                return last["result"]
+            if last.get("status") == "failed":
+                self.fail(last.get("error_message") or "analyze task failed")
+            time.sleep(0.05)
+        self.fail(f"analyze task {task_id} did not complete: {last}")
+
     def test_public_user_behavior(self):
         # 1. Public user runs subset analyses (allowed, no db save)
         response = self.client.post("/api/analyze", json={"filters": {"query": "public_test"}})
-        self.assertEqual(response.status_code, 200)
-        data = json.loads(response.data.decode("utf-8"))
+        self.assertEqual(response.status_code, 202)
+        queued = json.loads(response.data.decode("utf-8"))
+        data = self._wait_for_analyze_result(queued["task_id"])
         self.assertIsNone(data["id"])  # should be null/None since not saved
         self.assertIn("chart_data", data)
 
@@ -1667,8 +1686,9 @@ class TestAnalysesUserIsolation(unittest.TestCase):
             "/api/analyze",
             json={"filters": {"query": "logged_in_test", "limit": 10, "offset": 0}},
         )
-        self.assertEqual(response.status_code, 200)
-        data = json.loads(response.data.decode("utf-8"))
+        self.assertEqual(response.status_code, 202)
+        queued = json.loads(response.data.decode("utf-8"))
+        data = self._wait_for_analyze_result(queued["task_id"])
         self.assertIsNotNone(data.get("id"))
         self.assertIn("chart_data", data)
 

@@ -2072,8 +2072,9 @@ class DatabaseManager:
     def search_papers_minimal_for_section_stats(
         self,
         filters: Dict[str, Any],
+        limit: Optional[int] = None,
     ) -> List[Dict[str, Any]]:
-        """Return id/title/abstract rows for all papers matching filters (no pagination)."""
+        """Return lightweight rows for section-stats (optional hard cap)."""
         conn = self.get_connection()
         cursor = conn.cursor()
         query_val = filters.get("query")
@@ -2091,9 +2092,54 @@ class DatabaseManager:
         sql = select_sql
         if where_clauses:
             sql += " WHERE " + " AND ".join(where_clauses)
+        if limit is not None:
+            sql += " LIMIT ?"
+            params.append(int(limit))
         try:
             cursor.execute(sql, params)
             return [dict(row) for row in cursor.fetchall()]
+        finally:
+            conn.close()
+
+    def search_papers_by_ids(self, paper_ids: List[Any]) -> List[Dict[str, Any]]:
+        """Return list-column rows for the given paper ids, preserving id order."""
+        ids: List[int] = []
+        for raw in paper_ids:
+            try:
+                ids.append(int(raw))
+            except (TypeError, ValueError):
+                continue
+        if not ids:
+            return []
+
+        conn = self.get_connection()
+        cursor = conn.cursor()
+        list_columns_sql = ", ".join(TABLE_LIST_COLUMNS)
+        placeholders = ",".join(["?"] * len(ids))
+        sql = f"SELECT {list_columns_sql} FROM papers WHERE papers.id IN ({placeholders})"
+        try:
+            cursor.execute(sql, ids)
+            by_id: Dict[int, Dict[str, Any]] = {}
+            for row in cursor.fetchall():
+                res = dict(row)
+                for json_field in ["authors", "outcome_domain"]:
+                    if res.get(json_field):
+                        try:
+                            res[json_field] = json.loads(res[json_field])
+                        except Exception:
+                            res[json_field] = []
+                    else:
+                        res[json_field] = []
+                for json_field in ["study_type", "exposure_method", "cannabis_type", "expert_locked_fields"]:
+                    if res.get(json_field):
+                        try:
+                            val = res[json_field]
+                            if isinstance(val, str) and val.startswith("[") and val.endswith("]"):
+                                res[json_field] = json.loads(val)
+                        except Exception:
+                            pass
+                by_id[int(res["id"])] = res
+            return [by_id[i] for i in ids if i in by_id]
         finally:
             conn.close()
 
