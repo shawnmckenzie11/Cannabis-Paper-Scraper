@@ -24,6 +24,8 @@ HARVEST_ANALYZE_SAVE_FUNCS = (
     "analyzeFilteredSubset",
     "startAnalyzeFilteredJob",
     "cancelAnalyzePoll",
+    "openAnalyzeResults",
+    "retryAnalyzeFilteredJob",
     "exportAnalysisCSV",
     "maybeRestoreGuestAnalysisAfterLogin",
     "deleteAnalysis",
