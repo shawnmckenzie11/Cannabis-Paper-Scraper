@@ -1429,9 +1429,64 @@
         }
 
         .sidebar-action-btn.analyze-btn:disabled {
+            opacity: 0.55;
+            cursor: not-allowed;
+            filter: saturate(0.7);
+        }
+
+        .sidebar-action-btn.analyze-btn.is-busy:disabled {
             opacity: 0.7;
             cursor: wait;
             filter: saturate(0.85);
+        }
+
+        .analyze-cta-block {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .analyze-cta-actions {
+            display: flex;
+            gap: 8px;
+            align-items: stretch;
+        }
+
+        .analyze-cta-actions .analyze-btn {
+            flex: 1 1 auto;
+        }
+
+        .analyze-cancel-btn {
+            flex: 0 0 auto;
+            padding: 8px 12px;
+            border-radius: 8px;
+            border: 1px solid rgba(255, 255, 255, 0.14);
+            background: rgba(15, 23, 42, 0.7);
+            color: var(--text-primary);
+            font-family: var(--font-display);
+            font-size: 0.78rem;
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        .analyze-cancel-btn[hidden] {
+            display: none !important;
+        }
+
+        .analyze-cancel-btn:hover {
+            border-color: rgba(255, 255, 255, 0.28);
+            background: rgba(30, 41, 59, 0.9);
+        }
+
+        .analyze-filter-summary {
+            margin: 0;
+            font-size: 0.72rem;
+            line-height: 1.4;
+            color: var(--text-secondary);
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
         }
 
         #my-analyses-panel.guest-analysis-preview-active .analysis-col-charts,
@@ -3449,8 +3504,18 @@
             <div class="sidebar-sticky-footer">
                 <button type="button" class="btn btn-secondary sidebar-action-btn"
                     onclick="resetFilters()">Reset All Filters</button>
-                <button type="button" class="sidebar-action-btn analyze-btn" id="btn-analyze-subset"
-                    onclick="analyzeFilteredSubset()">📊 Analyze Filtered Articles</button>
+                <div class="analyze-cta-block" id="analyze-cta-block">
+                    <div class="analyze-cta-actions">
+                        <button type="button" class="sidebar-action-btn analyze-btn" id="btn-analyze-subset"
+                            onclick="analyzeFilteredSubset()" aria-busy="false"
+                            aria-describedby="analyze-filter-summary">
+                            <span id="analyze-cta-label">Analyze — papers</span>
+                        </button>
+                        <button type="button" class="analyze-cancel-btn" id="btn-analyze-cancel" hidden
+                            onclick="cancelAnalyzePoll()">Cancel</button>
+                    </div>
+                    <p class="analyze-filter-summary" id="analyze-filter-summary">No extra filters · current tab</p>
+                </div>
             </div>
         </aside>
 
@@ -5035,6 +5100,7 @@
                     + `onclick="removeActiveFilterChip(decodeURIComponent('${key}'), decodeURIComponent('${value}'))">&times;</button>`
                     + `</span>`;
             }).join("");
+            updateAnalyzeCta();
         }
 
         /** Clear one active filter from its control, then refresh. */
@@ -5276,6 +5342,9 @@
         let activeSearchRequestId = 0;
         let activeSearchAbort = null;
         let lastKnownTotal = null;
+        let analyzePollActive = false;
+        let analyzePollCancelled = false;
+        let analysisPapersFullyLoaded = false;
         let lastFilterFingerprint = "";
         let tableSearchInFlight = false;
         let harvestPollInterval = null;
@@ -5602,10 +5671,16 @@
 
         /** Show or hide the analyze button based on active tab. */
         function updateAnalyzeButtonVisibility(tab = currentTab) {
+            const visible = ANALYZE_SUBSET_TABS.has(tab);
             const analyzeBtn = document.getElementById("btn-analyze-subset");
+            const block = document.getElementById("analyze-cta-block");
             if (analyzeBtn) {
-                analyzeBtn.style.display = ANALYZE_SUBSET_TABS.has(tab) ? "inline-flex" : "none";
+                analyzeBtn.style.display = visible ? "inline-flex" : "none";
             }
+            if (block) {
+                block.style.display = visible ? "flex" : "none";
+            }
+            updateAnalyzeCta();
         }
 
         // Update ranges text descriptors on slide inputs
@@ -5843,6 +5918,7 @@
             // Enable/disable page buttons
             document.getElementById("btn-page-prev").disabled = tableSearchInFlight || safePage <= 1;
             document.getElementById("btn-page-next").disabled = tableSearchInFlight || safePage >= totalPages;
+            updateAnalyzeCta();
         }
 
         function updateSectionStatsDisplay(stats) {
@@ -7139,13 +7215,26 @@
             };
         }
 
-        function pollBackgroundTask(url, intervalMs) {
+        function pollBackgroundTask(url, intervalMs, options) {
             const interval = intervalMs || 400;
+            const opts = options || {};
             return new Promise((resolve, reject) => {
                 const tick = () => {
+                    if (typeof opts.isCancelled === "function" && opts.isCancelled()) {
+                        const err = new Error("cancelled");
+                        err.cancelled = true;
+                        reject(err);
+                        return;
+                    }
                     fetch(url)
                         .then(res => res.json().then(data => ({ ok: res.ok, data })))
                         .then(({ ok, data }) => {
+                            if (typeof opts.isCancelled === "function" && opts.isCancelled()) {
+                                const err = new Error("cancelled");
+                                err.cancelled = true;
+                                reject(err);
+                                return;
+                            }
                             if (!ok && data && data.error && !data.status) {
                                 reject(new Error(data.error));
                                 return;
@@ -7593,15 +7682,154 @@
         // Sync row checkboxes and deletion count
         function updateSelectionSummary() {}
 
+        /** Format the catalog match count for the Analyze CTA. */
+        function formatAnalyzeCountLabel(total) {
+            if (total === 0) return "Analyze 0 papers";
+            if (total == null || !Number.isFinite(Number(total))) return "Analyze — papers";
+            return "Analyze " + Number(total).toLocaleString() + " papers";
+        }
+
+        /** One-line summary of active chips for the Analyze pre-flight chrome. */
+        function formatAnalyzeFilterSummary() {
+            const chips = collectActiveFilterChips();
+            if (!chips.length) return "No extra filters · current tab";
+            const labels = chips.map((chip) => chip.label);
+            if (labels.length <= 3) return labels.join(" · ");
+            return labels.slice(0, 3).join(" · ") + " +" + (labels.length - 3) + " more";
+        }
+
+        /** Set the Analyze button label without wiping the inner span. */
+        function setAnalyzeCtaLabel(text) {
+            const label = document.getElementById("analyze-cta-label");
+            if (label) {
+                label.textContent = text;
+                return;
+            }
+            const btn = document.getElementById("btn-analyze-subset");
+            if (btn) btn.textContent = text;
+        }
+
+        /** Refresh Analyze CTA count, filter summary, and empty-gate disabled state. */
+        function updateAnalyzeCta() {
+            const btn = document.getElementById("btn-analyze-subset");
+            const summary = document.getElementById("analyze-filter-summary");
+            if (summary) summary.textContent = formatAnalyzeFilterSummary();
+            if (!btn) return;
+            if (analyzePollActive) return;
+            const empty = lastKnownTotal === 0;
+            btn.disabled = empty;
+            btn.classList.remove("is-busy");
+            btn.setAttribute("aria-busy", "false");
+            setAnalyzeCtaLabel(formatAnalyzeCountLabel(lastKnownTotal));
+        }
+
+        /** Mark the Analyze CTA as waiting on the #69 background job. */
+        function setAnalyzeCtaBusy(isBusy) {
+            const btn = document.getElementById("btn-analyze-subset");
+            const cancelBtn = document.getElementById("btn-analyze-cancel");
+            if (btn) {
+                btn.disabled = isBusy || lastKnownTotal === 0;
+                btn.classList.toggle("is-busy", isBusy);
+                btn.setAttribute("aria-busy", isBusy ? "true" : "false");
+                if (isBusy) setAnalyzeCtaLabel("Analyzing…");
+            }
+            if (cancelBtn) cancelBtn.hidden = !isBusy;
+            if (!isBusy) updateAnalyzeCta();
+        }
+
+        /** Stop waiting on the current analyze poll. The server job may still finish. */
+        function cancelAnalyzePoll() {
+            if (!analyzePollActive) return;
+            analyzePollCancelled = true;
+        }
+
+        /** Dedicated empty copy when Analyze matches zero papers. */
+        function showAnalysisEmptyState(message) {
+            hideAnalysisCharts();
+            const placeholder = document.getElementById("analysis-charts-placeholder");
+            if (placeholder) {
+                placeholder.textContent = message || "No papers matched — adjust filters.";
+                placeholder.style.display = "flex";
+            }
+            const countBadge = document.getElementById("selection-count-badge");
+            if (countBadge) {
+                countBadge.style.display = "inline-block";
+                countBadge.textContent = "0 Articles";
+            }
+        }
+
+        /** Restore the default My Analyses placeholder after an empty-state message. */
+        function resetAnalysisEmptyPlaceholder() {
+            const placeholder = document.getElementById("analysis-charts-placeholder");
+            if (placeholder && placeholder.textContent !== "Select a saved analysis to view charts") {
+                placeholder.textContent = "Select a saved analysis to view charts";
+            }
+        }
+
+        /** Paint charts from the completed analyze job payload (A4 — no double-fetch). */
+        function paintAnalysisFromJobResult(result) {
+            analysisPapersFullyLoaded = false;
+            selectedAnalysisId = result.id == null ? null : result.id;
+            updateExportCSVButtonState();
+            currentAnalyzedPapers = result.chart_data;
+            currentAnalysisPapers = result.papers || [];
+            resetAnalysisEmptyPlaceholder();
+            openMyAnalyses({ preserveCharts: true, skipLoadAnalysesList: true });
+            if (result.id == null) {
+                showGuestAnalysisPreview(result);
+            } else {
+                clearGuestAnalysisPreview();
+                renderChartsFromData(result.chart_data);
+                requestAnimationFrame(() => resizeAnalysisCharts());
+                loadAnalysesList(result.id);
+            }
+        }
+
+        /** Fetch saved analysis papers only when the user opens a chart drilldown. */
+        function ensureAnalysisPapersForDrilldown() {
+            if (!IS_LOGGED_IN || !selectedAnalysisId || analysisPapersFullyLoaded) {
+                return Promise.resolve();
+            }
+            return fetch("/api/analyses/" + selectedAnalysisId + "/papers")
+                .then((res) => res.json())
+                .then((papersResp) => {
+                    if (Array.isArray(papersResp.papers)) {
+                        currentAnalysisPapers = papersResp.papers;
+                        analysisPapersFullyLoaded = true;
+                    }
+                })
+                .catch((err) => {
+                    console.warn("Could not load analysis papers for drilldown:", err);
+                });
+        }
+
         // Pull all papers under the current active filter for the Original Articles tab and analyze
         function analyzeFilteredSubset() {
             const btn = document.getElementById("btn-analyze-subset") || document.getElementById("btn-new-analysis");
-            if (!btn) return;
-            const originalText = btn.innerHTML;
-            btn.disabled = true;
-            btn.innerHTML = "⌛ Analyzing...";
+            if (!btn || analyzePollActive) return;
+            if (lastKnownTotal === 0) {
+                showToast("No papers match these filters. Adjust filters to analyze.", "error");
+                updateAnalyzeCta();
+                return;
+            }
 
-            // Build filters payload for the backend
+            const filterSummary = formatAnalyzeFilterSummary();
+            const countLabel = lastKnownTotal == null
+                ? "matching papers"
+                : Number(lastKnownTotal).toLocaleString() + " papers";
+            const confirmMessage = "Analyze " + countLabel + " with the current filters? " + filterSummary;
+
+            showConfirmModal(confirmMessage, "Analyze").then((confirmed) => {
+                if (!confirmed) return;
+                startAnalyzeFilteredJob();
+            });
+        }
+
+        /** POST /api/analyze (202) and poll status until charts can paint. */
+        function startAnalyzeFilteredJob() {
+            const btn = document.getElementById("btn-analyze-subset") || document.getElementById("btn-new-analysis");
+            if (!btn || analyzePollActive) return;
+
             const rawFilters = collectFilterParams();
             const filters = { ...rawFilters };
             if (filters.method) {
@@ -7610,6 +7838,11 @@
                 if (rawFilters.method_logic) filters.exposure_logic = rawFilters.method_logic;
                 delete filters.method_logic;
             }
+
+            analyzePollActive = true;
+            analyzePollCancelled = false;
+            setAnalyzeCtaBusy(true);
+            showToast("Analysis running…");
 
             fetch("/api/analyze", {
                 method: "POST",
@@ -7621,9 +7854,15 @@
                     return { ok: res.ok, status: res.status, data };
                 })
                 .then(({ ok, status, data }) => {
+                    if (analyzePollCancelled) {
+                        const err = new Error("cancelled");
+                        err.cancelled = true;
+                        throw err;
+                    }
                     if (status === 202 && data.task_id) {
-                        btn.innerHTML = "⌛ Analyzing in background...";
-                        return pollBackgroundTask("/api/analyze/status/" + data.task_id).then(task => {
+                        return pollBackgroundTask("/api/analyze/status/" + data.task_id, 400, {
+                            isCancelled: () => analyzePollCancelled,
+                        }).then(task => {
                             const result = task.result || {};
                             return { ok: true, status: 200, data: result };
                         });
@@ -7631,37 +7870,44 @@
                     return { ok, status, data };
                 })
                 .then(({ ok, status, data: result }) => {
+                    if (analyzePollCancelled) return;
                     if (!ok || result.error) {
                         const msg = result.error || ("Request failed (" + status + ")");
                         console.error("Analysis failed:", msg);
                         showToast(result.login_required
                             ? "Please log in to save analyses to My Analyses."
-                            : ("Analysis failed: " + msg), "error");
+                            : ("Analysis failed: " + msg + " Try again."), "error");
+                        return;
+                    }
+                    const paperCount = Number(result.paper_count || result.analyzed_count || 0);
+                    if (!paperCount) {
+                        selectedAnalysisId = result.id == null ? null : result.id;
+                        updateExportCSVButtonState();
+                        openMyAnalyses({ preserveCharts: true, skipLoadAnalysesList: true });
+                        clearGuestAnalysisPreview();
+                        showAnalysisEmptyState();
+                        if (result.id != null) loadAnalysesList(result.id);
+                        showToast("No papers matched — adjust filters.");
                         return;
                     }
                     if (result.truncated && result.chart_data && result.chart_data.cap_message) {
                         showToast(result.chart_data.cap_message);
                     }
-                    // Open My Analyses, then load the new analysis the same way a row
-                    // click does so quantitative stats and paper-derived charts paint fully.
-                    selectedAnalysisId = result.id;
-                    updateExportCSVButtonState();
-                    openMyAnalyses({ preserveCharts: true, skipLoadAnalysesList: true });
-
-                    if (result.id == null) {
-                        showGuestAnalysisPreview(result);
-                    } else {
-                        clearGuestAnalysisPreview();
-                        loadAnalysesList(result.id).then(() => loadAnalysis(result.id));
-                    }
+                    paintAnalysisFromJobResult(result);
+                    showToast("Analysis ready — " + Number(paperCount).toLocaleString() + " papers.", "success");
                 })
                 .catch(err => {
+                    if (err && err.cancelled) {
+                        showToast("Analysis cancelled.");
+                        return;
+                    }
                     console.error("Subset Analysis Failed: ", err);
-                    showToast("Analysis failed. Please try again or refresh the page.", "error");
+                    showToast("Analysis failed. Try again.", "error");
                 })
                 .finally(() => {
-                    btn.disabled = false;
-                    btn.innerHTML = originalText;
+                    analyzePollActive = false;
+                    analyzePollCancelled = false;
+                    setAnalyzeCtaBusy(false);
                 });
         }
 
@@ -7757,6 +8003,7 @@
         }
 
         function hideAnalysisCharts() {
+            resetAnalysisEmptyPlaceholder();
             showAnalysisChartsUI(false);
             clearChartDrilldown();
         }
@@ -7901,11 +8148,15 @@
                             renderGuestAnalysisListRow(guestAnalysisPreview);
                             return;
                         }
-                        tbody.innerHTML = '<tr><td colspan="4" style="text-align: center; color: var(--text-secondary); padding: 20px; font-size: 0.75rem;">No analyses yet. Click "Analyze Filtered Articles" to run one!</td></tr>';
-                        selectedAnalysisId = null;
-                        currentAnalysisPapers = [];
-                        updateExportCSVButtonState();
-                        renderChartsFromData(null);
+                        tbody.innerHTML = '<tr><td colspan="4" style="text-align: center; color: var(--text-secondary); padding: 20px; font-size: 0.75rem;">No analyses yet. Click Analyze on the catalog to run one.</td></tr>';
+                        // Keep a just-painted job result if the list refresh races the insert.
+                        if (selectId === undefined) {
+                            selectedAnalysisId = null;
+                            currentAnalysisPapers = [];
+                            updateExportCSVButtonState();
+                            resetAnalysisEmptyPlaceholder();
+                            renderChartsFromData(null);
+                        }
                         return;
                     }
                     clearGuestAnalysisPreview();
@@ -7967,10 +8218,17 @@
                     document.querySelectorAll("#analyses-tbody tr").forEach(tr => tr.classList.remove("selected"));
                     const row = document.querySelector(`#analyses-tbody tr[data-id="${id}"]`);
                     if (row) row.classList.add("selected");
-                    // Papers must be set before renderChartsFromData so quantitative
-                    // stats and paper-derived charts populate on first paint.
                     currentAnalysisPapers = papersResp.papers || [];
                     currentAnalyzedPapers = analysis.chart_data;
+                    analysisPapersFullyLoaded = true;
+                    const paperCount = Number(
+                        (analysis.chart_data && analysis.chart_data.paper_count) || analysis.paper_count || 0
+                    );
+                    if (!paperCount) {
+                        showAnalysisEmptyState();
+                        return;
+                    }
+                    resetAnalysisEmptyPlaceholder();
                     renderChartsFromData(analysis.chart_data);
                     requestAnimationFrame(() => {
                         resizeAnalysisCharts();
@@ -9868,6 +10126,7 @@
 
         function handleAnalysisChartClick(chartKind, index, meta) {
             selectAnalysisChart(chartKind);
+            const finish = () => {
             const matched = filterPapersForChartSegment(chartKind, index, meta);
             let segmentLabel = "";
             if (chartKind === "cannabinoid-distribution") {
@@ -9891,6 +10150,8 @@
                 segmentLabel = meta.displayLabels ? meta.displayLabels[index] : meta.rawLabels[index];
             }
             renderChartDrilldownTable(matched, chartKind, segmentLabel);
+            };
+            ensureAnalysisPapersForDrilldown().then(finish);
         }
 
         function analysisChartClickHandler(chartKind, meta) {

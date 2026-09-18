@@ -22,6 +22,8 @@ HARVEST_ANALYZE_SAVE_FUNCS = (
     "confirmHarvestLimitPrompt",
     "confirmForcedHarvest",
     "analyzeFilteredSubset",
+    "startAnalyzeFilteredJob",
+    "cancelAnalyzePoll",
     "exportAnalysisCSV",
     "maybeRestoreGuestAnalysisAfterLogin",
     "deleteAnalysis",
@@ -169,7 +171,7 @@ class TestSliceAFeelFastUx(unittest.TestCase):
         """#69 202 task polling must stay wired for harvest, PDF, and analyze."""
         self.assertIn("function pollBackgroundTask(", self.html)
         self.assertIn('pollBackgroundTask("/api/tasks/" + data.task_id)', self.html)
-        self.assertIn('pollBackgroundTask("/api/analyze/status/" + data.task_id)', self.html)
+        self.assertIn('pollBackgroundTask("/api/analyze/status/" + data.task_id', self.html)
         harvest_start = _function_body(self.html, "startHarvestRequest")
         self.assertIn("Counting PubMed matches", harvest_start)
         self.assertIn("startPollingHarvestStatus()", harvest_start)
