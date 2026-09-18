@@ -219,15 +219,15 @@ class TestAnalyzeIsQueuedAndCapped(unittest.TestCase):
         with patch("db_manager.DatabaseManager.search_papers_for_analysis", return_value=papers):
             with patch("db_manager.DatabaseManager.init_analyses_table"):
                 response = self.client.post("/api/analyze", json={"filters": {"tab": "clinical"}})
-        self.assertEqual(response.status_code, 202, response.data)
-        task_id = response.get_json()["task_id"]
+                self.assertEqual(response.status_code, 202, response.data)
+                task_id = response.get_json()["task_id"]
 
-        def _done():
-            poll = self.client.get(f"/api/analyze/status/{task_id}")
-            payload = poll.get_json()
-            return payload if payload and payload.get("status") == "completed" else None
+                def _done():
+                    poll = self.client.get(f"/api/analyze/status/{task_id}")
+                    payload = poll.get_json()
+                    return payload if payload and payload.get("status") == "completed" else None
 
-        payload = _wait_until(_done, timeout_s=8)
+                payload = _wait_until(_done, timeout_s=8)
         result = payload["result"]
         self.assertTrue(result["truncated"])
         self.assertEqual(result["analyzed_count"], background_jobs.ANALYZE_PAPER_CAP)
