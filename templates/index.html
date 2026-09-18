@@ -933,6 +933,276 @@
             white-space: nowrap;
         }
 
+        .active-filter-chips {
+            flex-shrink: 0;
+            z-index: 90;
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 8px 10px;
+            padding: 8px 30px 10px;
+            background: rgba(10, 14, 24, 0.97);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+        }
+
+        .active-filter-chips[hidden] {
+            display: none !important;
+        }
+
+        .active-filter-chips-summary {
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.4px;
+            white-space: nowrap;
+        }
+
+        .active-filter-chips-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            flex: 1 1 auto;
+            min-width: 0;
+        }
+
+        .active-filter-chip {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            max-width: 280px;
+            padding: 3px 8px 3px 10px;
+            border-radius: 999px;
+            border: 1px solid rgba(0, 240, 255, 0.22);
+            background: rgba(0, 240, 255, 0.08);
+            color: var(--text-primary);
+            font-size: 0.78rem;
+            font-weight: 500;
+            line-height: 1.3;
+        }
+
+        .active-filter-chip-label {
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .active-filter-chip-remove {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 18px;
+            height: 18px;
+            padding: 0;
+            border: none;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.08);
+            color: var(--text-secondary);
+            cursor: pointer;
+            font-size: 12px;
+            line-height: 1;
+        }
+
+        .active-filter-chip-remove:hover {
+            background: rgba(255, 255, 255, 0.16);
+            color: var(--text-primary);
+        }
+
+        .active-filter-chips-clear {
+            margin-left: auto;
+            padding: 4px 10px;
+            border-radius: 6px;
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            background: transparent;
+            color: var(--text-secondary);
+            font-family: var(--font-display);
+            font-size: 0.75rem;
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        .active-filter-chips-clear:hover {
+            color: var(--text-primary);
+            border-color: rgba(255, 255, 255, 0.22);
+        }
+
+        .tab-count-badge {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 1.6em;
+            margin-left: 6px;
+            padding: 1px 6px;
+            border-radius: 999px;
+            background: rgba(255, 255, 255, 0.08);
+            color: var(--text-secondary);
+            font-family: var(--font-body);
+            font-size: 11px;
+            font-weight: 600;
+            letter-spacing: 0;
+            vertical-align: 1px;
+        }
+
+        .tab-btn.active .tab-count-badge {
+            background: rgba(0, 240, 255, 0.14);
+            color: var(--accent-blue);
+        }
+
+        .tab-count-badge[hidden] {
+            display: none !important;
+        }
+
+        .table-updating-bar {
+            position: sticky;
+            top: 0;
+            z-index: 20;
+            display: none;
+            align-items: center;
+            justify-content: flex-start;
+            gap: 8px;
+            height: 28px;
+            padding: 0 16px;
+            background: rgba(0, 240, 255, 0.08);
+            border-bottom: 1px solid rgba(0, 240, 255, 0.18);
+            color: var(--text-secondary);
+            font-size: 0.75rem;
+            font-weight: 600;
+            letter-spacing: 0.3px;
+            text-transform: uppercase;
+        }
+
+        .table-wrapper.is-updating .papers-table tbody {
+            opacity: 0.45;
+            transition: opacity 0.15s ease;
+        }
+
+        .toast-stack {
+            position: fixed;
+            right: 20px;
+            bottom: 20px;
+            z-index: 240;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            max-width: min(420px, calc(100vw - 32px));
+            pointer-events: none;
+        }
+
+        .app-toast {
+            pointer-events: auto;
+            padding: 10px 14px;
+            border-radius: 8px;
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            background: rgba(18, 22, 33, 0.96);
+            color: var(--text-primary);
+            font-size: 0.85rem;
+            line-height: 1.4;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+        }
+
+        .app-toast.toast-error {
+            border-color: rgba(255, 61, 0, 0.35);
+            background: rgba(40, 16, 12, 0.96);
+        }
+
+        .app-toast.toast-success {
+            border-color: rgba(0, 230, 118, 0.28);
+        }
+
+        .confirm-modal-overlay {
+            position: fixed;
+            inset: 0;
+            z-index: 230;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            background: rgba(0, 0, 0, 0.65);
+            backdrop-filter: blur(4px);
+        }
+
+        .confirm-modal-overlay.open {
+            display: flex;
+        }
+
+        .confirm-modal {
+            width: min(420px, calc(100vw - 32px));
+            padding: 22px 22px 18px;
+            border-radius: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            background: var(--drawer-bg);
+        }
+
+        .confirm-modal-message {
+            margin-bottom: 18px;
+            color: var(--text-primary);
+            font-size: 0.95rem;
+            line-height: 1.5;
+        }
+
+        .confirm-modal-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 8px;
+        }
+
+        .harvest-limit-prompt {
+            margin-top: 14px;
+            padding: 14px;
+            border-radius: 10px;
+            border: 1px solid rgba(0, 240, 255, 0.18);
+            background: rgba(0, 240, 255, 0.05);
+        }
+
+        .harvest-limit-prompt[hidden] {
+            display: none !important;
+        }
+
+        .harvest-limit-copy {
+            margin-bottom: 12px;
+            color: var(--text-primary);
+            font-size: 0.85rem;
+            line-height: 1.5;
+        }
+
+        .harvest-limit-prompt label {
+            display: block;
+            margin-bottom: 6px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.4px;
+        }
+
+        .harvest-limit-prompt input[type="number"] {
+            width: 100%;
+            padding: 8px 12px;
+            border-radius: 8px;
+            background: rgba(15, 23, 42, 0.6);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            color: var(--text-primary);
+            font-family: 'Outfit', sans-serif;
+            font-size: 0.9rem;
+            outline: none;
+        }
+
+        .harvest-limit-error {
+            margin-top: 8px;
+            color: var(--accent-red);
+            font-size: 0.8rem;
+        }
+
+        .harvest-limit-error[hidden] {
+            display: none !important;
+        }
+
+        .harvest-limit-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 8px;
+            margin-top: 12px;
+        }
+
         .tabs-container {
             flex-shrink: 0;
             z-index: 90;
@@ -2742,14 +3012,20 @@
         </div>
     </div>
 
+    <div class="active-filter-chips" id="active-filter-chips" hidden>
+        <div class="active-filter-chips-summary" id="active-filter-chips-summary"></div>
+        <div class="active-filter-chips-list" id="active-filter-chips-list"></div>
+        <button type="button" class="active-filter-chips-clear" id="active-filter-chips-clear" onclick="clearActiveFilterChips()">Clear filters</button>
+    </div>
+
     <!-- FULL PAGE WIDTH TABS -->
     <div class="tabs-container" id="global-tabs-container">
         <div style="display: flex; gap: 10px 15px; align-items: center; flex-wrap: wrap;">
-            <button class="tab-btn active" id="tab-all-original" onclick="switchTab('all_original')">All Original Research</button>
-            <button class="tab-btn" id="tab-preclinical" onclick="switchTab('preclinical')">Pre-Clinical</button>
-            <button class="tab-btn" id="tab-clinical" onclick="switchTab('clinical')">Clinical</button>
-            <button class="tab-btn" id="tab-review" onclick="switchTab('review')">Reviews &amp; Meta-Analyses</button>
-            <button class="tab-btn" id="tab-unclassified" onclick="switchTab('unclassified')">Unclassified</button>
+            <button class="tab-btn active" id="tab-all-original" onclick="switchTab('all_original')">All Original Research <span class="tab-count-badge" data-tab-count="all_original" hidden></span></button>
+            <button class="tab-btn" id="tab-preclinical" onclick="switchTab('preclinical')">Pre-Clinical <span class="tab-count-badge" data-tab-count="preclinical" hidden></span></button>
+            <button class="tab-btn" id="tab-clinical" onclick="switchTab('clinical')">Clinical <span class="tab-count-badge" data-tab-count="clinical" hidden></span></button>
+            <button class="tab-btn" id="tab-review" onclick="switchTab('review')">Reviews &amp; Meta-Analyses <span class="tab-count-badge" data-tab-count="review" hidden></span></button>
+            <button class="tab-btn" id="tab-unclassified" onclick="switchTab('unclassified')">Unclassified <span class="tab-count-badge" data-tab-count="unclassified" hidden></span></button>
         </div>
         <div style="display: flex; gap: 10px; align-items: center;">
             <button type="button" class="btn" id="edit-columns-btn" onclick="openColumnEditorModal(event)"
@@ -2976,13 +3252,13 @@
                     <label>Min THC Content: <span id="thc-min-val"
                             style="color: var(--accent-blue); font-weight: 600;">0</span>%</label>
                     <input type="range" id="filter-thc-min" min="0" max="100" value="0" step="0.5"
-                        oninput="updateSliderValues(); scheduleSearch()">
+                        oninput="updateSliderValues()" onchange="commitSliderSearch()" onpointerup="commitSliderSearch()">
                 </div>
                 <div class="form-group" style="margin-bottom: 12px;">
                     <label>Max THC Content: <span id="thc-max-val"
                             style="color: var(--accent-blue); font-weight: 600;">100</span>%</label>
                     <input type="range" id="filter-thc-max" min="0" max="100" value="100" step="0.5"
-                        oninput="updateSliderValues(); scheduleSearch()">
+                        oninput="updateSliderValues()" onchange="commitSliderSearch()" onpointerup="commitSliderSearch()">
                 </div>
                 </div>
 
@@ -2991,13 +3267,13 @@
                     <label>Min CBD Content: <span id="cbd-min-val"
                             style="color: var(--accent-blue); font-weight: 600;">0</span>%</label>
                     <input type="range" id="filter-cbd-min" min="0" max="100" value="0" step="0.5"
-                        oninput="updateSliderValues(); scheduleSearch()">
+                        oninput="updateSliderValues()" onchange="commitSliderSearch()" onpointerup="commitSliderSearch()">
                 </div>
                 <div class="form-group" style="margin-bottom: 12px;">
                     <label>Max CBD Content: <span id="cbd-max-val"
                             style="color: var(--accent-blue); font-weight: 600;">100</span>%</label>
                     <input type="range" id="filter-cbd-max" min="0" max="100" value="100" step="0.5"
-                        oninput="updateSliderValues(); scheduleSearch()">
+                        oninput="updateSliderValues()" onchange="commitSliderSearch()" onpointerup="commitSliderSearch()">
                 </div>
                 </div>
 
@@ -3006,13 +3282,13 @@
                     <label>Min Publication Year: <span id="year-min-val"
                             style="color: var(--accent-blue); font-weight: 600;">1950</span></label>
                     <input type="range" id="filter-year-min" min="1950" max="2026" value="1950" step="1"
-                        oninput="updateSliderValues(); scheduleSearch()">
+                        oninput="updateSliderValues()" onchange="commitSliderSearch()" onpointerup="commitSliderSearch()">
                 </div>
                 <div class="form-group" style="margin-bottom: 12px;">
                     <label>Max Publication Year: <span id="year-max-val"
                             style="color: var(--accent-blue); font-weight: 600;">2026</span></label>
                     <input type="range" id="filter-year-max" min="1950" max="2026" value="2026" step="1"
-                        oninput="updateSliderValues(); scheduleSearch()">
+                        oninput="updateSliderValues()" onchange="commitSliderSearch()" onpointerup="commitSliderSearch()">
                 </div>
                 </div>
 
@@ -3051,12 +3327,12 @@
                 <div class="form-group" style="margin-bottom: 12px;">
                     <label>Min N: <span id="sample-size-min-val" style="color: var(--accent-blue); font-weight: 600;">0</span></label>
                     <input type="range" id="filter-sample-size-min" min="0" max="10000" value="0" step="1"
-                        oninput="updateSliderValues(); scheduleSearch()">
+                        oninput="updateSliderValues()" onchange="commitSliderSearch()" onpointerup="commitSliderSearch()">
                 </div>
                 <div class="form-group" style="margin-bottom: 12px;">
                     <label>Max N: <span id="sample-size-max-val" style="color: var(--accent-blue); font-weight: 600;">10000</span></label>
                     <input type="range" id="filter-sample-size-max" min="0" max="10000" value="10000" step="1"
-                        oninput="updateSliderValues(); scheduleSearch()">
+                        oninput="updateSliderValues()" onchange="commitSliderSearch()" onpointerup="commitSliderSearch()">
                 </div>
                 </div>
 
@@ -3065,12 +3341,12 @@
                 <div class="form-group" style="margin-bottom: 12px;">
                     <label>Min dose (mg): <span id="dose-mg-min-val" style="color: var(--accent-blue); font-weight: 600;">0</span></label>
                     <input type="range" id="filter-dose-mg-min" min="0" max="1000" value="0" step="1"
-                        oninput="updateSliderValues(); scheduleSearch()">
+                        oninput="updateSliderValues()" onchange="commitSliderSearch()" onpointerup="commitSliderSearch()">
                 </div>
                 <div class="form-group" style="margin-bottom: 12px;">
                     <label>Max dose (mg): <span id="dose-mg-max-val" style="color: var(--accent-blue); font-weight: 600;">1000</span></label>
                     <input type="range" id="filter-dose-mg-max" min="0" max="1000" value="1000" step="1"
-                        oninput="updateSliderValues(); scheduleSearch()">
+                        oninput="updateSliderValues()" onchange="commitSliderSearch()" onpointerup="commitSliderSearch()">
                 </div>
                 </div>
 
@@ -3079,12 +3355,12 @@
                 <div class="form-group" style="margin-bottom: 12px;">
                     <label>Min days: <span id="duration-days-min-val" style="color: var(--accent-blue); font-weight: 600;">0</span></label>
                     <input type="range" id="filter-duration-days-min" min="0" max="365" value="0" step="1"
-                        oninput="updateSliderValues(); scheduleSearch()">
+                        oninput="updateSliderValues()" onchange="commitSliderSearch()" onpointerup="commitSliderSearch()">
                 </div>
                 <div class="form-group" style="margin-bottom: 12px;">
                     <label>Max days: <span id="duration-days-max-val" style="color: var(--accent-blue); font-weight: 600;">365</span></label>
                     <input type="range" id="filter-duration-days-max" min="0" max="365" value="365" step="1"
-                        oninput="updateSliderValues(); scheduleSearch()">
+                        oninput="updateSliderValues()" onchange="commitSliderSearch()" onpointerup="commitSliderSearch()">
                 </div>
                 </div>
 
@@ -3109,22 +3385,22 @@
                 <div class="form-group" style="margin-bottom: 12px;">
                     <label>Min THC (mg/kg): <span id="thc-mg-kg-min-val" style="color: var(--accent-blue); font-weight: 600;">0</span></label>
                     <input type="range" id="filter-thc-mg-kg-min" min="0" max="100" value="0" step="0.1"
-                        oninput="updateSliderValues(); scheduleSearch()">
+                        oninput="updateSliderValues()" onchange="commitSliderSearch()" onpointerup="commitSliderSearch()">
                 </div>
                 <div class="form-group" style="margin-bottom: 12px;">
                     <label>Max THC (mg/kg): <span id="thc-mg-kg-max-val" style="color: var(--accent-blue); font-weight: 600;">100</span></label>
                     <input type="range" id="filter-thc-mg-kg-max" min="0" max="100" value="100" step="0.1"
-                        oninput="updateSliderValues(); scheduleSearch()">
+                        oninput="updateSliderValues()" onchange="commitSliderSearch()" onpointerup="commitSliderSearch()">
                 </div>
                 <div class="form-group" style="margin-bottom: 12px;">
                     <label>Min CBD (mg/kg): <span id="cbd-mg-kg-min-val" style="color: var(--accent-blue); font-weight: 600;">0</span></label>
                     <input type="range" id="filter-cbd-mg-kg-min" min="0" max="100" value="0" step="0.1"
-                        oninput="updateSliderValues(); scheduleSearch()">
+                        oninput="updateSliderValues()" onchange="commitSliderSearch()" onpointerup="commitSliderSearch()">
                 </div>
                 <div class="form-group" style="margin-bottom: 12px;">
                     <label>Max CBD (mg/kg): <span id="cbd-mg-kg-max-val" style="color: var(--accent-blue); font-weight: 600;">100</span></label>
                     <input type="range" id="filter-cbd-mg-kg-max" min="0" max="100" value="100" step="0.1"
-                        oninput="updateSliderValues(); scheduleSearch()">
+                        oninput="updateSliderValues()" onchange="commitSliderSearch()" onpointerup="commitSliderSearch()">
                 </div>
                 </div>
 
@@ -3133,22 +3409,22 @@
                 <div class="form-group" style="margin-bottom: 12px;">
                     <label>Min THC (mg/mL): <span id="thc-mg-ml-min-val" style="color: var(--accent-blue); font-weight: 600;">0</span></label>
                     <input type="range" id="filter-thc-mg-ml-min" min="0" max="10" value="0" step="0.01"
-                        oninput="updateSliderValues(); scheduleSearch()">
+                        oninput="updateSliderValues()" onchange="commitSliderSearch()" onpointerup="commitSliderSearch()">
                 </div>
                 <div class="form-group" style="margin-bottom: 12px;">
                     <label>Max THC (mg/mL): <span id="thc-mg-ml-max-val" style="color: var(--accent-blue); font-weight: 600;">10</span></label>
                     <input type="range" id="filter-thc-mg-ml-max" min="0" max="10" value="10" step="0.01"
-                        oninput="updateSliderValues(); scheduleSearch()">
+                        oninput="updateSliderValues()" onchange="commitSliderSearch()" onpointerup="commitSliderSearch()">
                 </div>
                 <div class="form-group" style="margin-bottom: 12px;">
                     <label>Min THC (µM): <span id="thc-uM-min-val" style="color: var(--accent-blue); font-weight: 600;">0</span></label>
                     <input type="range" id="filter-thc-uM-min" min="0" max="100" value="0" step="0.1"
-                        oninput="updateSliderValues(); scheduleSearch()">
+                        oninput="updateSliderValues()" onchange="commitSliderSearch()" onpointerup="commitSliderSearch()">
                 </div>
                 <div class="form-group" style="margin-bottom: 12px;">
                     <label>Max THC (µM): <span id="thc-uM-max-val" style="color: var(--accent-blue); font-weight: 600;">100</span></label>
                     <input type="range" id="filter-thc-uM-max" min="0" max="100" value="100" step="0.1"
-                        oninput="updateSliderValues(); scheduleSearch()">
+                        oninput="updateSliderValues()" onchange="commitSliderSearch()" onpointerup="commitSliderSearch()">
                 </div>
                 </div>
 
@@ -3165,7 +3441,7 @@
                 <div class="form-group" style="margin-bottom: 12px;">
                     <label>Min Puff Count: <span id="puff-count-min-val" style="color: var(--accent-blue); font-weight: 600;">0</span></label>
                     <input type="range" id="filter-puff-count-min" min="0" max="100" value="0" step="1"
-                        oninput="updateSliderValues(); scheduleSearch()">
+                        oninput="updateSliderValues()" onchange="commitSliderSearch()" onpointerup="commitSliderSearch()">
                 </div>
                 </div>
 
@@ -3186,10 +3462,9 @@
 
             <!-- TABLE OF MATCHED PAPERS -->
             <section class="glass-panel database-table-section" style="padding: 0; border-radius: 0; border: none; border-top: 1px solid rgba(255, 255, 255, 0.08); background: rgba(10, 12, 19, 0.5);">
-                <div class="table-wrapper" style="flex: 1; min-height: 0; border-radius: 0; border: none; overflow-y: auto; position: relative;">
-                    <div id="table-loading-overlay" style="display: none; position: absolute; inset: 0; z-index: 20; align-items: center; justify-content: center; flex-direction: column; gap: 12px; background: rgba(10, 12, 19, 0.72);">
-                        <div class="spinner" style="width: 28px; height: 28px; border-width: 3px;"></div>
-                        <div style="color: var(--text-secondary); font-size: 0.85rem;">Loading papers…</div>
+                <div class="table-wrapper" id="papers-table-wrapper" style="flex: 1; min-height: 0; border-radius: 0; border: none; overflow-y: auto; position: relative;">
+                    <div id="table-loading-overlay" class="table-updating-bar" style="display: none;" role="status" aria-live="polite">
+                        <span class="table-updating-bar-label">Updating…</span>
                     </div>
                     <table class="papers-table">
                         <thead>
@@ -4364,6 +4639,18 @@
                 <button class="btn btn-primary" onclick="triggerHarvest()">Start Harvest</button>
             </div>
 
+            <div id="harvest-limit-prompt" class="harvest-limit-prompt" hidden>
+                <p class="harvest-limit-copy" id="harvest-limit-copy"></p>
+                <label for="harvest-limit-input">Papers to ingest</label>
+                <input type="number" id="harvest-limit-input" min="1" step="1" value="500"
+                    onkeydown="if (event.key === 'Enter') { event.preventDefault(); confirmHarvestLimitPrompt(); }">
+                <p class="harvest-limit-error" id="harvest-limit-error" hidden></p>
+                <div class="harvest-limit-actions">
+                    <button type="button" class="btn btn-secondary" onclick="cancelHarvestLimitPrompt()">Cancel</button>
+                    <button type="button" class="btn btn-primary" onclick="confirmHarvestLimitPrompt()">Start harvest</button>
+                </div>
+            </div>
+
             <!-- Daily Background Auto-Scan Scheduler Status (PubMed only) -->
             <div class="scheduler-status-row" id="scheduler-status-row"
                 style="margin-top: 15px; display: flex; align-items: center; justify-content: space-between; font-size: 0.8rem; padding: 12px 15px; background: rgba(255, 255, 255, 0.02); border: 1px solid rgba(255, 255, 255, 0.05); border-radius: 8px; color: var(--text-secondary);">
@@ -4444,6 +4731,17 @@
             </div>
             <div class="progress-meter">
                 <div class="progress-fill" id="harvest-progress-fill"></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="toast-stack" id="toast-stack" aria-live="polite" aria-relevant="additions"></div>
+    <div class="confirm-modal-overlay" id="confirm-modal-overlay" onclick="if (event.target === this) closeConfirmModal(false)">
+        <div class="confirm-modal" role="dialog" aria-modal="true" aria-labelledby="confirm-modal-message">
+            <p class="confirm-modal-message" id="confirm-modal-message"></p>
+            <div class="confirm-modal-actions">
+                <button type="button" class="btn btn-secondary" id="confirm-modal-cancel" onclick="closeConfirmModal(false)">Cancel</button>
+                <button type="button" class="btn btn-primary" id="confirm-modal-confirm" onclick="closeConfirmModal(true)">Confirm</button>
             </div>
         </div>
     </div>
@@ -4574,6 +4872,251 @@
                 sort_by: currentSortCol,
                 sort_dir: currentSortDir,
             };
+        }
+
+        const RECENT_RANGE_CHIP_LABELS = {
+            today: "Harvested today",
+            week: "Harvested this week",
+            month: "Harvested this month",
+            "180d": "Last 180 days",
+        };
+
+        const SLIDER_CHIP_DEFS = [
+            { param: "thc_min", id: "filter-thc-min", defaultValue: "0", label: (v) => `THC ≥ ${v}%` },
+            { param: "thc_max", id: "filter-thc-max", defaultValue: "100", label: (v) => `THC ≤ ${v}%` },
+            { param: "cbd_min", id: "filter-cbd-min", defaultValue: "0", label: (v) => `CBD ≥ ${v}%` },
+            { param: "cbd_max", id: "filter-cbd-max", defaultValue: "100", label: (v) => `CBD ≤ ${v}%` },
+            { param: "year_min", id: "filter-year-min", defaultValue: "1950", label: (v) => `Year ≥ ${v}` },
+            { param: "year_max", id: "filter-year-max", defaultValue: "2026", label: (v) => `Year ≤ ${v}` },
+            { param: "sample_size_min", id: "filter-sample-size-min", defaultValue: "0", label: (v) => `N ≥ ${v}` },
+            { param: "sample_size_max", id: "filter-sample-size-max", defaultValue: "10000", label: (v) => `N ≤ ${v}` },
+            { param: "dose_mg_min", id: "filter-dose-mg-min", defaultValue: "0", label: (v) => `Dose ≥ ${v} mg` },
+            { param: "dose_mg_max", id: "filter-dose-mg-max", defaultValue: "1000", label: (v) => `Dose ≤ ${v} mg` },
+            { param: "duration_days_min", id: "filter-duration-days-min", defaultValue: "0", label: (v) => `Duration ≥ ${v} d` },
+            { param: "duration_days_max", id: "filter-duration-days-max", defaultValue: "365", label: (v) => `Duration ≤ ${v} d` },
+            { param: "thc_mg_kg_min", id: "filter-thc-mg-kg-min", defaultValue: "0", label: (v) => `THC ≥ ${v} mg/kg` },
+            { param: "thc_mg_kg_max", id: "filter-thc-mg-kg-max", defaultValue: "100", label: (v) => `THC ≤ ${v} mg/kg` },
+            { param: "cbd_mg_kg_min", id: "filter-cbd-mg-kg-min", defaultValue: "0", label: (v) => `CBD ≥ ${v} mg/kg` },
+            { param: "cbd_mg_kg_max", id: "filter-cbd-mg-kg-max", defaultValue: "100", label: (v) => `CBD ≤ ${v} mg/kg` },
+            { param: "thc_mg_ml_min", id: "filter-thc-mg-ml-min", defaultValue: "0", label: (v) => `THC ≥ ${v} mg/mL` },
+            { param: "thc_mg_ml_max", id: "filter-thc-mg-ml-max", defaultValue: "10", label: (v) => `THC ≤ ${v} mg/mL` },
+            { param: "thc_uM_min", id: "filter-thc-uM-min", defaultValue: "0", label: (v) => `THC ≥ ${v} µM` },
+            { param: "thc_uM_max", id: "filter-thc-uM-max", defaultValue: "100", label: (v) => `THC ≤ ${v} µM` },
+            { param: "puff_count_min", id: "filter-puff-count-min", defaultValue: "0", label: (v) => `Puffs ≥ ${v}` },
+        ];
+
+        const CHECKBOX_CHIP_GROUPS = [
+            { name: "publication_type" },
+            { name: "study_type" },
+            { name: "method" },
+            { name: "cannabis_type" },
+            { name: "outcome" },
+            { name: "species" },
+            { name: "exposure_regimen_bin" },
+            { name: "population_age" },
+            { name: "population_sex" },
+        ];
+
+        let lastSliderCommitAt = 0;
+        let confirmModalResolver = null;
+        let pendingHarvestLimitQuery = "";
+
+        /** Commit a slider filter only on change / pointer-up, not every oninput tick. */
+        function commitSliderSearch() {
+            const now = Date.now();
+            if (now - lastSliderCommitAt < 50) return;
+            lastSliderCommitAt = now;
+            updateSliderValues();
+            scheduleSearch();
+        }
+
+        /** Show a short, calm status toast. */
+        function showToast(message, tone = "info") {
+            const stack = document.getElementById("toast-stack");
+            if (!stack || !message) return;
+            const toast = document.createElement("div");
+            toast.className = "app-toast" + (tone === "error" ? " toast-error" : tone === "success" ? " toast-success" : "");
+            toast.textContent = message;
+            stack.appendChild(toast);
+            window.setTimeout(() => {
+                toast.remove();
+            }, 4200);
+        }
+
+        /** Ask for confirmation without a native dialog. Resolves true/false. */
+        function showConfirmModal(message, confirmLabel = "Confirm") {
+            return new Promise((resolve) => {
+                const overlay = document.getElementById("confirm-modal-overlay");
+                const messageEl = document.getElementById("confirm-modal-message");
+                const confirmBtn = document.getElementById("confirm-modal-confirm");
+                if (!overlay || !messageEl || !confirmBtn) {
+                    resolve(false);
+                    return;
+                }
+                if (confirmModalResolver) {
+                    confirmModalResolver(false);
+                }
+                confirmModalResolver = resolve;
+                messageEl.textContent = message;
+                confirmBtn.textContent = confirmLabel;
+                overlay.classList.add("open");
+                confirmBtn.focus();
+            });
+        }
+
+        /** Close the in-app confirm modal and resolve its pending promise. */
+        function closeConfirmModal(confirmed) {
+            const overlay = document.getElementById("confirm-modal-overlay");
+            if (overlay) overlay.classList.remove("open");
+            const resolver = confirmModalResolver;
+            confirmModalResolver = null;
+            if (resolver) resolver(Boolean(confirmed));
+        }
+
+        /** Build chip descriptors for currently active global + sidebar filters. */
+        function collectActiveFilterChips() {
+            const chips = [];
+            const query = getFilterValue("filter-query").trim();
+            if (query) {
+                chips.push({ key: "query", value: query, label: `Search: ${query}` });
+            }
+            const recentRange = getFilterValue("filter-recent-range");
+            if (recentRange) {
+                chips.push({
+                    key: "recent_range",
+                    value: recentRange,
+                    label: RECENT_RANGE_CHIP_LABELS[recentRange] || recentRange,
+                });
+            }
+            const hasPdfEl = document.getElementById("filter-has-pdf");
+            if (hasPdfEl && hasPdfEl.checked) {
+                chips.push({ key: "has_pdf", value: "true", label: "PDF" });
+            }
+            const hasFullTextEl = document.getElementById("filter-has-full-text");
+            if (hasFullTextEl && hasFullTextEl.checked) {
+                chips.push({ key: "has_full_text", value: "true", label: "Full Text" });
+            }
+
+            CHECKBOX_CHIP_GROUPS.forEach(({ name }) => {
+                document.querySelectorAll(`#filters-form input[name="${name}"]:checked`).forEach((cb) => {
+                    const labelText = (cb.closest("label") && cb.closest("label").textContent || cb.value || "").trim();
+                    chips.push({ key: `checkbox:${name}`, value: cb.value, label: labelText });
+                });
+            });
+
+            SLIDER_CHIP_DEFS.forEach((def) => {
+                const el = document.getElementById(def.id);
+                if (!el || el.value === def.defaultValue) return;
+                chips.push({ key: `slider:${def.id}`, value: el.value, label: def.label(el.value) });
+            });
+            return chips;
+        }
+
+        /** Render the chip strip under the global filter bar. */
+        function renderActiveFilterChips() {
+            const strip = document.getElementById("active-filter-chips");
+            const list = document.getElementById("active-filter-chips-list");
+            const summary = document.getElementById("active-filter-chips-summary");
+            if (!strip || !list || !summary) return;
+            if (strip.dataset.catalogHidden === "1") {
+                strip.hidden = true;
+                return;
+            }
+            const chips = collectActiveFilterChips();
+            strip.hidden = chips.length === 0;
+            summary.textContent = chips.length === 1 ? "1 filter" : `${chips.length} filters`;
+            list.innerHTML = chips.map((chip) => {
+                const key = encodeURIComponent(chip.key);
+                const value = encodeURIComponent(chip.value);
+                const label = escapeHtml(chip.label);
+                return `<span class="active-filter-chip" title="${label}">`
+                    + `<span class="active-filter-chip-label">${label}</span>`
+                    + `<button type="button" class="active-filter-chip-remove" aria-label="Remove ${label}" `
+                    + `onclick="removeActiveFilterChip(decodeURIComponent('${key}'), decodeURIComponent('${value}'))">&times;</button>`
+                    + `</span>`;
+            }).join("");
+        }
+
+        /** Clear one active filter from its control, then refresh. */
+        function removeActiveFilterChip(key, value) {
+            if (key === "query") {
+                const el = document.getElementById("filter-query");
+                if (el) el.value = "";
+            } else if (key === "recent_range") {
+                const el = document.getElementById("filter-recent-range");
+                if (el) el.value = "";
+            } else if (key === "has_pdf") {
+                const el = document.getElementById("filter-has-pdf");
+                if (el) el.checked = false;
+            } else if (key === "has_full_text") {
+                const el = document.getElementById("filter-has-full-text");
+                if (el) el.checked = false;
+            } else if (key.startsWith("checkbox:")) {
+                const name = key.slice("checkbox:".length);
+                document.querySelectorAll(`#filters-form input[name="${name}"]`).forEach((cb) => {
+                    if (cb.value === value) cb.checked = false;
+                });
+            } else if (key.startsWith("slider:")) {
+                const id = key.slice("slider:".length);
+                const def = SLIDER_CHIP_DEFS.find((item) => item.id === id);
+                const el = document.getElementById(id);
+                if (el && def) el.value = def.defaultValue;
+                updateSliderValues();
+            }
+            lastKnownTotal = null;
+            lastFilterFingerprint = "";
+            renderActiveFilterChips();
+            scheduleSearch(true);
+        }
+
+        /** Clear chip-backed filters without resetting tab, sort, or columns. */
+        function clearActiveFilterChips() {
+            resetGlobalFilters();
+            resetTabSpecificFilters();
+            lastKnownTotal = null;
+            lastFilterFingerprint = "";
+            renderActiveFilterChips();
+            triggerSearch(true);
+        }
+
+        /** Format a tab membership count for the tab rail badge. */
+        function formatTabCount(count) {
+            const num = Number(count);
+            if (!Number.isFinite(num)) return "";
+            return num.toLocaleString();
+        }
+
+        /** Wire GET /api/tab-counts onto the catalog tab rail. */
+        function loadTabCounts() {
+            fetch("/api/tab-counts")
+                .then((res) => res.ok ? res.json() : Promise.reject(new Error(`Tab counts failed (${res.status})`)))
+                .then((data) => {
+                    const counts = (data && data.counts) || {};
+                    document.querySelectorAll("[data-tab-count]").forEach((badge) => {
+                        const key = badge.getAttribute("data-tab-count");
+                        if (counts[key] == null) return;
+                        badge.textContent = formatTabCount(counts[key]);
+                        badge.hidden = false;
+                    });
+                })
+                .catch((err) => {
+                    console.error("Tab counts fetch failed:", err);
+                });
+        }
+
+        /** Show or hide catalog chrome (global bar, chips, tabs) together. */
+        function setCatalogChromeVisible(visible) {
+            const display = visible ? "" : "none";
+            const bar = document.getElementById("global-filters-bar");
+            const chips = document.getElementById("active-filter-chips");
+            const tabs = document.getElementById("global-tabs-container");
+            if (bar) bar.style.display = display;
+            if (tabs) tabs.style.display = display;
+            if (chips) {
+                chips.dataset.catalogHidden = visible ? "0" : "1";
+                if (visible) renderActiveFilterChips();
+                else chips.hidden = true;
+            }
         }
 
         /** Show sidebar sections that match the active tab filter profile. */
@@ -5114,6 +5657,8 @@
             await loadColumnPreferences();
             updateAnalyzeButtonVisibility(currentTab);
             updateSliderValues();
+            renderActiveFilterChips();
+            loadTabCounts();
             const restoringGuestAnalysis = IS_LOGGED_IN
                 && new URLSearchParams(window.location.search).get('restore_guest_analysis') === '1';
             if (!restoringGuestAnalysis) {
@@ -5152,11 +5697,18 @@
         function setTableLoading(isLoading) {
             tableSearchInFlight = isLoading;
             const overlay = document.getElementById("table-loading-overlay");
+            const wrapper = document.getElementById("papers-table-wrapper")
+                || (overlay && overlay.closest(".table-wrapper"));
             if (overlay) {
                 overlay.style.display = isLoading ? "flex" : "none";
             }
+            if (wrapper) {
+                wrapper.classList.toggle("is-updating", Boolean(isLoading));
+            }
             const emptyState = document.getElementById("table-empty-state");
-            if (isLoading && emptyState) {
+            const tbody = document.getElementById("papers-table-body");
+            const hasVisibleRows = Boolean(tbody && tbody.children.length);
+            if (isLoading && emptyState && !hasVisibleRows) {
                 emptyState.style.display = "none";
             }
             const prevBtn = document.getElementById("btn-page-prev");
@@ -5222,6 +5774,7 @@
             const url = `/api/search?${params.join("&")}`;
             const requestId = ++activeSearchRequestId;
             const requestedTab = activeTab;
+            renderActiveFilterChips();
 
             if (activeSearchAbort) {
                 activeSearchAbort.abort();
@@ -5554,6 +6107,7 @@
 
             lastKnownTotal = null;
             lastFilterFingerprint = "";
+            renderActiveFilterChips();
             triggerSearch(true);
         }
 
@@ -6154,7 +6708,7 @@
             .then(res => res.json())
             .then(data => {
                 if (data.error) {
-                    alert("Failed to save changes: " + data.error);
+                    showToast("Failed to save changes: " + data.error, "error");
                 } else {
                     Object.assign(activeEditingPaper, payload);
                     activeEditingPaper.expert_locked_fields = data.locked_fields;
@@ -6162,11 +6716,12 @@
                     toggleEditMode();
                     openDrawer(activeEditingPaper);
                     triggerSearch(false);
+                    showToast("Classification saved.", "success");
                 }
             })
             .catch(err => {
                 console.error("Error saving classification: ", err);
-                alert("An error occurred while saving changes.");
+                showToast("An error occurred while saving changes.", "error");
             });
         }
 
@@ -6183,7 +6738,7 @@
                 return;
             }
             if (!IS_ADMIN) {
-                alert("Add Papers is restricted to administrators.");
+                showToast("Add Papers is restricted to administrators.", "error");
                 return;
             }
             openHarvestModal();
@@ -6200,6 +6755,7 @@
             document.getElementById("harvest-modal").classList.remove("open");
             document.getElementById("harvest-modal").classList.remove("review-mode");
             document.getElementById("harvest-overlay").classList.remove("open");
+            hideHarvestLimitPrompt();
             cancelPdfReview();
             pdfUploadQueue = [];
         }
@@ -6318,7 +6874,7 @@
                 ? "new"
                 : (selectedPdfMatchId != null ? String(selectedPdfMatchId) : null);
             if (!choice) {
-                alert("Select a database match, or choose “None of these — new paper”.");
+                showToast("Select a database match, or choose “None of these — new paper”.", "error");
                 return;
             }
 
@@ -6794,7 +7350,7 @@
 
         function triggerPdfUpload() {
             if (!selectedPdfUploadFiles.length) {
-                alert("Please choose at least one PDF file first.");
+                showToast("Please choose at least one PDF file first.", "error");
                 return;
             }
 
@@ -6810,26 +7366,76 @@
             processPdfUploadQueue();
         }
 
-        // Trigger crawler harvesting pass (always uses internal Maude classifier)
-        function triggerHarvest() {
-            const query = document.getElementById("harvest-query").value;
-            const limit = 100;
-            const update = true;
-            const classify = false;
+        /** Hide the in-modal harvest count prompt. */
+        function hideHarvestLimitPrompt() {
+            const promptEl = document.getElementById("harvest-limit-prompt");
+            const errorEl = document.getElementById("harvest-limit-error");
+            if (promptEl) promptEl.hidden = true;
+            if (errorEl) {
+                errorEl.hidden = true;
+                errorEl.textContent = "";
+            }
+            pendingHarvestLimitQuery = "";
+        }
 
-            if (!query) {
-                alert("Please enter a PubMed search string first.");
+        /** Show the in-modal harvest count prompt when PubMed matches exceed 500. */
+        function showHarvestLimitPrompt(totalCount, query) {
+            const promptEl = document.getElementById("harvest-limit-prompt");
+            const copyEl = document.getElementById("harvest-limit-copy");
+            const inputEl = document.getElementById("harvest-limit-input");
+            const errorEl = document.getElementById("harvest-limit-error");
+            const bar = document.getElementById("harvest-status-bar");
+            pendingHarvestLimitQuery = query;
+            if (bar) bar.style.display = "none";
+            if (copyEl) {
+                copyEl.textContent = `Your search matches ${Number(totalCount).toLocaleString()} papers on PubMed, above the 500-paper automatic threshold. Enter how many to ingest.`;
+            }
+            if (inputEl) {
+                inputEl.max = String(totalCount);
+                inputEl.value = "500";
+                inputEl.focus();
+                inputEl.select();
+            }
+            if (errorEl) {
+                errorEl.hidden = true;
+                errorEl.textContent = "";
+            }
+            if (promptEl) promptEl.hidden = false;
+        }
+
+        /** Dismiss the harvest count prompt without starting ingest. */
+        function cancelHarvestLimitPrompt() {
+            hideHarvestLimitPrompt();
+            showToast("Harvest cancelled.", "info");
+        }
+
+        /** Validate the in-modal count and start a forced harvest. */
+        function confirmHarvestLimitPrompt() {
+            const inputEl = document.getElementById("harvest-limit-input");
+            const errorEl = document.getElementById("harvest-limit-error");
+            const parsedCount = parseInt(inputEl && inputEl.value, 10);
+            if (!Number.isFinite(parsedCount) || parsedCount <= 0) {
+                if (errorEl) {
+                    errorEl.textContent = "Enter a whole number greater than 0.";
+                    errorEl.hidden = false;
+                }
                 return;
             }
+            const query = pendingHarvestLimitQuery || document.getElementById("harvest-query").value;
+            hideHarvestLimitPrompt();
+            startHarvestRequest({ query, maxResults: parsedCount, force: true });
+        }
 
-            // Show status bar
+        /** POST /api/harvest and handle the >500 count prompt in-modal. */
+        function startHarvestRequest({ query, maxResults, force }) {
             const bar = document.getElementById("harvest-status-bar");
-            bar.style.display = "block";
-            document.getElementById("harvest-progress-msg").innerText = "Queuing ingest pass...";
+            if (bar) bar.style.display = "block";
+            document.getElementById("harvest-progress-msg").innerText = force
+                ? `Queuing ingest for ${maxResults} papers...`
+                : "Queuing ingest pass...";
             document.getElementById("harvest-progress-fill").style.width = "5%";
             document.getElementById("harvest-progress-percent").innerText = "";
 
-            // Call POST harvest endpoint
             fetch("/api/harvest", {
                 method: "POST",
                 headers: {
@@ -6837,74 +7443,51 @@
                 },
                 body: JSON.stringify({
                     query: query,
-                    max_results: parseInt(limit),
-                    update: update,
-                    classify: classify
+                    max_results: parseInt(maxResults, 10),
+                    update: true,
+                    classify: false,
+                    force: Boolean(force)
                 })
             })
                 .then(res => res.json().then(data => ({ ok: res.ok, status: res.status, data })))
                 .then(({ data }) => {
                     if (data.error) {
                         document.getElementById("harvest-progress-msg").innerText = data.error;
-                        document.getElementById("harvest-status-bar").style.display = "none";
+                        if (bar) bar.style.display = "none";
+                        showToast(data.error, "error");
                         return;
                     }
 
                     // Count now happens in the worker. Always poll; "prompt" arrives via status.
-                    document.getElementById("harvest-progress-msg").innerText = "Counting PubMed matches...";
+                    document.getElementById("harvest-progress-msg").innerText = force
+                        ? "Background harvester started..."
+                        : "Counting PubMed matches...";
+                    if (force) {
+                        showToast("Harvest started in the background.");
+                    }
                     startPollingHarvestStatus();
                 })
                 .catch(err => {
                     document.getElementById("harvest-progress-msg").innerText = "Ingest connection failed.";
+                    showToast("Ingest connection failed.", "error");
                 });
         }
 
+        /** Open the in-modal harvest limit form when the worker reports >500 hits. */
         function confirmForcedHarvest(totalCount) {
-            const query = document.getElementById("harvest-query").value;
-            const confirmedCount = prompt(
-                `Your search query matches ${totalCount} papers on PubMed. This exceeds the 500 threshold.\n\n` +
-                `How many papers would you like to ingest? (Enter any number up to ${totalCount}):`,
-                "500"
-            );
+            const query = (document.getElementById("harvest-query").value || pendingHarvestLimitQuery || "").trim();
+            showHarvestLimitPrompt(totalCount, query);
+        }
 
-            if (confirmedCount === null) {
+        // Trigger crawler harvesting pass (always uses internal Maude classifier)
+        function triggerHarvest() {
+            const query = (document.getElementById("harvest-query").value || "").trim();
+            if (!query) {
+                showToast("Please enter a PubMed search string first.", "error");
                 return;
             }
-
-            const parsedCount = parseInt(confirmedCount);
-            if (isNaN(parsedCount) || parsedCount <= 0) {
-                alert("Invalid number entered. Aborting harvest.");
-                return;
-            }
-
-            document.getElementById("harvest-status-bar").style.display = "block";
-            document.getElementById("harvest-progress-msg").innerText = `Queuing ingest for ${parsedCount} papers...`;
-
-            fetch("/api/harvest", {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json"
-                },
-                body: JSON.stringify({
-                    query: query,
-                    max_results: parsedCount,
-                    update: true,
-                    classify: false,
-                    force: true
-                })
-            })
-                .then(res => res.json())
-                .then(forceData => {
-                    if (forceData.error) {
-                        document.getElementById("harvest-progress-msg").innerText = forceData.error;
-                        return;
-                    }
-                    document.getElementById("harvest-progress-msg").innerText = "Background harvester started...";
-                    startPollingHarvestStatus();
-                })
-                .catch(err => {
-                    document.getElementById("harvest-progress-msg").innerText = "Ingest connection failed.";
-                });
+            hideHarvestLimitPrompt();
+            startHarvestRequest({ query, maxResults: 100, force: false });
         }
 
         // Poll Crawler status logs
@@ -6940,6 +7523,8 @@
 
                             // Trigger table refresh to load new papers!
                             triggerSearch();
+                            loadTabCounts();
+                            showToast("Harvest complete.", "success");
 
                             setTimeout(() => {
                                 document.getElementById("harvest-status-bar").style.display = "none";
@@ -7049,13 +7634,13 @@
                     if (!ok || result.error) {
                         const msg = result.error || ("Request failed (" + status + ")");
                         console.error("Analysis failed:", msg);
-                        alert(result.login_required
+                        showToast(result.login_required
                             ? "Please log in to save analyses to My Analyses."
-                            : ("Analysis failed: " + msg));
+                            : ("Analysis failed: " + msg), "error");
                         return;
                     }
                     if (result.truncated && result.chart_data && result.chart_data.cap_message) {
-                        alert(result.chart_data.cap_message);
+                        showToast(result.chart_data.cap_message);
                     }
                     // Open My Analyses, then load the new analysis the same way a row
                     // click does so quantitative stats and paper-derived charts paint fully.
@@ -7072,7 +7657,7 @@
                 })
                 .catch(err => {
                     console.error("Subset Analysis Failed: ", err);
-                    alert("Analysis failed. Please try again or refresh the page.");
+                    showToast("Analysis failed. Please try again or refresh the page.", "error");
                 })
                 .finally(() => {
                     btn.disabled = false;
@@ -7085,8 +7670,7 @@
         function showView(viewName, options = {}) {
             // 1. Hide all views and overlays first
             document.querySelector('.sidebar').style.display = 'none';
-            document.getElementById('global-filters-bar').style.display = 'none';
-            document.getElementById('global-tabs-container').style.display = 'none';
+            setCatalogChromeVisible(false);
             const tableSection = document.querySelector('.main-content > section.database-table-section');
             if (tableSection) tableSection.style.display = 'none';
 
@@ -7116,8 +7700,7 @@
             // 2. Show requested view
             if (viewName === 'database') {
                 document.querySelector('.sidebar').style.display = '';
-                document.getElementById('global-filters-bar').style.display = '';
-                document.getElementById('global-tabs-container').style.display = '';
+                setCatalogChromeVisible(true);
                 if (tableSection) tableSection.style.display = 'flex';
                 triggerSearch(false);
             } else if (viewName === 'my-analyses') {
@@ -7180,7 +7763,7 @@
 
         function exportAnalysisCSV() {
             if (!selectedAnalysisId) {
-                alert("Please select an analysis from the table to export.");
+                showToast("Please select an analysis from the table to export.", "error");
                 return;
             }
             window.location.href = `/api/analyses/${selectedAnalysisId}/export-csv`;
@@ -7252,7 +7835,7 @@
                 const result = await resp.json().catch(() => ({}));
                 if (!resp.ok) {
                     console.error('Failed to save guest analysis after login:', result.error);
-                    alert(result.error || 'Could not save your analysis. Please try running Analyze again.');
+                    showToast(result.error || 'Could not save your analysis. Please try running Analyze again.', "error");
                     openMyAnalyses();
                     return;
                 }
@@ -7270,7 +7853,7 @@
                 requestAnimationFrame(() => resizeAnalysisCharts());
             } catch (err) {
                 console.error('Guest analysis restore failed:', err);
-                alert('Could not restore your analysis. Please try running Analyze again.');
+                showToast('Could not restore your analysis. Please try running Analyze again.', "error");
                 openMyAnalyses();
             }
         }
@@ -7398,29 +7981,32 @@
 
         function deleteAnalysis(id, event) {
             if (event) event.stopPropagation();
-            if (!confirm("Delete this analysis?")) return;
-            fetch("/api/analyses/" + id + "?_t=" + Date.now(), { method: "DELETE" })
-                .then(res => {
-                    if (!res.ok) {
-                        return res.json().then(err => { throw new Error(err.error || "Failed to delete"); });
-                    }
-                    return res.json();
-                })
-                .then(result => {
-                    if (result.success) {
-                        if (selectedAnalysisId === id) {
-                            selectedAnalysisId = null;
-                            updateExportCSVButtonState();
-                            currentAnalysisPapers = [];
-                            renderChartsFromData(null);
+            showConfirmModal("Delete this analysis?", "Delete").then((confirmed) => {
+                if (!confirmed) return;
+                fetch("/api/analyses/" + id + "?_t=" + Date.now(), { method: "DELETE" })
+                    .then(res => {
+                        if (!res.ok) {
+                            return res.json().then(err => { throw new Error(err.error || "Failed to delete"); });
                         }
-                        loadAnalysesList();
-                    }
-                })
-                .catch(err => {
-                    console.error("Error deleting analysis:", err);
-                    alert("Error deleting analysis: " + err.message);
-                });
+                        return res.json();
+                    })
+                    .then(result => {
+                        if (result.success) {
+                            if (selectedAnalysisId === id) {
+                                selectedAnalysisId = null;
+                                updateExportCSVButtonState();
+                                currentAnalysisPapers = [];
+                                renderChartsFromData(null);
+                            }
+                            loadAnalysesList();
+                            showToast("Analysis deleted.");
+                        }
+                    })
+                    .catch(err => {
+                        console.error("Error deleting analysis:", err);
+                        showToast("Error deleting analysis: " + err.message, "error");
+                    });
+            });
         }
 
         function openLearningDashboard() {
