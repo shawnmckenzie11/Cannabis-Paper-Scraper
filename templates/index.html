@@ -1522,10 +1522,128 @@
         #my-analyses-panel.guest-analysis-preview-active .analysis-col-charts,
         #my-analyses-panel.guest-analysis-preview-active .analysis-col-drilldown,
         #my-analyses-panel.guest-analysis-preview-active .analysis-stats-span {
-            filter: blur(1.5px);
-            opacity: 0.94;
+            /* Silhouette preview — charts are not readable; CTA matches what's visible. */
+            filter: blur(8px);
+            opacity: 0.55;
             pointer-events: none;
             user-select: none;
+        }
+
+        .analysis-cap-banner {
+            display: none;
+            margin: 0 0 10px 0;
+            padding: 8px 12px;
+            border-radius: 8px;
+            border: 1px solid rgba(255, 193, 7, 0.35);
+            background: rgba(255, 193, 7, 0.08);
+            color: #ffe08a;
+            font-size: 0.78rem;
+            line-height: 1.4;
+        }
+
+        .analysis-cap-banner.visible {
+            display: block;
+        }
+
+        .analysis-provenance {
+            display: block;
+            margin-top: 2px;
+            font-size: 0.68rem;
+            font-weight: 400;
+            color: var(--text-secondary);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .analysis-truncated-badge {
+            display: inline-block;
+            margin-left: 6px;
+            padding: 1px 6px;
+            border-radius: 999px;
+            font-size: 0.62rem;
+            font-weight: 700;
+            letter-spacing: 0.02em;
+            color: #ffe08a;
+            background: rgba(255, 193, 7, 0.12);
+            border: 1px solid rgba(255, 193, 7, 0.35);
+            vertical-align: middle;
+        }
+
+        .chart-drilldown-meta {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 8px;
+            flex-wrap: wrap;
+            margin: 0 0 6px 0;
+        }
+
+        .chart-drilldown-count {
+            font-size: 0.72rem;
+            color: var(--text-secondary);
+        }
+
+        .chart-drilldown-table-wrap th.drilldown-year-col,
+        .chart-drilldown-table-wrap td.drilldown-year-cell {
+            width: 52px;
+            text-align: right;
+            color: var(--text-secondary);
+            font-variant-numeric: tabular-nums;
+            white-space: nowrap;
+        }
+
+        .pdf-wizard-steps {
+            display: flex;
+            gap: 8px;
+            margin: 0 0 12px 0;
+            padding: 0;
+            list-style: none;
+        }
+
+        .pdf-wizard-steps li {
+            flex: 1;
+            text-align: center;
+            padding: 6px 8px;
+            border-radius: 8px;
+            font-size: 0.72rem;
+            font-weight: 600;
+            color: var(--text-secondary);
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+        }
+
+        .pdf-wizard-steps li.active {
+            color: var(--accent-blue);
+            border-color: rgba(0, 240, 255, 0.35);
+            background: rgba(0, 240, 255, 0.08);
+        }
+
+        .pdf-wizard-steps li.done {
+            color: var(--accent-green, #69f0ae);
+            border-color: rgba(105, 240, 174, 0.3);
+        }
+
+        .pdf-client-error {
+            display: none;
+            margin: 8px 0 0 0;
+            padding: 8px 10px;
+            border-radius: 8px;
+            font-size: 0.78rem;
+            color: #ff8a80;
+            background: rgba(255, 82, 82, 0.08);
+            border: 1px solid rgba(255, 82, 82, 0.25);
+        }
+
+        .pdf-client-error.visible {
+            display: block;
+        }
+
+        #section-stats-sampled {
+            display: none;
+            width: 100%;
+            font-size: 0.72rem;
+            color: var(--text-secondary);
         }
 
         #guest-analysis-overlay {
@@ -3657,6 +3775,7 @@
                         <div class="pagination-section-stats" id="pagination-section-stats" style="display: none;">
                             <span>Methods section: <strong id="section-stats-methods">—</strong></span>
                             <span>Results section: <strong id="section-stats-results">—</strong></span>
+                            <span id="section-stats-sampled"></span>
                         </div>
                     </div>
                     <div class="pagination-controls" style="display: flex; gap: 12px; align-items: center;">
@@ -3673,6 +3792,7 @@
 
             <!-- MY ANALYSES PANEL -->
             <section id="my-analyses-panel">
+                <div id="analysis-cap-banner" class="analysis-cap-banner" role="status" aria-live="polite"></div>
                 <div id="guest-analysis-overlay">
                     <p>Sign in to save analyses.</p>
                     <a id="guest-analysis-sign-in-link" href="/login?next=%2F%3Frestore_guest_analysis%3D1" class="btn btn-primary" style="padding: 8px 18px; border-radius: 10px; text-decoration: none; font-weight: 600;">Sign In</a>
@@ -3828,11 +3948,15 @@
                             <span id="selection-count-badge" class="badge" style="display: none; background: rgba(0, 240, 255, 0.12); color: var(--accent-blue); border: 1px solid rgba(0, 240, 255, 0.3); font-weight: 700; padding: 2px 8px; font-size: 0.72rem;">0 Articles</span>
                         </div>
                         <p id="chart-drilldown-subtitle" style="margin: 0 0 6px 0; font-size: 0.72rem; color: var(--text-secondary);">Click a chart section to list papers.</p>
+                        <div class="chart-drilldown-meta" id="chart-drilldown-meta" hidden>
+                            <span class="chart-drilldown-count" id="chart-drilldown-count"></span>
+                            <button type="button" class="btn btn-secondary btn-sm" id="btn-drilldown-load-more" hidden onclick="loadMoreChartDrilldown()">Load more</button>
+                        </div>
                         <div id="analysis-drilldown-placeholder" class="analysis-col-placeholder" style="padding: 12px;">No section selected</div>
                         <div class="chart-drilldown-table-wrap analyses-table-wrap" id="analysis-drilldown-table-wrap" style="display: none;">
                             <table>
                                 <thead>
-                                    <tr><th>Title</th></tr>
+                                    <tr><th class="drilldown-year-col">Year</th><th>Title</th></tr>
                                 </thead>
                                 <tbody id="chart-drilldown-tbody"></tbody>
                             </table>
@@ -4777,10 +4901,17 @@
         </div>
 
         <div class="add-papers-panel" id="add-papers-panel-upload">
+            <ol class="pdf-wizard-steps" id="pdf-wizard-steps" aria-label="PDF upload steps">
+                <li class="active" data-step="1">1 File</li>
+                <li data-step="2">2 Match</li>
+                <li data-step="3">3 Review</li>
+            </ol>
             <div class="pdf-upload-dropzone" id="pdf-upload-dropzone" onclick="document.getElementById('pdf-upload-input').click()">
                 <div>Drop PDF(s) here or click to browse</div>
+                <div style="margin-top: 4px; font-size: 0.72rem; color: var(--text-secondary);">PDF only · max 25 MB each</div>
                 <div id="pdf-upload-filename" style="margin-top: 8px; color: var(--accent-blue); font-weight: 600;"></div>
             </div>
+            <p class="pdf-client-error" id="pdf-client-error" role="status"></p>
             <input type="file" id="pdf-upload-input" accept="application/pdf,.pdf" multiple style="display: none;">
             <button class="btn btn-primary" id="btn-upload-pdf" onclick="triggerPdfUpload()" disabled style="margin-top: 10px;">Upload &amp; Classify</button>
 
@@ -5380,6 +5511,13 @@
         let analyzePollActive = false;
         let analyzePollCancelled = false;
         let analysisPapersFullyLoaded = false;
+        let analysisPapersTotalCount = 0;
+        let analysisPapersTruncated = false;
+        let analysisPapersNextPage = 1;
+        const ANALYSIS_PAPERS_PAGE_SIZE = 200;
+        const DRILLDOWN_PAGE_SIZE = 50;
+        let drilldownState = null; // { chartKind, index, meta, segmentLabel, matched, shown }
+        const PDF_CLIENT_MAX_BYTES = 25 * 1024 * 1024;
         let analyzeChromeState = "idle";
         let pendingAnalyzeResult = null;
         let pendingAnalyzeFilters = null;
@@ -5834,8 +5972,17 @@
             }
         }
 
+        
         function scheduleSearch(resetPage = true, tabOverride = null) {
             clearTimeout(searchTimeout);
+            // Drop stale catalog totals immediately so Analyze CTA never flashes a prior N
+            // (e.g. full corpus) while a narrower filter like milad is in flight.
+            const nextParams = collectFilterParams(tabOverride || currentTab);
+            const nextFp = buildFilterFingerprint(nextParams);
+            if (nextFp !== lastFilterFingerprint) {
+                lastKnownTotal = null;
+                updateAnalyzeCta();
+            }
             searchTimeout = setTimeout(() => {
                 searchTimeout = null;
                 triggerSearch(resetPage, tabOverride);
@@ -5959,46 +6106,72 @@
             updateAnalyzeCta();
         }
 
+        
+        
         function updateSectionStatsDisplay(stats) {
             const container = document.getElementById("pagination-section-stats");
             const methodsEl = document.getElementById("section-stats-methods");
             const resultsEl = document.getElementById("section-stats-results");
+            const sampledEl = document.getElementById("section-stats-sampled");
             if (!container || !methodsEl || !resultsEl) return;
 
             if (!stats || !stats.total_count) {
                 container.style.display = "none";
                 methodsEl.textContent = "—";
                 resultsEl.textContent = "—";
+                if (sampledEl) {
+                    sampledEl.style.display = "none";
+                    sampledEl.textContent = "";
+                }
                 return;
             }
 
             methodsEl.textContent = `${stats.methods_pct}%`;
             resultsEl.textContent = `${stats.results_pct}%`;
+            if (sampledEl) {
+                if (stats.sampled) {
+                    const n = Number(stats.sample_size || stats.sample_limit || stats.sampled_count || 400);
+                    sampledEl.textContent = `sampled (${n})`;
+                    sampledEl.style.display = "block";
+                } else {
+                    sampledEl.textContent = "";
+                    sampledEl.style.display = "none";
+                }
+            }
             container.style.display = "flex";
         }
 
+        
         function fetchSectionStats(filterParams, activeTab, requestId) {
-            const params = [];
-            Object.entries(filterParams).forEach(([key, value]) => {
-                if (key === "tab" || key === "sort_by" || key === "sort_dir") return;
-                if (key === "method") {
-                    params.push(`method=${encodeURIComponent(value)}`);
-                    return;
-                }
-                params.push(`${encodeURIComponent(key)}=${encodeURIComponent(value)}`);
-            });
-            if (activeTab) params.push(`tab=${activeTab}`);
-
-            fetch(`/api/search/section-stats?${params.join("&")}`)
-                .then(res => res.ok ? res.json() : Promise.reject(new Error(`Section stats failed (${res.status})`)))
-                .then(stats => {
-                    if (requestId !== activeSearchRequestId) return;
-                    updateSectionStatsDisplay(stats);
-                })
-                .catch(err => {
-                    console.error("Section stats fetch failed:", err);
-                    updateSectionStatsDisplay(null);
+            const run = () => {
+                const params = [];
+                Object.entries(filterParams).forEach(([key, value]) => {
+                    if (key === "tab" || key === "sort_by" || key === "sort_dir") return;
+                    if (key === "method") {
+                        params.push(`method=${encodeURIComponent(value)}`);
+                        return;
+                    }
+                    params.push(`${encodeURIComponent(key)}=${encodeURIComponent(value)}`);
                 });
+                if (activeTab) params.push(`tab=${activeTab}`);
+
+                fetch(`/api/search/section-stats?${params.join("&")}`)
+                    .then(res => res.ok ? res.json() : Promise.reject(new Error(`Section stats failed (${res.status})`)))
+                    .then(stats => {
+                        if (requestId !== activeSearchRequestId) return;
+                        updateSectionStatsDisplay(stats);
+                    })
+                    .catch(err => {
+                        console.error("Section stats fetch failed:", err);
+                        updateSectionStatsDisplay(null);
+                    });
+            };
+            // Defer off the hot path so the papers table paints first.
+            if (typeof window.requestIdleCallback === "function") {
+                window.requestIdleCallback(run, { timeout: 1200 });
+            } else {
+                setTimeout(run, 0);
+            }
         }
 
         // Change current page in pagination
@@ -6893,6 +7066,8 @@
         }
 
         function cancelPdfMatchSelection() {
+            setPdfWizardStep(1);
+            showPdfClientError("");
             pendingPdfMatch = null;
             selectedPdfMatchId = null;
             const panel = document.getElementById("pdf-match-panel");
@@ -6906,6 +7081,8 @@
         }
 
         function cancelPdfReview() {
+            setPdfWizardStep(1);
+            showPdfClientError("");
             pendingPdfMerge = null;
             cancelPdfMatchSelection();
             const panel = document.getElementById("pdf-review-panel");
@@ -6921,6 +7098,7 @@
         }
 
         function showPdfMatchPanel(data, file) {
+            setPdfWizardStep(2);
             pendingPdfMatch = {
                 merge_token: data.merge_token,
                 title: data.title || "",
@@ -7077,6 +7255,7 @@
         }
 
         function showPdfReviewPanel(data, file) {
+            setPdfWizardStep(3);
             cancelPdfMatchSelection();
             pendingPdfMerge = {
                 merge_token: data.merge_token,
@@ -7426,10 +7605,13 @@
             confirmPdfReview();
         }
 
+        
         function setSelectedPdfUploadFiles(files) {
             selectedPdfUploadFiles = Array.from(files || []).filter(f => f && f.name);
             selectedPdfUploadFile = selectedPdfUploadFiles[0] || null;
             cancelPdfReview();
+            showPdfClientError("");
+            setPdfWizardStep(1);
             const filenameEl = document.getElementById("pdf-upload-filename");
             const uploadBtn = document.getElementById("btn-upload-pdf");
             if (filenameEl) {
@@ -7475,14 +7657,25 @@
             });
         }
 
-        function triggerPdfUpload() {
+        
+        async function triggerPdfUpload() {
             if (!selectedPdfUploadFiles.length) {
                 showToast("Please choose at least one PDF file first.", "error");
                 return;
             }
 
+            showPdfClientError("");
+            for (const file of selectedPdfUploadFiles) {
+                const err = await validatePdfFileClient(file);
+                if (err) {
+                    showPdfClientError(err);
+                    return;
+                }
+            }
+
             cancelPdfReview();
             clearPdfUploadResults();
+            setPdfWizardStep(1);
             const seen = new Set();
             pdfUploadQueue = selectedPdfUploadFiles.filter(file => {
                 const key = `${file.name}:${file.size}:${file.lastModified || 0}`;
@@ -7618,6 +7811,7 @@
         }
 
         // Poll Crawler status logs
+        
         function startPollingHarvestStatus() {
             clearInterval(harvestPollInterval);
             harvestPollInterval = setInterval(() => {
@@ -7626,48 +7820,68 @@
                     .then(status => {
                         const fill = document.getElementById("harvest-progress-fill");
                         const msg = document.getElementById("harvest-progress-msg");
+                        const pctEl = document.getElementById("harvest-progress-percent");
 
                         msg.innerText = status.progress || "Crawling database...";
+
+                        const processed = Number(status.processed);
+                        const total = Number(status.total);
+                        let percentText = "";
+                        let width = null;
+                        if (Number.isFinite(processed) && Number.isFinite(total) && total > 0) {
+                            const pct = Math.max(0, Math.min(100, Math.round((processed / total) * 100)));
+                            percentText = pct + "%";
+                            width = pct + "%";
+                        } else {
+                            // Parse live "Ingesting (i/total):" lines from the worker — never invent keyword %.
+                            const m = String(status.progress || "").match(/\((\d+)\s*\/\s*(\d+)\)/);
+                            if (m) {
+                                const p = Number(m[1]);
+                                const t = Number(m[2]);
+                                if (t > 0) {
+                                    const pct = Math.max(0, Math.min(100, Math.round((p / t) * 100)));
+                                    percentText = pct + "%";
+                                    width = pct + "%";
+                                }
+                            }
+                        }
+                        if (pctEl) pctEl.innerText = percentText;
+                        if (fill && width) fill.style.width = width;
 
                         if (status.status === "prompt") {
                             clearInterval(harvestPollInterval);
                             document.getElementById("harvest-status-bar").style.display = "none";
                             confirmForcedHarvest(status.total_count);
                         } else if (status.status === "running") {
-                            // Deduce dynamic percentage mapping based on active text to show beautiful meter
-                            let percent = "20%";
-                            if ((status.progress || "").includes("Counting")) percent = "10%";
-                            else if ((status.progress || "").includes("Enriching")) percent = "50%";
-                            else if ((status.progress || "").includes("Merging")) percent = "70%";
-                            else if ((status.progress || "").includes("Ingesting")) percent = "85%";
-                            fill.style.width = percent;
+                            // Width/percent already set from real processed/total when available.
+                            if (fill && !width) {
+                                // Indeterminate: keep a calm thin pulse without fake stage percentages.
+                                fill.style.width = fill.style.width || "8%";
+                            }
                         } else if (status.status === "success") {
                             clearInterval(harvestPollInterval);
-                            fill.style.width = "100%";
+                            if (fill) fill.style.width = "100%";
+                            if (pctEl) pctEl.innerText = "100%";
                             document.getElementById("harvest-spinner").style.display = "none";
-                            // Clear input
                             document.getElementById("harvest-query").value = "";
-
-                            // Trigger table refresh to load new papers!
                             triggerSearch();
                             loadTabCounts();
                             showToast("Harvest complete.", "success");
-
                             setTimeout(() => {
                                 document.getElementById("harvest-status-bar").style.display = "none";
                                 document.getElementById("harvest-spinner").style.display = "inline-block";
                             }, 5000);
                         } else if (status.status === "error") {
                             clearInterval(harvestPollInterval);
-                            fill.style.width = "100%";
-                            fill.style.background = "var(--accent-red)";
+                            if (fill) {
+                                fill.style.width = "100%";
+                                fill.style.background = "var(--accent-red)";
+                            }
                             document.getElementById("harvest-spinner").style.display = "none";
                             msg.innerHTML = `<span style="color: var(--accent-red);">Error: ${status.error || "Execution failed"}</span>`;
                         }
                     })
-                    .catch(err => {
-                        clearInterval(harvestPollInterval);
-                    });
+                    .catch(err => console.error("Harvest status poll failed:", err));
             }, 1000);
         }
 
@@ -7842,8 +8056,12 @@
         }
 
         /** Paint charts from the completed analyze job payload (A4 — no double-fetch). */
+        
         function paintAnalysisFromJobResult(result) {
             analysisPapersFullyLoaded = false;
+            analysisPapersTotalCount = 0;
+            analysisPapersTruncated = Boolean(result && result.truncated);
+            analysisPapersNextPage = 1;
             selectedAnalysisId = result.id == null ? null : result.id;
             updateExportCSVButtonState();
             currentAnalyzedPapers = result.chart_data;
@@ -7857,24 +8075,158 @@
                 renderChartsFromData(result.chart_data);
                 requestAnimationFrame(() => resizeAnalysisCharts());
                 loadAnalysesList(result.id);
+                // Prefetch full paper pages so the first chart click paints the right pane immediately.
+                ensureAnalysisPapersForDrilldown();
             }
         }
 
         /** Fetch saved analysis papers only when the user opens a chart drilldown. */
-        function ensureAnalysisPapersForDrilldown() {
-            if (!IS_LOGGED_IN || !selectedAnalysisId || analysisPapersFullyLoaded) {
-                return Promise.resolve();
+        
+
+        
+        function updateAnalysisCapBanner(chartData) {
+            const banner = document.getElementById("analysis-cap-banner");
+            if (!banner) return;
+            const truncated = Boolean(chartData && (chartData.truncated || chartData.cap_message));
+            if (!truncated) {
+                banner.classList.remove("visible");
+                banner.textContent = "";
+                return;
             }
-            return fetch("/api/analyses/" + selectedAnalysisId + "/papers")
+            const n = Number(chartData.analyzed_count || chartData.paper_count || 0);
+            const mRaw = chartData.match_total != null ? Number(chartData.match_total)
+                : (chartData.total_match_count != null ? Number(chartData.total_match_count) : null);
+            let copy;
+            if (Number.isFinite(n) && n > 0 && Number.isFinite(mRaw) && mRaw > n) {
+                copy = "Showing first " + n.toLocaleString() + " of " + mRaw.toLocaleString() + " — results may be incomplete.";
+            } else if (Number.isFinite(n) && n > 0) {
+                copy = "Showing first " + n.toLocaleString() + " of " + n.toLocaleString() + "+ — results may be incomplete.";
+            } else {
+                copy = "Showing first N of M — results may be incomplete.";
+            }
+            banner.textContent = copy;
+            banner.classList.add("visible");
+        }
+
+        function formatAnalysisFilterSubtitle(filterSettings) {
+            if (!filterSettings || typeof filterSettings !== "object") return "All filters";
+            const parts = [];
+            const skip = new Set(["limit", "offset", "page", "sort_by", "sort_dir", "tab", "paper_ids"]);
+            Object.keys(filterSettings).forEach((key) => {
+                if (skip.has(key)) return;
+                const val = filterSettings[key];
+                if (val == null || val === "" || val === "ALL") return;
+                if (Array.isArray(val)) {
+                    if (!val.length) return;
+                    parts.push(key.replace(/_/g, " ") + ": " + val.join(", "));
+                } else {
+                    parts.push(key.replace(/_/g, " ") + ": " + val);
+                }
+            });
+            if (!parts.length) return "All filters";
+            if (parts.length <= 2) return parts.join(" · ");
+            return parts.slice(0, 2).join(" · ") + " +" + (parts.length - 2) + " more";
+        }
+
+        function formatAnalysisCreatedAt(raw) {
+            if (!raw) return "";
+            try {
+                const d = new Date(raw);
+                if (Number.isNaN(d.getTime())) return String(raw).slice(0, 16);
+                return d.toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" });
+            } catch (_) {
+                return String(raw).slice(0, 16);
+            }
+        }
+
+        function setPdfWizardStep(step) {
+            const items = document.querySelectorAll("#pdf-wizard-steps li");
+            items.forEach((li) => {
+                const n = Number(li.getAttribute("data-step"));
+                li.classList.toggle("active", n === step);
+                li.classList.toggle("done", n < step);
+            });
+        }
+
+        function showPdfClientError(message) {
+            const el = document.getElementById("pdf-client-error");
+            if (!el) return;
+            if (!message) {
+                el.textContent = "";
+                el.classList.remove("visible");
+                return;
+            }
+            el.textContent = message;
+            el.classList.add("visible");
+        }
+
+        async function validatePdfFileClient(file) {
+            if (!file) return "Choose a PDF file to continue.";
+            if (file.size > PDF_CLIENT_MAX_BYTES) {
+                return "This file is larger than 25 MB. Choose a smaller PDF.";
+            }
+            try {
+                const blob = file.slice(0, 5);
+                const buf = await blob.arrayBuffer();
+                const bytes = new Uint8Array(buf);
+                const magic = String.fromCharCode(bytes[0], bytes[1], bytes[2], bytes[3]);
+                if (magic !== "%PDF") {
+                    return "That file does not look like a PDF. Choose a .pdf file and try again.";
+                }
+            } catch (_) {
+                return "Could not read that file. Choose a PDF and try again.";
+            }
+            return null;
+        }
+
+        
+        function ensureAnalysisPapersForDrilldown(options = {}) {
+            const forceNextPage = Boolean(options.forceNextPage);
+            if (!IS_LOGGED_IN || !selectedAnalysisId) {
+                return Promise.resolve({ papers: currentAnalysisPapers || [], total_count: (currentAnalysisPapers || []).length, truncated: false });
+            }
+            if (analysisPapersFullyLoaded && !forceNextPage) {
+                return Promise.resolve({
+                    papers: currentAnalysisPapers || [],
+                    total_count: analysisPapersTotalCount || (currentAnalysisPapers || []).length,
+                    truncated: analysisPapersTruncated,
+                });
+            }
+            const page = forceNextPage ? analysisPapersNextPage : 1;
+            if (!forceNextPage) {
+                analysisPapersNextPage = 1;
+            }
+            const url = "/api/analyses/" + selectedAnalysisId + "/papers?page=" + page + "&limit=" + ANALYSIS_PAPERS_PAGE_SIZE;
+            return fetch(url)
                 .then((res) => res.json())
                 .then((papersResp) => {
-                    if (Array.isArray(papersResp.papers)) {
-                        currentAnalysisPapers = papersResp.papers;
-                        analysisPapersFullyLoaded = true;
+                    const pagePapers = Array.isArray(papersResp.papers) ? papersResp.papers : [];
+                    if (page <= 1) {
+                        currentAnalysisPapers = pagePapers;
+                    } else {
+                        const seen = new Set((currentAnalysisPapers || []).map((p) => p.id));
+                        pagePapers.forEach((p) => {
+                            if (!seen.has(p.id)) currentAnalysisPapers.push(p);
+                        });
                     }
+                    analysisPapersTotalCount = Number(papersResp.total_count || papersResp.totalCount || currentAnalysisPapers.length) || currentAnalysisPapers.length;
+                    const loaded = (currentAnalysisPapers || []).length;
+                    analysisPapersTruncated = Boolean(papersResp.truncated) || loaded < analysisPapersTotalCount;
+                    analysisPapersFullyLoaded = !analysisPapersTruncated;
+                    analysisPapersNextPage = page + 1;
+                    // Keep quant row honest to the papers currently in selection / loaded set.
+                    if (currentChartDataRef) {
+                        renderQuantitativeStatsRow(currentChartDataRef, currentAnalysisPapers);
+                    }
+                    return {
+                        papers: currentAnalysisPapers,
+                        total_count: analysisPapersTotalCount,
+                        truncated: analysisPapersTruncated,
+                    };
                 })
                 .catch((err) => {
                     console.warn("Could not load analysis papers for drilldown:", err);
+                    return { papers: currentAnalysisPapers || [], total_count: (currentAnalysisPapers || []).length, truncated: false };
                 });
         }
 
@@ -7939,7 +8291,7 @@
             fetch("/api/analyze", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ filters: filters })
+                body: JSON.stringify({ filters: filters, match_total: lastKnownTotal })
             })
                 .then(async res => {
                     const data = await res.json().catch(() => ({}));
@@ -8204,18 +8556,28 @@
             if (signInLink) signInLink.href = getGuestSignInUrl();
         }
 
+        
         function renderGuestAnalysisListRow(result) {
             const tbody = document.getElementById("analyses-tbody");
             if (!tbody || !result) return;
             const safeName = (result.name || "Filtered Analysis Preview").replace(/</g, "&lt;");
+            const created = formatAnalysisCreatedAt(result.created_at);
+            const subtitle = formatAnalysisFilterSubtitle(result.filter_settings);
+            const truncated = Boolean(result.truncated || (result.chart_data && result.chart_data.truncated));
+            const badge = truncated ? '<span class="analysis-truncated-badge">Truncated</span>' : '';
+            const prov = [created, subtitle].filter(Boolean).join(" · ");
             tbody.innerHTML = '<tr class="selected" data-id="guest-preview">'
                 + '<td class="analysis-edit-cell"></td>'
-                + '<td class="analysis-name-cell" style="font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="' + safeName + '">' + safeName + '</td>'
+                + '<td class="analysis-name-cell" style="font-weight:600;" title="' + safeName + '">'
+                + '<div style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + safeName + badge + '</div>'
+                + (prov ? '<span class="analysis-provenance" title="' + prov.replace(/"/g, '&quot;') + '">' + prov.replace(/</g, '&lt;') + '</span>' : '')
+                + '</td>'
                 + '<td class="analysis-count-cell">' + (result.paper_count || 0) + '</td>'
                 + '<td class="analysis-delete-cell"></td>'
                 + '</tr>';
         }
 
+        
         function loadAnalysesList(selectId) {
             if (!IS_LOGGED_IN && guestAnalysisPreview) {
                 renderGuestAnalysisListRow(guestAnalysisPreview);
@@ -8232,7 +8594,6 @@
                             return;
                         }
                         tbody.innerHTML = '<tr><td colspan="4" style="text-align: center; color: var(--text-secondary); padding: 20px; font-size: 0.75rem;">No analyses yet. Click Analyze on the catalog to run one.</td></tr>';
-                        // Keep a just-painted job result if the list refresh races the insert.
                         if (selectId === undefined) {
                             selectedAnalysisId = null;
                             currentAnalysisPapers = [];
@@ -8251,9 +8612,18 @@
                         const isSelected = selectedAnalysisId !== null && a.id === selectedAnalysisId;
                         var rowClass = isSelected ? 'selected' : '';
                         const safeName = (a.name || 'Untitled').replace(/</g, '&lt;');
+                        const created = formatAnalysisCreatedAt(a.created_at);
+                        const subtitle = formatAnalysisFilterSubtitle(a.filter_settings);
+                        const truncated = Boolean(a.truncated);
+                        const badge = truncated ? '<span class="analysis-truncated-badge">Truncated</span>' : '';
+                        const prov = [created, subtitle].filter(Boolean).join(' · ');
+                        const safeProv = prov.replace(/</g, '&lt;').replace(/"/g, '&quot;');
                         return '<tr class="' + rowClass + '" onclick="loadAnalysis(' + a.id + ')" data-id="' + a.id + '">'
-                            + '<td class="analysis-edit-cell"><button type="button" class="btn-sm-icon btn-edit-analysis" title="Rename" onclick="event.stopPropagation();startRename(' + a.id + ', this.closest(\'tr\').querySelector(\'.analysis-name-cell\'))">&#9998;</button></td>'
-                            + '<td class="analysis-name-cell" style="font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="' + safeName + '">' + safeName + '</td>'
+                            + '<td class="analysis-edit-cell"><button type="button" class="btn-sm-icon btn-edit-analysis" title="Rename" onclick="event.stopPropagation();startRename(' + a.id + ', this.closest("tr").querySelector(".analysis-name-cell"))">&#9998;</button></td>'
+                            + '<td class="analysis-name-cell" style="font-weight:600;" title="' + safeName + '">'
+                            + '<div style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + safeName + badge + '</div>'
+                            + (prov ? '<span class="analysis-provenance" title="' + safeProv + '">' + safeProv + '</span>' : '')
+                            + '</td>'
                             + '<td class="analysis-count-cell">' + a.paper_count + '</td>'
                             + '<td class="analysis-delete-cell"><button type="button" class="btn-sm-icon btn-delete-analysis" title="Delete" onclick="event.stopPropagation(); deleteAnalysis(' + a.id + ', event)">&#10005;</button></td>'
                             + '</tr>';
@@ -9993,17 +10363,28 @@
             if (jumpSel && chartId) jumpSel.value = chartId;
         }
 
+        
         function clearChartDrilldown() {
+            drilldownState = null;
             const tbody = document.getElementById("chart-drilldown-tbody");
             const title = document.getElementById("chart-drilldown-title");
             const subtitle = document.getElementById("chart-drilldown-subtitle");
             const placeholder = document.getElementById("analysis-drilldown-placeholder");
             const tableWrap = document.getElementById("analysis-drilldown-table-wrap");
+            const meta = document.getElementById("chart-drilldown-meta");
+            const countEl = document.getElementById("chart-drilldown-count");
+            const moreBtn = document.getElementById("btn-drilldown-load-more");
             if (tbody) tbody.innerHTML = "";
             if (title) title.innerText = "Papers in Selection";
             if (subtitle) subtitle.innerText = "Click a chart section to list papers.";
-            if (placeholder) placeholder.style.display = "flex";
+            if (placeholder) {
+                placeholder.innerText = "No section selected";
+                placeholder.style.display = "flex";
+            }
             if (tableWrap) tableWrap.style.display = "none";
+            if (meta) meta.hidden = true;
+            if (countEl) countEl.textContent = "";
+            if (moreBtn) moreBtn.hidden = true;
         }
 
         function emptyCannabinoidBins() {
@@ -10172,67 +10553,161 @@
             return [];
         }
 
-        function renderChartDrilldownTable(papers, chartKind, segmentLabel) {
+        
+        function renderChartDrilldownTable(papers, chartKind, segmentLabel, options = {}) {
+            const matched = Array.isArray(papers) ? papers : [];
+            const shownLimit = Number(options.shownLimit) > 0 ? Number(options.shownLimit) : DRILLDOWN_PAGE_SIZE;
+            const visible = matched.slice(0, shownLimit);
             const tbody = document.getElementById("chart-drilldown-tbody");
             const title = document.getElementById("chart-drilldown-title");
             const subtitle = document.getElementById("chart-drilldown-subtitle");
             const placeholder = document.getElementById("analysis-drilldown-placeholder");
             const tableWrap = document.getElementById("analysis-drilldown-table-wrap");
+            const meta = document.getElementById("chart-drilldown-meta");
+            const countEl = document.getElementById("chart-drilldown-count");
+            const moreBtn = document.getElementById("btn-drilldown-load-more");
             if (!tbody) return;
-            if (title) title.innerText = segmentLabel + " (" + papers.length + ")";
+
+            drilldownState = {
+                chartKind: chartKind,
+                segmentLabel: segmentLabel,
+                matched: matched,
+                shown: visible.length,
+                shownLimit: shownLimit,
+            };
+
+            if (title) title.innerText = segmentLabel + " (" + matched.length + ")";
             if (subtitle) subtitle.innerText = "Click a row to open the paper drawer.";
-            if (!papers.length) {
+
+            if (!matched.length) {
                 if (placeholder) {
-                    placeholder.innerText = "No papers in this section";
+                    placeholder.innerText = "No papers in this slice.";
                     placeholder.style.display = "flex";
                 }
                 if (tableWrap) tableWrap.style.display = "none";
+                if (meta) meta.hidden = true;
+                if (moreBtn) moreBtn.hidden = true;
                 tbody.innerHTML = "";
                 return;
             }
+
             if (placeholder) placeholder.style.display = "none";
             if (tableWrap) tableWrap.style.display = "block";
-            tbody.innerHTML = papers.map(p => {
+            if (meta) meta.hidden = false;
+
+            const totalKnown = matched.length;
+            const canLoadMorePapers = Boolean(analysisPapersTruncated) && IS_LOGGED_IN && selectedAnalysisId;
+            const canRevealMore = visible.length < matched.length;
+            if (countEl) {
+                if (visible.length < totalKnown || canLoadMorePapers) {
+                    countEl.textContent = "Showing first " + visible.length + " of " + totalKnown
+                        + (canLoadMorePapers ? "+" : "");
+                } else {
+                    countEl.textContent = "Showing " + visible.length + " of " + totalKnown;
+                }
+            }
+            if (moreBtn) {
+                moreBtn.hidden = !(canRevealMore || canLoadMorePapers);
+            }
+
+            tbody.innerHTML = visible.map((p) => {
                 const safeTitle = (p.title || "Untitled").replace(/</g, "&lt;").replace(/"/g, "&quot;");
+                const year = p.year || (p.publication_date ? String(p.publication_date).slice(0, 4) : "—");
+                const safeYear = String(year).replace(/</g, "&lt;");
                 return '<tr class="drilldown-row" data-paper-id="' + p.id + '">'
+                    + '<td class="drilldown-year-cell">' + safeYear + '</td>'
                     + '<td class="drilldown-title-cell" title="' + safeTitle + '">' + safeTitle + '</td>'
                     + '</tr>';
             }).join("");
-            tbody.querySelectorAll(".drilldown-row").forEach(row => {
+            tbody.querySelectorAll(".drilldown-row").forEach((row) => {
                 row.addEventListener("click", () => {
                     const paperId = Number(row.dataset.paperId);
-                    const paper = papers.find(p => p.id === paperId);
+                    const paper = matched.find((p) => p.id === paperId);
                     if (paper) openDrawer(paper);
                 });
             });
         }
 
+        function loadMoreChartDrilldown() {
+            if (!drilldownState) return;
+            const nextLimit = (drilldownState.shownLimit || DRILLDOWN_PAGE_SIZE) + DRILLDOWN_PAGE_SIZE;
+            const needMorePapers = analysisPapersTruncated && IS_LOGGED_IN && selectedAnalysisId
+                && (drilldownState.matched || []).length <= (drilldownState.shownLimit || 0);
+            const finish = () => {
+                const matched = filterPapersForChartSegment(
+                    drilldownState.chartKind,
+                    drilldownState.index,
+                    drilldownState.meta
+                );
+                // Prefer re-filter when papers grew; else keep prior matched and reveal more rows.
+                const papers = (matched && matched.length) ? matched : (drilldownState.matched || []);
+                renderChartDrilldownTable(papers, drilldownState.chartKind, drilldownState.segmentLabel, {
+                    shownLimit: nextLimit,
+                });
+                if (drilldownState) {
+                    drilldownState.index = drilldownState.index;
+                    drilldownState.meta = drilldownState.meta;
+                }
+            };
+            if (needMorePapers) {
+                ensureAnalysisPapersForDrilldown({ forceNextPage: true }).then(() => {
+                    // Re-run the stored segment filter against the expanded paper set.
+                    if (drilldownState && drilldownState.meta != null && drilldownState.index != null) {
+                        const matched = filterPapersForChartSegment(
+                            drilldownState.chartKind,
+                            drilldownState.index,
+                            drilldownState.meta
+                        );
+                        renderChartDrilldownTable(matched, drilldownState.chartKind, drilldownState.segmentLabel, {
+                            shownLimit: nextLimit,
+                        });
+                    } else {
+                        finish();
+                    }
+                });
+                return;
+            }
+            renderChartDrilldownTable(drilldownState.matched, drilldownState.chartKind, drilldownState.segmentLabel, {
+                shownLimit: nextLimit,
+            });
+        }
+
+        
         function handleAnalysisChartClick(chartKind, index, meta) {
             selectAnalysisChart(chartKind);
             const finish = () => {
-            const matched = filterPapersForChartSegment(chartKind, index, meta);
-            let segmentLabel = "";
-            if (chartKind === "cannabinoid-distribution") {
-                const labels = meta.binLabels || getCannabinoidBinLabels(meta.mode || cannabinoidViewMode);
-                const compoundLabel = (meta.compound || "thc").toUpperCase();
-                segmentLabel = compoundLabel + " · " + (labels[index] || (meta.binKeys || THC_BIN_KEYS)[index]);
-            } else if (chartKind === "outcome") {
-                segmentLabel = OUTCOME_LABELS[meta.rawLabels[index]] || meta.rawLabels[index];
-            } else if (chartKind === "timeline") {
-                segmentLabel = meta.sortedLabels[index];
-            } else if (chartKind === "duration") {
-                const labels = meta.binLabels || ((meta.mode || durationChartMode) === "study"
-                    ? STUDY_DURATION_BIN_LABELS
-                    : TREATMENT_DURATION_BIN_LABELS);
-                segmentLabel = labels[index] || (meta.binKeys || [])[index];
-            } else if (chartKind === "puff-count") {
-                segmentLabel = (meta.binLabels || PUFF_COUNT_BIN_LABELS)[index] || (meta.binKeys || [])[index];
-            } else if (chartKind === "admin-frequency" || chartKind === "population-sex" || chartKind === "population-age") {
-                segmentLabel = meta.displayLabels ? meta.displayLabels[index] : meta.rawLabels[index];
-            } else {
-                segmentLabel = meta.displayLabels ? meta.displayLabels[index] : meta.rawLabels[index];
-            }
-            renderChartDrilldownTable(matched, chartKind, segmentLabel);
+                const matched = filterPapersForChartSegment(chartKind, index, meta);
+                let segmentLabel = "";
+                if (chartKind === "cannabinoid-distribution") {
+                    const labels = meta.binLabels || getCannabinoidBinLabels(meta.mode || cannabinoidViewMode);
+                    const compoundLabel = (meta.compound || "thc").toUpperCase();
+                    segmentLabel = compoundLabel + " · " + (labels[index] || (meta.binKeys || THC_BIN_KEYS)[index]);
+                } else if (chartKind === "outcome") {
+                    segmentLabel = OUTCOME_LABELS[meta.rawLabels[index]] || meta.rawLabels[index];
+                } else if (chartKind === "timeline") {
+                    segmentLabel = meta.sortedLabels[index];
+                } else if (chartKind === "duration") {
+                    const labels = meta.binLabels || ((meta.mode || durationChartMode) === "study"
+                        ? STUDY_DURATION_BIN_LABELS
+                        : TREATMENT_DURATION_BIN_LABELS);
+                    segmentLabel = labels[index] || (meta.binKeys || [])[index];
+                } else if (chartKind === "puff-count") {
+                    segmentLabel = (meta.binLabels || PUFF_COUNT_BIN_LABELS)[index] || (meta.binKeys || [])[index];
+                } else if (chartKind === "admin-frequency" || chartKind === "population-sex" || chartKind === "population-age") {
+                    segmentLabel = meta.displayLabels ? meta.displayLabels[index] : meta.rawLabels[index];
+                } else {
+                    segmentLabel = meta.displayLabels ? meta.displayLabels[index] : meta.rawLabels[index];
+                }
+                drilldownState = {
+                    chartKind: chartKind,
+                    index: index,
+                    meta: meta,
+                    segmentLabel: segmentLabel,
+                    matched: matched,
+                    shown: 0,
+                    shownLimit: DRILLDOWN_PAGE_SIZE,
+                };
+                renderChartDrilldownTable(matched, chartKind, segmentLabel, { shownLimit: DRILLDOWN_PAGE_SIZE });
             };
             ensureAnalysisPapersForDrilldown().then(finish);
         }
@@ -10244,13 +10719,16 @@
             };
         }
 
+        
         function renderChartsFromData(d) {
             if (!d || d.paper_count === 0) {
                 currentChartDataRef = null;
+                updateAnalysisCapBanner(null);
                 hideAnalysisCharts();
                 return;
             }
             currentChartDataRef = d;
+            updateAnalysisCapBanner(d);
             showAnalysisChartsUI(true);
             populateAnalysisChartJumpSelect();
             document.getElementById("selection-count-badge").innerText = d.paper_count + " Articles";

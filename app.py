@@ -162,6 +162,8 @@ harvest_state = {
     "start_time": None,
     "total_count": None,   # PubMed hit count (filled in the worker)
     "query": None,
+    "processed": None,     # Real ingest progress (idx), never faked in UI
+    "total": None,         # Real ingest denominator when known
 }
 
 _pending_pdf_uploads: Dict[str, Dict[str, Any]] = {}
@@ -270,6 +272,8 @@ def _reset_harvest_state_for_start(query: str) -> None:
     harvest_state["start_time"] = datetime.now().strftime("%H:%M:%S")
     harvest_state["total_count"] = None
     harvest_state["query"] = query
+    harvest_state["processed"] = None
+    harvest_state["total"] = None
 
 
 def bg_harvest_worker(
@@ -290,6 +294,11 @@ def bg_harvest_worker(
         def update_progress(msg):
             with harvest_lock:
                 harvest_state["progress"] = msg
+                # Capture real "Ingesting (i/total):" progress for honest UI %.
+                m = re.search(r"\((\d+)\s*/\s*(\d+)\)", str(msg) or "")
+                if m:
+                    harvest_state["processed"] = int(m.group(1))
+                    harvest_state["total"] = int(m.group(2))
 
         if not force:
             update_progress("Counting matching papers on PubMed...")
@@ -1041,6 +1050,7 @@ def api_search_section_stats():
         stats = section_stats.compute_section_stats(papers)
         stats["sampled"] = sampled
         stats["sample_limit"] = sample_limit
+        stats["sample_size"] = len(papers)
         return jsonify(stats)
     except Exception as e:
         return jsonify({"error": str(e)}), 500
@@ -2232,6 +2242,7 @@ def _build_analyze_result(
     db.init_analyses_table()
 
     work_filters = dict(filters)
+    work_filters.pop("match_total", None)
     work_filters["limit"] = background_jobs.ANALYZE_PAPER_CAP + 1
     work_filters["offset"] = 0
     papers = db.search_papers_for_analysis(work_filters)
@@ -2242,11 +2253,27 @@ def _build_analyze_result(
     chart_data["paper_ids"] = [p["id"] for p in papers]
     chart_data["truncated"] = truncated
     chart_data["analyzed_count"] = len(papers)
+    match_total = None
+    raw_match_total = filters.get("match_total") if isinstance(filters, dict) else None
+    if raw_match_total is None and isinstance(work_filters, dict):
+        raw_match_total = work_filters.pop("match_total", None)
+    try:
+        if raw_match_total is not None:
+            match_total = int(raw_match_total)
+    except (TypeError, ValueError):
+        match_total = None
+    if match_total is not None:
+        chart_data["match_total"] = match_total
     if truncated:
-        chart_data["cap_message"] = (
-            f"Charts from the first {background_jobs.ANALYZE_PAPER_CAP} matching papers. "
-            "Narrow filters to include the rest."
-        )
+        n = len(papers)
+        if match_total is not None and match_total > n:
+            chart_data["cap_message"] = (
+                f"Showing first {n} of {match_total} — results may be incomplete."
+            )
+        else:
+            chart_data["cap_message"] = (
+                f"Showing first {n} of {n}+ — results may be incomplete."
+            )
 
     analysis_id = None
     if user_id:
@@ -2436,12 +2463,21 @@ def api_list_analyses():
 
     db = DatabaseManager()
     analyses = db.list_analyses(user_id=user["id"])
-    # Parse JSON fields for the frontend
+    # Parse JSON fields for the frontend; surface truncated for list provenance.
     for a in analyses:
         try:
             a["filter_settings"] = json.loads(a["filter_settings"])
         except (json.JSONDecodeError, TypeError):
             a["filter_settings"] = {}
+        chart_raw = a.pop("chart_data", None)
+        truncated = False
+        if chart_raw:
+            try:
+                chart_data = json.loads(chart_raw) if isinstance(chart_raw, str) else (chart_raw or {})
+                truncated = bool(chart_data.get("truncated"))
+            except (json.JSONDecodeError, TypeError):
+                truncated = False
+        a["truncated"] = truncated
     return jsonify(analyses)
 
 
@@ -2503,7 +2539,7 @@ def api_get_analysis_papers(analysis_id):
         "page": page,
         "limit": limit,
         "total_count": total,
-        "truncated": total > limit,
+        "truncated": (offset + len(papers)) < total,
     })
 
 

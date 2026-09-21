@@ -2110,12 +2110,12 @@ class DatabaseManager:
         try:
             if user_id is not None:
                 cursor = conn.execute(
-                    "SELECT id, user_id, name, filter_settings, paper_count, created_at FROM analyses WHERE user_id = ? ORDER BY created_at DESC;",
+                    "SELECT id, user_id, name, filter_settings, paper_count, chart_data, created_at FROM analyses WHERE user_id = ? ORDER BY created_at DESC;",
                     (user_id,)
                 )
             else:
                 cursor = conn.execute(
-                    "SELECT id, user_id, name, filter_settings, paper_count, created_at FROM analyses ORDER BY created_at DESC;"
+                    "SELECT id, user_id, name, filter_settings, paper_count, chart_data, created_at FROM analyses ORDER BY created_at DESC;"
                 )
             return [dict(row) for row in cursor.fetchall()]
         finally:
