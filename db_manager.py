@@ -86,12 +86,24 @@ class PostgresCursorWrapper:
             
         sql = self.translate_json_queries(sql)
         
-        # 3. Handle RETURNING clause for INSERT queries to emulate lastrowid
+        # 3. Handle RETURNING clause for INSERT queries to emulate lastrowid.
+        # Tables whose primary key is not a surrogate "id" must RETURN that PK
+        # (background_tasks.task_id, heuristics_rules.rule_key). Blind RETURNING id
+        # breaks Analyze/PDF/harvest enqueue on Postgres (Wonder error: Analysis
+        # didn't finish).
         is_insert = sql.strip().upper().startswith("INSERT INTO")
         if is_insert and "RETURNING" not in sql.upper():
             match = re.match(r"INSERT\s+INTO\s+[\"`\[]?([a-zA-Z0-9_]+)[\"`\]]?", sql.strip(), re.IGNORECASE)
             table_name = match.group(1).lower() if match else ""
-            if table_name != "system_metadata":
+            returning_pk = {
+                "background_tasks": "task_id",
+                "heuristics_rules": "rule_key",
+            }.get(table_name)
+            if table_name == "system_metadata":
+                pass
+            elif returning_pk:
+                sql = sql.rstrip(';').strip() + f" RETURNING {returning_pk}"
+            else:
                 sql = sql.rstrip(';').strip() + " RETURNING id"
             
         # Escape literal % characters (not part of %s placeholders) as %% for psycopg2

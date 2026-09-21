@@ -45,5 +45,51 @@ class PostgresInitTests(unittest.TestCase):
         mock_init_db.assert_not_called()
 
 
+class ReturningPkMappingTests(unittest.TestCase):
+    """Postgres INSERT RETURNING must use real PKs (Analyze enqueue regression)."""
+
+    def test_wrapper_execute_appends_task_id(self):
+        """Drive the real wrapper against a mock cursor (no live Postgres)."""
+        from unittest.mock import MagicMock
+        from db_manager import PostgresCursorWrapper
+
+        mock_cur = MagicMock()
+        mock_cur.fetchone.return_value = {"task_id": "abc-123"}
+        wrapper = PostgresCursorWrapper(mock_cur)
+        wrapper.execute(
+            "INSERT INTO background_tasks (task_id, sa_task_type, status, total_papers, processed_papers) "
+            "VALUES (?, ?, ?, ?, ?)",
+            ("abc-123", "analyze", "pending", 0, 0),
+        )
+        executed_sql = mock_cur.execute.call_args[0][0]
+        self.assertIn("RETURNING task_id", executed_sql)
+        self.assertNotIn("RETURNING id", executed_sql)
+        self.assertEqual(wrapper.lastrowid, "abc-123")
+
+    def test_wrapper_execute_papers_returns_id(self):
+        from unittest.mock import MagicMock
+        from db_manager import PostgresCursorWrapper
+
+        mock_cur = MagicMock()
+        mock_cur.fetchone.return_value = {"id": 42}
+        wrapper = PostgresCursorWrapper(mock_cur)
+        wrapper.execute("INSERT INTO papers (title) VALUES (?)", ("x",))
+        executed_sql = mock_cur.execute.call_args[0][0]
+        self.assertTrue(executed_sql.rstrip(";").endswith("RETURNING id"))
+
+    def test_wrapper_skips_system_metadata_returning(self):
+        from unittest.mock import MagicMock
+        from db_manager import PostgresCursorWrapper
+
+        mock_cur = MagicMock()
+        wrapper = PostgresCursorWrapper(mock_cur)
+        wrapper.execute(
+            "INSERT INTO system_metadata (key, value) VALUES (?, ?)",
+            ("k", "v"),
+        )
+        executed_sql = mock_cur.execute.call_args[0][0]
+        self.assertNotIn("RETURNING", executed_sql.upper())
+
+
 if __name__ == "__main__":
     unittest.main()
