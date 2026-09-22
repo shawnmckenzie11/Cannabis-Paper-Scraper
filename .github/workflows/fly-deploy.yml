@@ -1,10 +1,13 @@
-# See https://fly.io/docs/app-guides/continuous-deployment-with-github-actions/
+# Manual Fly promote (D5, locked 2026-09-22).
+# Push and merge to main must not deploy. Docs, methods, and schema-only
+# merges were rolling the live app (for example the WP1 methods merge).
+# Promote intentionally from Actions: Fly Deploy → Run workflow, and pick
+# the ref to ship. The running app stays up until that dispatch.
+# flyctl usage: https://fly.io/docs/app-guides/continuous-deployment-with-github-actions/
 
 name: Fly Deploy
 on:
-  push:
-    branches:
-      - main
+  workflow_dispatch:
 jobs:
   deploy:
     name: Deploy app
