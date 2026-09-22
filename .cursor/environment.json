@@ -2,5 +2,5 @@
   "name": "Cannabis Paper Scraper",
   "install": "cd /agent/repos/Cannabis-Paper-Scraper && (sudo apt-get update -qq && sudo apt-get install -y -qq python3.12-venv >/dev/null 2>&1 || true) && python3 -m venv .venv && .venv/bin/pip install --upgrade pip && .venv/bin/pip install -r requirements.txt",
   "start": "cd /agent/repos/Cannabis-Paper-Scraper && DATABASE_PATH=\"$PWD/cannabis_papers.db\" CHEAP_OPS=1 .venv/bin/gunicorn --workers 1 --timeout 120 --bind 0.0.0.0:8080 app:app",
-  "ports": [8080]
+  "ports": [ { "name": "web", "port": 8080 } ]
 }
