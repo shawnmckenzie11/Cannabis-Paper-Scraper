@@ -1,31 +1,151 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://github.com/shawnmckenzie11/Cannabis-Paper-Scraper/schemas/methods.schema.json",
-  "title": "WP1 methods assertion document",
-  "description": "Draft contract for Cannabis Research Navigator methods extraction. Scientific allowed values are pending_biomedical and are intentionally not closed enums. Abstract silence is not_in_available_source, not evidence the full text omitted a method.",
+  "$id": "https://cannabis-research-navigator.local/schemas/methods.schema.json",
+  "title": "CRN Methods Extraction Contract (WP1)",
+  "description": "Year-1 methods/context extraction document for Cannabis Research Navigator. Scientific enum meanings are pending_biomedical (Shawn adjudication). Technical: provenance envelope, missingness, IDEAS/SGBA hooks.",
   "type": "object",
   "additionalProperties": false,
-  "required": ["schema_version", "publication_id", "assertions"],
+  "required": [
+    "schema_version",
+    "paper_id",
+    "provenance",
+    "fields"
+  ],
   "properties": {
     "schema_version": {
-      "const": "wp1-methods-draft-0.1"
-    },
-    "publication_id": {
       "type": "string",
-      "minLength": 1,
-      "description": "Opaque publication key (PMID, DOI, or internal id). Not a scientific identifier scheme."
+      "const": "wp1.0.0-draft",
+      "description": "Methods contract version."
     },
-    "assertions": {
-      "type": "array",
-      "items": {
-        "$ref": "#/$defs/assertion"
+    "paper_id": {
+      "type": "integer",
+      "minimum": 1,
+      "description": "Foreign key to catalog papers.id. Whether paper is the scientific unit of record is pending_biomedical (Q7); technical Year-1 attachment is paper-scoped."
+    },
+    "record_unit": {
+      "type": "string",
+      "description": "Technical attachment unit. Scientific multi-arm/family policy pending_biomedical (Q7).",
+      "enum": ["paper"],
+      "default": "paper"
+    },
+    "provenance": {
+      "$ref": "#/$defs/provenance_envelope"
+    },
+    "honesty_label": {
+      "type": "string",
+      "description": "UI-facing honesty chip derived from provenance (technical).",
+      "enum": ["ai_assisted", "human_reviewed", "hand_tagged", "mixed"]
+    },
+    "fields": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "Per-field slots. Scientific allowed values pending_biomedical unless noted technical.",
+      "properties": {
+        "research_type": {
+          "$ref": "#/$defs/string_field",
+          "description": "In vitro / in vivo / clinical (+ edge cases). Enum pending_biomedical (Q2)."
+        },
+        "clinical_subtype": {
+          "$ref": "#/$defs/string_field",
+          "description": "Clinical design subtype when applicable. Enum pending_biomedical (Q3)."
+        },
+        "product": {
+          "$ref": "#/$defs/string_array_field",
+          "description": "Product / substance class. Taxonomy pending_biomedical (Q4)."
+        },
+        "route": {
+          "$ref": "#/$defs/string_array_field",
+          "description": "Route / administration / exposure modality. Enum pending_biomedical (Q5)."
+        },
+        "disease_or_experimental_model": {
+          "$ref": "#/$defs/string_field",
+          "description": "Disease or experimental model. Ontology pending_biomedical (Q6). May be deferred Year-1 (Q1)."
+        },
+        "outcome_domains": {
+          "$ref": "#/$defs/string_array_field",
+          "description": "Outcome domains actually studied. Enum pending_biomedical (Q10)."
+        },
+        "species_or_biological_system": {
+          "$ref": "#/$defs/string_field",
+          "description": "Species or biological system. Enum pending_biomedical (Q11)."
+        },
+        "dose_mg": { "$ref": "#/$defs/number_field" },
+        "dose_thc_mg_kg": { "$ref": "#/$defs/number_field" },
+        "dose_cbd_mg_kg": { "$ref": "#/$defs/number_field" },
+        "dose_thc_mg_g": { "$ref": "#/$defs/number_field" },
+        "dose_cbd_mg_g": { "$ref": "#/$defs/number_field" },
+        "conc_thc_mg_ml": { "$ref": "#/$defs/number_field" },
+        "conc_cbd_mg_ml": { "$ref": "#/$defs/number_field" },
+        "conc_thc_uM": { "$ref": "#/$defs/number_field" },
+        "conc_cbd_uM": { "$ref": "#/$defs/number_field" },
+        "pct_thc": { "$ref": "#/$defs/number_field" },
+        "pct_cbd": { "$ref": "#/$defs/number_field" },
+        "puff_count": { "$ref": "#/$defs/integer_field" },
+        "duration_days": { "$ref": "#/$defs/number_field" },
+        "inhaled_exposure_duration": { "$ref": "#/$defs/string_field" },
+        "administration_frequency": { "$ref": "#/$defs/string_field" },
+        "treatment_duration": { "$ref": "#/$defs/string_field" },
+        "repeat_exposure_count": { "$ref": "#/$defs/integer_field" },
+        "exposure_regimen_bin": {
+          "$ref": "#/$defs/string_field",
+          "description": "Regimen bin label pending_biomedical (Q8)."
+        },
+        "multiple_doses": { "$ref": "#/$defs/boolean_field" },
+        "multiple_time_intervals": { "$ref": "#/$defs/boolean_field" },
+        "sample_size": {
+          "$ref": "#/$defs/integer_field",
+          "description": "N as reported; replicate rules pending_biomedical (Q9)."
+        },
+        "replicates_notes": { "$ref": "#/$defs/string_field" },
+        "strain_reported": { "$ref": "#/$defs/string_field" },
+        "strain_normalized": {
+          "$ref": "#/$defs/string_field",
+          "description": "Normalized chemotype/mapping pending_biomedical."
+        },
+        "publication_type": {
+          "$ref": "#/$defs/string_field",
+          "description": "Catalog publication_type; keep orthogonal to research_type."
+        },
+        "study_type_legacy": {
+          "$ref": "#/$defs/string_array_field",
+          "description": "Legacy study_type multi-label for transition only."
+        },
+        "sgba_sex_reported": {
+          "$ref": "#/$defs/string_field",
+          "description": "Sex only if explicitly reported. Coding pending_biomedical (Q12). NEVER infer."
+        },
+        "sgba_gender_reported": {
+          "$ref": "#/$defs/string_field",
+          "description": "Gender only if explicitly reported (distinct from sex). NEVER infer."
+        },
+        "sgba_population_age": {
+          "$ref": "#/$defs/string_field",
+          "description": "Population age only if reported. Coding pending_biomedical (Q12)."
+        },
+        "sgba_population_descriptors": {
+          "$ref": "#/$defs/string_array_field",
+          "description": "IDEAS/population descriptors only as reported; no invented taxonomy."
+        },
+        "sgba_reporting_present": {
+          "$ref": "#/$defs/boolean_field",
+          "description": "Technical flag: true iff any SGBA+-relevant fact was explicitly present in available source."
+        },
+        "ideas_representation_notes": {
+          "$ref": "#/$defs/string_field",
+          "description": "Human-review notes for IDEAS/SGBA+ capture quality; not model invention."
+        }
       }
+    },
+    "legacy_crosswalk": {
+      "type": "object",
+      "additionalProperties": { "type": ["string", "number", "boolean", "null", "array", "object"] },
+      "description": "Optional snapshot of legacy Scraper column values used as hand-tag fallback for Compare."
     }
   },
   "$defs": {
     "missingness": {
-      "description": "Distinct states. not_in_available_source means the text that was read is silent. source_unavailable means that text could not be obtained. Neither code asserts that a study failed to perform a method.",
       "type": "string",
+      "description": "Distinct missingness (technical proposal).",
       "enum": [
         "reported",
         "not_in_available_source",
@@ -36,69 +156,19 @@
       ]
     },
     "source_tier": {
-      "description": "Text tier actually read, using labels from content_tiers.py. Not a study-quality grade.",
       "type": "string",
+      "description": "Technical source tier; aligns with content_tiers.py spirit. Truth policy pending_biomedical (Q13).",
       "enum": [
         "pdf_extracted",
         "abstract_reclassify",
         "pdf_link",
-        "abstract_only"
+        "abstract_only",
+        "metadata_only",
+        "human_entry",
+        "unknown"
       ]
     },
-    "field_id": {
-      "description": "Year-1 slot name. Sex and gender are separate ids. Allowed normalized values are pending_biomedical.",
-      "type": "string",
-      "enum": [
-        "study_type",
-        "model_population",
-        "product_composition",
-        "route",
-        "dose_or_concentration",
-        "exposure_duration",
-        "administration_frequency",
-        "sample_size",
-        "comparator",
-        "outcome_measure",
-        "outcome_time_point",
-        "strain_reported",
-        "puff_count",
-        "repeat_exposure_count",
-        "sex_reported",
-        "gender_reported",
-        "age_reported",
-        "race_ethnicity_reported",
-        "indigenous_identity_reported",
-        "disability_reported",
-        "socioeconomic_reported",
-        "geographic_context_reported"
-      ]
-    },
-    "source_span": {
-      "type": "object",
-      "additionalProperties": false,
-      "required": ["quote", "section", "page", "char_start", "char_end"],
-      "properties": {
-        "quote": {
-          "type": ["string", "null"]
-        },
-        "section": {
-          "type": ["string", "null"]
-        },
-        "page": {
-          "type": ["integer", "null"],
-          "minimum": 1
-        },
-        "char_start": {
-          "type": ["integer", "null"],
-          "minimum": 0
-        },
-        "char_end": {
-          "type": ["integer", "null"],
-          "minimum": 0
-        }
-      }
-    },
-    "provenance": {
+    "provenance_envelope": {
       "type": "object",
       "additionalProperties": false,
       "required": [
@@ -114,170 +184,161 @@
       ],
       "properties": {
         "schema_version": {
-          "const": "wp1-methods-draft-0.1"
+          "type": "string",
+          "description": "Schema/contract version used for this extraction."
         },
         "extractor_id": {
           "type": "string",
-          "minLength": 1
+          "description": "Extractor or pipeline component identifier."
         },
         "model_id": {
-          "type": ["string", "null"]
+          "type": ["string", "null"],
+          "description": "Model id when ML/LLM used; null for pure hand tag."
         },
         "prompt_id": {
-          "type": ["string", "null"]
+          "type": ["string", "null"],
+          "description": "Prompt or rules_config version id; null if none."
         },
         "confidence": {
-          "description": "Stored extractor score. Not a calibrated probability.",
           "type": ["number", "null"],
           "minimum": 0,
-          "maximum": 1
+          "maximum": 1,
+          "description": "Extractor confidence when available."
         },
         "source_tier": {
           "$ref": "#/$defs/source_tier"
         },
         "source_span": {
-          "$ref": "#/$defs/source_span"
+          "type": ["string", "null"],
+          "description": "Optional verbatim span or locator grounding the extraction."
         },
         "human_override": {
-          "type": "boolean"
+          "description": "False if none; true or object when a human overrode AI.",
+          "oneOf": [
+            { "type": "boolean" },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["overridden", "by"],
+              "properties": {
+                "overridden": { "type": "boolean" },
+                "by": { "type": "string" },
+                "fields": {
+                  "type": "array",
+                  "items": { "type": "string" }
+                },
+                "note": { "type": "string" }
+              }
+            }
+          ]
         },
         "reviewed_at": {
           "type": ["string", "null"],
-          "format": "date-time"
+          "format": "date-time",
+          "description": "ISO-8601 timestamp of human review; null if unreviewed."
         }
+      }
+    },
+    "field_meta": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["missingness"],
+      "properties": {
+        "missingness": { "$ref": "#/$defs/missingness" },
+        "confidence": {
+          "type": ["number", "null"],
+          "minimum": 0,
+          "maximum": 1
+        },
+        "source_span": { "type": ["string", "null"] },
+        "pending_biomedical": {
+          "type": "boolean",
+          "description": "True when value waits Shawn scientific adjudication or open coding.",
+          "default": true
+        }
+      }
+    },
+    "string_field": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["value", "missingness"],
+      "properties": {
+        "value": {
+          "type": ["string", "null"],
+          "description": "Scientific allowed vocabulary pending_biomedical unless missingness != reported."
+        },
+        "missingness": { "$ref": "#/$defs/missingness" },
+        "confidence": { "type": ["number", "null"], "minimum": 0, "maximum": 1 },
+        "source_span": { "type": ["string", "null"] },
+        "pending_biomedical": { "type": "boolean", "default": true }
       },
       "allOf": [
         {
           "if": {
-            "properties": {
-              "human_override": {
-                "const": true
-              }
-            },
-            "required": ["human_override"]
+            "properties": { "missingness": { "const": "reported" } },
+            "required": ["missingness"]
           },
           "then": {
-            "properties": {
-              "reviewed_at": {
-                "type": "string",
-                "format": "date-time",
-                "minLength": 1
-              }
-            },
-            "required": ["reviewed_at"]
+            "properties": { "value": { "type": "string", "minLength": 1 } }
           }
         }
       ]
     },
-    "assertion": {
+    "string_array_field": {
       "type": "object",
       "additionalProperties": false,
-      "required": [
-        "field_id",
-        "missingness",
-        "raw_text",
-        "normalized_text",
-        "raw_number",
-        "experiment_id",
-        "arm_id",
-        "provenance"
-      ],
+      "required": ["value", "missingness"],
       "properties": {
-        "field_id": {
-          "$ref": "#/$defs/field_id"
+        "value": {
+          "type": ["array", "null"],
+          "items": { "type": "string", "minLength": 1 },
+          "description": "Multi-label; vocab pending_biomedical."
         },
-        "missingness": {
-          "$ref": "#/$defs/missingness"
-        },
-        "raw_text": {
+        "missingness": { "$ref": "#/$defs/missingness" },
+        "confidence": { "type": ["number", "null"], "minimum": 0, "maximum": 1 },
+        "source_span": { "type": ["string", "null"] },
+        "pending_biomedical": { "type": "boolean", "default": true }
+      }
+    },
+    "number_field": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["value", "missingness"],
+      "properties": {
+        "value": { "type": ["number", "null"] },
+        "unit_as_reported": {
           "type": ["string", "null"],
-          "description": "Source wording when missingness is reported; otherwise null."
+          "description": "Unit family as reported; do not silently convert across families (Q8)."
         },
-        "normalized_text": {
-          "type": ["string", "null"],
-          "description": "Optional normalized label. x-adjudication pending_biomedical: no allowed-value list in this draft.",
-          "x-adjudication": "pending_biomedical"
-        },
-        "raw_number": {
-          "type": ["number", "null"],
-          "description": "Numeric token copied from the source when one was stated. Unit conversion is pending_biomedical and must not be applied by this schema."
-        },
-        "experiment_id": {
-          "type": ["string", "null"],
-          "description": "Opaque local id. Arm segmentation is pending_biomedical."
-        },
-        "arm_id": {
-          "type": ["string", "null"],
-          "description": "Opaque local id. Arm segmentation is pending_biomedical."
-        },
-        "provenance": {
-          "$ref": "#/$defs/provenance"
-        }
-      },
-      "allOf": [
-        {
-          "if": {
-            "properties": {
-              "missingness": {
-                "const": "reported"
-              }
-            },
-            "required": ["missingness"]
-          },
-          "then": {
-            "properties": {
-              "raw_text": {
-                "type": "string",
-                "minLength": 1
-              },
-              "provenance": {
-                "properties": {
-                  "source_span": {
-                    "properties": {
-                      "quote": {
-                        "type": "string",
-                        "minLength": 1
-                      }
-                    },
-                    "required": ["quote"]
-                  }
-                },
-                "required": ["source_span"]
-              }
-            },
-            "required": ["raw_text"]
-          }
-        },
-        {
-          "if": {
-            "properties": {
-              "missingness": {
-                "enum": [
-                  "not_in_available_source",
-                  "source_unavailable",
-                  "not_applicable",
-                  "uncertain",
-                  "extraction_failed"
-                ]
-              }
-            },
-            "required": ["missingness"]
-          },
-          "then": {
-            "properties": {
-              "raw_text": {
-                "type": "null"
-              },
-              "normalized_text": {
-                "type": "null"
-              },
-              "raw_number": {
-                "type": "null"
-              }
-            }
-          }
-        }
-      ]
+        "missingness": { "$ref": "#/$defs/missingness" },
+        "confidence": { "type": ["number", "null"], "minimum": 0, "maximum": 1 },
+        "source_span": { "type": ["string", "null"] },
+        "pending_biomedical": { "type": "boolean", "default": true }
+      }
+    },
+    "integer_field": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["value", "missingness"],
+      "properties": {
+        "value": { "type": ["integer", "null"] },
+        "missingness": { "$ref": "#/$defs/missingness" },
+        "confidence": { "type": ["number", "null"], "minimum": 0, "maximum": 1 },
+        "source_span": { "type": ["string", "null"] },
+        "pending_biomedical": { "type": "boolean", "default": true }
+      }
+    },
+    "boolean_field": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["value", "missingness"],
+      "properties": {
+        "value": { "type": ["boolean", "null"] },
+        "missingness": { "$ref": "#/$defs/missingness" },
+        "confidence": { "type": ["number", "null"], "minimum": 0, "maximum": 1 },
+        "source_span": { "type": ["string", "null"] },
+        "pending_biomedical": { "type": "boolean", "default": false }
+      }
     }
   }
 }

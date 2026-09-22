@@ -1,133 +1,137 @@
-# WP1 baseline audit — existing fields vs seed methods needs
+# WP1 Baseline Audit — Cannabis Research Navigator Methods Schema
 
-Status: draft for Director and Reliability review. Biomedical adjudication is open. This note does not deploy, does not change Fly, and does not define scientific meanings.
+**Role:** CRN Methods (Scientific Data Architect)  
+**Date:** 2026-09-22 (ET)  
+**Scope:** Read-only inventory of local Cannabis Paper Scraper (`/workspace/cannabis-paper-scraper`) against Faculty of Medicine AI Seed Year-1 needs (`ai-seed-fom/*`).  
+**Status:** Draft for tip/dev PR packaging. Scientific value meanings marked `pending_biomedical` — Shawn adjudicates; this audit does not invent definitions.
 
-Tip audited: `3856758` (`fix(cursor): environment.json ports as objects (#77)`), which includes merged env unblock PR #76.
+---
 
-## Sources inventoried
+## 1. Sources audited (local, read-only)
 
-| Source | What it actually holds |
-| --- | --- |
-| `schema.sql` | SQLite `papers` DDL. Comments on columns are legacy hints, not an approved vocabulary. |
-| `db_manager.py` `_PAPERS_PATCH_COLUMNS` / `columns_to_add` | Idempotent `ALTER TABLE` patches. `cannabis_type` and `tab_*` flags live here and are absent from the `schema.sql` `CREATE TABLE`. |
-| `rules_config.json` | `field_groups`, decision nodes, and the shared extraction prompt (`version` 2.7.0). Prompt output lists `multiple_doses` and `multiple_time_intervals`, which are not `papers` columns. |
-| `classification_schema.py` | Routing taxonomy helpers: publication type, review subtypes, ingestion status. Not a methods ontology. |
-| `subnode_field_scopes.py` | Calibration field lists for `node2a`, `node2b`, `node2c`, and Node 7 exposure paths. |
-| `content_tiers.py` `METHODS_HEAVY_FIELDS` | Fields dropped from alignment when the content tier is abstract-only. |
-| `migrations/versions/2d3a2de95a99_create_heuristics_and_tasks_tables.py` | The only Alembic revision. It creates `heuristics_rules` and `background_tasks`. It does not version `papers`. |
-| `docs/projects/project-1/architecture-design-document.md` | §5.2–§5.3 and §10.1. Several §5.3 names are illustrative and have no column. §5.2 lists `classification_source`, which is not in `schema.sql`. |
-| Seed needs | The path `ai-seed-fom/` is not in this repository at the tip above. Needs below are the methodology requirements in the 22 September 2026 AI Seed materials: proposal §2.2 ontology (`AI_Proposal_NM 3.0.docx`) and the consultant plan sections on critical fields, the minimum data model, and IDEAS/SGBA+ checkpoints (`Cannabis_Research_Navigator_Consultant_Plan.docx`). |
+| Source | Path |
+|--------|------|
+| Proposal / pillars | `ai-seed-fom/01-updated-proposal-*.md`, `02-researcher-brief-*.md`, `03-director-implementation-plan-*.md`, `04-two-pillars-ai-language-*.md` |
+| Paper columns | `schema.sql` |
+| Decision-tree / LLM field contract | `rules_config.json`, `classification_schema.py` |
+| Branch field scopes | `subnode_field_scopes.py` |
+| Source-tier gating | `content_tiers.py` (`METHODS_HEAVY_FIELDS`) |
+| Maude tree | `maude_classifier.py`, `maude_cues.py` |
+| Migrations | `migrations/versions/` (heuristics/tasks only; no methods extraction table yet) |
 
-Postgres is the production source of truth for paper rows (`docs/agent_automation_plan.md`). This audit does not reconcile the older SQLite-as-source wording later in that same plan. That reconciliation is out of scope for this docs slice.
+**Not touched:** Paper Scraper Engineer lanes, Fly, git write, production DB.
 
-Paper Scraper Engineer surfaces (Analyze chrome, harvest rewrites, `tab_*` dashboard flags) are listed only so they are not mistaken for Methods work. This PR does not change them.
+---
 
-## How to read dispositions
+## 2. Seed Year-1 method needs (from Seed docs — not invented)
 
-| Disposition | Meaning in this draft |
-| --- | --- |
-| keep | Slot stays. Year-1 contract can store it without a new scientific definition. |
-| refine | Slot stays, but shape, missingness, or provenance must change before it is a Methods assertion. Allowed values stay `pending_biomedical`. |
-| drop | Do not carry this slot into the Year-1 methods contract. |
-| defer | Real seed need or existing column, but not in this PR’s implementation. No migration here. |
+Pillar 1 asks for validated **study/context properties** comparable across papers:
 
-Nothing in the “rationale” column answers a biomedical question.
+1. Research type (in vitro / in vivo / clinical framing)  
+2. Product  
+3. Route of administration  
+4. Disease or experimental model  
+5. Key outcomes / related method fields  
+6. SGBA+ / IDEAS fields **only when papers report them**  
+7. Provenance: model/prompt identity, confidence, human override; AI-assisted vs human-reviewed honesty  
 
-## Bibliographic identity and text availability
+Compare UI must work on **hand tags / existing Analyze fields first**, then fill as AI lands.
 
-| Field / group | Where | Seed need | Disposition | Rationale |
-| --- | --- | --- | --- | --- |
-| `pmid`, `doi`, `semantic_scholar_id`, `title`, `authors`, `journal`, `year`, `abstract`, `publication_date` | `schema.sql` | Publication identity | keep | Identity columns already exist; Methods assertions point at them. |
-| `full_text_link`, `open_access` | `schema.sql` | Text availability, licence | refine | A link is not retrieved text. Availability becomes `source_tier` plus missingness, not a new boolean. |
-| Query version, retrieval time, document hash, parser version, study-family id | Absent | Minimum data model | defer | Seed asks for them. Adding columns is a later Alembic change, not this PR. |
-| `date_harvested`, `citation_count`, `summary` | `schema.sql` | Not a methods field | defer | Harvest and display metadata. Leave the harvest path alone. |
+---
 
-## Routing
+## 3. Inventory disposition
 
-| Field / group | Where | Seed need | Disposition | Rationale |
-| --- | --- | --- | --- | --- |
-| `ingestion_status` | `schema.sql`; `classification_schema.py` | Inclusion boundary | keep | Node 0 gate. Changing who is in the corpus is a Shawn question, not a rename. |
-| `publication_type` and review subtypes | `schema.sql`; `classification_schema.py`; `rules_config.json` nodes 1 and 3 | Reviews vs original research | keep | Coarse routing labels already exist. |
-| `study_type` | `schema.sql` (free text / JSON list in practice); scopes | Study design: in vitro, in vivo, clinical/human, mixed | refine | Keep the column as the current route. Year-1 assertions must not treat today’s labels as the approved design list. |
-| Architecture names `review_type`, `topic_scope`, `included_studies_count`, `synthesis_notes` | Architecture §5.3 only | Secondary literature | defer | Illustrative. Not columns. Restricted extraction for reviews stays a Shawn question. |
+Legend: **KEEP** = retain as-is for Year-1 contract · **REFINE** = keep concept, reshape naming/envelope · **DROP** = do not carry into Year-1 methods contract · **DEFER** = wait on Shawn biomedical adjudication (see `biomedical-adjudication-questions.md`).
 
-## Exposure, product, strain
+### 3.1 Classification / routing
 
-| Field / group | Where | Seed need | Disposition | Rationale |
-| --- | --- | --- | --- | --- |
-| `exposure_method` | `schema.sql`; all Node 2 scopes; prompt | Route | refine | Paper-level list. Seed wants experiment/arm linkage. Route vocabulary is `pending_biomedical`. |
-| `cannabis_type` | Prompt, scopes, `db_manager` patch; missing from `schema.sql` `CREATE TABLE` | Product and composition | refine | Runtime column exists; DDL is drifted. Composition beyond the current prompt list is `pending_biomedical`. |
-| `strain_reported` | `schema.sql`; `extractor.extract_strain_info`; `METHODS_HEAVY`; alignment-excluded | Strain when stated | keep | Raw source string. Methods-heavy, so abstract tiers do not gate it. |
-| `strain_normalized` | `schema.sql` comment “Chemotype I/II/III”; extractor chemotype map | Terminology normalization that preserves source wording | defer | Normalization rule is an existing code behavior, not an approved ontology. Do not extend the map in this PR. |
+| Existing | Disposition | Notes |
+|----------|-------------|-------|
+| `ingestion_status` (Node 0) | **KEEP** (catalog) | Relevance gate; not a Compare method card field. Out of methods schema core; remains Scraper ingest. |
+| `publication_type` | **KEEP** (catalog) | original research / review / case study. Orthogonal to research-type ontology (Q2). |
+| `study_type` (multi-label strings) | **REFINE** | Today mixes design labels (RCT, animal, in vitro) with review subtypes. Seed needs a clearer **research_type** axis — scientific enum **`pending_biomedical`** (Q2, Q3). |
+| Maude decision tree (Nodes 0–3, 2a/2b/2c/2d, Node 7 paths) | **DEFER** (Q15) | Live routing/calibration asset. Year-1 methods contract must not silently replace it; status is a Shawn question. |
+| High-level compare fields (`ingestion_status`, `publication_type`, `study_type`, `exposure_method`, `cannabis_type`, `outcome_domain`, `species`) | **REFINE** | Align names to Seed vocabulary (product, route, research_type) after adjudication. |
 
-## Dose and concentration
+### 3.2 Product / route / exposure
 
-| Field / group | Where | Seed need | Disposition | Rationale |
-| --- | --- | --- | --- | --- |
-| `dose_mg` | `schema.sql`; `METHODS_HEAVY` | Dose with units | refine | Unit is baked into the column name. Seed wants raw value, raw unit, and a separate normalized value. |
-| `thc_pct`, `cbd_pct` | `schema.sql`; scopes; `METHODS_HEAVY` | Cannabinoid composition | refine | Keep as legacy numeric slots. They are not a composition record. |
-| `thc_mg_ml`, `cbd_mg_ml`, `thc_mg_g`, `cbd_mg_g`, `thc_mg_kg`, `cbd_mg_kg`, `thc_uM`, `cbd_uM` | `schema.sql`; branch scopes; `METHODS_HEAVY` | Concentration with units | refine | Same unit-baked pattern. Product concentration is not defined here as delivered dose. |
-| `puff_count` | `schema.sql`; inhaled Node 7 paths; `METHODS_HEAVY` | Exposure detail when reported | keep | Integer slot only. When it applies is `pending_biomedical`. |
-| Architecture `dose_mg_kg`, `concentration_uM`, `intervention_type` | §5.3 examples | Dose / intervention | drop | Not columns. Covered only if Shawn maps them onto the unit-bearing assertion, which this draft does not do. |
+| Existing | Disposition | Notes |
+|----------|-------------|-------|
+| `cannabis_type` (product-form list in prompts) | **REFINE** → proposed `product` | Existing cue list is engineering vocabulary, not adjudicated ontology. Values **`pending_biomedical`** (Q4). |
+| `exposure_method` | **REFINE** → proposed `route` (and/or exposure context) | Today conflates clinical routes, in vivo exposure setups, and in vitro media exposure. Separation of **route vs product** is Q5. |
+| `strain_reported` / `strain_normalized` | **REFINE** | Overloaded: botanical strain, synthetic ligand, sometimes supplier cues; animal strains explicitly forbidden in prompts but still a confusion risk. Chemotype I/II/III mapping is scientific — **`pending_biomedical`**. |
+| Node 7 exposure path splits (7a–7g in vivo; 7a–7c in vitro) | **DEFER** | Useful extraction scoping; not Year-1 public Compare filters until Shawn confirms. |
 
-## Time and regimen
+### 3.3 Dose / concentration / regimen
 
-| Field / group | Where | Seed need | Disposition | Rationale |
-| --- | --- | --- | --- | --- |
-| `duration_days` | `schema.sql`; clinical and in vivo scopes; `METHODS_HEAVY` | Exposure duration | refine | One numeric column cannot yet distinguish exposure, treatment, and follow-up. |
-| `inhaled_exposure_duration` | `schema.sql`; `METHODS_HEAVY` | Exposure duration | refine | Separate string slot already exists. Relation to `duration_days` is `pending_biomedical`. |
-| `treatment_duration` | `schema.sql`; in vitro scopes; `METHODS_HEAVY` | Exposure or treatment duration | refine | Kept as its own slot so in vitro timing is not forced into `duration_days`. |
-| `administration_frequency` | `schema.sql`; prompt; `METHODS_HEAVY` | Frequency | keep | Free-text slot. Allowed normalizations are `pending_biomedical`. |
-| `repeat_exposure_count` | `schema.sql`; in vivo scopes; `METHODS_HEAVY` | Regimen detail | keep | Integer when the source states a count. |
-| `exposure_regimen_bin` | `schema.sql` comment “acute \| subchronic \| chronic”; in vivo scopes; prompt; `METHODS_HEAVY` | Not named as a seed field | defer | Bin edges are a scientific definition. Leave the column; do not add values in the new contract. |
-| `multiple_doses`, `multiple_time_intervals` | Scopes and prompt JSON only | Multi-arm / multi-dose | refine | Flags are not durable columns. Year-1 contract uses repeated assertions instead of a boolean. |
+| Existing | Disposition | Notes |
+|----------|-------------|-------|
+| `dose_mg`, `thc_mg_kg`, `cbd_mg_kg`, `thc_mg_g`, `cbd_mg_g` | **KEEP** columns conceptually | Store **as reported**; unit family must stay distinct. |
+| `thc_mg_ml`, `cbd_mg_ml`, `thc_uM`, `cbd_uM`, `thc_pct`, `cbd_pct` | **KEEP** conceptually | Concentration vs dose vs % — do not cross-convert without policy (Q8). |
+| `puff_count` | **KEEP** (inhaled contexts) | Methods-heavy; abstract-tier gated today. |
+| Prompt-side µg/mL → mg/mL conversion guidance | **DROP** from Year-1 methods contract | Technical proposal: forbid silent unit inventing; mark conversions as adjudication (Q8). Existing prompt text is Eng lane debt — Methods documents the **forbidden conversions** rule only. |
+| `duration_days`, `inhaled_exposure_duration`, `administration_frequency`, `treatment_duration`, `repeat_exposure_count`, `exposure_regimen_bin` | **REFINE** → regimen group | Keep as reported-structure fields; regimen bin labels acute/subchronic/chronic are scientific — **`pending_biomedical`**. |
+| `multiple_doses`, `multiple_time_intervals` | **KEEP** as design flags | Boolean design cues; not outcomes. |
 
-## Sample size, comparator, outcome
+### 3.4 Outcomes / models / species / population
 
-| Field / group | Where | Seed need | Disposition | Rationale |
-| --- | --- | --- | --- | --- |
-| `sample_size` | `schema.sql`; node2b scope; `METHODS_HEAVY`; not in the node2a scope list | Sample size and per-arm denominator | refine | One paper-level integer. What it counts is `pending_biomedical`. |
-| Comparator | Absent | Comparator | defer | Seed field with no column and no approved meaning. |
-| `outcome_domain` | `schema.sql`; scopes; prompt | Outcome measure and time point | refine | Coarse multi-label only. Measure text and time point are separate Year-1 slots with values `pending_biomedical`. |
-| Outcome time point | Absent | Outcome time point | defer | No column. Do not reuse exposure duration as a stand-in. |
+| Existing | Disposition | Notes |
+|----------|-------------|-------|
+| `outcome_domain` (pain, anxiety, …) | **REFINE** | Cue list exists; Year-1 domain set and “other” policy **`pending_biomedical`** (Q10). |
+| Disease / experimental model | **DEFER** as first-class field | **Absent** as dedicated column today; Seed explicitly needs it (Q6). Placeholder hook only until Shawn. |
+| `species` | **REFINE** | Host species from Maude tree; align with biological-system ontology (Q11). |
+| `population_age`, `population_sex` | **KEEP** as SGBA+ hooks | Expand representation envelope; **never invent** (Q12). |
+| `inclusion_criteria`, `exclusion_criteria` | **DEFER** for Compare cards | Free-text; optional recall / gold detail, not Year-1 filter spine. |
+| `sample_size` | **REFINE** | Needs replicate vs sample vs arm rules (Q9). |
 
-## Population, criteria, IDEAS/SGBA+
+### 3.5 Provenance / confidence / source tier
 
-| Field / group | Where | Seed need | Disposition | Rationale |
-| --- | --- | --- | --- | --- |
-| `species` | `schema.sql`; node2b scope; not in the prompt output example | Model / population, including species | refine | Host label exists. Cell model vs animal vs human is `pending_biomedical`. DDL and prompt output are drifted. |
-| `population_age` | `schema.sql`; node2a scope; `extract_population_age` docstring says pediatric / adult / geriatric | Age where reported | refine | Keep capture-if-reported. Those three words are a code comment, not an approved list. |
-| `population_sex` | `schema.sql` comment “male, female, both”; node2a scope; `extract_population_sex` | Reported biological sex, distinct from gender | refine | One column and no gender slot. Sex and gender stay separate keys; vocabularies are `pending_biomedical`. |
-| Gender | Absent | Gender identity when the source states it | defer | Hook only in `schemas/methods.schema.json`. No column until Shawn sets the value list. |
-| Race/ethnicity, Indigenous identity, disability, socioeconomic circumstances, geographic context | Absent | SGBA+ fields where explicitly reported | defer | Hooks in the schema. No inference, no value lists, no migration in this PR. |
-| `inclusion_criteria`, `exclusion_criteria` | `schema.sql`; node2a scope; `ALIGNMENT_EXCLUDED_FIELDS` | Not in the seed critical-field list | defer | Already stored and already outside the alignment denominator. Not a Year-1 methods gate. |
+| Existing | Disposition | Notes |
+|----------|-------------|-------|
+| `classification_confidence`, `classifier_version`, `classification_timestamp` | **REFINE** → provenance envelope | Expand to Seed-required: schema_version, extractor_id, model_id, prompt_id, confidence, source_tier, source_span, human_override, reviewed_at. |
+| `expert_locked_fields`, `feedback_audit` | **KEEP** (HITL substrate) | Supports gold/override; gold policy itself is Q16. |
+| `llm_calls_log` | **KEEP** (ops) | Cost/token telemetry; not scientific ontology. |
+| `content_tiers.py` tiers + `METHODS_HEAVY_FIELDS` | **KEEP / REFINE** | Maps to `source_tier` honesty (abstract vs PDF). Align with Q13. |
+| Distinct missingness | **NEW (technical)** | Today null/empty conflates “not reported”, “not applicable”, “failed”. Propose enum: `reported \| not_in_available_source \| source_unavailable \| not_applicable \| uncertain \| extraction_failed`. |
 
-## Provenance, locks, and evaluation metadata
+### 3.6 IDEAS / SGBA+
 
-| Field / group | Where | Seed need | Disposition | Rationale |
-| --- | --- | --- | --- | --- |
-| `classification_confidence`, `classification_timestamp`, `classifier_version` | `schema.sql` | Model/prompt version and confidence on each field | refine | Paper-level only. The new envelope is per assertion. Confidence stays a stored number, not a calibrated probability. |
-| `expert_locked_fields` | `schema.sql` | Locked expert value | keep | Do not overwrite locks. The envelope’s `human_override` points at this behavior. |
-| `feedback_audit` | `schema.sql` | Audit history | keep | Correction log already exists. Test-label handling is unchanged here. |
-| `llm_calls_log` | `schema.sql` | Tokens, model, cost | keep | Run log, not a scientific field. |
-| `classification_source` | Architecture §5.2 only | Extractor identity | defer | Named in the architecture doc, not in `schema.sql`. Envelope uses `extractor_id` instead of a silent column add. |
-| Content tiers | `content_tiers.py` | Abstract silence is not full-text omission | keep | `pdf_extracted`, `abstract_reclassify`, `pdf_link`, `abstract_only` are the technical `source_tier` vocabulary. `METHODS_HEAVY_FIELDS` already keeps dose, duration, sample size, strain, and concentration off abstract alignment. |
-| Experiment id, arm id, source span | Absent as columns | Experiment/arm and source passage | defer | Represented in the JSON Schema only. No Alembic revision in this PR. |
+| Existing | Disposition | Notes |
+|----------|-------------|-------|
+| `population_sex`, `population_age` | **KEEP** + hook expansion | Seed: capture only when reported. |
+| Gender (distinct from sex), population descriptors beyond age/sex | **DEFER** hooks | Representation fields in schema contract as optional reported-only; scientific coding **`pending_biomedical`** (Q12). |
+| Fabricating SGBA+ from names/pronouns/assumptions | **DROP** (forbidden) | Annotation guide: never-infer. |
 
-## Other-lane columns (not Methods)
+### 3.7 Unit of scientific record
 
-| Field / group | Where | Disposition | Rationale |
-| --- | --- | --- | --- |
-| `tab_preclinical`, `tab_clinical`, `tab_unclassified_preclinical`, `tab_tangential`, `tab_review` | `db_manager.py` patches only | defer | Dashboard routing flags. Paper Scraper Engineer lane. |
+| Existing | Disposition | Notes |
+|----------|-------------|-------|
+| One row ≈ one paper (`papers.id`) | **KEEP** as Year-1 default | Seed Q7 asks paper vs family vs experiment vs arm — **`pending_biomedical`**. Technical proposal: Year-1 extraction attaches to paper_id; multi-arm is deferred structure. |
 
-## Alembic
+---
 
-Current head is `2d3a2de95a99` and it does not describe `papers`. Future methods columns belong in Alembic against Postgres. This PR adds no revision: the contract is `schemas/methods.schema.json` plus the docs in this directory.
+## 4. Executive keep / refine / drop / defer (summary)
 
-## Drift to fix later (not in this PR)
+1. **KEEP** catalog bibliographic spine and ingest relevance (`ingestion_status`, IDs, FTS).  
+2. **KEEP** numeric dose/concentration **columns as reported** (no silent cross-unit science).  
+3. **KEEP** content-tier gating of methods-heavy fields (abstract honesty).  
+4. **KEEP** HITL substrates (`expert_locked_fields`, `feedback_audit`) for gold workflow.  
+5. **REFINE** `study_type` → separate publication_type vs research_type axes after Shawn Q2/Q3.  
+6. **REFINE** `cannabis_type` / `exposure_method` → product vs route (Q4/Q5).  
+7. **REFINE** confidence/version stamps → full provenance envelope.  
+8. **REFINE** nulls → distinct missingness enum (technical).  
+9. **DROP** from Year-1 methods contract: prompt-authorized inventing of unit conversions; inventing SGBA+; chatbot/MCP/RLHF as FoM deliverables (already Seed out-of-scope).  
+10. **DEFER** disease/experimental model ontology, multi-arm unit of record, legacy Maude tree replacement decision (Q6, Q7, Q15), gold policy details (Q16).  
+11. **DEFER** Node-7 path labels as public filters until product/route adjudicated.  
+12. **NEW** IDEAS/SGBA representation hooks with never-infer rule; scientific codes pending.
 
-- `cannabis_type` and `tab_*` are patched in `db_manager.py` and missing from the `schema.sql` `CREATE TABLE`.
-- `multiple_doses` and `multiple_time_intervals` are in scopes and the prompt, not in the table.
-- `species` is a column and a node2b scope field, and it is absent from the prompt’s output example.
-- `classification_source` is documented in the architecture doc and absent from `schema.sql`.
-- `schema.sql` comments and extractor docstrings state vocabularies (chemotype bins, sex bins, regimen bins) that this draft does not adopt.
+---
+
+## 5. Separation reminder
+
+| Lane | Owns |
+|------|------|
+| **Technical (this WP1 package)** | JSON Schema contract shape, provenance envelope, missingness enum, source_tier mapping, file layout, tip/dev PR text |
+| **Shawn biomedical adjudication** | All scientific enums, mandatory vs deferred Year-1 fields, comparability language bar, Maude status, gold policy |
+| **Paper Scraper Engineer** | Migrations, extract jobs, Fly, request-path workers — **not started by this package** |
+

@@ -1,48 +1,186 @@
-# Biomedical adjudication questions (open)
+# Biomedical Adjudication Questions — Shawn
 
-Owner: Shawn (biomedical lead). Status of every item: open.
+**Role:** CRN Methods (Scientific Data Architect)  
+**Date:** 2026-09-22 (ET)  
+**Instruction to agents/annotators:** **Do not answer these questions.** Embed for Shawn Biomedical adjudication only.  
+**Context:** Year-1 Cannabis Research Navigator methods schema (Faculty of Medicine AI Seed). Technical proposals live in `schema-proposal.md` and `methods.schema.json`; scientific meanings stay open until Shawn decides.
 
-This list is input to adjudication. It does not answer the questions, recommend an option, or record a provisional scientific definition. Methods will not close an enum until a decision is written back against the item id.
+---
 
-Related drafts: `docs/methods/field-dictionary.md`, `schemas/methods.schema.json`.
+## Q1 — Year-1 core fields: mandatory vs deferred
 
-## Corpus boundary
+Which proposed Core fields are **mandatory** for Year-1 extraction / Compare filters, and which are **deferred**?
 
-1. Which of the following are inside the Year-1 pilot: plant products, isolated cannabinoids, synthetic cannabinoids, endocannabinoid mechanism papers, medicinal use, observational exposure? Decision needed before inclusion rules change.
-2. How should reviews, case reports, ex vivo work, mixed studies, non-English text, and publication corrections be routed for methods extraction? Decision needed before `not_applicable` is used.
+Candidates referenced in the field dictionary: `research_type`, `clinical_subtype`, `product`, `route`, `disease_or_experimental_model`, `outcome_domains`, `species_or_biological_system`, plus dose/regimen cluster, SGBA hooks.
 
-## Design, model, product, route
+*(No answer here.)*
 
-3. What is the allowed value list for `study_type`, including mixed designs? Current `papers.study_type` labels are not that list.
-4. What is the allowed value list for `model_population` (human, animal species, cell model, other)? Decision needed before `species` is treated as that field.
-5. What is the allowed value list for `product_composition`? The prompt’s current `cannabis_type` bullets are not adopted here.
-6. What is the allowed value list for `route`? The `schema.sql` comment on `exposure_method` is not adopted here.
-7. Does Year-1 keep a separate strain field, and is chemotype normalization in or out? `strain_normalized` currently maps toward Chemotype I/II/III in code. That mapping is not approved by this draft.
+---
 
-## Quantity, time, comparator, outcome
+## Q2 — Research-type ontology (in vitro / in vivo / clinical + edge cases)
 
-8. Are product concentration and delivered dose different slots? If a conversion is ever allowed, which pairs and which assumptions? No conversion is specified here.
-9. How should exposure duration, treatment duration, inhalation time, and follow-up time be distinguished? When is each `not_applicable`? `duration_days`, `inhaled_exposure_duration`, and `treatment_duration` stay unmerged until this is answered.
-10. Do the bins currently commented on `exposure_regimen_bin` (`acute`, `subchronic`, `chronic`) stay, change, or leave the Year-1 contract?
-11. What does `sample_size` count (participants, animals, samples, biological replicates, technical replicates, per arm)? Decision needed before gold labels score that field.
-12. What counts as a `comparator`?
-13. What is an `outcome_measure`, and what is an `outcome_time_point`? Decision needed before `outcome_domain` is treated as either one.
-14. What splits one experiment into arms, and may a paper-level dose be stored when arms differ?
+What is the authoritative **research_type** ontology for cannabis literature in this catalog?
 
-## IDEAS / SGBA+
+Include how to treat edge cases (mixed designs, ex vivo, organoid, human tissues in vitro, observational without intervention, etc.).
 
-15. What source-defined and, separately, normalized values are allowed for `sex_reported`? Does that list differ for humans, animals, and cell donors? `population_sex` comments (`male`, `female`, `both`) are not that decision.
-16. What source-defined and normalized values are allowed for `gender_reported`? Confirm it stays a different field from sex.
-17. What may be stored in `age_reported`? The extractor docstring (`pediatric`, `adult`, `geriatric`) is not that decision.
-18. Which of these enter Year-1 at all, and what wording is stored versus normalized: `race_ethnicity_reported`, `indigenous_identity_reported`, `disability_reported`, `socioeconomic_reported`, `geographic_context_reported`?
-19. What must reviewers refuse to infer, beyond the never-infer rule already stated in the annotation guide? Add cases; do not fill examples as policy here.
-20. How should a reporting audit describe missing sex or gender without treating missingness as a biological finding? Wording is a lead decision.
+*(No answer here.)*
 
-## Legacy columns
+---
 
-21. Which current columns remain public methods fields, which become internal projections, and which are retired after the assertion store exists? Candidates include the unit-baked THC/CBD columns, `population_sex`, `population_age`, `strain_normalized`, and `exposure_regimen_bin`.
-22. Should secondary literature carry any of the Year-1 slots, or only routing fields?
+## Q3 — Clinical subtypes
 
-## Not in scope for these questions
+What clinical subtype vocabulary should nest under or sit beside clinical research_type (e.g. RCT, prospective, retrospective, observational, and any others)?
 
-This list does not ask the lead to approve a deploy, a threshold, or a model. Reliability review of the technical contract is separate and does not close items 1–22.
+How should case reports / case series relate to clinical subtypes vs `publication_type`?
+
+*(No answer here.)*
+
+---
+
+## Q4 — Product taxonomy
+
+What is the Year-1 **product** taxonomy (replacing/refining legacy `cannabis_type` cue lists)?
+
+How should synthetics, isolates, receptor agonists/antagonists, and plant products be grouped?
+
+*(No answer here.)*
+
+---
+
+## Q5 — Route vs product
+
+How should **route** (administration / exposure modality) be separated from **product**?
+
+Which legacy `exposure_method` / Node 7 path labels survive as routes, which are exposure setups, and which fold into product?
+
+*(No answer here.)*
+
+---
+
+## Q6 — Disease / experimental model
+
+What ontology or coding approach should Year-1 use for **disease or experimental model** (absent as a dedicated column today)?
+
+Mandatory in Year 1 or deferred (ties to Q1)?
+
+*(No answer here.)*
+
+---
+
+## Q7 — Unit of scientific record
+
+What is the unit of scientific record for comparability: **paper**, **paper family**, **experiment**, or **arm**?
+
+If finer than paper, what is the Year-1 interim rule while storage remains paper-scoped?
+
+*(No answer here.)*
+
+---
+
+## Q8 — Dose vs concentration vs regimen + forbidden conversions
+
+Define scientific rules distinguishing **dose**, **concentration**, and **regimen**.
+
+List **forbidden conversions** (and any explicitly allowed ones) for Year-1 extraction — especially across mg, mg/kg, mg/mL, µM, %, and puff-based measures.
+
+*(No answer here.)*
+
+---
+
+## Q9 — Replicates & samples rules
+
+How should `sample_size`, biological replicates, technical replicates, and per-arm N be coded when papers report them inconsistently?
+
+What must never be inferred?
+
+*(No answer here.)*
+
+---
+
+## Q10 — Outcomes domains
+
+What is the Year-1 **outcome_domains** controlled list (refining legacy pain/anxiety/cognition/… cues)?
+
+Policy for `"other"`, multi-label, and excluding background-only mentions?
+
+*(No answer here.)*
+
+---
+
+## Q11 — Species / biological system
+
+What vocabulary covers host **species** and broader **biological system** (cell line vs primary cells vs organoid vs whole animal vs human)?
+
+Where does this sit relative to research_type?
+
+*(No answer here.)*
+
+---
+
+## Q12 — SGBA+ scientific rules
+
+Beyond the technical never-infer rule, what scientific coding is required for sex, gender, and population fields when reported?
+
+Any IDEAS-specific representation requirements for Year-1 gold review?
+
+*(No answer here.)*
+
+---
+
+## Q13 — Source-tier truth (abstract vs full text)
+
+When may an abstract alone assert a Core methods value as `reported`?
+
+What is the truth bar for methods-heavy fields across abstract vs PDF-extracted tiers?
+
+*(No answer here.)*
+
+---
+
+## Q14 — Comparability / gap language bar
+
+What scientific bar must Public Compare / “I wonder…” gap cues meet before claiming thin evidence along a dimension (product × route × model × research_type, etc.)?
+
+*(No answer here. Wonder owns microcopy tone; Shawn owns scientific bar.)*
+
+---
+
+## Q15 — Legacy Maude / decision-tree status
+
+What is the Year-1 status of the legacy Maude decision tree and calibration stack?
+
+Options might include: keep as routing authority, keep as weak prior, freeze, replace after gold gates, or other — **Shawn decides**.
+
+*(No answer here.)*
+
+---
+
+## Q16 — Gold / adjudication policy
+
+What is the gold-set and disagreement adjudication policy (who breaks ties, precision/recall gates before backfill, Label Studio workflow expectations, trainee vs clinician co-review)?
+
+*(No answer here.)*
+
+---
+
+## Sign-off block (for Shawn)
+
+| Question | Decision (Shawn) | Date | Notes |
+|----------|------------------|------|-------|
+| Q1 | _pending_ | | |
+| Q2 | _pending_ | | |
+| Q3 | _pending_ | | |
+| Q4 | _pending_ | | |
+| Q5 | _pending_ | | |
+| Q6 | _pending_ | | |
+| Q7 | _pending_ | | |
+| Q8 | _pending_ | | |
+| Q9 | _pending_ | | |
+| Q10 | _pending_ | | |
+| Q11 | _pending_ | | |
+| Q12 | _pending_ | | |
+| Q13 | _pending_ | | |
+| Q14 | _pending_ | | |
+| Q15 | _pending_ | | |
+| Q16 | _pending_ | | |
+

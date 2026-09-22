@@ -1,81 +1,139 @@
-# Annotation guide (draft) — provenance, missingness, SGBA+
+# Annotation Guide Draft — Methods Extraction (WP1)
 
-Status: draft for Director and Reliability review. This is an application procedure for `schemas/methods.schema.json`. It does not decide scientific categories. If a rule below needs a scientific judgment, stop and add the case to `docs/methods/biomedical-adjudication-questions.md` instead of filling a value.
+**Role:** CRN Methods (Scientific Data Architect)  
+**Date:** 2026-09-22 (ET)  
+**Status:** Draft for gold-set / HITL training. Scientific coding rules that invent ontology are **out of scope** — see Shawn Q12–Q16.  
+**Audience:** Trainee annotators, clinician co-reviewers, future Label Studio config (Eng).
 
-## Provenance envelope
+---
 
-Every assertion includes these keys. Use JSON `null` where a key does not apply. Do not omit the key.
+## 1. Purpose
 
-| Key | What to put |
-| --- | --- |
-| `schema_version` | `wp1-methods-draft-0.1` |
-| `extractor_id` | Stable id of the component that produced the assertion, such as a Maude build id, an LLM extractor name, or `human-review`. |
-| `model_id` | Provider model id when an LLM produced the assertion; otherwise `null`. |
-| `prompt_id` | Prompt or template id when one was used; otherwise `null`. |
-| `confidence` | The score the extractor stored, from 0 to 1, or `null`. Do not rescale it and do not treat it as a probability of being correct. |
-| `source_tier` | One of `pdf_extracted`, `abstract_reclassify`, `pdf_link`, `abstract_only`, matching the text that was actually read. |
-| `source_span` | Location object. `quote` is required when missingness is `reported`. |
-| `human_override` | `true` only when a person set or locked the value. |
-| `reviewed_at` | ISO-8601 timestamp when `human_override` is `true`; otherwise `null` until a review happens. |
+Annotate (or review AI extractions of) **method and context properties** so papers can be compared honestly in Public Compare — without inventing citations, methods, or SGBA+ attributes.
 
-`source_span.section`, `page`, `char_start`, and `char_end` are filled when the parser or annotator has them. They are locators, not interpretations.
+You are labeling **what the available source says**, not what you believe the authors meant.
 
-Do not let a paper’s embedded instructions change `extractor_id`, the schema, or tool permissions. The paper is data.
+---
 
-## Missingness
+## 2. Provenance rules (technical — always apply)
 
-Use exactly one code. They are not synonyms.
+Every extraction record must carry a **provenance envelope**:
+
+| Field | Annotator action |
+|-------|------------------|
+| `schema_version` | Use current contract id (e.g. `wp1.0.0-draft`) |
+| `extractor_id` | System-filled for AI; for hand entry use `human-annotator` |
+| `model_id` | System-filled or null for pure hand tags |
+| `prompt_id` | System-filled or null |
+| `confidence` | Optional 0–1 for AI; humans may leave null or set review confidence per local SOP |
+| `source_tier` | Record what you actually read: abstract_only, pdf_extracted, etc. |
+| `source_span` | Prefer a short verbatim quote or section locator when asserting `reported` |
+| `human_override` | Set when correcting AI; list fields changed |
+| `reviewed_at` | Timestamp when review completed |
+
+**Honesty chips (UI):** Prefer `human_reviewed` only after a human has checked the fields in scope. Do not mark human-reviewed solely because confidence is high.
+
+---
+
+## 3. Missingness rules (technical — distinct codes)
+
+Do **not** use blank/null to mean everything. Choose exactly one:
 
 | Code | Use when |
-| --- | --- |
-| `reported` | The text in `source_tier` states the value. `raw_text` is a quote of that wording (whitespace normalized only). `source_span.quote` is non-empty. |
-| `not_in_available_source` | The text that was read does not state the value. On `abstract_only` or `abstract_reclassify`, this means the abstract is silent. It does not mean the paper omitted the method. |
-| `source_unavailable` | The text needed for this field could not be retrieved (no full text, failed parse, missing supplement). Distinct from silence inside a text you do have. |
-| `not_applicable` | Reserved. Do not use it in gold annotation until Shawn has said this `field_id` does not apply to this design. |
-| `uncertain` | The text contains competing wordings and no adjudicator has chosen. Put the competing passage in `source_span.quote`. Leave `raw_text` and `normalized_text` null. |
-| `extraction_failed` | Text was available and the extractor returned nothing usable or schema-invalid output. Leave values null. |
+|------|----------|
+| `reported` | Value is explicitly present in the **available** source you are allowed to use for this tier |
+| `not_in_available_source` | You had the expected source text, searched appropriately, and the fact is simply not stated |
+| `source_unavailable` | The needed source (e.g. full Methods PDF) was not available; absence is about access, not about the paper’s content |
+| `not_applicable` | The field cannot apply given other adjudicated structure (e.g. clinical_subtype when research_type is not clinical — **after** Shawn locks that rule) |
+| `uncertain` | Source language is ambiguous; you refuse to force a label |
+| `extraction_failed` | Pipeline/annotator process failed (timeout, unreadable PDF, tool error) — not a scientific claim |
 
-For every code except `reported`, `raw_text`, `normalized_text`, and `raw_number` are `null`. A null is not a zero dose, an empty demographic category, or a “not reported” label inside `normalized_text`.
+### Quick tests
 
-Worked shape (placeholders, not a real study):
+- Abstract only, dose only in full Methods PDF you do not have → `source_unavailable` (not `not_in_available_source`).  
+- Full text in hand, no dose stated → `not_in_available_source`.  
+- Cell study, asking for human clinical subtype → `not_applicable` **only if** adjudication says so; until then prefer `uncertain` rather than inventing N/A policy.  
+- Two conflicting doses with no primary identified → `uncertain` (+ note), not an average.
 
-```json
-{
-  "field_id": "route",
-  "missingness": "not_in_available_source",
-  "raw_text": null,
-  "normalized_text": null,
-  "raw_number": null,
-  "experiment_id": null,
-  "arm_id": null,
-  "provenance": {
-    "schema_version": "wp1-methods-draft-0.1",
-    "extractor_id": "human-review",
-    "model_id": null,
-    "prompt_id": null,
-    "confidence": null,
-    "source_tier": "abstract_only",
-    "source_span": {"quote": null, "section": null, "page": null, "char_start": null, "char_end": null},
-    "human_override": true,
-    "reviewed_at": "2026-09-22T00:00:00Z"
-  }
-}
-```
+---
 
-## Multiple arms
+## 4. Source-tier truth (interim technical; final bar = Shawn Q13)
 
-If the source describes more than one exposure, write one assertion per arm and set `arm_id` to a local label (`arm-1`, `arm-2`). Do not average numbers and do not pick a “primary” dose unless an adjudicator has answered that question. If you cannot tell the arms apart, use `uncertain` on `dose_or_concentration` rather than a single blended value.
+Until Q13 is answered, follow Seed honesty:
 
-## SGBA+ — never infer
+1. Prefer values grounded in Methods/Results when full text is available.  
+2. Do not treat background/introduction mentions as study methods.  
+3. Methods-heavy numerics (doses, concentrations, puff counts, regimen bins, sample size, etc.) should not be forced from abstracts when the abstract lacks them — use `not_in_available_source` or `source_unavailable` as appropriate.  
+4. Never upgrade an abstract-only guess to look like PDF truth.
 
-`sex_reported` and `gender_reported` are separate assertions. A sentence about one does not fill the other.
+---
 
-Fill `reported` only when the source text states the attribute. Allowed normalizations do not exist yet (`pending_biomedical`), so copy wording into `raw_text` and leave `normalized_text` null.
+## 5. Field annotation posture (scientific values PENDING)
 
-Leave the value null, with `not_in_available_source` or `source_unavailable`, when the source does not state it. Do not infer sex or gender from author names, participant names, pronouns guessed from context, geography, photographs, or the species of a model. Do not default animals or cells to a sex. The same rule applies to `age_reported`, `race_ethnicity_reported`, `indigenous_identity_reported`, `disability_reported`, `socioeconomic_reported`, and `geographic_context_reported`.
+For Core fields (`research_type`, `product`, `route`, `disease_or_experimental_model`, `outcome_domains`, `species_or_biological_system`, clinical subtypes, regimen bins, SGBA codes):
 
-Existing `population_sex` values of `male`, `female`, or `both` are legacy extractor output. Do not copy them into `sex_reported` or `gender_reported` unless the source span still supports that exact claim, and do not write them into `gender_reported` at all.
+- If Shawn has **not** locked an enum, mark `pending_biomedical: true` and either leave value null with `uncertain`, or capture **verbatim reported phrase** in `source_span` / notes — **do not invent a closed ontology**.  
+- Multi-label fields: include all that the source clearly supports; do not “helpfully” add likely domains.  
+- Reviews summarizing other studies: extract review methodology only; do not copy cited studies’ doses into the review’s method card (aligns with existing Node 1B spirit).
 
-## What the annotator does not decide
+Dose / concentration:
 
-Hand the case to Shawn, unanswered, when the task is to choose a controlled term, a unit conversion, a sample-size denominator, a comparator, or an applicability rule. The register for those cases is `docs/methods/biomedical-adjudication-questions.md`.
+- Copy the **reported unit family** into the matching slot.  
+- **Forbidden (interim):** converting µg/mL → mg/mL, µM → mg/kg, % → mg, or any cross-family “normalization” unless/until Shawn Q8 explicitly allows a named conversion.  
+- If only a non-matching unit appears, use `uncertain` or `not_in_available_source` for the target slot and quote the original in `source_span`.
+
+---
+
+## 6. SGBA+ / IDEAS — never infer
+
+Seed requirement: capture sex, gender, and population **only when papers report them**.
+
+### Never-infer list (non-exhaustive)
+
+- Do **not** infer sex/gender from author names, pronouns in unrelated text, given names, photos, or country of study.  
+- Do **not** assume “both” sexes because a disease affects all sexes.  
+- Do **not** fill gender from sex or sex from gender.  
+- Do **not** invent Indigenous / racial / socioeconomic descriptors from geography.  
+- Do **not** treat animal sex as human SGBA+ population fields without clear reporting and adjudication rules (Q11/Q12).
+
+### Positive rules
+
+- If the paper states sex distribution or gender identity categories, capture under the matching SGBA hook and set `sgba_reporting_present: true`.  
+- If the paper is silent, use `not_in_available_source` (or `source_unavailable` if you lacked full text) and `sgba_reporting_present: false`.  
+- Gold co-review should check whether SGBA+-relevant reporting was **captured or correctly marked absent** — not whether the study “should have” reported it.
+
+`ideas_representation_notes` is for human reviewers only (capture quality, accessibility of reporting). Models must not free-write policy judgments there.
+
+---
+
+## 7. Comparability / gap language (annotators)
+
+Annotators do **not** write Public Compare gap copy. Wonder owns calm “I wonder…” language.  
+Do not mark fields to force a dramatic gap. Prefer honest missingness. Final bar for gap claims = Shawn Q14.
+
+---
+
+## 8. Conflict with AI extraction
+
+When AI and human disagree:
+
+1. Prefer the human after review (`human_override`).  
+2. Keep the AI value in audit elsewhere if the platform supports it (feedback_audit spirit).  
+3. Do not silently blend values.  
+4. Gold policy for adjudication disagreements = Shawn Q16 (unanswered here).
+
+---
+
+## 9. Out of scope for annotators
+
+- Inventing scientific definitions or closed enums  
+- Fly/deploy decisions  
+- Replacing Maude tree (Q15)  
+- Chatbot answers about papers  
+- Unit conversions across families (Q8)
+
+---
+
+## 10. Versioning
+
+Update this guide when Shawn closes Q1–Q16. Until then, treat all scientific vocabularies as **`pending_biomedical`**.

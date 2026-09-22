@@ -1,55 +1,139 @@
-# Methods schema proposal (WP1)
+# Schema Proposal (Narrative) — Methods WP1
 
-Status: draft for Director and Reliability review. Biomedical adjudication is open. No Fly deploy. No scientific definitions are decided in this note.
+**Role:** CRN Methods (Scientific Data Architect)  
+**Date:** 2026-09-22 (ET)  
+**Audience:** tip/dev PR reviewers; Shawn for biomedical adjudication; Eng later for Alembic (not this package)
 
-## What this slice is
+---
 
-WP1’s Methods slice is a contract, not a migration. The contract is `schemas/methods.schema.json`. Narrative companions:
+## 1. What this proposal is
 
-- `docs/methods/wp1-baseline-audit.md` — keep / refine / drop / defer against current code
-- `docs/methods/field-dictionary.md` — Year-1 slot names
-- `docs/methods/annotation-guide-draft.md` — how to apply provenance, missingness, and SGBA+
-- `docs/methods/biomedical-adjudication-questions.md` — questions for Shawn, unanswered
+A **Year-1 methods extraction contract** that:
 
-`schema_version` is `wp1-methods-draft-0.1`. Postgres remains the production source of truth. The next schema change that adds columns should be an Alembic revision. The current Alembic head (`2d3a2de95a99`) only creates `heuristics_rules` and `background_tasks`. This PR does not add a revision.
+- Extends the live Cannabis Paper Scraper catalog (PostgreSQL source of truth per Seed director plan).  
+- Separates **technical storage/honesty machinery** from **Shawn biomedical meaning**.  
+- Ships as docs + JSON Schema under `/workspace/crn-methods-wp1/` for tip/dev — **no Fly, no Eng pipeline PR, no git write from this lane**.
 
-Paper Scraper Engineer work (Analyze chrome, harvest, `tab_*` flags) is untouched.
+Machine contract: `schemas/methods.schema.json`.  
+Field inventory: `docs/methods/field-dictionary.md`.  
+Shawn question list: `docs/methods/biomedical-adjudication-questions.md`.
 
-## What Methods owns technically
+---
 
-Methods owns the shape of an assertion:
+## 2. Technical choices (Methods / Eng can implement without inventing science)
 
-- A publication id plus zero or more assertions, so one paper is not one dose.
-- Optional `experiment_id` and `arm_id` strings so two arms are not stored as one number. Segmentation rules are not owned here.
-- A closed `field_id` list for the Year-1 slots in the field dictionary.
-- A closed missingness enum: `reported`, `not_in_available_source`, `source_unavailable`, `not_applicable`, `uncertain`, `extraction_failed`.
-- A provenance envelope on every assertion: `schema_version`, `extractor_id`, `model_id`, `prompt_id`, `confidence`, `source_tier`, `source_span`, `human_override`, `reviewed_at`.
-- `source_tier` uses the existing labels in `content_tiers.py`: `pdf_extracted`, `abstract_reclassify`, `pdf_link`, `abstract_only`. Those labels name which text was available to the extractor. They are not a claim about the study.
-- `reported` requires `raw_text` and a non-empty `source_span.quote`. The other missingness codes require null values, so a blank is not stored as a finding.
-- `human_override: true` requires `reviewed_at`. That flag records an expert lock; it does not by itself change `expert_locked_fields` (no writer in this PR).
-- `confidence` is an optional number from 0 to 1. It is a stored score, not a calibrated probability.
-- Sex and gender are different field ids. The schema has no combined sex/gender field and no closed demographic enum.
+### 2.1 Attachment unit (provisional)
 
-Legacy unit-baked columns (`dose_mg`, `thc_mg_kg`, and the rest) stay as they are. The new object can quote them in `raw_text` without declaring a unit conversion.
+- Extractions methods records attach to **`paper_id`** (existing `papers` row).  
+- Multi-experiment / multi-arm structure is **not** implemented until Q7 is answered.  
+- Technical default does **not** claim scientific “one paper = one comparable unit.”
 
-## What Methods does not own
+### 2.2 Provenance envelope (required on every extraction)
 
-Open scientific questions are listed in `docs/methods/biomedical-adjudication-questions.md` and marked `pending_biomedical` on normalized values in the schema. In particular, Methods does not decide:
+| Key | Purpose |
+|-----|---------|
+| `schema_version` | Contract version string |
+| `extractor_id` | Pipeline/component id |
+| `model_id` | Model identity if LLM/encoder used |
+| `prompt_id` | Prompt/rules version id |
+| `confidence` | 0–1 score when available |
+| `source_tier` | Aligns with content tiers (abstract vs full text, etc.) |
+| `source_span` | Optional quote/locator into available text |
+| `human_override` | bool or structured override payload |
+| `reviewed_at` | ISO timestamp when human reviewed |
 
-- allowed labels for design, route, product, model, outcome, age, sex, or gender
-- when a field is `not_applicable`
-- whether a concentration may be converted to a dose
-- what a sample-size integer counts
-- how arms, comparators, and outcome time points are delimited
-- whether chemotype bins or acute/subchronic/chronic bins survive
+This refines today’s `classification_confidence` / `classifier_version` / `classification_timestamp` without deleting them until Eng migrates.
 
-Until those answers exist, `normalized_text` is optional and unconstrained on purpose. Validators must not grow an enum from `schema.sql` comments.
+### 2.3 Distinct missingness (required)
 
-## What a later implementation PR would add
+Null alone is insufficient. Proposed enum:
 
-Not this PR:
+`reported` | `not_in_available_source` | `source_unavailable` | `not_applicable` | `uncertain` | `extraction_failed`
 
-- Alembic columns or a child table for assertions, spans, and missingness on Postgres
-- a writer that fills the JSON document from `extractor.py` or Maude
-- retirement or backfill of `population_sex`
-- any change to harvest, Analyze, or Fly
+Supports Seed honesty (“empty is OK”) and SGBA+ “absent vs not reported” checks.
+
+### 2.4 Source-tier gating
+
+Preserve the spirit of `content_tiers.py` + `METHODS_HEAVY_FIELDS`:
+
+- Methods-heavy numerics should not be treated as “missing science” when only an abstract was available — prefer `source_unavailable` or `not_in_available_source`.  
+- Exact tier labels map technically to `source_tier`; whether abstract may assert a value is Q13.
+
+### 2.5 IDEAS / SGBA+ hooks
+
+Schema includes reported-only SGBA+/IDEAS fields and a `sgba_reporting_present` flag.  
+**Technical forbid:** inference that fabricates sex/gender/population.  
+**Scientific coding:** pending Q12.
+
+### 2.6 Dual-write / hand-tag compatibility
+
+Public Compare must work on **existing hand tags / Analyze fields** before AI backfill (Seed objective).  
+Technical proposal: methods schema is additive; legacy columns remain readable; rename mapping lives in the field dictionary.
+
+### 2.7 Out of this package
+
+- Alembic migrations, extract workers, pgvector, Label Studio deploy  
+- Fly volume/deploy  
+- Replacing or rewriting Maude decision-tree runtime (status = Q15)  
+- Answering biomedical enums
+
+---
+
+## 3. Shawn biomedical adjudication (do not answer here)
+
+All scientific meaning is gated on the 16 questions in `biomedical-adjudication-questions.md`, including:
+
+- Which Core fields are mandatory in Year 1 (Q1)  
+- Research-type and clinical subtype ontologies (Q2–Q3)  
+- Product taxonomy; route vs product (Q4–Q5)  
+- Disease/experimental model (Q6)  
+- Unit of scientific record (Q7)  
+- Dose/concentration/regimen rules and **forbidden conversions** (Q8)  
+- Replicates & samples (Q9)  
+- Outcomes domains (Q10)  
+- Species / biological system (Q11)  
+- SGBA+ scientific rules (Q12)  
+- Source-tier truth bar (Q13)  
+- Comparability / gap language bar (Q14)  
+- Legacy Maude/decision-tree status (Q15)  
+- Gold/adjudication policy (Q16)
+
+Until answered, allowed enum arrays in JSON Schema are placeholders marked `pending_biomedical` (open string with description — not a fake closed ontology).
+
+---
+
+## 4. Suggested storage shape (technical sketch only)
+
+Not an Eng migration. Illustrative:
+
+1. Keep `papers` bibliographic + legacy classification columns.  
+2. Add `paper_methods_extractions` (or JSONB column) holding schema-conformant documents with provenance + per-field missingness.  
+3. Index Compare filters only after Q1 marks fields mandatory.
+
+Cascade extraction (MeSH → encoder → schema-constrained LLM) remains Seed Pillar 1 Eng work; this package only defines the **target document shape**.
+
+---
+
+## 5. Risks if technical and biomedical are conflated
+
+| Risk | Mitigation in WP1 |
+|------|-------------------|
+| Invented cannabis ontology in schema | Open enums + `pending_biomedical` |
+| Fake completeness on abstract-only rows | missingness + source_tier |
+| SGBA+ fabrication | never-infer annotation rule |
+| Silent mg↔µM “helpfulness” | forbidden conversions flagged for Q8 |
+| Maude replaced by accident | Q15 explicit; tree treated as DEFER |
+
+---
+
+## 6. Acceptance for this draft package
+
+- [x] Audit vs Seed needs with keep/refine/drop/defer  
+- [x] Field dictionary with PENDING scientific values  
+- [x] JSON Schema with provenance + missingness + IDEAS/SGBA hooks  
+- [x] Annotation guide draft  
+- [x] 16 Shawn questions embedded unanswered  
+- [x] PR description for tip/dev when Cloud Agent env is fixed  
+- [ ] Shawn adjudication (blocker for closed enums)  
+- [ ] Eng implementation (out of lane)
+
