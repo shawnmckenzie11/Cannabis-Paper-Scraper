@@ -1,0 +1,283 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/shawnmckenzie11/Cannabis-Paper-Scraper/schemas/methods.schema.json",
+  "title": "WP1 methods assertion document",
+  "description": "Draft contract for Cannabis Research Navigator methods extraction. Scientific allowed values are pending_biomedical and are intentionally not closed enums. Abstract silence is not_in_available_source, not evidence the full text omitted a method.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "publication_id", "assertions"],
+  "properties": {
+    "schema_version": {
+      "const": "wp1-methods-draft-0.1"
+    },
+    "publication_id": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Opaque publication key (PMID, DOI, or internal id). Not a scientific identifier scheme."
+    },
+    "assertions": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/assertion"
+      }
+    }
+  },
+  "$defs": {
+    "missingness": {
+      "description": "Distinct states. not_in_available_source means the text that was read is silent. source_unavailable means that text could not be obtained. Neither code asserts that a study failed to perform a method.",
+      "type": "string",
+      "enum": [
+        "reported",
+        "not_in_available_source",
+        "source_unavailable",
+        "not_applicable",
+        "uncertain",
+        "extraction_failed"
+      ]
+    },
+    "source_tier": {
+      "description": "Text tier actually read, using labels from content_tiers.py. Not a study-quality grade.",
+      "type": "string",
+      "enum": [
+        "pdf_extracted",
+        "abstract_reclassify",
+        "pdf_link",
+        "abstract_only"
+      ]
+    },
+    "field_id": {
+      "description": "Year-1 slot name. Sex and gender are separate ids. Allowed normalized values are pending_biomedical.",
+      "type": "string",
+      "enum": [
+        "study_type",
+        "model_population",
+        "product_composition",
+        "route",
+        "dose_or_concentration",
+        "exposure_duration",
+        "administration_frequency",
+        "sample_size",
+        "comparator",
+        "outcome_measure",
+        "outcome_time_point",
+        "strain_reported",
+        "puff_count",
+        "repeat_exposure_count",
+        "sex_reported",
+        "gender_reported",
+        "age_reported",
+        "race_ethnicity_reported",
+        "indigenous_identity_reported",
+        "disability_reported",
+        "socioeconomic_reported",
+        "geographic_context_reported"
+      ]
+    },
+    "source_span": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["quote", "section", "page", "char_start", "char_end"],
+      "properties": {
+        "quote": {
+          "type": ["string", "null"]
+        },
+        "section": {
+          "type": ["string", "null"]
+        },
+        "page": {
+          "type": ["integer", "null"],
+          "minimum": 1
+        },
+        "char_start": {
+          "type": ["integer", "null"],
+          "minimum": 0
+        },
+        "char_end": {
+          "type": ["integer", "null"],
+          "minimum": 0
+        }
+      }
+    },
+    "provenance": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema_version",
+        "extractor_id",
+        "model_id",
+        "prompt_id",
+        "confidence",
+        "source_tier",
+        "source_span",
+        "human_override",
+        "reviewed_at"
+      ],
+      "properties": {
+        "schema_version": {
+          "const": "wp1-methods-draft-0.1"
+        },
+        "extractor_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "model_id": {
+          "type": ["string", "null"]
+        },
+        "prompt_id": {
+          "type": ["string", "null"]
+        },
+        "confidence": {
+          "description": "Stored extractor score. Not a calibrated probability.",
+          "type": ["number", "null"],
+          "minimum": 0,
+          "maximum": 1
+        },
+        "source_tier": {
+          "$ref": "#/$defs/source_tier"
+        },
+        "source_span": {
+          "$ref": "#/$defs/source_span"
+        },
+        "human_override": {
+          "type": "boolean"
+        },
+        "reviewed_at": {
+          "type": ["string", "null"],
+          "format": "date-time"
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "human_override": {
+                "const": true
+              }
+            },
+            "required": ["human_override"]
+          },
+          "then": {
+            "properties": {
+              "reviewed_at": {
+                "type": "string",
+                "format": "date-time",
+                "minLength": 1
+              }
+            },
+            "required": ["reviewed_at"]
+          }
+        }
+      ]
+    },
+    "assertion": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "field_id",
+        "missingness",
+        "raw_text",
+        "normalized_text",
+        "raw_number",
+        "experiment_id",
+        "arm_id",
+        "provenance"
+      ],
+      "properties": {
+        "field_id": {
+          "$ref": "#/$defs/field_id"
+        },
+        "missingness": {
+          "$ref": "#/$defs/missingness"
+        },
+        "raw_text": {
+          "type": ["string", "null"],
+          "description": "Source wording when missingness is reported; otherwise null."
+        },
+        "normalized_text": {
+          "type": ["string", "null"],
+          "description": "Optional normalized label. x-adjudication pending_biomedical: no allowed-value list in this draft.",
+          "x-adjudication": "pending_biomedical"
+        },
+        "raw_number": {
+          "type": ["number", "null"],
+          "description": "Numeric token copied from the source when one was stated. Unit conversion is pending_biomedical and must not be applied by this schema."
+        },
+        "experiment_id": {
+          "type": ["string", "null"],
+          "description": "Opaque local id. Arm segmentation is pending_biomedical."
+        },
+        "arm_id": {
+          "type": ["string", "null"],
+          "description": "Opaque local id. Arm segmentation is pending_biomedical."
+        },
+        "provenance": {
+          "$ref": "#/$defs/provenance"
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "missingness": {
+                "const": "reported"
+              }
+            },
+            "required": ["missingness"]
+          },
+          "then": {
+            "properties": {
+              "raw_text": {
+                "type": "string",
+                "minLength": 1
+              },
+              "provenance": {
+                "properties": {
+                  "source_span": {
+                    "properties": {
+                      "quote": {
+                        "type": "string",
+                        "minLength": 1
+                      }
+                    },
+                    "required": ["quote"]
+                  }
+                },
+                "required": ["source_span"]
+              }
+            },
+            "required": ["raw_text"]
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "missingness": {
+                "enum": [
+                  "not_in_available_source",
+                  "source_unavailable",
+                  "not_applicable",
+                  "uncertain",
+                  "extraction_failed"
+                ]
+              }
+            },
+            "required": ["missingness"]
+          },
+          "then": {
+            "properties": {
+              "raw_text": {
+                "type": "null"
+              },
+              "normalized_text": {
+                "type": "null"
+              },
+              "raw_number": {
+                "type": "null"
+              }
+            }
+          }
+        }
+      ]
+    }
+  }
+}
