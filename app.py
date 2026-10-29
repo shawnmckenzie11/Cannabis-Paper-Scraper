@@ -19,6 +19,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 from db_manager import DatabaseManager
+from csv_safety import csv_safe_cell as _csv_safe_cell
 import classifier
 import harvest
 from extractor import is_cannabis_related
@@ -2615,14 +2616,6 @@ def api_delete_analysis(analysis_id):
     return jsonify({"error": "Analysis not found"}), 404
 
 
-_CSV_FORMULA_PREFIXES = ("=", "+", "-", "@", "\t", "\r")
-
-
-def _csv_safe_cell(val):
-    """Neutralize spreadsheet formula injection (OWASP CSV injection) in exported text."""
-    if isinstance(val, str) and val.startswith(_CSV_FORMULA_PREFIXES):
-        return "'" + val
-    return val
 
 
 @app.route("/api/analyses/<int:analysis_id>/export-csv", methods=["GET"])

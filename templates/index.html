@@ -3834,7 +3834,7 @@
                                 <div class="chart-canvas-wrap"><canvas id="chart-study-design"></canvas></div>
                             </div>
                             <div role="button" tabindex="0" class="analysis-chart-card" id="container-chart-cannabinoid-distribution" data-chart-id="cannabinoid-distribution" onclick="selectAnalysisChart('cannabinoid-distribution')">
-                                <div role="button" tabindex="0" class="analysis-chart-card-header">
+                                <div class="analysis-chart-card-header">
                                     <h4>Cannabinoid Distribution</h4>
                                     <div class="analysis-chart-header-controls">
                                         <select id="select-cannabinoid-view" class="analysis-chart-select" onclick="event.stopPropagation();" onchange="onCannabinoidViewChange()">
@@ -3851,7 +3851,7 @@
                                 <div class="chart-canvas-wrap"><canvas id="chart-cannabinoid-distribution"></canvas></div>
                             </div>
                             <div role="button" tabindex="0" class="analysis-chart-card" id="container-chart-exposure" data-chart-id="exposure" onclick="selectAnalysisChart('exposure')">
-                                <div role="button" tabindex="0" class="analysis-chart-card-header">
+                                <div class="analysis-chart-card-header">
                                     <h4>Exposure Breakdown</h4>
                                     <select id="select-exposure-mode" class="analysis-chart-select" onclick="event.stopPropagation();" onchange="onExposureModeChange()">
                                         <option value="clinical">Clinical</option>
@@ -3875,7 +3875,7 @@
                                 <div class="chart-canvas-wrap"><canvas id="chart-outcome-bar"></canvas></div>
                             </div>
                             <div role="button" tabindex="0" class="analysis-chart-card" id="container-chart-duration" data-chart-id="duration" onclick="selectAnalysisChart('duration')">
-                                <div role="button" tabindex="0" class="analysis-chart-card-header">
+                                <div class="analysis-chart-card-header">
                                     <h4>Duration Distribution</h4>
                                     <div class="analysis-chart-header-controls">
                                         <select id="select-duration-mode" class="analysis-chart-select" onclick="event.stopPropagation();" onchange="onDurationModeChange()">
@@ -3891,7 +3891,7 @@
                                 <div class="chart-canvas-wrap"><canvas id="chart-duration"></canvas></div>
                             </div>
                             <div role="button" tabindex="0" class="analysis-chart-card" id="container-chart-puff-count" data-chart-id="puff-count" onclick="selectAnalysisChart('puff-count')">
-                                <div role="button" tabindex="0" class="analysis-chart-card-header">
+                                <div class="analysis-chart-card-header">
                                     <h4>Puff Count Distribution</h4>
                                     <label class="analysis-chart-nr-toggle" onclick="event.stopPropagation();">
                                         <input type="checkbox" id="cb-puff-count-include-nr" onchange="onPuffCountIncludeNRChange()">
@@ -3901,7 +3901,7 @@
                                 <div class="chart-canvas-wrap"><canvas id="chart-puff-count"></canvas></div>
                             </div>
                             <div role="button" tabindex="0" class="analysis-chart-card" id="container-chart-admin-frequency" data-chart-id="admin-frequency" onclick="selectAnalysisChart('admin-frequency')">
-                                <div role="button" tabindex="0" class="analysis-chart-card-header">
+                                <div class="analysis-chart-card-header">
                                     <h4>Administration Frequency</h4>
                                     <label class="analysis-chart-nr-toggle" onclick="event.stopPropagation();">
                                         <input type="checkbox" id="cb-admin-frequency-include-nr" onchange="onAdminFrequencyIncludeNRChange()">
@@ -3911,7 +3911,7 @@
                                 <div class="chart-canvas-wrap"><canvas id="chart-admin-frequency"></canvas></div>
                             </div>
                             <div role="button" tabindex="0" class="analysis-chart-card" id="container-chart-population-sex" data-chart-id="population-sex" onclick="selectAnalysisChart('population-sex')">
-                                <div role="button" tabindex="0" class="analysis-chart-card-header">
+                                <div class="analysis-chart-card-header">
                                     <h4>Population Sex</h4>
                                     <label class="analysis-chart-nr-toggle" onclick="event.stopPropagation();">
                                         <input type="checkbox" id="cb-population-sex-include-nr" onchange="onPopulationSexIncludeNRChange()">
@@ -3921,7 +3921,7 @@
                                 <div class="chart-canvas-wrap"><canvas id="chart-population-sex"></canvas></div>
                             </div>
                             <div role="button" tabindex="0" class="analysis-chart-card" id="container-chart-population-age" data-chart-id="population-age" onclick="selectAnalysisChart('population-age')">
-                                <div role="button" tabindex="0" class="analysis-chart-card-header">
+                                <div class="analysis-chart-card-header">
                                     <h4>Population Age</h4>
                                     <label class="analysis-chart-nr-toggle" onclick="event.stopPropagation();">
                                         <input type="checkbox" id="cb-population-age-include-nr" onchange="onPopulationAgeIncludeNRChange()">
@@ -3931,7 +3931,7 @@
                                 <div class="chart-canvas-wrap"><canvas id="chart-population-age"></canvas></div>
                             </div>
                             <div role="button" tabindex="0" class="analysis-chart-card analysis-timeline-section" id="container-chart-timeline" data-chart-id="timeline" onclick="selectAnalysisChart('timeline')">
-                                <div role="button" tabindex="0" class="analysis-chart-card-header">
+                                <div class="analysis-chart-card-header">
                                     <h4>Publication Timeline</h4>
                                     <button id="btn-timescale-toggle" onclick="event.stopPropagation(); toggleTimescale();" class="btn btn-secondary btn-sm"
                                         style="padding: 2px 10px; font-size: 0.72rem; background: rgba(0,240,255,0.06); border-color: rgba(0,240,255,0.2); color: var(--accent-blue); cursor: pointer; border-radius: 4px; font-weight: 600;">Timescale: Yearly</button>
@@ -7365,7 +7365,8 @@
                 .replace(/&/g, "&amp;")
                 .replace(/</g, "&lt;")
                 .replace(/>/g, "&gt;")
-                .replace(/"/g, "&quot;");
+                .replace(/"/g, "&quot;")
+                .replace(/'/g, "&#39;");
         }
 
         function clearPdfUploadResults() {
@@ -9397,10 +9398,10 @@
                 .then(r => r.json())
                 .then(papers => {
                     resultsDiv.innerHTML = papers.map(p =>
-                        `<div role="button" tabindex="0" class="connect-search-item" data-id="${p.id}" onclick="selectConnectPaper(${p.id})"
+                        `<div role="button" tabindex="0" class="connect-search-item" data-id="${escapeHtml(p.id)}" onclick="selectConnectPaper(${Number(p.id)})"
                               style="padding: 10px 14px; cursor: pointer; border-bottom: 1px solid rgba(255,255,255,0.05); display: flex; justify-content: space-between; align-items: center;">
-                              <span style="color: var(--text-primary);">${p.title}</span>
-                              <span style="color: var(--text-secondary); font-size: 0.8rem;">${p.year || '—'}</span>
+                              <span style="color: var(--text-primary);">${escapeHtml(p.title)}</span>
+                              <span style="color: var(--text-secondary); font-size: 0.8rem;">${escapeHtml(p.year || '—')}</span>
                          </div>`
                     ).join('');
                     resultsDiv.style.display = papers.length ? "block" : "none";
