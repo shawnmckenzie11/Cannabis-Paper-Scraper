@@ -29,6 +29,12 @@ import maude_feedback
 import email_service
 import background_jobs
 
+from sentry_setup import init_sentry
+try:
+    init_sentry()  # MCK-102: no-op unless SENTRY_DSN set
+except Exception:
+    logging.getLogger(__name__).exception("Sentry init failed; continuing without Sentry")
+
 app = Flask(__name__)
 app.secret_key = os.getenv("FLASK_SECRET_KEY", "mckenzian-secret-key-12345")
 ACCESS_PASSWORD = os.getenv("ACCESS_PASSWORD", "admin123")
