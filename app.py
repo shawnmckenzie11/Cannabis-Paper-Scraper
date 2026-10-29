@@ -1443,7 +1443,7 @@ def api_search():
         limit = int(limit)
     except (ValueError, TypeError):
         limit = 50
-    limit = min(limit, MAX_SEARCH_LIMIT)
+    limit = max(1, min(limit, MAX_SEARCH_LIMIT))
 
     clean_filters = _build_dashboard_filters_from_request()
         
@@ -3479,7 +3479,11 @@ def api_graph_network():
 def api_papers_search_simple():
     """Simple paper search returning id + title for the paper selector."""
     q = request.args.get("q", "").strip()
-    limit = min(int(request.args.get("limit", 50)), MAX_SEARCH_LIMIT)
+    try:
+        limit = int(request.args.get("limit", 50))
+    except (ValueError, TypeError):
+        limit = 50
+    limit = max(1, min(limit, MAX_SEARCH_LIMIT))
     db = DatabaseManager()
     conn = db.get_connection()
     try:

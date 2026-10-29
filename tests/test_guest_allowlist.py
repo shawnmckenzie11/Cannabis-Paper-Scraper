@@ -428,6 +428,15 @@ class TestGuestDashboardNested(unittest.TestCase):
                          self.m.GUEST_DASHBOARD_FILTER_SECTION_KEYS)
         self.assertEqual(set(c["schema_tier_51_fields"]), self.m.GUEST_DASHBOARD_SCHEMA_TIER_51_FIELDS)
 
+    def test_guest_allowlists_match_config_source(self):
+        """Drift guard: hardcoded guest allowlists must equal dashboard_ui_config source constants."""
+        import dashboard_ui_config as cfg
+        self.assertEqual(len(cfg.FILTER_SECTION_REGISTRY), 24)
+        self.assertEqual(set(cfg.FILTER_SECTION_REGISTRY), self.m.GUEST_DASHBOARD_FILTER_SECTION_NAMES)
+        self.assertEqual({k for v in cfg.FILTER_SECTION_REGISTRY.values() for k in v},
+                         self.m.GUEST_DASHBOARD_FILTER_SECTION_KEYS)
+        self.assertEqual(set(cfg.SCHEMA_TIER_51_FIELDS), self.m.GUEST_DASHBOARD_SCHEMA_TIER_51_FIELDS)
+
     def test_signed_in_sees_nested_extras(self):
         raw = self._raw()
         with self.client.session_transaction() as s:
