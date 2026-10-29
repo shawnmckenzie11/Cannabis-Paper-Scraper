@@ -175,3 +175,9 @@ Record contract: `schemas/methods.schema.json` → `$defs.expert_review`; fixtur
 
 ### Telemetry
 - Sentry must **never** receive the transcript or any form field (scrub before send; no breadcrumbs of field values).
+
+## Scope rule (v0.2)
+
+Surveys, market studies and re-analyses of earlier trials are **not original research** and are excluded from CRN study sets. Source: Shawn's working ruling, Oct 29 2026; the PhD expert may confirm or change it. If changed, excluded PMIDs 38757607, 36803833, 34265088 are re-scoped under a new manifest version.
+
+One study = one original research paper, which may include multiple arms (Q7); `study_group_id == paper_id`.
