@@ -16,9 +16,8 @@ class TestCICHIntegration(unittest.TestCase):
         self.admin_email = "shawnmckenzie11.sm@gmail.com"
         
     def login_admin(self):
-        with self.client.session_transaction() as sess:
-            sess['logged_in'] = True
-            sess['email'] = self.admin_email
+        from auth_test_helpers import login_session
+        login_session(self.client, self.admin_email)
 
     def test_unauthorized_access(self):
         # 1. Accessing rules without auth should return 401

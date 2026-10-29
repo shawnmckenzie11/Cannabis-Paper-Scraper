@@ -359,3 +359,89 @@ class TestGuestRouteKeySets(unittest.TestCase):
                  for r in ("cites", "cited_by", "gold", "review", "new_future_type")]
         out = self.m._guest_shape("api_graph_network", {"nodes": [], "edges": edges})
         self.assertEqual([e["relationship"] for e in out["edges"]], ["cites", "cited_by"])
+
+
+NESTED_EXTRAS = {"split_counts": {"test": 1}, "gold_count": 2,
+                 "verdict_breakdown": {"x": 1}, "new_future_key": 1}
+
+
+class TestGuestDashboardNested(unittest.TestCase):
+    def setUp(self):
+        import app as app_module
+        self.m = app_module
+        app_module.app.config["TESTING"] = True
+        app_module.limiter.reset()
+        self.client = app_module.app.test_client()
+
+    def tearDown(self):
+        self.m.limiter.reset()
+
+    def _raw(self):
+        from dashboard_ui_config import build_dashboard_ui_config
+        raw = build_dashboard_ui_config()
+        raw["tabs"] = [dict(t, **NESTED_EXTRAS) for t in raw["tabs"]]
+        raw["filter_profiles"] = dict(
+            {k: dict(v, **NESTED_EXTRAS) for k, v in raw["filter_profiles"].items()}, **NESTED_EXTRAS)
+        raw["global_filters"] = [dict(g, **NESTED_EXTRAS) for g in raw["global_filters"]]
+        raw["filter_section_registry"] = dict(
+            {k: dict(v, **NESTED_EXTRAS) for k, v in raw["filter_section_registry"].items()}, **NESTED_EXTRAS)
+        raw["schema_tier_51_fields"] = list(raw["schema_tier_51_fields"]) + list(NESTED_EXTRAS)
+        return raw
+
+    def _get(self, raw):
+        with patch.object(self.m, "build_dashboard_ui_config", return_value=raw):
+            return self.client.get("/api/dashboard-config").get_json()
+
+    def test_guest_nested_extras_dropped(self):
+        data = self._get(self._raw())
+        for t in data["tabs"]:
+            self.assertLessEqual(set(t), self.m.GUEST_DASHBOARD_TAB_ITEM_KEYS)
+        self.assertLessEqual(set(data["filter_profiles"]), self.m.GUEST_DASHBOARD_FILTER_PROFILE_NAMES)
+        for v in data["filter_profiles"].values():
+            self.assertLessEqual(set(v), self.m.GUEST_DASHBOARD_FILTER_PROFILE_KEYS)
+        for g in data["global_filters"]:
+            self.assertLessEqual(set(g), self.m.GUEST_DASHBOARD_GLOBAL_FILTER_KEYS)
+        self.assertLessEqual(set(data["filter_section_registry"]), self.m.GUEST_DASHBOARD_FILTER_SECTION_NAMES)
+        for v in data["filter_section_registry"].values():
+            self.assertLessEqual(set(v), self.m.GUEST_DASHBOARD_FILTER_SECTION_KEYS)
+        self.assertLessEqual(set(data["schema_tier_51_fields"]), self.m.GUEST_DASHBOARD_SCHEMA_TIER_51_FIELDS)
+        self.assertFalse(set(NESTED_EXTRAS) & set(_keys(data)))
+        self.assertFalse(set(NESTED_EXTRAS) & set(data["schema_tier_51_fields"]))
+
+    def test_guest_real_config_unchanged_by_nested_shaping(self):
+        from dashboard_ui_config import build_dashboard_ui_config
+        real = build_dashboard_ui_config()
+        data = self._get(build_dashboard_ui_config())
+        for k in ("tabs", "filter_profiles", "global_filters", "filter_section_registry", "schema_tier_51_fields"):
+            self.assertEqual(data[k], real[k], k)
+
+    def test_real_config_nested_keys_match_lists(self):
+        from dashboard_ui_config import build_dashboard_ui_config
+        c = build_dashboard_ui_config()
+        self.assertEqual({k for t in c["tabs"] for k in t}, self.m.GUEST_DASHBOARD_TAB_ITEM_KEYS)
+        self.assertEqual(set(c["filter_profiles"]), self.m.GUEST_DASHBOARD_FILTER_PROFILE_NAMES)
+        self.assertEqual({k for v in c["filter_profiles"].values() for k in v},
+                         self.m.GUEST_DASHBOARD_FILTER_PROFILE_KEYS)
+        self.assertEqual({k for g in c["global_filters"] for k in g}, self.m.GUEST_DASHBOARD_GLOBAL_FILTER_KEYS)
+        self.assertEqual(set(c["filter_section_registry"]), self.m.GUEST_DASHBOARD_FILTER_SECTION_NAMES)
+        self.assertEqual({k for v in c["filter_section_registry"].values() for k in v},
+                         self.m.GUEST_DASHBOARD_FILTER_SECTION_KEYS)
+        self.assertEqual(set(c["schema_tier_51_fields"]), self.m.GUEST_DASHBOARD_SCHEMA_TIER_51_FIELDS)
+
+    def test_signed_in_sees_nested_extras(self):
+        raw = self._raw()
+        with self.client.session_transaction() as s:
+            s["logged_in"] = True
+        data = self._get(raw)
+        self.assertEqual(data["tabs"], raw["tabs"])
+        self.assertIn("gold_count", data["filter_profiles"])
+        self.assertIn("new_future_key", data["schema_tier_51_fields"])
+
+
+class TestGuestPatternFullmatch(unittest.TestCase):
+    def test_patterns(self):
+        import app as m
+        for p in ("/api/papers/1", "/api/papers/12/references", "/api/papers/3/cited-by"):
+            self.assertTrue(m._is_guest_allowlisted(p), p)
+        for p in ("/api/papers/1/x", "/api/papers/abc", "/api/papers/1/references/2", "x/api/papers/1"):
+            self.assertFalse(m._is_guest_allowlisted(p), p)

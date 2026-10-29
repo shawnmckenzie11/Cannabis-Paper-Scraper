@@ -21,6 +21,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 from db_manager import DatabaseManager
+from csv_safety import csv_safe_cell as _csv_safe_cell
 import classifier
 import harvest
 from extractor import is_cannabis_related
@@ -30,8 +31,43 @@ import maude_feedback
 import email_service
 import background_jobs
 
+from sentry_setup import init_sentry
+try:
+    init_sentry()  # MCK-102: no-op unless SENTRY_DSN set
+except Exception:
+    logging.getLogger(__name__).exception("Sentry init failed; continuing without Sentry")
+
 app = Flask(__name__)
-app.secret_key = os.getenv("FLASK_SECRET_KEY", "mckenzian-secret-key-12345")
+
+_DEV_ENV_NAMES = {"dev", "development", "local", "test", "testing"}
+
+
+def _is_dev_or_test_env() -> bool:
+    """True only when an explicit dev/test config is set (APP_ENV or FLASK_ENV)."""
+    for var in ("APP_ENV", "FLASK_ENV"):
+        if (os.getenv(var) or "").strip().lower() in _DEV_ENV_NAMES:
+            return True
+    return False
+
+
+def _resolve_secret_key() -> str:
+    """Fail closed: refuse to boot without FLASK_SECRET_KEY outside dev/test."""
+    key = (os.getenv("FLASK_SECRET_KEY") or "").strip()
+    if key:
+        return key
+    if _is_dev_or_test_env():
+        import secrets
+        logging.getLogger(__name__).warning(
+            "FLASK_SECRET_KEY unset; using a random per-process key (dev/test only)."
+        )
+        return secrets.token_hex(32)
+    raise RuntimeError(
+        "FLASK_SECRET_KEY is not set. Refusing to start. Set it (e.g. `fly secrets set "
+        "FLASK_SECRET_KEY=...`) or set APP_ENV=development for local use."
+    )
+
+
+app.secret_key = _resolve_secret_key()
 
 
 def _rate_limit_key() -> str:
@@ -113,16 +149,40 @@ def login_required(f):
 
 ADMIN_EMAILS = {"shawnmckenzie11.sm@gmail.com", "solutions@mckenzian.com", "nadiadalim@gmail.com"}
 if os.getenv("ADMIN_EMAILS"):
-    ADMIN_EMAILS.update(email.strip() for email in os.getenv("ADMIN_EMAILS").split(","))
+    ADMIN_EMAILS.update(email.strip() for email in os.getenv("ADMIN_EMAILS").split(",") if email.strip())
+ADMIN_EMAILS = {email.lower() for email in ADMIN_EMAILS}
+
+
+def _session_admin_email() -> Optional[str]:
+    """Return the admin email for the session, verified against the users table.
+
+    The cookie's ``email`` is never trusted on its own: the session must carry a
+    ``user_id`` whose DB row is a claimed (verified or Google-linked) account whose
+    stored email is on the admin allowlist and matches the session email.
+    """
+    if not session.get("logged_in"):
+        return None
+    user_id = session.get("user_id")
+    try:
+        user = DatabaseManager().get_user_by_id(int(user_id)) if user_id is not None else None
+    except (TypeError, ValueError, Exception):
+        user = None
+    if not user or not _account_is_claimed(user):
+        return None
+    db_email = (user.get("email") or "").strip().lower()
+    session_email = (session.get("email") or "").strip().lower()
+    if not db_email or db_email != session_email or db_email not in ADMIN_EMAILS:
+        return None
+    return db_email
+
 
 def admin_required(f):
     @wraps(f)
     def decorated_function(*args, **kwargs):
         if not session.get("logged_in"):
             return jsonify({"error": "Authentication required.", "login_url": url_for("login", next=request.path)}), 401
-        user_email = session.get("email")
-        if not user_email or user_email not in ADMIN_EMAILS:
-            return jsonify({"error": "This action is restricted to administrators.", "email": user_email}), 403
+        if not _session_admin_email():
+            return jsonify({"error": "This action is restricted to administrators."}), 403
         return f(*args, **kwargs)
     return decorated_function
 
@@ -429,17 +489,20 @@ GUEST_ALLOWLIST_EXACT = frozenset({
     "/api/graph/stats",
     "/api/graph/network",
 })
+# Hard cap on ?limit= for /api/search and /api/papers/search-simple (all users; clamped, not rejected).
+MAX_SEARCH_LIMIT = 100
+
 GUEST_ALLOWLIST_PATTERNS = (
-    re.compile(r"^/api/papers/\d+$"),
-    re.compile(r"^/api/papers/\d+/references$"),
-    re.compile(r"^/api/papers/\d+/cited-by$"),
+    re.compile(r"/api/papers/\d+"),
+    re.compile(r"/api/papers/\d+/references"),
+    re.compile(r"/api/papers/\d+/cited-by"),
 )
 
 
 def _is_guest_allowlisted(path: str) -> bool:
     if path in GUEST_ALLOWLIST_EXACT:
         return True
-    return any(p.match(path) for p in GUEST_ALLOWLIST_PATTERNS)
+    return any(p.fullmatch(path) for p in GUEST_ALLOWLIST_PATTERNS)
 
 
 _GUEST_HIDDEN_KEY_RE = re.compile(
@@ -516,6 +579,25 @@ GUEST_DASHBOARD_CONFIG_KEYS = frozenset({
     "filter_section_registry", "schema_tier_51_fields", "analyze_subset_tabs",
     "taxonomy", "rules_config_version",
 })
+# Nested dashboard-config allowlists (key sets of the real config as of this commit).
+GUEST_DASHBOARD_TAB_ITEM_KEYS = frozenset({"key", "label"})
+GUEST_DASHBOARD_FILTER_PROFILE_NAMES = frozenset(_DASHBOARD_TAB_KEYS)
+GUEST_DASHBOARD_FILTER_PROFILE_KEYS = frozenset({"node", "sections"})
+GUEST_DASHBOARD_GLOBAL_FILTER_KEYS = frozenset({
+    "element_id", "label", "param", "schema_tier", "fields", "control_type",
+})
+GUEST_DASHBOARD_FILTER_SECTION_NAMES = frozenset({
+    "classification_details", "publication_type", "study_type_all", "study_type_clinical",
+    "study_type_animal", "study_type_cell", "exposure_all", "exposure_clinical",
+    "exposure_in_vivo", "exposure_in_vitro", "species", "cannabis_type", "thc_pct", "cbd_pct",
+    "year", "outcomes", "sample_size", "dose_clinical", "duration_clinical", "study_population",
+    "dose_in_vivo", "dose_in_vitro", "exposure_regimen", "puff_count",
+})
+GUEST_DASHBOARD_FILTER_SECTION_KEYS = frozenset({"tier", "fields", "param", "sidebar_only"})
+GUEST_DASHBOARD_SCHEMA_TIER_51_FIELDS = frozenset({
+    "pmid", "doi", "title", "authors", "journal", "year", "abstract",
+    "full_text_link", "date_harvested", "publication_date",
+})
 GUEST_DASHBOARD_TAXONOMY_KEYS = frozenset({
     "study_type_clinical", "study_type_animal", "study_type_cell", "study_type_all",
     "exposure_clinical", "exposure_in_vivo", "exposure_in_vitro", "exposure_all",
@@ -548,6 +630,34 @@ def _guest_citation_only(items):
     if not isinstance(items, list):
         return items
     return [i for i in items if isinstance(i, dict) and i.get("relationship") in GUEST_LINK_RELATIONSHIPS]
+
+
+def _pick_map(obj, names, inner_keys):
+    """Keep allowlisted names whose values are dicts, each reduced to inner_keys."""
+    if not isinstance(obj, dict):
+        return {}
+    return {n: _pick(v, inner_keys) for n, v in obj.items() if n in names and isinstance(v, dict)}
+
+
+def _guest_shape_dashboard_nested(out):
+    if "tabs" in out:
+        out["tabs"] = [_pick(t, GUEST_DASHBOARD_TAB_ITEM_KEYS) for t in out["tabs"] if isinstance(t, dict)] \
+            if isinstance(out["tabs"], list) else []
+    if "filter_profiles" in out:
+        out["filter_profiles"] = _pick_map(
+            out["filter_profiles"], GUEST_DASHBOARD_FILTER_PROFILE_NAMES, GUEST_DASHBOARD_FILTER_PROFILE_KEYS)
+    if "global_filters" in out:
+        out["global_filters"] = [_pick(g, GUEST_DASHBOARD_GLOBAL_FILTER_KEYS)
+                                 for g in out["global_filters"] if isinstance(g, dict)] \
+            if isinstance(out["global_filters"], list) else []
+    if "filter_section_registry" in out:
+        out["filter_section_registry"] = _pick_map(
+            out["filter_section_registry"], GUEST_DASHBOARD_FILTER_SECTION_NAMES,
+            GUEST_DASHBOARD_FILTER_SECTION_KEYS)
+    if "schema_tier_51_fields" in out:
+        out["schema_tier_51_fields"] = [f for f in out["schema_tier_51_fields"]
+                                        if f in GUEST_DASHBOARD_SCHEMA_TIER_51_FIELDS] \
+            if isinstance(out["schema_tier_51_fields"], list) else []
 
 
 def _guest_shape(endpoint, data):
@@ -584,6 +694,7 @@ def _guest_shape(endpoint, data):
         out = _pick(data, GUEST_DASHBOARD_CONFIG_KEYS)
         if "taxonomy" in out:
             out["taxonomy"] = _pick(out["taxonomy"], GUEST_DASHBOARD_TAXONOMY_KEYS)
+        _guest_shape_dashboard_nested(out)
         return out
     # Any other allowlisted JSON route without a shaper: drop everything.
     return {}
@@ -1108,7 +1219,7 @@ def settings():
         "Google + email password" if is_google and has_password else "Email & password"
     )
     email = user.get("email") or ""
-    is_admin = email in ADMIN_EMAILS
+    is_admin = bool(_session_admin_email())
     analyses_count = db.count_user_analyses(int(user["id"]))
 
     return render_template(
@@ -1332,6 +1443,7 @@ def api_search():
         limit = int(limit)
     except (ValueError, TypeError):
         limit = 50
+    limit = min(limit, MAX_SEARCH_LIMIT)
 
     clean_filters = _build_dashboard_filters_from_request()
         
@@ -2085,6 +2197,7 @@ def _calibration_output_dir() -> Path:
 
 
 @app.route("/calibration/dashboard")
+@admin_required
 def calibration_dashboard_page():
     """Serves the interactive calibration learning dashboard."""
     output_dir = _calibration_output_dir()
@@ -2104,13 +2217,14 @@ def api_calibration_auth_status():
     logged_in = bool(session.get("logged_in"))
     return jsonify({
         "logged_in": logged_in,
-        "is_admin": bool(email and email in ADMIN_EMAILS),
+        "is_admin": bool(_session_admin_email()),
         "email": email,
         "login_url": url_for("login", next="/calibration/dashboard"),
     })
 
 
 @app.route("/api/calibration/dashboard-metrics", methods=["GET"])
+@admin_required
 def api_calibration_dashboard_metrics():
     """Returns aggregated calibration learning metrics for dashboards and agents."""
     try:
@@ -2130,6 +2244,7 @@ def api_calibration_dashboard_metrics():
 
 
 @app.route("/api/calibration/lock-status", methods=["GET"])
+@login_required
 def api_calibration_lock_status():
     """Returns the production calibration coordination lock snapshot."""
     import calibration_coordinator
@@ -2837,6 +2952,8 @@ def api_delete_analysis(analysis_id):
     return jsonify({"error": "Analysis not found"}), 404
 
 
+
+
 @app.route("/api/analyses/<int:analysis_id>/export-csv", methods=["GET"])
 def api_export_analysis_csv(analysis_id):
     """Generates and downloads a CSV export of all papers associated with a saved analysis if owned by user."""
@@ -2937,6 +3054,7 @@ def api_export_analysis_csv(analysis_id):
                 p_copy[f] = json.dumps(val)
             else:
                 p_copy[f] = val
+            p_copy[f] = _csv_safe_cell(p_copy[f])
         writer.writerow(p_copy)
 
     csv_data = output.getvalue()
@@ -3361,7 +3479,7 @@ def api_graph_network():
 def api_papers_search_simple():
     """Simple paper search returning id + title for the paper selector."""
     q = request.args.get("q", "").strip()
-    limit = int(request.args.get("limit", 50))
+    limit = min(int(request.args.get("limit", 50)), MAX_SEARCH_LIMIT)
     db = DatabaseManager()
     conn = db.get_connection()
     try:

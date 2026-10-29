@@ -8,6 +8,7 @@ from unittest.mock import patch
 from app import ADMIN_EMAILS, app, harvest_lock, harvest_state
 from db_manager import DatabaseManager
 import background_jobs
+from auth_test_helpers import login_session
 
 
 def _admin_email():
@@ -68,9 +69,7 @@ class TestHarvestDoesNotBlockOnNcbi(unittest.TestCase):
             })
 
     def _login_admin(self):
-        with self.client.session_transaction() as sess:
-            sess["logged_in"] = True
-            sess["email"] = _admin_email()
+        login_session(self.client, _admin_email())
 
     def test_harvest_returns_202_before_pubmed_count(self):
         """NCBI esearch used to run on the request; it must not delay 202."""
@@ -136,9 +135,7 @@ class TestPdfUploadQueuesParse(unittest.TestCase):
         ensure_background_tasks_table()
 
     def _login_admin(self):
-        with self.client.session_transaction() as sess:
-            sess["logged_in"] = True
-            sess["email"] = _admin_email()
+        login_session(self.client, _admin_email())
 
     def test_initial_pdf_upload_returns_202_and_polls_result(self):
         """Parse/classify is enqueued; GET /api/tasks returns the match payload."""

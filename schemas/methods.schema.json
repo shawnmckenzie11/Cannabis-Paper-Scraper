@@ -14,8 +14,8 @@
   "properties": {
     "schema_version": {
       "type": "string",
-      "const": "wp1.0.0-draft",
-      "description": "Methods contract version."
+      "enum": ["wp1.0.0-draft", "wp1.1.0-draft"],
+      "description": "Methods contract version. wp1.0.0-draft records remain valid while wp1.1.0 is in draft."
     },
     "paper_id": {
       "type": "integer",
@@ -339,6 +339,148 @@
         "source_span": { "type": ["string", "null"] },
         "pending_biomedical": { "type": "boolean", "default": false }
       }
+    },
+    "expert_review": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "Expert-review form record (wp1.1.0-draft). Audio is NEVER stored: only rationale_text and an optional raw_transcript are persisted. raw_transcript is stored separately and is never treated as the label. Sentry must never receive the transcript or any form field.",
+      "required": [
+        "review_id",
+        "paper_id",
+        "study_group_id",
+        "source_span",
+        "claim_field",
+        "claim_value_shown",
+        "verdict",
+        "reviewer_confidence",
+        "rationale_text",
+        "raw_transcript",
+        "input_mode",
+        "stt_model_id",
+        "reviewer_id",
+        "reviewed_at",
+        "schema_version",
+        "split_assignment_ref",
+        "label_status"
+      ],
+      "properties": {
+        "review_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "paper_id": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "study_group_id": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Key grouping duplicates and papers from the same study so they land in the same split. Scientific unit-of-record definition pending_biomedical (Q7, MCK-90).",
+          "x-scientific-status": "pending_biomedical"
+        },
+        "source_span": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Reference to the source passage under review."
+        },
+        "claim_field": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Which contract field (key under fields) is being reviewed."
+        },
+        "claim_value_shown": {
+          "description": "The value displayed to the reviewer, verbatim."
+        },
+        "verdict": {
+          "type": "string",
+          "enum": [
+            "agree",
+            "disagree",
+            "cannot_judge_from_source"
+          ],
+          "description": "Required; no default. Blank or unclear entries are invalid and must never default to disagree."
+        },
+        "reviewer_confidence": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 5,
+          "description": "Ordinal scale 1-5 (technical placeholder). Scale anchors/meaning: pending_biomedical.",
+          "x-scientific-status": "pending_biomedical"
+        },
+        "rationale_text": {
+          "type": "string",
+          "description": "Expert's submitted text (after any transcript edits). This, not raw_transcript, is the review content."
+        },
+        "raw_transcript": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Unedited STT output; nullable; stored separately; never treated as the label."
+        },
+        "input_mode": {
+          "type": "string",
+          "enum": [
+            "voice",
+            "typed"
+          ]
+        },
+        "stt_model_id": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "STT model identifier when input_mode=voice; null for typed."
+        },
+        "reviewer_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "reviewed_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "schema_version": {
+          "type": "string",
+          "const": "wp1.1.0-draft"
+        },
+        "split_assignment_ref": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Reference to Evaluation's split manifest entry; assigned before review. Splits are grouped by study_group_id so duplicates/same-study papers share a split."
+        },
+        "label_status": {
+          "type": "string",
+          "enum": [
+            "review_note"
+          ],
+          "default": "review_note",
+          "description": "Only review_note allowed. gold/training values pending Q16 (Shawn adjudication, MCK-90)."
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "input_mode": {
+                "const": "typed"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "raw_transcript": {
+                "type": "null"
+              },
+              "stt_model_id": {
+                "type": "null"
+              }
+            }
+          }
+        }
+      ]
     }
   }
 }
