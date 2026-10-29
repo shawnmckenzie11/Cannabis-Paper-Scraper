@@ -86,7 +86,6 @@ def before_send(event, hint=None):
     if isinstance(event.get("contexts"), dict):
         event["contexts"] = {k: v for k, v in event["contexts"].items() if k in _SAFE_CONTEXTS}
     exc_values = (event.get("exception") or {}).get("values") or []
-    first_type = exc_values[0].get("type") if exc_values else None
     for exc in exc_values:
         exc["value"] = hash_text(exc.get("type"), exc.get("value"))
         for fr in (exc.get("stacktrace") or {}).get("frames") or []:
@@ -96,14 +95,9 @@ def before_send(event, hint=None):
         for fr in (th.get("stacktrace") or {}).get("frames") or []:
             for k in ("vars", "context_line", "pre_context", "post_context"):
                 fr.pop(k, None)
-    kind = first_type or "LogMessage"
-    if isinstance(event.get("logentry"), dict):
-        le = event["logentry"]
-        le["message"] = hash_text(kind, le.get("message"))
-        le.pop("params", None)
-        le.pop("formatted", None)
-    if event.get("message") is not None:
-        event["message"] = hash_text(kind, event["message"])
+    # Log message text and params are dropped entirely (not hashed).
+    event.pop("logentry", None)
+    event.pop("message", None)
     if "request" in event:
         event["request"] = _scrub_request(event["request"])
     if isinstance(event.get("transaction"), str):
@@ -137,9 +131,8 @@ def before_breadcrumb(crumb, hint=None):
         crumb["data"] = _scrub_mapping(crumb["data"])
         crumb["data"].pop("http.query", None)
         crumb["data"].pop("http.fragment", None)
-    if crumb.get("message") is not None:
-        # All breadcrumb messages (incl. logging) are hashed: never send text.
-        crumb["message"] = hash_text(crumb.get("category") or crumb.get("type") or "Breadcrumb", crumb["message"])
+    # All breadcrumb messages (incl. logging) are dropped: never send text.
+    crumb.pop("message", None)
     return crumb
 
 

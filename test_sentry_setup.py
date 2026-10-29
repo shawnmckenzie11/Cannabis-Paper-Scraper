@@ -97,15 +97,15 @@ def test_exception_message_only_type_and_hash():
     assert set(out["contexts"]) == {"runtime", "trace"}
 
 
-def test_log_messages_hashed():
+def test_log_and_breadcrumb_messages_dropped():
     ev = {"logentry": {"message": "saving %s", "params": [TRANSCRIPT], "formatted": "saving " + TRANSCRIPT},
           "message": "saving " + TRANSCRIPT,
           "breadcrumbs": {"values": [{"category": "app.log", "type": "log", "message": TRANSCRIPT}]}}
     out = ss.before_send(ev, {})
     s = str(out)
     assert "Reviewer" not in s and "blinding" not in s
-    assert out["logentry"]["message"].startswith("LogMessage sha256:")
-    assert "params" not in out["logentry"]
-    assert out["breadcrumbs"]["values"][0]["message"].startswith("app.log sha256:")
+    assert "logentry" not in out and "message" not in out
+    assert "message" not in out["breadcrumbs"]["values"][0]
+    assert "sha256" not in s
     c = ss.before_breadcrumb({"category": "root", "message": TRANSCRIPT, "data": {"rationale_text": TRANSCRIPT}})
-    assert "Reviewer" not in str(c)
+    assert "Reviewer" not in str(c) and "message" not in c
