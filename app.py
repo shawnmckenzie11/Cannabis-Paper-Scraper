@@ -10,6 +10,7 @@ from typing import Any, Dict, List, Optional, Tuple
 from pathlib import Path
 from functools import wraps
 from flask import Flask, render_template, request, jsonify, session, redirect, url_for, send_file
+from flask_wtf.csrf import CSRFProtect, CSRFError, generate_csrf
 from dashboard_ui_config import build_dashboard_ui_config
 import random
 import requests
@@ -31,6 +32,44 @@ import background_jobs
 app = Flask(__name__)
 app.secret_key = os.getenv("FLASK_SECRET_KEY", "mckenzian-secret-key-12345")
 ACCESS_PASSWORD = os.getenv("ACCESS_PASSWORD", "admin123")
+
+
+def _env_flag(name: str, default: bool) -> bool:
+    raw = os.getenv(name)
+    if raw is None or raw.strip() == "":
+        return default
+    return raw.strip().lower() not in ("0", "false", "no", "off")
+
+
+def _is_test_env() -> bool:
+    return any((os.getenv(v) or "").strip().lower() in ("test", "testing") for v in ("APP_ENV", "FLASK_ENV"))
+
+
+# Session cookie hardening. SESSION_COOKIE_SECURE=0 for plain-http local dev.
+app.config.update(
+    SESSION_COOKIE_SECURE=_env_flag("SESSION_COOKIE_SECURE", True),
+    SESSION_COOKIE_HTTPONLY=True,
+    SESSION_COOKIE_SAMESITE="Lax",
+    # Token is bound to the session; no 1h expiry so long-open dashboards keep working.
+    WTF_CSRF_TIME_LIMIT=None,
+    # Only the test suite may turn CSRF off (APP_ENV=test + WTF_CSRF_ENABLED=0).
+    WTF_CSRF_ENABLED=True if not _is_test_env() else _env_flag("WTF_CSRF_ENABLED", True),
+)
+csrf = CSRFProtect(app)
+
+
+@app.errorhandler(CSRFError)
+def _csrf_error(e):
+    if request.path.startswith("/api/") or request.is_json:
+        return jsonify({"error": "CSRF token missing or invalid. Reload the page and try again.",
+                        "csrf_error": True}), 400
+    return render_template("login.html", error="Your form expired. Please try again."), 400
+
+
+@app.route("/api/csrf-token", methods=["GET"])
+def api_csrf_token():
+    """Same-origin JS (e.g. the static calibration dashboard) fetches its token here."""
+    return jsonify({"csrf_token": generate_csrf()})
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 RELIABILITY_MANIFEST_FILE = os.path.join(BASE_DIR, "reliability_manifest.json")
 
@@ -588,7 +627,13 @@ def auth_google():
     return redirect(google_auth_url)
 
 @app.route("/auth/google/callback", methods=["GET", "POST"])
+@csrf.exempt  # Google Identity Services POSTs here cross-site; it uses its own g_csrf_token double-submit (checked below).
 def auth_google_callback():
+    if request.method == "POST":
+        cookie_token = request.cookies.get("g_csrf_token")
+        body_token = request.form.get("g_csrf_token")
+        if not cookie_token or not body_token or cookie_token != body_token:
+            return render_template("login.html", error="Google sign-in failed: CSRF check failed."), 400
     client_id = os.getenv("GOOGLE_CLIENT_ID")
     client_secret = os.getenv("GOOGLE_CLIENT_SECRET")
     

@@ -249,6 +249,7 @@
             {% endif %}
 
             <form method="POST" action="/login">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                 <input type="hidden" name="action" value="signin">
                 {% if next_url %}
                 <input type="hidden" name="next" value="{{ next_url }}">
@@ -274,6 +275,7 @@
             {% endif %}
 
             <form method="POST" action="/signup">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                 <div class="form-group">
                     <label for="reg-username">Username</label>
                     <input type="text" id="reg-username" name="username" placeholder="Choose a username" required autocomplete="username">
