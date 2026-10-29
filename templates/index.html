@@ -3829,12 +3829,12 @@
                                 </select>
                             </div>
                             <div class="analysis-charts-scroll" id="analysis-charts-scroll">
-                            <div class="analysis-chart-card" id="container-chart-study-design" data-chart-id="study-design" onclick="selectAnalysisChart('study-design')">
+                            <div role="button" tabindex="0" class="analysis-chart-card" id="container-chart-study-design" data-chart-id="study-design" onclick="selectAnalysisChart('study-design')">
                                 <h4>Study Design Distribution</h4>
                                 <div class="chart-canvas-wrap"><canvas id="chart-study-design"></canvas></div>
                             </div>
-                            <div class="analysis-chart-card" id="container-chart-cannabinoid-distribution" data-chart-id="cannabinoid-distribution" onclick="selectAnalysisChart('cannabinoid-distribution')">
-                                <div class="analysis-chart-card-header">
+                            <div role="button" tabindex="0" class="analysis-chart-card" id="container-chart-cannabinoid-distribution" data-chart-id="cannabinoid-distribution" onclick="selectAnalysisChart('cannabinoid-distribution')">
+                                <div role="button" tabindex="0" class="analysis-chart-card-header">
                                     <h4>Cannabinoid Distribution</h4>
                                     <div class="analysis-chart-header-controls">
                                         <select id="select-cannabinoid-view" class="analysis-chart-select" onclick="event.stopPropagation();" onchange="onCannabinoidViewChange()">
@@ -3850,8 +3850,8 @@
                                 </div>
                                 <div class="chart-canvas-wrap"><canvas id="chart-cannabinoid-distribution"></canvas></div>
                             </div>
-                            <div class="analysis-chart-card" id="container-chart-exposure" data-chart-id="exposure" onclick="selectAnalysisChart('exposure')">
-                                <div class="analysis-chart-card-header">
+                            <div role="button" tabindex="0" class="analysis-chart-card" id="container-chart-exposure" data-chart-id="exposure" onclick="selectAnalysisChart('exposure')">
+                                <div role="button" tabindex="0" class="analysis-chart-card-header">
                                     <h4>Exposure Breakdown</h4>
                                     <select id="select-exposure-mode" class="analysis-chart-select" onclick="event.stopPropagation();" onchange="onExposureModeChange()">
                                         <option value="clinical">Clinical</option>
@@ -3864,18 +3864,18 @@
                                     <div id="fallback-exposure" class="chart-drilldown-empty" style="display: none; padding: 12px;">No exposure data in this subset</div>
                                 </div>
                             </div>
-                            <div class="analysis-chart-card" id="container-chart-cannabis-type" data-chart-id="cannabis-type" onclick="selectAnalysisChart('cannabis-type')">
+                            <div role="button" tabindex="0" class="analysis-chart-card" id="container-chart-cannabis-type" data-chart-id="cannabis-type" onclick="selectAnalysisChart('cannabis-type')">
                                 <h4>Cannabis Type Breakdown</h4>
                                 <div class="chart-canvas-wrap" style="display: flex; justify-content: center; align-items: center;">
                                     <canvas id="chart-cannabis-type-doughnut" style="max-height: 180px; max-width: 180px;"></canvas>
                                 </div>
                             </div>
-                            <div class="analysis-chart-card" id="container-chart-outcome" data-chart-id="outcome" onclick="selectAnalysisChart('outcome')">
+                            <div role="button" tabindex="0" class="analysis-chart-card" id="container-chart-outcome" data-chart-id="outcome" onclick="selectAnalysisChart('outcome')">
                                 <h4>Outcome Domain Prevalence</h4>
                                 <div class="chart-canvas-wrap"><canvas id="chart-outcome-bar"></canvas></div>
                             </div>
-                            <div class="analysis-chart-card" id="container-chart-duration" data-chart-id="duration" onclick="selectAnalysisChart('duration')">
-                                <div class="analysis-chart-card-header">
+                            <div role="button" tabindex="0" class="analysis-chart-card" id="container-chart-duration" data-chart-id="duration" onclick="selectAnalysisChart('duration')">
+                                <div role="button" tabindex="0" class="analysis-chart-card-header">
                                     <h4>Duration Distribution</h4>
                                     <div class="analysis-chart-header-controls">
                                         <select id="select-duration-mode" class="analysis-chart-select" onclick="event.stopPropagation();" onchange="onDurationModeChange()">
@@ -3890,8 +3890,8 @@
                                 </div>
                                 <div class="chart-canvas-wrap"><canvas id="chart-duration"></canvas></div>
                             </div>
-                            <div class="analysis-chart-card" id="container-chart-puff-count" data-chart-id="puff-count" onclick="selectAnalysisChart('puff-count')">
-                                <div class="analysis-chart-card-header">
+                            <div role="button" tabindex="0" class="analysis-chart-card" id="container-chart-puff-count" data-chart-id="puff-count" onclick="selectAnalysisChart('puff-count')">
+                                <div role="button" tabindex="0" class="analysis-chart-card-header">
                                     <h4>Puff Count Distribution</h4>
                                     <label class="analysis-chart-nr-toggle" onclick="event.stopPropagation();">
                                         <input type="checkbox" id="cb-puff-count-include-nr" onchange="onPuffCountIncludeNRChange()">
@@ -3900,8 +3900,8 @@
                                 </div>
                                 <div class="chart-canvas-wrap"><canvas id="chart-puff-count"></canvas></div>
                             </div>
-                            <div class="analysis-chart-card" id="container-chart-admin-frequency" data-chart-id="admin-frequency" onclick="selectAnalysisChart('admin-frequency')">
-                                <div class="analysis-chart-card-header">
+                            <div role="button" tabindex="0" class="analysis-chart-card" id="container-chart-admin-frequency" data-chart-id="admin-frequency" onclick="selectAnalysisChart('admin-frequency')">
+                                <div role="button" tabindex="0" class="analysis-chart-card-header">
                                     <h4>Administration Frequency</h4>
                                     <label class="analysis-chart-nr-toggle" onclick="event.stopPropagation();">
                                         <input type="checkbox" id="cb-admin-frequency-include-nr" onchange="onAdminFrequencyIncludeNRChange()">
@@ -3910,8 +3910,8 @@
                                 </div>
                                 <div class="chart-canvas-wrap"><canvas id="chart-admin-frequency"></canvas></div>
                             </div>
-                            <div class="analysis-chart-card" id="container-chart-population-sex" data-chart-id="population-sex" onclick="selectAnalysisChart('population-sex')">
-                                <div class="analysis-chart-card-header">
+                            <div role="button" tabindex="0" class="analysis-chart-card" id="container-chart-population-sex" data-chart-id="population-sex" onclick="selectAnalysisChart('population-sex')">
+                                <div role="button" tabindex="0" class="analysis-chart-card-header">
                                     <h4>Population Sex</h4>
                                     <label class="analysis-chart-nr-toggle" onclick="event.stopPropagation();">
                                         <input type="checkbox" id="cb-population-sex-include-nr" onchange="onPopulationSexIncludeNRChange()">
@@ -3920,8 +3920,8 @@
                                 </div>
                                 <div class="chart-canvas-wrap"><canvas id="chart-population-sex"></canvas></div>
                             </div>
-                            <div class="analysis-chart-card" id="container-chart-population-age" data-chart-id="population-age" onclick="selectAnalysisChart('population-age')">
-                                <div class="analysis-chart-card-header">
+                            <div role="button" tabindex="0" class="analysis-chart-card" id="container-chart-population-age" data-chart-id="population-age" onclick="selectAnalysisChart('population-age')">
+                                <div role="button" tabindex="0" class="analysis-chart-card-header">
                                     <h4>Population Age</h4>
                                     <label class="analysis-chart-nr-toggle" onclick="event.stopPropagation();">
                                         <input type="checkbox" id="cb-population-age-include-nr" onchange="onPopulationAgeIncludeNRChange()">
@@ -3930,8 +3930,8 @@
                                 </div>
                                 <div class="chart-canvas-wrap"><canvas id="chart-population-age"></canvas></div>
                             </div>
-                            <div class="analysis-chart-card analysis-timeline-section" id="container-chart-timeline" data-chart-id="timeline" onclick="selectAnalysisChart('timeline')">
-                                <div class="analysis-chart-card-header">
+                            <div role="button" tabindex="0" class="analysis-chart-card analysis-timeline-section" id="container-chart-timeline" data-chart-id="timeline" onclick="selectAnalysisChart('timeline')">
+                                <div role="button" tabindex="0" class="analysis-chart-card-header">
                                     <h4>Publication Timeline</h4>
                                     <button id="btn-timescale-toggle" onclick="event.stopPropagation(); toggleTimescale();" class="btn btn-secondary btn-sm"
                                         style="padding: 2px 10px; font-size: 0.72rem; background: rgba(0,240,255,0.06); border-color: rgba(0,240,255,0.2); color: var(--accent-blue); cursor: pointer; border-radius: 4px; font-weight: 600;">Timescale: Yearly</button>
@@ -4906,7 +4906,7 @@
                 <li data-step="2">2 Match</li>
                 <li data-step="3">3 Review</li>
             </ol>
-            <div class="pdf-upload-dropzone" id="pdf-upload-dropzone" onclick="document.getElementById('pdf-upload-input').click()">
+            <div role="button" tabindex="0" class="pdf-upload-dropzone" id="pdf-upload-dropzone" onclick="document.getElementById('pdf-upload-input').click()">
                 <div>Drop PDF(s) here or click to browse</div>
                 <div style="margin-top: 4px; font-size: 0.72rem; color: var(--text-secondary);">PDF only · max 25 MB each</div>
                 <div id="pdf-upload-filename" style="margin-top: 8px; color: var(--accent-blue); font-weight: 600;"></div>
@@ -9397,7 +9397,7 @@
                 .then(r => r.json())
                 .then(papers => {
                     resultsDiv.innerHTML = papers.map(p =>
-                        `<div class="connect-search-item" data-id="${p.id}" onclick="selectConnectPaper(${p.id})"
+                        `<div role="button" tabindex="0" class="connect-search-item" data-id="${p.id}" onclick="selectConnectPaper(${p.id})"
                               style="padding: 10px 14px; cursor: pointer; border-bottom: 1px solid rgba(255,255,255,0.05); display: flex; justify-content: space-between; align-items: center;">
                               <span style="color: var(--text-primary);">${p.title}</span>
                               <span style="color: var(--text-secondary); font-size: 0.8rem;">${p.year || '—'}</span>
@@ -11591,7 +11591,7 @@
                 const initials = name.substring(0, 2).toUpperCase();
                 
                 container.innerHTML = `
-                    <div class="user-avatar" id="user-avatar-btn" onclick="toggleUserDropdown(event)">
+                    <div role="button" tabindex="0" class="user-avatar" id="user-avatar-btn" onclick="toggleUserDropdown(event)">
                         ${initials}
                     </div>
                     <div class="user-dropdown" id="user-dropdown-menu">
@@ -11806,6 +11806,17 @@
             </div>
         </div>
     </div>
+<script>
+// Keyboard access for clickable non-button elements (role="button" + onclick).
+document.addEventListener('keydown', function (e) {
+  if (e.key !== 'Enter' && e.key !== ' ') return;
+  var el = e.target;
+  if (!el || el.tagName === 'BUTTON' || el.getAttribute('role') !== 'button' || !el.hasAttribute('onclick')) return;
+  e.preventDefault();
+  el.click();
+});
+</script>
+<style>[role="button"][tabindex="0"]:focus-visible{outline:2px solid #4c9aff;outline-offset:2px}</style>
 </body>
 
 </html>

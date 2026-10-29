@@ -2615,6 +2615,16 @@ def api_delete_analysis(analysis_id):
     return jsonify({"error": "Analysis not found"}), 404
 
 
+_CSV_FORMULA_PREFIXES = ("=", "+", "-", "@", "\t", "\r")
+
+
+def _csv_safe_cell(val):
+    """Neutralize spreadsheet formula injection (OWASP CSV injection) in exported text."""
+    if isinstance(val, str) and val.startswith(_CSV_FORMULA_PREFIXES):
+        return "'" + val
+    return val
+
+
 @app.route("/api/analyses/<int:analysis_id>/export-csv", methods=["GET"])
 def api_export_analysis_csv(analysis_id):
     """Generates and downloads a CSV export of all papers associated with a saved analysis if owned by user."""
@@ -2715,6 +2725,7 @@ def api_export_analysis_csv(analysis_id):
                 p_copy[f] = json.dumps(val)
             else:
                 p_copy[f] = val
+            p_copy[f] = _csv_safe_cell(p_copy[f])
         writer.writerow(p_copy)
 
     csv_data = output.getvalue()
