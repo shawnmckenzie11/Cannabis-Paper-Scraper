@@ -7,7 +7,9 @@ from unittest.mock import MagicMock, patch
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-SENSITIVE = re.compile(r"gold|expert|rationale|(^|_)split($|_)|split_label", re.I)
+SENSITIVE = re.compile(
+    r"gold|expert|rationale|(^|_)split($|_)|split_label|verdict|confidence|reviewer|reference_value", re.I)
+EXTRA_KEYS = ("verdict", "llm_confidence", "reviewer_email", "reference_value")
 
 
 def _keys(obj):
@@ -26,8 +28,56 @@ def _fake_paper():
         "is_golden": True, "gold_badge": "gold", "expert_reason": "x",
         "expert_locked_fields": ["a"], "rationale": "why", "llm_rationale": "y",
         "split": "test", "eval_split": "test", "split_label": "test",
-        "nested": {"golden_status": 1, "keep": 2},
+        "verdict": "include", "llm_confidence": 0.9, "reviewer_email": "r@x",
+        "reference_value": 3,
+        "nested": {"golden_status": 1, "keep": 2, "final_verdict": "x", "reviewer": "r"},
     }
+
+
+ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+
+EXPECTED_PUBLIC_FIELDS = {
+    "id", "pmid", "doi", "semantic_scholar_id", "title", "authors", "journal",
+    "year", "abstract", "full_text_link", "study_type", "publication_type",
+    "exposure_method", "thc_pct", "cbd_pct", "dose_mg", "puff_count", "strain_reported",
+    "thc_mg_ml", "thc_mg_g", "thc_mg_kg", "thc_uM", "cbd_mg_ml", "cbd_mg_g", "cbd_mg_kg", "cbd_uM",
+}
+
+# Snapshot of schema.sql papers columns. A new column fails test_schema_snapshot
+# so someone must decide whether it is public before it ships.
+SCHEMA_PAPER_COLUMNS_SNAPSHOT = [
+    "id", "pmid", "doi", "semantic_scholar_id", "title", "authors", "journal", "year",
+    "abstract", "full_text_link", "study_type", "publication_type", "exposure_method",
+    "thc_pct", "cbd_pct", "dose_mg", "puff_count", "thc_mg_ml", "thc_mg_g", "thc_mg_kg",
+    "cbd_mg_ml", "cbd_mg_g", "cbd_mg_kg", "thc_uM", "cbd_uM", "strain_reported",
+    "strain_normalized", "duration_days", "inhaled_exposure_duration",
+    "administration_frequency", "treatment_duration", "repeat_exposure_count",
+    "exposure_regimen_bin", "sample_size", "outcome_domain", "open_access",
+    "citation_count", "date_harvested", "publication_date", "summary",
+    "expert_locked_fields", "classification_confidence", "classification_timestamp",
+    "classifier_version", "ingestion_status", "species", "population_age",
+    "population_sex", "inclusion_criteria", "exclusion_criteria",
+]
+
+
+def _schema_paper_columns():
+    sql = open(os.path.join(ROOT, "schema.sql")).read()
+    m = re.search(r"CREATE TABLE (?:IF NOT EXISTS )?papers\s*\((.*?)\n\);", sql, re.S)
+    cols = []
+    for line in m.group(1).splitlines():
+        mm = re.match(r"\s+([A-Za-z_][A-Za-z0-9_]*)\s+[A-Z]", line)
+        if mm and mm.group(1).upper() not in ("PRIMARY", "UNIQUE", "FOREIGN", "CHECK", "CONSTRAINT"):
+            cols.append(mm.group(1))
+    return cols
+
+
+def _full_fake_paper():
+    p = {c: f"v_{c}" for c in _schema_paper_columns()}
+    p["id"] = 1
+    p.update({"verdict": "x", "confidence": 0.5, "reviewer": "r", "reference_value": 1,
+              "split": "test", "gold": True, "strain_normalized": "s", "new_future_col": 1,
+              "date_harvested": None})
+    return p
 
 
 class TestGuestAllowlist(unittest.TestCase):
@@ -35,7 +85,11 @@ class TestGuestAllowlist(unittest.TestCase):
         import app as app_module
         self.app_module = app_module
         app_module.app.config["TESTING"] = True
+        app_module.limiter.reset()
         self.client = app_module.app.test_client()
+
+    def tearDown(self):
+        self.app_module.limiter.reset()
 
     def _fake_db(self):
         db = MagicMock()
@@ -101,6 +155,70 @@ class TestGuestAllowlist(unittest.TestCase):
         with patch.object(self.app_module, "DatabaseManager", return_value=self._fake_db()):
             data = self.client.get("/api/papers/1").get_json()
         self.assertIn("is_golden", data["paper"])
+        for k in EXTRA_KEYS:
+            self.assertIn(k, data["paper"], k)
+        self.assertIn("final_verdict", data["paper"]["nested"])
+
+    def test_guest_extra_keys_stripped(self):
+        with patch.object(self.app_module, "DatabaseManager", return_value=self._fake_db()):
+            data = self.client.get("/api/papers/1").get_json()
+        for k in EXTRA_KEYS:
+            self.assertNotIn(k, data["paper"], k)
+        self.assertNotIn("nested", data["paper"])
+
+    def test_schema_snapshot(self):
+        self.assertEqual(_schema_paper_columns(), SCHEMA_PAPER_COLUMNS_SNAPSHOT)
+
+    def test_allowlist_constant_matches_methods_list(self):
+        self.assertEqual(set(self.app_module.GUEST_PAPER_FIELDS), EXPECTED_PUBLIC_FIELDS)
+        self.assertTrue(EXPECTED_PUBLIC_FIELDS <= set(_schema_paper_columns()))
+
+    def _db_full(self):
+        db = MagicMock()
+        db.search_papers.side_effect = lambda f, include_total=False: (
+            ([_full_fake_paper()], 1) if include_total else [_full_fake_paper()])
+        db.get_paper.return_value = _full_fake_paper()
+        db.get_metadata.return_value = None
+        return db
+
+    def test_guest_paper_keys_exactly_allowlist(self):
+        with patch.object(self.app_module, "DatabaseManager", return_value=self._db_full()):
+            paper = self.client.get("/api/papers/1").get_json()["paper"]
+            self.assertEqual(set(paper), EXPECTED_PUBLIC_FIELDS)
+            data = self.client.get("/api/search").get_json()
+            self.assertEqual(set(data["papers"][0]), EXPECTED_PUBLIC_FIELDS)
+            self.assertEqual(set(data), {"papers", "total_count", "page", "limit",
+                                         "search_ms", "count_ms", "skipped_count"})
+
+    def test_signed_in_sees_all_fields(self):
+        with self.client.session_transaction() as s:
+            s["logged_in"] = True
+        with patch.object(self.app_module, "DatabaseManager", return_value=self._db_full()):
+            paper = self.client.get("/api/papers/1").get_json()["paper"]
+        self.assertEqual(set(paper), set(_full_fake_paper()))
+
+    def test_graph_network_nodes_filtered(self):
+        # /api/graph/network is MVP-gated (403) in tests, so check the shaper directly.
+        raw = {"nodes": [dict(_full_fake_paper(), degree=3)],
+               "edges": [{"source": 1, "target": 2, "relationship": "cites", "confidence": 0.4}],
+               "debug": "x"}
+        data = self.app_module._guest_shape("api_graph_network", raw)
+        self.assertEqual(set(data), {"nodes", "edges"})
+        self.assertEqual(set(data["nodes"][0]), EXPECTED_PUBLIC_FIELDS | {"degree"})
+        self.assertEqual(set(data["edges"][0]), {"source", "target", "relationship"})
+        simple = self.app_module._guest_shape("api_papers_search_simple", [_full_fake_paper()])
+        self.assertEqual(set(simple[0]), EXPECTED_PUBLIC_FIELDS)
+
+    def test_guest_read_rate_limit_60_per_minute(self):
+        with patch.dict(os.environ, {"RATE_LIMIT_GUEST_READ": "60 per minute"}), \
+                patch.object(self.app_module, "DatabaseManager", return_value=self._fake_db()):
+            codes = [self.client.get("/api/papers/1").status_code for _ in range(61)]
+            self.assertEqual(codes[:60], [200] * 60)
+            self.assertEqual(codes[60], 429)
+            with self.client.session_transaction() as s:
+                s["logged_in"] = True
+            codes = [self.client.get("/api/papers/1").status_code for _ in range(70)]
+            self.assertEqual(set(codes), {200})
 
 
 if __name__ == "__main__":

@@ -442,7 +442,27 @@ def _is_guest_allowlisted(path: str) -> bool:
     return any(p.match(path) for p in GUEST_ALLOWLIST_PATTERNS)
 
 
-_GUEST_HIDDEN_KEY_RE = re.compile(r"gold|expert|rationale|(^|_)split($|_)|split_label", re.I)
+_GUEST_HIDDEN_KEY_RE = re.compile(
+    r"gold|expert|rationale|(^|_)split($|_)|split_label|verdict|confidence|reviewer|reference_value",
+    re.I,
+)
+
+# Per-IP limit on guest (not logged-in) reads of the allowlist. One shared bucket
+# across all allowlisted routes. Signed-in users are never counted.
+GUEST_READ_RATE_LIMIT = _limit_from_env("RATE_LIMIT_GUEST_READ", "60 per minute")
+
+
+def _guest_read_limited() -> bool:
+    """Count one guest read; True if over GUEST_READ_RATE_LIMIT."""
+    if not app.config.get("RATELIMIT_ENABLED", True):
+        return False
+    from limits import parse_many
+    key = _rate_limit_key()
+    over = False
+    for item in parse_many(GUEST_READ_RATE_LIMIT()):
+        if not limiter.limiter.hit(item, "guest-read", key):
+            over = True
+    return over
 
 
 def _strip_guest_sensitive(obj):
@@ -455,12 +475,67 @@ def _strip_guest_sensitive(obj):
     return obj
 
 
+# Methods-approved public paper fields. Guests see ONLY these keys on any paper
+# object (top-level, nested, or in lists). Concentration columns are listed
+# explicitly from schema.sql's papers table; no wildcards.
+GUEST_PAPER_FIELDS = frozenset({
+    "id", "pmid", "doi", "semantic_scholar_id", "title", "authors", "journal",
+    "year", "abstract", "full_text_link",
+    "study_type", "publication_type", "exposure_method",
+    "thc_pct", "cbd_pct", "dose_mg", "puff_count", "strain_reported",
+    "thc_mg_ml", "thc_mg_g", "thc_mg_kg", "thc_uM",
+    "cbd_mg_ml", "cbd_mg_g", "cbd_mg_kg", "cbd_uM",
+})
+# Graph network nodes: paper fields plus the structural degree count.
+GUEST_GRAPH_NODE_FIELDS = GUEST_PAPER_FIELDS | {"degree"}
+GUEST_GRAPH_EDGE_FIELDS = frozenset({"source", "target", "relationship"})
+GUEST_SEARCH_ENVELOPE = frozenset({
+    "papers", "total_count", "page", "limit", "search_ms", "count_ms", "skipped_count",
+})
+
+
+def _guest_paper(obj):
+    if not isinstance(obj, dict):
+        return obj
+    return {k: v for k, v in obj.items() if k in GUEST_PAPER_FIELDS}
+
+
+def _guest_list(items, fn):
+    return [fn(i) for i in items] if isinstance(items, list) else []
+
+
+def _guest_shape(endpoint, data):
+    """Allowlist-shape guest JSON per route; unknown shapes pass through to the denylist."""
+    if isinstance(data, dict) and set(data) == {"error"}:
+        return data
+    if endpoint == "api_search" and isinstance(data, dict):
+        out = {k: v for k, v in data.items() if k in GUEST_SEARCH_ENVELOPE}
+        out["papers"] = _guest_list(data.get("papers"), _guest_paper)
+        return out
+    if endpoint == "api_get_paper" and isinstance(data, dict):
+        return {"paper": _guest_paper(data.get("paper"))}
+    if endpoint == "api_papers_search_simple":
+        return _guest_list(data, _guest_paper)
+    if endpoint == "api_graph_network" and isinstance(data, dict):
+        return {
+            "nodes": _guest_list(data.get("nodes"), lambda n: {
+                k: v for k, v in n.items() if k in GUEST_GRAPH_NODE_FIELDS} if isinstance(n, dict) else n),
+            "edges": _guest_list(data.get("edges"), lambda e: {
+                k: v for k, v in e.items() if k in GUEST_GRAPH_EDGE_FIELDS} if isinstance(e, dict) else e),
+        }
+    # dashboard-config, tab-counts, section-stats, graph stats, references,
+    # cited-by: aggregate/edge envelopes with no paper objects; denylist only.
+    return data
+
+
 @app.before_request
 def require_login():
     """Global login gate: PUBLIC_PATHS are open; guests get read-only GETs on the allowlist."""
     if _is_public_path(request.path) or session.get("logged_in"):
         return None
     if request.method in GUEST_SAFE_METHODS and _is_guest_allowlisted(request.path):
+        if _guest_read_limited():
+            return jsonify({"error": "Too many requests. Sign in or try again shortly."}), 429
         return None
     if request.path.startswith("/api/"):
         return jsonify({
@@ -482,7 +557,7 @@ def _strip_guest_payload(response):
         data = response.get_json(silent=True)
         if data is None:
             return response
-        response.set_data(json.dumps(_strip_guest_sensitive(data), default=str))
+        response.set_data(json.dumps(_strip_guest_sensitive(_guest_shape(request.endpoint, data)), default=str))
     except Exception:
         app.logger.exception("guest payload strip failed")
         return jsonify({"error": "Unavailable."}), 500
