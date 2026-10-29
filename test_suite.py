@@ -1418,6 +1418,9 @@ class TestExpertEditAndActiveLearning(unittest.TestCase):
             "classifier_version": "llm-reclassify-2.1.0"
         })
         
+        with self.client.session_transaction() as sess:
+            sess["logged_in"] = True
+
         queue_response = self.client.get("/api/classification/queue?confidence_max=0.6&limit=5")
         self.assertEqual(queue_response.status_code, 200)
         queue_data = json.loads(queue_response.data.decode("utf-8"))
@@ -1660,20 +1663,13 @@ class TestAnalysesUserIsolation(unittest.TestCase):
         self.fail(f"analyze task {task_id} did not complete: {last}")
 
     def test_public_user_behavior(self):
-        # 1. Public user runs subset analyses (allowed, no db save)
+        # Global login gate: logged-out users cannot analyze or read analyses.
         response = self.client.post("/api/analyze", json={"filters": {"query": "public_test"}})
-        self.assertEqual(response.status_code, 202)
-        queued = json.loads(response.data.decode("utf-8"))
-        data = self._wait_for_analyze_result(queued["task_id"])
-        self.assertIsNone(data["id"])  # should be null/None since not saved
-        self.assertIn("chart_data", data)
+        self.assertEqual(response.status_code, 401)
 
-        # 2. Public user lists analyses (returns empty list)
         response = self.client.get("/api/analyses")
-        self.assertEqual(response.status_code, 200)
-        self.assertEqual(json.loads(response.data.decode("utf-8")), [])
+        self.assertEqual(response.status_code, 401)
 
-        # 3. Public user fetching an analysis directly (blocked)
         response = self.client.get("/api/analyses/12345")
         self.assertEqual(response.status_code, 401)
 
@@ -1770,6 +1766,9 @@ class TestMvpGatingAPI(unittest.TestCase):
             ("/api/graph/stats", "GET", None),
             ("/api/graph/network", "GET", None)
         ]
+
+        with self.client.session_transaction() as sess:
+            sess["logged_in"] = True
 
         for route, method, payload in gated_endpoints:
             if method == "POST":

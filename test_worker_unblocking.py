@@ -195,6 +195,8 @@ class TestAnalyzeIsQueuedAndCapped(unittest.TestCase):
     def setUp(self):
         app.config["TESTING"] = True
         self.client = app.test_client()
+        with self.client.session_transaction() as sess:
+            sess["logged_in"] = True
         ensure_background_tasks_table()
 
     def test_analyze_returns_202_then_capped_result(self):
@@ -243,6 +245,8 @@ class TestSectionStatsIsSampled(unittest.TestCase):
     def setUp(self):
         app.config["TESTING"] = True
         self.client = app.test_client()
+        with self.client.session_transaction() as sess:
+            sess["logged_in"] = True
 
     def test_section_stats_passes_sample_limit(self):
         """The route asks the DB for sample_limit+1 rows so it can set sampled."""

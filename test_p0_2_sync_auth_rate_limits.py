@@ -30,6 +30,8 @@ class TestRateLimits(unittest.TestCase):
         self.app_module = app_module
         app_module.app.config["TESTING"] = True
         self.client = app_module.app.test_client()
+        with self.client.session_transaction() as sess:
+            sess["logged_in"] = True
         app_module.limiter.reset()
 
     def tearDown(self):

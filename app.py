@@ -32,7 +32,6 @@ import background_jobs
 
 app = Flask(__name__)
 app.secret_key = os.getenv("FLASK_SECRET_KEY", "mckenzian-secret-key-12345")
-ACCESS_PASSWORD = os.getenv("ACCESS_PASSWORD", "admin123")
 
 
 def _rate_limit_key() -> str:
@@ -392,23 +391,35 @@ def send_verification_email(recipient_email, username, code):
     """Send a signup verification code via configured email provider."""
     return email_service.send_verification_email(recipient_email, username, code)
 
+PUBLIC_PATHS = frozenset({
+    "/login",
+    "/signup",
+    "/verify-email",
+    "/resend-verification",
+    "/auth/google",
+    "/auth/google/callback",
+    "/logout",
+    "/health",
+    "/healthz",
+})
+
+
+def _is_public_path(path: str) -> bool:
+    return path in PUBLIC_PATHS or path.startswith("/static/")
+
+
 @app.before_request
 def require_login():
-    allowed_paths = [
-        '/',
-        '/login',
-        '/signup',
-        '/verify-email',
-        '/resend-verification',
-        '/auth/google',
-        '/auth/google/callback',
-        '/logout',
-        '/settings',
-    ]
-    if request.path in allowed_paths or request.path.startswith('/static/'):
-        return
-        
-    # REMOVED: auth requirement — all buttons unlocked
+    """Global login gate: everything except PUBLIC_PATHS needs a signed-in session."""
+    if _is_public_path(request.path) or session.get("logged_in"):
+        return None
+    if request.path.startswith("/api/"):
+        return jsonify({
+            "error": "Authentication required.",
+            "login_required": True,
+            "login_url": url_for("login", next=request.path),
+        }), 401
+    return redirect(url_for("login", next=request.full_path if request.query_string else request.path))
 
 @app.route("/login", methods=["GET", "POST"])
 def login():
