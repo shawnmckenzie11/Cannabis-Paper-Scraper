@@ -22,9 +22,14 @@ def _keys(obj):
             yield from _keys(v)
 
 
+# Fixture rule: made-up papers only. Never real PMIDs/DOIs from the split manifest.
+FAKE_PMID = "00000001"
+FAKE_DOI = "10.0000/fake.00000001"
+
+
 def _fake_paper():
     return {
-        "id": 1, "title": "T", "date_harvested": None,
+        "id": 1, "pmid": FAKE_PMID, "doi": FAKE_DOI, "title": "Fake paper", "date_harvested": None,
         "is_golden": True, "gold_badge": "gold", "expert_reason": "x",
         "expert_locked_fields": ["a"], "rationale": "why", "llm_rationale": "y",
         "split": "test", "eval_split": "test", "split_label": "test",
@@ -74,6 +79,9 @@ def _schema_paper_columns():
 def _full_fake_paper():
     p = {c: f"v_{c}" for c in _schema_paper_columns()}
     p["id"] = 1
+    p["pmid"] = FAKE_PMID  # made-up identifiers only (Evaluation fixture rule)
+    p["doi"] = FAKE_DOI
+    p["semantic_scholar_id"] = "fake-s2-00000001"
     p.update({"verdict": "x", "confidence": 0.5, "reviewer": "r", "reference_value": 1,
               "split": "test", "gold": True, "strain_normalized": "s", "new_future_col": 1,
               "date_harvested": None})
@@ -241,6 +249,7 @@ TAB_KEYS = {"all_original", "preclinical", "clinical", "review", "unclassified"}
 
 def _link_entry():
     e = {k: 1 for k in LINK_KEYS | V0_LINK_PAPER}
+    e.update({"pmid": "00000002", "doi": "10.0000/fake.00000002", "title": "Fake linked paper"})
     e.update({"confidence": 0.9, "source": "s2", "cannabis_type": "x",
               "strain_normalized": "s", "new_future_key": 1, "gold": True})
     return e
