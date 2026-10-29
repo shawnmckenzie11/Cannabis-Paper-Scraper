@@ -5595,7 +5595,55 @@
             publication_type: 'review'
         };
 
+        /**
+         * Paper fields the server returns to guests (mirrors app.GUEST_PAPER_FIELDS;
+         * tests/test_guest_ui.py keeps them in sync). Single source for guest UI gating.
+         */
+        const GUEST_PUBLIC_PAPER_FIELDS = [
+            "id", "pmid", "doi", "semantic_scholar_id", "title", "authors", "journal",
+            "year", "abstract", "full_text_link", "study_type", "publication_type",
+            "exposure_method", "thc_pct", "cbd_pct", "dose_mg", "puff_count",
+            "thc_mg_ml", "thc_mg_g", "thc_mg_kg", "thc_uM",
+            "cbd_mg_ml", "cbd_mg_g", "cbd_mg_kg", "cbd_uM", "strain_reported"
+        ];
+
+        /** Paper fields each optional table column reads. */
+        const COLUMN_SOURCE_FIELDS = {
+            duration: ["duration_days"],
+            treatment_duration: ["treatment_duration"],
+            year: ["year"],
+            study_type: ["study_type"],
+            exposure_method: ["exposure_method"],
+            publication_type: ["publication_type"],
+            citations: ["citation_count"],
+            links: ["doi", "pmid", "full_text_link"],
+            cannabis_type: ["cannabis_type"],
+            outcome_domain: ["outcome_domain"],
+            dose_mg: ["dose_mg"],
+            puff_count: ["puff_count"],
+            admin_frequency: ["administration_frequency"],
+            thc_mg_ml: ["thc_mg_ml"],
+            cbd_mg_ml: ["cbd_mg_ml"],
+            thc_mg_kg: ["thc_mg_kg"],
+            cbd_mg_kg: ["cbd_mg_kg"],
+            thc_uM: ["thc_uM"],
+            cbd_uM: ["cbd_uM"],
+            strain_reported: ["strain_reported"],
+            strain_normalized: ["strain_normalized"],
+            population_age: ["population_age"],
+            population_sex: ["population_sex"]
+        };
+
+        /** Guest-visible columns: those whose source fields are all public. */
+        const GUEST_VISIBLE_COLUMNS = Object.keys(COLUMN_SOURCE_FIELDS).filter(col =>
+            COLUMN_SOURCE_FIELDS[col].every(f => GUEST_PUBLIC_PAPER_FIELDS.includes(f)));
+
+        function isGuestColumnAllowed(col) {
+            return IS_LOGGED_IN || GUEST_VISIBLE_COLUMNS.includes(col);
+        }
+
         function isColumnRelevant(col, tab) {
+            if (!isGuestColumnAllowed(col)) return false;
             const section = COLUMN_SECTIONS[col];
             if (!section) return false;
             if (section === 'column_common') return true;
@@ -5915,8 +5963,10 @@
             if (!restoringGuestAnalysis) {
                 triggerSearch(true);
             }
-            updateSchedulerStatus();
-            setInterval(updateSchedulerStatus, 60000);
+            if (IS_LOGGED_IN) {
+                updateSchedulerStatus();
+                setInterval(updateSchedulerStatus, 60000);
+            }
             
             initializeUserWidget();
             setupAuthInterceptors();
@@ -6044,6 +6094,13 @@
 
             fetch(url, { signal: activeSearchAbort.signal })
                 .then(res => {
+                    if (res.status === 429) {
+                        return res.json().catch(() => ({})).then(body => {
+                            const err = new Error((body && body.error) || "Too many requests. Try again shortly.");
+                            err.rateLimited = true;
+                            throw err;
+                        });
+                    }
                     if (!res.ok) {
                         throw new Error(`Search failed (${res.status})`);
                     }
@@ -6075,7 +6132,11 @@
                     const emptyState = document.getElementById("table-empty-state");
                     if (emptyState) {
                         emptyState.style.display = "block";
-                        emptyState.textContent = "Search failed to load. Refresh the page or try again.";
+                        if (err && err.rateLimited) {
+                            emptyState.textContent = err.message + (IS_LOGGED_IN ? "" : " Sign in for higher limits.");
+                        } else {
+                            emptyState.textContent = "Search failed to load. Refresh the page or try again.";
+                        }
                     }
                     updatePagination(lastKnownTotal || 0, currentPage, pageSize);
                 })
@@ -6559,6 +6620,34 @@
             renderDrawer(paper);
         }
 
+        /** Drawer elements backed by fields the server strips for guests. */
+        const GUEST_HIDDEN_DRAWER_IDS = [
+            "drawer-sample-size", "item-study-duration", "drawer-citations",
+            "drawer-outcomes-container", "drawer-population-section",
+            "item-cannabis-types", "item-strain-normalized", "item-treatment-duration",
+            "item-admin-frequency", "item-inhaled-duration", "card-classification"
+        ];
+
+        /** Guests: hide stripped-field drawer items and show one sign-in note instead of placeholders. */
+        function applyGuestDrawerGating() {
+            if (IS_LOGGED_IN) return;
+            GUEST_HIDDEN_DRAWER_IDS.forEach(id => {
+                const el = document.getElementById(id);
+                if (!el) return;
+                const item = (el.classList.contains("meta-item") || id.startsWith("card-") || id.endsWith("-section"))
+                    ? el : (el.closest(".meta-item") || el);
+                item.style.display = "none";
+            });
+            const overview = document.getElementById("card-study-overview");
+            if (overview && !document.getElementById("drawer-guest-signin-note")) {
+                const note = document.createElement("p");
+                note.id = "drawer-guest-signin-note";
+                note.style.cssText = "font-size: 0.75rem; color: var(--text-secondary); margin: 8px 0 0;";
+                note.innerHTML = 'More classification details are available after you <a href="/login" style="color: var(--accent-blue);">sign in</a>.';
+                overview.appendChild(note);
+            }
+        }
+
         function renderDrawer(paper) {
             activeEditingPaper = paper;
             editMode = false;
@@ -6792,6 +6881,8 @@
             if (!linksContainer.innerHTML) {
                 linksContainer.innerHTML = `<span style="font-size: 0.72rem; color: var(--text-secondary);">No resource links</span>`;
             }
+
+            applyGuestDrawerGating();
 
             // Slide drawer out and reset scroll position to the top
             const drawerEl = document.getElementById("details-drawer");
@@ -8235,6 +8326,10 @@
         function analyzeFilteredSubset() {
             const btn = document.getElementById("btn-analyze-subset") || document.getElementById("btn-new-analysis");
             if (!btn || analyzePollActive) return;
+            if (!IS_LOGGED_IN) {
+                showAuthModal();
+                return;
+            }
             if (lastKnownTotal === 0) {
                 setAnalyzeChrome("empty");
                 return;
@@ -8282,6 +8377,10 @@
             const btn = document.getElementById("btn-analyze-subset") || document.getElementById("btn-new-analysis");
             if (!btn || analyzePollActive) return;
 
+            if (!IS_LOGGED_IN) {
+                showAuthModal();
+                return;
+            }
             const filters = filtersOverride || collectAnalyzeFilters();
             pendingAnalyzeFilters = filters;
             pendingAnalyzeResult = null;
@@ -8302,6 +8401,11 @@
                     if (analyzePollCancelled) {
                         const err = new Error("cancelled");
                         err.cancelled = true;
+                        throw err;
+                    }
+                    if (status === 401 && data && data.login_required) {
+                        const err = new Error("login_required");
+                        err.loginRequired = true;
                         throw err;
                     }
                     if (status === 202 && data.task_id) {
@@ -8336,6 +8440,11 @@
                 .catch(err => {
                     if (err && err.cancelled) {
                         setAnalyzeChrome("idle");
+                        return;
+                    }
+                    if (err && err.loginRequired) {
+                        setAnalyzeChrome("idle");
+                        showAuthModal();
                         return;
                     }
                     console.error("Subset Analysis Failed: ", err);
@@ -8561,9 +8670,23 @@
                 return Promise.resolve();
             }
 
+            if (!IS_LOGGED_IN) {
+                showGuestAnalysesSignInPrompt();
+                return Promise.resolve();
+            }
+
             return fetch("/api/analyses?_t=" + Date.now())
-                .then(res => res.json())
+                .then(res => {
+                    if (res.status === 401) {
+                        const err = new Error("login_required");
+                        err.loginRequired = true;
+                        throw err;
+                    }
+                    if (!res.ok) throw new Error(`Analyses failed to load (${res.status})`);
+                    return res.json();
+                })
                 .then(analyses => {
+                    if (!Array.isArray(analyses)) throw new Error("Unexpected analyses response");
                     const tbody = document.getElementById("analyses-tbody");
                     if (analyses.length === 0) {
                         if (!IS_LOGGED_IN && guestAnalysisPreview) {
@@ -8605,7 +8728,30 @@
                             + '<td class="analysis-delete-cell"><button type="button" class="btn-sm-icon btn-delete-analysis" title="Delete" onclick="event.stopPropagation(); deleteAnalysis(' + a.id + ', event)">&#10005;</button></td>'
                             + '</tr>';
                     }).join('');
+                })
+                .catch(err => {
+                    if (err && err.loginRequired) {
+                        showGuestAnalysesSignInPrompt();
+                        return;
+                    }
+                    console.error("Error loading analyses:", err);
+                    const tbody = document.getElementById("analyses-tbody");
+                    if (tbody) {
+                        tbody.innerHTML = '<tr><td colspan="4" style="text-align: center; color: var(--text-secondary); padding: 20px; font-size: 0.75rem;">Could not load analyses. Refresh and try again.</td></tr>';
+                    }
                 });
+        }
+
+        /** Guests: show the My Analyses sign-in overlay instead of an empty/broken list. */
+        function showGuestAnalysesSignInPrompt() {
+            const panel = document.getElementById("my-analyses-panel");
+            if (panel) panel.classList.add("guest-analysis-preview-active");
+            const tbody = document.getElementById("analyses-tbody");
+            if (tbody) {
+                tbody.innerHTML = '<tr><td colspan="4" style="text-align: center; color: var(--text-secondary); padding: 20px; font-size: 0.75rem;">Sign in to run and save analyses.</td></tr>';
+            }
+            const link = document.getElementById("guest-analysis-sign-in-link");
+            if (link) link.focus();
         }
 
         function startRename(id, cell) {
@@ -9132,6 +9278,7 @@
                 .then(r => r.json())
                 .then(data => {
                     if (data.error) { overlay.innerHTML = '<div style="color:#ff8a65;">Error: ' + data.error + '</div>'; return; }
+                    data = { nodes: Array.isArray(data.nodes) ? data.nodes : [], edges: Array.isArray(data.edges) ? data.edges : [] };
                     cyGraphData = data;
                     cyNodeMap = {};
                     data.nodes.forEach(n => { cyNodeMap[n.id] = n; });
@@ -9337,8 +9484,8 @@
             // Show title, update stats
             const ndata = node.data();
             document.getElementById("zoom-paper-title").textContent =
-                ndata.title + ' (' + ndata.degree + ' connections)';
-            document.getElementById("stat-zoomed").textContent = ndata.title.substring(0, 30);
+                (ndata.title || 'Untitled') + ' (' + (ndata.degree || 0) + ' connections)';
+            document.getElementById("stat-zoomed").textContent = (ndata.title || 'Untitled').substring(0, 30);
             document.getElementById("btn-reset-graph").style.display = "inline-flex";
 
             // Fit view to selected + neighbors
@@ -11436,6 +11583,11 @@
                 const show = tokens.some(token => activeSections.has(token));
                 el.style.display = show ? "" : "none";
             });
+            Object.keys(DEFAULT_VISIBLE_COLUMNS).forEach(col => {
+                const cb = document.getElementById(`col-cb-${col}`);
+                const lbl = cb && cb.closest("label");
+                if (lbl) lbl.style.display = isGuestColumnAllowed(col) ? "" : "none";
+            });
             const subtitle = document.getElementById("column-editor-tab-label");
             if (subtitle) {
                 const tabMeta = (DASHBOARD_CONFIG.tabs || []).find(t => t.key === tab);
@@ -11605,10 +11757,15 @@
             }
         });
 
+        let authModalReturnFocus = null;
+
         function showAuthModal() {
             const modal = document.getElementById("auth-required-modal");
             if (modal) {
+                authModalReturnFocus = document.activeElement;
                 modal.style.display = "flex";
+                const signIn = modal.querySelector("a[href^='/login'], button");
+                if (signIn) signIn.focus();
             }
         }
 
@@ -11617,7 +11774,19 @@
             if (modal) {
                 modal.style.display = "none";
             }
+            if (authModalReturnFocus && typeof authModalReturnFocus.focus === "function") {
+                authModalReturnFocus.focus();
+            }
+            authModalReturnFocus = null;
         }
+
+        document.addEventListener("keydown", (e) => {
+            const modal = document.getElementById("auth-required-modal");
+            if (e.key === "Escape" && modal && modal.style.display === "flex") {
+                e.preventDefault();
+                closeAuthModal();
+            }
+        });
 
         function showMvpLockModal(featureName) {
             const modal = document.getElementById("mvp-lock-modal");
@@ -11748,10 +11917,10 @@
     </div>
 
     <!-- Auth Required Modal -->
-    <div id="auth-required-modal" class="modal-overlay">
+    <div id="auth-required-modal" class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="auth-required-title">
         <div class="glass-panel" style="max-width: 400px; width: 90%; padding: 30px; text-align: center; border-radius: 20px; border: 1px solid rgba(255,255,255,0.08); background: rgba(15, 20, 32, 0.95); box-shadow: 0 20px 50px rgba(0,0,0,0.6);">
             <div style="font-size: 3rem; margin-bottom: 15px;">🔒</div>
-            <h3 style="font-family: var(--font-display); font-size: 1.4rem; font-weight: 700; margin-bottom: 10px; color: var(--text-primary);">Authentication Required</h3>
+            <h3 style="font-family: var(--font-display); font-size: 1.4rem; font-weight: 700; margin-bottom: 10px; color: var(--text-primary);" id="auth-required-title">Authentication Required</h3>
             <p style="font-size: 0.9rem; color: var(--text-muted); margin-bottom: 25px; line-height: 1.5;">You must be signed in to perform this action. Sign in to add papers, analyze datasets, edit display columns, or modify catalog records.</p>
             <div style="display: flex; gap: 10px; justify-content: center;">
                 <button type="button" class="btn btn-secondary" onclick="closeAuthModal()" style="padding: 10px 20px; border-radius: 10px; font-weight: 600; font-family: var(--font-sans);">Cancel</button>
