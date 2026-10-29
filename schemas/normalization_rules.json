@@ -1,0 +1,11 @@
+{
+  "version": "v0",
+  "rules": [
+    {"id": "range_format", "kind": "formatting_only", "status": "allowed",
+     "example": ["0.5-60 minutes", "0.5 to 60 minutes"],
+     "note": "Range punctuation/wording only; meaning unchanged."},
+    {"id": "frequency_once_daily_vs_daily", "kind": "semantic", "status": "pending_biomedical",
+     "example": ["once daily", "daily"],
+     "note": "Not merged until PhD expert/Shawn approve."}
+  ]
+}

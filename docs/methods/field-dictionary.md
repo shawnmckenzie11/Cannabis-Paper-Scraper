@@ -197,3 +197,35 @@ Definitions for annotators: `annotation-guide-draft.md`. Not biomedical ontology
 
 **Not decided here.** Embed only: Shawn Q1 must mark each Core field mandatory vs deferred. Until then, treat Core list as **proposed candidates**, Supporting as optional extraction, Deferred as hooks only.
 
+
+## J. Expert review record (`$defs.expert_review`, wp1.1.0-draft)
+
+| Field | Type | Notes |
+|---|---|---|
+| review_id | string | Unique review id |
+| paper_id | int | FK papers.id |
+| study_group_id | string\|null | Groups duplicates / same-study papers into the same split; **pending_biomedical** (Q7, MCK-90) |
+| source_span | string | Reference to the passage reviewed |
+| claim_field | string | Contract field under review |
+| claim_value_shown | any | Value shown to the reviewer, verbatim |
+| verdict | enum | `agree` / `disagree` / `cannot_judge_from_source`; required, no default; blank/unclear is invalid (never coerced to disagree) |
+| verdict (name) | — | `cannot_judge_from_source` is the intended, final enum value name (not `cannot_judge` / `unclear`) |
+| reviewer_confidence | int 1–5 | Ordinal; anchors **pending_biomedical** |
+| rationale_text | string | Expert's submitted text (post-edit) |
+| raw_transcript | string\|null | Stored separately; **never the label**; null when typed |
+| input_mode | enum | `voice` / `typed` |
+| stt_model_id | string\|null | null when typed |
+| reviewer_id, reviewed_at, schema_version | string | `reviewed_at` ISO 8601; version `wp1.1.0-draft` |
+| split_assignment_ref | string | Ref into Evaluation's split manifest, assigned **before** review; grouped by `study_group_id` |
+| label_status | enum | `review_note` only (default). `gold`/`training` pending Q16 (Shawn, MCK-90) |
+
+**Audio is never stored.** Sentry never receives the transcript or any form field.
+
+## v0.2 additions (wp1.2.0-draft)
+
+- **Guest public fields v0**: `schemas/guest_public_fields.json` (default-deny allowlist; link entries carry `relationship` in {cites, cited_by}, `paper_id`, `external_id`, `is_internal`). Guest stats never broken down by split, gold, verdict or reviewer.
+- **study_group_id**: equals `paper_id` (Q7, Shawn Oct 29 2026).
+- **reference_value**: `paper_id, field, value, raw_text, status (draft|expert_checked), checked_by, checked_at`. Internal only.
+- **gold_badge**: paper-level; `paper_id, rater (verified sign-in), timestamp, raw_transcript, submitted_rationale` (separate), no audio. `split=test` ⇒ `storage=locked_store`. Rationale format pending_biomedical (free text for now).
+- **normalized_field**: `raw_text` + `normalized_value` with `normalization_status: pending_biomedical`. Rules: `schemas/normalization_rules.json` (range formatting allowed; "once daily" vs "daily" pending_biomedical).
+- **work_id**: grouping key; preprint/published versions and duplicate records of one work share a `work_id`. Splits are assigned by `work_id` (not paper_id). `study_group_id` stays = `paper_id`. DOI/title matches across splits produce a `work_merge_flag` for Methods confirmation — never auto-merged; a confirmed merge requires a new manifest version.

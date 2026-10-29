@@ -21,7 +21,7 @@ Every extraction record must carry a **provenance envelope**:
 
 | Field | Annotator action |
 |-------|------------------|
-| `schema_version` | Use current contract id (e.g. `wp1.0.0-draft`) |
+| `schema_version` | Use current contract id (e.g. `wp1.1.0-draft`) |
 | `extractor_id` | System-filled for AI; for hand entry use `human-annotator` |
 | `model_id` | System-filled or null for pure hand tags |
 | `prompt_id` | System-filled or null |
@@ -137,3 +137,47 @@ When AI and human disagree:
 ## 10. Versioning
 
 Update this guide when Shawn closes Q1–Q16. Until then, treat all scientific vocabularies as **`pending_biomedical`**.
+
+## Expert review form (wp1.1.0-draft)
+
+Record contract: `schemas/methods.schema.json` → `$defs.expert_review`; fixture `tests/fixtures/expert_review_valid.json`.
+
+### Verdicts
+- **agree** — the passage at `source_span` supports `claim_value_shown` for `claim_field`.
+- **disagree** — the passage contradicts or does not match the shown value.
+- **cannot_judge_from_source** — the passage alone is insufficient to decide. Use this rather than guessing; explain what is missing in the rationale. It is not a disagreement.
+- A verdict is required. Blank or unclear entries are rejected by the schema and are **never** defaulted to `disagree`.
+- `reviewer_confidence` is an ordinal 1–5 scale; anchor meanings are **pending_biomedical**.
+
+### Transcript editing and typed path
+- With voice input, the transcript is shown as editable text. Review and correct it **before Submit**; the submitted text is `rationale_text`.
+- The unedited STT output (`raw_transcript`) is stored separately and is never treated as the label.
+- The typed path collects exactly the same fields as voice; `raw_transcript` and `stt_model_id` are null.
+
+### Accessibility
+- Mic control is keyboard-operable (focusable, Space/Enter toggles, visible state).
+- Screen-reader announcements for recording start/stop, transcript ready, validation errors, and submit result.
+- Transcript is plain editable text.
+- The source passage can be replayed/re-read before submitting.
+
+### Voice capture status
+- **Voice capture is OFF** until Shawn decides Q16. Typed path only until then.
+- Enabling it requires a spend-freeze exception for xAI STT.
+- Consent wording must disclose that audio is processed by a US-hosted service (wording pending approval).
+- **Audio is never stored.**
+
+### Evaluation guardrails
+- Splits are assigned before review (`split_assignment_ref`).
+- Test-split labels are unreadable by tuning code/processes.
+- A two-reviewer agreement sample is drawn for inter-rater checks.
+- Scoring runs with Sentry off.
+- `label_status` is `review_note`; `gold`/`training` pending Q16 (MCK-90).
+
+### Telemetry
+- Sentry must **never** receive the transcript or any form field (scrub before send; no breadcrumbs of field values).
+
+## Scope rule (v0.2)
+
+Surveys, market studies and re-analyses of earlier trials are **not original research** and are excluded from CRN study sets. Source: Shawn's working ruling, Oct 29 2026; the PhD expert may confirm or change it. If changed, excluded PMIDs 38757607, 36803833, 34265088 are re-scoped under a new manifest version.
+
+One study = one original research paper, which may include multiple arms (Q7); `study_group_id == paper_id`.
