@@ -503,6 +503,9 @@ GUEST_GRAPH_STATS_KEYS = frozenset({
     "papers_with_references", "papers_with_citations", "edge_types",
 })
 GUEST_GRAPH_EDGE_TYPE_KEYS = frozenset({"cites", "cited_by"})
+# Citation relationship values written by citation_graph.py / batch_build_graph.py.
+# Guest link entries and graph edges with any other relationship are dropped.
+GUEST_LINK_RELATIONSHIPS = frozenset({"cites", "cited_by"})
 GUEST_SECTION_STATS_KEYS = frozenset({
     "total_count", "methods_count", "results_count", "methods_pct", "results_pct",
     "sampled", "sample_limit", "sample_size",
@@ -540,6 +543,13 @@ def _guest_list(items, fn):
     return [fn(i) for i in items] if isinstance(items, list) else []
 
 
+def _guest_citation_only(items):
+    """Drop entries whose relationship is not a known citation value."""
+    if not isinstance(items, list):
+        return items
+    return [i for i in items if isinstance(i, dict) and i.get("relationship") in GUEST_LINK_RELATIONSHIPS]
+
+
 def _guest_shape(endpoint, data):
     """Allowlist-shape guest JSON per route; unknown shapes pass through to the denylist."""
     if isinstance(data, dict) and set(data) == {"error"}:
@@ -556,11 +566,11 @@ def _guest_shape(endpoint, data):
         return {
             "nodes": _guest_list(data.get("nodes"), lambda n: {
                 k: v for k, v in n.items() if k in GUEST_GRAPH_NODE_FIELDS} if isinstance(n, dict) else n),
-            "edges": _guest_list(data.get("edges"), lambda e: {
+            "edges": _guest_list(_guest_citation_only(data.get("edges")), lambda e: {
                 k: v for k, v in e.items() if k in GUEST_GRAPH_EDGE_FIELDS} if isinstance(e, dict) else e),
         }
     if endpoint in ("api_paper_references", "api_paper_cited_by"):
-        return _guest_list(data, _guest_link_entry)
+        return _guest_list(_guest_citation_only(data), _guest_link_entry)
     if endpoint == "api_graph_stats" and isinstance(data, dict):
         out = _pick(data, GUEST_GRAPH_STATS_KEYS)
         if "edge_types" in out:

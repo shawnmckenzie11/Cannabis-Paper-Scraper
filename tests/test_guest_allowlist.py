@@ -249,7 +249,8 @@ TAB_KEYS = {"all_original", "preclinical", "clinical", "review", "unclassified"}
 
 def _link_entry():
     e = {k: 1 for k in LINK_KEYS | V0_LINK_PAPER}
-    e.update({"pmid": "00000002", "doi": "10.0000/fake.00000002", "title": "Fake linked paper"})
+    e.update({"pmid": "00000002", "doi": "10.0000/fake.00000002", "title": "Fake linked paper",
+              "relationship": "cites"})
     e.update({"confidence": 0.9, "source": "s2", "cannabis_type": "x",
               "strain_normalized": "s", "new_future_key": 1, "gold": True})
     return e
@@ -329,3 +330,32 @@ class TestGuestRouteKeySets(unittest.TestCase):
         with patch.object(self.m, "CitationGraph", self._cg()), patch.object(self.m, "DatabaseManager"):
             entry = self.client.get("/api/papers/1/references").get_json()[0]
         self.assertEqual(entry, _link_entry())
+
+    def _mixed_links(self):
+        out = []
+        for rel in ("cites", "cited_by", "gold", "review", "new_future_type"):
+            e = _link_entry()
+            e["relationship"] = rel
+            out.append(e)
+        return out
+
+    def test_guest_links_drop_unknown_relationships(self):
+        cg = MagicMock()
+        cg.return_value.get_references.return_value = self._mixed_links()
+        cg.return_value.get_cited_by.return_value = self._mixed_links()
+        with patch.object(self.m, "CitationGraph", cg), patch.object(self.m, "DatabaseManager"):
+            for p in ("/api/papers/1/references", "/api/papers/1/cited-by"):
+                rels = [e["relationship"] for e in self.client.get(p).get_json()]
+                self.assertEqual(rels, ["cites", "cited_by"], p)
+            with self.client.session_transaction() as s:
+                s["logged_in"] = True
+            for p in ("/api/papers/1/references", "/api/papers/1/cited-by"):
+                rels = [e["relationship"] for e in self.client.get(p).get_json()]
+                self.assertEqual(rels, ["cites", "cited_by", "gold", "review", "new_future_type"], p)
+
+    def test_guest_graph_edges_drop_unknown_relationships(self):
+        self.assertEqual(self.m.GUEST_LINK_RELATIONSHIPS, {"cites", "cited_by"})
+        edges = [{"source": 1, "target": 2, "relationship": r}
+                 for r in ("cites", "cited_by", "gold", "review", "new_future_type")]
+        out = self.m._guest_shape("api_graph_network", {"nodes": [], "edges": edges})
+        self.assertEqual([e["relationship"] for e in out["edges"]], ["cites", "cited_by"])
