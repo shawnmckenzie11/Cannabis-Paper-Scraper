@@ -193,6 +193,23 @@ def reclassify_all_papers():
     finally:
         conn.close()
  
+_DEV_ENVS = {"dev", "development", "local", "test", "testing"}
+_TRUTHY = {"1", "true", "yes", "on"}
+
+
+def reclassify_allowed() -> bool:
+    """This script DELETEs papers. Require explicit opt-in AND a dev/test env
+    (APP_ENV decides alone when set; FLASK_ENV only when APP_ENV is unset)."""
+    opt_in = (os.getenv("ALLOW_RECLASSIFY_PURGE") or "").strip().lower() in _TRUTHY
+    env = (os.getenv("APP_ENV") or "").strip() or (os.getenv("FLASK_ENV") or "").strip()
+    return opt_in and env.lower() in _DEV_ENVS
+
+
 if __name__ == "__main__":
-    from datetime import datetime
+    if not reclassify_allowed():
+        logger.warning(
+            "reclassify_metadata.py refused: requires ALLOW_RECLASSIFY_PURGE=1 and "
+            "APP_ENV in dev/test (it deletes papers). Nothing changed."
+        )
+        raise SystemExit(0)
     reclassify_all_papers()
