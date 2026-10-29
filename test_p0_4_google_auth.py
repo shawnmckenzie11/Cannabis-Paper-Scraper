@@ -86,15 +86,54 @@ class GoogleCallbackTests(unittest.TestCase):
 
     # (a) One Tap credential
     def test_forged_unsigned_token_rejected(self):
-        r = self.client.post("/auth/google/callback", data={"credential": _forged_jwt(GOOD_PAYLOAD)})
+        r = self._post_one_tap({"credential": _forged_jwt(GOOD_PAYLOAD)})
         self.assertEqual(r.status_code, 401)
         self.assertFalse(self._logged_in())
         self.assertEqual(self.db.linked, [])
 
-    def _post_with_verify(self, payload=None, side_effect=None):
+    def _post_one_tap(self, data, cookie="csrf-abc", body="csrf-abc"):
+        data = dict(data)
+        if body is not None:
+            data["g_csrf_token"] = body
+        if cookie is not None:
+            self.client.set_cookie("g_csrf_token", cookie)
+        else:
+            self.client.delete_cookie("g_csrf_token")
+        return self.client.post("/auth/google/callback", data=data)
+
+    def _post_with_verify(self, payload=None, side_effect=None, **csrf):
         with mock.patch("google.oauth2.id_token.verify_oauth2_token", return_value=payload, side_effect=side_effect) as v:
-            r = self.client.post("/auth/google/callback", data={"credential": "tok"})
+            r = self._post_one_tap({"credential": "tok"}, **csrf)
         return r, v
+
+    def test_one_tap_missing_csrf_cookie_rejected(self):
+        for csrf in ({"cookie": None}, {"body": None}, {"cookie": None, "body": None}):
+            r, v = self._post_with_verify(dict(GOOD_PAYLOAD), **csrf)
+            self.assertEqual(r.status_code, 401, csrf)
+            v.assert_not_called()
+            self.assertFalse(self._logged_in())
+        self.assertEqual(self.db.linked, [])
+
+    def test_one_tap_mismatched_csrf_rejected(self):
+        r, v = self._post_with_verify(dict(GOOD_PAYLOAD), cookie="aaa", body="bbb")
+        self.assertEqual(r.status_code, 401)
+        v.assert_not_called()
+        self.assertFalse(self._logged_in())
+        self.assertEqual(self.db.linked, [])
+
+    def test_one_tap_matching_csrf_and_valid_credential_succeeds(self):
+        r, v = self._post_with_verify(dict(GOOD_PAYLOAD), cookie="same-tok", body="same-tok")
+        self.assertEqual(r.status_code, 302)
+        v.assert_called_once()
+        self.assertTrue(self._logged_in())
+
+    def test_redirect_flow_exception_text_not_shown(self):
+        with self.client.session_transaction() as s:
+            s["google_oauth_state"] = "111111"
+        with mock.patch.object(app_module.requests, "post", side_effect=RuntimeError("SECRET-DETAIL")):
+            r = self.client.get("/auth/google/callback?code=abc&state=111111")
+        self.assertEqual(r.status_code, 401)
+        self.assertNotIn(b"SECRET-DETAIL", r.data)
 
     def test_valid_token_passes(self):
         r, v = self._post_with_verify(dict(GOOD_PAYLOAD))

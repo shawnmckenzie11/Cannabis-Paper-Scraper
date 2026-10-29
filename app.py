@@ -673,13 +673,21 @@ def auth_google_callback():
     # Google Identity Services (One Tap / Auto Sign-In) credential: signature-verified ID token only.
     jwt_token = request.form.get("credential")
     if jwt_token:
+        # Google's double-submit CSRF check: must run FIRST, before any verification or user linking.
+        # When PR #85 (Flask-WTF CSRF) lands, this route gets @csrf.exempt and this g_csrf_token check stays first.
+        csrf_cookie = request.cookies.get("g_csrf_token")
+        csrf_body = request.form.get("g_csrf_token")
+        if not csrf_cookie or not csrf_body or not hmac.compare_digest(str(csrf_cookie), str(csrf_body)):
+            return _google_login_failed("Google sign-in failed: invalid request.")
         try:
             payload = _verify_google_id_token(jwt_token, client_id)
         except Exception as e:
             print(f"[GOOGLE ONE TAP AUTH] token rejected: {e}")
             return _google_login_failed("Google sign-in failed: invalid credential.")
-        email = payload["email"]
-        google_id = payload["sub"]
+        email = payload.get("email")
+        google_id = payload.get("sub")
+        if not email or not google_id:
+            return _google_login_failed("Google sign-in failed: missing account details.")
         name = payload.get("name") or payload.get("given_name") or email.split("@")[0]
         user = _link_or_create_google_user(email, google_id, name)
         if not user:
@@ -736,8 +744,10 @@ def auth_google_callback():
             except Exception as e:
                 print(f"[GOOGLE AUTH] id_token rejected: {e}")
                 return _google_login_failed("Google sign-in failed: invalid credential.")
-            email = claims["email"]
-            google_id = claims["sub"]
+            email = claims.get("email")
+            google_id = claims.get("sub")
+            if not email or not google_id:
+                return _google_login_failed("Google sign-in failed: missing account details.")
             name = claims.get("name") or claims.get("given_name") or email.split("@")[0]
         else:
             userinfo_url = "https://www.googleapis.com/oauth2/v3/userinfo"
@@ -762,8 +772,8 @@ def auth_google_callback():
         return _google_auth_redirect()
         
     except Exception as e:
-        print(f"[GOOGLE AUTH ERROR] Failed to exchange token/fetch info: {e}")
-        return render_template("login.html", error=f"Google authentication error: {e}")
+        logging.getLogger(__name__).exception("[GOOGLE AUTH ERROR] Failed to exchange token/fetch info")
+        return _google_login_failed("Google authentication failed. Please try again.")
 
 
 def _google_auth_redirect():
