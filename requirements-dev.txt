@@ -1,0 +1,4 @@
+-r requirements.txt
+# Test-only dependencies (schema contract tests)
+jsonschema>=4.20
+rfc3339-validator>=0.1.4
