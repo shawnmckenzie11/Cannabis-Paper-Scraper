@@ -92,11 +92,19 @@ def admin_required(f):
     return decorated_function
 
 
-def _safe_next_url(next_url):
-    """Returns a same-site relative redirect target when safe."""
-    if not next_url or not next_url.startswith("/") or next_url.startswith("//"):
-        return None
-    return next_url
+def _safe_next_url(target, default='/'):
+    from urllib.parse import urlsplit, unquote
+    if not target or not isinstance(target, str):
+        return default
+    for s in (target, unquote(target)):
+        if any(ord(c) < 32 or ord(c) == 127 for c in s) or '\\' in s:
+            return default
+        if not s.startswith('/') or s.startswith('//'):
+            return default
+        parts = urlsplit(s)
+        if parts.scheme or parts.netloc:
+            return default
+    return target
 
 
 def _establish_user_session(user: Dict[str, Any], *, is_google: bool = False) -> None:
@@ -375,7 +383,7 @@ def require_login():
 
 @app.route("/login", methods=["GET", "POST"])
 def login():
-    next_url = _safe_next_url(request.args.get("next") or request.form.get("next"))
+    next_url = _safe_next_url(request.args.get("next") or request.form.get("next"), None)
     if session.get("logged_in"):
         return redirect(next_url or url_for("index"))
         
@@ -559,7 +567,7 @@ def resend_verification():
 @app.route("/auth/google")
 def auth_google():
     client_id = os.getenv("GOOGLE_CLIENT_ID")
-    next_url = _safe_next_url(request.args.get("next"))
+    next_url = _safe_next_url(request.args.get("next"), None)
     if next_url:
         session["google_oauth_next"] = next_url
     
@@ -637,7 +645,7 @@ def _link_or_create_google_user(email: str, google_id: str, name: str, *, unique
     user = db.get_user_by_google_id(google_id)
     if user:
         return user
-    user_by_email = db.get_user_by_username_or_email(email)
+    user_by_email = db.get_user_by_email(email)
     if user_by_email:
         conn = db.get_connection()
         try:
@@ -719,18 +727,30 @@ def auth_google_callback():
         if not access_token:
             return render_template("login.html", error="Failed to fetch access token from Google.")
             
-        userinfo_url = "https://www.googleapis.com/oauth2/v3/userinfo"
-        headers = {"Authorization": f"Bearer {access_token}"}
-        userinfo_resp = requests.get(userinfo_url, headers=headers, timeout=10)
-        userinfo_resp.raise_for_status()
-        userinfo_data = userinfo_resp.json()
-        
-        email = userinfo_data.get("email")
-        google_id = userinfo_data.get("sub")
-        name = userinfo_data.get("name") or userinfo_data.get("given_name") or email.split("@")[0]
-        
-        if not email or not google_id:
-            return render_template("login.html", error="Google profile info missing required fields.")
+        raw_id_token = token_data.get("id_token")
+        if raw_id_token:
+            # Signature-verified ID token is authoritative for email/sub (aud, iss, email_verified checked).
+            try:
+                claims = _verify_google_id_token(raw_id_token, client_id)
+            except Exception as e:
+                print(f"[GOOGLE AUTH] id_token rejected: {e}")
+                return _google_login_failed("Google sign-in failed: invalid credential.")
+            email = claims["email"]
+            google_id = claims["sub"]
+            name = claims.get("name") or claims.get("given_name") or email.split("@")[0]
+        else:
+            userinfo_url = "https://www.googleapis.com/oauth2/v3/userinfo"
+            headers = {"Authorization": f"Bearer {access_token}"}
+            userinfo_resp = requests.get(userinfo_url, headers=headers, timeout=10)
+            userinfo_resp.raise_for_status()
+            userinfo_data = userinfo_resp.json()
+            if userinfo_data.get("email_verified") is not True:
+                return _google_login_failed("Google sign-in failed: email not verified.")
+            email = userinfo_data.get("email")
+            google_id = userinfo_data.get("sub")
+            if not email or not google_id:
+                return _google_login_failed("Google profile info missing required fields.")
+            name = userinfo_data.get("name") or userinfo_data.get("given_name") or email.split("@")[0]
             
         user = _link_or_create_google_user(email, google_id, name)
 
@@ -747,7 +767,7 @@ def auth_google_callback():
 
 def _google_auth_redirect():
     """Returns post-login redirect after Google OAuth."""
-    return redirect(_safe_next_url(session.pop("google_oauth_next", None)) or url_for("index"))
+    return redirect(_safe_next_url(session.pop("google_oauth_next", None), None) or url_for("index"))
 
 
 @app.route("/logout")

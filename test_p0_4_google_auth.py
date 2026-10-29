@@ -35,6 +35,9 @@ class FakeDB:
     def get_user_by_username_or_email(self, v):
         return next((u for u in self.users.values() if v in (u["email"], u["username"])), None)
 
+    def get_user_by_email(self, v):
+        return next((u for u in self.users.values() if (u["email"] or "").lower() == (v or "").lower()), None)
+
     def get_connection(self):
         db = self
 
@@ -169,12 +172,82 @@ class GoogleCallbackTests(unittest.TestCase):
         with self.client.session_transaction() as s:
             s["google_oauth_state"] = "111111"
         tok = mock.Mock(**{"json.return_value": {"access_token": "at"}})
-        info = mock.Mock(**{"json.return_value": {"email": "admin@example.com", "sub": "g1", "name": "A"}})
+        info = mock.Mock(**{"json.return_value": {"email": "admin@example.com", "email_verified": True, "sub": "g1", "name": "A"}})
         with mock.patch.object(app_module.requests, "post", return_value=tok), \
              mock.patch.object(app_module.requests, "get", return_value=info):
             r = self.client.get("/auth/google/callback?code=abc&state=111111")
         self.assertEqual(r.status_code, 302)
         self.assertTrue(self._logged_in())
+
+    # (d) redirect flow: email_verified required
+    def _redirect_flow(self, token_json, userinfo_json=None, verify=None, verify_err=None):
+        with self.client.session_transaction() as s:
+            s["google_oauth_state"] = "111111"
+        tok = mock.Mock(**{"json.return_value": token_json})
+        info = mock.Mock(**{"json.return_value": userinfo_json or {}})
+        with mock.patch.object(app_module.requests, "post", return_value=tok), \
+             mock.patch.object(app_module.requests, "get", return_value=info) as get, \
+             mock.patch("google.oauth2.id_token.verify_oauth2_token", return_value=verify, side_effect=verify_err):
+            r = self.client.get("/auth/google/callback?code=abc&state=111111")
+        return r, get
+
+    def test_redirect_userinfo_unverified_email_rejected(self):
+        for ev in (False, None, "true"):
+            info = {"email": "admin@example.com", "sub": "attacker", "name": "X"}
+            if ev is not None:
+                info["email_verified"] = ev
+            r, _ = self._redirect_flow({"access_token": "at"}, info)
+            self.assertEqual(r.status_code, 401, ev)
+            self.assertFalse(self._logged_in())
+        self.assertEqual(self.db.linked, [])
+        self.assertIsNone(self.db.users[1]["google_id"])
+
+    def test_redirect_id_token_unverified_email_rejected(self):
+        r, get = self._redirect_flow({"access_token": "at", "id_token": "idt"},
+                                     {"email": "admin@example.com", "email_verified": True, "sub": "x"},
+                                     verify={**GOOD_PAYLOAD, "email_verified": False})
+        self.assertEqual(r.status_code, 401)
+        self.assertFalse(self._logged_in())
+        self.assertEqual(self.db.linked, [])
+        get.assert_not_called()
+
+    def test_redirect_id_token_bad_signature_rejected(self):
+        r, _ = self._redirect_flow({"access_token": "at", "id_token": "idt"}, verify_err=ValueError("bad"))
+        self.assertEqual(r.status_code, 401)
+        self.assertEqual(self.db.linked, [])
+
+    def test_redirect_verified_id_token_works(self):
+        r, get = self._redirect_flow({"access_token": "at", "id_token": "idt"},
+                                     {"email": "other@example.com", "email_verified": True, "sub": "other"},
+                                     verify=dict(GOOD_PAYLOAD))
+        self.assertEqual(r.status_code, 302)
+        self.assertTrue(self._logged_in())
+        self.assertEqual(self.db.linked, [(1, "google-sub-123")])
+        get.assert_not_called()
+
+    def test_redirect_verified_userinfo_works(self):
+        r, _ = self._redirect_flow({"access_token": "at"},
+                                   {"email": "admin@example.com", "email_verified": True, "sub": "g9", "name": "A"})
+        self.assertEqual(r.status_code, 302)
+        self.assertTrue(self._logged_in())
+        self.assertEqual(self.db.linked, [(1, "g9")])
+
+    # (e) link by email only
+    def test_google_email_matching_username_does_not_link(self):
+        self.db.users[2] = {"id": 2, "username": "victim@example.com", "email": "real@example.com", "google_id": None}
+        r, _ = self._post_with_verify({**GOOD_PAYLOAD, "email": "victim@example.com", "sub": "atk"})
+        self.assertEqual(r.status_code, 302)
+        self.assertIsNone(self.db.users[2]["google_id"])
+        self.assertNotIn(2, [uid for uid, _ in self.db.linked])
+
+
+class SafeNextUrlTests(unittest.TestCase):
+    def test_rejects_open_redirects(self):
+        for bad in ("/%09/evil.com", "/\\evil.com", "//evil.com", "https://evil.com"):
+            self.assertEqual(app_module._safe_next_url(bad), "/", bad)
+
+    def test_keeps_local_path(self):
+        self.assertEqual(app_module._safe_next_url("/settings?x=1"), "/settings?x=1")
 
 
 if __name__ == "__main__":
