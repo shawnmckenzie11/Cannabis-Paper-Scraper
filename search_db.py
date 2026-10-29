@@ -116,7 +116,7 @@ def export_csv(papers: List[Dict[str, Any]], filepath: str):
     try:
         with open(filepath, "w", newline="", encoding="utf-8") as f:
             writer = csv.DictWriter(f, fieldnames=fields)
-            writer.writeheader()
+            writer.writerow({k: csv_safe_cell(k) for k in fields})
             for p in papers:
                 p_copy = p.copy()
                 # Serialize list values to JSON string for CSV compatibility

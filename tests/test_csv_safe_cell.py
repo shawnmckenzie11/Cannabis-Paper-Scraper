@@ -14,8 +14,13 @@ def test_leading_space_formula_neutralized():
 
 
 def test_numeric_strings_untouched():
-    for v in ["-0.5", "+3", " -12", "1e5"]:
+    for v in ["-0.5", "+3", " -12", "1e5", "-2E-3", "nan"]:
         assert f(v) == v
+
+
+def test_tricky_values_guarded():
+    for v in ["\t-1", "\r+3", "-inf", "+nan", "-1_0"]:
+        assert f(v) == "'" + v
 
 
 def test_plain_values_untouched():
