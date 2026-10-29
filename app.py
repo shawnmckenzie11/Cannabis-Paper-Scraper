@@ -19,6 +19,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 from db_manager import DatabaseManager
+from csv_safety import csv_safe_cell as _csv_safe_cell
 import classifier
 import harvest
 from extractor import is_cannabis_related
@@ -2615,6 +2616,8 @@ def api_delete_analysis(analysis_id):
     return jsonify({"error": "Analysis not found"}), 404
 
 
+
+
 @app.route("/api/analyses/<int:analysis_id>/export-csv", methods=["GET"])
 def api_export_analysis_csv(analysis_id):
     """Generates and downloads a CSV export of all papers associated with a saved analysis if owned by user."""
@@ -2715,6 +2718,7 @@ def api_export_analysis_csv(analysis_id):
                 p_copy[f] = json.dumps(val)
             else:
                 p_copy[f] = val
+            p_copy[f] = _csv_safe_cell(p_copy[f])
         writer.writerow(p_copy)
 
     csv_data = output.getvalue()

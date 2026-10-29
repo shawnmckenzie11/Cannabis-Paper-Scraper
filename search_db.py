@@ -2,6 +2,7 @@
 import argparse
 import json
 import csv
+from csv_safety import csv_safe_cell
 import sys
 from typing import List, Dict, Any
 from db_manager import DatabaseManager
@@ -115,14 +116,14 @@ def export_csv(papers: List[Dict[str, Any]], filepath: str):
     try:
         with open(filepath, "w", newline="", encoding="utf-8") as f:
             writer = csv.DictWriter(f, fieldnames=fields)
-            writer.writeheader()
+            writer.writerow({k: csv_safe_cell(k) for k in fields})
             for p in papers:
                 p_copy = p.copy()
                 # Serialize list values to JSON string for CSV compatibility
                 for key in ["authors", "outcome_domain", "methodological_quality_flags"]:
                     if isinstance(p_copy.get(key), list):
                         p_copy[key] = json.dumps(p_copy[key])
-                writer.writerow(p_copy)
+                writer.writerow({k: csv_safe_cell(v) for k, v in p_copy.items()})
         print(f"{GREEN}Successfully exported {len(papers)} records to CSV: '{filepath}'{RESET}")
     except Exception as e:
         print(f"{RED}Failed to export CSV: {e}{RESET}", file=sys.stderr)
