@@ -45,6 +45,8 @@ def test_event_scrubbed():
         assert bad not in s, bad
     assert out["request"]["headers"] == {"User-Agent": "ua"}
     assert out["request"]["url"] == "https://app/login"
+    assert "stacktrace" in out["exception"]["values"][0]
+    assert "vars" not in out["exception"]["values"][0]["stacktrace"]["frames"][0]
 
 
 def test_pii_off_in_init(monkeypatch):
@@ -60,3 +62,50 @@ def test_pii_off_in_init(monkeypatch):
     assert captured["include_local_variables"] is False
     assert captured["traces_sample_rate"] == 0.0
     assert captured["before_send"] is ss.before_send
+
+
+TRANSCRIPT = "raw_transcript: Reviewer said the RCT dosing was 10mg THC; rationale_text=because blinding failed"
+
+
+def _frames_event(exc):
+    import sentry_sdk.utils as u
+    import sys
+    try:
+        raise exc
+    except Exception:
+        ei = sys.exc_info()
+    from sentry_sdk.utils import event_from_exception
+    ev, hint = event_from_exception(ei, client_options={"include_local_variables": True, "include_source_context": True, "max_value_length": 1024})
+    return ev, hint
+
+
+def test_exception_message_only_type_and_hash():
+    import hashlib
+    ev, hint = _frames_event(ValueError(TRANSCRIPT))
+    ev["extra"] = {"rationale_text": TRANSCRIPT}
+    ev["contexts"] = {"runtime": {"name": "CPython"}, "form": {"raw_transcript": TRANSCRIPT}, "trace": {"trace_id": "x"}}
+    out = ss.before_send(ev, hint)
+    s = str(out)
+    assert "Reviewer" not in s and "blinding" not in s and "10mg" not in s
+    exp = "ValueError sha256:" + hashlib.sha256(TRANSCRIPT.encode()).hexdigest()[:12]
+    val = out["exception"]["values"][0]
+    assert val["value"] == exp and val["type"] == "ValueError"
+    fr = val["stacktrace"]["frames"][-1]
+    assert fr["function"] == "_frames_event" and fr["lineno"] and fr["filename"]
+    assert "vars" not in fr and "context_line" not in fr
+    assert "extra" not in out
+    assert set(out["contexts"]) == {"runtime", "trace"}
+
+
+def test_log_messages_hashed():
+    ev = {"logentry": {"message": "saving %s", "params": [TRANSCRIPT], "formatted": "saving " + TRANSCRIPT},
+          "message": "saving " + TRANSCRIPT,
+          "breadcrumbs": {"values": [{"category": "app.log", "type": "log", "message": TRANSCRIPT}]}}
+    out = ss.before_send(ev, {})
+    s = str(out)
+    assert "Reviewer" not in s and "blinding" not in s
+    assert out["logentry"]["message"].startswith("LogMessage sha256:")
+    assert "params" not in out["logentry"]
+    assert out["breadcrumbs"]["values"][0]["message"].startswith("app.log sha256:")
+    c = ss.before_breadcrumb({"category": "root", "message": TRANSCRIPT, "data": {"rationale_text": TRANSCRIPT}})
+    assert "Reviewer" not in str(c)

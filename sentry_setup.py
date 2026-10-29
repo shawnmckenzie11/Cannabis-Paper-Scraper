@@ -16,7 +16,7 @@ _SECRET_RE = re.compile(
     r"(\s*[=:]\s*)([^\s&,;\"']+)"
 )
 _KEY_PATTERNS = re.compile(r"\b(sk-[A-Za-z0-9_-]{8,}|gh[pousr]_[A-Za-z0-9]{8,}|Bearer\s+[A-Za-z0-9._-]+)")
-_SENSITIVE_KEYS = re.compile(r"(?i)password|passwd|secret|token|api[_-]?key|auth|cookie|session|email|code|dsn")
+_SENSITIVE_KEYS = re.compile(r"(?i)rationale|transcript|text|abstract|body|content|notes?\b|message|password|passwd|secret|token|api[_-]?key|auth|cookie|session|email|code|dsn")
 
 
 def strip_query(url):
@@ -67,21 +67,45 @@ def _scrub_request(req):
     return req
 
 
+_SAFE_CONTEXTS = {"runtime", "os", "trace", "device", "app", "flask"}
+
+
+def hash_text(kind, text):
+    """Replace free text with '<kind> sha256:<12 hex>' so no content ever leaves."""
+    import hashlib
+    if text is None:
+        text = ""
+    if not isinstance(text, str):
+        text = repr(text)
+    return "%s sha256:%s" % (kind or "Unknown", hashlib.sha256(text.encode("utf-8", "replace")).hexdigest()[:12])
+
+
 def before_send(event, hint=None):
     event.pop("user", None)
-    if "request" in event:
-        event["request"] = _scrub_request(event["request"])
-    for exc in (event.get("exception") or {}).get("values") or []:
-        exc["value"] = scrub_text(exc.get("value"))
+    event.pop("extra", None)
+    if isinstance(event.get("contexts"), dict):
+        event["contexts"] = {k: v for k, v in event["contexts"].items() if k in _SAFE_CONTEXTS}
+    exc_values = (event.get("exception") or {}).get("values") or []
+    first_type = exc_values[0].get("type") if exc_values else None
+    for exc in exc_values:
+        exc["value"] = hash_text(exc.get("type"), exc.get("value"))
         for fr in (exc.get("stacktrace") or {}).get("frames") or []:
-            fr.pop("vars", None)
+            for k in ("vars", "context_line", "pre_context", "post_context"):
+                fr.pop(k, None)
+    for th in (event.get("threads") or {}).get("values") or []:
+        for fr in (th.get("stacktrace") or {}).get("frames") or []:
+            for k in ("vars", "context_line", "pre_context", "post_context"):
+                fr.pop(k, None)
+    kind = first_type or "LogMessage"
     if isinstance(event.get("logentry"), dict):
         le = event["logentry"]
-        le["message"] = scrub_text(le.get("message"))
-        le["formatted"] = scrub_text(le.get("formatted"))
+        le["message"] = hash_text(kind, le.get("message"))
         le.pop("params", None)
-    if isinstance(event.get("message"), str):
-        event["message"] = scrub_text(event["message"])
+        le.pop("formatted", None)
+    if event.get("message") is not None:
+        event["message"] = hash_text(kind, event["message"])
+    if "request" in event:
+        event["request"] = _scrub_request(event["request"])
     if isinstance(event.get("transaction"), str):
         event["transaction"] = strip_query(event["transaction"])
     for sp in event.get("spans") or []:
@@ -113,8 +137,9 @@ def before_breadcrumb(crumb, hint=None):
         crumb["data"] = _scrub_mapping(crumb["data"])
         crumb["data"].pop("http.query", None)
         crumb["data"].pop("http.fragment", None)
-    if isinstance(crumb.get("message"), str):
-        crumb["message"] = scrub_text(_strip_desc(crumb["message"]))
+    if crumb.get("message") is not None:
+        # All breadcrumb messages (incl. logging) are hashed: never send text.
+        crumb["message"] = hash_text(crumb.get("category") or crumb.get("type") or "Breadcrumb", crumb["message"])
     return crumb
 
 
