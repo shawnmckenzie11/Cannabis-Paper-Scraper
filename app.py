@@ -1878,6 +1878,7 @@ def _calibration_output_dir() -> Path:
 
 
 @app.route("/calibration/dashboard")
+@admin_required
 def calibration_dashboard_page():
     """Serves the interactive calibration learning dashboard."""
     output_dir = _calibration_output_dir()
@@ -1904,6 +1905,7 @@ def api_calibration_auth_status():
 
 
 @app.route("/api/calibration/dashboard-metrics", methods=["GET"])
+@admin_required
 def api_calibration_dashboard_metrics():
     """Returns aggregated calibration learning metrics for dashboards and agents."""
     try:

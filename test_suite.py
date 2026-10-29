@@ -1406,6 +1406,13 @@ class TestExpertEditAndActiveLearning(unittest.TestCase):
         response = self.client.get("/api/calibration/dashboard-metrics")
         self.assertEqual(response.status_code, 401)
 
+    def test_calibration_dashboard_metrics_forbidden_for_non_admin(self):
+        with self.client.session_transaction() as sess:
+            sess["logged_in"] = True
+            sess["email"] = "not-an-admin@example.com"
+        self.assertEqual(self.client.get("/api/calibration/dashboard-metrics").status_code, 403)
+        self.assertEqual(self.client.get("/calibration/dashboard").status_code, 403)
+
     def test_agent_queue_status_and_recent_feedback_apis(self):
         paper_id = self.db.insert_paper({
             "pmid": "444555",
