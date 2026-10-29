@@ -120,7 +120,9 @@ def _env_flag(name: str, default: bool) -> bool:
 
 
 def _is_test_env() -> bool:
-    return any((os.getenv(v) or "").strip().lower() in ("test", "testing") for v in ("APP_ENV", "FLASK_ENV"))
+    """Same precedence as _is_dev_or_test_env: APP_ENV decides alone when set."""
+    value = (os.getenv("APP_ENV") or "").strip() or (os.getenv("FLASK_ENV") or "").strip()
+    return value.lower() in ("test", "testing")
 
 
 # Session cookie hardening. SESSION_COOKIE_SECURE=0 for plain-http local dev.

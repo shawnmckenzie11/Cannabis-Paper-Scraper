@@ -4,6 +4,9 @@ import re
 import unittest
 
 REPO = os.path.dirname(os.path.abspath(__file__))
+# Fake values that satisfy #89's prod boot checks (boot_safety.validate_startup_env).
+PROD_FAKE = {"FLASK_SECRET_KEY": "fake-" + "k" * 40, "GOOGLE_CLIENT_ID": "fake-client-id",
+             "GOOGLE_CLIENT_SECRET": "fake-client-secret", "RATE_LIMIT_SINGLE_INSTANCE": "1"}
 
 
 class TestCsrf(unittest.TestCase):
@@ -70,18 +73,27 @@ class TestCsrf(unittest.TestCase):
 
     def test_prod_cannot_disable_csrf_via_env(self):
         import subprocess, sys
-        env = {k: v for k, v in os.environ.items() if k not in ("APP_ENV", "FLASK_ENV")}
-        env.update({"WTF_CSRF_ENABLED": "0", "FLASK_SECRET_KEY": "x" * 40})
+        env = {k: v for k, v in os.environ.items() if k not in ("APP_ENV", "FLASK_ENV", "RATELIMIT_STORAGE_URI")}
+        env.update({"WTF_CSRF_ENABLED": "0", **PROD_FAKE})
         r = subprocess.run([sys.executable, "-c", "import app; print(app.app.config['WTF_CSRF_ENABLED'])"],
                            cwd=REPO, env=env, capture_output=True, text=True, timeout=120)
+        self.assertEqual(r.stdout.strip().splitlines()[-1], "True", r.stderr[-1500:])
+
+    def test_app_env_production_overrides_flask_env_test(self):
+        import subprocess, sys
+        env = {k: v for k, v in os.environ.items() if k not in ("APP_ENV", "FLASK_ENV", "RATELIMIT_STORAGE_URI")}
+        env.update({"APP_ENV": "production", "FLASK_ENV": "test", "WTF_CSRF_ENABLED": "0", **PROD_FAKE})
+        r = subprocess.run([sys.executable, "-c", "import app; print(app.app.config['WTF_CSRF_ENABLED'])"],
+                           cwd=REPO, env=env, capture_output=True, text=True, timeout=120)
+        self.assertEqual(r.returncode, 0, r.stderr[-1500:])
         self.assertEqual(r.stdout.strip().splitlines()[-1], "True", r.stderr[-1500:])
 
 
 class TestCookieFlags(unittest.TestCase):
     def test_config_flags(self):
         import subprocess, sys
-        env = {k: v for k, v in os.environ.items() if k not in ("APP_ENV", "FLASK_ENV", "SESSION_COOKIE_SECURE")}
-        env["FLASK_SECRET_KEY"] = "x" * 40
+        env = {k: v for k, v in os.environ.items() if k not in ("APP_ENV", "FLASK_ENV", "SESSION_COOKIE_SECURE", "RATELIMIT_STORAGE_URI")}
+        env.update(PROD_FAKE)
         code = ("import app; c=app.app.config; "
                 "print(c['SESSION_COOKIE_SECURE'], c['SESSION_COOKIE_HTTPONLY'], c['SESSION_COOKIE_SAMESITE'])")
         r = subprocess.run([sys.executable, "-c", code], cwd=REPO, env=env, capture_output=True, text=True, timeout=120)
