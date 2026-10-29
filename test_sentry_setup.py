@@ -62,6 +62,13 @@ def test_pii_off_in_init(monkeypatch):
     assert captured["include_local_variables"] is False
     assert captured["traces_sample_rate"] == 0.0
     assert captured["before_send"] is ss.before_send
+    names = {type(i).__name__ for i in captured["disabled_integrations"]}
+    assert "AnthropicIntegration" in names
+    try:  # importable only when the openai package is installed
+        import sentry_sdk.integrations.openai  # noqa: F401
+        assert "OpenAIIntegration" in names
+    except Exception:
+        pass
 
 
 TRANSCRIPT = "raw_transcript: Reviewer said the RCT dosing was 10mg THC; rationale_text=because blinding failed"
@@ -109,3 +116,42 @@ def test_log_and_breadcrumb_messages_dropped():
     assert "sha256" not in s
     c = ss.before_breadcrumb({"category": "root", "message": TRANSCRIPT, "data": {"rationale_text": TRANSCRIPT}})
     assert "Reviewer" not in str(c) and "message" not in c
+
+
+def test_malformed_event_tolerated():
+    ev = {
+        "spans": [None, {"description": None, "data": None}],
+        "exception": {"values": [None, {"type": "E", "value": "x", "stacktrace": {"frames": [None, {"vars": {"a": 1}}]}}]},
+        "threads": {"values": [None, {"stacktrace": None}]},
+        "breadcrumbs": {"values": [None, {"message": "m", "data": None}]},
+        "tags": None,
+    }
+    out = ss.before_send(ev)
+    assert out is not None
+    assert "vars" not in out["exception"]["values"][1]["stacktrace"]["frames"][1]
+    assert out["breadcrumbs"]["values"] == [{"data": None}]
+    assert ss.before_breadcrumb(None) is None
+
+    class Boom(dict):
+        def pop(self, *a):
+            raise RuntimeError("boom")
+    assert ss.before_send(Boom()) is None
+    assert ss.before_breadcrumb(Boom(data={})) is None
+
+
+def test_tags_allowlisted():
+    ev = {"tags": {"environment": "prod", "release": "r1", "url": "https://h/p/q?email=a@b.c",
+                   "user_email": "a@b.c", "paper_title": "secret", "level": "error"}}
+    out = ss.before_send(ev)
+    assert out["tags"] == {"environment": "prod", "release": "r1", "url": "/p/q", "level": "error"}
+    out = ss.before_send({"tags": [["os", "linux"], ["token", "x"]]})
+    assert out["tags"] == {"os": "linux"}
+
+
+def test_harmless_keys_kept():
+    out = ss.before_breadcrumb({"data": {"status_code": 500, "Content-Length": "12",
+                                         "http.response.status_code": 200, "token": "t"}})
+    assert out["data"]["status_code"] == 500
+    assert out["data"]["Content-Length"] == "12"
+    assert out["data"]["http.response.status_code"] == 200
+    assert out["data"]["token"] == "[filtered]"

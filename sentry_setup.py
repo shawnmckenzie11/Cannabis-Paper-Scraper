@@ -1,8 +1,19 @@
 """MCK-102: privacy-first Sentry wiring for the Flask app.
 
 No-op unless SENTRY_DSN is set. Disabled when CRN_SENTRY_DISABLED=1 (scoring /
-evaluation runs). Sends no PII, no request bodies, no cookies/auth headers, no
-query strings, no local variables, and redacts e-mail addresses / obvious secrets.
+evaluation runs). What before_send / before_breadcrumb do:
+- drop event user, extra, logentry and message; keep only allowlisted contexts
+  and tags (url tags are reduced to their path);
+- replace exception values with "<type> sha256:<hash>"; drop frame vars and
+  source context lines;
+- drop request data, cookies, query string, env and fragment; keep only
+  allowlisted headers; strip query/fragment from URLs and transaction names;
+- in span and breadcrumb data, replace values of keys that look sensitive with
+  "[filtered]" and regex-redact e-mail addresses and common secret patterns in
+  the remaining strings and span descriptions; drop breadcrumb messages;
+- drop the whole event (or breadcrumb) if scrubbing raises.
+Redaction of free text is pattern-based and best-effort, not a guarantee.
+The Anthropic and OpenAI integrations are disabled so prompts are not captured.
 """
 import os
 import re
@@ -38,12 +49,24 @@ def scrub_text(s):
     return _SECRET_RE.sub(lambda m: m.group(1) + m.group(2) + "[filtered]", s)
 
 
+_SAFE_KEYS = {
+    "status_code", "http.status_code", "http.response.status_code",
+    "content-length", "content-type", "http.response_content_length",
+    "http.response.body.size", "http.request.body.size",
+}
+
+
+def _is_sensitive_key(k):
+    k = str(k)
+    return k.lower() not in _SAFE_KEYS and bool(_SENSITIVE_KEYS.search(k))
+
+
 def _scrub_mapping(d):
     if not isinstance(d, dict):
         return d
     out = {}
     for k, v in d.items():
-        if _SENSITIVE_KEYS.search(str(k)):
+        if _is_sensitive_key(k):
             out[k] = "[filtered]"
         elif isinstance(v, str):
             out[k] = scrub_text(strip_query(v) if k in ("url", "http.url", "http.query") or str(v).startswith("http") else v)
@@ -68,6 +91,33 @@ def _scrub_request(req):
 
 
 _SAFE_CONTEXTS = {"runtime", "os", "trace", "device", "app", "flask"}
+_SAFE_TAGS = {"environment", "release", "server_name", "level", "transaction", "runtime", "os", "url"}
+
+
+def _scrub_tags(tags):
+    if isinstance(tags, list):  # Sentry also allows [[k, v], ...]
+        tags = {t[0]: t[1] for t in tags if isinstance(t, (list, tuple)) and len(t) == 2}
+    if not isinstance(tags, dict):
+        return {}
+    out = {}
+    for k, v in tags.items():
+        if k not in _SAFE_TAGS:
+            continue
+        if k == "url":
+            v = urlsplit(v).path if isinstance(v, str) else None
+        elif k == "transaction" and isinstance(v, str):
+            v = strip_query(v)
+        if v is not None:
+            out[k] = v
+    return out
+
+
+def _dicts(seq):
+    return [x for x in (seq if isinstance(seq, list) else []) if isinstance(x, dict)]
+
+
+def _get(d, k):
+    return d.get(k) if isinstance(d, dict) else None
 
 
 def hash_text(kind, text):
@@ -81,18 +131,28 @@ def hash_text(kind, text):
 
 
 def before_send(event, hint=None):
+    try:
+        return _before_send(event, hint)
+    except Exception:
+        return None
+
+
+def _before_send(event, hint=None):
+    if not isinstance(event, dict):
+        return None
     event.pop("user", None)
     event.pop("extra", None)
     if isinstance(event.get("contexts"), dict):
         event["contexts"] = {k: v for k, v in event["contexts"].items() if k in _SAFE_CONTEXTS}
-    exc_values = (event.get("exception") or {}).get("values") or []
-    for exc in exc_values:
+    if "tags" in event:
+        event["tags"] = _scrub_tags(event["tags"])
+    for exc in _dicts(_get(event.get("exception"), "values")):
         exc["value"] = hash_text(exc.get("type"), exc.get("value"))
-        for fr in (exc.get("stacktrace") or {}).get("frames") or []:
+        for fr in _dicts(_get(exc.get("stacktrace"), "frames")):
             for k in ("vars", "context_line", "pre_context", "post_context"):
                 fr.pop(k, None)
-    for th in (event.get("threads") or {}).get("values") or []:
-        for fr in (th.get("stacktrace") or {}).get("frames") or []:
+    for th in _dicts(_get(event.get("threads"), "values")):
+        for fr in _dicts(_get(th.get("stacktrace"), "frames")):
             for k in ("vars", "context_line", "pre_context", "post_context"):
                 fr.pop(k, None)
     # Log message text and params are dropped entirely (not hashed).
@@ -102,7 +162,7 @@ def before_send(event, hint=None):
         event["request"] = _scrub_request(event["request"])
     if isinstance(event.get("transaction"), str):
         event["transaction"] = strip_query(event["transaction"])
-    for sp in event.get("spans") or []:
+    for sp in _dicts(event.get("spans")):
         if isinstance(sp.get("description"), str):
             sp["description"] = scrub_text(_strip_desc(sp["description"]))
         if isinstance(sp.get("data"), dict):
@@ -125,8 +185,15 @@ before_send_transaction = before_send
 
 
 def before_breadcrumb(crumb, hint=None):
+    try:
+        return _before_breadcrumb(crumb, hint)
+    except Exception:
+        return None
+
+
+def _before_breadcrumb(crumb, hint=None):
     if not isinstance(crumb, dict):
-        return crumb
+        return None
     if isinstance(crumb.get("data"), dict):
         crumb["data"] = _scrub_mapping(crumb["data"])
         crumb["data"].pop("http.query", None)
@@ -157,9 +224,22 @@ def init_sentry():
     import sentry_sdk
     from sentry_sdk.integrations.flask import FlaskIntegration
 
+    disabled = []
+    try:
+        from sentry_sdk.integrations.anthropic import AnthropicIntegration
+        disabled.append(AnthropicIntegration())
+    except Exception:
+        pass
+    try:
+        from sentry_sdk.integrations.openai import OpenAIIntegration
+        disabled.append(OpenAIIntegration())
+    except Exception:
+        pass
+
     sentry_sdk.init(
         dsn=os.environ["SENTRY_DSN"].strip(),
         integrations=[FlaskIntegration()],
+        disabled_integrations=disabled,
         send_default_pii=False,
         max_request_body_size="never",
         include_local_variables=False,
