@@ -51,7 +51,7 @@ class TestCsrf(unittest.TestCase):
 
     def test_google_callback_post_needs_g_csrf_double_submit(self):
         r = self.client.post("/auth/google/callback", data={"credential": "a.b.c"})
-        self.assertEqual(r.status_code, 400)
+        self.assertEqual(r.status_code, 401)  # route is @csrf.exempt; Google's own double-submit rejects it
         self.assertIn("CSRF check failed", r.get_data(as_text=True))
 
     def test_pages_embed_token(self):

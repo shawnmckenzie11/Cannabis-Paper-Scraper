@@ -413,6 +413,7 @@ def require_login():
         '/resend-verification',
         '/auth/google',
         '/auth/google/callback',
+        '/api/csrf-token',
         '/logout',
         '/settings',
     ]
@@ -702,11 +703,6 @@ def _link_or_create_google_user(email: str, google_id: str, name: str, *, unique
 @app.route("/auth/google/callback", methods=["GET", "POST"])
 @csrf.exempt  # Google Identity Services POSTs here cross-site; it uses its own g_csrf_token double-submit (checked below).
 def auth_google_callback():
-    if request.method == "POST":
-        cookie_token = request.cookies.get("g_csrf_token")
-        body_token = request.form.get("g_csrf_token")
-        if not cookie_token or not body_token or cookie_token != body_token:
-            return render_template("login.html", error="Google sign-in failed: CSRF check failed."), 400
     client_id = os.getenv("GOOGLE_CLIENT_ID")
     client_secret = os.getenv("GOOGLE_CLIENT_SECRET")
     
@@ -719,11 +715,11 @@ def auth_google_callback():
     jwt_token = request.form.get("credential")
     if jwt_token:
         # Google's double-submit CSRF check: must run FIRST, before any verification or user linking.
-        # When PR #85 (Flask-WTF CSRF) lands, this route gets @csrf.exempt and this g_csrf_token check stays first.
+        # The route is @csrf.exempt (Flask-WTF), so this g_csrf_token check is the only CSRF guard here and stays first.
         csrf_cookie = request.cookies.get("g_csrf_token")
         csrf_body = request.form.get("g_csrf_token")
         if not csrf_cookie or not csrf_body or not hmac.compare_digest(str(csrf_cookie), str(csrf_body)):
-            return _google_login_failed("Google sign-in failed: invalid request.")
+            return _google_login_failed("Google sign-in failed: CSRF check failed.")
         try:
             payload = _verify_google_id_token(jwt_token, client_id)
         except Exception as e:
