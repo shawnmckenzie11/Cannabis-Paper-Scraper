@@ -429,17 +429,20 @@ GUEST_ALLOWLIST_EXACT = frozenset({
     "/api/graph/stats",
     "/api/graph/network",
 })
+# Hard cap on ?limit= for /api/search and /api/papers/search-simple (all users; clamped, not rejected).
+MAX_SEARCH_LIMIT = 100
+
 GUEST_ALLOWLIST_PATTERNS = (
-    re.compile(r"^/api/papers/\d+$"),
-    re.compile(r"^/api/papers/\d+/references$"),
-    re.compile(r"^/api/papers/\d+/cited-by$"),
+    re.compile(r"/api/papers/\d+"),
+    re.compile(r"/api/papers/\d+/references"),
+    re.compile(r"/api/papers/\d+/cited-by"),
 )
 
 
 def _is_guest_allowlisted(path: str) -> bool:
     if path in GUEST_ALLOWLIST_EXACT:
         return True
-    return any(p.match(path) for p in GUEST_ALLOWLIST_PATTERNS)
+    return any(p.fullmatch(path) for p in GUEST_ALLOWLIST_PATTERNS)
 
 
 _GUEST_HIDDEN_KEY_RE = re.compile(
@@ -516,6 +519,25 @@ GUEST_DASHBOARD_CONFIG_KEYS = frozenset({
     "filter_section_registry", "schema_tier_51_fields", "analyze_subset_tabs",
     "taxonomy", "rules_config_version",
 })
+# Nested dashboard-config allowlists (key sets of the real config as of this commit).
+GUEST_DASHBOARD_TAB_ITEM_KEYS = frozenset({"key", "label"})
+GUEST_DASHBOARD_FILTER_PROFILE_NAMES = frozenset(_DASHBOARD_TAB_KEYS)
+GUEST_DASHBOARD_FILTER_PROFILE_KEYS = frozenset({"node", "sections"})
+GUEST_DASHBOARD_GLOBAL_FILTER_KEYS = frozenset({
+    "element_id", "label", "param", "schema_tier", "fields", "control_type",
+})
+GUEST_DASHBOARD_FILTER_SECTION_NAMES = frozenset({
+    "classification_details", "publication_type", "study_type_all", "study_type_clinical",
+    "study_type_animal", "study_type_cell", "exposure_all", "exposure_clinical",
+    "exposure_in_vivo", "exposure_in_vitro", "species", "cannabis_type", "thc_pct", "cbd_pct",
+    "year", "outcomes", "sample_size", "dose_clinical", "duration_clinical", "study_population",
+    "dose_in_vivo", "dose_in_vitro", "exposure_regimen", "puff_count",
+})
+GUEST_DASHBOARD_FILTER_SECTION_KEYS = frozenset({"tier", "fields", "param", "sidebar_only"})
+GUEST_DASHBOARD_SCHEMA_TIER_51_FIELDS = frozenset({
+    "pmid", "doi", "title", "authors", "journal", "year", "abstract",
+    "full_text_link", "date_harvested", "publication_date",
+})
 GUEST_DASHBOARD_TAXONOMY_KEYS = frozenset({
     "study_type_clinical", "study_type_animal", "study_type_cell", "study_type_all",
     "exposure_clinical", "exposure_in_vivo", "exposure_in_vitro", "exposure_all",
@@ -548,6 +570,34 @@ def _guest_citation_only(items):
     if not isinstance(items, list):
         return items
     return [i for i in items if isinstance(i, dict) and i.get("relationship") in GUEST_LINK_RELATIONSHIPS]
+
+
+def _pick_map(obj, names, inner_keys):
+    """Keep allowlisted names whose values are dicts, each reduced to inner_keys."""
+    if not isinstance(obj, dict):
+        return {}
+    return {n: _pick(v, inner_keys) for n, v in obj.items() if n in names and isinstance(v, dict)}
+
+
+def _guest_shape_dashboard_nested(out):
+    if "tabs" in out:
+        out["tabs"] = [_pick(t, GUEST_DASHBOARD_TAB_ITEM_KEYS) for t in out["tabs"] if isinstance(t, dict)] \
+            if isinstance(out["tabs"], list) else []
+    if "filter_profiles" in out:
+        out["filter_profiles"] = _pick_map(
+            out["filter_profiles"], GUEST_DASHBOARD_FILTER_PROFILE_NAMES, GUEST_DASHBOARD_FILTER_PROFILE_KEYS)
+    if "global_filters" in out:
+        out["global_filters"] = [_pick(g, GUEST_DASHBOARD_GLOBAL_FILTER_KEYS)
+                                 for g in out["global_filters"] if isinstance(g, dict)] \
+            if isinstance(out["global_filters"], list) else []
+    if "filter_section_registry" in out:
+        out["filter_section_registry"] = _pick_map(
+            out["filter_section_registry"], GUEST_DASHBOARD_FILTER_SECTION_NAMES,
+            GUEST_DASHBOARD_FILTER_SECTION_KEYS)
+    if "schema_tier_51_fields" in out:
+        out["schema_tier_51_fields"] = [f for f in out["schema_tier_51_fields"]
+                                        if f in GUEST_DASHBOARD_SCHEMA_TIER_51_FIELDS] \
+            if isinstance(out["schema_tier_51_fields"], list) else []
 
 
 def _guest_shape(endpoint, data):
@@ -584,6 +634,7 @@ def _guest_shape(endpoint, data):
         out = _pick(data, GUEST_DASHBOARD_CONFIG_KEYS)
         if "taxonomy" in out:
             out["taxonomy"] = _pick(out["taxonomy"], GUEST_DASHBOARD_TAXONOMY_KEYS)
+        _guest_shape_dashboard_nested(out)
         return out
     # Any other allowlisted JSON route without a shaper: drop everything.
     return {}
@@ -1332,6 +1383,7 @@ def api_search():
         limit = int(limit)
     except (ValueError, TypeError):
         limit = 50
+    limit = min(limit, MAX_SEARCH_LIMIT)
 
     clean_filters = _build_dashboard_filters_from_request()
         
@@ -3361,7 +3413,7 @@ def api_graph_network():
 def api_papers_search_simple():
     """Simple paper search returning id + title for the paper selector."""
     q = request.args.get("q", "").strip()
-    limit = int(request.args.get("limit", 50))
+    limit = min(int(request.args.get("limit", 50)), MAX_SEARCH_LIMIT)
     db = DatabaseManager()
     conn = db.get_connection()
     try:
