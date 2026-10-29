@@ -223,3 +223,100 @@ class TestGuestAllowlist(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+EXTRAS = {"split_counts": {"test": 1}, "gold_count": 2, "verdict_breakdown": {"x": 1},
+          "reviewer_breakdown": {"r": 1}, "new_future_key": 3}
+V0_LINK_PAPER = {"title", "pmid", "doi", "year", "study_type", "exposure_method"}
+LINK_KEYS = {"relationship", "paper_id", "external_id", "is_internal"}
+GRAPH_STATS_KEYS = {"total_edges", "internal_edges", "external_edges",
+                    "papers_with_references", "papers_with_citations", "edge_types"}
+SECTION_KEYS = {"total_count", "methods_count", "results_count", "methods_pct",
+                "results_pct", "sampled", "sample_limit", "sample_size"}
+DASH_KEYS = {"default_tab", "tabs", "filter_profiles", "global_filters", "global_filter_params",
+             "filter_section_registry", "schema_tier_51_fields", "analyze_subset_tabs",
+             "taxonomy", "rules_config_version"}
+TAB_KEYS = {"all_original", "preclinical", "clinical", "review", "unclassified"}
+
+
+def _link_entry():
+    e = {k: 1 for k in LINK_KEYS | V0_LINK_PAPER}
+    e.update({"confidence": 0.9, "source": "s2", "cannabis_type": "x",
+              "strain_normalized": "s", "new_future_key": 1, "gold": True})
+    return e
+
+
+class TestGuestRouteKeySets(unittest.TestCase):
+    def setUp(self):
+        import app as app_module
+        self.m = app_module
+        app_module.app.config["TESTING"] = True
+        app_module.limiter.reset()
+        self.client = app_module.app.test_client()
+
+    def tearDown(self):
+        self.m.limiter.reset()
+
+    def _cg(self):
+        cg = MagicMock()
+        cg.return_value.get_references.return_value = [_link_entry()]
+        cg.return_value.get_cited_by.return_value = [_link_entry()]
+        return cg
+
+    def test_link_entries_only_v0_paper_fields(self):
+        with patch.object(self.m, "CitationGraph", self._cg()), patch.object(self.m, "DatabaseManager"):
+            for p in ("/api/papers/1/references", "/api/papers/1/cited-by"):
+                r = self.client.get(p)
+                self.assertEqual(r.status_code, 200, p)
+                entry = r.get_json()[0]
+                self.assertEqual(set(entry), LINK_KEYS | V0_LINK_PAPER, p)
+                self.assertTrue((set(entry) - LINK_KEYS) <= set(self.m.GUEST_PAPER_FIELDS))
+
+    def test_graph_stats_exact_keys_no_breakdowns(self):
+        raw = {k: 1 for k in GRAPH_STATS_KEYS}
+        raw["edge_types"] = {"cites": 3, "cited_by": 2, "gold": 1, "split_test": 1, "verdict_x": 1}
+        raw.update(EXTRAS)
+        out = self.m._guest_shape("api_graph_stats", raw)
+        self.assertEqual(set(out), GRAPH_STATS_KEYS)
+        self.assertEqual(out["edge_types"], {"cites": 3, "cited_by": 2})
+
+    def test_section_stats_exact_keys(self):
+        raw = dict({k: 1 for k in SECTION_KEYS}, **EXTRAS)
+        db = MagicMock()
+        db.search_papers_minimal_for_section_stats.return_value = []
+        with patch.object(self.m, "DatabaseManager", return_value=db), \
+                patch("section_stats.compute_section_stats", return_value=dict(raw)):
+            r = self.client.get("/api/search/section-stats")
+        self.assertEqual(r.status_code, 200)
+        self.assertEqual(set(r.get_json()), SECTION_KEYS)
+
+    def test_tab_counts_exact_keys(self):
+        db = MagicMock()
+        db.get_tab_counts.return_value = dict({k: 1 for k in TAB_KEYS}, **EXTRAS)
+        with patch.object(self.m, "DatabaseManager", return_value=db):
+            data = self.client.get("/api/tab-counts").get_json()
+            self.assertEqual(set(data), {"counts"})
+            self.assertEqual(set(data["counts"]), TAB_KEYS)
+            with self.client.session_transaction() as s:
+                s["logged_in"] = True
+            data = self.client.get("/api/tab-counts").get_json()
+        self.assertTrue(set(EXTRAS) <= set(data["counts"]))
+
+    def test_dashboard_config_exact_keys(self):
+        raw = dict({k: [] for k in DASH_KEYS}, **EXTRAS)
+        raw["taxonomy"] = {"species": ["rat"], "gold_labels": ["x"], "new_future_key": 1}
+        with patch.object(self.m, "build_dashboard_ui_config", return_value=raw):
+            data = self.client.get("/api/dashboard-config").get_json()
+        self.assertEqual(set(data), DASH_KEYS)
+        self.assertEqual(data["taxonomy"], {"species": ["rat"]})
+
+    def test_real_dashboard_config_keys_match(self):
+        from dashboard_ui_config import build_dashboard_ui_config
+        self.assertEqual(set(build_dashboard_ui_config()), DASH_KEYS)
+
+    def test_signed_in_sees_link_extras(self):
+        with self.client.session_transaction() as s:
+            s["logged_in"] = True
+        with patch.object(self.m, "CitationGraph", self._cg()), patch.object(self.m, "DatabaseManager"):
+            entry = self.client.get("/api/papers/1/references").get_json()[0]
+        self.assertEqual(entry, _link_entry())

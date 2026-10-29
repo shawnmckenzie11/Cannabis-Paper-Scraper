@@ -494,6 +494,42 @@ GUEST_SEARCH_ENVELOPE = frozenset({
 })
 
 
+from repository.constants import DASHBOARD_TAB_KEYS as _DASHBOARD_TAB_KEYS
+
+# Link entries (references / cited-by): link keys + v0 paper fields only.
+GUEST_LINK_KEYS = frozenset({"relationship", "paper_id", "external_id", "is_internal"})
+GUEST_GRAPH_STATS_KEYS = frozenset({
+    "total_edges", "internal_edges", "external_edges",
+    "papers_with_references", "papers_with_citations", "edge_types",
+})
+GUEST_GRAPH_EDGE_TYPE_KEYS = frozenset({"cites", "cited_by"})
+GUEST_SECTION_STATS_KEYS = frozenset({
+    "total_count", "methods_count", "results_count", "methods_pct", "results_pct",
+    "sampled", "sample_limit", "sample_size",
+})
+GUEST_TAB_COUNT_KEYS = frozenset(_DASHBOARD_TAB_KEYS)
+GUEST_DASHBOARD_CONFIG_KEYS = frozenset({
+    "default_tab", "tabs", "filter_profiles", "global_filters", "global_filter_params",
+    "filter_section_registry", "schema_tier_51_fields", "analyze_subset_tabs",
+    "taxonomy", "rules_config_version",
+})
+GUEST_DASHBOARD_TAXONOMY_KEYS = frozenset({
+    "study_type_clinical", "study_type_animal", "study_type_cell", "study_type_all",
+    "exposure_clinical", "exposure_in_vivo", "exposure_in_vitro", "exposure_all",
+    "cannabis_type", "outcome_domain", "species", "exposure_regimen_bin", "publication_type",
+})
+
+
+def _pick(obj, keys):
+    return {k: v for k, v in obj.items() if k in keys} if isinstance(obj, dict) else {}
+
+
+def _guest_link_entry(obj):
+    if not isinstance(obj, dict):
+        return obj
+    return {k: v for k, v in obj.items() if k in GUEST_LINK_KEYS or k in GUEST_PAPER_FIELDS}
+
+
 def _guest_paper(obj):
     if not isinstance(obj, dict):
         return obj
@@ -523,9 +559,24 @@ def _guest_shape(endpoint, data):
             "edges": _guest_list(data.get("edges"), lambda e: {
                 k: v for k, v in e.items() if k in GUEST_GRAPH_EDGE_FIELDS} if isinstance(e, dict) else e),
         }
-    # dashboard-config, tab-counts, section-stats, graph stats, references,
-    # cited-by: aggregate/edge envelopes with no paper objects; denylist only.
-    return data
+    if endpoint in ("api_paper_references", "api_paper_cited_by"):
+        return _guest_list(data, _guest_link_entry)
+    if endpoint == "api_graph_stats" and isinstance(data, dict):
+        out = _pick(data, GUEST_GRAPH_STATS_KEYS)
+        if "edge_types" in out:
+            out["edge_types"] = _pick(out["edge_types"], GUEST_GRAPH_EDGE_TYPE_KEYS)
+        return out
+    if endpoint == "api_search_section_stats" and isinstance(data, dict):
+        return _pick(data, GUEST_SECTION_STATS_KEYS)
+    if endpoint == "api_tab_counts" and isinstance(data, dict):
+        return {"counts": _pick(data.get("counts"), GUEST_TAB_COUNT_KEYS)}
+    if endpoint == "api_dashboard_config" and isinstance(data, dict):
+        out = _pick(data, GUEST_DASHBOARD_CONFIG_KEYS)
+        if "taxonomy" in out:
+            out["taxonomy"] = _pick(out["taxonomy"], GUEST_DASHBOARD_TAXONOMY_KEYS)
+        return out
+    # Any other allowlisted JSON route without a shaper: drop everything.
+    return {}
 
 
 @app.before_request
