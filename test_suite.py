@@ -1104,9 +1104,8 @@ class TestExpertEditAndActiveLearning(unittest.TestCase):
         })
         
         # Edit the paper classification via API
-        with self.client.session_transaction() as sess:
-            sess["logged_in"] = True
-            sess["email"] = "shawnmckenzie11.sm@gmail.com"
+        from auth_test_helpers import login_session
+        login_session(self.client, "shawnmckenzie11.sm@gmail.com")
             
         payload = {
             "study_type": ["Clinical (RCT)"],
@@ -1394,9 +1393,8 @@ class TestExpertEditAndActiveLearning(unittest.TestCase):
         self.assertGreaterEqual(metrics["summary"]["expert_notes_count"], 1)
 
     def test_calibration_dashboard_metrics_api(self):
-        with self.client.session_transaction() as sess:
-            sess["logged_in"] = True
-            sess["email"] = "shawnmckenzie11.sm@gmail.com"
+        from auth_test_helpers import login_session
+        login_session(self.client, "shawnmckenzie11.sm@gmail.com")
         response = self.client.get("/api/calibration/dashboard-metrics")
         self.assertEqual(response.status_code, 200)
         data = json.loads(response.data.decode("utf-8"))
@@ -1408,6 +1406,13 @@ class TestExpertEditAndActiveLearning(unittest.TestCase):
         response = self.client.get("/api/calibration/dashboard-metrics")
         self.assertEqual(response.status_code, 401)
 
+    def test_calibration_dashboard_metrics_forbidden_for_non_admin(self):
+        with self.client.session_transaction() as sess:
+            sess["logged_in"] = True
+            sess["email"] = "not-an-admin@example.com"
+        self.assertEqual(self.client.get("/api/calibration/dashboard-metrics").status_code, 403)
+        self.assertEqual(self.client.get("/calibration/dashboard").status_code, 403)
+
     def test_agent_queue_status_and_recent_feedback_apis(self):
         paper_id = self.db.insert_paper({
             "pmid": "444555",
@@ -1418,15 +1423,17 @@ class TestExpertEditAndActiveLearning(unittest.TestCase):
             "classifier_version": "llm-reclassify-2.1.0"
         })
         
+        with self.client.session_transaction() as sess:
+            sess["logged_in"] = True
+
         queue_response = self.client.get("/api/classification/queue?confidence_max=0.6&limit=5")
         self.assertEqual(queue_response.status_code, 200)
         queue_data = json.loads(queue_response.data.decode("utf-8"))
         queue_ids = {p["id"] for p in queue_data["papers"]}
         self.assertIn(paper_id, queue_ids)
         
-        with self.client.session_transaction() as sess:
-            sess["logged_in"] = True
-            sess["email"] = "shawnmckenzie11.sm@gmail.com"
+        from auth_test_helpers import login_session
+        login_session(self.client, "shawnmckenzie11.sm@gmail.com")
             
         edit_response = self.client.post(
             f"/api/papers/{paper_id}/edit-classification",
@@ -1660,20 +1667,13 @@ class TestAnalysesUserIsolation(unittest.TestCase):
         self.fail(f"analyze task {task_id} did not complete: {last}")
 
     def test_public_user_behavior(self):
-        # 1. Public user runs subset analyses (allowed, no db save)
+        # Global login gate: logged-out users cannot analyze or read analyses.
         response = self.client.post("/api/analyze", json={"filters": {"query": "public_test"}})
-        self.assertEqual(response.status_code, 202)
-        queued = json.loads(response.data.decode("utf-8"))
-        data = self._wait_for_analyze_result(queued["task_id"])
-        self.assertIsNone(data["id"])  # should be null/None since not saved
-        self.assertIn("chart_data", data)
+        self.assertEqual(response.status_code, 401)
 
-        # 2. Public user lists analyses (returns empty list)
         response = self.client.get("/api/analyses")
-        self.assertEqual(response.status_code, 200)
-        self.assertEqual(json.loads(response.data.decode("utf-8")), [])
+        self.assertEqual(response.status_code, 401)
 
-        # 3. Public user fetching an analysis directly (blocked)
         response = self.client.get("/api/analyses/12345")
         self.assertEqual(response.status_code, 401)
 
@@ -1694,31 +1694,6 @@ class TestAnalysesUserIsolation(unittest.TestCase):
 
         response = self.client.get("/api/analyses")
         self.assertEqual(response.status_code, 200)
-        analyses = json.loads(response.data.decode("utf-8"))
-        self.assertTrue(any(a["id"] == data["id"] for a in analyses))
-
-    def test_save_guest_analysis_after_login(self):
-        """Logged-in users can persist a precomputed guest preview via save-guest."""
-        chart_data = {"paper_count": 2, "paper_ids": [1, 2], "study_design": {"rct": 1}}
-        with self.client.session_transaction() as sess:
-            sess["logged_in"] = True
-            sess["user_id"] = self.user_a["id"]
-        response = self.client.post(
-            "/api/analyses/save-guest",
-            json={
-                "name": "Guest Preview Saved",
-                "paper_count": 2,
-                "filter_settings": {"tab": "all_original"},
-                "chart_data": chart_data,
-            },
-        )
-        self.assertEqual(response.status_code, 200)
-        data = json.loads(response.data.decode("utf-8"))
-        self.assertIsNotNone(data.get("id"))
-        self.assertEqual(data["paper_count"], 2)
-        self.assertEqual(data["chart_data"]["paper_ids"], [1, 2])
-
-        response = self.client.get("/api/analyses")
         analyses = json.loads(response.data.decode("utf-8"))
         self.assertTrue(any(a["id"] == data["id"] for a in analyses))
 
@@ -1771,6 +1746,9 @@ class TestMvpGatingAPI(unittest.TestCase):
             ("/api/graph/network", "GET", None)
         ]
 
+        with self.client.session_transaction() as sess:
+            sess["logged_in"] = True
+
         for route, method, payload in gated_endpoints:
             if method == "POST":
                 response = self.client.post(route, json=payload or {})
@@ -1819,9 +1797,8 @@ class TestAdminRequiredEndpoints(unittest.TestCase):
         self.assertEqual(res3.status_code, 403)
 
     def test_admin_logged_in_users_pass_decorator(self):
-        with self.client.session_transaction() as sess:
-            sess["logged_in"] = True
-            sess["email"] = "shawnmckenzie11.sm@gmail.com"
+        from auth_test_helpers import login_session
+        login_session(self.client, "shawnmckenzie11.sm@gmail.com")
 
         # Should bypass 401/403 (for delete, we expect 400 'No paper IDs provided' if we send empty/invalid data, or normal execution)
         res1 = self.client.post("/api/papers/delete", json={})
