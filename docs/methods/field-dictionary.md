@@ -220,3 +220,12 @@ Definitions for annotators: `annotation-guide-draft.md`. Not biomedical ontology
 | label_status | enum | `review_note` only (default). `gold`/`training` pending Q16 (Shawn, MCK-90) |
 
 **Audio is never stored.** Sentry never receives the transcript or any form field.
+
+## v0.2 additions (wp1.2.0-draft)
+
+- **Guest public fields v0**: `schemas/guest_public_fields.json` (default-deny allowlist; link entries carry `relationship` in {cites, cited_by}, `paper_id`, `external_id`, `is_internal`). Guest stats never broken down by split, gold, verdict or reviewer.
+- **study_group_id**: equals `paper_id` (Q7, Shawn Oct 29 2026).
+- **reference_value**: `paper_id, field, value, raw_text, status (draft|expert_checked), checked_by, checked_at`. Internal only.
+- **gold_badge**: paper-level; `paper_id, rater (verified sign-in), timestamp, raw_transcript, submitted_rationale` (separate), no audio. `split=test` ⇒ `storage=locked_store`. Rationale format pending_biomedical (free text for now).
+- **normalized_field**: `raw_text` + `normalized_value` with `normalization_status: pending_biomedical`. Rules: `schemas/normalization_rules.json` (range formatting allowed; "once daily" vs "daily" pending_biomedical).
+- **work_id**: grouping key; preprint/published versions and duplicate records of one work share a `work_id`. Splits are assigned by `work_id` (not paper_id). `study_group_id` stays = `paper_id`. DOI/title matches across splits produce a `work_merge_flag` for Methods confirmation — never auto-merged; a confirmed merge requires a new manifest version.
