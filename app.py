@@ -35,7 +35,13 @@ try:
 except Exception:
     logging.getLogger(__name__).exception("Sentry init failed; continuing without Sentry")
 
+from boot_safety import validate_startup_env, resolve_rate_limit_storage_uri
+
+validate_startup_env()  # P0-5: fail fast outside dev/test (names vars, never values)
+
 app = Flask(__name__)
+# Flask-Limiter reads RATELIMIT_STORAGE_URI from app.config.
+app.config["RATELIMIT_STORAGE_URI"] = resolve_rate_limit_storage_uri()
 
 _DEV_ENV_NAMES = {"dev", "development", "local", "test", "testing"}
 

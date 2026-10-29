@@ -3,30 +3,41 @@ set -e
 
 DB_PATH=${DATABASE_PATH:-/data/cannabis_papers.db}
 SEED_SOURCE="cannabis_papers.db"
-CALIBRATION_ARTIFACT_DIR="/data/calibration_runs"
+CALIBRATION_ARTIFACT_DIR="${CALIBRATION_ARTIFACT_DIR:-/data/calibration_runs}"
 CHEAP_OPS_NORM=$(printf '%s' "${CHEAP_OPS:-0}" | tr '[:upper:]' '[:lower:]')
 
 echo "Checking database status..."
 mkdir -p "$(dirname "$DB_PATH")"
 mkdir -p "$CALIBRATION_ARTIFACT_DIR"
 
-# If database exists but is incomplete (less than 50MB), delete it so we can re-seed
-if [ -f "$DB_PATH" ]; then
-    # Cross-platform file size retrieval (Linux/macOS)
-    FILESIZE=$(stat -c%s "$DB_PATH" 2>/dev/null || stat -f%z "$DB_PATH" 2>/dev/null || echo 0)
-    echo "Found existing database at $DB_PATH ($FILESIZE bytes)."
-    if [ "$FILESIZE" -lt 50000000 ]; then
-        echo "Database file is too small or incomplete. Deleting to trigger re-seed..."
-        rm -f "$DB_PATH"
-    fi
-fi
+APP_ENV_NORM=$(printf '%s' "${APP_ENV:-${FLASK_ENV:-}}" | tr '[:upper:]' '[:lower:]')
+SEED_DEV_DB_NORM=$(printf '%s' "${SEED_DEV_DB:-0}" | tr '[:upper:]' '[:lower:]')
 
-# Seed the database if it doesn't exist
-if [ -f "$SEED_SOURCE" ] && [ ! -f "$DB_PATH" ]; then
-    echo "Seeding database from $SEED_SOURCE to $DB_PATH..."
-    mkdir -p "$(dirname "$DB_PATH")"
-    cp "$SEED_SOURCE" "$DB_PATH"
-    echo "Database seeded successfully."
+# Boot safety: never delete or overwrite an existing database.
+# Seeding from the bundled SQLite file is a dev-only convenience and requires
+# SEED_DEV_DB=1 plus APP_ENV/FLASK_ENV in dev/test, and only when no DB exists.
+seed_allowed=0
+case "$APP_ENV_NORM" in
+    dev|development|local|test|testing)
+        case "$SEED_DEV_DB_NORM" in
+            1|true|yes|on) seed_allowed=1 ;;
+        esac
+        ;;
+esac
+
+if [ -n "$DATABASE_URL" ]; then
+    echo "PostgreSQL mode (DATABASE_URL set): boot never seeds, drops or recreates the database."
+elif [ -f "$DB_PATH" ]; then
+    FILESIZE=$(stat -c%s "$DB_PATH" 2>/dev/null || stat -f%z "$DB_PATH" 2>/dev/null || echo 0)
+    echo "Found existing database at $DB_PATH ($FILESIZE bytes); leaving it untouched."
+elif [ "$seed_allowed" = "1" ] && [ -f "$SEED_SOURCE" ]; then
+    echo "Dev seed: no database at $DB_PATH; copying $SEED_SOURCE..."
+    cp "$SEED_SOURCE" "$DB_PATH.seed-tmp"
+    mv -n "$DB_PATH.seed-tmp" "$DB_PATH" 2>/dev/null || true
+    rm -f "$DB_PATH.seed-tmp"
+    echo "Database seeded (dev)."
+else
+    echo "No database at $DB_PATH; seeding skipped (requires SEED_DEV_DB=1 and APP_ENV in dev/test)."
 fi
 
 if [ -f "$DB_PATH" ]; then
