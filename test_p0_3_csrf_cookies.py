@@ -22,7 +22,7 @@ class TestCsrf(unittest.TestCase):
         return self.client.get("/api/csrf-token").get_json()["csrf_token"]
 
     def test_json_post_without_token_rejected(self):
-        r = self.client.post("/api/analyses/save-guest", json={})
+        r = self.client.post("/api/analyze", json={})
         self.assertEqual(r.status_code, 400)
         self.assertTrue(r.get_json()["csrf_error"])
 
