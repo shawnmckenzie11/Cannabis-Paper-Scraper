@@ -2051,14 +2051,15 @@ class DatabaseManager:
             
             table_exists_val = self.table_exists("analyses", conn)
             if table_exists_val:
-                has_all = True
-                for col in required_cols:
-                    if not self.column_exists("analyses", col, conn):
-                        has_all = False
-                        break
-                if not has_all:
-                    conn.execute("DROP TABLE IF EXISTS analyses;")
-                    conn.commit()
+                # Non-destructive migration: never DROP analyses (it holds
+                # users' saved work). Add missing columns in place; refuse to
+                # start if a column cannot be added safely.
+                missing = sorted(
+                    col for col in required_cols
+                    if not self.column_exists("analyses", col, conn)
+                )
+                if missing:
+                    self._migrate_analyses_columns(conn, missing)
                     
             analyses_sql = """
                 CREATE TABLE IF NOT EXISTS analyses (
@@ -2078,6 +2079,50 @@ class DatabaseManager:
             conn.commit()
         finally:
             conn.close()
+
+    # Columns that can be added to an existing analyses table with
+    # ALTER TABLE ... ADD COLUMN without rewriting rows or constraints.
+    # Values: (sqlite_type, postgres_type); None = cannot be added safely.
+    _ANALYSES_ADDABLE_COLUMNS = {
+        'user_id': ("INTEGER REFERENCES users(id) ON DELETE CASCADE",
+                    "INTEGER REFERENCES users(id) ON DELETE CASCADE"),
+        'name': ("TEXT DEFAULT 'Analysis'", "TEXT DEFAULT 'Analysis'"),
+        'filter_settings': ("TEXT", "TEXT"),
+        'paper_count': ("INTEGER DEFAULT 0", "INTEGER DEFAULT 0"),
+        'chart_data': ("TEXT", "TEXT"),
+        # SQLite rejects non-constant defaults (CURRENT_TIMESTAMP) on ADD COLUMN.
+        'created_at': (None, "TIMESTAMP DEFAULT NOW()"),
+        # Primary key cannot be added via ALTER TABLE.
+        'id': (None, None),
+    }
+
+    def _migrate_analyses_columns(self, conn, missing):
+        """Add missing analyses columns in place, or raise without dropping."""
+        idx = 1 if self.is_postgres else 0
+        unsafe = [c for c in missing
+                  if self._ANALYSES_ADDABLE_COLUMNS.get(c, (None, None))[idx] is None]
+        if unsafe:
+            raise RuntimeError(
+                "Refusing to start: table 'analyses' is missing column(s) "
+                f"{', '.join(unsafe)} that cannot be added safely with "
+                "ALTER TABLE ADD COLUMN. Migrate the table manually; it will "
+                "not be dropped automatically."
+            )
+        for col in missing:
+            col_type = self._ANALYSES_ADDABLE_COLUMNS[col][idx]
+            if self.is_postgres:
+                stmt = f"ALTER TABLE analyses ADD COLUMN IF NOT EXISTS {col} {col_type};"
+            else:
+                stmt = f"ALTER TABLE analyses ADD COLUMN {col} {col_type};"
+            try:
+                conn.execute(stmt)
+                conn.commit()
+            except Exception as e:
+                raise RuntimeError(
+                    f"Refusing to start: failed to add column 'analyses.{col}' "
+                    f"({e}). Table was not dropped."
+                ) from e
+            logger.warning(f"Migrated analyses table: added column {col}")
 
     def create_analysis(self, name: str, filter_settings: str, paper_count: int, chart_data: str, user_id: Optional[int] = None) -> int:
         """Creates a new analysis record and returns its id."""
