@@ -155,3 +155,11 @@ def test_harmless_keys_kept():
     assert out["data"]["Content-Length"] == "12"
     assert out["data"]["http.response.status_code"] == 200
     assert out["data"]["token"] == "[filtered]"
+
+def test_tag_values_scrubbed():
+    from sentry_setup import _scrub_tags
+    d = {"url": "https://x.test/reset/a@b.com?q=1", "transaction": "/u/sk-abcdefghijk?x=1",
+         "release": {"t": "secret"}, "level": 5, "environment": "prod"}
+    for tags in (d, [[k, v] for k, v in d.items()]):
+        out = _scrub_tags(tags)
+        assert out == {"url": "/reset/[email]", "transaction": "/u/[secret]", "environment": "prod"}

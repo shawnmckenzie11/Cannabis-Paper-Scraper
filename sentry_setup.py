@@ -101,14 +101,16 @@ def _scrub_tags(tags):
         return {}
     out = {}
     for k, v in tags.items():
-        if k not in _SAFE_TAGS:
+        if k not in _SAFE_TAGS or not isinstance(v, str):
             continue
         if k == "url":
-            v = urlsplit(v).path if isinstance(v, str) else None
-        elif k == "transaction" and isinstance(v, str):
+            try:
+                v = urlsplit(v).path
+            except ValueError:
+                v = strip_query(v)
+        elif k == "transaction":
             v = strip_query(v)
-        if v is not None:
-            out[k] = v
+        out[k] = scrub_text(v)
     return out
 
 
