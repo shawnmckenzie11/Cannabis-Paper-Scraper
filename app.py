@@ -128,11 +128,19 @@ def admin_required(f):
     return decorated_function
 
 
-def _safe_next_url(next_url):
-    """Returns a same-site relative redirect target when safe."""
-    if not next_url or not next_url.startswith("/") or next_url.startswith("//"):
-        return None
-    return next_url
+def _safe_next_url(target, default='/'):
+    from urllib.parse import urlsplit, unquote
+    if not target or not isinstance(target, str):
+        return default
+    for s in (target, unquote(target)):
+        if any(ord(c) < 32 or ord(c) == 127 for c in s) or '\\' in s:
+            return default
+        if not s.startswith('/') or s.startswith('//'):
+            return default
+        parts = urlsplit(s)
+        if parts.scheme or parts.netloc:
+            return default
+    return target
 
 
 def _establish_user_session(user: Dict[str, Any], *, is_google: bool = False) -> None:
@@ -421,6 +429,12 @@ def require_login():
             "login_url": url_for("login", next=request.path),
         }), 401
     return redirect(url_for("login", next=request.full_path if request.query_string else request.path))
+
+@app.route("/health", methods=["GET"])
+@app.route("/healthz", methods=["GET"])
+def health():
+    return jsonify({"ok": True}), 200
+
 
 @app.route("/login", methods=["GET", "POST"])
 def login():
