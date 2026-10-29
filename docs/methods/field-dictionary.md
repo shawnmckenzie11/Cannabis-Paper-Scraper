@@ -197,3 +197,24 @@ Definitions for annotators: `annotation-guide-draft.md`. Not biomedical ontology
 
 **Not decided here.** Embed only: Shawn Q1 must mark each Core field mandatory vs deferred. Until then, treat Core list as **proposed candidates**, Supporting as optional extraction, Deferred as hooks only.
 
+
+## J. Expert review record (`$defs.expert_review`, wp1.1.0-draft)
+
+| Field | Type | Notes |
+|---|---|---|
+| review_id | string | Unique review id |
+| paper_id | int | FK papers.id |
+| source_span | string | Reference to the passage reviewed |
+| claim_field | string | Contract field under review |
+| claim_value_shown | any | Value shown to the reviewer, verbatim |
+| verdict | enum | `agree` / `disagree` / `cannot_judge_from_source`; required, no default; blank/unclear is invalid (never coerced to disagree) |
+| reviewer_confidence | int 1–5 | Ordinal; anchors **pending_biomedical** |
+| rationale_text | string | Expert's submitted text (post-edit) |
+| raw_transcript | string\|null | Stored separately; **never the label**; null when typed |
+| input_mode | enum | `voice` / `typed` |
+| stt_model_id | string\|null | null when typed |
+| reviewer_id, reviewed_at, schema_version | string | `reviewed_at` ISO 8601; version `wp1.1.0-draft` |
+| split_assignment_ref | string | Ref into Evaluation's split manifest, assigned **before** review |
+| label_status | enum | `review_note` only (default). `gold`/`training` pending Q16 (Shawn, MCK-90) |
+
+**Audio is never stored.** Sentry never receives the transcript or any form field.
