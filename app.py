@@ -36,8 +36,36 @@ except Exception:
     logging.getLogger(__name__).exception("Sentry init failed; continuing without Sentry")
 
 app = Flask(__name__)
-app.secret_key = os.getenv("FLASK_SECRET_KEY", "mckenzian-secret-key-12345")
-ACCESS_PASSWORD = os.getenv("ACCESS_PASSWORD", "admin123")
+
+_DEV_ENV_NAMES = {"dev", "development", "local", "test", "testing"}
+
+
+def _is_dev_or_test_env() -> bool:
+    """True only when an explicit dev/test config is set (APP_ENV or FLASK_ENV)."""
+    for var in ("APP_ENV", "FLASK_ENV"):
+        if (os.getenv(var) or "").strip().lower() in _DEV_ENV_NAMES:
+            return True
+    return False
+
+
+def _resolve_secret_key() -> str:
+    """Fail closed: refuse to boot without FLASK_SECRET_KEY outside dev/test."""
+    key = (os.getenv("FLASK_SECRET_KEY") or "").strip()
+    if key:
+        return key
+    if _is_dev_or_test_env():
+        import secrets
+        logging.getLogger(__name__).warning(
+            "FLASK_SECRET_KEY unset; using a random per-process key (dev/test only)."
+        )
+        return secrets.token_hex(32)
+    raise RuntimeError(
+        "FLASK_SECRET_KEY is not set. Refusing to start. Set it (e.g. `fly secrets set "
+        "FLASK_SECRET_KEY=...`) or set APP_ENV=development for local use."
+    )
+
+
+app.secret_key = _resolve_secret_key()
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 RELIABILITY_MANIFEST_FILE = os.path.join(BASE_DIR, "reliability_manifest.json")
 
@@ -84,16 +112,40 @@ def login_required(f):
 
 ADMIN_EMAILS = {"shawnmckenzie11.sm@gmail.com", "solutions@mckenzian.com", "nadiadalim@gmail.com"}
 if os.getenv("ADMIN_EMAILS"):
-    ADMIN_EMAILS.update(email.strip() for email in os.getenv("ADMIN_EMAILS").split(","))
+    ADMIN_EMAILS.update(email.strip() for email in os.getenv("ADMIN_EMAILS").split(",") if email.strip())
+ADMIN_EMAILS = {email.lower() for email in ADMIN_EMAILS}
+
+
+def _session_admin_email() -> Optional[str]:
+    """Return the admin email for the session, verified against the users table.
+
+    The cookie's ``email`` is never trusted on its own: the session must carry a
+    ``user_id`` whose DB row is a claimed (verified or Google-linked) account whose
+    stored email is on the admin allowlist and matches the session email.
+    """
+    if not session.get("logged_in"):
+        return None
+    user_id = session.get("user_id")
+    try:
+        user = DatabaseManager().get_user_by_id(int(user_id)) if user_id is not None else None
+    except (TypeError, ValueError, Exception):
+        user = None
+    if not user or not _account_is_claimed(user):
+        return None
+    db_email = (user.get("email") or "").strip().lower()
+    session_email = (session.get("email") or "").strip().lower()
+    if not db_email or db_email != session_email or db_email not in ADMIN_EMAILS:
+        return None
+    return db_email
+
 
 def admin_required(f):
     @wraps(f)
     def decorated_function(*args, **kwargs):
         if not session.get("logged_in"):
             return jsonify({"error": "Authentication required.", "login_url": url_for("login", next=request.path)}), 401
-        user_email = session.get("email")
-        if not user_email or user_email not in ADMIN_EMAILS:
-            return jsonify({"error": "This action is restricted to administrators.", "email": user_email}), 403
+        if not _session_admin_email():
+            return jsonify({"error": "This action is restricted to administrators."}), 403
         return f(*args, **kwargs)
     return decorated_function
 
@@ -856,7 +908,7 @@ def settings():
         "Google + email password" if is_google and has_password else "Email & password"
     )
     email = user.get("email") or ""
-    is_admin = email in ADMIN_EMAILS
+    is_admin = bool(_session_admin_email())
     analyses_count = db.count_user_analyses(int(user["id"]))
 
     return render_template(
@@ -1832,6 +1884,7 @@ def _calibration_output_dir() -> Path:
 
 
 @app.route("/calibration/dashboard")
+@admin_required
 def calibration_dashboard_page():
     """Serves the interactive calibration learning dashboard."""
     output_dir = _calibration_output_dir()
@@ -1851,13 +1904,14 @@ def api_calibration_auth_status():
     logged_in = bool(session.get("logged_in"))
     return jsonify({
         "logged_in": logged_in,
-        "is_admin": bool(email and email in ADMIN_EMAILS),
+        "is_admin": bool(_session_admin_email()),
         "email": email,
         "login_url": url_for("login", next="/calibration/dashboard"),
     })
 
 
 @app.route("/api/calibration/dashboard-metrics", methods=["GET"])
+@admin_required
 def api_calibration_dashboard_metrics():
     """Returns aggregated calibration learning metrics for dashboards and agents."""
     try:
@@ -1877,6 +1931,7 @@ def api_calibration_dashboard_metrics():
 
 
 @app.route("/api/calibration/lock-status", methods=["GET"])
+@login_required
 def api_calibration_lock_status():
     """Returns the production calibration coordination lock snapshot."""
     import calibration_coordinator

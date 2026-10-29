@@ -1104,9 +1104,8 @@ class TestExpertEditAndActiveLearning(unittest.TestCase):
         })
         
         # Edit the paper classification via API
-        with self.client.session_transaction() as sess:
-            sess["logged_in"] = True
-            sess["email"] = "shawnmckenzie11.sm@gmail.com"
+        from auth_test_helpers import login_session
+        login_session(self.client, "shawnmckenzie11.sm@gmail.com")
             
         payload = {
             "study_type": ["Clinical (RCT)"],
@@ -1394,9 +1393,8 @@ class TestExpertEditAndActiveLearning(unittest.TestCase):
         self.assertGreaterEqual(metrics["summary"]["expert_notes_count"], 1)
 
     def test_calibration_dashboard_metrics_api(self):
-        with self.client.session_transaction() as sess:
-            sess["logged_in"] = True
-            sess["email"] = "shawnmckenzie11.sm@gmail.com"
+        from auth_test_helpers import login_session
+        login_session(self.client, "shawnmckenzie11.sm@gmail.com")
         response = self.client.get("/api/calibration/dashboard-metrics")
         self.assertEqual(response.status_code, 200)
         data = json.loads(response.data.decode("utf-8"))
@@ -1407,6 +1405,13 @@ class TestExpertEditAndActiveLearning(unittest.TestCase):
     def test_calibration_dashboard_metrics_requires_admin(self):
         response = self.client.get("/api/calibration/dashboard-metrics")
         self.assertEqual(response.status_code, 401)
+
+    def test_calibration_dashboard_metrics_forbidden_for_non_admin(self):
+        with self.client.session_transaction() as sess:
+            sess["logged_in"] = True
+            sess["email"] = "not-an-admin@example.com"
+        self.assertEqual(self.client.get("/api/calibration/dashboard-metrics").status_code, 403)
+        self.assertEqual(self.client.get("/calibration/dashboard").status_code, 403)
 
     def test_agent_queue_status_and_recent_feedback_apis(self):
         paper_id = self.db.insert_paper({
@@ -1424,9 +1429,8 @@ class TestExpertEditAndActiveLearning(unittest.TestCase):
         queue_ids = {p["id"] for p in queue_data["papers"]}
         self.assertIn(paper_id, queue_ids)
         
-        with self.client.session_transaction() as sess:
-            sess["logged_in"] = True
-            sess["email"] = "shawnmckenzie11.sm@gmail.com"
+        from auth_test_helpers import login_session
+        login_session(self.client, "shawnmckenzie11.sm@gmail.com")
             
         edit_response = self.client.post(
             f"/api/papers/{paper_id}/edit-classification",
@@ -1819,9 +1823,8 @@ class TestAdminRequiredEndpoints(unittest.TestCase):
         self.assertEqual(res3.status_code, 403)
 
     def test_admin_logged_in_users_pass_decorator(self):
-        with self.client.session_transaction() as sess:
-            sess["logged_in"] = True
-            sess["email"] = "shawnmckenzie11.sm@gmail.com"
+        from auth_test_helpers import login_session
+        login_session(self.client, "shawnmckenzie11.sm@gmail.com")
 
         # Should bypass 401/403 (for delete, we expect 400 'No paper IDs provided' if we send empty/invalid data, or normal execution)
         res1 = self.client.post("/api/papers/delete", json={})
