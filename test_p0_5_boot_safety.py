@@ -24,6 +24,16 @@ def _clean_env(overrides):
     return env
 
 
+# Limiter storage stub for prod boots: records the URI Flask-Limiter is built
+# with and serves memory storage, so redis:// needs no redis package or server.
+_STUB_LIMITER_STORAGE = (
+    "import flask_limiter._extension as _fe, limits.storage as _ls; _seen = []\n"
+    "def _stub(uri, **kw):\n"
+    "    _seen.append(uri); return _ls.MemoryStorage()\n"
+    "_fe.storage_from_string = _stub\n"
+)
+
+
 def _boot(overrides, code="import app; print('BOOTED')"):
     return subprocess.run([sys.executable, "-c", code], cwd=REPO, env=_clean_env(overrides),
                           capture_output=True, text=True, timeout=180)
@@ -92,8 +102,9 @@ class TestEntrypointNeverWipes(unittest.TestCase):
 
 class TestProdFailFast(unittest.TestCase):
     def test_prod_full_config_boots(self):
-        r = _boot(dict(PROD_OK))
+        r = _boot(dict(PROD_OK), _STUB_LIMITER_STORAGE + "import app; print('BOOTED')")
         self.assertEqual(r.returncode, 0, r.stderr[-2000:])
+        self.assertIn("BOOTED", r.stdout)
 
     def test_each_missing_var_refuses(self):
         for var in ("GOOGLE_CLIENT_ID", "GOOGLE_CLIENT_SECRET", "FLASK_SECRET_KEY"):
@@ -139,5 +150,8 @@ class TestProdFailFast(unittest.TestCase):
         self.assertIn("memory://", r.stdout)
 
     def test_limiter_redis_used_in_prod(self):
-        r = _boot(dict(PROD_OK), "import app; print(app.app.config['RATELIMIT_STORAGE_URI'])")
+        r = _boot(dict(PROD_OK), _STUB_LIMITER_STORAGE + "import app\n"
+                  "print(app.app.config['RATELIMIT_STORAGE_URI'])\nprint('LIMITER', _seen)")
+        self.assertEqual(r.returncode, 0, r.stderr[-2000:])
         self.assertIn("redis://fake:6379/0", r.stdout)
+        self.assertIn("LIMITER ['redis://fake:6379/0']", r.stdout)
