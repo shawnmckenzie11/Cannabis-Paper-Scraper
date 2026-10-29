@@ -25,9 +25,7 @@
     "record_unit": {
       "type": "string",
       "description": "Technical attachment unit. Scientific multi-arm/family policy pending_biomedical (Q7).",
-      "enum": [
-        "paper"
-      ],
+      "enum": ["paper"],
       "default": "paper"
     },
     "provenance": {
@@ -36,12 +34,7 @@
     "honesty_label": {
       "type": "string",
       "description": "UI-facing honesty chip derived from provenance (technical).",
-      "enum": [
-        "ai_assisted",
-        "human_reviewed",
-        "hand_tagged",
-        "mixed"
-      ]
+      "enum": ["ai_assisted", "human_reviewed", "hand_tagged", "mixed"]
     },
     "fields": {
       "type": "object",
@@ -76,77 +69,35 @@
           "$ref": "#/$defs/string_field",
           "description": "Species or biological system. Enum pending_biomedical (Q11)."
         },
-        "dose_mg": {
-          "$ref": "#/$defs/number_field"
-        },
-        "dose_thc_mg_kg": {
-          "$ref": "#/$defs/number_field"
-        },
-        "dose_cbd_mg_kg": {
-          "$ref": "#/$defs/number_field"
-        },
-        "dose_thc_mg_g": {
-          "$ref": "#/$defs/number_field"
-        },
-        "dose_cbd_mg_g": {
-          "$ref": "#/$defs/number_field"
-        },
-        "conc_thc_mg_ml": {
-          "$ref": "#/$defs/number_field"
-        },
-        "conc_cbd_mg_ml": {
-          "$ref": "#/$defs/number_field"
-        },
-        "conc_thc_uM": {
-          "$ref": "#/$defs/number_field"
-        },
-        "conc_cbd_uM": {
-          "$ref": "#/$defs/number_field"
-        },
-        "pct_thc": {
-          "$ref": "#/$defs/number_field"
-        },
-        "pct_cbd": {
-          "$ref": "#/$defs/number_field"
-        },
-        "puff_count": {
-          "$ref": "#/$defs/integer_field"
-        },
-        "duration_days": {
-          "$ref": "#/$defs/number_field"
-        },
-        "inhaled_exposure_duration": {
-          "$ref": "#/$defs/string_field"
-        },
-        "administration_frequency": {
-          "$ref": "#/$defs/string_field"
-        },
-        "treatment_duration": {
-          "$ref": "#/$defs/string_field"
-        },
-        "repeat_exposure_count": {
-          "$ref": "#/$defs/integer_field"
-        },
+        "dose_mg": { "$ref": "#/$defs/number_field" },
+        "dose_thc_mg_kg": { "$ref": "#/$defs/number_field" },
+        "dose_cbd_mg_kg": { "$ref": "#/$defs/number_field" },
+        "dose_thc_mg_g": { "$ref": "#/$defs/number_field" },
+        "dose_cbd_mg_g": { "$ref": "#/$defs/number_field" },
+        "conc_thc_mg_ml": { "$ref": "#/$defs/number_field" },
+        "conc_cbd_mg_ml": { "$ref": "#/$defs/number_field" },
+        "conc_thc_uM": { "$ref": "#/$defs/number_field" },
+        "conc_cbd_uM": { "$ref": "#/$defs/number_field" },
+        "pct_thc": { "$ref": "#/$defs/number_field" },
+        "pct_cbd": { "$ref": "#/$defs/number_field" },
+        "puff_count": { "$ref": "#/$defs/integer_field" },
+        "duration_days": { "$ref": "#/$defs/number_field" },
+        "inhaled_exposure_duration": { "$ref": "#/$defs/string_field" },
+        "administration_frequency": { "$ref": "#/$defs/string_field" },
+        "treatment_duration": { "$ref": "#/$defs/string_field" },
+        "repeat_exposure_count": { "$ref": "#/$defs/integer_field" },
         "exposure_regimen_bin": {
           "$ref": "#/$defs/string_field",
           "description": "Regimen bin label pending_biomedical (Q8)."
         },
-        "multiple_doses": {
-          "$ref": "#/$defs/boolean_field"
-        },
-        "multiple_time_intervals": {
-          "$ref": "#/$defs/boolean_field"
-        },
+        "multiple_doses": { "$ref": "#/$defs/boolean_field" },
+        "multiple_time_intervals": { "$ref": "#/$defs/boolean_field" },
         "sample_size": {
           "$ref": "#/$defs/integer_field",
           "description": "N as reported; replicate rules pending_biomedical (Q9)."
         },
-        "replicates_notes": {
-          "$ref": "#/$defs/string_field"
-        },
-        "strain_reported": {
-          "$ref": "#/$defs/string_field"
-        },
+        "replicates_notes": { "$ref": "#/$defs/string_field" },
+        "strain_reported": { "$ref": "#/$defs/string_field" },
         "strain_normalized": {
           "$ref": "#/$defs/string_field",
           "description": "Normalized chemotype/mapping pending_biomedical."
@@ -187,16 +138,7 @@
     },
     "legacy_crosswalk": {
       "type": "object",
-      "additionalProperties": {
-        "type": [
-          "string",
-          "number",
-          "boolean",
-          "null",
-          "array",
-          "object"
-        ]
-      },
+      "additionalProperties": { "type": ["string", "number", "boolean", "null", "array", "object"] },
       "description": "Optional snapshot of legacy Scraper column values used as hand-tag fallback for Compare."
     }
   },
@@ -250,24 +192,15 @@
           "description": "Extractor or pipeline component identifier."
         },
         "model_id": {
-          "type": [
-            "string",
-            "null"
-          ],
+          "type": ["string", "null"],
           "description": "Model id when ML/LLM used; null for pure hand tag."
         },
         "prompt_id": {
-          "type": [
-            "string",
-            "null"
-          ],
+          "type": ["string", "null"],
           "description": "Prompt or rules_config version id; null if none."
         },
         "confidence": {
-          "type": [
-            "number",
-            "null"
-          ],
+          "type": ["number", "null"],
           "minimum": 0,
           "maximum": 1,
           "description": "Extractor confidence when available."
@@ -276,50 +209,31 @@
           "$ref": "#/$defs/source_tier"
         },
         "source_span": {
-          "type": [
-            "string",
-            "null"
-          ],
+          "type": ["string", "null"],
           "description": "Optional verbatim span or locator grounding the extraction."
         },
         "human_override": {
           "description": "False if none; true or object when a human overrode AI.",
           "oneOf": [
-            {
-              "type": "boolean"
-            },
+            { "type": "boolean" },
             {
               "type": "object",
               "additionalProperties": false,
-              "required": [
-                "overridden",
-                "by"
-              ],
+              "required": ["overridden", "by"],
               "properties": {
-                "overridden": {
-                  "type": "boolean"
-                },
-                "by": {
-                  "type": "string"
-                },
+                "overridden": { "type": "boolean" },
+                "by": { "type": "string" },
                 "fields": {
                   "type": "array",
-                  "items": {
-                    "type": "string"
-                  }
+                  "items": { "type": "string" }
                 },
-                "note": {
-                  "type": "string"
-                }
+                "note": { "type": "string" }
               }
             }
           ]
         },
         "reviewed_at": {
-          "type": [
-            "string",
-            "null"
-          ],
+          "type": ["string", "null"],
           "format": "date-time",
           "description": "ISO-8601 timestamp of human review; null if unreviewed."
         }
@@ -328,27 +242,15 @@
     "field_meta": {
       "type": "object",
       "additionalProperties": false,
-      "required": [
-        "missingness"
-      ],
+      "required": ["missingness"],
       "properties": {
-        "missingness": {
-          "$ref": "#/$defs/missingness"
-        },
+        "missingness": { "$ref": "#/$defs/missingness" },
         "confidence": {
-          "type": [
-            "number",
-            "null"
-          ],
+          "type": ["number", "null"],
           "minimum": 0,
           "maximum": 1
         },
-        "source_span": {
-          "type": [
-            "string",
-            "null"
-          ]
-        },
+        "source_span": { "type": ["string", "null"] },
         "pending_biomedical": {
           "type": "boolean",
           "description": "True when value waits Shawn scientific adjudication or open coding.",
@@ -359,59 +261,25 @@
     "string_field": {
       "type": "object",
       "additionalProperties": false,
-      "required": [
-        "value",
-        "missingness"
-      ],
+      "required": ["value", "missingness"],
       "properties": {
         "value": {
-          "type": [
-            "string",
-            "null"
-          ],
+          "type": ["string", "null"],
           "description": "Scientific allowed vocabulary pending_biomedical unless missingness != reported."
         },
-        "missingness": {
-          "$ref": "#/$defs/missingness"
-        },
-        "confidence": {
-          "type": [
-            "number",
-            "null"
-          ],
-          "minimum": 0,
-          "maximum": 1
-        },
-        "source_span": {
-          "type": [
-            "string",
-            "null"
-          ]
-        },
-        "pending_biomedical": {
-          "type": "boolean",
-          "default": true
-        }
+        "missingness": { "$ref": "#/$defs/missingness" },
+        "confidence": { "type": ["number", "null"], "minimum": 0, "maximum": 1 },
+        "source_span": { "type": ["string", "null"] },
+        "pending_biomedical": { "type": "boolean", "default": true }
       },
       "allOf": [
         {
           "if": {
-            "properties": {
-              "missingness": {
-                "const": "reported"
-              }
-            },
-            "required": [
-              "missingness"
-            ]
+            "properties": { "missingness": { "const": "reported" } },
+            "required": ["missingness"]
           },
           "then": {
-            "properties": {
-              "value": {
-                "type": "string",
-                "minLength": 1
-              }
-            }
+            "properties": { "value": { "type": "string", "minLength": 1 } }
           }
         }
       ]
@@ -419,161 +287,57 @@
     "string_array_field": {
       "type": "object",
       "additionalProperties": false,
-      "required": [
-        "value",
-        "missingness"
-      ],
+      "required": ["value", "missingness"],
       "properties": {
         "value": {
-          "type": [
-            "array",
-            "null"
-          ],
-          "items": {
-            "type": "string",
-            "minLength": 1
-          },
+          "type": ["array", "null"],
+          "items": { "type": "string", "minLength": 1 },
           "description": "Multi-label; vocab pending_biomedical."
         },
-        "missingness": {
-          "$ref": "#/$defs/missingness"
-        },
-        "confidence": {
-          "type": [
-            "number",
-            "null"
-          ],
-          "minimum": 0,
-          "maximum": 1
-        },
-        "source_span": {
-          "type": [
-            "string",
-            "null"
-          ]
-        },
-        "pending_biomedical": {
-          "type": "boolean",
-          "default": true
-        }
+        "missingness": { "$ref": "#/$defs/missingness" },
+        "confidence": { "type": ["number", "null"], "minimum": 0, "maximum": 1 },
+        "source_span": { "type": ["string", "null"] },
+        "pending_biomedical": { "type": "boolean", "default": true }
       }
     },
     "number_field": {
       "type": "object",
       "additionalProperties": false,
-      "required": [
-        "value",
-        "missingness"
-      ],
+      "required": ["value", "missingness"],
       "properties": {
-        "value": {
-          "type": [
-            "number",
-            "null"
-          ]
-        },
+        "value": { "type": ["number", "null"] },
         "unit_as_reported": {
-          "type": [
-            "string",
-            "null"
-          ],
+          "type": ["string", "null"],
           "description": "Unit family as reported; do not silently convert across families (Q8)."
         },
-        "missingness": {
-          "$ref": "#/$defs/missingness"
-        },
-        "confidence": {
-          "type": [
-            "number",
-            "null"
-          ],
-          "minimum": 0,
-          "maximum": 1
-        },
-        "source_span": {
-          "type": [
-            "string",
-            "null"
-          ]
-        },
-        "pending_biomedical": {
-          "type": "boolean",
-          "default": true
-        }
+        "missingness": { "$ref": "#/$defs/missingness" },
+        "confidence": { "type": ["number", "null"], "minimum": 0, "maximum": 1 },
+        "source_span": { "type": ["string", "null"] },
+        "pending_biomedical": { "type": "boolean", "default": true }
       }
     },
     "integer_field": {
       "type": "object",
       "additionalProperties": false,
-      "required": [
-        "value",
-        "missingness"
-      ],
+      "required": ["value", "missingness"],
       "properties": {
-        "value": {
-          "type": [
-            "integer",
-            "null"
-          ]
-        },
-        "missingness": {
-          "$ref": "#/$defs/missingness"
-        },
-        "confidence": {
-          "type": [
-            "number",
-            "null"
-          ],
-          "minimum": 0,
-          "maximum": 1
-        },
-        "source_span": {
-          "type": [
-            "string",
-            "null"
-          ]
-        },
-        "pending_biomedical": {
-          "type": "boolean",
-          "default": true
-        }
+        "value": { "type": ["integer", "null"] },
+        "missingness": { "$ref": "#/$defs/missingness" },
+        "confidence": { "type": ["number", "null"], "minimum": 0, "maximum": 1 },
+        "source_span": { "type": ["string", "null"] },
+        "pending_biomedical": { "type": "boolean", "default": true }
       }
     },
     "boolean_field": {
       "type": "object",
       "additionalProperties": false,
-      "required": [
-        "value",
-        "missingness"
-      ],
+      "required": ["value", "missingness"],
       "properties": {
-        "value": {
-          "type": [
-            "boolean",
-            "null"
-          ]
-        },
-        "missingness": {
-          "$ref": "#/$defs/missingness"
-        },
-        "confidence": {
-          "type": [
-            "number",
-            "null"
-          ],
-          "minimum": 0,
-          "maximum": 1
-        },
-        "source_span": {
-          "type": [
-            "string",
-            "null"
-          ]
-        },
-        "pending_biomedical": {
-          "type": "boolean",
-          "default": false
-        }
+        "value": { "type": ["boolean", "null"] },
+        "missingness": { "$ref": "#/$defs/missingness" },
+        "confidence": { "type": ["number", "null"], "minimum": 0, "maximum": 1 },
+        "source_span": { "type": ["string", "null"] },
+        "pending_biomedical": { "type": "boolean", "default": false }
       }
     },
     "expert_review": {
@@ -583,6 +347,7 @@
       "required": [
         "review_id",
         "paper_id",
+        "study_group_id",
         "source_span",
         "claim_field",
         "claim_value_shown",
@@ -606,6 +371,14 @@
         "paper_id": {
           "type": "integer",
           "minimum": 1
+        },
+        "study_group_id": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Key grouping duplicates and papers from the same study so they land in the same split. Scientific unit-of-record definition pending_biomedical (Q7, MCK-90).",
+          "x-scientific-status": "pending_biomedical"
         },
         "source_span": {
           "type": "string",
@@ -676,7 +449,7 @@
         "split_assignment_ref": {
           "type": "string",
           "minLength": 1,
-          "description": "Reference to Evaluation's split manifest entry; assigned before review."
+          "description": "Reference to Evaluation's split manifest entry; assigned before review. Splits are grouped by study_group_id so duplicates/same-study papers share a split."
         },
         "label_status": {
           "type": "string",
