@@ -366,6 +366,7 @@ class DatabaseManager:
             
         # Check if papers table exists in this DB
         db_exists = False
+        pg_probe_failed = False
         if self.is_postgres:
             try:
                 if not DatabaseManager._postgres_compat_ready:
@@ -423,6 +424,7 @@ class DatabaseManager:
             except Exception as e:
                 logger.error(f"Postgres connection check/compat functions failed: {e}")
                 db_exists = True
+                pg_probe_failed = True
         else:
             if os.path.exists(self.db_path) and os.path.getsize(self.db_path) > 0:
                 try:
@@ -445,6 +447,10 @@ class DatabaseManager:
                     self._ensure_postgres_schema_patches()
                 except Exception as exc:
                     logger.error("Postgres schema patches failed: %s", exc)
+                # Startup-only analyses migration (raises to refuse boot if unsafe).
+                # Skipped when the Postgres probe failed (outage: no DB work).
+                if not pg_probe_failed:
+                    self.init_analyses_table()
             elif not self.is_postgres:
                 self.init_db()
             DatabaseManager._initialized = True

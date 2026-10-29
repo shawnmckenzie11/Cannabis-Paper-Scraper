@@ -69,8 +69,19 @@ else
             > /tmp/upgrade_stale_harvest.log 2>&1 &
     fi
 
-    # Run heuristic reclassification in background if needed (non-blocking)
-    if [ -f "$DB_PATH" ]; then
+    # Heuristic reclassification DELETEs papers: dev-only, explicit opt-in.
+    ALLOW_RECLASSIFY_NORM=$(printf '%s' "${ALLOW_RECLASSIFY_PURGE:-0}" | tr '[:upper:]' '[:lower:]')
+    reclassify_allowed=0
+    case "$APP_ENV_NORM" in
+        dev|development|local|test|testing)
+            case "$ALLOW_RECLASSIFY_NORM" in
+                1|true|yes|on) reclassify_allowed=1 ;;
+            esac
+            ;;
+    esac
+    if [ "$reclassify_allowed" != "1" ]; then
+        echo "Heuristic reclassify skipped (requires ALLOW_RECLASSIFY_PURGE=1 and APP_ENV in dev/test)."
+    elif [ -f "$DB_PATH" ]; then
         echo "Checking if heuristic reclassification is needed..."
         RECLASSIFIED=$(python3 -c "
 import sqlite3

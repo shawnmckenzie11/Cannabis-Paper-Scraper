@@ -17,10 +17,10 @@ class StartupConfigError(RuntimeError):
 
 
 def is_dev_env() -> bool:
-    for var in ("APP_ENV", "FLASK_ENV"):
-        if (os.getenv(var) or "").strip().lower() in DEV_ENVS:
-            return True
-    return False
+    """APP_ENV decides alone when set; FLASK_ENV is consulted only when APP_ENV
+    is unset/empty (matches entrypoint.sh ${APP_ENV:-${FLASK_ENV:-}})."""
+    value = (os.getenv("APP_ENV") or "").strip() or (os.getenv("FLASK_ENV") or "").strip()
+    return value.lower() in DEV_ENVS
 
 
 def resolve_rate_limit_storage_uri() -> str:
