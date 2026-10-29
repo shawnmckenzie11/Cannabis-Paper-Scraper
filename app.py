@@ -1924,6 +1924,7 @@ def api_calibration_dashboard_metrics():
 
 
 @app.route("/api/calibration/lock-status", methods=["GET"])
+@login_required
 def api_calibration_lock_status():
     """Returns the production calibration coordination lock snapshot."""
     import calibration_coordinator

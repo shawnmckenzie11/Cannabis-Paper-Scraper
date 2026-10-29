@@ -90,3 +90,22 @@ class TestAdminServerSide(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class TestCalibrationLockStatusAuth(unittest.TestCase):
+    def setUp(self):
+        from app import app
+        app.config["TESTING"] = True
+        self.client = app.test_client()
+
+    def test_anonymous_gets_401(self):
+        r = self.client.get("/api/calibration/lock-status")
+        self.assertEqual(r.status_code, 401)
+        self.assertTrue(r.get_json().get("login_required"))
+
+    def test_logged_in_user_gets_lock_status(self):
+        from auth_test_helpers import login_session
+        login_session(self.client, "lockstatus-user@example.com")
+        r = self.client.get("/api/calibration/lock-status")
+        self.assertEqual(r.status_code, 200, r.get_data(as_text=True)[:500])
+        self.assertIsInstance(r.get_json(), dict)
