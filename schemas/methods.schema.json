@@ -14,8 +14,8 @@
   "properties": {
     "schema_version": {
       "type": "string",
-      "const": "wp1.1.0-draft",
-      "description": "Methods contract version."
+      "enum": ["wp1.0.0-draft", "wp1.1.0-draft"],
+      "description": "Methods contract version. wp1.0.0-draft records remain valid while wp1.1.0 is in draft."
     },
     "paper_id": {
       "type": "integer",

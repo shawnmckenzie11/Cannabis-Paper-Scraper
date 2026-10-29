@@ -209,6 +209,7 @@ Definitions for annotators: `annotation-guide-draft.md`. Not biomedical ontology
 | claim_field | string | Contract field under review |
 | claim_value_shown | any | Value shown to the reviewer, verbatim |
 | verdict | enum | `agree` / `disagree` / `cannot_judge_from_source`; required, no default; blank/unclear is invalid (never coerced to disagree) |
+| verdict (name) | — | `cannot_judge_from_source` is the intended, final enum value name (not `cannot_judge` / `unclear`) |
 | reviewer_confidence | int 1–5 | Ordinal; anchors **pending_biomedical** |
 | rationale_text | string | Expert's submitted text (post-edit) |
 | raw_transcript | string\|null | Stored separately; **never the label**; null when typed |

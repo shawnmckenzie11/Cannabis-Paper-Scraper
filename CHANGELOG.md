@@ -5,6 +5,11 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+- Methods contract `wp1.1.0-draft` adds `$defs.expert_review` (expert-review form record). Top-level `schema_version` accepts both `wp1.0.0-draft` and `wp1.1.0-draft`; wp1.0.0-draft records remain valid during the draft period.
+
 ## [2.6.0] - 2026-06-22
 
 ### Added
