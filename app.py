@@ -37,17 +37,22 @@ try:
 except Exception:
     logging.getLogger(__name__).exception("Sentry init failed; continuing without Sentry")
 
+from boot_safety import validate_startup_env, resolve_rate_limit_storage_uri
+
+validate_startup_env()  # P0-5: fail fast outside dev/test (names vars, never values)
+
 app = Flask(__name__)
+# Flask-Limiter reads RATELIMIT_STORAGE_URI from app.config.
+app.config["RATELIMIT_STORAGE_URI"] = resolve_rate_limit_storage_uri()
 
 _DEV_ENV_NAMES = {"dev", "development", "local", "test", "testing"}
 
 
 def _is_dev_or_test_env() -> bool:
-    """True only when an explicit dev/test config is set (APP_ENV or FLASK_ENV)."""
-    for var in ("APP_ENV", "FLASK_ENV"):
-        if (os.getenv(var) or "").strip().lower() in _DEV_ENV_NAMES:
-            return True
-    return False
+    """True only for an explicit dev/test env. APP_ENV decides alone when set;
+    FLASK_ENV is used only when APP_ENV is unset (matches entrypoint.sh)."""
+    value = (os.getenv("APP_ENV") or "").strip() or (os.getenv("FLASK_ENV") or "").strip()
+    return value.lower() in _DEV_ENV_NAMES
 
 
 def _resolve_secret_key() -> str:
@@ -2613,8 +2618,7 @@ def _build_analyze_result(
     Does not return the full paper list in the first payload. Drill-down uses
     ``GET /api/analyses/<id>/papers`` (logged-in) or a small sample for guests.
     """
-    db = DatabaseManager()
-    db.init_analyses_table()
+    db = DatabaseManager()  # analyses schema is migrated once at startup, not per request
 
     work_filters = dict(filters)
     work_filters.pop("match_total", None)

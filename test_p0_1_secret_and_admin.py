@@ -27,7 +27,8 @@ class TestSecretKeyFailClosed(unittest.TestCase):
         self.assertNotEqual(r.returncode, 0)
 
     def test_boot_ok_with_key(self):
-        r = _boot({"FLASK_SECRET_KEY": "x" * 40})
+        r = _boot({"FLASK_SECRET_KEY": "x" * 40, "GOOGLE_CLIENT_ID": "fake-id",
+                   "GOOGLE_CLIENT_SECRET": "fake-secret", "RATE_LIMIT_SINGLE_INSTANCE": "1"})
         self.assertEqual(r.returncode, 0, r.stderr[-2000:])
         self.assertIn("BOOTED", r.stdout)
 
