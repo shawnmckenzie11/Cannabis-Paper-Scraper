@@ -10,6 +10,8 @@ from typing import Any, Dict, List, Optional, Tuple
 from pathlib import Path
 from functools import wraps
 from flask import Flask, render_template, request, jsonify, session, redirect, url_for, send_file
+from flask_limiter import Limiter
+from flask_limiter.util import get_remote_address
 from dashboard_ui_config import build_dashboard_ui_config
 import random
 import requests
@@ -31,6 +33,42 @@ import background_jobs
 app = Flask(__name__)
 app.secret_key = os.getenv("FLASK_SECRET_KEY", "mckenzian-secret-key-12345")
 ACCESS_PASSWORD = os.getenv("ACCESS_PASSWORD", "admin123")
+
+
+def _rate_limit_key() -> str:
+    """Client IP for rate limiting. On Fly (FLY_APP_NAME set) the edge sets Fly-Client-IP."""
+    if os.getenv("FLY_APP_NAME") or os.getenv("TRUST_FLY_CLIENT_IP") == "1":
+        fly_ip = (request.headers.get("Fly-Client-IP") or "").strip()
+        if fly_ip:
+            return fly_ip
+    return get_remote_address()
+
+
+# In-memory storage: per-process counters (fine for the single gunicorn worker).
+# Override with RATELIMIT_STORAGE_URI; disable with RATELIMIT_ENABLED=0.
+app.config.setdefault("RATELIMIT_ENABLED", os.getenv("RATELIMIT_ENABLED", "1") != "0")
+limiter = Limiter(
+    _rate_limit_key,
+    app=app,
+    storage_uri=os.getenv("RATELIMIT_STORAGE_URI", "memory://"),
+    default_limits=[],
+    headers_enabled=True,
+)
+
+
+def _limit_from_env(var: str, default: str):
+    """Return a callable so limits can be changed via env without code edits."""
+    return lambda: os.getenv(var) or default
+
+
+ANALYZE_RATE_LIMIT = _limit_from_env("RATE_LIMIT_ANALYZE", "10 per minute;60 per hour")
+SAVE_GUEST_RATE_LIMIT = _limit_from_env("RATE_LIMIT_SAVE_GUEST", "10 per minute;60 per hour")
+
+
+@app.errorhandler(429)
+def _rate_limited(e):
+    return jsonify({"error": "Too many requests. Please slow down and try again shortly.",
+                    "limit": str(getattr(e, "description", ""))}), 429
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 RELIABILITY_MANIFEST_FILE = os.path.join(BASE_DIR, "reliability_manifest.json")
 
@@ -1288,6 +1326,7 @@ def api_edit_classification(paper_id):
         conn.close()
 
 @app.route("/api/papers/<int:paper_id>/sync-metadata", methods=["POST"])
+@admin_required
 def api_sync_metadata(paper_id):
     """Queries external APIs (Semantic Scholar / PubMed) using DOI or PMID to fetch the abstract,
     updates it in the database, and runs the classification pipeline to update the paper's metadata.
@@ -2325,6 +2364,7 @@ def async_analyze_task(
 
 
 @app.route("/api/analyze", methods=["POST"])
+@limiter.limit(ANALYZE_RATE_LIMIT)
 def api_analyze():
     """Queue chart computation for the current filters. Poll ``/api/analyze/status/<id>``.
 
@@ -2416,6 +2456,7 @@ def api_set_dashboard_preferences():
 
 
 @app.route("/api/analyses/save-guest", methods=["POST"])
+@limiter.limit(SAVE_GUEST_RATE_LIMIT)
 def api_save_guest_analysis():
     """Persist a guest preview analysis to the logged-in user's account."""
     user = _get_session_user()
