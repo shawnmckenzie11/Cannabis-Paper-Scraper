@@ -400,6 +400,7 @@ PUBLIC_PATHS = frozenset({
     "/auth/google/callback",
     "/logout",
     "/health",
+    "/api/csrf-token",
     "/healthz",
 })
 

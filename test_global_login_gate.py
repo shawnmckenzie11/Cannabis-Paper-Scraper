@@ -35,6 +35,13 @@ class TestGlobalLoginGate(unittest.TestCase):
         self.assertNotEqual(r.status_code, 401)
         self.assertNotIn("/login?next", r.headers.get("Location", ""))
 
+    def test_csrf_token_endpoint_not_gated(self):
+        from app import _is_public_path
+        self.assertTrue(_is_public_path("/api/csrf-token"))
+        r = self.client.get("/api/csrf-token")
+        self.assertNotEqual(r.status_code, 401)
+        self.assertNotIn(r.status_code, (301, 302, 303, 307, 308))
+
     def test_logged_in_user_passes_gate(self):
         with self.client.session_transaction() as sess:
             sess["logged_in"] = True
