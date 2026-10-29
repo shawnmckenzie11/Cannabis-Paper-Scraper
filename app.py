@@ -61,7 +61,6 @@ def _limit_from_env(var: str, default: str):
 
 
 ANALYZE_RATE_LIMIT = _limit_from_env("RATE_LIMIT_ANALYZE", "10 per minute;60 per hour")
-SAVE_GUEST_RATE_LIMIT = _limit_from_env("RATE_LIMIT_SAVE_GUEST", "10 per minute;60 per hour")
 
 
 @app.errorhandler(429)
@@ -417,10 +416,51 @@ def _is_public_path(path: str) -> bool:
     return path in PUBLIC_PATHS or path.startswith("/static/")
 
 
+# Read-only guest view (seed proposal §6.5): guests may search, browse and
+# compare via GET/HEAD/OPTIONS only. Saving and exporting require sign-in.
+GUEST_SAFE_METHODS = frozenset({"GET", "HEAD", "OPTIONS"})
+GUEST_ALLOWLIST_EXACT = frozenset({
+    "/",
+    "/api/dashboard-config",
+    "/api/tab-counts",
+    "/api/search",
+    "/api/search/section-stats",
+    "/api/papers/search-simple",
+    "/api/graph/stats",
+    "/api/graph/network",
+})
+GUEST_ALLOWLIST_PATTERNS = (
+    re.compile(r"^/api/papers/\d+$"),
+    re.compile(r"^/api/papers/\d+/references$"),
+    re.compile(r"^/api/papers/\d+/cited-by$"),
+)
+
+
+def _is_guest_allowlisted(path: str) -> bool:
+    if path in GUEST_ALLOWLIST_EXACT:
+        return True
+    return any(p.match(path) for p in GUEST_ALLOWLIST_PATTERNS)
+
+
+_GUEST_HIDDEN_KEY_RE = re.compile(r"gold|expert|rationale|(^|_)split($|_)|split_label", re.I)
+
+
+def _strip_guest_sensitive(obj):
+    """Recursively drop gold / expert / rationale / split-label keys."""
+    if isinstance(obj, dict):
+        return {k: _strip_guest_sensitive(v) for k, v in obj.items()
+                if not (isinstance(k, str) and _GUEST_HIDDEN_KEY_RE.search(k))}
+    if isinstance(obj, list):
+        return [_strip_guest_sensitive(v) for v in obj]
+    return obj
+
+
 @app.before_request
 def require_login():
-    """Global login gate: everything except PUBLIC_PATHS needs a signed-in session."""
+    """Global login gate: PUBLIC_PATHS are open; guests get read-only GETs on the allowlist."""
     if _is_public_path(request.path) or session.get("logged_in"):
+        return None
+    if request.method in GUEST_SAFE_METHODS and _is_guest_allowlisted(request.path):
         return None
     if request.path.startswith("/api/"):
         return jsonify({
@@ -429,6 +469,25 @@ def require_login():
             "login_url": url_for("login", next=request.path),
         }), 401
     return redirect(url_for("login", next=request.full_path if request.query_string else request.path))
+
+
+@app.after_request
+def _strip_guest_payload(response):
+    """Guests never see gold badges, expert rationale, or split labels."""
+    try:
+        if session.get("logged_in") or not response.is_json:
+            return response
+        if not _is_guest_allowlisted(request.path):
+            return response
+        data = response.get_json(silent=True)
+        if data is None:
+            return response
+        response.set_data(json.dumps(_strip_guest_sensitive(data), default=str))
+    except Exception:
+        app.logger.exception("guest payload strip failed")
+        return jsonify({"error": "Unavailable."}), 500
+    return response
+
 
 @app.route("/health", methods=["GET"])
 @app.route("/healthz", methods=["GET"])
@@ -2479,46 +2538,6 @@ def api_set_dashboard_preferences():
     if not db.set_user_dashboard_preferences(user["id"], merged):
         return jsonify({"error": "Failed to save preferences"}), 500
     return jsonify({"success": True, "visible_columns": visible_columns})
-
-
-@app.route("/api/analyses/save-guest", methods=["POST"])
-@limiter.limit(SAVE_GUEST_RATE_LIMIT)
-def api_save_guest_analysis():
-    """Persist a guest preview analysis to the logged-in user's account."""
-    user = _get_session_user()
-    if not user:
-        return jsonify({"error": "Unauthorized", "login_required": True}), 401
-
-    data = request.get_json() or {}
-    chart_data = data.get("chart_data")
-    if not isinstance(chart_data, dict):
-        return jsonify({"error": "Missing or invalid chart_data"}), 400
-
-    filter_settings = data.get("filter_settings") or {}
-    if not isinstance(filter_settings, dict):
-        return jsonify({"error": "Invalid filter_settings"}), 400
-
-    name = (data.get("name") or "").strip() or f"Analysis {datetime.now().strftime('%b %d %Y %H:%M')}"
-    paper_count = int(data.get("paper_count") or chart_data.get("paper_count") or 0)
-
-    db = DatabaseManager()
-    db.init_analyses_table()
-    analysis_id = db.create_analysis(
-        name=name,
-        filter_settings=json.dumps(filter_settings, default=str),
-        paper_count=paper_count,
-        chart_data=json.dumps(chart_data, default=str),
-        user_id=user["id"],
-    )
-
-    return jsonify({
-        "id": analysis_id,
-        "name": name,
-        "paper_count": paper_count,
-        "filter_settings": filter_settings,
-        "chart_data": chart_data,
-        "created_at": datetime.now().isoformat(),
-    })
 
 
 @app.route("/api/analyses", methods=["GET"])

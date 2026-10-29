@@ -9,15 +9,12 @@ class TestGlobalLoginGate(unittest.TestCase):
         self.client = app.test_client()
 
     def test_api_route_returns_401_when_logged_out(self):
-        r = self.client.get("/api/dashboard-config")
+        r = self.client.get("/api/analyses")
         self.assertEqual(r.status_code, 401)
         self.assertTrue(r.get_json()["login_required"])
 
     def test_page_route_redirects_to_login_when_logged_out(self):
         r = self.client.get("/settings")
-        self.assertEqual(r.status_code, 302)
-        self.assertIn("/login", r.headers["Location"])
-        r = self.client.get("/")
         self.assertEqual(r.status_code, 302)
         self.assertIn("/login", r.headers["Location"])
 
@@ -27,7 +24,7 @@ class TestGlobalLoginGate(unittest.TestCase):
                      "/auth/google", "/auth/google/callback", "/logout",
                      "/health", "/healthz", "/static/app.js"):
             self.assertTrue(_is_public_path(path), path)
-        for path in ("/", "/settings", "/api/search", "/calibration/dashboard"):
+        for path in ("/", "/settings", "/api/search", "/calibration/dashboard"):  # not PUBLIC_PATHS; "/" and /api/search are guest-allowlisted (GET only)
             self.assertFalse(_is_public_path(path), path)
         r = self.client.get("/login")
         self.assertEqual(r.status_code, 200)

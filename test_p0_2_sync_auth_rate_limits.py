@@ -1,4 +1,4 @@
-"""P0-2: sync-metadata requires admin auth; analyze/save-guest are rate limited."""
+"""P0-2: sync-metadata requires admin auth; analyze is rate limited."""
 import os
 import unittest
 from unittest.mock import patch
@@ -47,11 +47,6 @@ class TestRateLimits(unittest.TestCase):
     def test_analyze_returns_429_over_limit(self):
         # Invalid filters -> 400 before any work is queued; the limiter still counts it.
         codes = self._hammer("/api/analyze", "RATE_LIMIT_ANALYZE", body={"filters": []})
-        self.assertTrue(all(c != 429 for c in codes[:-1]), codes)
-        self.assertEqual(codes[-1], 429)
-
-    def test_save_guest_returns_429_over_limit(self):
-        codes = self._hammer("/api/analyses/save-guest", "RATE_LIMIT_SAVE_GUEST")
         self.assertTrue(all(c != 429 for c in codes[:-1]), codes)
         self.assertEqual(codes[-1], 429)
 
