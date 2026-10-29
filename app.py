@@ -59,7 +59,6 @@ def _resolve_secret_key() -> str:
 
 
 app.secret_key = _resolve_secret_key()
-ACCESS_PASSWORD = os.getenv("ACCESS_PASSWORD", "admin123")
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 RELIABILITY_MANIFEST_FILE = os.path.join(BASE_DIR, "reliability_manifest.json")
 
