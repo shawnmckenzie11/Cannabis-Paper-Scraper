@@ -8,3 +8,4 @@ psycopg2-binary>=2.9.0
 sqlalchemy>=2.0.0
 alembic>=1.13.0
 pypdf>=4.0.0
+sentry-sdk[flask]==2.73.0
