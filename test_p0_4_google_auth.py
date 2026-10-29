@@ -153,6 +153,18 @@ class GoogleCallbackTests(unittest.TestCase):
         self.assertTrue(self._logged_in())
 
     # (c) state
+    def test_auth_google_state_is_random_urlsafe_string(self):
+        import urllib.parse
+        r = self.client.get("/auth/google")
+        self.assertEqual(r.status_code, 302)
+        q = urllib.parse.parse_qs(urllib.parse.urlparse(r.headers["Location"]).query)
+        with self.client.session_transaction() as s:
+            stored = s["google_oauth_state"]
+        self.assertIsInstance(stored, str)
+        self.assertGreaterEqual(len(stored), 32)
+        self.assertEqual(q["state"], [stored])
+        self.assertNotEqual(self.client.get("/auth/google").headers["Location"], r.headers["Location"])
+
     def test_missing_state_rejected(self):
         with mock.patch.object(app_module.requests, "post") as post:
             r = self.client.get("/auth/google/callback?code=abc&state=123456")

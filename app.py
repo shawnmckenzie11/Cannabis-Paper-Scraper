@@ -13,6 +13,7 @@ from functools import wraps
 from flask import Flask, render_template, request, jsonify, session, redirect, url_for, send_file
 from dashboard_ui_config import build_dashboard_ui_config
 import random
+import secrets
 import requests
 
 from dotenv import load_dotenv
@@ -581,7 +582,7 @@ def auth_google():
         return render_template("google_auth.html")
         
     import urllib.parse
-    state = f"{random.randint(100000, 999999)}"
+    state = secrets.token_urlsafe(32)
     session["google_oauth_state"] = state
     
     params = {
