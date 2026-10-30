@@ -59,24 +59,45 @@ def validate_startup_env() -> None:
     resolve_rate_limit_storage_uri()
 
 
-def _refuse_postgres_in_dev() -> None:
-    """A dev/test run must not point at a remote Postgres DB (e.g. prod); localhost is allowed.
+_LOCAL_DB_HOSTS = frozenset({"localhost", "127.0.0.1", "::1", ""})
 
-    Set CRN_ALLOW_LOCAL_POSTGRES=1 for a deliberate local Postgres. Names vars, never values.
-    """
-    url = (os.getenv("DATABASE_URL") or "").strip().lower()
-    if not url.startswith(("postgres://", "postgresql://")):
-        return
-    from urllib.parse import urlsplit
+
+def _postgres_hosts(url: str):
+    """Every host psycopg2 would try, including ?host= / ?hostaddr= overrides."""
+    hosts = []
     try:
-        host = (urlsplit(url).hostname or "").lower()
+        from psycopg2.extensions import parse_dsn
+        dsn_url = "postgresql" + url[url.index("://"):] if "://" in url else url
+        parsed = parse_dsn(dsn_url)
+        for key in ("host", "hostaddr"):
+            hosts += [h.strip().lower() for h in (parsed.get(key) or "").split(",")]
+    except Exception:
+        return None  # unparseable: treat as non-local
+    from urllib.parse import urlsplit, parse_qs
+    try:
+        parts = urlsplit(url)
+        hosts.append((parts.hostname or "").lower())
+        q = parse_qs(parts.query)
+        for key in ("host", "hostaddr"):
+            for v in q.get(key, []):
+                hosts += [h.strip().lower() for h in v.split(",")]
     except ValueError:
-        host = ""
-    if host in ("localhost", "127.0.0.1", "::1"):
-        return  # local/CI test database
-    if (os.getenv("CRN_ALLOW_LOCAL_POSTGRES") or "").strip().lower() in ("1", "true", "yes", "on"):
+        return None
+    return hosts
+
+
+def _refuse_postgres_in_dev() -> None:
+    """A dev/test run may only use a localhost Postgres (local or CI test DB); never a remote/prod one.
+
+    No override. Error names variables, never values.
+    """
+    url = (os.getenv("DATABASE_URL") or "").strip()
+    if not url.lower().startswith("postgres"):
+        return
+    hosts = _postgres_hosts(url)
+    if hosts is not None and all(h in _LOCAL_DB_HOSTS for h in hosts):
         return
     raise StartupConfigError(
-        "DATABASE_URL points at a non-local Postgres while APP_ENV is a dev/test value. Refusing to start: "
-        "unset DATABASE_URL, or set CRN_ALLOW_LOCAL_POSTGRES=1 for a deliberate local Postgres."
+        "DATABASE_URL points at a non-local Postgres while APP_ENV is a dev/test value. "
+        "Refusing to start: unset DATABASE_URL or use a localhost database."
     )
