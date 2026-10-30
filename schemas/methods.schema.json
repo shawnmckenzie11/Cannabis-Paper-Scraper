@@ -746,7 +746,7 @@
     "reference_value": {
       "type": "object",
       "additionalProperties": false,
-      "description": "Dev reference value hand-checked by an expert. Internal only; never guest-visible. v0.3: work_id/split/storage added; optional so v0.2 records stay valid during draft.",
+      "description": "Dev reference value hand-checked by an expert. Internal only; never guest-visible. v0.3: work_id/split/storage added; optional so v0.2 records stay valid during draft. Locked store holds test-split records only; dev records never go to the locked store.",
       "required": [
         "paper_id",
         "field",
@@ -879,13 +879,16 @@
               }
             }
           }
+        },
+        {
+          "$ref": "#/$defs/locked_store_test_only"
         }
       ]
     },
     "gold_badge": {
       "type": "object",
       "additionalProperties": false,
-      "description": "Paper-level gold badge by a verified PhD rater. No audio. Test-split gold lives only in the locked store. v0.3: decision/awarded_by/work_id added; optional so v0.2 records stay valid during draft, required by v0.3 producers (see field dictionary).",
+      "description": "Paper-level gold badge by a verified PhD rater. No audio. Test-split gold lives only in the locked store. v0.3: decision/awarded_by/work_id added; optional so v0.2 records stay valid during draft, required by v0.3 producers (see field dictionary). Locked store holds test-split records only; dev records never go to the locked store.",
       "required": [
         "paper_id",
         "rater",
@@ -999,6 +1002,9 @@
               }
             }
           }
+        },
+        {
+          "$ref": "#/$defs/locked_store_test_only"
         }
       ]
     },
@@ -1113,14 +1119,20 @@
         "required": [
           "rater_verified",
           "rationale_format"
-        ]
+        ],
+        "properties": {
+          "rationale_format": {
+            "const": "free_text"
+          }
+        }
       }
     },
     "rationale_format": {
       "enum": [
+        "pending_biomedical",
         "free_text"
       ],
-      "description": "PLACEHOLDER enum pending_biomedical (free comments vs set criteria). Rationale is stored for audit only and is NEVER scored."
+      "description": "pending_biomedical kept so v0.2 working-store records stay valid. Locked-store records must use free_text (enforced by locked_store_requirements; Evaluation also enforces in code). Rationale format is pending the Biomedical lead; no structured option yet. Rationale is NEVER scored."
     },
     "split": {
       "enum": [
@@ -1143,7 +1155,7 @@
     "relevance_grade": {
       "type": "object",
       "additionalProperties": false,
-      "description": "Relevance judgment keyed on (query_id, pmid). Field names/types aligned with crn-eval locked-store relevance_grade_PROPOSAL. Intended to evolve into a multi-axis record (PROPOSED axes in docs/methods/field-dictionary.md, not schema fields).",
+      "description": "Relevance judgment keyed on (query_id, pmid). Field names/types aligned with crn-eval locked-store relevance_grade_PROPOSAL. Intended to evolve into a multi-axis record (PROPOSED axes in docs/methods/field-dictionary.md, not schema fields). Locked store holds test-split records only; dev records never go to the locked store.",
       "x-key": [
         "query_id",
         "pmid"
@@ -1251,13 +1263,16 @@
               }
             }
           }
+        },
+        {
+          "$ref": "#/$defs/locked_store_test_only"
         }
       ]
     },
     "correction": {
       "type": "object",
       "additionalProperties": false,
-      "description": "State records are append-only. A correction supersedes a prior record; records are never edited in place.",
+      "description": "State records are append-only. A correction supersedes a prior record; records are never edited in place. A retraction points at the target's record_id (never a store position/sequence number): retracted=true + supersedes_record_id covers it.",
       "required": [
         "record_id",
         "supersedes_record_id",
@@ -1354,6 +1369,29 @@
       "type": "string",
       "minLength": 1,
       "description": "Unique id of this state record; target of correction.supersedes_record_id. Optional on v0.2-era records, required on v0.3 record types."
+    },
+    "locked_store_test_only": {
+      "if": {
+        "properties": {
+          "storage": {
+            "const": "locked_store"
+          }
+        },
+        "required": [
+          "storage"
+        ]
+      },
+      "then": {
+        "required": [
+          "split"
+        ],
+        "properties": {
+          "split": {
+            "const": "test"
+          }
+        }
+      },
+      "description": "storage == locked_store => split must be 'test'. Dev records never go to the locked store."
     }
   },
   "x-contract-version": "0.3"

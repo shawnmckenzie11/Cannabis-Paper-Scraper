@@ -80,8 +80,8 @@ def test_gap5_work_id():
 
 def test_gap6_locked_store_requires_verified_and_format():
     for name, rec in (("gold_badge", GBL),
-                      ("reference_value", dict(REF, storage="locked_store", rater_verified=True, rationale_format="free_text")),
-                      ("relevance_grade", dict(REL, storage="locked_store", rater_verified=True, rationale_format="free_text"))):
+                      ("reference_value", dict(REF, split="test", storage="locked_store", rater_verified=True, rationale_format="free_text")),
+                      ("relevance_grade", dict(REL, split="test", storage="locked_store", rater_verified=True, rationale_format="free_text"))):
         v(name, rec)
         bad(name, drop(rec, "rater_verified"))
         bad(name, drop(rec, "rationale_format"))
@@ -120,3 +120,26 @@ def test_record_id_everywhere():
     bad("gold_badge", dict(GB, record_id=""))
     bad("paper_pmid_mapping", drop({"record_id": "x", "paper_id": 1, "pmid": 9, "pmid_missing": False, "manifest_eligible": True}, "record_id"))
     assert "supersedes_record_id" not in D["paper_pmid_mapping"]["description"]
+
+def test_rationale_format_free_text_only():
+    assert SCHEMA["$defs"]["rationale_format"]["enum"] == ["pending_biomedical", "free_text"]
+    bad("gold_badge", dict(GBL, rationale_format="pending_biomedical"))
+
+def test_v02_working_store_gold_pending_biomedical_valid():
+    v("gold_badge", {"paper_id": 1, "rater": "rater-fake-1", "timestamp": TS, "raw_transcript": "t",
+                     "submitted_rationale": "r", "split": "dev", "storage": "working_store",
+                     "rationale_format": "pending_biomedical"})
+    assert "Biomedical lead" in SCHEMA["$defs"]["rationale_format"]["description"]
+
+def test_locked_store_is_test_only():
+    lk = dict(storage="locked_store", rater_verified=True, rationale_format="free_text")
+    bad("gold_badge", dict(GBL, split="dev"))
+    bad("reference_value", dict(REF, split="dev", **lk))
+    bad("relevance_grade", dict(REL, split="dev", **lk))
+    bad("relevance_grade", dict(REL, **lk))  # split missing
+    v("relevance_grade", dict(REL, split="test", **lk))
+    v("relevance_grade", dict(REL, split="dev", storage="working_store"))
+
+def test_retraction_by_record_id():
+    assert "record_id" in SCHEMA["$defs"]["correction"]["description"]
+    v("correction", dict(COR, retracted=True, supersedes_record_id="rec-gb-1"))
