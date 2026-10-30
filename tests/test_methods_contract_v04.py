@@ -61,3 +61,18 @@ def test_missing_pmid_and_bad_shapes():
     for ts in ("2026-10-30T03:00:43", "2026-10-30 03:00:43Z", "2026-10-30T03:00:43+00:00", "2026-10-30"):
         r = rec0(); r["provenance"]["retrieved_at"] = ts; bad(r)
     r = rec0(); del r["provenance"]["endpoint"]; bad(r)
+
+
+def test_provenance_params_reject_email_and_api_key():
+    import copy
+    import json
+    import jsonschema
+    from pathlib import Path
+
+    schema = json.loads(Path("schemas/methods.schema.json").read_text())
+    sub = {"$defs": schema["$defs"], "$ref": "#/$defs/pubmed_metadata_record"}
+    params = sub["$defs"]["pubmed_metadata_record"]["properties"]["provenance"]["properties"]["params"]
+    v = jsonschema.Draft202012Validator(params)
+    assert v.is_valid({"db": "pubmed", "retmode": "xml"})
+    for k in ("email", "api_key"):
+        assert not v.is_valid({"db": "pubmed", k: "x"})

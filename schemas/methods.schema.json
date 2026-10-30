@@ -1532,7 +1532,13 @@
               "additionalProperties": {
                 "type": "string"
               },
-              "description": "Query params sent to E-utilities, excluding id (and api_key/email if ever added)."
+              "not": {
+                "anyOf": [
+                  {"required": ["email"]},
+                  {"required": ["api_key"]}
+                ]
+              },
+              "description": "Query params sent to E-utilities, excluding id. email and api_key are forbidden so contact addresses and keys never get committed."
             },
             "retrieved_at": {
               "type": "string",
