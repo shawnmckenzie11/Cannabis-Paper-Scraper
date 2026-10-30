@@ -5287,9 +5287,17 @@
                 return `<span class="active-filter-chip" title="${label}">`
                     + `<span class="active-filter-chip-label">${label}</span>`
                     + `<button type="button" class="active-filter-chip-remove" aria-label="Remove ${label}" `
-                    + `onclick="removeActiveFilterChip(decodeURIComponent('${key}'), decodeURIComponent('${value}'))">&times;</button>`
+                    + `data-chip-key="${key}" data-chip-value="${value}">&times;</button>`
                     + `</span>`;
             }).join("");
+            list.querySelectorAll(".active-filter-chip-remove").forEach((btn) => {
+                btn.addEventListener("click", () => {
+                    removeActiveFilterChip(
+                        decodeURIComponent(btn.dataset.chipKey || ""),
+                        decodeURIComponent(btn.dataset.chipValue || ""),
+                    );
+                });
+            });
             updateAnalyzeCta();
         }
 
@@ -6531,15 +6539,22 @@
                 const val = paper[f];
                 if (val !== null && val !== undefined && val !== "") {
                     const def = cannabinoidFieldDefs[f];
-                    container.innerHTML += `
-                        <div class="meta-item">
-                            <span class="meta-label" id="label-${f}">${def.label}</span>
-                            <span class="meta-value" id="drawer-${f}">${def.format(val)}</span>
-                        </div>
-                    `;
+                    const item = document.createElement("div");
+                    item.className = "meta-item";
+                    const labelEl = document.createElement("span");
+                    labelEl.className = "meta-label";
+                    labelEl.id = `label-${f}`;
+                    labelEl.textContent = def.label;
+                    const valueEl = document.createElement("span");
+                    valueEl.className = "meta-value";
+                    valueEl.id = `drawer-${f}`;
+                    valueEl.textContent = def.format(val);
+                    item.appendChild(labelEl);
+                    item.appendChild(valueEl);
+                    container.appendChild(item);
                 }
             });
-            container.style.display = container.innerHTML ? "grid" : "none";
+            container.style.display = container.childElementCount ? "grid" : "none";
         }
 
         function isClinicalPaper(paper) {
@@ -8042,7 +8057,7 @@
                                 fill.style.background = "var(--accent-red)";
                             }
                             document.getElementById("harvest-spinner").style.display = "none";
-                            msg.innerHTML = `<span style="color: var(--accent-red);">Error: ${status.error || "Execution failed"}</span>`;
+                            msg.innerHTML = `<span style="color: var(--accent-red);">Error: ${escapeHtml(status.error || "Execution failed")}</span>`;
                         }
                     })
                     .catch(err => console.error("Harvest status poll failed:", err));
@@ -9708,7 +9723,7 @@
                                 rateColor = '#ff9800'; // orange for >0% and <=10%
                             }
                             return `<tr>
-                                <td style="color: var(--accent-blue); font-weight: 700; font-family: monospace;">${v.version}</td>
+                                <td style="color: var(--accent-blue); font-weight: 700; font-family: monospace;">${escapeHtml(v.version)}</td>
                                 <td style="text-align: right; font-weight: 600; color: var(--text-primary);">${v.total_classified}</td>
                                 <td style="text-align: right; color: #4caf50; font-weight: 600;">${(v.avg_confidence * 100).toFixed(1)}%</td>
                                 <td style="text-align: right; color: var(--text-secondary);">${v.corrected_count}</td>
@@ -9728,9 +9743,9 @@
                             const formattedId = formatBatchLabel(b.batch_id);
                             const timeStr = b.batch_time ? b.batch_time.split('T')[0] + ' ' + b.batch_time.split('T')[1].substring(0, 5) : '—';
                             return `<tr>
-                                <td style="color: var(--accent-blue); font-weight: 600;">${formattedId}</td>
-                                <td style="font-size: 0.8rem; color: var(--text-secondary);">${timeStr}</td>
-                                <td style="font-size: 0.8rem; color: var(--text-secondary);">${b.model}</td>
+                                <td style="color: var(--accent-blue); font-weight: 600;">${escapeHtml(formattedId)}</td>
+                                <td style="font-size: 0.8rem; color: var(--text-secondary);">${escapeHtml(timeStr)}</td>
+                                <td style="font-size: 0.8rem; color: var(--text-secondary);">${escapeHtml(b.model)}</td>
                                 <td style="text-align: right; font-weight: 700;">${b.paper_count}</td>
                                 <td style="text-align: right; color: var(--text-secondary);">${b.avg_input}</td>
                                 <td style="text-align: right; color: var(--accent-blue);">${b.avg_cache_read}</td>
@@ -11828,12 +11843,12 @@
                 
                 container.innerHTML = `
                     <div role="button" tabindex="0" class="user-avatar" id="user-avatar-btn" aria-label="Account menu" aria-haspopup="true" onclick="toggleUserDropdown(event)">
-                        ${initials}
+                        ${escapeHtml(initials)}
                     </div>
                     <div class="user-dropdown" id="user-dropdown-menu">
                         <div class="user-info">
-                            <div class="username">${name}</div>
-                            <div style="font-size: 0.75rem; color: var(--text-secondary); word-break: break-all;">${CURRENT_USER.email}</div>
+                            <div class="username">${escapeHtml(name)}</div>
+                            <div style="font-size: 0.75rem; color: var(--text-secondary); word-break: break-all;">${escapeHtml(CURRENT_USER.email || "")}</div>
                             ${CURRENT_USER.is_google ? '<div style="font-size: 0.7rem; color: var(--accent-blue); margin-top: 4px;">Google Account</div>' : ''}
                         </div>
                         <a href="/settings" class="btn-signout" style="text-decoration: none; margin-bottom: 8px; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08);">Settings</a>
