@@ -1,6 +1,6 @@
 # Known-failing test node ids on main (c84dc9a), generated with SENTRY_DSN unset, APP_ENV=test.
 # Adding lines here requires the 'baseline-update' PR label (enforced in CI) and /ci/ code-owner review.
-# PYTHON-VERSION FLAKY: the two holdout_paper_11824 tests fail on Python 3.13 but pass on 3.11 (CI).
+# 42 entries. The two holdout_paper_11824 tests were removed: they pass on CI (Python 3.11), only fail locally on 3.13.
 test_analyze_slice_1.py::TestAnalyzeSlice1::test_first_paint_uses_job_result_not_load_analysis
 test_golden_candidate_scoring.py::test_clinical_gate_requires_population_age_and_sex
 test_golden_dataset_paths.py::GoldenDatasetPathTests::test_sorted_non_review_first_row
@@ -22,11 +22,9 @@ test_patch_node2a_golden_rct_oral_v1.py::PatchNode2aGoldenRctOralV1Tests::test_c
 test_patch_node2a_golden_rct_oral_v1.py::PatchNode2aGoldenRctOralV1Tests::test_cbg_trial_outcomes_anxiety_cognition
 test_patch_node2a_golden_rct_oral_v1.py::PatchNode2aGoldenRctOralV1Tests::test_male_or_female_subjects_both_sex
 test_patch_node2a_study_pop.py::PatchNode2aStudyPopTests::test_extract_population_age_both
-test_patch_node2b_173700.py::PatchNode2b173700Tests::test_holdout_paper_11824_exposure_injection
 test_patch_node2b_195454.py::PatchNode2b195454Tests::test_frequency_once_a_day_maps_to_daily
 test_patch_node2b_195454.py::PatchNode2b195454Tests::test_invivo_prefers_animal_strain_over_cannabidiol
 test_patch_node2b_195454.py::PatchNode2b195454Tests::test_mixed_invivo_primary_not_dissolved_in_media
-test_patch_node2b_200722.py::PatchNode2b200722Tests::test_holdout_paper_11824_classifies_as_invivo
 test_patch_node2b_200722.py::PatchNode2b200722Tests::test_mixed_branch_animal_dosing_resolves_rat_not_clinical_12689
 test_patch_node2b_200722.py::PatchNode2b200722Tests::test_node7_ip_routing_from_cached_holdout_11824
 test_patch_node2b_200722.py::PatchNode2b200722Tests::test_node7_oral_over_failed_ip_narrative_13570
