@@ -17,6 +17,7 @@ import json
 import os
 import subprocess
 import sys
+import tempfile
 from datetime import datetime, timezone
 from urllib.parse import urlencode
 from urllib.request import urlopen
@@ -49,27 +50,66 @@ def load_queries(path):
             raise ValueError("query row needs query_id/id and query text: %r" % (r,))
         filters = r.get("filters")
         if isinstance(filters, str):
-            filters = json.loads(filters) if filters.strip() else None
-        out.append((str(qid), str(text), filters or {}))
+            try:
+                filters = json.loads(filters) if filters.strip() else None
+            except ValueError as e:
+                raise ValueError("query %s: filters is not valid JSON: %s" % (qid, e))
+        if filters is None:
+            filters = {}
+        if not isinstance(filters, dict):
+            raise ValueError("query %s: filters must be an object/dict or null, got %s"
+                             % (qid, type(filters).__name__))
+        try:
+            filters_to_params(filters)  # validate every query before any request/output
+        except ValueError as e:
+            raise ValueError("query %s: %s" % (qid, e))
+        out.append((str(qid), str(text), filters))
     return out
 
 
 def filters_to_params(filters):
     """Map a query-set filters dict to /api/search params. Unknown keys fail loudly."""
     params = {}
-    for key, val in (filters or {}).items():
-        if val is None or val == "":
-            continue
+    if filters is None:
+        return params
+    if not isinstance(filters, dict):
+        raise ValueError("filters must be an object/dict or null, got %s" % type(filters).__name__)
+    for key, val in filters.items():
         if key not in FILTER_PARAM_MAP:
             raise ValueError("unsupported filter %r (known: %s)" % (key, sorted(FILTER_PARAM_MAP)))
+        if val is None or val == "":
+            continue
         params[FILTER_PARAM_MAP[key]] = val
     return params
 
 
+MAX_K = 100  # server clamps ?limit= to MAX_SEARCH_LIMIT (100)
+
+
+def normalize_k(k):
+    k = int(k)
+    if k <= 0:
+        raise ValueError("--k must be >= 1, got %d" % k)
+    if k > MAX_K:
+        print("warning: --k %d exceeds server cap; clamping to %d" % (k, MAX_K), file=sys.stderr)
+        k = MAX_K
+    return k
+
+
 def extract_pmids(payload, k):
-    """/api/search returns {"papers": [{..., "pmid": ...}, ...], "total_count": ...}."""
+    """/api/search returns {"papers": [{..., "pmid": ...}, ...], "total_count": ...}.
+
+    An error payload or a missing/invalid "papers" list fails the run.
+    """
+    if not isinstance(payload, dict):
+        raise RuntimeError("/api/search returned non-object payload: %r" % (payload,))
+    if payload.get("error"):
+        raise RuntimeError("/api/search returned error: %s" % payload["error"])
+    papers = payload.get("papers")
+    if not isinstance(papers, list):
+        raise RuntimeError("/api/search response missing 'papers' list")
     pmids = []
-    for p in (payload or {}).get("papers") or []:
+    for p in papers:
         pmid = p.get("pmid")
         if pmid not in (None, ""):
             pmids.append(str(pmid))
@@ -112,13 +152,27 @@ def git_sha():
 
 
 def run(queries_path, output_path, k=20, base_url=None, meta_path=None, search=None):
+    k = normalize_k(k)
     queries = load_queries(queries_path)
     if search is None:
         search = make_http_search(base_url) if base_url else make_test_client_search()
-    with open(output_path, "w", encoding="utf-8") as out:
-        for qid, text, filters in queries:
+    lines = []
+    for qid, text, filters in queries:
+        try:
             pmids = extract_pmids(search(text, k, filters), k)
-            out.write(json.dumps({"query_id": qid, "pmids": pmids}) + "\n")
+        except Exception as e:
+            raise RuntimeError("query %s failed: %s" % (qid, e)) from e
+        lines.append(json.dumps({"query_id": qid, "pmids": pmids}) + "\n")
+    out_dir = os.path.dirname(os.path.abspath(output_path))
+    fd, tmp = tempfile.mkstemp(prefix=".search_runner.", suffix=".tmp", dir=out_dir)
+    try:
+        with os.fdopen(fd, "w", encoding="utf-8") as out:
+            out.writelines(lines)
+        os.replace(tmp, output_path)  # atomic: final file only after every query succeeded
+    except BaseException:
+        if os.path.exists(tmp):
+            os.unlink(tmp)
+        raise
     if meta_path:
         with open(meta_path, "w", encoding="utf-8") as f:
             json.dump({
@@ -144,9 +198,14 @@ def build_parser():
 
 def main(argv=None):
     a = build_parser().parse_args(argv)
-    n = run(a.queries, a.output, k=a.k, base_url=a.base_url, meta_path=a.meta)
+    try:
+        n = run(a.queries, a.output, k=a.k, base_url=a.base_url, meta_path=a.meta)
+    except Exception as e:
+        print("error: %s" % e, file=sys.stderr)
+        return 1
     print("wrote %d queries to %s" % (n, a.output))
+    return 0
 
 
 if __name__ == "__main__":
-    main()
+    sys.exit(main())
