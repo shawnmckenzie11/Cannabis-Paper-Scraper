@@ -4404,7 +4404,7 @@
     <div class="drawer-overlay" id="drawer-overlay" onclick="closeDrawer()"></div>
 
     <!-- EXPANDABLE Abstract sliding drawer -->
-    <aside class="details-drawer" id="details-drawer">
+    <aside class="details-drawer" id="details-drawer" role="dialog" aria-modal="true" aria-labelledby="drawer-title">
         <div class="drawer-header">
             <div class="drawer-title-group">
                 <div id="drawer-journal-year" style="margin-bottom: 8px; font-size: 0.85rem; color: var(--accent-blue); font-weight: 600; font-family: var(--font-display); letter-spacing: 0.5px;">Clinical Journal (2026)</div>
@@ -4413,7 +4413,7 @@
             <div class="drawer-header-actions">
                 <button class="btn btn-secondary btn-sm drawer-action-btn" id="btn-delete-paper" onclick="deleteCurrentPaper()">Delete</button>
                 <button class="btn btn-secondary btn-sm drawer-action-btn" id="btn-edit-classification" onclick="toggleEditMode()">Edit</button>
-                <button class="btn btn-secondary btn-sm drawer-action-btn" onclick="closeDrawer()">Close</button>
+                <button class="btn btn-secondary btn-sm drawer-action-btn" id="btn-close-drawer" aria-label="Close paper details" onclick="closeDrawer()">Close</button>
             </div>
         </div>
 
@@ -5287,9 +5287,17 @@
                 return `<span class="active-filter-chip" title="${label}">`
                     + `<span class="active-filter-chip-label">${label}</span>`
                     + `<button type="button" class="active-filter-chip-remove" aria-label="Remove ${label}" `
-                    + `onclick="removeActiveFilterChip(decodeURIComponent('${key}'), decodeURIComponent('${value}'))">&times;</button>`
+                    + `data-chip-key="${key}" data-chip-value="${value}">&times;</button>`
                     + `</span>`;
             }).join("");
+            list.querySelectorAll(".active-filter-chip-remove").forEach((btn) => {
+                btn.addEventListener("click", () => {
+                    removeActiveFilterChip(
+                        decodeURIComponent(btn.dataset.chipKey || ""),
+                        decodeURIComponent(btn.dataset.chipValue || ""),
+                    );
+                });
+            });
             updateAnalyzeCta();
         }
 
@@ -6531,15 +6539,22 @@
                 const val = paper[f];
                 if (val !== null && val !== undefined && val !== "") {
                     const def = cannabinoidFieldDefs[f];
-                    container.innerHTML += `
-                        <div class="meta-item">
-                            <span class="meta-label" id="label-${f}">${def.label}</span>
-                            <span class="meta-value" id="drawer-${f}">${def.format(val)}</span>
-                        </div>
-                    `;
+                    const item = document.createElement("div");
+                    item.className = "meta-item";
+                    const labelEl = document.createElement("span");
+                    labelEl.className = "meta-label";
+                    labelEl.id = `label-${f}`;
+                    labelEl.textContent = def.label;
+                    const valueEl = document.createElement("span");
+                    valueEl.className = "meta-value";
+                    valueEl.id = `drawer-${f}`;
+                    valueEl.textContent = def.format(val);
+                    item.appendChild(labelEl);
+                    item.appendChild(valueEl);
+                    container.appendChild(item);
                 }
             });
-            container.style.display = container.innerHTML ? "grid" : "none";
+            container.style.display = container.childElementCount ? "grid" : "none";
         }
 
         function isClinicalPaper(paper) {
@@ -6636,7 +6651,12 @@
         }
 
         // Open details Drawer slide-in
+        let drawerReturnFocus = null;
         function openDrawer(paper) {
+            const drawerNode = document.getElementById("details-drawer");
+            if (!drawerNode || !drawerNode.classList.contains("open")) {
+                drawerReturnFocus = document.activeElement;
+            }
             if (paper && paper.id && paper.abstract === undefined) {
                 fetch(`/api/papers/${paper.id}`)
                     .then(res => {
@@ -6691,7 +6711,7 @@
             const studyTypeHeaderEl = document.getElementById("drawer-study-type");
             if (studyTypeHeaderEl) studyTypeHeaderEl.innerText = studyTypeStr;
             document.getElementById("drawer-authors").innerText = (paper.authors || []).join(", ") || "Not Reported";
-            document.getElementById("drawer-journal-year").innerHTML = `*${paper.journal || "Unknown Source"}* (${paper.year || "N/A"})`;
+            document.getElementById("drawer-journal-year").textContent = `*${paper.journal || "Unknown Source"}* (${paper.year || "N/A"})`;
             document.getElementById("drawer-citations").innerText = paper.citation_count || 0;
             // Determine exposure type context for dynamic duration and frequency fields
             const studyTypes = Array.isArray(paper.study_type) ? paper.study_type : (paper.study_type ? [paper.study_type] : []);
@@ -6812,7 +6832,10 @@
                     if (cannabisTypesContainer) {
                         cannabisTypesContainer.innerHTML = "";
                         validTypes.forEach(ct => {
-                            cannabisTypesContainer.innerHTML += `<span class="cannabis-tag">${ct}</span>`;
+                            const tag = document.createElement("span");
+                            tag.className = "cannabis-tag";
+                            tag.textContent = String(ct);
+                            cannabisTypesContainer.appendChild(tag);
                         });
                     }
                 } else {
@@ -6889,7 +6912,10 @@
             outcomesContainer.innerHTML = "";
             const outcomes = paper.outcome_domain || [];
             outcomes.forEach(o => {
-                outcomesContainer.innerHTML += `<span class="outcome-tag">${o}</span>`;
+                const tag = document.createElement("span");
+                tag.className = "outcome-tag";
+                tag.textContent = String(o);
+                outcomesContainer.appendChild(tag);
             });
             if (outcomes.length === 0) outcomesContainer.innerHTML = `<span style="color: var(--text-secondary)">None</span>`;
 
@@ -6898,17 +6924,24 @@
             // Resource links footer
             const linksContainer = document.getElementById("drawer-links-container");
             linksContainer.innerHTML = "";
-            if (paper.doi) {
-                linksContainer.innerHTML += `<a href="https://doi.org/${paper.doi}" target="_blank" rel="noopener" class="drawer-link">DOI</a>`;
-            }
-            if (paper.pmid) {
-                linksContainer.innerHTML += `<a href="https://pubmed.ncbi.nlm.nih.gov/${paper.pmid}/" target="_blank" rel="noopener" class="drawer-link">PubMed</a>`;
-            }
+            const addDrawerLink = (url, label) => {
+                const href = safeHttpUrl(url);
+                if (!href) return;
+                const a = document.createElement("a");
+                a.href = href;
+                a.target = "_blank";
+                a.rel = "noopener noreferrer";
+                a.className = "drawer-link";
+                a.textContent = label;
+                linksContainer.appendChild(a);
+            };
+            if (paper.doi) addDrawerLink("https://doi.org/" + encodeURI(String(paper.doi)), "DOI");
+            if (paper.pmid) addDrawerLink("https://pubmed.ncbi.nlm.nih.gov/" + encodeURIComponent(String(paper.pmid)) + "/", "PubMed");
             if (paper.full_text_link) {
-                const label = paper.full_text_link.endsWith(".pdf") ? "PDF" : "Full text";
-                linksContainer.innerHTML += `<a href="${paper.full_text_link}" target="_blank" rel="noopener" class="drawer-link">${label}</a>`;
+                const label = String(paper.full_text_link).endsWith(".pdf") ? "PDF" : "Full text";
+                addDrawerLink(paper.full_text_link, label);
             }
-            if (!linksContainer.innerHTML) {
+            if (!linksContainer.childNodes.length) {
                 linksContainer.innerHTML = `<span style="font-size: 0.72rem; color: var(--text-secondary);">No resource links</span>`;
             }
 
@@ -6919,6 +6952,8 @@
             drawerEl.scrollTop = 0;
             drawerEl.classList.add("open");
             document.getElementById("drawer-overlay").classList.add("open");
+            const drawerCloseBtn = document.getElementById("btn-close-drawer");
+            if (drawerCloseBtn && typeof drawerCloseBtn.focus === "function") drawerCloseBtn.focus();
         }
 
         function toggleEditMode() {
@@ -7135,9 +7170,31 @@
 
         // Close Drawer sliding panel
         function closeDrawer() {
-            document.getElementById("details-drawer").classList.remove("open");
+            const drawerNode = document.getElementById("details-drawer");
+            const wasOpen = drawerNode.classList.contains("open");
+            drawerNode.classList.remove("open");
             document.getElementById("drawer-overlay").classList.remove("open");
+            const opener = drawerReturnFocus;
+            drawerReturnFocus = null;
+            if (wasOpen && opener && typeof opener.focus === "function" && opener.isConnected !== false) {
+                opener.focus();
+            }
         }
+
+        // Escape closes the details drawer (unless typing in a form field or a modal is on top).
+        function handleDrawerEscape(e) {
+            if (e.key !== "Escape" || e.defaultPrevented) return;
+            const drawerNode = document.getElementById("details-drawer");
+            if (!drawerNode || !drawerNode.classList.contains("open")) return;
+            const t = e.target;
+            const tag = t && t.tagName ? t.tagName.toUpperCase() : "";
+            if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT" || (t && t.isContentEditable)) return;
+            const authModal = document.getElementById("auth-required-modal");
+            if (authModal && authModal.style.display === "flex") return;
+            e.preventDefault();
+            closeDrawer();
+        }
+        document.addEventListener("keydown", handleDrawerEscape);
 
         // Open Add Papers Modal (admin only)
         function openAddPapersModal() {
@@ -8000,7 +8057,7 @@
                                 fill.style.background = "var(--accent-red)";
                             }
                             document.getElementById("harvest-spinner").style.display = "none";
-                            msg.innerHTML = `<span style="color: var(--accent-red);">Error: ${status.error || "Execution failed"}</span>`;
+                            msg.innerHTML = `<span style="color: var(--accent-red);">Error: ${escapeHtml(status.error || "Execution failed")}</span>`;
                         }
                     })
                     .catch(err => console.error("Harvest status poll failed:", err));
@@ -9666,7 +9723,7 @@
                                 rateColor = '#ff9800'; // orange for >0% and <=10%
                             }
                             return `<tr>
-                                <td style="color: var(--accent-blue); font-weight: 700; font-family: monospace;">${v.version}</td>
+                                <td style="color: var(--accent-blue); font-weight: 700; font-family: monospace;">${escapeHtml(v.version)}</td>
                                 <td style="text-align: right; font-weight: 600; color: var(--text-primary);">${v.total_classified}</td>
                                 <td style="text-align: right; color: #4caf50; font-weight: 600;">${(v.avg_confidence * 100).toFixed(1)}%</td>
                                 <td style="text-align: right; color: var(--text-secondary);">${v.corrected_count}</td>
@@ -9686,9 +9743,9 @@
                             const formattedId = formatBatchLabel(b.batch_id);
                             const timeStr = b.batch_time ? b.batch_time.split('T')[0] + ' ' + b.batch_time.split('T')[1].substring(0, 5) : '—';
                             return `<tr>
-                                <td style="color: var(--accent-blue); font-weight: 600;">${formattedId}</td>
-                                <td style="font-size: 0.8rem; color: var(--text-secondary);">${timeStr}</td>
-                                <td style="font-size: 0.8rem; color: var(--text-secondary);">${b.model}</td>
+                                <td style="color: var(--accent-blue); font-weight: 600;">${escapeHtml(formattedId)}</td>
+                                <td style="font-size: 0.8rem; color: var(--text-secondary);">${escapeHtml(timeStr)}</td>
+                                <td style="font-size: 0.8rem; color: var(--text-secondary);">${escapeHtml(b.model)}</td>
                                 <td style="text-align: right; font-weight: 700;">${b.paper_count}</td>
                                 <td style="text-align: right; color: var(--text-secondary);">${b.avg_input}</td>
                                 <td style="text-align: right; color: var(--accent-blue);">${b.avg_cache_read}</td>
@@ -10043,19 +10100,39 @@
             if (!reviewRows.length) {
                 reviewTbody.innerHTML = '<tr><td colspan="5" style="text-align: center; color: var(--text-secondary); padding: 20px;">No calibration review queue compiled yet.</td></tr>';
             } else {
-                reviewTbody.innerHTML = reviewRows.slice(0, 12).map(row => {
+                reviewTbody.innerHTML = "";
+                reviewRows.slice(0, 12).forEach(row => {
                     const conf = row.confidence != null ? (row.confidence * 100).toFixed(1) + '%' : '—';
-                    const queueBadge = row.in_review_queue
-                        ? ' <span style="color:#fbbf24;font-size:0.72rem;font-weight:700;">queue</span>'
-                        : '';
-                    return `<tr>
-                        <td style="font-family: monospace; color: var(--accent-blue);">${row.paper_id}<div style="color: var(--text-secondary); font-size: 0.75rem;">${row.pmid || ''}</div></td>
-                        <td>${conf}${queueBadge}</td>
-                        <td style="font-family: monospace; font-size: 0.8rem;">${row.variant || '—'}</td>
-                        <td style="font-family: monospace; font-size: 0.75rem;">${(row.high_level_fields || []).join(', ')}</td>
-                        <td style="font-size: 0.82rem; max-width: 360px;">${row.title || ''}${row.expert_status ? `<div style="color: var(--text-secondary); margin-top: 4px;">${row.expert_status}</div>` : ''}</td>
-                    </tr>`;
-                }).join('');
+                    const tr = document.createElement("tr");
+                    const td = (style, text) => {
+                        const cell = document.createElement("td");
+                        if (style) cell.style.cssText = style;
+                        cell.textContent = text === null || text === undefined ? "" : String(text);
+                        tr.appendChild(cell);
+                        return cell;
+                    };
+                    const sub = (cell, style, text) => {
+                        const div = document.createElement("div");
+                        div.style.cssText = style;
+                        div.textContent = String(text);
+                        cell.appendChild(div);
+                    };
+                    const idCell = td("font-family: monospace; color: var(--accent-blue);", row.paper_id);
+                    sub(idCell, "color: var(--text-secondary); font-size: 0.75rem;", row.pmid || '');
+                    const confCell = td(null, conf);
+                    if (row.in_review_queue) {
+                        const badge = document.createElement("span");
+                        badge.style.cssText = "color:#fbbf24;font-size:0.72rem;font-weight:700;";
+                        badge.textContent = "queue";
+                        confCell.appendChild(document.createTextNode(" "));
+                        confCell.appendChild(badge);
+                    }
+                    td("font-family: monospace; font-size: 0.8rem;", row.variant || '—');
+                    td("font-family: monospace; font-size: 0.75rem;", (row.high_level_fields || []).join(', '));
+                    const titleCell = td("font-size: 0.82rem; max-width: 360px;", row.title || '');
+                    if (row.expert_status) sub(titleCell, "color: var(--text-secondary); margin-top: 4px;", row.expert_status);
+                    reviewTbody.appendChild(tr);
+                });
             }
 
             const variants = (calibration && calibration.variant_comparison && calibration.variant_comparison.variants) || [];
@@ -10770,15 +10847,24 @@
                 moreBtn.hidden = !(canRevealMore || canLoadMorePapers);
             }
 
-            tbody.innerHTML = visible.map((p) => {
-                const safeTitle = (p.title || "Untitled").replace(/</g, "&lt;").replace(/"/g, "&quot;");
+            tbody.innerHTML = "";
+            visible.forEach((p) => {
+                const title = String(p.title || "Untitled");
                 const year = p.year || (p.publication_date ? String(p.publication_date).slice(0, 4) : "—");
-                const safeYear = String(year).replace(/</g, "&lt;");
-                return '<tr class="drilldown-row" data-paper-id="' + p.id + '">'
-                    + '<td class="drilldown-year-cell">' + safeYear + '</td>'
-                    + '<td class="drilldown-title-cell" title="' + safeTitle + '">' + safeTitle + '</td>'
-                    + '</tr>';
-            }).join("");
+                const tr = document.createElement("tr");
+                tr.className = "drilldown-row";
+                tr.dataset.paperId = String(p.id);
+                const yearTd = document.createElement("td");
+                yearTd.className = "drilldown-year-cell";
+                yearTd.textContent = String(year);
+                const titleTd = document.createElement("td");
+                titleTd.className = "drilldown-title-cell";
+                titleTd.title = title;
+                titleTd.textContent = title;
+                tr.appendChild(yearTd);
+                tr.appendChild(titleTd);
+                tbody.appendChild(tr);
+            });
             tbody.querySelectorAll(".drilldown-row").forEach((row) => {
                 row.addEventListener("click", () => {
                     const paperId = Number(row.dataset.paperId);
@@ -11757,12 +11843,12 @@
                 
                 container.innerHTML = `
                     <div role="button" tabindex="0" class="user-avatar" id="user-avatar-btn" aria-label="Account menu" aria-haspopup="true" onclick="toggleUserDropdown(event)">
-                        ${initials}
+                        ${escapeHtml(initials)}
                     </div>
                     <div class="user-dropdown" id="user-dropdown-menu">
                         <div class="user-info">
-                            <div class="username">${name}</div>
-                            <div style="font-size: 0.75rem; color: var(--text-secondary); word-break: break-all;">${CURRENT_USER.email}</div>
+                            <div class="username">${escapeHtml(name)}</div>
+                            <div style="font-size: 0.75rem; color: var(--text-secondary); word-break: break-all;">${escapeHtml(CURRENT_USER.email || "")}</div>
                             ${CURRENT_USER.is_google ? '<div style="font-size: 0.7rem; color: var(--accent-blue); margin-top: 4px;">Google Account</div>' : ''}
                         </div>
                         <a href="/settings" class="btn-signout" style="text-decoration: none; margin-bottom: 8px; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08);">Settings</a>
