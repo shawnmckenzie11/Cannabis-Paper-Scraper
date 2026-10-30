@@ -5005,7 +5005,7 @@
             email: "{{ session.get('email') or '' }}",
             is_google: {{ 'true' if session.get('is_google') else 'false' }}
         };
-        const IS_ADMIN = {{ 'true' if session.get('email') and admin_emails_list and session.get('email') in admin_emails_list else 'false' }};
+        const IS_ADMIN = {{ 'true' if is_admin else 'false' }};
         const DASHBOARD_CONFIG = {{ dashboard_config | tojson }};
 
         /** Read a filter control value when the element may be absent for a tab/profile. */
