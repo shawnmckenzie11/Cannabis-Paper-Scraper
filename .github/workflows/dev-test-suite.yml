@@ -2,6 +2,7 @@ name: Dev test suite (baseline-gated)
 
 on:
   pull_request:
+    types: [opened, synchronize, reopened, labeled, unlabeled]
   push:
     branches: [ main ]
 
@@ -15,7 +16,8 @@ jobs:
     env:
       SENTRY_DSN: ""
       APP_ENV: test
-      MIN_TOTAL_TESTS: "700"
+      # Floor on collected tests; raise it as the suite grows.
+      MIN_TOTAL_TESTS: "770"
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
@@ -59,7 +61,9 @@ jobs:
           fi
 
       - name: Fail only on failures not in ci/test_failure_baseline.txt
-        run: python ci/check_test_baseline.py pytest-report.xml ci/test_failure_baseline.txt --min-total "$MIN_TOTAL_TESTS"
+        run: python ci/check_test_baseline.py pytest-report.xml ci/test_failure_baseline.txt --min-total "$MIN_TOTAL_TESTS" $STRICT_FLAG
+        env:
+          STRICT_FLAG: ${{ (github.event_name == 'push' && github.ref == 'refs/heads/main') && '--strict' || '' }}
 
       - name: Upload report
         if: always()
