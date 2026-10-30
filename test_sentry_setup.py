@@ -163,3 +163,106 @@ def test_tag_values_scrubbed():
     for tags in (d, [[k, v] for k, v in d.items()]):
         out = _scrub_tags(tags)
         assert out == {"url": "/reset/[email]", "transaction": "/u/[secret]", "environment": "prod"}
+
+
+FAKE_DSN = "https://fakepublickey@example.invalid/0"
+
+
+def test_tags_with_unhashable_key_regression():
+    # sentry_setup.py:99 used to raise TypeError (unhashable list key), so the
+    # whole event was dropped by before_send's catch-all.
+    tags = [[["not", "hashable"], "x"], ["environment", "test"], [{"k": 1}, "y"], ["level", "error"]]
+    assert ss._scrub_tags(tags) == {"environment": "test", "level": "error"}
+    ev = ss.before_send({"tags": [[["bad"], "x"], ["environment", "test"]],
+                         "request": {"url": "https://app.example/api/search?q=fake"}})
+    assert ev is not None
+    assert ev["tags"] == {"environment": "test"}
+    assert ev["request"]["url"] == "https://app.example/api/search"
+
+
+def test_non_string_tag_keys_dropped():
+    assert ss._scrub_tags({1: "x", ("a",): "y", "release": "r1"}) == {"release": "r1"}
+
+
+def test_header_list_form_scrubbed():
+    ev = ss.before_send({"request": {"headers": [["Authorization", "Bearer faketoken"], ["Cookie", "session=fake"],
+                                                 ["User-Agent", "ua"], [["x"], "y"]]}})
+    assert ev["request"]["headers"] == {"User-Agent": "ua"}
+
+
+def test_userinfo_stripped_from_urls():
+    assert ss.strip_query("https://fakeuser:fakepass@host.example/p?q=1") == "https://host.example/p"
+
+
+def test_init_only_when_dsn_set(monkeypatch):
+    import sentry_sdk
+    calls = []
+    monkeypatch.setattr(sentry_sdk, "init", lambda **kw: calls.append(kw))
+    monkeypatch.delenv("CRN_SENTRY_DISABLED", raising=False)
+    monkeypatch.delenv("SENTRY_DSN", raising=False)
+    assert ss.init_sentry() is False
+    assert calls == []
+    monkeypatch.setenv("SENTRY_DSN", FAKE_DSN)
+    assert ss.init_sentry() is True
+    assert len(calls) == 1 and calls[0]["dsn"] == FAKE_DSN
+
+
+def test_environment_from_app_env(monkeypatch):
+    import sentry_sdk
+    captured = {}
+    monkeypatch.setattr(sentry_sdk, "init", lambda **kw: captured.update(kw))
+    monkeypatch.delenv("CRN_SENTRY_DISABLED", raising=False)
+    monkeypatch.setenv("SENTRY_DSN", FAKE_DSN)
+    monkeypatch.setenv("APP_ENV", "staging")
+    monkeypatch.setenv("SENTRY_ENVIRONMENT", "other")
+    assert ss.init_sentry() is True
+    assert captured["environment"] == "staging"
+    assert ss.sentry_environment({}) is None
+    assert ss.sentry_environment({"APP_ENV": " ", "SENTRY_ENVIRONMENT": "prod"}) == "prod"
+
+
+def test_end_to_end_no_pii_and_no_network(monkeypatch):
+    """Real SDK + Flask request; a capturing transport replaces the network."""
+    import sentry_sdk
+    from flask import Flask
+    envelopes = []
+
+    class CaptureTransport(sentry_sdk.transport.Transport):
+        def capture_envelope(self, envelope):
+            envelopes.append(envelope)
+
+        def flush(self, *a, **k):
+            pass
+
+        def kill(self):
+            pass
+
+    real_init = sentry_sdk.init
+    monkeypatch.setattr(sentry_sdk, "init", lambda **kw: real_init(transport=CaptureTransport, **kw))
+    monkeypatch.delenv("CRN_SENTRY_DISABLED", raising=False)
+    monkeypatch.setenv("SENTRY_DSN", FAKE_DSN)
+    monkeypatch.setenv("APP_ENV", "test")
+    try:
+        assert ss.init_sentry() is True
+        app = Flask("fake_sentry_app")
+
+        @app.route("/boom", methods=["POST"])
+        def boom():
+            raise RuntimeError("fail for fake-user@example.invalid")
+
+        client = app.test_client()
+        client.set_cookie("session", "fakesessioncookie")
+        client.post("/boom?q=fakequery&email=fake-user@example.invalid",
+                    data={"password": "fakepassword"},
+                    headers={"Authorization": "Bearer fakebearertoken", "X-Forwarded-For": "203.0.113.9"})
+        sentry_sdk.flush()
+    finally:
+        real_init(dsn=None)
+    payload = "".join(
+        item.payload.get_bytes().decode("utf-8", "replace") for env in envelopes for item in env.items
+    )
+    assert "RuntimeError" in payload  # the error was captured...
+    for leaked in ("fakequery", "fake-user@example.invalid", "fakepassword", "fakesessioncookie",
+                   "fakebearertoken", "203.0.113.9", "127.0.0.1"):
+        assert leaked not in payload, leaked  # ...without PII
+    assert '"environment":"test"' in payload.replace(" ", "")

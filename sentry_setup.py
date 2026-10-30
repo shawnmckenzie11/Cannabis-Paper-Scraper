@@ -36,7 +36,8 @@ def strip_query(url):
         return url
     try:
         p = urlsplit(url)
-        return urlunsplit((p.scheme, p.netloc, p.path, "", ""))
+        netloc = p.netloc.rsplit("@", 1)[-1]  # drop user:password@
+        return urlunsplit((p.scheme, netloc, p.path, "", ""))
     except ValueError:
         return url.split("?", 1)[0].split("#", 1)[0]
 
@@ -85,8 +86,14 @@ def _scrub_request(req):
     if "url" in req:
         req["url"] = strip_query(req["url"])
     headers = req.get("headers")
+    if isinstance(headers, list):  # Sentry also allows [[k, v], ...]
+        headers = {h[0]: h[1] for h in headers
+                   if isinstance(h, (list, tuple)) and len(h) == 2 and isinstance(h[0], str)}
     if isinstance(headers, dict):
-        req["headers"] = {k: v for k, v in headers.items() if k.lower() in _SAFE_HEADERS}
+        req["headers"] = {k: v for k, v in headers.items()
+                          if isinstance(k, str) and k.lower() in _SAFE_HEADERS}
+    elif "headers" in req:
+        req.pop("headers")
     return req
 
 
@@ -96,12 +103,15 @@ _SAFE_TAGS = {"environment", "release", "server_name", "level", "transaction", "
 
 def _scrub_tags(tags):
     if isinstance(tags, list):  # Sentry also allows [[k, v], ...]
-        tags = {t[0]: t[1] for t in tags if isinstance(t, (list, tuple)) and len(t) == 2}
+        # Keys must be strings: an unhashable key (e.g. a list) used to raise
+        # TypeError here, which made before_send drop the whole event.
+        tags = {t[0]: t[1] for t in tags
+                if isinstance(t, (list, tuple)) and len(t) == 2 and isinstance(t[0], str)}
     if not isinstance(tags, dict):
         return {}
     out = {}
     for k, v in tags.items():
-        if k not in _SAFE_TAGS or not isinstance(v, str):
+        if not isinstance(k, str) or k not in _SAFE_TAGS or not isinstance(v, str):
             continue
         if k == "url":
             try:
@@ -219,6 +229,16 @@ def sentry_enabled(env=None):
     return bool((env.get("SENTRY_DSN") or "").strip())
 
 
+def sentry_environment(env=None):
+    """Sentry environment tag: APP_ENV first, then SENTRY_ENVIRONMENT / FLY_APP_NAME."""
+    env = os.environ if env is None else env
+    for name in ("APP_ENV", "SENTRY_ENVIRONMENT", "FLY_APP_NAME"):
+        value = (env.get(name) or "").strip()
+        if value:
+            return value
+    return None
+
+
 def init_sentry():
     """Initialise Sentry if configured. Returns True when initialised."""
     if not sentry_enabled():
@@ -246,7 +266,7 @@ def init_sentry():
         max_request_body_size="never",
         include_local_variables=False,
         traces_sample_rate=_float_env("SENTRY_TRACES_SAMPLE_RATE", 0.0),
-        environment=os.getenv("SENTRY_ENVIRONMENT") or os.getenv("FLY_APP_NAME") or None,
+        environment=sentry_environment(),
         release=os.getenv("SENTRY_RELEASE") or os.getenv("FLY_IMAGE_REF") or os.getenv("GIT_SHA") or None,
         before_send=before_send,
         before_send_transaction=before_send_transaction,
