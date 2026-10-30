@@ -18,9 +18,10 @@
         "wp1.0.0-draft",
         "wp1.1.0-draft",
         "wp1.2.0-draft",
-        "wp1.3.0-draft"
+        "wp1.3.0-draft",
+        "wp1.4.0-draft"
       ],
-      "description": "Methods contract version. wp1.0.0-draft records remain valid while wp1.1.0 is in draft. wp1.3.0-draft = Methods contract v0.3 (eval gaps, fields only)."
+      "description": "Methods contract version. wp1.0.0-draft records remain valid while wp1.1.0 is in draft. wp1.3.0-draft = Methods contract v0.3 (eval gaps, fields only). wp1.4.0-draft = Methods contract v0.4 (pubmed_metadata_record)."
     },
     "paper_id": {
       "type": "integer",
@@ -1392,7 +1393,290 @@
         }
       },
       "description": "storage == locked_store => split must be 'test'. Dev records never go to the locked store."
+    },
+    "pubmed_metadata_record": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "v0.4: one bibliographic record from scripts/fetch_pubmed_metadata.py (data/pubmed_metadata_split_v0.1.json is a JSON array of these). A null field must have a reason in missing.",
+      "required": [
+        "pmid",
+        "title",
+        "authors",
+        "journal",
+        "year",
+        "doi",
+        "publication_types",
+        "missing",
+        "provenance"
+      ],
+      "properties": {
+        "record_id": {
+          "$ref": "#/$defs/record_id"
+        },
+        "pmid": {
+          "type": "string",
+          "pattern": "^[0-9]+$",
+          "description": "PubMed ID as a digit string."
+        },
+        "title": {
+          "anyOf": [
+            {
+              "type": "string",
+              "minLength": 1
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "authors": {
+          "anyOf": [
+            {
+              "type": "array",
+              "minItems": 1,
+              "items": {
+                "type": "string",
+                "minLength": 1
+              }
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "journal": {
+          "anyOf": [
+            {
+              "type": "string",
+              "minLength": 1
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "year": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "doi": {
+          "anyOf": [
+            {
+              "type": "string",
+              "minLength": 1
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "publication_types": {
+          "anyOf": [
+            {
+              "type": "array",
+              "minItems": 1,
+              "items": {
+                "type": "string",
+                "minLength": 1
+              }
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "missing": {
+          "type": "object",
+          "propertyNames": {
+            "enum": [
+              "title",
+              "authors",
+              "journal",
+              "year",
+              "doi",
+              "publication_types"
+            ]
+          },
+          "additionalProperties": {
+            "type": "string",
+            "minLength": 1
+          },
+          "description": "field -> reason; required for every null field. Current producer reason: 'absent in PubMed record'."
+        },
+        "provenance": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "source",
+            "endpoint",
+            "params",
+            "retrieved_at"
+          ],
+          "properties": {
+            "source": {
+              "type": "string",
+              "minLength": 1
+            },
+            "endpoint": {
+              "type": "string",
+              "minLength": 1
+            },
+            "params": {
+              "type": "object",
+              "additionalProperties": {
+                "type": "string"
+              },
+              "not": {
+                "anyOf": [
+                  {"required": ["email"]},
+                  {"required": ["api_key"]}
+                ]
+              },
+              "description": "Query params sent to E-utilities, excluding id. email and api_key are forbidden so contact addresses and keys never get committed."
+            },
+            "retrieved_at": {
+              "type": "string",
+              "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$",
+              "description": "UTC, YYYY-MM-DDTHH:MM:SSZ."
+            }
+          }
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "title": {
+                "type": "null"
+              }
+            },
+            "required": [
+              "title"
+            ]
+          },
+          "then": {
+            "properties": {
+              "missing": {
+                "required": [
+                  "title"
+                ]
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "authors": {
+                "type": "null"
+              }
+            },
+            "required": [
+              "authors"
+            ]
+          },
+          "then": {
+            "properties": {
+              "missing": {
+                "required": [
+                  "authors"
+                ]
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "journal": {
+                "type": "null"
+              }
+            },
+            "required": [
+              "journal"
+            ]
+          },
+          "then": {
+            "properties": {
+              "missing": {
+                "required": [
+                  "journal"
+                ]
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "year": {
+                "type": "null"
+              }
+            },
+            "required": [
+              "year"
+            ]
+          },
+          "then": {
+            "properties": {
+              "missing": {
+                "required": [
+                  "year"
+                ]
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "doi": {
+                "type": "null"
+              }
+            },
+            "required": [
+              "doi"
+            ]
+          },
+          "then": {
+            "properties": {
+              "missing": {
+                "required": [
+                  "doi"
+                ]
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "publication_types": {
+                "type": "null"
+              }
+            },
+            "required": [
+              "publication_types"
+            ]
+          },
+          "then": {
+            "properties": {
+              "missing": {
+                "required": [
+                  "publication_types"
+                ]
+              }
+            }
+          }
+        }
+      ]
     }
   },
-  "x-contract-version": "0.3"
+  "x-contract-version": "0.4"
 }

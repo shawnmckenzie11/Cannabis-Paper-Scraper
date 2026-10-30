@@ -253,3 +253,16 @@ Contract version **0.3** (`schema_version: wp1.3.0-draft`; `x-contract-version: 
 - **rationale_format:** enum `pending_biomedical|free_text` (pending_biomedical kept so v0.2 working-store records stay valid); locked-store records must be `free_text`. Rationale format is pending the Biomedical lead; no structured option yet. Rationale is never scored.
 - **Locked store is test-only:** for gold_badge, reference_value and relevance_grade, `storage == locked_store` requires `split == test` (if/then). Dev records never go to the locked store.
 - **Retractions:** a retraction is a `correction` with `retracted: true` whose `supersedes_record_id` is the target's `record_id` — never a store position/sequence number (replaces the locked-store `retracts_seq` proposal).
+
+## v0.4 additions (wp1.4.0-draft) — PubMed metadata record
+
+Contract version **0.4** (`x-contract-version: "0.4"`). `$defs.pubmed_metadata_record` describes each element of `data/pubmed_metadata_split_v0.1.json` (a JSON array) as written by `scripts/fetch_pubmed_metadata.py`. The existing file validates unchanged.
+
+- **Required:** `pmid` (digit string), `title`, `authors` (list of "LastName Initials" or collective name), `journal`, `year` (integer), `doi`, `publication_types` (list), `missing`, `provenance`. No other keys allowed.
+- **Nulls:** each bibliographic field is a value or `null`. **A null field must have a reason in `missing`** (`missing[field] = reason`; producer currently writes `"absent in PubMed record"`). `missing` keys are limited to those six fields.
+- **provenance:** `source` ("NCBI E-utilities"), `endpoint` (efetch URL), `params` (query params minus `id`: db, retmode, tool), `retrieved_at` UTC `YYYY-MM-DDTHH:MM:SSZ`.
+- **record_id:** optional, same definition as v0.3.
+
+### Preprint flag (OPTIONAL, derived — pending Biomedical lead)
+
+Preprint status is **derivable** from `publication_types` (contains `"Preprint"`); it is not stored. Evaluation flagged PMIDs 40502036, 36993751, 40235472 as preprints, and these are exactly the records with `"Preprint"` in the merged file. **No inclusion/exclusion rule for preprints is defined — pending Biomedical lead.**
