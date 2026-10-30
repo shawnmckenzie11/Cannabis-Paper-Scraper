@@ -6,7 +6,16 @@ through a runtime rewriter.
 
 from __future__ import annotations
 
+import itertools
+import re
 from typing import List
+
+
+# Same expression as the idx_papers_fts GIN index in db_manager.py.
+PG_FTS_VECTOR = (
+    "to_tsvector('english', papers.title || ' ' || coalesce(papers.abstract, '') "
+    "|| ' ' || coalesce(papers.authors, ''))"
+)
 
 
 class DialectSQL:
@@ -84,17 +93,34 @@ class DialectSQL:
     def fts_match_clause(self) -> str:
         """WHERE fragment for a free-text query. Uses 1 bind."""
         if self.is_postgres:
-            return (
-                "to_tsvector('english', papers.title || ' ' || coalesce(papers.abstract, '') "
-                "|| ' ' || coalesce(papers.authors, '')) @@ websearch_to_tsquery('english', ?)"
-            )
+            return f"{PG_FTS_VECTOR} @@ websearch_to_tsquery('english', ?)"
         return "papers_fts MATCH ?"
 
     def fts_rank_expr(self) -> str:
-        """SELECT expression for relevance rank."""
+        """SELECT expression for relevance rank. Postgres uses 1 bind (see fts_rank_binds)."""
         if self.is_postgres:
-            return "0 AS rank"
+            return f"ts_rank({PG_FTS_VECTOR}, websearch_to_tsquery('english', ?)) AS rank"
         return "papers_fts.rank"
+
+    def fts_query_bind(self, cleaned_query: str) -> str:
+        """Bind value for fts_match_clause / fts_rank_expr.
+
+        SQLite FTS5 binds OR tighter than implicit AND, so ``a OR b c`` means
+        ``(a OR b) AND c``. Postgres websearch_to_tsquery binds AND tighter
+        (``a | (b & c)``) and has no grouping, so on Postgres the query is
+        rewritten to the equivalent disjunctive form ``a c OR b c``.
+        """
+        if not self.is_postgres:
+            return cleaned_query
+        return websearch_or_groups(cleaned_query)
+
+    def fts_rank_binds(self, cleaned_query: str) -> List[str]:
+        """Binds consumed by fts_rank_expr (Postgres only)."""
+        return [self.fts_query_bind(cleaned_query)] if self.is_postgres else []
+
+    def fts_rank_order(self) -> str:
+        """ORDER BY direction for rank: ts_rank higher is better; SQLite bm25 lower is better."""
+        return "rank DESC" if self.is_postgres else "rank ASC"
 
     def collate_c(self) -> str:
         """Deterministic text collation for ORDER BY (Postgres only)."""
@@ -149,3 +175,52 @@ def expand_study_types(study_types: List[str]) -> List[str]:
         else:
             expanded.append(item)
     return expanded
+
+
+_MAX_OR_EXPANSION = 64
+# Inputs beyond these caps are passed through unrewritten (websearch_to_tsquery
+# still parses them; only the FTS5 OR-precedence fix-up is skipped).
+_MAX_OR_REWRITE_CHARS = 2000
+_MAX_OR_REWRITE_TOKENS = 200
+
+# A token is a run of unquoted non-space chars and/or complete "quoted spans",
+# so ``"cannabis use"`` (and ``foo"bar baz"``) stays a single token.
+_WEBSEARCH_TOKEN_RE = re.compile(r'(?:[^\s"]+|"[^"]*")+')
+
+
+def websearch_or_groups(cleaned_query: str) -> str:
+    """Rewrite FTS5-precedence OR (``a OR b c`` = ``(a|b) & c``) for websearch_to_tsquery.
+
+    Only an uppercase ``OR`` token is an operator, as in FTS5. Quoted phrases are kept
+    intact as single tokens. The AND of OR-groups is expanded into an OR of
+    AND-conjunctions (DNF); the query is returned unchanged if it has unbalanced
+    quotes, exceeds the size caps, or the expansion would exceed _MAX_OR_EXPANSION.
+    """
+    query = cleaned_query or ""
+    if "OR" not in query:
+        return cleaned_query
+    if len(query) > _MAX_OR_REWRITE_CHARS or query.count('"') % 2:
+        return cleaned_query
+    tokens = _WEBSEARCH_TOKEN_RE.findall(query)
+    if len(tokens) > _MAX_OR_REWRITE_TOKENS or "OR" not in tokens:
+        return cleaned_query
+    groups: List[List[str]] = []
+    pending_or = False
+    for tok in tokens:
+        if tok == "OR":
+            pending_or = bool(groups)
+            continue
+        if pending_or:
+            groups[-1].append(tok)
+        else:
+            groups.append([tok])
+        pending_or = False
+    if not groups:
+        return cleaned_query
+    total = 1
+    for g in groups:
+        total *= len(g)
+        if total > _MAX_OR_EXPANSION:
+            return cleaned_query
+    # Linear in output size: at most 64 conjunctions of <=200 tokens each.
+    return " or ".join(" ".join(c) for c in itertools.product(*groups))

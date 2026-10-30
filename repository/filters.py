@@ -125,7 +125,7 @@ def build_filter_clauses(
     query_val = filters.get("query")
     if query_val:
         where_clauses.append(dialect.fts_match_clause())
-        params.append(clean_fts_query(query_val))
+        params.append(dialect.fts_query_bind(clean_fts_query(query_val)))
 
     if filters.get("year_min") is not None:
         where_clauses.append("papers.year >= ?")
@@ -372,5 +372,5 @@ def apply_sort_sql(
     if extra:
         return sql + extra
     if query_val:
-        return sql + " ORDER BY rank ASC"
+        return sql + " ORDER BY " + dialect.fts_rank_order()
     return sql + " ORDER BY papers.year DESC, papers.id DESC"
