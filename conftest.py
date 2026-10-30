@@ -11,8 +11,6 @@ import os
 os.environ.setdefault("APP_ENV", "test")
 os.environ.setdefault("WTF_CSRF_ENABLED", "0")
 os.environ.setdefault("SESSION_COOKIE_SECURE", "0")
-os.environ["CRN_SENTRY_DISABLED"] = "1"
-os.environ["ENABLE_INPROCESS_SCHEDULER"] = "0"
 
 # Never let a test run (or a subprocess boot that copies os.environ) reach a real
 # Sentry project: drop SENTRY_DSN, SENTRY_DSN_LIVE and any other SENTRY_*DSN var.
