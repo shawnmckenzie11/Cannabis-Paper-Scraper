@@ -184,3 +184,7 @@ def test_full_v05_record_validates_against_whole_schema():
     missing = {k: v for k, v in FULL_V05.items() if k != "record_id"}
     with pytest.raises(jsonschema.ValidationError):
         jsonschema.Draft202012Validator(SCHEMA).validate(missing)
+
+
+def test_excluded_reason_has_consecutive_failure_stop():
+    vd("extraction_run_manifest", dict(MAN, excluded=[{"paper_pmid": "123", "reason": "consecutive_failure_stop"}]))

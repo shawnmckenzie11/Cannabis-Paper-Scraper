@@ -281,3 +281,4 @@ Preprint status is **derivable** from `publication_types` (contains `"Preprint"`
 | `run_event` | `$defs` | Run-log event with ids and a reason code only (`quote_not_found`, `extraction_failed`, `parse_downgrade_abstract_only`). | technical |
 
 Also in v0.5: `test` records must live in `locked_store` (now enforced both ways), `run_event.field` must be a contract field name, and the run manifest's `contract_version` is pinned to `"0.5"`.
+- `extraction_run_manifest.excluded[].reason` also accepts `consecutive_failure_stop`, for papers skipped after the runner stops on repeated failures.
