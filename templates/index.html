@@ -53,7 +53,7 @@
         button:focus-visible,
         .logic-btn:focus-visible,
         table.papers-table th.sortable .sort-btn:focus-visible,
-        table.papers-table tbody tr:focus-visible {
+        table.papers-table .paper-title-btn:focus-visible {
             outline: 2px solid var(--accent-blue);
             outline-offset: 2px;
         }
@@ -552,6 +552,16 @@
             top: 0;
             z-index: 5;
             transition: background 0.2s ease, color 0.2s ease;
+        }
+
+        table.papers-table .paper-title-btn {
+            background: none;
+            border: none;
+            padding: 0;
+            color: inherit;
+            font: inherit;
+            text-align: left;
+            cursor: pointer;
         }
 
         table.papers-table th.sortable .sort-btn {
@@ -6161,7 +6171,8 @@
         // Update pagination bar displays and button active states
         function announceSearchStatus(message) {
             const el = document.getElementById("search-results-status");
-            if (el) el.textContent = String(message || "");
+            const text = String(message || "");
+            if (el && el.textContent !== text) el.textContent = text;
         }
 
         function updatePagination(totalCount, page, limit) {
@@ -6172,7 +6183,9 @@
             const rangeEnd = Math.min(safePage * safeLimit, safeTotal);
 
             document.getElementById("pagination-range").innerText = `${rangeStart}-${rangeEnd} of ${safeTotal}`;
-            if (safeTotal > 0) announceSearchStatus(`${safeTotal} papers found. Showing ${rangeStart} to ${rangeEnd}.`);
+            // Empty and error states are announced once, where they are shown; never overwrite them here.
+            const emptyShown = (document.getElementById("table-empty-state") || {}).style?.display === "block";
+            if (safeTotal > 0 && !emptyShown) announceSearchStatus(`${safeTotal} papers found. Showing ${rangeStart} to ${rangeEnd}.`);
             document.getElementById("pagination-current").innerText = safePage;
 
             const totalPages = Math.ceil(safeTotal / safeLimit) || 1;
@@ -6333,16 +6346,6 @@
             papers.forEach(p => {
                 const tr = document.createElement("tr");
                 tr.onclick = () => openDrawer(p);
-                tr.tabIndex = 0;
-                tr.setAttribute("role", "button");
-                tr.setAttribute("aria-label", "Open details: " + String(p.title || "paper"));
-                tr.addEventListener("keydown", (ev) => {
-                    if (ev.target !== tr) return;
-                    if (ev.key === "Enter" || ev.key === " ") {
-                        ev.preventDefault();
-                        openDrawer(p);
-                    }
-                });
 
                 // Format Open Access status
                 const oa = p.open_access === 1
@@ -6374,7 +6377,7 @@
                 let cells = [];
 
                 // Title (fixed, always first data column)
-                cells.push(`<td class="paper-title-col" title="${p.title}">${p.title}${newBadge}</td>`);
+                cells.push(`<td class="paper-title-col" title="${p.title}"><button type="button" class="paper-title-btn">${p.title}</button>${newBadge}</td>`);
 
                 // Optional columns in ordered format
                 if (visibleColumns.year && isColumnRelevant('year', currentTab)) {
@@ -6454,6 +6457,13 @@
                 }
 
                 tr.innerHTML = cells.join("");
+                const titleBtn = tr.querySelector(".paper-title-btn");
+                if (titleBtn) {
+                    titleBtn.addEventListener("click", (ev) => {
+                        ev.stopPropagation();
+                        openDrawer(p);
+                    });
+                }
                 tbody.appendChild(tr);
             });
         }

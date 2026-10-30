@@ -33,16 +33,24 @@ class SearchKeyboardA11yTest(unittest.TestCase):
         self.assertEqual(len(headers), 23)
         self.assertIn("setAttribute('aria-sort'", _fn_body("updateSortIndicators", 1600))
 
-    def test_result_rows_are_keyboard_operable(self):
-        body = _fn_body("populateTable", 2500)
-        self.assertIn("tr.tabIndex = 0", body)
-        self.assertIn('ev.key === "Enter" || ev.key === " "', body)
+    def test_result_rows_open_via_native_title_button(self):
+        body = _fn_body("populateTable", 12000)
+        self.assertIn('<button type="button" class="paper-title-btn">', body)
+        self.assertIn('tr.querySelector(".paper-title-btn")', body)
+        self.assertNotIn("tr.tabIndex", body)
+        self.assertNotIn('tr.setAttribute("role"', body)
 
     def test_result_count_live_region(self):
         s = _html()
         self.assertRegex(s, r'id="search-results-status" class="sr-only" role="status" aria-live="polite"')
-        self.assertIn("announceSearchStatus(", _fn_body("updatePagination", 900))
+        self.assertIn("announceSearchStatus(", _fn_body("updatePagination", 1200))
         self.assertIn("announceSearchStatus(", _fn_body("populateTable", 1200))
+
+    def test_zero_results_announced_once(self):
+        pag = _fn_body("updatePagination", 1200)
+        self.assertIn("safeTotal > 0 && !emptyShown", pag)
+        self.assertEqual(_fn_body("populateTable", 1200).count("announceSearchStatus("), 1)
+        self.assertIn("el.textContent !== text", _fn_body("announceSearchStatus", 300))
 
     def test_focus_visible_styles_present(self):
         s = _html()
