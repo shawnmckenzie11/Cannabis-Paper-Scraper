@@ -20,6 +20,8 @@ def test_dev_refuses_postgres(monkeypatch):
     "postgresql://fake:fake@localhost/fake?hostaddr=203.0.113.9",
     "postgresql+psycopg2://fake:fake@db.invalid/fake",
     "postgres://fake:fake@localhost,db.invalid/fake",
+    "postgresql:///fake",
+    "postgresql://fake:fake@/fake",
 ])
 def test_dev_refuses_host_bypasses(monkeypatch, url):
     monkeypatch.setenv("APP_ENV", "test")

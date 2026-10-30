@@ -59,7 +59,7 @@ def validate_startup_env() -> None:
     resolve_rate_limit_storage_uri()
 
 
-_LOCAL_DB_HOSTS = frozenset({"localhost", "127.0.0.1", "::1", ""})
+_LOCAL_DB_HOSTS = frozenset({"localhost", "127.0.0.1", "::1"})
 
 
 def _postgres_hosts(url: str):
@@ -83,7 +83,7 @@ def _postgres_hosts(url: str):
                 hosts += [h.strip().lower() for h in v.split(",")]
     except ValueError:
         return None
-    return hosts
+    return [h for h in hosts if h]
 
 
 def _refuse_postgres_in_dev() -> None:
@@ -95,7 +95,8 @@ def _refuse_postgres_in_dev() -> None:
     if not url.lower().startswith("postgres"):
         return
     hosts = _postgres_hosts(url)
-    if hosts is not None and all(h in _LOCAL_DB_HOSTS for h in hosts):
+    # An empty host (e.g. postgresql:///d) lets libpq take PGHOST/PGHOSTADDR/service=, so refuse it.
+    if hosts and all(h in _LOCAL_DB_HOSTS for h in hosts):
         return
     raise StartupConfigError(
         "DATABASE_URL points at a non-local Postgres while APP_ENV is a dev/test value. "
