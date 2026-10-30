@@ -42,7 +42,7 @@ GB = {"paper_id": 1, "rater": "phd@x", "timestamp": "2026-10-29T12:00:00Z", "raw
       "submitted_rationale": "r", "split": "dev", "storage": "working_store"}
 def test_gold_badge():
     v("gold_badge", GB)
-    v("gold_badge", dict(GB, split="test", storage="locked_store"))
+    v("gold_badge", dict(GB, split="test", storage="locked_store", rater_verified=True, rationale_format="free_text"))  # v0.3 gap 6
     bad("gold_badge", dict(GB, split="test", storage="working_store"))
     bad("gold_badge", dict(GB, audio="b64"))
     bad("gold_badge", {k: x for k, x in GB.items() if k != "submitted_rationale"})
