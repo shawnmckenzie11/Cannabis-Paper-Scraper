@@ -35,8 +35,12 @@ class SearchKeyboardA11yTest(unittest.TestCase):
 
     def test_result_rows_open_via_native_title_button(self):
         body = _fn_body("populateTable", 12000)
-        self.assertIn('<button type="button" class="paper-title-btn">', body)
-        self.assertIn('tr.querySelector(".paper-title-btn")', body)
+        self.assertIn('document.createElement("button")', body)
+        self.assertIn('titleBtn.type = "button"', body)
+        self.assertIn('titleBtn.className = "paper-title-btn"', body)
+        self.assertIn("titleBtn.textContent", body)
+        self.assertIn("openDrawer(p)", body)
+        self.assertNotIn("innerHTML = cells", body)
         self.assertNotIn("tr.tabIndex", body)
         self.assertNotIn('tr.setAttribute("role"', body)
 

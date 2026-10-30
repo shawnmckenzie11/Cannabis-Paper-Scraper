@@ -34,9 +34,9 @@ import maude_feedback
 import email_service
 import background_jobs
 
-from sentry_setup import init_sentry
+from sentry_setup import init_sentry, is_deployed_env
 try:
-    init_sentry()  # MCK-102: no-op unless SENTRY_DSN set
+    init_sentry()  # MCK-102: no-op unless CRN_SENTRY_DSN set on a deployed app
 except Exception:
     logging.getLogger(__name__).exception("Sentry init failed; continuing without Sentry")
 
@@ -410,9 +410,11 @@ def daily_harvest_scheduler():
                     summary.get("cheap_ops"),
                 )
         except Exception as e:
-            err_msg = f"Background scheduler failed: {e}"
-            sched_logger.error(err_msg)
-            db.set_metadata("last_daily_harvest_status", f"Error at {datetime.now().strftime('%H:%M:%S')}: {e}")
+            sched_logger.exception("Background scheduler failed")
+            db.set_metadata(
+                "last_daily_harvest_status",
+                f"Error at {datetime.now().strftime('%H:%M:%S')}: {type(e).__name__}",
+            )
 
         time.sleep(60)
 
@@ -501,7 +503,8 @@ def bg_harvest_worker(
         with harvest_lock:
             harvest_state["status"] = "error"
             harvest_state["progress"] = "Scraper execution failed."
-            harvest_state["error"] = str(e)
+            app.logger.exception("Harvest failed")
+            harvest_state["error"] = GENERIC_SERVER_ERROR
 
 def send_verification_email(recipient_email, username, code):
     """Send a signup verification code via configured email provider."""
@@ -1328,7 +1331,7 @@ def index():
     """Serves the Single-Page Application dynamic research dashboard."""
     return render_template(
         "index.html",
-        admin_emails_list=list(ADMIN_EMAILS),
+        is_admin=bool(session.get("email")) and session.get("email", "").lower() in ADMIN_EMAILS,
         dashboard_config=build_dashboard_ui_config(),
     )
 
@@ -1600,8 +1603,9 @@ def api_delete_papers():
             if db.delete_paper(int(pid)):
                 success_count += 1
         return jsonify({"message": f"Successfully deleted {success_count} papers."})
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
+    except Exception:
+        app.logger.exception("Request failed")
+        return jsonify({"error": GENERIC_SERVER_ERROR}), 500
 
 @app.route("/api/papers/<int:paper_id>/edit-classification", methods=["POST"])
 @admin_required
@@ -1743,7 +1747,8 @@ def api_edit_classification(paper_id):
         
     except Exception as e:
         conn.rollback()
-        return jsonify({"error": str(e)}), 500
+        app.logger.exception("Request failed")
+        return jsonify({"error": GENERIC_SERVER_ERROR}), 500
     finally:
         conn.close()
 
@@ -1879,8 +1884,9 @@ def api_sync_metadata(paper_id):
             "message": "Metadata synced and classification updated successfully.",
             "paper": updated_paper
         })
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
+    except Exception:
+        app.logger.exception("Request failed")
+        return jsonify({"error": GENERIC_SERVER_ERROR}), 500
     finally:
         conn.close()
 
@@ -1975,8 +1981,9 @@ def api_reclassify_llm(paper_id):
         finally:
             conn.close()
 
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
+    except Exception:
+        app.logger.exception("Request failed")
+        return jsonify({"error": GENERIC_SERVER_ERROR}), 500
 
 @app.route("/api/harvest", methods=["POST"])
 @admin_required
@@ -2069,8 +2076,9 @@ def api_upload_pdf():
                 selected_paper_id=selected_id,
                 force_new=force_new,
             )
-        except ValueError as exc:
-            return jsonify({"error": str(exc)}), 400
+        except ValueError:
+            app.logger.exception("PDF upload review rejected")
+            return jsonify({"error": "This PDF upload couldn't be matched. Please check it and try again."}), 400
 
         _update_pending_pdf_upload(
             merge_token,
@@ -2175,8 +2183,9 @@ def api_upload_pdf():
             "message": f"Paper {result['action']} successfully.",
             **result,
         })
-    except ValueError as exc:
-        return jsonify({"error": str(exc)}), 400
+    except ValueError:
+        app.logger.exception("PDF upload save rejected")
+        return jsonify({"error": "This PDF upload couldn't be saved. Please check it and try again."}), 400
     except Exception:
         app.logger.exception("PDF upload failed")
         return jsonify({"error": GENERIC_SERVER_ERROR}), 500
@@ -2214,9 +2223,12 @@ def async_pdf_upload_task(task_id: str, pending_token: str) -> None:
             }
         background_jobs.set_task_result(task_id, payload)
         background_jobs.update_task(task_id, status="completed", processed_papers=1, total_papers=1)
-    except ValueError as exc:
+    except ValueError:
+        app.logger.exception("Async PDF upload task %s rejected", task_id)
         _pop_pending_pdf_upload(pending_token)
-        background_jobs.mark_task_failed(task_id, exc)
+        background_jobs.mark_task_failed(
+            task_id, RuntimeError("This PDF upload couldn't be processed. Please check it and try again.")
+        )
     except Exception:
         # mark_task_failed stores str(exc) where GET /api/tasks/<id> returns it,
         # so log the real exception here and store only a generic message.
@@ -2335,7 +2347,8 @@ def api_calibration_dashboard_metrics():
         return jsonify(metrics)
     except Exception as e:
         app.logger.error(f"Error compiling calibration dashboard metrics: {e}")
-        return jsonify({"error": str(e)}), 500
+        app.logger.exception("Request failed")
+        return jsonify({"error": GENERIC_SERVER_ERROR}), 500
 
 
 @app.route("/api/calibration/lock-status", methods=["GET"])
@@ -2368,8 +2381,9 @@ def api_calibration_lock():
             return jsonify(
                 calibration_coordinator.acquire_lock(state, owner, subnode=subnode, db=db)
             )
-        except calibration_coordinator.CalibrationLockError as exc:
-            return jsonify({"error": str(exc)}), 409
+        except calibration_coordinator.CalibrationLockError:
+            app.logger.info("Calibration lock conflict", exc_info=True)
+            return jsonify({"error": "The calibration lock is held by another session."}), 409
     return jsonify({"error": "action must be acquire or release"}), 400
 
 
@@ -2406,7 +2420,8 @@ def api_calibration_resolve_disagreement():
         return jsonify(result)
     except Exception as e:
         app.logger.error(f"Error resolving Maude disagreement for paper {paper_id}: {e}")
-        return jsonify({"error": str(e)}), 500
+        app.logger.exception("Request failed")
+        return jsonify({"error": GENERIC_SERVER_ERROR}), 500
 
 
 @app.route("/api/agents/automation-status", methods=["GET"])
@@ -2484,8 +2499,9 @@ def api_classification_run_eval():
             "last_reliability_eval_timestamp": now_str,
             "reliability_manifest": load_reliability_manifest()
         })
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
+    except Exception:
+        app.logger.exception("Request failed")
+        return jsonify({"error": GENERIC_SERVER_ERROR}), 500
 
 # ─── Analyses Endpoints ─────────────────────────────────────────
 
@@ -2789,8 +2805,9 @@ def async_analyze_task(
             total_papers=result.get("analyzed_count") or 0,
             processed_papers=result.get("analyzed_count") or 0,
         )
-    except Exception as exc:
-        background_jobs.mark_task_failed(task_id, exc)
+    except Exception:
+        app.logger.exception("Analyze task %s failed", task_id)
+        background_jobs.mark_task_failed(task_id, RuntimeError(GENERIC_SERVER_ERROR))
 
 
 @app.route("/api/analyze", methods=["POST"])
@@ -2814,7 +2831,8 @@ def api_analyze():
         task_id = background_jobs.create_task("analyze")
     except Exception as exc:
         app.logger.error("Failed to enqueue analyze task: %s", exc)
-        return jsonify({"error": str(exc)}), 500
+        app.logger.exception("Request failed")
+        return jsonify({"error": GENERIC_SERVER_ERROR}), 500
 
     background_jobs.submit_background(async_analyze_task, task_id, dict(filters), name, user_id)
     return jsonify({
@@ -3532,7 +3550,8 @@ def api_learning_dashboard_metrics():
         
     except Exception as e:
         app.logger.error(f"Error compiling Learning Dashboard metrics: {e}")
-        return jsonify({"error": str(e)}), 500
+        app.logger.exception("Request failed")
+        return jsonify({"error": GENERIC_SERVER_ERROR}), 500
     finally:
         conn.close()
 
@@ -3551,7 +3570,8 @@ def api_graph_stats():
         return jsonify(stats)
     except Exception as e:
         app.logger.error(f"Graph stats error: {e}")
-        return jsonify({"error": str(e)}), 500
+        app.logger.exception("Request failed")
+        return jsonify({"error": GENERIC_SERVER_ERROR}), 500
 
 
 @app.route("/api/graph/network", methods=["GET"])
@@ -3566,7 +3586,8 @@ def api_graph_network():
         return jsonify(data)
     except Exception as e:
         app.logger.error(f"Graph network error: {e}")
-        return jsonify({"error": str(e)}), 500
+        app.logger.exception("Request failed")
+        return jsonify({"error": GENERIC_SERVER_ERROR}), 500
 
 
 @app.route("/api/papers/search-simple", methods=["GET"])
@@ -3593,8 +3614,9 @@ def api_papers_search_simple():
             """, (limit,)).fetchall()
         results = [dict(r) for r in rows]
         return jsonify(results)
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
+    except Exception:
+        app.logger.exception("Request failed")
+        return jsonify({"error": GENERIC_SERVER_ERROR}), 500
     finally:
         conn.close()
 
@@ -3817,7 +3839,7 @@ def async_backpopulate_task(task_id: str):
         try:
             cursor.execute(
                 f"UPDATE background_tasks SET status = 'failed', error_message = {param}, updated_at = CURRENT_TIMESTAMP WHERE task_id = {param}",
-                (str(e), task_id)
+                (GENERIC_SERVER_ERROR, task_id)
             )
             conn.commit()
         except:
@@ -3860,7 +3882,8 @@ def api_test_llm_rules():
             "prompt_length": len(prompt)
         })
     except Exception as e:
-        return jsonify({"error": f"Validation failed: {str(e)}"}), 422
+        app.logger.exception("LLM rules validation failed")
+        return jsonify({"error": "Validation failed. Check the rules and try again."}), 422
 
 
 @app.route("/api/llm/rules", methods=["POST"])
@@ -3886,7 +3909,8 @@ def api_save_llm_rules():
             "message": "LLM rules updated successfully in database."
         })
     except Exception as e:
-        return jsonify({"error": f"Failed to save rules: {str(e)}"}), 500
+        app.logger.exception("Failed to save LLM rules")
+        return jsonify({"error": GENERIC_SERVER_ERROR}), 500
 
 
 @app.route("/api/heuristics/test", methods=["POST"])
@@ -3899,8 +3923,9 @@ def api_test_heuristics_rules():
     try:
         score = run_golden_regression_eval(rules_dict)
         return jsonify({"score": score})
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
+    except Exception:
+        app.logger.exception("Request failed")
+        return jsonify({"error": GENERIC_SERVER_ERROR}), 500
 
 
 @app.route("/api/heuristics/rules", methods=["POST"])
@@ -3933,8 +3958,9 @@ def api_save_heuristics_rules():
             "score": score,
             "message": f"Rules updated successfully! Golden dataset score: {score * 100:.2f}%"
         })
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
+    except Exception:
+        app.logger.exception("Request failed")
+        return jsonify({"error": GENERIC_SERVER_ERROR}), 500
 
 
 @app.route("/api/backpopulate", methods=["POST"])
@@ -3945,8 +3971,9 @@ def api_trigger_backpopulate():
         task_id = background_jobs.create_task("backpopulation")
         background_jobs.submit_background(async_backpopulate_task, task_id)
         return jsonify({"task_id": task_id, "status": "pending"}), 202
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
+    except Exception:
+        app.logger.exception("Request failed")
+        return jsonify({"error": GENERIC_SERVER_ERROR}), 500
 
 
 @app.route("/api/tasks/<task_id>", methods=["GET"])
@@ -3958,15 +3985,45 @@ def api_get_task_status(task_id):
         if not payload:
             return jsonify({"error": "Task not found."}), 404
         return jsonify(payload)
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
+    except Exception:
+        app.logger.exception("Request failed")
+        return jsonify({"error": GENERIC_SERVER_ERROR}), 500
 
 
-# Start the background daily scheduler thread, protected against debug reloader double-runs and unit tests
-import sys
-if (not app.debug or os.environ.get("WERKZEUG_RUN_MAIN") == "true") and "unittest" not in sys.modules:
+def scheduler_should_start(env=None) -> bool:
+    """The in-process harvest scheduler runs only where it was asked for.
+
+    ENABLE_INPROCESS_SCHEDULER=1/0 decides when set. Otherwise it runs only on a
+    deployed app (Fly, or APP_ENV=production/staging), so a plain `import app` in a
+    script, test or agent shell never starts a thread that writes to the DB.
+    """
+    env = os.environ if env is None else env
+    flag = (env.get("ENABLE_INPROCESS_SCHEDULER") or "").strip().lower()
+    if flag in ("1", "true", "yes", "on"):
+        return True
+    if flag in ("0", "false", "no", "off"):
+        return False
+    return is_deployed_env(env)
+
+
+_scheduler_started = False
+
+
+def start_scheduler() -> bool:
+    """Start the daily harvest thread once, if scheduler_should_start(). Returns True if started."""
+    global _scheduler_started
+    if _scheduler_started or not scheduler_should_start():
+        return False
+    if app.debug and os.environ.get("WERKZEUG_RUN_MAIN") != "true":
+        return False  # debug reloader parent process
     logging.getLogger("scheduler").info("Launching daily automatic harvest scheduler thread...")
     threading.Thread(target=daily_harvest_scheduler, daemon=True).start()
+    _scheduler_started = True
+    return True
+
+
+# gunicorn imports app:app on Fly, so the gated call stays at module level.
+start_scheduler()
 
 if __name__ == "__main__":
     # Start server on local network port 5001 to bypass macOS default AirPlay port conflict (5000)
