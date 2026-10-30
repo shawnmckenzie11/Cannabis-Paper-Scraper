@@ -57,3 +57,8 @@ def test_dev_allows_localhost_postgres(monkeypatch):
     for h in ("localhost", "127.0.0.1"):
         monkeypatch.setenv("DATABASE_URL", f"postgresql://fake:fake@{h}:5432/fake")
         boot_safety.validate_startup_env()
+
+
+def test_sentry_environment_is_production_on_fly():
+    assert sentry_setup.sentry_environment({"FLY_APP_NAME": "fake-app"}) == "production"
+    assert sentry_setup.sentry_environment({"APP_ENV": "staging", "FLY_APP_NAME": "fake-app"}) == "staging"

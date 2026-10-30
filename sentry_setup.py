@@ -244,12 +244,14 @@ def is_deployed_env(env=None):
 
 
 def sentry_environment(env=None):
-    """Sentry environment tag: APP_ENV first, then SENTRY_ENVIRONMENT / FLY_APP_NAME."""
+    """Sentry environment tag: APP_ENV first, then SENTRY_ENVIRONMENT; on Fly, "production"."""
     env = os.environ if env is None else env
-    for name in ("APP_ENV", "SENTRY_ENVIRONMENT", "FLY_APP_NAME"):
+    for name in ("APP_ENV", "SENTRY_ENVIRONMENT"):
         value = (env.get(name) or "").strip()
         if value:
             return value
+    if (env.get("FLY_APP_NAME") or "").strip():
+        return "production"
     return None
 
 
