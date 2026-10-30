@@ -245,3 +245,8 @@ Contract version **0.3** (`schema_version: wp1.3.0-draft`; `x-contract-version: 
 8. **gold_badge.split deliberately excludes `train`** — intentional: gold badges are evaluation labels and never training data.
 
 **Q7 scope ruling:** one study = one original research paper. Surveys, market studies and re-analyses are not original research and are excluded from study sets (e.g. PMIDs 38757607, 36803833, 34265088).
+
+### v0.3 review follow-ups
+
+- **record_id** (string, non-empty): unique id of a state record and the target of `correction.supersedes_record_id`. Available on every record type (gold_badge, reference_value, relevance_grade, correction, paper_pmid_mapping, expert_review, work_merge_flag, and the top-level methods document). **Optional** on v0.2-era types so v0.2 records stay valid; **required** on the v0.3 types `relevance_grade`, `correction`, `paper_pmid_mapping`.
+- **Split manifest:** manifest v0.1 (owned by Evaluation) has no `work_id` column. Split manifest **v0.2 should add a `work_id` column** so splits can be assigned/checked by work_id. Not changed here.

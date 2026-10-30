@@ -36,7 +36,7 @@ def test_gap1_gold_decision_awarded_by():
     bad("gold_badge", dict(GB, decision="silver"))
     bad("gold_badge", dict(GB, awarded_by=""))
 
-REL = {"query_id": "q-1", "pmid": 12345, "grade": 2, "rater": "rater-fake-1",
+REL = {"record_id": "rec-rel-1", "query_id": "q-1", "pmid": 12345, "grade": 2, "rater": "rater-fake-1",
        "query_set_version": "qs-v1", "query_set_sha256": SHA}
 
 def test_gap2_relevance_grade():
@@ -63,11 +63,11 @@ def test_gap3_correction():
         bad("correction", drop(COR, k))
 
 def test_gap4_pmid_mapping():
-    v("paper_pmid_mapping", {"paper_id": 1, "pmid": 9, "pmid_missing": False, "manifest_eligible": True})
-    v("paper_pmid_mapping", {"paper_id": 1, "pmid": None, "pmid_missing": True, "manifest_eligible": False})
-    bad("paper_pmid_mapping", {"paper_id": 1, "pmid": None, "pmid_missing": True, "manifest_eligible": True})
-    bad("paper_pmid_mapping", {"paper_id": 1, "pmid": None, "pmid_missing": False, "manifest_eligible": False})
-    bad("paper_pmid_mapping", {"paper_id": 1, "pmid": 9, "pmid_missing": True, "manifest_eligible": False})
+    v("paper_pmid_mapping", {"record_id": "rec-map-1", "paper_id": 1, "pmid": 9, "pmid_missing": False, "manifest_eligible": True})
+    v("paper_pmid_mapping", {"record_id": "rec-map-1", "paper_id": 1, "pmid": None, "pmid_missing": True, "manifest_eligible": False})
+    bad("paper_pmid_mapping", {"record_id": "rec-map-1", "paper_id": 1, "pmid": None, "pmid_missing": True, "manifest_eligible": True})
+    bad("paper_pmid_mapping", {"record_id": "rec-map-1", "paper_id": 1, "pmid": None, "pmid_missing": False, "manifest_eligible": False})
+    bad("paper_pmid_mapping", {"record_id": "rec-map-1", "paper_id": 1, "pmid": 9, "pmid_missing": True, "manifest_eligible": False})
 
 REF = {"paper_id": 1, "field": "thc_pct", "value": 20, "status": "draft", "work_id": "w-1",
        "split": "dev", "storage": "working_store"}
@@ -105,3 +105,18 @@ def test_gap8_gold_split_excludes_train():
 
 def test_v02_records_still_valid():
     v("reference_value", {"paper_id": 1, "field": "thc_pct", "value": 20, "status": "draft"})
+
+def test_record_id_everywhere():
+    D = SCHEMA["$defs"]
+    for k in ("gold_badge", "reference_value", "relevance_grade", "correction",
+              "paper_pmid_mapping", "expert_review", "work_merge_flag"):
+        assert D[k]["properties"]["record_id"] == {"$ref": "#/$defs/record_id"}, k
+    for k in ("relevance_grade", "correction", "paper_pmid_mapping"):
+        assert "record_id" in D[k]["required"], k
+    assert "record_id" not in D["gold_badge"]["required"]
+    assert "record_id" not in D["reference_value"]["required"]
+    v("gold_badge", dict(GB, record_id="rec-gb-1"))
+    v("reference_value", dict(REF, record_id="rec-ref-1"))
+    bad("gold_badge", dict(GB, record_id=""))
+    bad("paper_pmid_mapping", drop({"record_id": "x", "paper_id": 1, "pmid": 9, "pmid_missing": False, "manifest_eligible": True}, "record_id"))
+    assert "supersedes_record_id" not in D["paper_pmid_mapping"]["description"]
