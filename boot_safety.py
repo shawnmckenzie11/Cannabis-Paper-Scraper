@@ -47,6 +47,7 @@ def resolve_rate_limit_storage_uri() -> str:
 def validate_startup_env() -> None:
     """Raise StartupConfigError outside dev/test if required config is missing/empty."""
     if is_dev_env():
+        _refuse_postgres_in_dev()
         return
     missing = [n for n in REQUIRED_PROD_VARS if not (os.getenv(n) or "").strip()]
     if missing:
@@ -56,3 +57,19 @@ def validate_startup_env() -> None:
             "value (dev, development, local, test, testing) for local use."
         )
     resolve_rate_limit_storage_uri()
+
+
+def _refuse_postgres_in_dev() -> None:
+    """A dev/test run must not point at a Postgres DB (e.g. prod) unless explicitly allowed.
+
+    Set CRN_ALLOW_LOCAL_POSTGRES=1 for a deliberate local Postgres. Names vars, never values.
+    """
+    url = (os.getenv("DATABASE_URL") or "").strip().lower()
+    if not url.startswith(("postgres://", "postgresql://")):
+        return
+    if (os.getenv("CRN_ALLOW_LOCAL_POSTGRES") or "").strip().lower() in ("1", "true", "yes", "on"):
+        return
+    raise StartupConfigError(
+        "DATABASE_URL points at Postgres while APP_ENV is a dev/test value. Refusing to start: "
+        "unset DATABASE_URL, or set CRN_ALLOW_LOCAL_POSTGRES=1 for a deliberate local Postgres."
+    )

@@ -36,7 +36,7 @@ import background_jobs
 
 from sentry_setup import init_sentry, is_deployed_env
 try:
-    init_sentry()  # MCK-102: no-op unless SENTRY_DSN set
+    init_sentry()  # MCK-102: no-op unless CRN_SENTRY_DSN set on a deployed app
 except Exception:
     logging.getLogger(__name__).exception("Sentry init failed; continuing without Sentry")
 

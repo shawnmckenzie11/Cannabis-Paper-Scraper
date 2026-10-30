@@ -1,6 +1,6 @@
 """MCK-102: privacy-first Sentry wiring for the Flask app.
 
-No-op unless SENTRY_DSN is set. Disabled when CRN_SENTRY_DISABLED=1 (scoring /
+No-op unless CRN_SENTRY_DSN is set (the shared SENTRY_DSN belongs to another project and is ignored). Disabled when CRN_SENTRY_DISABLED=1 (scoring /
 evaluation runs). What before_send / before_breadcrumb do:
 - drop event user, extra, logentry and message; keep only allowlisted contexts
   and tags (url tags are reduced to their path);
@@ -229,7 +229,7 @@ def sentry_enabled(env=None):
     if not is_deployed_env(env):
         # Local/box runs never report: the box injects an unrelated DSN into every shell.
         return False
-    return bool((env.get("SENTRY_DSN") or "").strip())
+    return bool((env.get("CRN_SENTRY_DSN") or "").strip())
 
 
 DEPLOYED_APP_ENVS = {"production", "prod", "staging"}
@@ -273,7 +273,7 @@ def init_sentry():
         pass
 
     sentry_sdk.init(
-        dsn=os.environ["SENTRY_DSN"].strip(),
+        dsn=os.environ["CRN_SENTRY_DSN"].strip(),
         integrations=[FlaskIntegration()],
         disabled_integrations=disabled,
         send_default_pii=False,
