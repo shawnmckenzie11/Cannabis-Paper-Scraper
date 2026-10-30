@@ -59,3 +59,5 @@ The `ai-seed-fom/` inputs are not added by this PR.
 1. Shawn adjudicates Q1–Q16.  
 2. Revise dictionary + schema enums from decisions.  
 3. Eng implements storage/pipeline in a **separate** unlocked PR.
+
+**v0.5 (wp1.5.0-draft):** adds the `pmc_oa_xml` tier, optional `source_license` (full-text storage pinned off pending Shawn), the `validation` split, `extraction_run_manifest` and `run_event`, and requires `record_id` on new records. All additive; earlier records stay valid. See `field-dictionary.md`.

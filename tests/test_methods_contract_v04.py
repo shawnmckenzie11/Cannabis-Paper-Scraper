@@ -20,7 +20,7 @@ def bad(rec):
 
 def test_schema_valid_and_version():
     jsonschema.Draft202012Validator.check_schema(SCHEMA)
-    assert SCHEMA["x-contract-version"] == "0.4"
+    assert SCHEMA["x-contract-version"] == "0.5"
     assert "wp1.4.0-draft" in SCHEMA["properties"]["schema_version"]["enum"]
     assert "wp1.3.0-draft" in SCHEMA["properties"]["schema_version"]["enum"]
 
@@ -78,16 +78,50 @@ def test_provenance_params_reject_email_and_api_key():
         assert not v.is_valid({"db": "pubmed", k: "x"})
 
 
+
+def vd(name, rec):
+    s = dict(SCHEMA["$defs"][name], **{"$defs": SCHEMA["$defs"]})
+    jsonschema.Draft202012Validator(s).validate(rec)
+
+
 def test_source_tier_includes_pmc_oa_xml():
-    import json
-    s = json.load(open("schemas/methods.schema.json"))
-    assert "pmc_oa_xml" in s["$defs"]["source_tier"]["enum"]
+    assert "pmc_oa_xml" in SCHEMA["$defs"]["source_tier"]["enum"]
 
 
-def test_source_license_defaults_not_storable():
-    import json
-    s = json.load(open("schemas/methods.schema.json"))
-    d = s["$defs"]["source_license"]
-    assert d["properties"]["fulltext_storable"]["default"] is False
-    assert "source_license" in s["$defs"]["provenance_envelope"]["properties"]
-    assert "source_license" not in s["$defs"]["provenance_envelope"]["required"]
+LIC = {"license_raw": "CC BY 4.0", "license_source": "pmc_oa_list", "fulltext_storable": False, "pending_biomedical": True}
+
+
+def test_source_license_valid_and_pinned_false():
+    vd("source_license", LIC)
+    for k in ("fulltext_storable", "pending_biomedical"):
+        r = dict(LIC); r.pop(k)
+        with pytest.raises(jsonschema.ValidationError):
+            vd("source_license", r)
+    with pytest.raises(jsonschema.ValidationError):
+        vd("source_license", dict(LIC, fulltext_storable=True))
+    assert "source_license" not in SCHEMA["$defs"]["provenance_envelope"]["required"]
+
+
+def test_split_has_validation():
+    assert SCHEMA["$defs"]["split"]["enum"] == ["dev", "validation", "test"]
+
+
+MAN = {"run_id": "r1", "mode": "scored", "split": "dev", "contract_version": "0.5", "git_ref": "abc123",
+       "config_hash": "h", "prompt_hashes": {"x23-A-v1": "p"}, "model_ids": {"A": "m"},
+       "records": [{"record_id": "rec-1", "paper_pmid": "123"}], "excluded": [{"paper_pmid": "456", "reason": "budget_cap"}],
+       "events": [{"record_id": "rec-1", "field": "route", "reason": "quote_not_found"}]}
+
+
+def test_run_manifest_scored_and_fences():
+    vd("extraction_run_manifest", MAN)
+    for bad_rec in (dict(MAN, split="test"), dict(MAN, model_ids=None),
+                    dict(MAN, mode="dry_run"), dict(MAN, events=[{"record_id": "r", "field": "f", "reason": "x", "quote": "q"}])):
+        with pytest.raises(jsonschema.ValidationError):
+            vd("extraction_run_manifest", bad_rec)
+    vd("extraction_run_manifest", dict(MAN, mode="dry_run", model_ids=None, records=[]))
+
+
+def test_record_id_required_only_on_v05():
+    gate = [c for c in SCHEMA["allOf"] if c.get("if", {}).get("properties", {}).get("schema_version", {}).get("const") == "wp1.5.0-draft"]
+    assert gate and gate[0]["then"]["required"] == ["record_id"]
+    assert "record_id" not in SCHEMA.get("required", [])

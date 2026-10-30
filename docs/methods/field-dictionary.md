@@ -266,3 +266,14 @@ Contract version **0.4** (`x-contract-version: "0.4"`). `$defs.pubmed_metadata_r
 ### Preprint flag (OPTIONAL, derived — pending Biomedical lead)
 
 Preprint status is **derivable** from `publication_types` (contains `"Preprint"`); it is not stored. Evaluation flagged PMIDs 40502036, 36993751, 40235472 as preprints, and these are exactly the records with `"Preprint"` in the merged file. **No inclusion/exclusion rule for preprints is defined — pending Biomedical lead.**
+
+## v0.5 additions (wp1.5.0-draft, #105)
+
+| Name | Where | Meaning | Status |
+|---|---|---|---|
+| `pmc_oa_xml` | `source_tier` value | Value came from PMC Open Access XML full text. | technical |
+| `source_license` | optional in `provenance_envelope` | `license_raw` (verbatim or null), `license_source` (`pmc_oa_list`, `publisher_page`, `unknown`), `fulltext_storable` (pinned `false`), `pending_biomedical` (`true`). Only quoted spans and extracted fields are kept until Shawn sets the license-to-storage policy. | policy pending Shawn |
+| `validation` | `split` value | Held-out check scored only by Evaluation; capped and logged. `test` never appears in extraction runs. | technical |
+| `record_id` | top-level | Required on `wp1.5.0-draft` records; stable across reruns. Current record = latest non-retracted record in its correction chain. | technical |
+| `extraction_run_manifest` | `$defs` | Per-run manifest: split (dev or validation only), mode (`scored` or `dry_run`; dry runs have null `model_ids` and no records), git ref, config and prompt hashes, records, excluded papers with reason. | technical |
+| `run_event` | `$defs` | Run-log event with ids and a reason code only (`quote_not_found`, `extraction_failed`, `parse_downgrade_abstract_only`). | technical |

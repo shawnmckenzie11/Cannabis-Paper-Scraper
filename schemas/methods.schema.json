@@ -19,9 +19,10 @@
         "wp1.1.0-draft",
         "wp1.2.0-draft",
         "wp1.3.0-draft",
-        "wp1.4.0-draft"
+        "wp1.4.0-draft",
+        "wp1.5.0-draft"
       ],
-      "description": "Methods contract version. wp1.0.0-draft records remain valid while wp1.1.0 is in draft. wp1.3.0-draft = Methods contract v0.3 (eval gaps, fields only). wp1.4.0-draft = Methods contract v0.4 (pubmed_metadata_record)."
+      "description": "Methods contract version. wp1.0.0-draft records remain valid while wp1.1.0 is in draft. wp1.3.0-draft = Methods contract v0.3 (eval gaps, fields only). wp1.4.0-draft = Methods contract v0.4 (pubmed_metadata_record). wp1.5.0-draft = Methods contract v0.5 (pmc_oa_xml tier, source_license, validation split, extraction run manifest; record_id required)."
     },
     "paper_id": {
       "type": "integer",
@@ -1142,9 +1143,10 @@
     "split": {
       "enum": [
         "dev",
+        "validation",
         "test"
       ],
-      "description": "Eval split. test values allowed only with storage == locked_store."
+      "description": "Eval split. validation = held-out tuning check scored only by Evaluation, capped and logged per run. test values allowed only with storage == locked_store; test never appears in extraction runs."
     },
     "storage": {
       "enum": [
@@ -1277,7 +1279,7 @@
     "correction": {
       "type": "object",
       "additionalProperties": false,
-      "description": "State records are append-only. A correction supersedes a prior record; records are never edited in place. A retraction points at the target's record_id (never a store position/sequence number): retracted=true + supersedes_record_id covers it.",
+      "description": "State records are append-only. A correction supersedes a prior record; records are never edited in place. A retraction points at the target's record_id (never a store position/sequence number): retracted=true + supersedes_record_id covers it. Current record rule: for a given target, the current record is the latest record in the chain that is not retracted; if the latest is a retraction, the target has no current value.",
       "required": [
         "record_id",
         "supersedes_record_id",
@@ -1373,7 +1375,7 @@
     "record_id": {
       "type": "string",
       "minLength": 1,
-      "description": "Unique id of this state record; target of correction.supersedes_record_id. Optional on v0.2-era records, required on v0.3 record types."
+      "description": "Unique id of this state record; target of correction.supersedes_record_id. Must be stable across reruns of the same extraction config for the same paper. Optional on v0.2-era records, required on v0.3 record types and on wp1.5.0-draft methods records."
     },
     "locked_store_test_only": {
       "if": {
@@ -1692,11 +1694,12 @@
     "source_license": {
       "type": "object",
       "additionalProperties": false,
-      "description": "Licence of the acquired source (review of #104). Whether a licence permits storing full text is a policy call pending Shawn; default is not storable: keep quoted spans and extracted fields only.",
+      "description": "License of the acquired source. Whether a license permits storing full text is a policy decision pending Shawn; until then fulltext_storable is pinned false and only quoted spans and extracted fields are kept.",
       "required": [
         "license_raw",
         "license_source",
-        "fulltext_storable"
+        "fulltext_storable",
+        "pending_biomedical"
       ],
       "properties": {
         "license_raw": {
@@ -1704,24 +1707,217 @@
             "string",
             "null"
           ],
-          "description": "Licence text/identifier verbatim as given by the source."
+          "description": "License text or identifier exactly as given by the source; null if none found."
         },
         "license_source": {
+          "type": "string",
           "enum": [
             "pmc_oa_list",
             "publisher_page",
             "unknown"
-          ]
+          ],
+          "description": "Where license_raw was read from."
         },
         "fulltext_storable": {
-          "type": "boolean",
-          "default": false
+          "const": false,
+          "description": "Pinned false until Shawn sets the storage policy; widening it is a contract change."
         },
         "pending_biomedical": {
-          "const": true
+          "const": true,
+          "description": "License-to-storage policy not yet decided by Shawn."
+        }
+      }
+    },
+    "extraction_run_manifest": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "One per extraction run (runs/<run_id>/manifest.json). Maps each record to its split, since methods records carry no split. Never lists test.",
+      "required": [
+        "run_id",
+        "mode",
+        "split",
+        "contract_version",
+        "git_ref",
+        "config_hash",
+        "prompt_hashes",
+        "model_ids",
+        "records",
+        "excluded"
+      ],
+      "properties": {
+        "run_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "mode": {
+          "enum": [
+            "scored",
+            "dry_run"
+          ],
+          "description": "dry_run builds prompts and counts tokens only; it must not be scored."
+        },
+        "split": {
+          "enum": [
+            "dev",
+            "validation"
+          ]
+        },
+        "contract_version": {
+          "type": "string",
+          "minLength": 1
+        },
+        "git_ref": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Git tag for a frozen run, else commit sha."
+        },
+        "config_hash": {
+          "type": "string",
+          "minLength": 1
+        },
+        "prompt_hashes": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          }
+        },
+        "model_ids": {
+          "type": [
+            "object",
+            "null"
+          ],
+          "additionalProperties": {
+            "type": "string"
+          },
+          "description": "Exact model string per field group; null only in dry_run."
+        },
+        "records": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "record_id",
+              "paper_pmid"
+            ],
+            "properties": {
+              "record_id": {
+                "$ref": "#/$defs/record_id"
+              },
+              "paper_pmid": {
+                "type": "string",
+                "pattern": "^[0-9]+$"
+              }
+            }
+          }
+        },
+        "excluded": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "paper_pmid",
+              "reason"
+            ],
+            "properties": {
+              "paper_pmid": {
+                "type": "string",
+                "pattern": "^[0-9]+$"
+              },
+              "reason": {
+                "enum": [
+                  "budget_cap",
+                  "pmid_missing",
+                  "source_unavailable"
+                ]
+              }
+            }
+          },
+          "description": "Papers not extracted; Evaluation treats them as excluded, not misses."
+        },
+        "events": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/run_event"
+          }
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "mode": {
+                "const": "dry_run"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "model_ids": {
+                "type": "null"
+              },
+              "records": {
+                "maxItems": 0
+              }
+            }
+          },
+          "else": {
+            "properties": {
+              "model_ids": {
+                "type": "object"
+              }
+            }
+          }
+        }
+      ]
+    },
+    "run_event": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "Run-log event. Ids and reason codes only: no quotes, full text, email, api_key or reviewer data.",
+      "required": [
+        "record_id",
+        "field",
+        "reason"
+      ],
+      "properties": {
+        "record_id": {
+          "$ref": "#/$defs/record_id"
+        },
+        "field": {
+          "type": "string",
+          "minLength": 1
+        },
+        "reason": {
+          "enum": [
+            "quote_not_found",
+            "extraction_failed",
+            "parse_downgrade_abstract_only"
+          ],
+          "description": "quote_not_found marks a pipeline-set uncertain, distinct from reviewer uncertain."
         }
       }
     }
   },
-  "x-contract-version": "0.4"
+  "x-contract-version": "0.5",
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "schema_version": {
+            "const": "wp1.5.0-draft"
+          }
+        },
+        "required": [
+          "schema_version"
+        ]
+      },
+      "then": {
+        "required": [
+          "record_id"
+        ]
+      }
+    }
+  ]
 }
