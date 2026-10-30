@@ -96,7 +96,7 @@ No numbers are invented here. Cost per run = papers × ~5 calls × (input + outp
 | HTTP 429 | honor `Retry-After`; counts as a retry | as above |
 | Parse error | fall to abstract | tier `abstract_only`, `run_event` `parse_downgrade_abstract_only` |
 | Model error / rate limit | 3 retries, jittered backoff, total-time cap; counts against the per-day cap | affected group `extraction_failed`, `run_event` `extraction_failed` |
-| N consecutive model/rate-limit failures (N in config) | stop the run cleanly | remaining papers listed as excluded (`budget_cap` is the only fitting contract reason; see §7) |
+| N consecutive model/rate-limit failures (N in config) | stop the run cleanly | remaining papers listed in `excluded` with reason `consecutive_failures` (added in #109); Evaluation scores them as misses, never as budget exclusions |
 | Invalid JSON / schema fail | one repair call quoting the validator error (counts against cap) | still failing: group `extraction_failed` |
 | Quote not found in source | drop value | `missingness: uncertain`, `run_event` `quote_not_found` |
 | Budget/day cap hit | stop run cleanly | remaining papers in `excluded` with `budget_cap` |
@@ -106,7 +106,7 @@ Nothing failed is silently filled. Run logs and `run_event`s hold ids and reason
 ## 6. Evaluation hooks (for Evaluation to review)
 
 - Every run writes `runs/<run_id>/records.jsonl` + `manifest.json`, an `extraction_run_manifest` (`run_id`, `mode`, `split` = dev|validation, `contract_version: "0.5"`, `git_ref`, `config_hash`, `prompt_hashes`, `model_ids`, `records` [`record_id`, `paper_pmid`], `excluded`, `events`). Methods records carry no split; the manifest is the split mapping.
-- `runs/` is gitignored (to be added with the runner code); retention: dev runs kept 30 days, frozen/validation runs kept until superseded by the next frozen run. Records hold quotes and fields only, never full text.
+- `runs/` is gitignored (to be added with the runner code); retention: dev runs kept 30 days; every validation and frozen-run `manifest.json` is kept permanently (audit trail for the validation cap), and their `records.jsonl` is kept until superseded by the next frozen run. Records hold quotes and fields only, never full text.
 - **Frozen run** = a git tag (`git_ref`) plus the manifest's config and prompt hashes. Evaluation runs validation/test with that tag in its own process; only Evaluation reads gold.
 - **Validation runs** are capped (count set by Evaluation) and each one is logged; results never change prompts or model choice.
 - The field-level P/R/F1 scorer consumes `records.jsonl` as-is; Pipeline never runs it against test. Scoring reports: scorer version, contract pin (`0.5` / `wp1.5.0-draft`), and the `source_tier` map of scored records.
@@ -115,7 +115,7 @@ Nothing failed is silently filled. Run logs and `run_event`s hold ids and reason
 
 ## 7. Open items needing others
 
-- Methods: confirm group subsets don't need new schema; MCK-425 vocabulary before `strain_normalized`. `excluded.reason` has no value for "stopped after consecutive model failures"; using `budget_cap` until Methods decides whether to add one.
+- Methods: confirm group subsets don't need new schema; MCK-425 vocabulary before `strain_normalized`. Consecutive-failure stops use `consecutive_failures` (#109), never `budget_cap`.
 - Biomedical lead: Q8 (unit conversion), Q13 (abstract-only truth policy), preprint rule.
 - Shawn: budget cap value before any paid run; licence-to-storage policy (`fulltext_storable`).
-- Evaluation: dev gate metric and threshold; validation run cap; retention periods above.
+- Evaluation (answered Oct 30): validation cap is 3 logged runs per extraction phase (raising it is dr eggbot's call); dev gate is micro P/R per field group with placeholder P≥0.90, R≥0.80 until Shawn or the PhD sets the bar; the scorer strips the `<locator> | ` prefix before the §2.1 quote match and matches predictions to gold by `paper_id` (current record), not by `record_id`.
