@@ -1858,7 +1858,7 @@
                   "budget_cap",
                   "pmid_missing",
                   "source_unavailable",
-                  "consecutive_failure_stop"
+                  "consecutive_failures"
                 ]
               }
             }
