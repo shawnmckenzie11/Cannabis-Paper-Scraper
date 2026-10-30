@@ -6,6 +6,8 @@ through a runtime rewriter.
 
 from __future__ import annotations
 
+import itertools
+import re
 from typing import List
 
 
@@ -176,17 +178,31 @@ def expand_study_types(study_types: List[str]) -> List[str]:
 
 
 _MAX_OR_EXPANSION = 64
+# Inputs beyond these caps are passed through unrewritten (websearch_to_tsquery
+# still parses them; only the FTS5 OR-precedence fix-up is skipped).
+_MAX_OR_REWRITE_CHARS = 2000
+_MAX_OR_REWRITE_TOKENS = 200
+
+# A token is a run of unquoted non-space chars and/or complete "quoted spans",
+# so ``"cannabis use"`` (and ``foo"bar baz"``) stays a single token.
+_WEBSEARCH_TOKEN_RE = re.compile(r'(?:[^\s"]+|"[^"]*")+')
 
 
 def websearch_or_groups(cleaned_query: str) -> str:
     """Rewrite FTS5-precedence OR (``a OR b c`` = ``(a|b) & c``) for websearch_to_tsquery.
 
-    Only an uppercase ``OR`` token is an operator, as in FTS5. The AND of OR-groups is
-    expanded into an OR of AND-conjunctions (DNF); if that would exceed
-    _MAX_OR_EXPANSION conjunctions the query is returned unchanged.
+    Only an uppercase ``OR`` token is an operator, as in FTS5. Quoted phrases are kept
+    intact as single tokens. The AND of OR-groups is expanded into an OR of
+    AND-conjunctions (DNF); the query is returned unchanged if it has unbalanced
+    quotes, exceeds the size caps, or the expansion would exceed _MAX_OR_EXPANSION.
     """
-    tokens = (cleaned_query or "").split()
-    if "OR" not in tokens:
+    query = cleaned_query or ""
+    if "OR" not in query:
+        return cleaned_query
+    if len(query) > _MAX_OR_REWRITE_CHARS or query.count('"') % 2:
+        return cleaned_query
+    tokens = _WEBSEARCH_TOKEN_RE.findall(query)
+    if len(tokens) > _MAX_OR_REWRITE_TOKENS or "OR" not in tokens:
         return cleaned_query
     groups: List[List[str]] = []
     pending_or = False
@@ -199,12 +215,12 @@ def websearch_or_groups(cleaned_query: str) -> str:
         else:
             groups.append([tok])
         pending_or = False
+    if not groups:
+        return cleaned_query
     total = 1
     for g in groups:
         total *= len(g)
-    if total > _MAX_OR_EXPANSION or not groups:
-        return cleaned_query
-    conjunctions = [[]]
-    for g in groups:
-        conjunctions = [c + [t] for c in conjunctions for t in g]
-    return " or ".join(" ".join(c) for c in conjunctions)
+        if total > _MAX_OR_EXPANSION:
+            return cleaned_query
+    # Linear in output size: at most 64 conjunctions of <=200 tokens each.
+    return " or ".join(" ".join(c) for c in itertools.product(*groups))
