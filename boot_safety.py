@@ -60,16 +60,23 @@ def validate_startup_env() -> None:
 
 
 def _refuse_postgres_in_dev() -> None:
-    """A dev/test run must not point at a Postgres DB (e.g. prod) unless explicitly allowed.
+    """A dev/test run must not point at a remote Postgres DB (e.g. prod); localhost is allowed.
 
     Set CRN_ALLOW_LOCAL_POSTGRES=1 for a deliberate local Postgres. Names vars, never values.
     """
     url = (os.getenv("DATABASE_URL") or "").strip().lower()
     if not url.startswith(("postgres://", "postgresql://")):
         return
+    from urllib.parse import urlsplit
+    try:
+        host = (urlsplit(url).hostname or "").lower()
+    except ValueError:
+        host = ""
+    if host in ("localhost", "127.0.0.1", "::1"):
+        return  # local/CI test database
     if (os.getenv("CRN_ALLOW_LOCAL_POSTGRES") or "").strip().lower() in ("1", "true", "yes", "on"):
         return
     raise StartupConfigError(
-        "DATABASE_URL points at Postgres while APP_ENV is a dev/test value. Refusing to start: "
+        "DATABASE_URL points at a non-local Postgres while APP_ENV is a dev/test value. Refusing to start: "
         "unset DATABASE_URL, or set CRN_ALLOW_LOCAL_POSTGRES=1 for a deliberate local Postgres."
     )
