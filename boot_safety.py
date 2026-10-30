@@ -47,6 +47,7 @@ def resolve_rate_limit_storage_uri() -> str:
 def validate_startup_env() -> None:
     """Raise StartupConfigError outside dev/test if required config is missing/empty."""
     if is_dev_env():
+        _refuse_postgres_in_dev()
         return
     missing = [n for n in REQUIRED_PROD_VARS if not (os.getenv(n) or "").strip()]
     if missing:
@@ -56,3 +57,48 @@ def validate_startup_env() -> None:
             "value (dev, development, local, test, testing) for local use."
         )
     resolve_rate_limit_storage_uri()
+
+
+_LOCAL_DB_HOSTS = frozenset({"localhost", "127.0.0.1", "::1"})
+
+
+def _postgres_hosts(url: str):
+    """Every host psycopg2 would try, including ?host= / ?hostaddr= overrides."""
+    hosts = []
+    try:
+        from psycopg2.extensions import parse_dsn
+        dsn_url = "postgresql" + url[url.index("://"):] if "://" in url else url
+        parsed = parse_dsn(dsn_url)
+        for key in ("host", "hostaddr"):
+            hosts += [h.strip().lower() for h in (parsed.get(key) or "").split(",")]
+    except Exception:
+        return None  # unparseable: treat as non-local
+    from urllib.parse import urlsplit, parse_qs
+    try:
+        parts = urlsplit(url)
+        hosts.append((parts.hostname or "").lower())
+        q = parse_qs(parts.query)
+        for key in ("host", "hostaddr"):
+            for v in q.get(key, []):
+                hosts += [h.strip().lower() for h in v.split(",")]
+    except ValueError:
+        return None
+    return [h for h in hosts if h]
+
+
+def _refuse_postgres_in_dev() -> None:
+    """A dev/test run may only use a localhost Postgres (local or CI test DB); never a remote/prod one.
+
+    No override. Error names variables, never values.
+    """
+    url = (os.getenv("DATABASE_URL") or "").strip()
+    if not url.lower().startswith("postgres"):
+        return
+    hosts = _postgres_hosts(url)
+    # An empty host (e.g. postgresql:///d) lets libpq take PGHOST/PGHOSTADDR/service=, so refuse it.
+    if hosts and all(h in _LOCAL_DB_HOSTS for h in hosts):
+        return
+    raise StartupConfigError(
+        "DATABASE_URL points at a non-local Postgres while APP_ENV is a dev/test value. "
+        "Refusing to start: unset DATABASE_URL or use a localhost database."
+    )
