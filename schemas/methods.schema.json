@@ -17,14 +17,15 @@
       "enum": [
         "wp1.0.0-draft",
         "wp1.1.0-draft",
-        "wp1.2.0-draft"
+        "wp1.2.0-draft",
+        "wp1.3.0-draft"
       ],
-      "description": "Methods contract version. wp1.0.0-draft records remain valid while wp1.1.0 is in draft."
+      "description": "Methods contract version. wp1.0.0-draft records remain valid while wp1.1.0 is in draft. wp1.3.0-draft = Methods contract v0.3 (eval gaps, fields only)."
     },
     "paper_id": {
       "type": "integer",
       "minimum": 1,
-      "description": "Foreign key to catalog papers.id. Q7 (Shawn ruling Oct 29 2026, MCK-90): one study = one original research paper (may include multiple arms); study_group_id == paper_id."
+      "description": "Foreign key to catalog papers.id. Q7 (Shawn ruling Oct 29 2026, MCK-90): one study = one original research paper (may include multiple arms); study_group_id == paper_id. Mapping rule (v0.3): paper_id resolves to papers.pmid via $defs.paper_pmid_mapping; a record whose paper has no pmid is flagged (pmid_missing) and excluded from eval manifests."
     },
     "record_unit": {
       "type": "string",
@@ -739,7 +740,7 @@
     "reference_value": {
       "type": "object",
       "additionalProperties": false,
-      "description": "Dev reference value hand-checked by an expert. Internal only; never guest-visible.",
+      "description": "Dev reference value hand-checked by an expert. Internal only; never guest-visible. v0.3: work_id/split/storage added; optional so v0.2 records stay valid during draft.",
       "required": [
         "paper_id",
         "field",
@@ -787,32 +788,95 @@
             "string",
             "null"
           ]
+        },
+        "work_id": {
+          "$ref": "#/$defs/work_id"
+        },
+        "split": {
+          "$ref": "#/$defs/split"
+        },
+        "storage": {
+          "$ref": "#/$defs/storage"
+        },
+        "rater_verified": {
+          "type": "boolean"
+        },
+        "rationale_format": {
+          "$ref": "#/$defs/rationale_format"
         }
       },
-      "if": {
-        "properties": {
-          "status": {
-            "const": "expert_checked"
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "status": {
+                "const": "expert_checked"
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "checked_by",
+              "checked_at"
+            ],
+            "properties": {
+              "checked_by": {
+                "type": "string",
+                "minLength": 1
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "split": {
+                "const": "test"
+              }
+            },
+            "required": [
+              "split"
+            ]
+          },
+          "then": {
+            "properties": {
+              "storage": {
+                "const": "locked_store"
+              }
+            },
+            "required": [
+              "storage"
+            ]
+          }
+        },
+        {
+          "$ref": "#/$defs/locked_store_requirements"
+        },
+        {
+          "if": {
+            "properties": {
+              "storage": {
+                "const": "locked_store"
+              }
+            },
+            "required": [
+              "storage"
+            ]
+          },
+          "then": {
+            "properties": {
+              "rater_verified": {
+                "const": true
+              }
+            }
           }
         }
-      },
-      "then": {
-        "required": [
-          "checked_by",
-          "checked_at"
-        ],
-        "properties": {
-          "checked_by": {
-            "type": "string",
-            "minLength": 1
-          }
-        }
-      }
+      ]
     },
     "gold_badge": {
       "type": "object",
       "additionalProperties": false,
-      "description": "Paper-level gold badge by a verified PhD rater. No audio. Test-split gold lives only in the locked store.",
+      "description": "Paper-level gold badge by a verified PhD rater. No audio. Test-split gold lives only in the locked store. v0.3: decision/awarded_by/work_id added; optional so v0.2 records stay valid during draft, required by v0.3 producers (see field dictionary).",
       "required": [
         "paper_id",
         "rater",
@@ -833,7 +897,8 @@
           "description": "Identity from verified sign-in only."
         },
         "rater_verified": {
-          "const": true
+          "type": "boolean",
+          "description": "Must be true for locked_store records (verified sign-in)."
         },
         "timestamp": {
           "type": "string",
@@ -848,35 +913,82 @@
           "description": "Free text. Format (free comments vs set criteria) is pending_biomedical."
         },
         "rationale_format": {
-          "const": "pending_biomedical"
+          "$ref": "#/$defs/rationale_format"
         },
         "split": {
           "enum": [
             "dev",
             "test"
-          ]
+          ],
+          "description": "Deliberately excludes 'train' (v0.3 gap 8, intentional): gold badges are evaluation labels only and must never enter training data."
         },
         "storage": {
           "enum": [
             "locked_store",
             "working_store"
           ]
+        },
+        "decision": {
+          "enum": [
+            "gold",
+            "not_gold"
+          ],
+          "description": "'gold' = paper marked by the resident PhD as top-notch in structure/detail."
+        },
+        "awarded_by": {
+          "$ref": "#/$defs/rater_id",
+          "description": "Rater id who made the decision."
+        },
+        "work_id": {
+          "$ref": "#/$defs/work_id"
         }
       },
-      "if": {
-        "properties": {
-          "split": {
-            "const": "test"
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "split": {
+                "const": "test"
+              }
+            },
+            "required": [
+              "split"
+            ]
+          },
+          "then": {
+            "properties": {
+              "storage": {
+                "const": "locked_store"
+              }
+            },
+            "required": [
+              "storage"
+            ]
+          }
+        },
+        {
+          "$ref": "#/$defs/locked_store_requirements"
+        },
+        {
+          "if": {
+            "properties": {
+              "storage": {
+                "const": "locked_store"
+              }
+            },
+            "required": [
+              "storage"
+            ]
+          },
+          "then": {
+            "properties": {
+              "rater_verified": {
+                "const": true
+              }
+            }
           }
         }
-      },
-      "then": {
-        "properties": {
-          "storage": {
-            "const": "locked_store"
-          }
-        }
-      }
+      ]
     },
     "normalized_field": {
       "type": "object",
@@ -964,6 +1076,257 @@
           }
         }
       }
+    },
+    "rater_id": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Rater identity from verified sign-in only (opaque id; never an email in fixtures)."
+    },
+    "locked_store_requirements": {
+      "description": "v0.3 gap 6: when storage == locked_store, rater_verified (true) and rationale_format are required. Rationale is never scored.",
+      "if": {
+        "properties": {
+          "storage": {
+            "const": "locked_store"
+          }
+        },
+        "required": [
+          "storage"
+        ]
+      },
+      "then": {
+        "required": [
+          "rater_verified",
+          "rationale_format"
+        ]
+      }
+    },
+    "rationale_format": {
+      "enum": [
+        "free_text"
+      ],
+      "description": "PLACEHOLDER enum pending_biomedical (free comments vs set criteria). Rationale is stored for audit only and is NEVER scored."
+    },
+    "split": {
+      "enum": [
+        "dev",
+        "test"
+      ],
+      "description": "Eval split. test values allowed only with storage == locked_store."
+    },
+    "storage": {
+      "enum": [
+        "locked_store",
+        "working_store"
+      ]
+    },
+    "work_id": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Copied from the paper's work_id (v0.3 gap 5)."
+    },
+    "relevance_grade": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "Relevance judgment keyed on (query_id, pmid). Field names/types aligned with crn-eval locked-store relevance_grade_PROPOSAL. Intended to evolve into a multi-axis record (PROPOSED axes in docs/methods/field-dictionary.md, not schema fields).",
+      "x-key": [
+        "query_id",
+        "pmid"
+      ],
+      "required": [
+        "query_id",
+        "pmid",
+        "grade",
+        "rater",
+        "query_set_version",
+        "query_set_sha256"
+      ],
+      "properties": {
+        "query_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "pmid": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "grade": {
+          "type": "integer",
+          "enum": [
+            0,
+            1,
+            2
+          ],
+          "x-placeholder": true,
+          "description": "PLACEHOLDER 0/1/2 pending Biomedical lead decision on a multi-axis linear relevance score."
+        },
+        "rater": {
+          "$ref": "#/$defs/rater_id"
+        },
+        "rater_verified": {
+          "type": "boolean"
+        },
+        "timestamp": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "query_set_version": {
+          "type": "string",
+          "minLength": 1
+        },
+        "query_set_sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "split": {
+          "$ref": "#/$defs/split"
+        },
+        "storage": {
+          "$ref": "#/$defs/storage"
+        },
+        "rationale_format": {
+          "$ref": "#/$defs/rationale_format"
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "split": {
+                "const": "test"
+              }
+            },
+            "required": [
+              "split"
+            ]
+          },
+          "then": {
+            "properties": {
+              "storage": {
+                "const": "locked_store"
+              }
+            },
+            "required": [
+              "storage"
+            ]
+          }
+        },
+        {
+          "$ref": "#/$defs/locked_store_requirements"
+        },
+        {
+          "if": {
+            "properties": {
+              "storage": {
+                "const": "locked_store"
+              }
+            },
+            "required": [
+              "storage"
+            ]
+          },
+          "then": {
+            "properties": {
+              "rater_verified": {
+                "const": true
+              }
+            }
+          }
+        }
+      ]
+    },
+    "correction": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "State records are append-only. A correction supersedes a prior record; records are never edited in place.",
+      "required": [
+        "record_id",
+        "supersedes_record_id",
+        "reason",
+        "corrected_by",
+        "at",
+        "retracted"
+      ],
+      "properties": {
+        "record_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "supersedes_record_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "reason": {
+          "type": "string",
+          "minLength": 1
+        },
+        "corrected_by": {
+          "$ref": "#/$defs/rater_id"
+        },
+        "at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "retracted": {
+          "type": "boolean",
+          "description": "true = superseded record is withdrawn with no replacement value."
+        }
+      }
+    },
+    "paper_pmid_mapping": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "v0.3 gap 4: paper_id resolves to papers.pmid. pmid null => pmid_missing must be true and manifest_eligible false (excluded from manifests). Consumers must also check record_id != supersedes_record_id at runtime.",
+      "required": [
+        "paper_id",
+        "pmid",
+        "pmid_missing",
+        "manifest_eligible"
+      ],
+      "properties": {
+        "paper_id": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "pmid": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 1
+        },
+        "pmid_missing": {
+          "type": "boolean"
+        },
+        "manifest_eligible": {
+          "type": "boolean"
+        }
+      },
+      "if": {
+        "properties": {
+          "pmid": {
+            "type": "null"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "pmid_missing": {
+            "const": true
+          },
+          "manifest_eligible": {
+            "const": false
+          }
+        }
+      },
+      "else": {
+        "properties": {
+          "pmid_missing": {
+            "const": false
+          }
+        }
+      }
     }
-  }
+  },
+  "x-contract-version": "0.3"
 }

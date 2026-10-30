@@ -229,3 +229,19 @@ Definitions for annotators: `annotation-guide-draft.md`. Not biomedical ontology
 - **gold_badge**: paper-level; `paper_id, rater (verified sign-in), timestamp, raw_transcript, submitted_rationale` (separate), no audio. `split=test` ⇒ `storage=locked_store`. Rationale format pending_biomedical (free text for now).
 - **normalized_field**: `raw_text` + `normalized_value` with `normalization_status: pending_biomedical`. Rules: `schemas/normalization_rules.json` (range formatting allowed; "once daily" vs "daily" pending_biomedical).
 - **work_id**: grouping key; preprint/published versions and duplicate records of one work share a `work_id`. Splits are assigned by `work_id` (not paper_id). `study_group_id` stays = `paper_id`. DOI/title matches across splits produce a `work_merge_flag` for Methods confirmation — never auto-merged; a confirmed merge requires a new manifest version.
+
+## v0.3 additions (wp1.3.0-draft) — eval gaps, fields only
+
+Contract version **0.3** (`schema_version: wp1.3.0-draft`; `x-contract-version: "0.3"`). New fields on existing records are optional so v0.2 records stay valid during draft; v0.3 producers must emit them.
+
+1. **gold_badge.decision** `gold|not_gold` and **awarded_by** (rater id). *Gold* = paper marked by the resident PhD as top-notch in structure/detail.
+2. **relevance_grade** (new, keyed on `(query_id, pmid)`): `query_id, pmid, grade, rater, query_set_version, query_set_sha256` (required); optional `rater_verified, timestamp, split, storage, rationale_format`. Names/types aligned with the eval locked-store `relevance_grade` proposal. **`grade` 0/1/2 is a PLACEHOLDER** pending the Biomedical lead's decision on a multi-axis linear relevance score.
+   - **PROPOSED axes (NOT schema fields yet):** `topic_match` 0/1/2 (0 = hard exclude); `study_type` category `original|review_meta_analysis|survey|reanalysis|other`; `design_correctness` 1–5; `reporting_depth` 1–5; gold badge; `relevance = w1*topic + w2*original + w3*design + w4*reporting + w5*gold`, weights **w1–w5 UNSET placeholders**.
+3. **correction** (new): `record_id, supersedes_record_id, reason, corrected_by, at (ISO-8601 date-time), retracted (bool)`. State records are **append-only**; corrections supersede, never edit.
+4. **Mapping rule** (`$defs.paper_pmid_mapping`): `paper_id` resolves to `papers.pmid`. If pmid is null the record is flagged `pmid_missing: true` and `manifest_eligible: false` — **excluded from manifests** (encoded via if/then).
+5. **work_id** on `reference_value` and `gold_badge`, copied from the paper.
+6. When `storage == locked_store`: `rater_verified` (must be true) and `rationale_format` are **required** (if/then). `rationale_format` placeholder enum `free_text`. **Rationale is never scored.**
+7. **reference_value.split / storage**; `split=test` allowed only with `storage=locked_store` (if/then).
+8. **gold_badge.split deliberately excludes `train`** — intentional: gold badges are evaluation labels and never training data.
+
+**Q7 scope ruling:** one study = one original research paper. Surveys, market studies and re-analyses are not original research and are excluded from study sets (e.g. PMIDs 38757607, 36803833, 34265088).
