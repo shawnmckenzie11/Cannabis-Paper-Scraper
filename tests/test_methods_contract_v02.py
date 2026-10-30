@@ -48,8 +48,9 @@ def test_gold_badge():
     bad("gold_badge", {k: x for k, x in GB.items() if k != "submitted_rationale"})
 
 def test_normalized_field():
-    v("normalized_field", {"raw_text": "once daily", "normalized_value": "daily", "normalization_status": "pending_biomedical"})
-    bad("normalized_field", {"raw_text": "x", "normalized_value": "x", "normalization_status": "approved"})
+    v("normalized_field", {"raw_text": "once daily", "normalized_value": "daily", "normalization_status": "pending_biomedical",
+                            "rule_id": "frequency_once_daily_vs_daily", "vocabulary_version": "v0"})  # v0.6: rule_id + version required
+    bad("normalized_field", {"raw_text": "x", "normalized_value": "x", "normalization_status": "bogus"})  # v0.6 widened enum
     bad("normalized_field", {"normalized_value": "x", "normalization_status": "pending_biomedical"})
 
 def test_normalization_rules():

@@ -23,7 +23,7 @@ def test_schema_valid_and_version():
     jsonschema.Draft202012Validator.check_schema(SCHEMA)
     assert "wp1.3.0-draft" in SCHEMA["properties"]["schema_version"]["enum"]
     assert "wp1.2.0-draft" in SCHEMA["properties"]["schema_version"]["enum"]
-    assert SCHEMA["x-contract-version"] in ("0.3", "0.4", "0.5")  # v0.4 and v0.5 are additive
+    assert SCHEMA["x-contract-version"] in ("0.3", "0.4", "0.5", "0.6")  # v0.4, v0.5, v0.6 are additive
 
 GB = {"paper_id": 1, "rater": "rater-fake-1", "timestamp": TS, "raw_transcript": "t",
       "submitted_rationale": "r", "split": "dev", "storage": "working_store",

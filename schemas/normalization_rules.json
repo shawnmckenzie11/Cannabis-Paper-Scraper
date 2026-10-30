@@ -1,11 +1,189 @@
 {
   "version": "v0",
   "rules": [
-    {"id": "range_format", "kind": "formatting_only", "status": "allowed",
-     "example": ["0.5-60 minutes", "0.5 to 60 minutes"],
-     "note": "Range punctuation/wording only; meaning unchanged."},
-    {"id": "frequency_once_daily_vs_daily", "kind": "semantic", "status": "pending_biomedical",
-     "example": ["once daily", "daily"],
-     "note": "Not merged until PhD expert/Shawn approve."}
-  ]
+    {
+      "id": "range_format",
+      "kind": "formatting_only",
+      "status": "allowed",
+      "example": [
+        "0.5-60 minutes",
+        "0.5 to 60 minutes"
+      ],
+      "note": "Range punctuation/wording only; meaning unchanged."
+    },
+    {
+      "id": "frequency_once_daily_vs_daily",
+      "kind": "semantic",
+      "status": "pending_biomedical",
+      "example": [
+        "once daily",
+        "daily"
+      ],
+      "note": "Not merged until PhD expert/Shawn approve."
+    },
+    {
+      "id": "mck425_product_origin",
+      "kind": "vocabulary_map",
+      "vocabulary": "product_origin",
+      "status": "pending_biomedical",
+      "confirm": "phd_to_confirm",
+      "note": "MCK-425; not approved until the Biomedical lead signs off."
+    },
+    {
+      "id": "mck425_product_preparation",
+      "kind": "vocabulary_map",
+      "vocabulary": "product_preparation",
+      "status": "pending_biomedical",
+      "confirm": "phd_to_confirm",
+      "note": "MCK-425; not approved until the Biomedical lead signs off."
+    },
+    {
+      "id": "mck425_product_substance",
+      "kind": "vocabulary_map",
+      "vocabulary": "product_substance",
+      "status": "pending_biomedical",
+      "confirm": "phd_to_confirm",
+      "note": "MCK-425; not approved until the Biomedical lead signs off."
+    },
+    {
+      "id": "mck425_strain_name_cleaning",
+      "kind": "name_cleaning_only",
+      "vocabulary": "strain_name",
+      "status": "pending_biomedical",
+      "confirm": "phd_to_confirm",
+      "note": "MCK-425; not approved until the Biomedical lead signs off."
+    },
+    {
+      "id": "mck425_chemotype_reported",
+      "kind": "vocabulary_map",
+      "vocabulary": "chemotype",
+      "status": "pending_biomedical",
+      "confirm": "phd_to_confirm",
+      "note": "MCK-425; not approved until the Biomedical lead signs off."
+    }
+  ],
+  "vocabularies": {
+    "_note": "MCK-425 (Shawn picks Oct 30 2026; PhD/Biomedical lead to confirm). 3C: our own versioned vocabulary; external_id is an empty nullable slot for later ChEBI/RxNorm. Do not add values without Biomedical lead approval.",
+    "product_origin": {
+      "version": "0.1.0",
+      "status": "phd_to_confirm",
+      "decision": "MCK-425 1B",
+      "values": [
+        {
+          "value": "plant_derived",
+          "external_id": null,
+          "status": "phd_to_confirm"
+        },
+        {
+          "value": "synthetic",
+          "external_id": null,
+          "status": "phd_to_confirm"
+        },
+        {
+          "value": "biosynthetic",
+          "external_id": null,
+          "status": "phd_to_confirm"
+        }
+      ]
+    },
+    "product_preparation": {
+      "version": "0.1.0",
+      "status": "phd_to_confirm",
+      "decision": "MCK-425 1B",
+      "values": [
+        {
+          "value": "whole_flower",
+          "external_id": null,
+          "status": "phd_to_confirm"
+        },
+        {
+          "value": "full_spectrum_extract",
+          "external_id": null,
+          "status": "phd_to_confirm"
+        },
+        {
+          "value": "broad_spectrum_extract",
+          "external_id": null,
+          "status": "phd_to_confirm"
+        },
+        {
+          "value": "isolate",
+          "external_id": null,
+          "status": "phd_to_confirm"
+        },
+        {
+          "value": "formulated_drug",
+          "external_id": null,
+          "status": "phd_to_confirm"
+        }
+      ]
+    },
+    "product_substance": {
+      "version": "0.1.0",
+      "status": "phd_to_confirm",
+      "decision": "MCK-425: receptor agonists/antagonists and named drugs get their own values, not collapsed into a class",
+      "values": [
+        {
+          "value": "epidiolex",
+          "external_id": null,
+          "status": "phd_to_confirm"
+        },
+        {
+          "value": "nabilone",
+          "external_id": null,
+          "status": "phd_to_confirm"
+        },
+        {
+          "value": "dronabinol",
+          "external_id": null,
+          "status": "phd_to_confirm"
+        }
+      ],
+      "note": "Seeded only with the named drugs Shawn listed as examples; agonist/antagonist values to be added by the Biomedical lead."
+    },
+    "strain_name": {
+      "version": "0.1.0",
+      "status": "phd_to_confirm",
+      "decision": "MCK-425 2D",
+      "values": [],
+      "note": "Name cleaning only (case, spelling, alias). No chemistry. Aliases added per approved rule."
+    },
+    "chemotype": {
+      "version": "0.1.0",
+      "status": "phd_to_confirm",
+      "decision": "MCK-425 2D",
+      "values": [
+        {
+          "value": "I",
+          "external_id": null,
+          "status": "phd_to_confirm"
+        },
+        {
+          "value": "II",
+          "external_id": null,
+          "status": "phd_to_confirm"
+        },
+        {
+          "value": "III",
+          "external_id": null,
+          "status": "phd_to_confirm"
+        }
+      ],
+      "note": "Set only when the paper reports cannabinoid content; never inferred from strain name."
+    }
+  },
+  "review_policy": {
+    "decision": "MCK-425 4C",
+    "status": "phd_to_confirm",
+    "approval": "A rule is approved once by the Biomedical lead; values it produces are approved, except raw strings seen fewer than N times, which go to needs_review.",
+    "normalization_status_enum": [
+      "pending_biomedical",
+      "approved",
+      "unmapped",
+      "needs_review"
+    ],
+    "rare_raw_string_threshold_n": 3,
+    "n_is_placeholder": true,
+    "n_note": "PLACEHOLDER: N=3 is not decided. PhD / Shawn to confirm."
+  }
 }
