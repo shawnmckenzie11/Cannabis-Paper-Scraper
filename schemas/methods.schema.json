@@ -1863,7 +1863,7 @@
               }
             }
           },
-          "description": "Papers not extracted; Evaluation treats them as excluded, not misses."
+          "description": "Papers not extracted. Evaluation leaves budget_cap papers out of the score; pmid_missing, source_unavailable and consecutive_failures papers count as recall misses on every gold field for that paper. The manifest reports each reason's count separately."
         },
         "events": {
           "type": "array",

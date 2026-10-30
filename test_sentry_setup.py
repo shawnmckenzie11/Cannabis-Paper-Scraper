@@ -260,6 +260,9 @@ def test_end_to_end_no_pii_and_no_network(monkeypatch):
                     headers={"Authorization": "Bearer fakebearertoken", "X-Forwarded-For": "203.0.113.9"})
         sentry_sdk.flush()
     finally:
+        client = sentry_sdk.get_client()
+        client.flush(timeout=2)
+        client.close(timeout=2)
         real_init(dsn=None)
     payload = "".join(
         item.payload.get_bytes().decode("utf-8", "replace") for env in envelopes for item in env.items
