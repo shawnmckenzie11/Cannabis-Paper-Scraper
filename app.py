@@ -3608,9 +3608,9 @@ def api_paper_references(paper_id):
     try:
         refs = cg.get_references(paper_id, include_external=include_ext)
         return jsonify(refs)
-    except Exception as e:
-        app.logger.error(f"References error for {paper_id}: {e}")
-        return jsonify({"error": str(e)}), 500
+    except Exception:
+        app.logger.exception("References error for %s", paper_id)
+        return jsonify({"error": GENERIC_SERVER_ERROR}), 500
 
 
 @app.route("/api/papers/<int:paper_id>/cited-by", methods=["GET"])
@@ -3622,9 +3622,9 @@ def api_paper_cited_by(paper_id):
     try:
         citing = custom_graph.get_cited_by(paper_id, include_external=include_ext)
         return jsonify(citing)
-    except Exception as e:
-        app.logger.error(f"Cited-by error for {paper_id}: {e}")
-        return jsonify({"error": str(e)}), 500
+    except Exception:
+        app.logger.exception("Cited-by error for %s", paper_id)
+        return jsonify({"error": GENERIC_SERVER_ERROR}), 500
 
 
 # --- Phase 2 Automation Systems: Heuristics & Asynchronous Backpopulation ---
