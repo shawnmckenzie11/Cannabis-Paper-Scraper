@@ -4404,7 +4404,7 @@
     <div class="drawer-overlay" id="drawer-overlay" onclick="closeDrawer()"></div>
 
     <!-- EXPANDABLE Abstract sliding drawer -->
-    <aside class="details-drawer" id="details-drawer">
+    <aside class="details-drawer" id="details-drawer" role="dialog" aria-modal="true" aria-labelledby="drawer-title">
         <div class="drawer-header">
             <div class="drawer-title-group">
                 <div id="drawer-journal-year" style="margin-bottom: 8px; font-size: 0.85rem; color: var(--accent-blue); font-weight: 600; font-family: var(--font-display); letter-spacing: 0.5px;">Clinical Journal (2026)</div>
@@ -4413,7 +4413,7 @@
             <div class="drawer-header-actions">
                 <button class="btn btn-secondary btn-sm drawer-action-btn" id="btn-delete-paper" onclick="deleteCurrentPaper()">Delete</button>
                 <button class="btn btn-secondary btn-sm drawer-action-btn" id="btn-edit-classification" onclick="toggleEditMode()">Edit</button>
-                <button class="btn btn-secondary btn-sm drawer-action-btn" onclick="closeDrawer()">Close</button>
+                <button class="btn btn-secondary btn-sm drawer-action-btn" id="btn-close-drawer" aria-label="Close paper details" onclick="closeDrawer()">Close</button>
             </div>
         </div>
 
@@ -6636,7 +6636,12 @@
         }
 
         // Open details Drawer slide-in
+        let drawerReturnFocus = null;
         function openDrawer(paper) {
+            const drawerNode = document.getElementById("details-drawer");
+            if (!drawerNode || !drawerNode.classList.contains("open")) {
+                drawerReturnFocus = document.activeElement;
+            }
             if (paper && paper.id && paper.abstract === undefined) {
                 fetch(`/api/papers/${paper.id}`)
                     .then(res => {
@@ -6932,6 +6937,8 @@
             drawerEl.scrollTop = 0;
             drawerEl.classList.add("open");
             document.getElementById("drawer-overlay").classList.add("open");
+            const drawerCloseBtn = document.getElementById("btn-close-drawer");
+            if (drawerCloseBtn && typeof drawerCloseBtn.focus === "function") drawerCloseBtn.focus();
         }
 
         function toggleEditMode() {
@@ -7148,9 +7155,31 @@
 
         // Close Drawer sliding panel
         function closeDrawer() {
-            document.getElementById("details-drawer").classList.remove("open");
+            const drawerNode = document.getElementById("details-drawer");
+            const wasOpen = drawerNode.classList.contains("open");
+            drawerNode.classList.remove("open");
             document.getElementById("drawer-overlay").classList.remove("open");
+            const opener = drawerReturnFocus;
+            drawerReturnFocus = null;
+            if (wasOpen && opener && typeof opener.focus === "function" && opener.isConnected !== false) {
+                opener.focus();
+            }
         }
+
+        // Escape closes the details drawer (unless typing in a form field or a modal is on top).
+        function handleDrawerEscape(e) {
+            if (e.key !== "Escape" || e.defaultPrevented) return;
+            const drawerNode = document.getElementById("details-drawer");
+            if (!drawerNode || !drawerNode.classList.contains("open")) return;
+            const t = e.target;
+            const tag = t && t.tagName ? t.tagName.toUpperCase() : "";
+            if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT" || (t && t.isContentEditable)) return;
+            const authModal = document.getElementById("auth-required-modal");
+            if (authModal && authModal.style.display === "flex") return;
+            e.preventDefault();
+            closeDrawer();
+        }
+        document.addEventListener("keydown", handleDrawerEscape);
 
         // Open Add Papers Modal (admin only)
         function openAddPapersModal() {
