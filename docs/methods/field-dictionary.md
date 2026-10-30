@@ -286,4 +286,4 @@ Also in v0.5: `test` records must live in `locked_store` (now enforced both ways
 
 The contract version stays `"0.5"`; these are additive changes, and every record valid before them is still valid.
 
-- #109: `extraction_run_manifest.excluded[].reason` accepts `consecutive_failures`, for papers skipped after the runner stops on repeated failures. The full set is `budget_cap`, `pmid_missing`, `source_unavailable`, `consecutive_failures`. Evaluation leaves `budget_cap` papers out of the score and counts `consecutive_failures` papers as recall misses.
+- #109: `extraction_run_manifest.excluded[].reason` accepts `consecutive_failures`, for papers skipped after the runner stops on repeated failures. The full set is `budget_cap`, `pmid_missing`, `source_unavailable`, `consecutive_failures`. Evaluation leaves `budget_cap` papers out of the score; `pmid_missing`, `source_unavailable` and `consecutive_failures` papers count as recall misses on every gold field for that paper, with each reason's count reported separately.
