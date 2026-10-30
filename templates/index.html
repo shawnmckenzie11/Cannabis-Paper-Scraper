@@ -6335,118 +6335,107 @@
                 const tr = document.createElement("tr");
                 tr.onclick = () => openDrawer(p);
 
-                // Format Open Access status
-                const oa = p.open_access === 1
-                    ? `<span class="badge badge-oa">Yes</span>`
-                    : `<span style="color: var(--text-secondary)">No</span>`;
-
-                // Format link icons
-                let linksHtml = "";
-                if (p.doi) {
-                    linksHtml += `<a href="https://doi.org/${p.doi}" target="_blank" class="icon-link" onclick="event.stopPropagation();" title="DOI Resolver">D</a>`;
-                }
-                if (p.pmid) {
-                    linksHtml += `<a href="https://pubmed.ncbi.nlm.nih.gov/${p.pmid}/" target="_blank" class="icon-link" onclick="event.stopPropagation();" title="PubMed link">P</a>`;
-                }
-                if (p.full_text_link && p.full_text_link.endsWith(".pdf")) {
-                    linksHtml += `<a href="${p.full_text_link}" target="_blank" class="icon-link" onclick="event.stopPropagation();" title="Direct PDF Download" style="background: rgba(0, 230, 118, 0.08); border-color: rgba(0, 230, 118, 0.2);">PDF</a>`;
-                }
-
-                // Newly harvested badge when recency filter is active
-                let newBadge = "";
-                const recentRange = document.getElementById("filter-recent-range").value;
-                if (recentRange && p.newly_harvested) {
-                    newBadge = `<span class="badge" style="background: rgba(0, 240, 255, 0.12); color: var(--accent-blue); border: 1px solid rgba(0, 240, 255, 0.35); margin-left: 8px; font-size: 0.65rem; font-weight: 700; letter-spacing: 0.5px; padding: 2px 6px; text-transform: uppercase; border-radius: 4px; display: inline-block; vertical-align: middle;">Auto Ingested</span>`;
-                }
-
-                // Format citation count
-                const citationsVal = p.citation_count !== null && p.citation_count !== undefined ? p.citation_count : 0;
-
-                let cells = [];
+                // Build every cell with createElement/textContent: paper fields are never parsed as HTML.
+                const cells = [];
+                const addCell = (value, style, title) => {
+                    const td = document.createElement("td");
+                    if (style) td.style.cssText = style;
+                    if (title !== undefined) td.title = String(title);
+                    td.textContent = value === null || value === undefined ? "" : String(value);
+                    cells.push(td);
+                    return td;
+                };
+                const listText = (v) => Array.isArray(v) ? v.join(', ') : (v || "unknown");
+                const numOrDash = (v) => v !== null && v !== undefined ? v : "—";
+                const SECONDARY = "color: var(--text-secondary);";
 
                 // Title (fixed, always first data column)
-                cells.push(`<td class="paper-title-col" title="${p.title}">${p.title}${newBadge}</td>`);
+                const titleTd = addCell(p.title, null, p.title || "");
+                titleTd.className = "paper-title-col";
+                const recentRange = document.getElementById("filter-recent-range").value;
+                if (recentRange && p.newly_harvested) {
+                    const newBadge = document.createElement("span");
+                    newBadge.className = "badge";
+                    newBadge.style.cssText = "background: rgba(0, 240, 255, 0.12); color: var(--accent-blue); border: 1px solid rgba(0, 240, 255, 0.35); margin-left: 8px; font-size: 0.65rem; font-weight: 700; letter-spacing: 0.5px; padding: 2px 6px; text-transform: uppercase; border-radius: 4px; display: inline-block; vertical-align: middle;";
+                    newBadge.textContent = "Auto Ingested";
+                    titleTd.appendChild(newBadge);
+                }
 
                 // Optional columns in ordered format
-                if (visibleColumns.year && isColumnRelevant('year', currentTab)) {
-                    cells.push(`<td>${p.year || "N/A"}</td>`);
+                const show = (key) => visibleColumns[key] && isColumnRelevant(key, currentTab);
+                if (show('year')) addCell(p.year || "N/A");
+                if (show('duration')) addCell(formatStudyDuration(p.duration_days), SECONDARY);
+                if (show('treatment_duration')) addCell(p.treatment_duration || "—", SECONDARY);
+                if (show('study_type')) {
+                    const td = addCell("");
+                    const badge = document.createElement("span");
+                    badge.className = "badge badge-type";
+                    badge.textContent = listText(p.study_type);
+                    td.appendChild(badge);
                 }
-                if (visibleColumns.duration && isColumnRelevant('duration', currentTab)) {
-                    cells.push(`<td style="color: var(--text-secondary);">${formatStudyDuration(p.duration_days)}</td>`);
-                }
-                if (visibleColumns.treatment_duration && isColumnRelevant('treatment_duration', currentTab)) {
-                    cells.push(`<td style="color: var(--text-secondary);">${p.treatment_duration || "—"}</td>`);
-                }
-                if (visibleColumns.study_type && isColumnRelevant('study_type', currentTab)) {
-                    cells.push(`<td><span class="badge badge-type">${Array.isArray(p.study_type) ? p.study_type.join(', ') : (p.study_type || "unknown")}</span></td>`);
-                }
-                if (visibleColumns.exposure_method && isColumnRelevant('exposure_method', currentTab)) {
+                if (show('exposure_method')) {
                     const exposureStr = Array.isArray(p.exposure_method) ? p.exposure_method.map(formatExposureMethod).join(', ') : (p.exposure_method ? formatExposureMethod(p.exposure_method) : "unknown");
-                    cells.push(`<td style="color: #b0bec5;">${exposureStr}</td>`);
+                    addCell(exposureStr, "color: #b0bec5;");
                 }
-                if (visibleColumns.cannabis_type && isColumnRelevant('cannabis_type', currentTab)) {
-                    cells.push(`<td style="color: var(--text-secondary);">${Array.isArray(p.cannabis_type) ? p.cannabis_type.join(', ') : (p.cannabis_type || "unknown")}</td>`);
+                if (show('cannabis_type')) addCell(listText(p.cannabis_type), SECONDARY);
+                if (show('outcome_domain')) addCell(listText(p.outcome_domain), SECONDARY);
+                if (show('dose_mg')) addCell(numOrDash(p.dose_mg), SECONDARY);
+                if (show('puff_count')) addCell(numOrDash(p.puff_count), SECONDARY);
+                if (show('admin_frequency')) addCell(p.administration_frequency || "—", SECONDARY);
+                if (show('population_age')) addCell(p.population_age || "—", SECONDARY);
+                if (show('population_sex')) addCell(p.population_sex || "—", SECONDARY);
+                ['thc_mg_ml', 'cbd_mg_ml', 'thc_mg_kg', 'cbd_mg_kg', 'thc_uM', 'cbd_uM'].forEach(key => {
+                    if (show(key)) addCell(numOrDash(p[key]), SECONDARY);
+                });
+                if (show('strain_reported')) addCell(p.strain_reported || "—", SECONDARY, p.strain_reported || '');
+                if (show('strain_normalized')) addCell(p.strain_normalized || "—", SECONDARY);
+                if (show('publication_type')) addCell(p.publication_type || "unknown", SECONDARY + " font-weight: 500;");
+                if (show('citations')) {
+                    const citationsVal = p.citation_count !== null && p.citation_count !== undefined ? p.citation_count : 0;
+                    addCell(citationsVal, "text-align: left; " + SECONDARY + " font-weight: 500;");
                 }
-                if (visibleColumns.outcome_domain && isColumnRelevant('outcome_domain', currentTab)) {
-                    cells.push(`<td style="color: var(--text-secondary);">${Array.isArray(p.outcome_domain) ? p.outcome_domain.join(', ') : (p.outcome_domain || "unknown")}</td>`);
-                }
-                if (visibleColumns.dose_mg && isColumnRelevant('dose_mg', currentTab)) {
-                    cells.push(`<td style="color: var(--text-secondary);">${p.dose_mg !== null && p.dose_mg !== undefined ? p.dose_mg : "—"}</td>`);
-                }
-                if (visibleColumns.puff_count && isColumnRelevant('puff_count', currentTab)) {
-                    cells.push(`<td style="color: var(--text-secondary);">${p.puff_count !== null && p.puff_count !== undefined ? p.puff_count : "—"}</td>`);
-                }
-                if (visibleColumns.admin_frequency && isColumnRelevant('admin_frequency', currentTab)) {
-                    cells.push(`<td style="color: var(--text-secondary);">${p.administration_frequency || "—"}</td>`);
-                }
-                if (visibleColumns.population_age && isColumnRelevant('population_age', currentTab)) {
-                    cells.push(`<td style="color: var(--text-secondary);">${p.population_age || "—"}</td>`);
-                }
-                if (visibleColumns.population_sex && isColumnRelevant('population_sex', currentTab)) {
-                    cells.push(`<td style="color: var(--text-secondary);">${p.population_sex || "—"}</td>`);
-                }
-                if (visibleColumns.thc_mg_ml && isColumnRelevant('thc_mg_ml', currentTab)) {
-                    cells.push(`<td style="color: var(--text-secondary);">${p.thc_mg_ml !== null && p.thc_mg_ml !== undefined ? p.thc_mg_ml : "—"}</td>`);
-                }
-                if (visibleColumns.cbd_mg_ml && isColumnRelevant('cbd_mg_ml', currentTab)) {
-                    cells.push(`<td style="color: var(--text-secondary);">${p.cbd_mg_ml !== null && p.cbd_mg_ml !== undefined ? p.cbd_mg_ml : "—"}</td>`);
-                }
-                if (visibleColumns.thc_mg_kg && isColumnRelevant('thc_mg_kg', currentTab)) {
-                    cells.push(`<td style="color: var(--text-secondary);">${p.thc_mg_kg !== null && p.thc_mg_kg !== undefined ? p.thc_mg_kg : "—"}</td>`);
-                }
-                if (visibleColumns.cbd_mg_kg && isColumnRelevant('cbd_mg_kg', currentTab)) {
-                    cells.push(`<td style="color: var(--text-secondary);">${p.cbd_mg_kg !== null && p.cbd_mg_kg !== undefined ? p.cbd_mg_kg : "—"}</td>`);
-                }
-                if (visibleColumns.thc_uM && isColumnRelevant('thc_uM', currentTab)) {
-                    cells.push(`<td style="color: var(--text-secondary);">${p.thc_uM !== null && p.thc_uM !== undefined ? p.thc_uM : "—"}</td>`);
-                }
-                if (visibleColumns.cbd_uM && isColumnRelevant('cbd_uM', currentTab)) {
-                    cells.push(`<td style="color: var(--text-secondary);">${p.cbd_uM !== null && p.cbd_uM !== undefined ? p.cbd_uM : "—"}</td>`);
-                }
-                if (visibleColumns.strain_reported && isColumnRelevant('strain_reported', currentTab)) {
-                    cells.push(`<td style="color: var(--text-secondary);" title="${p.strain_reported || ''}">${p.strain_reported || "—"}</td>`);
-                }
-                if (visibleColumns.strain_normalized && isColumnRelevant('strain_normalized', currentTab)) {
-                    cells.push(`<td style="color: var(--text-secondary);">${p.strain_normalized || "—"}</td>`);
-                }
-                if (visibleColumns.publication_type && isColumnRelevant('publication_type', currentTab)) {
-                    const pt = p.publication_type || "unknown";
-                    cells.push(`<td style="color: var(--text-secondary); font-weight: 500;">${pt}</td>`);
-                }
-                if (visibleColumns.citations && isColumnRelevant('citations', currentTab)) {
-                    cells.push(`<td style="text-align: left; color: var(--text-secondary); font-weight: 500;">${citationsVal}</td>`);
-                }
-                if (visibleColumns.links && isColumnRelevant('links', currentTab)) {
-                    cells.push(`
-                        <td style="text-align: left;" onclick="event.stopPropagation();">
-                            <div class="link-icon-group">${linksHtml}</div>
-                        </td>
-                    `);
+                if (show('links')) {
+                    const td = addCell("", "text-align: left;");
+                    td.addEventListener("click", (ev) => ev.stopPropagation());
+                    const group = document.createElement("div");
+                    group.className = "link-icon-group";
+                    const addLink = (url, label, title, style) => {
+                        const href = safeHttpUrl(url);
+                        if (!href) return;
+                        const a = document.createElement("a");
+                        a.href = href;
+                        a.target = "_blank";
+                        a.rel = "noopener noreferrer";
+                        a.className = "icon-link";
+                        a.title = title;
+                        if (style) a.style.cssText = style;
+                        a.textContent = label;
+                        a.addEventListener("click", (ev) => ev.stopPropagation());
+                        group.appendChild(a);
+                    };
+                    if (p.doi) addLink("https://doi.org/" + encodeURI(String(p.doi)), "D", "DOI Resolver");
+                    if (p.pmid) addLink("https://pubmed.ncbi.nlm.nih.gov/" + encodeURIComponent(String(p.pmid)) + "/", "P", "PubMed link");
+                    if (p.full_text_link && String(p.full_text_link).endsWith(".pdf")) {
+                        addLink(p.full_text_link, "PDF", "Direct PDF Download", "background: rgba(0, 230, 118, 0.08); border-color: rgba(0, 230, 118, 0.2);");
+                    }
+                    td.appendChild(group);
                 }
 
-                tr.innerHTML = cells.join("");
+                cells.forEach(td => tr.appendChild(td));
                 tbody.appendChild(tr);
             });
+        }
+
+        /** Return url only when it is an absolute http(s) URL; javascript:, data:, etc. return "". */
+        function safeHttpUrl(url) {
+            const raw = String(url || "").trim();
+            if (!/^https?:\/\//i.test(raw)) return "";
+            try {
+                const parsed = new URL(raw);
+                return (parsed.protocol === "http:" || parsed.protocol === "https:") ? parsed.href : "";
+            } catch (e) {
+                return "";
+            }
         }
 
         // Reset sidebar filters
