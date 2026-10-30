@@ -38,7 +38,7 @@ Fly Postgres backups are **not** enabled (by choice, to keep it lightweight). So
 
 - [ ] `pg_dump -Fc` the prod DB through a local `fly proxy` (the repo helper `scripts/postgres_backup.py` wraps this)
 - [ ] Encrypt it (e.g. `age` or `gpg -c`), then delete the plaintext dump
-- [ ] Keep it on your machine only: **never** in git, never on the shared bot box
+- [ ] Keep it on your machine only: **never** in git, never on any agent or CI machine
 - [ ] Check it isn't empty: `pg_restore -l <file> | head`
 
 ## 3. Unsuspend (Shawn)
