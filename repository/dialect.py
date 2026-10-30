@@ -100,9 +100,21 @@ class DialectSQL:
             return f"ts_rank({PG_FTS_VECTOR}, websearch_to_tsquery('english', ?)) AS rank"
         return "papers_fts.rank"
 
+    def fts_query_bind(self, cleaned_query: str) -> str:
+        """Bind value for fts_match_clause / fts_rank_expr.
+
+        SQLite FTS5 binds OR tighter than implicit AND, so ``a OR b c`` means
+        ``(a OR b) AND c``. Postgres websearch_to_tsquery binds AND tighter
+        (``a | (b & c)``) and has no grouping, so on Postgres the query is
+        rewritten to the equivalent disjunctive form ``a c OR b c``.
+        """
+        if not self.is_postgres:
+            return cleaned_query
+        return websearch_or_groups(cleaned_query)
+
     def fts_rank_binds(self, cleaned_query: str) -> List[str]:
         """Binds consumed by fts_rank_expr (Postgres only)."""
-        return [cleaned_query] if self.is_postgres else []
+        return [self.fts_query_bind(cleaned_query)] if self.is_postgres else []
 
     def fts_rank_order(self) -> str:
         """ORDER BY direction for rank: ts_rank higher is better; SQLite bm25 lower is better."""
@@ -161,3 +173,38 @@ def expand_study_types(study_types: List[str]) -> List[str]:
         else:
             expanded.append(item)
     return expanded
+
+
+_MAX_OR_EXPANSION = 64
+
+
+def websearch_or_groups(cleaned_query: str) -> str:
+    """Rewrite FTS5-precedence OR (``a OR b c`` = ``(a|b) & c``) for websearch_to_tsquery.
+
+    Only an uppercase ``OR`` token is an operator, as in FTS5. The AND of OR-groups is
+    expanded into an OR of AND-conjunctions (DNF); if that would exceed
+    _MAX_OR_EXPANSION conjunctions the query is returned unchanged.
+    """
+    tokens = (cleaned_query or "").split()
+    if "OR" not in tokens:
+        return cleaned_query
+    groups: List[List[str]] = []
+    pending_or = False
+    for tok in tokens:
+        if tok == "OR":
+            pending_or = bool(groups)
+            continue
+        if pending_or:
+            groups[-1].append(tok)
+        else:
+            groups.append([tok])
+        pending_or = False
+    total = 1
+    for g in groups:
+        total *= len(g)
+    if total > _MAX_OR_EXPANSION or not groups:
+        return cleaned_query
+    conjunctions = [[]]
+    for g in groups:
+        conjunctions = [c + [t] for c in conjunctions for t in g]
+    return " or ".join(" ".join(c) for c in conjunctions)
