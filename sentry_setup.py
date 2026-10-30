@@ -226,7 +226,21 @@ def sentry_enabled(env=None):
     env = os.environ if env is None else env
     if (env.get("CRN_SENTRY_DISABLED") or "").strip().lower() in _TRUTHY:
         return False
+    if not is_deployed_env(env):
+        # Local/box runs never report: the box injects an unrelated DSN into every shell.
+        return False
     return bool((env.get("SENTRY_DSN") or "").strip())
+
+
+DEPLOYED_APP_ENVS = {"production", "prod", "staging"}
+
+
+def is_deployed_env(env=None):
+    """True on Fly (FLY_APP_NAME set) or when APP_ENV explicitly names production/staging."""
+    env = os.environ if env is None else env
+    if (env.get("FLY_APP_NAME") or "").strip():
+        return True
+    return (env.get("APP_ENV") or "").strip().lower() in DEPLOYED_APP_ENVS
 
 
 def sentry_environment(env=None):

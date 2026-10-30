@@ -34,7 +34,7 @@ import maude_feedback
 import email_service
 import background_jobs
 
-from sentry_setup import init_sentry
+from sentry_setup import init_sentry, is_deployed_env
 try:
     init_sentry()  # MCK-102: no-op unless SENTRY_DSN set
 except Exception:
@@ -3990,11 +3990,40 @@ def api_get_task_status(task_id):
         return jsonify({"error": GENERIC_SERVER_ERROR}), 500
 
 
-# Start the background daily scheduler thread, protected against debug reloader double-runs and unit tests
-import sys
-if (not app.debug or os.environ.get("WERKZEUG_RUN_MAIN") == "true") and "unittest" not in sys.modules:
+def scheduler_should_start(env=None) -> bool:
+    """The in-process harvest scheduler runs only where it was asked for.
+
+    ENABLE_INPROCESS_SCHEDULER=1/0 decides when set. Otherwise it runs only on a
+    deployed app (Fly, or APP_ENV=production/staging), so a plain `import app` in a
+    script, test or agent shell never starts a thread that writes to the DB.
+    """
+    env = os.environ if env is None else env
+    flag = (env.get("ENABLE_INPROCESS_SCHEDULER") or "").strip().lower()
+    if flag in ("1", "true", "yes", "on"):
+        return True
+    if flag in ("0", "false", "no", "off"):
+        return False
+    return is_deployed_env(env)
+
+
+_scheduler_started = False
+
+
+def start_scheduler() -> bool:
+    """Start the daily harvest thread once, if scheduler_should_start(). Returns True if started."""
+    global _scheduler_started
+    if _scheduler_started or not scheduler_should_start():
+        return False
+    if app.debug and os.environ.get("WERKZEUG_RUN_MAIN") != "true":
+        return False  # debug reloader parent process
     logging.getLogger("scheduler").info("Launching daily automatic harvest scheduler thread...")
     threading.Thread(target=daily_harvest_scheduler, daemon=True).start()
+    _scheduler_started = True
+    return True
+
+
+# gunicorn imports app:app on Fly, so the gated call stays at module level.
+start_scheduler()
 
 if __name__ == "__main__":
     # Start server on local network port 5001 to bypass macOS default AirPlay port conflict (5000)
