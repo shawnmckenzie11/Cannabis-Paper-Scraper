@@ -2,15 +2,15 @@ import sentry_setup as ss
 
 
 def test_noop_without_dsn(monkeypatch):
-    monkeypatch.delenv("SENTRY_DSN", raising=False)
+    monkeypatch.delenv("CRN_SENTRY_DSN", raising=False)
     monkeypatch.delenv("CRN_SENTRY_DISABLED", raising=False)
     assert ss.init_sentry() is False
-    monkeypatch.setenv("SENTRY_DSN", "  ")
+    monkeypatch.setenv("CRN_SENTRY_DSN", "  ")
     assert ss.init_sentry() is False
 
 
 def test_disabled_flag_wins(monkeypatch):
-    monkeypatch.setenv("SENTRY_DSN", "https://k@o0.ingest.sentry.io/1")
+    monkeypatch.setenv("CRN_SENTRY_DSN", "https://k@o0.ingest.sentry.io/1")
     monkeypatch.setenv("CRN_SENTRY_DISABLED", "1")
     assert ss.sentry_enabled() is False
     assert ss.init_sentry() is False
@@ -53,8 +53,9 @@ def test_pii_off_in_init(monkeypatch):
     captured = {}
     import sentry_sdk
     monkeypatch.setattr(sentry_sdk, "init", lambda **kw: captured.update(kw))
-    monkeypatch.setenv("SENTRY_DSN", "https://k@o0.ingest.sentry.io/1")
+    monkeypatch.setenv("CRN_SENTRY_DSN", "https://k@o0.ingest.sentry.io/1")
     monkeypatch.delenv("CRN_SENTRY_DISABLED", raising=False)
+    monkeypatch.setenv("FLY_APP_NAME", "fake-app")  # Sentry reports only from a deployed app
     monkeypatch.delenv("SENTRY_TRACES_SAMPLE_RATE", raising=False)
     assert ss.init_sentry() is True
     assert captured["send_default_pii"] is False
@@ -199,10 +200,11 @@ def test_init_only_when_dsn_set(monkeypatch):
     calls = []
     monkeypatch.setattr(sentry_sdk, "init", lambda **kw: calls.append(kw))
     monkeypatch.delenv("CRN_SENTRY_DISABLED", raising=False)
-    monkeypatch.delenv("SENTRY_DSN", raising=False)
+    monkeypatch.setenv("FLY_APP_NAME", "fake-app")  # Sentry reports only from a deployed app
+    monkeypatch.delenv("CRN_SENTRY_DSN", raising=False)
     assert ss.init_sentry() is False
     assert calls == []
-    monkeypatch.setenv("SENTRY_DSN", FAKE_DSN)
+    monkeypatch.setenv("CRN_SENTRY_DSN", FAKE_DSN)
     assert ss.init_sentry() is True
     assert len(calls) == 1 and calls[0]["dsn"] == FAKE_DSN
 
@@ -212,7 +214,7 @@ def test_environment_from_app_env(monkeypatch):
     captured = {}
     monkeypatch.setattr(sentry_sdk, "init", lambda **kw: captured.update(kw))
     monkeypatch.delenv("CRN_SENTRY_DISABLED", raising=False)
-    monkeypatch.setenv("SENTRY_DSN", FAKE_DSN)
+    monkeypatch.setenv("CRN_SENTRY_DSN", FAKE_DSN)
     monkeypatch.setenv("APP_ENV", "staging")
     monkeypatch.setenv("SENTRY_ENVIRONMENT", "other")
     assert ss.init_sentry() is True
@@ -240,7 +242,8 @@ def test_end_to_end_no_pii_and_no_network(monkeypatch):
     real_init = sentry_sdk.init
     monkeypatch.setattr(sentry_sdk, "init", lambda **kw: real_init(transport=CaptureTransport, **kw))
     monkeypatch.delenv("CRN_SENTRY_DISABLED", raising=False)
-    monkeypatch.setenv("SENTRY_DSN", FAKE_DSN)
+    monkeypatch.setenv("FLY_APP_NAME", "fake-app")  # Sentry reports only from a deployed app
+    monkeypatch.setenv("CRN_SENTRY_DSN", FAKE_DSN)
     monkeypatch.setenv("APP_ENV", "test")
     try:
         assert ss.init_sentry() is True
