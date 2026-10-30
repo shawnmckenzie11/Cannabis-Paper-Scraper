@@ -1378,27 +1378,53 @@
       "description": "Unique id of this state record; target of correction.supersedes_record_id. Must be stable across reruns of the same extraction config for the same paper. Optional on v0.2-era records, required on v0.3 record types and on wp1.5.0-draft methods records."
     },
     "locked_store_test_only": {
-      "if": {
-        "properties": {
-          "storage": {
-            "const": "locked_store"
+      "description": "Both directions: locked_store holds only test records, and test records live only in locked_store.",
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "storage": {
+                "const": "locked_store"
+              }
+            },
+            "required": [
+              "storage"
+            ]
+          },
+          "then": {
+            "required": [
+              "split"
+            ],
+            "properties": {
+              "split": {
+                "const": "test"
+              }
+            }
           }
         },
-        "required": [
-          "storage"
-        ]
-      },
-      "then": {
-        "required": [
-          "split"
-        ],
-        "properties": {
-          "split": {
-            "const": "test"
+        {
+          "if": {
+            "properties": {
+              "split": {
+                "const": "test"
+              }
+            },
+            "required": [
+              "split"
+            ]
+          },
+          "then": {
+            "required": [
+              "storage"
+            ],
+            "properties": {
+              "storage": {
+                "const": "locked_store"
+              }
+            }
           }
         }
-      },
-      "description": "storage == locked_store => split must be 'test'. Dev records never go to the locked store."
+      ]
     },
     "pubmed_metadata_record": {
       "type": "object",
@@ -1763,8 +1789,10 @@
           ]
         },
         "contract_version": {
-          "type": "string",
-          "minLength": 1
+          "enum": [
+            "0.5"
+          ],
+          "description": "Pinned to the contract version the run was validated against."
         },
         "git_ref": {
           "type": "string",
@@ -1886,8 +1914,48 @@
           "$ref": "#/$defs/record_id"
         },
         "field": {
-          "type": "string",
-          "minLength": 1
+          "enum": [
+            "administration_frequency",
+            "clinical_subtype",
+            "conc_cbd_mg_ml",
+            "conc_cbd_uM",
+            "conc_thc_mg_ml",
+            "conc_thc_uM",
+            "disease_or_experimental_model",
+            "dose_cbd_mg_g",
+            "dose_cbd_mg_kg",
+            "dose_mg",
+            "dose_thc_mg_g",
+            "dose_thc_mg_kg",
+            "duration_days",
+            "exposure_regimen_bin",
+            "ideas_representation_notes",
+            "inhaled_exposure_duration",
+            "multiple_doses",
+            "multiple_time_intervals",
+            "outcome_domains",
+            "pct_cbd",
+            "pct_thc",
+            "product",
+            "publication_type",
+            "puff_count",
+            "repeat_exposure_count",
+            "replicates_notes",
+            "research_type",
+            "route",
+            "sample_size",
+            "sgba_gender_reported",
+            "sgba_population_age",
+            "sgba_population_descriptors",
+            "sgba_reporting_present",
+            "sgba_sex_reported",
+            "species_or_biological_system",
+            "strain_normalized",
+            "strain_reported",
+            "study_type_legacy",
+            "treatment_duration"
+          ],
+          "description": "A methods field name from properties.fields; never free text."
         },
         "reason": {
           "enum": [

@@ -269,6 +269,8 @@ Preprint status is **derivable** from `publication_types` (contains `"Preprint"`
 
 ## v0.5 additions (wp1.5.0-draft, #105)
 
+`x-contract-version: "0.5"`
+
 | Name | Where | Meaning | Status |
 |---|---|---|---|
 | `pmc_oa_xml` | `source_tier` value | Value came from PMC Open Access XML full text. | technical |
@@ -277,3 +279,5 @@ Preprint status is **derivable** from `publication_types` (contains `"Preprint"`
 | `record_id` | top-level | Required on `wp1.5.0-draft` records; stable across reruns. Current record = latest non-retracted record in its correction chain. | technical |
 | `extraction_run_manifest` | `$defs` | Per-run manifest: split (dev or validation only), mode (`scored` or `dry_run`; dry runs have null `model_ids` and no records), git ref, config and prompt hashes, records, excluded papers with reason. | technical |
 | `run_event` | `$defs` | Run-log event with ids and a reason code only (`quote_not_found`, `extraction_failed`, `parse_downgrade_abstract_only`). | technical |
+
+Also in v0.5: `test` records must live in `locked_store` (now enforced both ways), `run_event.field` must be a contract field name, and the run manifest's `contract_version` is pinned to `"0.5"`.

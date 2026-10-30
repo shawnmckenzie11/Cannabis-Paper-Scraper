@@ -103,7 +103,18 @@ def test_source_license_valid_and_pinned_false():
 
 
 def test_split_has_validation():
-    assert SCHEMA["$defs"]["split"]["enum"] == ["dev", "validation", "test"]
+    vd("split", "validation")
+    with pytest.raises(jsonschema.ValidationError):
+        vd("split", "train")
+
+
+def test_test_split_only_in_locked_store_both_ways():
+    vd("locked_store_test_only", {"split": "test", "storage": "locked_store"})
+    vd("locked_store_test_only", {"split": "dev", "storage": "working_store"})
+    for rec in ({"split": "test", "storage": "working_store"}, {"split": "test"},
+                {"split": "dev", "storage": "locked_store"}):
+        with pytest.raises(jsonschema.ValidationError):
+            vd("locked_store_test_only", rec)
 
 
 MAN = {"run_id": "r1", "mode": "scored", "split": "dev", "contract_version": "0.5", "git_ref": "abc123",
@@ -123,5 +134,16 @@ def test_run_manifest_scored_and_fences():
 
 def test_record_id_required_only_on_v05():
     gate = [c for c in SCHEMA["allOf"] if c.get("if", {}).get("properties", {}).get("schema_version", {}).get("const") == "wp1.5.0-draft"]
-    assert gate and gate[0]["then"]["required"] == ["record_id"]
-    assert "record_id" not in SCHEMA.get("required", [])
+    assert len(gate) == 1
+    g = jsonschema.Draft202012Validator(gate[0])
+    assert not g.is_valid({"schema_version": "wp1.5.0-draft"})
+    assert g.is_valid({"schema_version": "wp1.5.0-draft", "record_id": "rec-1"})
+    assert g.is_valid({"schema_version": "wp1.4.0-draft"})
+
+
+def test_run_event_field_is_a_contract_field():
+    vd("run_event", {"record_id": "r", "field": "route", "reason": "quote_not_found"})
+    with pytest.raises(jsonschema.ValidationError):
+        vd("run_event", {"record_id": "r", "field": "patient said she felt dizzy", "reason": "quote_not_found"})
+    with pytest.raises(jsonschema.ValidationError):
+        vd("extraction_run_manifest", dict(MAN, contract_version="anything"))
