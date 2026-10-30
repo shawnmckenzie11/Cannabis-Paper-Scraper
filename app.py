@@ -1332,6 +1332,10 @@ def index():
         dashboard_config=build_dashboard_ui_config(),
     )
 
+# Returned to clients instead of raw exception text; details go to the server log.
+GENERIC_SERVER_ERROR = "An internal error occurred. Please try again later."
+
+
 @app.route("/api/dashboard-config", methods=["GET"])
 def api_dashboard_config():
     """Return tab and filter profile configuration for the research dashboard."""
@@ -1343,8 +1347,9 @@ def api_tab_counts():
     db = DatabaseManager()
     try:
         return jsonify({"counts": db.get_tab_counts()})
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
+    except Exception:
+        app.logger.exception("Tab counts failed")
+        return jsonify({"error": GENERIC_SERVER_ERROR}), 500
 
 
 def _build_dashboard_filters_from_request():
@@ -1565,8 +1570,9 @@ def api_search():
             "count_ms": round(count_ms, 1),
             "skipped_count": bool(skip_count and known_total is not None),
         })
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
+    except Exception:
+        app.logger.exception("Search failed")
+        return jsonify({"error": GENERIC_SERVER_ERROR}), 500
 
 @app.route("/api/papers/<int:paper_id>", methods=["GET"])
 def api_get_paper(paper_id):
@@ -2127,10 +2133,10 @@ def api_upload_pdf():
         pending_token = _store_pending_pdf_upload(pdf_bytes, filename)
         try:
             task_id = background_jobs.create_task("pdf_upload")
-        except Exception as exc:
+        except Exception:
             _pop_pending_pdf_upload(pending_token)
-            app.logger.error("Failed to enqueue PDF upload task: %s", exc)
-            return jsonify({"error": str(exc)}), 500
+            app.logger.exception("Failed to enqueue PDF upload task")
+            return jsonify({"error": GENERIC_SERVER_ERROR}), 500
         background_jobs.submit_background(async_pdf_upload_task, task_id, pending_token)
         return jsonify({
             "task_id": task_id,
@@ -2170,9 +2176,9 @@ def api_upload_pdf():
         })
     except ValueError as exc:
         return jsonify({"error": str(exc)}), 400
-    except Exception as exc:
-        app.logger.error("PDF upload failed: %s", exc)
-        return jsonify({"error": str(exc)}), 500
+    except Exception:
+        app.logger.exception("PDF upload failed")
+        return jsonify({"error": GENERIC_SERVER_ERROR}), 500
 
 
 def async_pdf_upload_task(task_id: str, pending_token: str) -> None:
@@ -2207,9 +2213,15 @@ def async_pdf_upload_task(task_id: str, pending_token: str) -> None:
             }
         background_jobs.set_task_result(task_id, payload)
         background_jobs.update_task(task_id, status="completed", processed_papers=1, total_papers=1)
-    except Exception as exc:
+    except ValueError as exc:
         _pop_pending_pdf_upload(pending_token)
         background_jobs.mark_task_failed(task_id, exc)
+    except Exception:
+        # mark_task_failed stores str(exc) where GET /api/tasks/<id> returns it,
+        # so log the real exception here and store only a generic message.
+        app.logger.exception("Async PDF upload task %s failed", task_id)
+        _pop_pending_pdf_upload(pending_token)
+        background_jobs.mark_task_failed(task_id, RuntimeError(GENERIC_SERVER_ERROR))
 
 @app.route("/api/scheduler/status", methods=["GET"])
 def api_scheduler_status():
