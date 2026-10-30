@@ -54,18 +54,24 @@ def parse_article(art):
     return rec
 
 
-def fetch(pmids, opener=urllib.request.urlopen, email=None):
+SECRET_PARAMS = ("id", "email", "api_key")
+
+
+def fetch(pmids, opener=urllib.request.urlopen, email=None, api_key=None):
     params = {"db": "pubmed", "id": ",".join(pmids), "retmode": "xml", "tool": TOOL}
     if email:
         params["email"] = email
+    if api_key:
+        params["api_key"] = api_key
     url = EFETCH + "?" + urllib.parse.urlencode(params)
+    stored = {k: v for k, v in params.items() if k not in SECRET_PARAMS}
     retrieved_at = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
     with opener(url) as r:
         root = ET.fromstring(r.read())
     out = {}
     for art in root.findall("PubmedArticle"):
         rec = parse_article(art)
-        rec["provenance"] = {"source": "NCBI E-utilities", "endpoint": EFETCH, "params": {k: v for k, v in params.items() if k != "id"}, "retrieved_at": retrieved_at}
+        rec["provenance"] = {"source": "NCBI E-utilities", "endpoint": EFETCH, "params": dict(stored), "retrieved_at": retrieved_at}
         out[rec["pmid"]] = rec
     return out
 

@@ -27,3 +27,22 @@ def test_build_with_mocked_http():
     assert b["doi"] is None and b["year"] is None and b["authors"] is None
     assert set(b["missing"]) == {"doi", "year", "authors", "publication_types"}
     assert a["provenance"]["source"] == "NCBI E-utilities" and a["provenance"]["retrieved_at"].endswith("Z")
+
+
+def test_email_and_api_key_kept_out_of_provenance():
+    import pathlib
+    import pytest
+    jsonschema = pytest.importorskip("jsonschema")
+    urls = []
+    def opener(url):
+        urls.append(url)
+        return io.BytesIO(XML)
+    out = f.fetch(["11111111"], opener, email="someone@example.invalid", api_key="FAKEKEY123")
+    assert "email=" in urls[0] and "api_key=FAKEKEY123" in urls[0]
+    schema = json.loads((pathlib.Path(__file__).resolve().parents[1] / "schemas/methods.schema.json").read_text())
+    validator = jsonschema.Draft202012Validator({"$defs": schema["$defs"], "$ref": "#/$defs/pubmed_metadata_record"})
+    for rec in out.values():
+        params = rec["provenance"]["params"]
+        assert "email" not in params and "api_key" not in params
+        assert "FAKEKEY123" not in json.dumps(rec) and "example.invalid" not in json.dumps(rec)
+        validator.validate(rec)
