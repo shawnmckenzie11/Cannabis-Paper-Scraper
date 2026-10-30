@@ -188,3 +188,11 @@ def test_full_v05_record_validates_against_whole_schema():
 
 def test_excluded_reason_has_consecutive_failures():
     vd("extraction_run_manifest", dict(MAN, excluded=[{"paper_pmid": "123", "reason": "consecutive_failures"}]))
+
+
+def test_excluded_reason_set_is_exact():
+    reason = SCHEMA["$defs"]["extraction_run_manifest"]["properties"]["excluded"]["items"]["properties"]["reason"]
+    assert reason["enum"] == ["budget_cap", "pmid_missing", "source_unavailable", "consecutive_failures"]
+    for bad in ("consecutive_failure_stop", "other", ""):
+        with pytest.raises(jsonschema.ValidationError):
+            vd("extraction_run_manifest", dict(MAN, excluded=[{"paper_pmid": "123", "reason": bad}]))
