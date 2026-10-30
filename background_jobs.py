@@ -157,11 +157,19 @@ def submit_background(fn: Callable, *args: Any) -> None:
     task_executor.submit(fn, *args)
 
 
-def mark_task_failed(task_id: str, exc: BaseException) -> None:
-    """Record a worker exception on the task row."""
-    logger.exception("Background task %s failed", task_id)
+GENERIC_TASK_ERROR = "An internal error occurred. Please try again later."
+
+
+def mark_task_failed(task_id: str, exc: BaseException, user_message: Optional[str] = None) -> None:
+    """Record a worker failure on the task row.
+
+    ``GET /api/tasks/<id>`` returns ``error_message`` to the client, so the row
+    stores only ``user_message`` (a user-safe string, default generic). The
+    exception details go to the log, never to the row.
+    """
+    logger.exception("Background task %s failed", task_id, exc_info=exc)
     try:
-        update_task(task_id, status="failed", error_message=str(exc))
+        update_task(task_id, status="failed", error_message=user_message or GENERIC_TASK_ERROR)
     except Exception:
         logger.exception("Failed to persist error for task %s", task_id)
 

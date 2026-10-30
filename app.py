@@ -2223,18 +2223,17 @@ def async_pdf_upload_task(task_id: str, pending_token: str) -> None:
             }
         background_jobs.set_task_result(task_id, payload)
         background_jobs.update_task(task_id, status="completed", processed_papers=1, total_papers=1)
-    except ValueError:
+    except ValueError as exc:
         app.logger.exception("Async PDF upload task %s rejected", task_id)
         _pop_pending_pdf_upload(pending_token)
         background_jobs.mark_task_failed(
-            task_id, RuntimeError("This PDF upload couldn't be processed. Please check it and try again.")
+            task_id, exc, user_message="This PDF upload couldn't be processed. Please check it and try again."
         )
-    except Exception:
-        # mark_task_failed stores str(exc) where GET /api/tasks/<id> returns it,
-        # so log the real exception here and store only a generic message.
+    except Exception as exc:
+        # GET /api/tasks/<id> returns error_message, so store only a user-safe message.
         app.logger.exception("Async PDF upload task %s failed", task_id)
         _pop_pending_pdf_upload(pending_token)
-        background_jobs.mark_task_failed(task_id, RuntimeError(GENERIC_SERVER_ERROR))
+        background_jobs.mark_task_failed(task_id, exc, user_message=GENERIC_SERVER_ERROR)
 
 @app.route("/api/scheduler/status", methods=["GET"])
 def api_scheduler_status():
@@ -2346,7 +2345,6 @@ def api_calibration_dashboard_metrics():
         )
         return jsonify(metrics)
     except Exception as e:
-        app.logger.error(f"Error compiling calibration dashboard metrics: {e}")
         app.logger.exception("Request failed")
         return jsonify({"error": GENERIC_SERVER_ERROR}), 500
 
@@ -2419,7 +2417,6 @@ def api_calibration_resolve_disagreement():
         )
         return jsonify(result)
     except Exception as e:
-        app.logger.error(f"Error resolving Maude disagreement for paper {paper_id}: {e}")
         app.logger.exception("Request failed")
         return jsonify({"error": GENERIC_SERVER_ERROR}), 500
 
@@ -2805,9 +2802,9 @@ def async_analyze_task(
             total_papers=result.get("analyzed_count") or 0,
             processed_papers=result.get("analyzed_count") or 0,
         )
-    except Exception:
+    except Exception as exc:
         app.logger.exception("Analyze task %s failed", task_id)
-        background_jobs.mark_task_failed(task_id, RuntimeError(GENERIC_SERVER_ERROR))
+        background_jobs.mark_task_failed(task_id, exc, user_message=GENERIC_SERVER_ERROR)
 
 
 @app.route("/api/analyze", methods=["POST"])
@@ -3549,7 +3546,6 @@ def api_learning_dashboard_metrics():
         return jsonify(metrics)
         
     except Exception as e:
-        app.logger.error(f"Error compiling Learning Dashboard metrics: {e}")
         app.logger.exception("Request failed")
         return jsonify({"error": GENERIC_SERVER_ERROR}), 500
     finally:
@@ -3569,7 +3565,6 @@ def api_graph_stats():
         stats = cg.get_graph_stats()
         return jsonify(stats)
     except Exception as e:
-        app.logger.error(f"Graph stats error: {e}")
         app.logger.exception("Request failed")
         return jsonify({"error": GENERIC_SERVER_ERROR}), 500
 
@@ -3585,7 +3580,6 @@ def api_graph_network():
         data = cg.get_network_data(max_nodes=max_nodes)
         return jsonify(data)
     except Exception as e:
-        app.logger.error(f"Graph network error: {e}")
         app.logger.exception("Request failed")
         return jsonify({"error": GENERIC_SERVER_ERROR}), 500
 
@@ -3835,7 +3829,7 @@ def async_backpopulate_task(task_id: str):
         )
         conn.commit()
     except Exception as e:
-        app.logger.error(f"Background task {task_id} failed: {e}")
+        app.logger.exception("Background task %s failed", task_id)
         try:
             cursor.execute(
                 f"UPDATE background_tasks SET status = 'failed', error_message = {param}, updated_at = CURRENT_TIMESTAMP WHERE task_id = {param}",
