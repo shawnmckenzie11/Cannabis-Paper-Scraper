@@ -33,6 +33,31 @@
         rel="stylesheet">
 
     <style>
+        .sr-only {
+            position: absolute;
+            width: 1px;
+            height: 1px;
+            padding: 0;
+            margin: -1px;
+            overflow: hidden;
+            clip: rect(0, 0, 0, 0);
+            white-space: nowrap;
+            border: 0;
+        }
+
+        input[type="range"]:focus-visible,
+        select:focus-visible,
+        .global-filters-bar .global-filter-field select:focus-visible,
+        .harvest-limit-prompt input[type="number"]:focus-visible,
+        .timeframe-select:focus-visible,
+        button:focus-visible,
+        .logic-btn:focus-visible,
+        table.papers-table th.sortable .sort-btn:focus-visible,
+        table.papers-table .paper-title-btn:focus-visible {
+            outline: 2px solid var(--accent-blue);
+            outline-offset: 2px;
+        }
+
         :root {
             --bg-color: #08090c;
             --card-bg: rgba(18, 22, 33, 0.65);
@@ -529,6 +554,26 @@
             transition: background 0.2s ease, color 0.2s ease;
         }
 
+        table.papers-table .paper-title-btn {
+            background: none;
+            border: none;
+            padding: 0;
+            color: inherit;
+            font: inherit;
+            text-align: left;
+            cursor: pointer;
+        }
+
+        table.papers-table th.sortable .sort-btn {
+            background: none;
+            border: none;
+            padding: 0;
+            color: inherit;
+            font: inherit;
+            text-align: inherit;
+            cursor: pointer;
+        }
+
         table.papers-table th.sortable:hover {
             background: rgba(255, 255, 255, 0.05);
             color: var(--text-primary);
@@ -874,6 +919,9 @@
             cursor: pointer;
             transition: all 0.15s ease;
             user-select: none;
+            background: none;
+            border: none;
+            font-family: inherit;
         }
 
         .logic-btn.active {
@@ -3270,8 +3318,8 @@
                 <div class="filter-header-row">
                     <div class="filter-header">Publication Type</div>
                     <div class="logic-toggle" id="toggle-publication_type">
-                        <span class="logic-btn active" onclick="setLogic('publication_type', 'or')">OR</span>
-                        <span class="logic-btn" onclick="setLogic('publication_type', 'and')">AND</span>
+                        <button type="button" class="logic-btn active" aria-pressed="true" onclick="setLogic('publication_type', 'or')">OR</button>
+                        <button type="button" class="logic-btn" aria-pressed="false" onclick="setLogic('publication_type', 'and')">AND</button>
                         <input type="hidden" name="publication_type_logic" id="logic-publication_type" value="or">
                     </div>
                 </div>
@@ -3291,8 +3339,8 @@
                 <div class="filter-header-row">
                     <div class="filter-header">Study Design</div>
                     <div class="logic-toggle" id="toggle-study_type">
-                        <span class="logic-btn active" onclick="setLogic('study_type', 'or')">OR</span>
-                        <span class="logic-btn" onclick="setLogic('study_type', 'and')">AND</span>
+                        <button type="button" class="logic-btn active" aria-pressed="true" onclick="setLogic('study_type', 'or')">OR</button>
+                        <button type="button" class="logic-btn" aria-pressed="false" onclick="setLogic('study_type', 'and')">AND</button>
                         <input type="hidden" name="study_logic" id="logic-study_type" value="or">
                     </div>
                 </div>
@@ -3357,8 +3405,8 @@
                 <div class="filter-header-row">
                     <div class="filter-header">Exposure Pathway</div>
                     <div class="logic-toggle" id="toggle-method">
-                        <span class="logic-btn active" onclick="setLogic('method', 'or')">OR</span>
-                        <span class="logic-btn" onclick="setLogic('method', 'and')">AND</span>
+                        <button type="button" class="logic-btn active" aria-pressed="true" onclick="setLogic('method', 'or')">OR</button>
+                        <button type="button" class="logic-btn" aria-pressed="false" onclick="setLogic('method', 'and')">AND</button>
                         <input type="hidden" name="method_logic" id="logic-method" value="or">
                     </div>
                 </div>
@@ -3445,8 +3493,8 @@
                 <div class="filter-header-row">
                     <div class="filter-header">Cannabis Type</div>
                     <div class="logic-toggle" id="toggle-cannabis_type">
-                        <span class="logic-btn active" onclick="setLogic('cannabis_type', 'or')">OR</span>
-                        <span class="logic-btn" onclick="setLogic('cannabis_type', 'and')">AND</span>
+                        <button type="button" class="logic-btn active" aria-pressed="true" onclick="setLogic('cannabis_type', 'or')">OR</button>
+                        <button type="button" class="logic-btn" aria-pressed="false" onclick="setLogic('cannabis_type', 'and')">AND</button>
                         <input type="hidden" name="cannabis_logic" id="logic-cannabis_type" value="or">
                     </div>
                 </div>
@@ -3520,8 +3568,8 @@
                 <div class="filter-header-row">
                     <div class="filter-header">Outcome Domains</div>
                     <div class="logic-toggle" id="toggle-outcome">
-                        <span class="logic-btn active" onclick="setLogic('outcome', 'or')">OR</span>
-                        <span class="logic-btn" onclick="setLogic('outcome', 'and')">AND</span>
+                        <button type="button" class="logic-btn active" aria-pressed="true" onclick="setLogic('outcome', 'or')">OR</button>
+                        <button type="button" class="logic-btn" aria-pressed="false" onclick="setLogic('outcome', 'and')">AND</button>
                         <input type="hidden" name="outcome_logic" id="logic-outcome" value="or">
                     </div>
                 </div>
@@ -3707,75 +3755,30 @@
                     <table class="papers-table">
                         <thead>
                             <tr>
-                                <th id="header-title" class="sortable" onclick="handleHeaderClick('title')">Title <span
-                                        id="sort-icon-title" class="sort-icon">↕</span></th>
-                                <th id="header-year" class="sortable" style="width: 75px;"
-                                    onclick="handleHeaderClick('year')">Year <span id="sort-icon-year"
-                                        class="sort-icon">↕</span></th>
-                                <th id="header-duration" class="sortable" style="width: 140px;"
-                                    onclick="handleHeaderClick('duration')">Study Duration <span
-                                        id="sort-icon-duration" class="sort-icon">↕</span></th>
-                                <th id="header-treatment_duration" class="sortable" style="width: 125px; display: none;"
-                                    onclick="handleHeaderClick('treatment_duration')">Tx Duration <span id="sort-icon-treatment_duration"
-                                        class="sort-icon">↕</span></th>
-                                <th id="header-study_type" class="sortable" style="width: 125px;"
-                                    onclick="handleHeaderClick('study_type')">Study Design <span
-                                        id="sort-icon-study_type" class="sort-icon">↕</span></th>
-                                <th id="header-exposure_method" class="sortable" style="width: 110px;"
-                                    onclick="handleHeaderClick('exposure_method')">Exposure <span
-                                        id="sort-icon-exposure_method" class="sort-icon">↕</span></th>
-                                <th id="header-cannabis_type" class="sortable" style="width: 130px; display: none;"
-                                    onclick="handleHeaderClick('cannabis_type')">Cannabis Type <span
-                                        id="sort-icon-cannabis_type" class="sort-icon">↕</span></th>
-                                <th id="header-outcome_domain" class="sortable" style="width: 140px; display: none;"
-                                    onclick="handleHeaderClick('outcome_domain')">Outcome Domain <span
-                                        id="sort-icon-outcome_domain" class="sort-icon">↕</span></th>
-                                <th id="header-dose_mg" class="sortable" style="width: 90px; display: none;"
-                                    onclick="handleHeaderClick('dose_mg')">Dose (mg) <span id="sort-icon-dose_mg"
-                                        class="sort-icon">↕</span></th>
-                                <th id="header-puff_count" class="sortable" style="width: 95px; display: none;"
-                                    onclick="handleHeaderClick('puff_count')">Puffs <span id="sort-icon-puff_count"
-                                        class="sort-icon">↕</span></th>
-                                <th id="header-admin_frequency" class="sortable" style="width: 110px; display: none;"
-                                    onclick="handleHeaderClick('administration_frequency')">Admin Freq <span id="sort-icon-admin_frequency"
-                                        class="sort-icon">↕</span></th>
-                                <th id="header-population_age" class="sortable" style="width: 95px; display: none;"
-                                    onclick="handleHeaderClick('population_age')">Age <span id="sort-icon-population_age"
-                                        class="sort-icon">↕</span></th>
-                                <th id="header-population_sex" class="sortable" style="width: 95px; display: none;"
-                                    onclick="handleHeaderClick('population_sex')">Sex <span id="sort-icon-population_sex"
-                                        class="sort-icon">↕</span></th>
-                                <th id="header-thc_mg_ml" class="sortable" style="width: 110px; display: none;"
-                                    onclick="handleHeaderClick('thc_mg_ml')">THC (mg/mL) <span id="sort-icon-thc_mg_ml"
-                                        class="sort-icon">↕</span></th>
-                                <th id="header-cbd_mg_ml" class="sortable" style="width: 110px; display: none;"
-                                    onclick="handleHeaderClick('cbd_mg_ml')">CBD (mg/mL) <span id="sort-icon-cbd_mg_ml"
-                                        class="sort-icon">↕</span></th>
-                                <th id="header-thc_mg_kg" class="sortable" style="width: 110px; display: none;"
-                                    onclick="handleHeaderClick('thc_mg_kg')">THC (mg/kg) <span id="sort-icon-thc_mg_kg"
-                                        class="sort-icon">↕</span></th>
-                                <th id="header-cbd_mg_kg" class="sortable" style="width: 110px; display: none;"
-                                    onclick="handleHeaderClick('cbd_mg_kg')">CBD (mg/kg) <span id="sort-icon-cbd_mg_kg"
-                                        class="sort-icon">↕</span></th>
-                                <th id="header-thc_uM" class="sortable" style="width: 110px; display: none;"
-                                    onclick="handleHeaderClick('thc_uM')">THC (µM) <span id="sort-icon-thc_uM"
-                                        class="sort-icon">↕</span></th>
-                                <th id="header-cbd_uM" class="sortable" style="width: 110px; display: none;"
-                                    onclick="handleHeaderClick('cbd_uM')">CBD (µM) <span id="sort-icon-cbd_uM"
-                                        class="sort-icon">↕</span></th>
-                                <th id="header-strain_reported" class="sortable" style="width: 155px; display: none;"
-                                    onclick="handleHeaderClick('strain_reported')">Reported Strain <span id="sort-icon-strain_reported"
-                                        class="sort-icon">↕</span></th>
-                                <th id="header-strain_normalized" class="sortable" style="width: 145px; display: none;"
-                                    onclick="handleHeaderClick('strain_normalized')">Normalized Strain <span id="sort-icon-strain_normalized"
-                                        class="sort-icon">↕</span></th>
-                                <th id="header-pub-type" class="sortable" style="width: 140px; display: none;"
-                                    onclick="handleHeaderClick('publication_type')">Pub Type <span
-                                        id="sort-icon-publication_type" class="sort-icon">↕</span></th>
+                                <th id="header-title" class="sortable" aria-sort="none"><button type="button" class="sort-btn" onclick="handleHeaderClick('title')">Title <span id="sort-icon-title" class="sort-icon" aria-hidden="true">↕</span></button></th>
+                                <th id="header-year" class="sortable" style="width: 75px;" aria-sort="none"><button type="button" class="sort-btn" onclick="handleHeaderClick('year')">Year <span id="sort-icon-year" class="sort-icon" aria-hidden="true">↕</span></button></th>
+                                <th id="header-duration" class="sortable" style="width: 140px;" aria-sort="none"><button type="button" class="sort-btn" onclick="handleHeaderClick('duration')">Study Duration <span id="sort-icon-duration" class="sort-icon" aria-hidden="true">↕</span></button></th>
+                                <th id="header-treatment_duration" class="sortable" style="width: 125px; display: none;" aria-sort="none"><button type="button" class="sort-btn" onclick="handleHeaderClick('treatment_duration')">Tx Duration <span id="sort-icon-treatment_duration" class="sort-icon" aria-hidden="true">↕</span></button></th>
+                                <th id="header-study_type" class="sortable" style="width: 125px;" aria-sort="none"><button type="button" class="sort-btn" onclick="handleHeaderClick('study_type')">Study Design <span id="sort-icon-study_type" class="sort-icon" aria-hidden="true">↕</span></button></th>
+                                <th id="header-exposure_method" class="sortable" style="width: 110px;" aria-sort="none"><button type="button" class="sort-btn" onclick="handleHeaderClick('exposure_method')">Exposure <span id="sort-icon-exposure_method" class="sort-icon" aria-hidden="true">↕</span></button></th>
+                                <th id="header-cannabis_type" class="sortable" style="width: 130px; display: none;" aria-sort="none"><button type="button" class="sort-btn" onclick="handleHeaderClick('cannabis_type')">Cannabis Type <span id="sort-icon-cannabis_type" class="sort-icon" aria-hidden="true">↕</span></button></th>
+                                <th id="header-outcome_domain" class="sortable" style="width: 140px; display: none;" aria-sort="none"><button type="button" class="sort-btn" onclick="handleHeaderClick('outcome_domain')">Outcome Domain <span id="sort-icon-outcome_domain" class="sort-icon" aria-hidden="true">↕</span></button></th>
+                                <th id="header-dose_mg" class="sortable" style="width: 90px; display: none;" aria-sort="none"><button type="button" class="sort-btn" onclick="handleHeaderClick('dose_mg')">Dose (mg) <span id="sort-icon-dose_mg" class="sort-icon" aria-hidden="true">↕</span></button></th>
+                                <th id="header-puff_count" class="sortable" style="width: 95px; display: none;" aria-sort="none"><button type="button" class="sort-btn" onclick="handleHeaderClick('puff_count')">Puffs <span id="sort-icon-puff_count" class="sort-icon" aria-hidden="true">↕</span></button></th>
+                                <th id="header-admin_frequency" class="sortable" style="width: 110px; display: none;" aria-sort="none"><button type="button" class="sort-btn" onclick="handleHeaderClick('administration_frequency')">Admin Freq <span id="sort-icon-admin_frequency" class="sort-icon" aria-hidden="true">↕</span></button></th>
+                                <th id="header-population_age" class="sortable" style="width: 95px; display: none;" aria-sort="none"><button type="button" class="sort-btn" onclick="handleHeaderClick('population_age')">Age <span id="sort-icon-population_age" class="sort-icon" aria-hidden="true">↕</span></button></th>
+                                <th id="header-population_sex" class="sortable" style="width: 95px; display: none;" aria-sort="none"><button type="button" class="sort-btn" onclick="handleHeaderClick('population_sex')">Sex <span id="sort-icon-population_sex" class="sort-icon" aria-hidden="true">↕</span></button></th>
+                                <th id="header-thc_mg_ml" class="sortable" style="width: 110px; display: none;" aria-sort="none"><button type="button" class="sort-btn" onclick="handleHeaderClick('thc_mg_ml')">THC (mg/mL) <span id="sort-icon-thc_mg_ml" class="sort-icon" aria-hidden="true">↕</span></button></th>
+                                <th id="header-cbd_mg_ml" class="sortable" style="width: 110px; display: none;" aria-sort="none"><button type="button" class="sort-btn" onclick="handleHeaderClick('cbd_mg_ml')">CBD (mg/mL) <span id="sort-icon-cbd_mg_ml" class="sort-icon" aria-hidden="true">↕</span></button></th>
+                                <th id="header-thc_mg_kg" class="sortable" style="width: 110px; display: none;" aria-sort="none"><button type="button" class="sort-btn" onclick="handleHeaderClick('thc_mg_kg')">THC (mg/kg) <span id="sort-icon-thc_mg_kg" class="sort-icon" aria-hidden="true">↕</span></button></th>
+                                <th id="header-cbd_mg_kg" class="sortable" style="width: 110px; display: none;" aria-sort="none"><button type="button" class="sort-btn" onclick="handleHeaderClick('cbd_mg_kg')">CBD (mg/kg) <span id="sort-icon-cbd_mg_kg" class="sort-icon" aria-hidden="true">↕</span></button></th>
+                                <th id="header-thc_uM" class="sortable" style="width: 110px; display: none;" aria-sort="none"><button type="button" class="sort-btn" onclick="handleHeaderClick('thc_uM')">THC (µM) <span id="sort-icon-thc_uM" class="sort-icon" aria-hidden="true">↕</span></button></th>
+                                <th id="header-cbd_uM" class="sortable" style="width: 110px; display: none;" aria-sort="none"><button type="button" class="sort-btn" onclick="handleHeaderClick('cbd_uM')">CBD (µM) <span id="sort-icon-cbd_uM" class="sort-icon" aria-hidden="true">↕</span></button></th>
+                                <th id="header-strain_reported" class="sortable" style="width: 155px; display: none;" aria-sort="none"><button type="button" class="sort-btn" onclick="handleHeaderClick('strain_reported')">Reported Strain <span id="sort-icon-strain_reported" class="sort-icon" aria-hidden="true">↕</span></button></th>
+                                <th id="header-strain_normalized" class="sortable" style="width: 145px; display: none;" aria-sort="none"><button type="button" class="sort-btn" onclick="handleHeaderClick('strain_normalized')">Normalized Strain <span id="sort-icon-strain_normalized" class="sort-icon" aria-hidden="true">↕</span></button></th>
+                                <th id="header-pub-type" class="sortable" style="width: 140px; display: none;" aria-sort="none"><button type="button" class="sort-btn" onclick="handleHeaderClick('publication_type')">Pub Type <span id="sort-icon-publication_type" class="sort-icon" aria-hidden="true">↕</span></button></th>
  
-                                <th id="header-citations" class="sortable" style="width: 95px; text-align: left;"
-                                    onclick="handleHeaderClick('citations')">Citations <span id="sort-icon-citations"
-                                        class="sort-icon">↕</span></th>
+                                <th id="header-citations" class="sortable" style="width: 95px; text-align: left;" aria-sort="none"><button type="button" class="sort-btn" onclick="handleHeaderClick('citations')">Citations <span id="sort-icon-citations" class="sort-icon" aria-hidden="true">↕</span></button></th>
                                 <th style="width: 80px; text-align: left;" id="header-links">Links</th>
                             </tr>
                         </thead>
@@ -3792,6 +3795,7 @@
                     style="display: flex; align-items: center; justify-content: space-between; padding: 12px 30px; border-top: 1px solid rgba(255, 255, 255, 0.08); background: rgba(0, 0, 0, 0.15);">
                     <div class="pagination-info" style="color: var(--text-secondary); font-size: 0.9rem;">
                         Showing <span id="pagination-range">0-0 of 0</span> papers
+                        <span id="search-results-status" class="sr-only" role="status" aria-live="polite"></span>
                         <div class="pagination-section-stats" id="pagination-section-stats" style="display: none;">
                             <span>Methods section: <strong id="section-stats-methods">—</strong></span>
                             <span>Results section: <strong id="section-stats-results">—</strong></span>
@@ -5452,11 +5456,9 @@
                 const container = document.getElementById(`toggle-${key}`);
                 if (container) {
                     container.querySelectorAll(".logic-btn").forEach(btn => {
-                        if (btn.innerText.toLowerCase() === "or") {
-                            btn.classList.add("active");
-                        } else {
-                            btn.classList.remove("active");
-                        }
+                        const on = btn.innerText.toLowerCase() === "or";
+                        btn.classList.toggle("active", on);
+                        btn.setAttribute("aria-pressed", on ? "true" : "false");
                     });
                 }
             });
@@ -5487,11 +5489,9 @@
             if (container) {
                 const buttons = container.querySelectorAll('.logic-btn');
                 buttons.forEach(btn => {
-                    if (btn.innerText.toLowerCase() === val) {
-                        btn.classList.add('active');
-                    } else {
-                        btn.classList.remove('active');
-                    }
+                    const on = btn.innerText.toLowerCase() === val;
+                    btn.classList.toggle('active', on);
+                    btn.setAttribute('aria-pressed', on ? 'true' : 'false');
                 });
             }
             scheduleSearch();
@@ -6157,6 +6157,7 @@
                         } else {
                             emptyState.textContent = "Search failed to load. Refresh the page or try again.";
                         }
+                        announceSearchStatus(emptyState.textContent);
                     }
                     updatePagination(lastKnownTotal || 0, currentPage, pageSize);
                 })
@@ -6168,6 +6169,12 @@
         }
 
         // Update pagination bar displays and button active states
+        function announceSearchStatus(message) {
+            const el = document.getElementById("search-results-status");
+            const text = String(message || "");
+            if (el && el.textContent !== text) el.textContent = text;
+        }
+
         function updatePagination(totalCount, page, limit) {
             const safeTotal = Number.isFinite(Number(totalCount)) ? Number(totalCount) : 0;
             const safePage = Number.isFinite(Number(page)) ? Number(page) : 1;
@@ -6176,6 +6183,9 @@
             const rangeEnd = Math.min(safePage * safeLimit, safeTotal);
 
             document.getElementById("pagination-range").innerText = `${rangeStart}-${rangeEnd} of ${safeTotal}`;
+            // Empty and error states are announced once, where they are shown; never overwrite them here.
+            const emptyShown = (document.getElementById("table-empty-state") || {}).style?.display === "block";
+            if (safeTotal > 0 && !emptyShown) announceSearchStatus(`${safeTotal} papers found. Showing ${rangeStart} to ${rangeEnd}.`);
             document.getElementById("pagination-current").innerText = safePage;
 
             const totalPages = Math.ceil(safeTotal / safeLimit) || 1;
@@ -6303,6 +6313,7 @@
                 const icon = document.getElementById(iconId);
                 if (!header || !icon) return;
 
+                header.setAttribute('aria-sort', col === currentSortCol ? (currentSortDir === 'asc' ? 'ascending' : 'descending') : 'none');
                 if (col === currentSortCol) {
                     header.classList.add('active');
                     icon.innerHTML = currentSortDir === 'asc' ? '▲' : '▼';
@@ -6327,6 +6338,7 @@
 
             if (!papers || papers.length === 0) {
                 emptyState.style.display = "block";
+                announceSearchStatus(emptyState.textContent.trim());
                 return;
             }
             emptyState.style.display = "none";
@@ -6350,8 +6362,17 @@
                 const SECONDARY = "color: var(--text-secondary);";
 
                 // Title (fixed, always first data column)
-                const titleTd = addCell(p.title, null, p.title || "");
+                const titleTd = addCell("", null, p.title || "");
                 titleTd.className = "paper-title-col";
+                const titleBtn = document.createElement("button");
+                titleBtn.type = "button";
+                titleBtn.className = "paper-title-btn";
+                titleBtn.textContent = p.title === null || p.title === undefined ? "" : String(p.title);
+                titleBtn.addEventListener("click", (ev) => {
+                    ev.stopPropagation();
+                    openDrawer(p);
+                });
+                titleTd.appendChild(titleBtn);
                 const recentRange = document.getElementById("filter-recent-range").value;
                 if (recentRange && p.newly_harvested) {
                     const newBadge = document.createElement("span");
@@ -9299,7 +9320,13 @@
                     overlay.style.display = "none";
                 })
                 .catch(e => {
-                    overlay.innerHTML = '<div style="color:#ff8a65;">Failed to load: ' + e.message + '</div>';
+                    console.error("Network graph failed to load:", e);
+                    overlay.innerHTML = '';
+                    const errDiv = document.createElement('div');
+                    errDiv.style.color = '#ff8a65';
+                    errDiv.setAttribute('role', 'alert');
+                    errDiv.textContent = 'Graph failed to load. Try again.';
+                    overlay.appendChild(errDiv);
                 });
         }
 
