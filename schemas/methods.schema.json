@@ -1857,7 +1857,8 @@
                 "enum": [
                   "budget_cap",
                   "pmid_missing",
-                  "source_unavailable"
+                  "source_unavailable",
+                  "consecutive_failures"
                 ]
               }
             }

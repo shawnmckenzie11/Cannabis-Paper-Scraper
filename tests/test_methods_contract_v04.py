@@ -147,3 +147,44 @@ def test_run_event_field_is_a_contract_field():
         vd("run_event", {"record_id": "r", "field": "patient said she felt dizzy", "reason": "quote_not_found"})
     with pytest.raises(jsonschema.ValidationError):
         vd("extraction_run_manifest", dict(MAN, contract_version="anything"))
+
+
+def test_run_event_field_enum_matches_fields_keys():
+    enum = set(SCHEMA["$defs"]["run_event"]["properties"]["field"]["enum"])
+    assert enum == set(SCHEMA["properties"]["fields"]["properties"])
+
+
+FULL_V05 = {
+    "schema_version": "wp1.5.0-draft",
+    "paper_id": 1,
+    "record_id": "rec-fake-1",
+    "provenance": {
+        "schema_version": "0.5",
+        "extractor_id": "fake-extractor",
+        "model_id": None,
+        "prompt_id": None,
+        "confidence": None,
+        "source_tier": "pmc_oa_xml",
+        "source_span": None,
+        "human_override": False,
+        "reviewed_at": None,
+        "source_license": {
+            "license_raw": None,
+            "license_source": "unknown",
+            "fulltext_storable": False,
+            "pending_biomedical": True,
+        },
+    },
+    "fields": {},
+}
+
+
+def test_full_v05_record_validates_against_whole_schema():
+    jsonschema.Draft202012Validator(SCHEMA).validate(FULL_V05)
+    missing = {k: v for k, v in FULL_V05.items() if k != "record_id"}
+    with pytest.raises(jsonschema.ValidationError):
+        jsonschema.Draft202012Validator(SCHEMA).validate(missing)
+
+
+def test_excluded_reason_has_consecutive_failures():
+    vd("extraction_run_manifest", dict(MAN, excluded=[{"paper_pmid": "123", "reason": "consecutive_failures"}]))
