@@ -76,3 +76,9 @@ def test_provenance_params_reject_email_and_api_key():
     assert v.is_valid({"db": "pubmed", "retmode": "xml"})
     for k in ("email", "api_key"):
         assert not v.is_valid({"db": "pubmed", k: "x"})
+
+
+def test_source_tier_includes_pmc_oa_xml():
+    import json
+    s = json.load(open("schemas/methods.schema.json"))
+    assert "pmc_oa_xml" in s["$defs"]["source_tier"]["enum"]

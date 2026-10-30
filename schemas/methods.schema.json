@@ -237,6 +237,7 @@
       "description": "Technical source tier; aligns with content_tiers.py spirit. Truth policy pending_biomedical (Q13).",
       "enum": [
         "pdf_extracted",
+        "pmc_oa_xml",
         "abstract_reclassify",
         "pdf_link",
         "abstract_only",
