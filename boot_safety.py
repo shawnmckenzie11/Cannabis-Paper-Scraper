@@ -63,15 +63,25 @@ _LOCAL_DB_HOSTS = frozenset({"localhost", "127.0.0.1", "::1"})
 
 
 def _postgres_hosts(url: str):
-    """Every host psycopg2 would try, including ?host= / ?hostaddr= overrides."""
+    """Every host psycopg2 would try, including ?host= / ?hostaddr= overrides.
+
+    Returns None when the URL can't be parsed (caller refuses it). A unix-socket
+    host (a path starting with '/', e.g. ?host=/var/run/postgresql) is returned
+    as-is and is not in _LOCAL_DB_HOSTS, so it is refused: the socket path alone
+    doesn't prove which server is behind it.
+    """
     hosts = []
     try:
+        from psycopg2 import ProgrammingError
         from psycopg2.extensions import parse_dsn
+    except ImportError:
+        return None  # can't check every host libpq would use: treat as non-local
+    try:
         dsn_url = "postgresql" + url[url.index("://"):] if "://" in url else url
         parsed = parse_dsn(dsn_url)
         for key in ("host", "hostaddr"):
             hosts += [h.strip().lower() for h in (parsed.get(key) or "").split(",")]
-    except Exception:
+    except (ProgrammingError, ValueError):
         return None  # unparseable: treat as non-local
     from urllib.parse import urlsplit, parse_qs
     try:

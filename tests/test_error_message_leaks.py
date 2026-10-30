@@ -100,9 +100,8 @@ class TestErrorMessageLeaks(unittest.TestCase):
                 patch.object(self.m.background_jobs, "mark_task_failed") as failed, \
                 self.assertLogs(self.m.app.logger, level="ERROR"):
             self.m.async_pdf_upload_task("fake-task-0001", token)
-        stored = failed.call_args[0][1]
-        self.assertNotIn("SECRET-DETAIL", str(stored))
-        self.assertEqual(str(stored), self.m.GENERIC_SERVER_ERROR)
+        self.assertEqual(failed.call_args.kwargs["user_message"], self.m.GENERIC_SERVER_ERROR)
+        self.assertNotIn("SECRET-DETAIL", failed.call_args.kwargs["user_message"])
 
 
 if __name__ == "__main__":

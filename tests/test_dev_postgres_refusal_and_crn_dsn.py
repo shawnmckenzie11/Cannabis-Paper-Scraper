@@ -22,6 +22,9 @@ def test_dev_refuses_postgres(monkeypatch):
     "postgres://fake:fake@localhost,db.invalid/fake",
     "postgresql:///fake",
     "postgresql://fake:fake@/fake",
+    "postgresql://fake:fake@db%2Einvalid/fake",  # percent-encoded remote host
+    "postgresql://fake:fake@localhost/fake?host=/var/run/postgresql",  # unix socket
+    "postgresql://fake:fake@localhost/fake?sslmode=bogus&=",  # parse failure
 ])
 def test_dev_refuses_host_bypasses(monkeypatch, url):
     monkeypatch.setenv("APP_ENV", "test")
@@ -56,7 +59,7 @@ def test_crn_sentry_dsn_enables_on_deployed_app():
 
 def test_dev_allows_localhost_postgres(monkeypatch):
     monkeypatch.setenv("APP_ENV", "test")
-    for h in ("localhost", "127.0.0.1"):
+    for h in ("localhost", "127.0.0.1", "[::1]"):
         monkeypatch.setenv("DATABASE_URL", f"postgresql://fake:fake@{h}:5432/fake")
         boot_safety.validate_startup_env()
 
@@ -64,3 +67,7 @@ def test_dev_allows_localhost_postgres(monkeypatch):
 def test_sentry_environment_is_production_on_fly():
     assert sentry_setup.sentry_environment({"FLY_APP_NAME": "fake-app"}) == "production"
     assert sentry_setup.sentry_environment({"APP_ENV": "staging", "FLY_APP_NAME": "fake-app"}) == "staging"
+
+
+def test_unparseable_url_returns_none():
+    assert boot_safety._postgres_hosts("postgresql://fake:fake@localhost/fake?sslmode=bogus&=") is None
