@@ -1,4 +1,5 @@
 # app.py
+import hmac
 import os
 import json
 import re
@@ -10,10 +11,12 @@ from typing import Any, Dict, List, Optional, Tuple
 from pathlib import Path
 from functools import wraps
 from flask import Flask, render_template, request, jsonify, session, redirect, url_for, send_file
+from flask_wtf.csrf import CSRFProtect, CSRFError, generate_csrf
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
 from dashboard_ui_config import build_dashboard_ui_config
 import random
+import secrets
 import requests
 
 from dotenv import load_dotenv
@@ -108,6 +111,47 @@ ANALYZE_RATE_LIMIT = _limit_from_env("RATE_LIMIT_ANALYZE", "10 per minute;60 per
 def _rate_limited(e):
     return jsonify({"error": "Too many requests. Please slow down and try again shortly.",
                     "limit": str(getattr(e, "description", ""))}), 429
+
+def _env_flag(name: str, default: bool) -> bool:
+    raw = os.getenv(name)
+    if raw is None or raw.strip() == "":
+        return default
+    return raw.strip().lower() not in ("0", "false", "no", "off")
+
+
+def _is_test_env() -> bool:
+    """Same precedence as _is_dev_or_test_env: APP_ENV decides alone when set."""
+    value = (os.getenv("APP_ENV") or "").strip() or (os.getenv("FLASK_ENV") or "").strip()
+    return value.lower() in ("test", "testing")
+
+
+# Session cookie hardening. SESSION_COOKIE_SECURE=0 for plain-http local dev.
+app.config.update(
+    SESSION_COOKIE_SECURE=_env_flag("SESSION_COOKIE_SECURE", True),
+    SESSION_COOKIE_HTTPONLY=True,
+    SESSION_COOKIE_SAMESITE="Lax",
+    # Token is bound to the session; no 1h expiry so long-open dashboards keep working.
+    WTF_CSRF_TIME_LIMIT=None,
+    # Only the test suite may turn CSRF off (APP_ENV=test + WTF_CSRF_ENABLED=0).
+    WTF_CSRF_ENABLED=True if not _is_test_env() else _env_flag("WTF_CSRF_ENABLED", True),
+)
+csrf = CSRFProtect(app)
+
+
+@app.errorhandler(CSRFError)
+def _csrf_error(e):
+    if request.path.startswith("/api/") or request.is_json:
+        return jsonify({"error": "CSRF token missing or invalid. Reload the page and try again.",
+                        "csrf_error": True}), 400
+    return render_template("login.html", error="Your form expired. Please try again."), 400
+
+
+@app.route("/api/csrf-token", methods=["GET"])
+def api_csrf_token():
+    """Same-origin JS (e.g. the static calibration dashboard) fetches its token here."""
+    return jsonify({"csrf_token": generate_csrf()})
+
+
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 RELIABILITY_MANIFEST_FILE = os.path.join(BASE_DIR, "reliability_manifest.json")
 
@@ -749,7 +793,7 @@ def health():
 
 @app.route("/login", methods=["GET", "POST"])
 def login():
-    next_url = _safe_next_url(request.args.get("next") or request.form.get("next"))
+    next_url = _safe_next_url(request.args.get("next") or request.form.get("next"), None)
     if session.get("logged_in"):
         return redirect(next_url or url_for("index"))
         
@@ -933,7 +977,7 @@ def resend_verification():
 @app.route("/auth/google")
 def auth_google():
     client_id = os.getenv("GOOGLE_CLIENT_ID")
-    next_url = _safe_next_url(request.args.get("next"))
+    next_url = _safe_next_url(request.args.get("next"), None)
     if next_url:
         session["google_oauth_next"] = next_url
     
@@ -947,7 +991,7 @@ def auth_google():
         return render_template("google_auth.html")
         
     import urllib.parse
-    state = f"{random.randint(100000, 999999)}"
+    state = secrets.token_urlsafe(32)
     session["google_oauth_state"] = state
     
     params = {
@@ -962,7 +1006,71 @@ def auth_google():
     google_auth_url = "https://accounts.google.com/o/oauth2/v2/auth?" + urllib.parse.urlencode(params)
     return redirect(google_auth_url)
 
+_GOOGLE_ISSUERS = ("accounts.google.com", "https://accounts.google.com")
+_DEV_ENV_VALUES = {"dev", "development", "local", "test", "testing"}
+
+
+def _google_fake_login_enabled() -> bool:
+    """`?email=` fake Google login is allowed ONLY with an explicit dev flag in a dev/test env.
+
+    Missing Google secrets never enable it.
+    """
+    if os.getenv("GOOGLE_FAKE_LOGIN", "").strip().lower() not in {"1", "true", "yes"}:
+        return False
+    env = (os.getenv("APP_ENV") or os.getenv("FLASK_ENV") or "").strip().lower()
+    return env in _DEV_ENV_VALUES
+
+
+def _verify_google_id_token(token: str, client_id: str) -> Dict[str, Any]:
+    """Verify a Google ID token's signature, audience, issuer and email_verified.
+
+    Raises ValueError on any failure.
+    """
+    from google.oauth2 import id_token as google_id_token
+    import google.auth.transport.requests as google_requests
+
+    if not client_id:
+        raise ValueError("GOOGLE_CLIENT_ID is not configured")
+    payload = google_id_token.verify_oauth2_token(token, google_requests.Request(), client_id)
+    if not isinstance(payload, dict):
+        raise ValueError("invalid token payload")
+    if payload.get("aud") != client_id:
+        raise ValueError("wrong audience")
+    if payload.get("iss") not in _GOOGLE_ISSUERS:
+        raise ValueError("wrong issuer")
+    if payload.get("email_verified") not in (True, "true"):
+        raise ValueError("email not verified")
+    if not payload.get("email") or not payload.get("sub"):
+        raise ValueError("token missing email/sub")
+    return payload
+
+
+def _google_login_failed(message: str):
+    return render_template("login.html", error=message, google_client_id=os.getenv("GOOGLE_CLIENT_ID")), 401
+
+
+def _link_or_create_google_user(email: str, google_id: str, name: str, *, unique_name: bool = True):
+    """Find the user by google_id, else link by email, else create. Only call after verification."""
+    db = DatabaseManager()
+    user = db.get_user_by_google_id(google_id)
+    if user:
+        return user
+    user_by_email = db.get_user_by_email(email)
+    if user_by_email:
+        conn = db.get_connection()
+        try:
+            conn.execute("UPDATE users SET google_id = ?, is_verified = 1 WHERE id = ?;", (google_id, user_by_email["id"]))
+            conn.commit()
+        finally:
+            conn.close()
+    else:
+        username = _get_unique_username(name) if unique_name else name
+        db.create_user(username=username, email=email, google_id=google_id, is_verified=1)
+    return db.get_user_by_google_id(google_id)
+
+
 @app.route("/auth/google/callback", methods=["GET", "POST"])
+@csrf.exempt  # Google Identity Services POSTs here cross-site; it uses its own g_csrf_token double-submit (checked below).
 def auth_google_callback():
     client_id = os.getenv("GOOGLE_CLIENT_ID")
     client_secret = os.getenv("GOOGLE_CLIENT_SECRET")
@@ -972,83 +1080,54 @@ def auth_google_callback():
         scheme = request.headers.get("X-Forwarded-Proto", request.scheme)
         redirect_uri = f"{scheme}://{request.host}/auth/google/callback"
 
-    # Support Google Identity Services (One Tap / Auto Sign-In) JWT credential callback
+    # Google Identity Services (One Tap / Auto Sign-In) credential: signature-verified ID token only.
     jwt_token = request.form.get("credential")
     if jwt_token:
-        import base64
+        # Google's double-submit CSRF check: must run FIRST, before any verification or user linking.
+        # The route is @csrf.exempt (Flask-WTF), so this g_csrf_token check is the only CSRF guard here and stays first.
+        csrf_cookie = request.cookies.get("g_csrf_token")
+        csrf_body = request.form.get("g_csrf_token")
+        if not csrf_cookie or not csrf_body or not hmac.compare_digest(str(csrf_cookie), str(csrf_body)):
+            return _google_login_failed("Google sign-in failed: CSRF check failed.")
         try:
-            parts = jwt_token.split('.')
-            if len(parts) >= 2:
-                payload_b64 = parts[1]
-                payload_b64 += '=' * (-len(payload_b64) % 4)
-                payload_json = base64.b64decode(payload_b64).decode('utf-8')
-                payload = json.loads(payload_json)
-                
-                email = payload.get("email")
-                google_id = payload.get("sub")
-                name = payload.get("name") or payload.get("given_name") or email.split("@")[0]
-                
-                if email and google_id:
-                    db = DatabaseManager()
-                    user = db.get_user_by_google_id(google_id)
-                    if not user:
-                        user_by_email = db.get_user_by_username_or_email(email)
-                        if user_by_email:
-                            user = user_by_email
-                            conn = db.get_connection()
-                            try:
-                                conn.execute("UPDATE users SET google_id = ?, is_verified = 1 WHERE id = ?;", (google_id, user["id"]))
-                                conn.commit()
-                            finally:
-                                conn.close()
-                            user = db.get_user_by_google_id(google_id)
-                        else:
-                            unique_username = _get_unique_username(name)
-                            db.create_user(username=unique_username, email=email, google_id=google_id, is_verified=1)
-                            user = db.get_user_by_google_id(google_id)
-                            
-                    if not user:
-                        return render_template("login.html", error="Google One Tap authentication failed: could not create or retrieve user account.")
-
-                    _establish_user_session(user, is_google=True)
-                    return _google_auth_redirect()
+            payload = _verify_google_id_token(jwt_token, client_id)
         except Exception as e:
-            print(f"[GOOGLE ONE TAP AUTH ERROR] {e}")
-            return render_template("login.html", error=f"Google One Tap authentication failed: {e}")
-        
-    if not client_id or not client_secret:
-        email = request.args.get("email")
-        name = request.args.get("name") or email.split("@")[0]
-        if not email:
-            return redirect(url_for("login"))
-            
-        db = DatabaseManager()
-        google_id = f"mock_google_{email}"
-        user = db.get_user_by_google_id(google_id)
+            print(f"[GOOGLE ONE TAP AUTH] token rejected: {e}")
+            return _google_login_failed("Google sign-in failed: invalid credential.")
+        email = payload.get("email")
+        google_id = payload.get("sub")
+        if not email or not google_id:
+            return _google_login_failed("Google sign-in failed: missing account details.")
+        name = payload.get("name") or payload.get("given_name") or email.split("@")[0]
+        user = _link_or_create_google_user(email, google_id, name)
         if not user:
-            user_by_email = db.get_user_by_username_or_email(email)
-            if user_by_email:
-                user = user_by_email
-                conn = db.get_connection()
-                try:
-                    conn.execute("UPDATE users SET google_id = ?, is_verified = 1 WHERE id = ?;", (google_id, user["id"]))
-                    conn.commit()
-                finally:
-                    conn.close()
-                user = db.get_user_by_google_id(google_id)
-            else:
-                db.create_user(username=name, email=email, google_id=google_id, is_verified=1)
-                user = db.get_user_by_google_id(google_id)
-                
+            return render_template("login.html", error="Google One Tap authentication failed: could not create or retrieve user account.")
         _establish_user_session(user, is_google=True)
         return _google_auth_redirect()
-        
+
+    # Dev-only fake login. Never enabled just because Google secrets are missing.
+    if request.args.get("email") is not None:
+        if not _google_fake_login_enabled():
+            return _google_login_failed("Google sign-in failed.")
+        email = request.args.get("email") or ""
+        if not email:
+            return redirect(url_for("login"))
+        name = request.args.get("name") or email.split("@")[0]
+        user = _link_or_create_google_user(email, f"mock_google_{email}", name, unique_name=False)
+        if not user:
+            return _google_login_failed("Google sign-in failed.")
+        _establish_user_session(user, is_google=True)
+        return _google_auth_redirect()
+
+    if not client_id or not client_secret:
+        return _google_login_failed("Google sign-in is not configured.")
+
     code = request.args.get("code")
     state = request.args.get("state")
     
     stored_state = session.pop("google_oauth_state", None)
-    if not code or (stored_state and state != stored_state):
-        return render_template("login.html", error="Google authentication failed: state mismatch.")
+    if not code or not stored_state or not state or not hmac.compare_digest(str(state), str(stored_state)):
+        return _google_login_failed("Google authentication failed: state mismatch.")
         
     try:
         token_url = "https://oauth2.googleapis.com/token"
@@ -1067,37 +1146,35 @@ def auth_google_callback():
         if not access_token:
             return render_template("login.html", error="Failed to fetch access token from Google.")
             
-        userinfo_url = "https://www.googleapis.com/oauth2/v3/userinfo"
-        headers = {"Authorization": f"Bearer {access_token}"}
-        userinfo_resp = requests.get(userinfo_url, headers=headers, timeout=10)
-        userinfo_resp.raise_for_status()
-        userinfo_data = userinfo_resp.json()
-        
-        email = userinfo_data.get("email")
-        google_id = userinfo_data.get("sub")
-        name = userinfo_data.get("name") or userinfo_data.get("given_name") or email.split("@")[0]
-        
-        if not email or not google_id:
-            return render_template("login.html", error="Google profile info missing required fields.")
+        raw_id_token = token_data.get("id_token")
+        if raw_id_token:
+            # Signature-verified ID token is authoritative for email/sub (aud, iss, email_verified checked).
+            try:
+                claims = _verify_google_id_token(raw_id_token, client_id)
+            except Exception as e:
+                print(f"[GOOGLE AUTH] id_token rejected: {e}")
+                return _google_login_failed("Google sign-in failed: invalid credential.")
+            email = claims.get("email")
+            google_id = claims.get("sub")
+            if not email or not google_id:
+                return _google_login_failed("Google sign-in failed: missing account details.")
+            name = claims.get("name") or claims.get("given_name") or email.split("@")[0]
+        else:
+            userinfo_url = "https://www.googleapis.com/oauth2/v3/userinfo"
+            headers = {"Authorization": f"Bearer {access_token}"}
+            userinfo_resp = requests.get(userinfo_url, headers=headers, timeout=10)
+            userinfo_resp.raise_for_status()
+            userinfo_data = userinfo_resp.json()
+            if userinfo_data.get("email_verified") is not True:
+                return _google_login_failed("Google sign-in failed: email not verified.")
+            email = userinfo_data.get("email")
+            google_id = userinfo_data.get("sub")
+            if not email or not google_id:
+                return _google_login_failed("Google profile info missing required fields.")
+            name = userinfo_data.get("name") or userinfo_data.get("given_name") or email.split("@")[0]
             
-        db = DatabaseManager()
-        user = db.get_user_by_google_id(google_id)
-        if not user:
-            user_by_email = db.get_user_by_username_or_email(email)
-            if user_by_email:
-                user = user_by_email
-                conn = db.get_connection()
-                try:
-                    conn.execute("UPDATE users SET google_id = ?, is_verified = 1 WHERE id = ?;", (google_id, user["id"]))
-                    conn.commit()
-                finally:
-                    conn.close()
-                user = db.get_user_by_google_id(google_id)
-            else:
-                unique_username = _get_unique_username(name)
-                db.create_user(username=unique_username, email=email, google_id=google_id, is_verified=1)
-                user = db.get_user_by_google_id(google_id)
-                
+        user = _link_or_create_google_user(email, google_id, name)
+
         if not user:
             return render_template("login.html", error="Google authentication failed: could not create or retrieve user account.")
 
@@ -1105,13 +1182,13 @@ def auth_google_callback():
         return _google_auth_redirect()
         
     except Exception as e:
-        print(f"[GOOGLE AUTH ERROR] Failed to exchange token/fetch info: {e}")
-        return render_template("login.html", error=f"Google authentication error: {e}")
+        logging.getLogger(__name__).exception("[GOOGLE AUTH ERROR] Failed to exchange token/fetch info")
+        return _google_login_failed("Google authentication failed. Please try again.")
 
 
 def _google_auth_redirect():
     """Returns post-login redirect after Google OAuth."""
-    return redirect(_safe_next_url(session.pop("google_oauth_next", None)) or url_for("index"))
+    return redirect(_safe_next_url(session.pop("google_oauth_next", None), None) or url_for("index"))
 
 
 @app.route("/logout")

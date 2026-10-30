@@ -357,6 +357,7 @@
             <h2>Display name</h2>
             <p class="help">This is the name shown in the top-right account menu.</p>
             <form method="POST" action="/settings">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                 <input type="hidden" name="action" value="update_username">
                 <label for="username">Username</label>
                 <input type="text" id="username" name="username" value="{{ user.username }}" required minlength="2" maxlength="64" autocomplete="username">
@@ -369,6 +370,7 @@
             {% if can_change_password %}
             <p class="help">Update the password used for email sign-in.</p>
             <form method="POST" action="/settings">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                 <input type="hidden" name="action" value="update_password">
                 <label for="current_password">Current password</label>
                 <input type="password" id="current_password" name="current_password" required autocomplete="current-password">
@@ -398,6 +400,7 @@
                 {% endif %}
             </p>
             <form method="POST" action="/settings">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                 <input type="hidden" name="action" value="update_notifications">
                 {% if notif_prefs.last_digest_sent_at %}
                 <input type="hidden" name="last_digest_sent_at" value="{{ notif_prefs.last_digest_sent_at }}">
@@ -454,6 +457,7 @@
                 Papers in the shared catalog are not removed.
             </p>
             <form method="POST" action="/settings" onsubmit="return confirm('Delete your account permanently? This cannot be undone.');">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                 <input type="hidden" name="action" value="delete_account">
                 <label for="confirm_email">Type your email to confirm</label>
                 <input type="email" id="confirm_email" name="confirm_email" placeholder="{{ user.email }}" required autocomplete="off">

@@ -3459,10 +3459,12 @@ def write_dashboard_html(metrics: Dict[str, Any], output_path: Path) -> Path:
       }}
       if (statusEl) statusEl.textContent = 'Saving...';
       try {{
+        const tokenResponse = await fetch(apiUrl('/api/csrf-token'), {{ credentials: 'same-origin' }});
+        const csrfToken = tokenResponse.ok ? (await tokenResponse.json()).csrf_token : '';
         const response = await fetch(apiUrl('/api/calibration/resolve-disagreement'), {{
           method: 'POST',
           credentials: 'same-origin',
-          headers: {{ 'Content-Type': 'application/json' }},
+          headers: {{ 'Content-Type': 'application/json', 'X-CSRFToken': csrfToken }},
           body: JSON.stringify({{ paper_id: paperId, batch_id: batchId, fields }}),
         }});
         let payload = {{}};
