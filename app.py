@@ -1509,8 +1509,9 @@ def api_search_section_stats():
         stats["sample_limit"] = sample_limit
         stats["sample_size"] = len(papers)
         return jsonify(stats)
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
+    except Exception:
+        app.logger.exception("Section stats failed")
+        return jsonify({"error": GENERIC_SERVER_ERROR}), 500
 
 
 @app.route("/api/search", methods=["GET"])

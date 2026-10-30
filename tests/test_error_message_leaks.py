@@ -48,6 +48,15 @@ class TestErrorMessageLeaks(unittest.TestCase):
         self._assert_generic(r)
         self.assertTrue(any("SECRET-DETAIL" in line for line in logs.output))
 
+    def test_section_stats_hides_exception_text(self):
+        db = MagicMock()
+        db.search_papers_minimal_for_section_stats.side_effect = RuntimeError(SECRET)
+        with patch.object(self.m, "DatabaseManager", return_value=db), \
+                self.assertLogs(self.m.app.logger, level="ERROR") as logs:
+            r = self.client.get("/api/search/section-stats")
+        self._assert_generic(r)
+        self.assertTrue(any("SECRET-DETAIL" in line for line in logs.output))
+
     def _login_admin(self):
         from auth_test_helpers import login_session
         login_session(self.client, next(iter(self.m.ADMIN_EMAILS)))
