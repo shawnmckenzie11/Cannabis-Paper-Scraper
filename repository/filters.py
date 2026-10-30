@@ -372,5 +372,5 @@ def apply_sort_sql(
     if extra:
         return sql + extra
     if query_val:
-        return sql + " ORDER BY rank ASC"
+        return sql + " ORDER BY " + dialect.fts_rank_order()
     return sql + " ORDER BY papers.year DESC, papers.id DESC"

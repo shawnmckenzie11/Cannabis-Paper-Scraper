@@ -19,7 +19,7 @@ from repository.constants import (
 )
 from repository.dialect import DialectSQL
 from repository.engine import get_engine
-from repository.filters import apply_sort_sql, build_filter_clauses, resolve_tab_sql
+from repository.filters import apply_sort_sql, build_filter_clauses, clean_fts_query, resolve_tab_sql
 from repository.session import execute, fetchall, fetchone, inserted_id
 
 logger = logging.getLogger(__name__)
@@ -473,6 +473,8 @@ class PapersRepository:
         else:
             select_sql = f"SELECT {columns_sql} FROM papers"
         where_clauses, params = self.build_filter_clauses(filters)
+        if query_val and include_rank:
+            params = self.dialect.fts_rank_binds(clean_fts_query(query_val)) + params
         sql = select_sql
         if where_clauses:
             sql += " WHERE " + " AND ".join(where_clauses)

@@ -9,6 +9,13 @@ from __future__ import annotations
 from typing import List
 
 
+# Same expression as the idx_papers_fts GIN index in db_manager.py.
+PG_FTS_VECTOR = (
+    "to_tsvector('english', papers.title || ' ' || coalesce(papers.abstract, '') "
+    "|| ' ' || coalesce(papers.authors, ''))"
+)
+
+
 class DialectSQL:
     """Backend-specific JSON membership, FTS, and INSERT helpers."""
 
@@ -84,17 +91,22 @@ class DialectSQL:
     def fts_match_clause(self) -> str:
         """WHERE fragment for a free-text query. Uses 1 bind."""
         if self.is_postgres:
-            return (
-                "to_tsvector('english', papers.title || ' ' || coalesce(papers.abstract, '') "
-                "|| ' ' || coalesce(papers.authors, '')) @@ websearch_to_tsquery('english', ?)"
-            )
+            return f"{PG_FTS_VECTOR} @@ websearch_to_tsquery('english', ?)"
         return "papers_fts MATCH ?"
 
     def fts_rank_expr(self) -> str:
-        """SELECT expression for relevance rank."""
+        """SELECT expression for relevance rank. Postgres uses 1 bind (see fts_rank_binds)."""
         if self.is_postgres:
-            return "0 AS rank"
+            return f"ts_rank({PG_FTS_VECTOR}, websearch_to_tsquery('english', ?)) AS rank"
         return "papers_fts.rank"
+
+    def fts_rank_binds(self, cleaned_query: str) -> List[str]:
+        """Binds consumed by fts_rank_expr (Postgres only)."""
+        return [cleaned_query] if self.is_postgres else []
+
+    def fts_rank_order(self) -> str:
+        """ORDER BY direction for rank: ts_rank higher is better; SQLite bm25 lower is better."""
+        return "rank DESC" if self.is_postgres else "rank ASC"
 
     def collate_c(self) -> str:
         """Deterministic text collation for ORDER BY (Postgres only)."""
