@@ -82,3 +82,12 @@ def test_source_tier_includes_pmc_oa_xml():
     import json
     s = json.load(open("schemas/methods.schema.json"))
     assert "pmc_oa_xml" in s["$defs"]["source_tier"]["enum"]
+
+
+def test_source_license_defaults_not_storable():
+    import json
+    s = json.load(open("schemas/methods.schema.json"))
+    d = s["$defs"]["source_license"]
+    assert d["properties"]["fulltext_storable"]["default"] is False
+    assert "source_license" in s["$defs"]["provenance_envelope"]["properties"]
+    assert "source_license" not in s["$defs"]["provenance_envelope"]["required"]

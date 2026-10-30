@@ -342,6 +342,9 @@
           ],
           "format": "date-time",
           "description": "ISO-8601 timestamp of human review; null if unreviewed."
+        },
+        "source_license": {
+          "$ref": "#/$defs/source_license"
         }
       }
     },
@@ -1535,8 +1538,16 @@
               },
               "not": {
                 "anyOf": [
-                  {"required": ["email"]},
-                  {"required": ["api_key"]}
+                  {
+                    "required": [
+                      "email"
+                    ]
+                  },
+                  {
+                    "required": [
+                      "api_key"
+                    ]
+                  }
                 ]
               },
               "description": "Query params sent to E-utilities, excluding id. email and api_key are forbidden so contact addresses and keys never get committed."
@@ -1677,6 +1688,39 @@
           }
         }
       ]
+    },
+    "source_license": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "Licence of the acquired source (review of #104). Whether a licence permits storing full text is a policy call pending Shawn; default is not storable: keep quoted spans and extracted fields only.",
+      "required": [
+        "license_raw",
+        "license_source",
+        "fulltext_storable"
+      ],
+      "properties": {
+        "license_raw": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Licence text/identifier verbatim as given by the source."
+        },
+        "license_source": {
+          "enum": [
+            "pmc_oa_list",
+            "publisher_page",
+            "unknown"
+          ]
+        },
+        "fulltext_storable": {
+          "type": "boolean",
+          "default": false
+        },
+        "pending_biomedical": {
+          "const": true
+        }
+      }
     }
   },
   "x-contract-version": "0.4"
