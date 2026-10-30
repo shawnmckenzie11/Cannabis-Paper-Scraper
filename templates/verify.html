@@ -244,6 +244,7 @@
         {% endif %}
 
         <form method="POST" action="/verify-email">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
             <input type="hidden" name="username" value="{{ username }}">
             <div class="form-group">
                 <label for="code">Enter Verification Code</label>
@@ -254,6 +255,7 @@
 
         {% if email_configured %}
         <form method="POST" action="/resend-verification">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
             <input type="hidden" name="username" value="{{ username }}">
             <button type="submit" class="btn-resend">Resend verification code</button>
         </form>

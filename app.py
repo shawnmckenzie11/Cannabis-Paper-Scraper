@@ -11,6 +11,7 @@ from typing import Any, Dict, List, Optional, Tuple
 from pathlib import Path
 from functools import wraps
 from flask import Flask, render_template, request, jsonify, session, redirect, url_for, send_file
+from flask_wtf.csrf import CSRFProtect, CSRFError, generate_csrf
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
 from dashboard_ui_config import build_dashboard_ui_config
@@ -110,6 +111,47 @@ ANALYZE_RATE_LIMIT = _limit_from_env("RATE_LIMIT_ANALYZE", "10 per minute;60 per
 def _rate_limited(e):
     return jsonify({"error": "Too many requests. Please slow down and try again shortly.",
                     "limit": str(getattr(e, "description", ""))}), 429
+
+def _env_flag(name: str, default: bool) -> bool:
+    raw = os.getenv(name)
+    if raw is None or raw.strip() == "":
+        return default
+    return raw.strip().lower() not in ("0", "false", "no", "off")
+
+
+def _is_test_env() -> bool:
+    """Same precedence as _is_dev_or_test_env: APP_ENV decides alone when set."""
+    value = (os.getenv("APP_ENV") or "").strip() or (os.getenv("FLASK_ENV") or "").strip()
+    return value.lower() in ("test", "testing")
+
+
+# Session cookie hardening. SESSION_COOKIE_SECURE=0 for plain-http local dev.
+app.config.update(
+    SESSION_COOKIE_SECURE=_env_flag("SESSION_COOKIE_SECURE", True),
+    SESSION_COOKIE_HTTPONLY=True,
+    SESSION_COOKIE_SAMESITE="Lax",
+    # Token is bound to the session; no 1h expiry so long-open dashboards keep working.
+    WTF_CSRF_TIME_LIMIT=None,
+    # Only the test suite may turn CSRF off (APP_ENV=test + WTF_CSRF_ENABLED=0).
+    WTF_CSRF_ENABLED=True if not _is_test_env() else _env_flag("WTF_CSRF_ENABLED", True),
+)
+csrf = CSRFProtect(app)
+
+
+@app.errorhandler(CSRFError)
+def _csrf_error(e):
+    if request.path.startswith("/api/") or request.is_json:
+        return jsonify({"error": "CSRF token missing or invalid. Reload the page and try again.",
+                        "csrf_error": True}), 400
+    return render_template("login.html", error="Your form expired. Please try again."), 400
+
+
+@app.route("/api/csrf-token", methods=["GET"])
+def api_csrf_token():
+    """Same-origin JS (e.g. the static calibration dashboard) fetches its token here."""
+    return jsonify({"csrf_token": generate_csrf()})
+
+
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 RELIABILITY_MANIFEST_FILE = os.path.join(BASE_DIR, "reliability_manifest.json")
 
@@ -1028,6 +1070,7 @@ def _link_or_create_google_user(email: str, google_id: str, name: str, *, unique
 
 
 @app.route("/auth/google/callback", methods=["GET", "POST"])
+@csrf.exempt  # Google Identity Services POSTs here cross-site; it uses its own g_csrf_token double-submit (checked below).
 def auth_google_callback():
     client_id = os.getenv("GOOGLE_CLIENT_ID")
     client_secret = os.getenv("GOOGLE_CLIENT_SECRET")
@@ -1041,11 +1084,11 @@ def auth_google_callback():
     jwt_token = request.form.get("credential")
     if jwt_token:
         # Google's double-submit CSRF check: must run FIRST, before any verification or user linking.
-        # When PR #85 (Flask-WTF CSRF) lands, this route gets @csrf.exempt and this g_csrf_token check stays first.
+        # The route is @csrf.exempt (Flask-WTF), so this g_csrf_token check is the only CSRF guard here and stays first.
         csrf_cookie = request.cookies.get("g_csrf_token")
         csrf_body = request.form.get("g_csrf_token")
         if not csrf_cookie or not csrf_body or not hmac.compare_digest(str(csrf_cookie), str(csrf_body)):
-            return _google_login_failed("Google sign-in failed: invalid request.")
+            return _google_login_failed("Google sign-in failed: CSRF check failed.")
         try:
             payload = _verify_google_id_token(jwt_token, client_id)
         except Exception as e:
