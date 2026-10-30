@@ -1,0 +1,839 @@
+[
+  {
+    "pmid": "40818965",
+    "title": "Neolignans isolated from industrial hemp (Cannabis sativa L.) roots have cytotoxic effects on cancer cells.",
+    "authors": [
+      "Brownstein KJ",
+      "Nieukirk GE",
+      "Edwards J",
+      "Thomas M",
+      "Nguyen TH",
+      "de Alarcón PA",
+      "Vermillion KE",
+      "Gnanamony M"
+    ],
+    "journal": "Journal of cannabis research",
+    "year": 2025,
+    "doi": "10.1186/s42238-025-00316-5",
+    "publication_types": [
+      "Journal Article"
+    ],
+    "missing": {},
+    "provenance": {
+      "source": "NCBI E-utilities",
+      "endpoint": "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi",
+      "params": {
+        "db": "pubmed",
+        "retmode": "xml",
+        "tool": "crn-pipeline"
+      },
+      "retrieved_at": "2026-10-30T03:00:43Z"
+    }
+  },
+  {
+    "pmid": "37680639",
+    "title": "The dual role of cannabidiol on monocyte-derived dendritic cell differentiation and maturation.",
+    "authors": [
+      "Pénzes Z",
+      "Alimohammadi S",
+      "Horváth D",
+      "Oláh A",
+      "Tóth BI",
+      "Bácsi A",
+      "Szöllősi AG"
+    ],
+    "journal": "Frontiers in immunology",
+    "year": 2023,
+    "doi": "10.3389/fimmu.2023.1240800",
+    "publication_types": [
+      "Journal Article",
+      "Research Support, Non-U.S. Gov't"
+    ],
+    "missing": {},
+    "provenance": {
+      "source": "NCBI E-utilities",
+      "endpoint": "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi",
+      "params": {
+        "db": "pubmed",
+        "retmode": "xml",
+        "tool": "crn-pipeline"
+      },
+      "retrieved_at": "2026-10-30T03:00:43Z"
+    }
+  },
+  {
+    "pmid": "38461169",
+    "title": "Cannabinoids induce cell death in leukaemic cells through Parthanatos and PARP-related metabolic disruptions.",
+    "authors": [
+      "Medrano M",
+      "Contreras M",
+      "Caballero-Velázquez T",
+      "Martínez L",
+      "Bejarano-García JA",
+      "Calderón-Ruiz R",
+      "García-Calderón CB",
+      "Rosado IV",
+      "Pérez-Simón JA"
+    ],
+    "journal": "British journal of cancer",
+    "year": 2024,
+    "doi": "10.1038/s41416-024-02618-6",
+    "publication_types": [
+      "Journal Article",
+      "Research Support, Non-U.S. Gov't"
+    ],
+    "missing": {},
+    "provenance": {
+      "source": "NCBI E-utilities",
+      "endpoint": "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi",
+      "params": {
+        "db": "pubmed",
+        "retmode": "xml",
+        "tool": "crn-pipeline"
+      },
+      "retrieved_at": "2026-10-30T03:00:43Z"
+    }
+  },
+  {
+    "pmid": "37703852",
+    "title": "Cannabidiol Inhibits the Proliferation and Invasiveness of Prostate Cancer Cells.",
+    "authors": [
+      "O'Reilly E",
+      "Khalifa K",
+      "Cosgrave J",
+      "Azam H",
+      "Prencipe M",
+      "Simpson JC",
+      "Gallagher WM",
+      "Perry AS"
+    ],
+    "journal": "Journal of natural products",
+    "year": 2023,
+    "doi": "10.1021/acs.jnatprod.3c00363",
+    "publication_types": [
+      "Journal Article",
+      "Research Support, Non-U.S. Gov't"
+    ],
+    "missing": {},
+    "provenance": {
+      "source": "NCBI E-utilities",
+      "endpoint": "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi",
+      "params": {
+        "db": "pubmed",
+        "retmode": "xml",
+        "tool": "crn-pipeline"
+      },
+      "retrieved_at": "2026-10-30T03:00:43Z"
+    }
+  },
+  {
+    "pmid": "40502036",
+    "title": "Single cell multiomic analysis of the impact of Delta-9-tetrahydrocannabinol on HIV infected CD4 T cells.",
+    "authors": [
+      "Ashokkumar M",
+      "Ge RY",
+      "Cooper-Volkheimer A",
+      "Margolis DM",
+      "Li Q",
+      "Jiang Y",
+      "Murdoch DM",
+      "Browne EP"
+    ],
+    "journal": "bioRxiv : the preprint server for biology",
+    "year": 2025,
+    "doi": "10.1101/2025.06.02.657468",
+    "publication_types": [
+      "Journal Article",
+      "Preprint"
+    ],
+    "missing": {},
+    "provenance": {
+      "source": "NCBI E-utilities",
+      "endpoint": "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi",
+      "params": {
+        "db": "pubmed",
+        "retmode": "xml",
+        "tool": "crn-pipeline"
+      },
+      "retrieved_at": "2026-10-30T03:00:43Z"
+    }
+  },
+  {
+    "pmid": "39776335",
+    "title": "Cannabinoid receptor 2 facilitates the Schwann cells-dependent peripheral nerve regeneration.",
+    "authors": [
+      "Xu H",
+      "Wen L",
+      "Luo Y",
+      "Zhou J",
+      "Yao S",
+      "Ding W",
+      "Feng J"
+    ],
+    "journal": "Clinical and translational medicine",
+    "year": 2025,
+    "doi": "10.1002/ctm2.70184",
+    "publication_types": [
+      "Journal Article"
+    ],
+    "missing": {},
+    "provenance": {
+      "source": "NCBI E-utilities",
+      "endpoint": "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi",
+      "params": {
+        "db": "pubmed",
+        "retmode": "xml",
+        "tool": "crn-pipeline"
+      },
+      "retrieved_at": "2026-10-30T03:00:43Z"
+    }
+  },
+  {
+    "pmid": "36993751",
+    "title": "Metabolic memory of Δ9-tetrahydrocannabinol exposure in pluripotent stem cells and primordial germ cells-like cells.",
+    "authors": [
+      "Verdikt R",
+      "Armstrong AA",
+      "Cheng J",
+      "Hwang YS",
+      "Clark AT",
+      "Yang X",
+      "Allard P"
+    ],
+    "journal": "bioRxiv : the preprint server for biology",
+    "year": 2023,
+    "doi": "10.1101/2023.03.13.531968",
+    "publication_types": [
+      "Preprint",
+      "Journal Article"
+    ],
+    "missing": {},
+    "provenance": {
+      "source": "NCBI E-utilities",
+      "endpoint": "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi",
+      "params": {
+        "db": "pubmed",
+        "retmode": "xml",
+        "tool": "crn-pipeline"
+      },
+      "retrieved_at": "2026-10-30T03:00:43Z"
+    }
+  },
+  {
+    "pmid": "36093055",
+    "title": "Yin and yang of cannabinoid CB1 receptor: CB1 deletion in immune cells causes exacerbation while deletion in non-immune cells attenuates obesity.",
+    "authors": [
+      "Miranda K",
+      "Becker W",
+      "Busbee PB",
+      "Dopkins N",
+      "Abdulla OA",
+      "Zhong Y",
+      "Zhang J",
+      "Nagarkatti M",
+      "Nagarkatti PS"
+    ],
+    "journal": "iScience",
+    "year": 2022,
+    "doi": "10.1016/j.isci.2022.104994",
+    "publication_types": [
+      "Journal Article"
+    ],
+    "missing": {},
+    "provenance": {
+      "source": "NCBI E-utilities",
+      "endpoint": "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi",
+      "params": {
+        "db": "pubmed",
+        "retmode": "xml",
+        "tool": "crn-pipeline"
+      },
+      "retrieved_at": "2026-10-30T03:00:43Z"
+    }
+  },
+  {
+    "pmid": "39965157",
+    "title": "Knockdown of the type 1 cannabinoid receptor in the central amygdala increases both spontaneous and water deprivation-induced sodium intake in rats.",
+    "authors": [
+      "Ruginsk SG",
+      "Greenwood MP",
+      "Greenwood M",
+      "Elias LLK",
+      "Murphy D",
+      "Antunes-Rodrigues J"
+    ],
+    "journal": "American journal of physiology. Regulatory, integrative and comparative physiology",
+    "year": 2025,
+    "doi": "10.1152/ajpregu.00241.2024",
+    "publication_types": [
+      "Journal Article"
+    ],
+    "missing": {},
+    "provenance": {
+      "source": "NCBI E-utilities",
+      "endpoint": "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi",
+      "params": {
+        "db": "pubmed",
+        "retmode": "xml",
+        "tool": "crn-pipeline"
+      },
+      "retrieved_at": "2026-10-30T03:00:43Z"
+    }
+  },
+  {
+    "pmid": "39921353",
+    "title": "Cannabidiol alleviates the inflammatory response in rats with traumatic brain injury through the PGE 2-EP2-cAMP-PKA signaling pathway.",
+    "authors": [
+      "Cao Y",
+      "Li H",
+      "Li J",
+      "Ling T",
+      "Yin A",
+      "Luo X",
+      "Zhou Y",
+      "Li J",
+      "Jiang H",
+      "Wang H",
+      "Yang L",
+      "Wu H",
+      "Li P"
+    ],
+    "journal": "Acta biochimica et biophysica Sinica",
+    "year": 2025,
+    "doi": "10.3724/abbs.2024183",
+    "publication_types": [
+      "Journal Article"
+    ],
+    "missing": {},
+    "provenance": {
+      "source": "NCBI E-utilities",
+      "endpoint": "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi",
+      "params": {
+        "db": "pubmed",
+        "retmode": "xml",
+        "tool": "crn-pipeline"
+      },
+      "retrieved_at": "2026-10-30T03:00:43Z"
+    }
+  },
+  {
+    "pmid": "40229540",
+    "title": "Behavioural effects of oral cannabidiol (CBD) treatment in the superoxide dismutase 1 G93 A (SOD1G93 A) mouse model of amyotrophic lateral sclerosis.",
+    "authors": [
+      "Ghimire S",
+      "Kreilaus F",
+      "Rosa Porto R",
+      "Anderson LL",
+      "Yerbury JJ",
+      "Arnold JC",
+      "Karl T"
+    ],
+    "journal": "Psychopharmacology",
+    "year": 2025,
+    "doi": "10.1007/s00213-025-06785-z",
+    "publication_types": [
+      "Journal Article"
+    ],
+    "missing": {},
+    "provenance": {
+      "source": "NCBI E-utilities",
+      "endpoint": "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi",
+      "params": {
+        "db": "pubmed",
+        "retmode": "xml",
+        "tool": "crn-pipeline"
+      },
+      "retrieved_at": "2026-10-30T03:00:43Z"
+    }
+  },
+  {
+    "pmid": "38364116",
+    "title": "Cannabidiol Exposure During Rat Pregnancy Leads to Labyrinth-Specific Vascular Defects in the Placenta and Reduced Fetal Growth.",
+    "authors": [
+      "Allen S",
+      "Natale BV",
+      "Ejeckam AO",
+      "Lee K",
+      "Hardy DB",
+      "Natale DRC"
+    ],
+    "journal": "Cannabis and cannabinoid research",
+    "year": 2024,
+    "doi": "10.1089/can.2023.0166",
+    "publication_types": [
+      "Journal Article",
+      "Research Support, Non-U.S. Gov't"
+    ],
+    "missing": {},
+    "provenance": {
+      "source": "NCBI E-utilities",
+      "endpoint": "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi",
+      "params": {
+        "db": "pubmed",
+        "retmode": "xml",
+        "tool": "crn-pipeline"
+      },
+      "retrieved_at": "2026-10-30T03:00:43Z"
+    }
+  },
+  {
+    "pmid": "39918746",
+    "title": "Cannabidiol protects lung against inflammation and apoptosis in a rat model of blunt chest trauma via Bax/Bcl-2/Cas-9 signaling pathway.",
+    "authors": [
+      "Emre AS",
+      "Mehtap S",
+      "Cem D",
+      "İlter İ",
+      "Melih A",
+      "Özlem Ö",
+      "Serdar S",
+      "Ekrem ÇH",
+      "Rasih Y"
+    ],
+    "journal": "European journal of trauma and emergency surgery : official publication of the European Trauma Society",
+    "year": 2025,
+    "doi": "10.1007/s00068-025-02767-0",
+    "publication_types": [
+      "Journal Article"
+    ],
+    "missing": {},
+    "provenance": {
+      "source": "NCBI E-utilities",
+      "endpoint": "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi",
+      "params": {
+        "db": "pubmed",
+        "retmode": "xml",
+        "tool": "crn-pipeline"
+      },
+      "retrieved_at": "2026-10-30T03:00:43Z"
+    }
+  },
+  {
+    "pmid": "40839768",
+    "title": "Elucidating interplay between myrcene and cannabinoid receptor 1 receptors to produce antinociception in mouse models of neuropathic pain.",
+    "authors": [
+      "Alayoubi M",
+      "Rodrigues A",
+      "Wu C",
+      "Whitehouse E",
+      "Nguyen J",
+      "Cooper ZD",
+      "O'Neill PR",
+      "Cahill CM"
+    ],
+    "journal": "Pain",
+    "year": 2025,
+    "doi": "10.1097/j.pain.0000000000003558",
+    "publication_types": [
+      "Journal Article"
+    ],
+    "missing": {},
+    "provenance": {
+      "source": "NCBI E-utilities",
+      "endpoint": "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi",
+      "params": {
+        "db": "pubmed",
+        "retmode": "xml",
+        "tool": "crn-pipeline"
+      },
+      "retrieved_at": "2026-10-30T03:00:43Z"
+    }
+  },
+  {
+    "pmid": "39979552",
+    "title": "Cannabinoid-2 receptor depletion promotes non-alcoholic fatty liver disease in mice via disturbing gut microbiota and tryptophan metabolism.",
+    "authors": [
+      "Cheng WT",
+      "Pei SY",
+      "Wu J",
+      "Wang YJ",
+      "Yang YW",
+      "Xiao MF",
+      "Chen J",
+      "Wang YY",
+      "Wu L",
+      "Huang ZB"
+    ],
+    "journal": "Acta pharmacologica Sinica",
+    "year": 2025,
+    "doi": "10.1038/s41401-025-01495-w",
+    "publication_types": [
+      "Journal Article"
+    ],
+    "missing": {},
+    "provenance": {
+      "source": "NCBI E-utilities",
+      "endpoint": "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi",
+      "params": {
+        "db": "pubmed",
+        "retmode": "xml",
+        "tool": "crn-pipeline"
+      },
+      "retrieved_at": "2026-10-30T03:00:43Z"
+    }
+  },
+  {
+    "pmid": "40852923",
+    "title": "Cannabinoid Receptors CB1 and CB2 Activation Restores Hippocampal Lipid Profiles and Alleviates Autism-Like Behaviors in Valproic Acid-Induced ASD Rats.",
+    "authors": [
+      "Wang H",
+      "Zhang M",
+      "Yang S",
+      "Jiang Y",
+      "Wu L",
+      "Sun C"
+    ],
+    "journal": "CNS neuroscience & therapeutics",
+    "year": 2025,
+    "doi": "10.1111/cns.70591",
+    "publication_types": [
+      "Journal Article",
+      "Research Support, Non-U.S. Gov't"
+    ],
+    "missing": {},
+    "provenance": {
+      "source": "NCBI E-utilities",
+      "endpoint": "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi",
+      "params": {
+        "db": "pubmed",
+        "retmode": "xml",
+        "tool": "crn-pipeline"
+      },
+      "retrieved_at": "2026-10-30T03:00:43Z"
+    }
+  },
+  {
+    "pmid": "33118602",
+    "title": "Ingestion of a THC-Rich Cannabis Oil in People with Fibromyalgia: A Randomized, Double-Blind, Placebo-Controlled Clinical Trial.",
+    "authors": [
+      "Chaves C",
+      "Bittencourt PCT",
+      "Pelegrini A"
+    ],
+    "journal": "Pain medicine (Malden, Mass.)",
+    "year": 2020,
+    "doi": "10.1093/pm/pnaa303",
+    "publication_types": [
+      "Journal Article",
+      "Randomized Controlled Trial"
+    ],
+    "missing": {},
+    "provenance": {
+      "source": "NCBI E-utilities",
+      "endpoint": "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi",
+      "params": {
+        "db": "pubmed",
+        "retmode": "xml",
+        "tool": "crn-pipeline"
+      },
+      "retrieved_at": "2026-10-30T03:00:43Z"
+    }
+  },
+  {
+    "pmid": "31802404",
+    "title": "A Phase I, Open-Label, Parallel-Group, Single-Dose Trial of the Pharmacokinetics, Safety, and Tolerability of Cannabidiol in Subjects with Mild to Severe Renal Impairment.",
+    "authors": [
+      "Tayo B",
+      "Taylor L",
+      "Sahebkar F",
+      "Morrison G"
+    ],
+    "journal": "Clinical pharmacokinetics",
+    "year": 2020,
+    "doi": "10.1007/s40262-019-00841-6",
+    "publication_types": [
+      "Clinical Trial, Phase I",
+      "Journal Article",
+      "Research Support, Non-U.S. Gov't"
+    ],
+    "missing": {},
+    "provenance": {
+      "source": "NCBI E-utilities",
+      "endpoint": "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi",
+      "params": {
+        "db": "pubmed",
+        "retmode": "xml",
+        "tool": "crn-pipeline"
+      },
+      "retrieved_at": "2026-10-30T03:00:43Z"
+    }
+  },
+  {
+    "pmid": "30758329",
+    "title": "Effects of cannabidiol on brain excitation and inhibition systems; a randomised placebo-controlled single dose trial during magnetic resonance spectroscopy in adults with and without autism spectrum disorder.",
+    "authors": [
+      "Pretzsch CM",
+      "Freyberg J",
+      "Voinescu B",
+      "Lythgoe D",
+      "Horder J",
+      "Mendez MA",
+      "Wichers R",
+      "Ajram L",
+      "Ivin G",
+      "Heasman M",
+      "Edden RAE",
+      "Williams S",
+      "Murphy DGM",
+      "Daly E",
+      "McAlonan GM"
+    ],
+    "journal": "Neuropsychopharmacology : official publication of the American College of Neuropsychopharmacology",
+    "year": 2019,
+    "doi": "10.1038/s41386-019-0333-8",
+    "publication_types": [
+      "Journal Article",
+      "Randomized Controlled Trial",
+      "Research Support, N.I.H., Extramural",
+      "Research Support, Non-U.S. Gov't"
+    ],
+    "missing": {},
+    "provenance": {
+      "source": "NCBI E-utilities",
+      "endpoint": "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi",
+      "params": {
+        "db": "pubmed",
+        "retmode": "xml",
+        "tool": "crn-pipeline"
+      },
+      "retrieved_at": "2026-10-30T03:00:43Z"
+    }
+  },
+  {
+    "pmid": "38923954",
+    "title": "Acute Cannabis Administration Transiently Reduces Mitochondrial DNA in Young Adults: Findings from a Secondary Analysis of a Double-Blind, Placebo-Controlled, Randomized Clinical Trial.",
+    "authors": [
+      "Powlowski P",
+      "Matheson J",
+      "Le Foll B",
+      "Andreazza AC",
+      "Ross RA"
+    ],
+    "journal": "Cannabis and cannabinoid research",
+    "year": 2025,
+    "doi": "10.1089/can.2023.0282",
+    "publication_types": [
+      "Journal Article",
+      "Randomized Controlled Trial",
+      "Research Support, N.I.H., Extramural",
+      "Research Support, Non-U.S. Gov't"
+    ],
+    "missing": {},
+    "provenance": {
+      "source": "NCBI E-utilities",
+      "endpoint": "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi",
+      "params": {
+        "db": "pubmed",
+        "retmode": "xml",
+        "tool": "crn-pipeline"
+      },
+      "retrieved_at": "2026-10-30T03:00:43Z"
+    }
+  },
+  {
+    "pmid": "41071032",
+    "title": "Influence of Cannabidiol Use on Visual Function and Optical Quality: A Randomized Controlled Trial.",
+    "authors": [
+      "Martino F",
+      "Ortiz-Peregrina S",
+      "Casares-López M",
+      "Granados-Delgado P",
+      "Castro-Torres JJ",
+      "Anera RG"
+    ],
+    "journal": "Translational vision science & technology",
+    "year": 2025,
+    "doi": "10.1167/tvst.14.10.10",
+    "publication_types": [
+      "Journal Article",
+      "Randomized Controlled Trial"
+    ],
+    "missing": {},
+    "provenance": {
+      "source": "NCBI E-utilities",
+      "endpoint": "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi",
+      "params": {
+        "db": "pubmed",
+        "retmode": "xml",
+        "tool": "crn-pipeline"
+      },
+      "retrieved_at": "2026-10-30T03:00:43Z"
+    }
+  },
+  {
+    "pmid": "38975596",
+    "title": "Impact of Legalization on Cannabis Use, Attitudes, and Purchasing Preferences: A Repeated Cross-Sectional Survey of Canadian Young Adults.",
+    "authors": [
+      "Bradley AHM",
+      "Salmon M",
+      "Wohl MJA",
+      "Howard AL"
+    ],
+    "journal": "Cannabis (Albuquerque, N.M.)",
+    "year": 2024,
+    "doi": "10.26828/cannabis/2024/000203",
+    "publication_types": [
+      "Journal Article"
+    ],
+    "missing": {},
+    "provenance": {
+      "source": "NCBI E-utilities",
+      "endpoint": "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi",
+      "params": {
+        "db": "pubmed",
+        "retmode": "xml",
+        "tool": "crn-pipeline"
+      },
+      "retrieved_at": "2026-10-30T03:00:43Z"
+    }
+  },
+  {
+    "pmid": "39707551",
+    "title": "Population-based cross-sectional analysis of cannabis use among Kentucky adults, 2020-21.",
+    "authors": [
+      "Shafer S",
+      "Kennedy G",
+      "Christian WJ"
+    ],
+    "journal": "Journal of cannabis research",
+    "year": 2024,
+    "doi": "10.1186/s42238-024-00251-x",
+    "publication_types": [
+      "Journal Article"
+    ],
+    "missing": {},
+    "provenance": {
+      "source": "NCBI E-utilities",
+      "endpoint": "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi",
+      "params": {
+        "db": "pubmed",
+        "retmode": "xml",
+        "tool": "crn-pipeline"
+      },
+      "retrieved_at": "2026-10-30T03:00:43Z"
+    }
+  },
+  {
+    "pmid": "40235472",
+    "title": "How cannabis consumption relates to negative affect and expectancies: A cross-sectional survey of an international Spanish-speaking sample.",
+    "authors": [
+      "Rosa L",
+      "Lisano JK",
+      "Martin-Willett R",
+      "Bidwell LC"
+    ],
+    "journal": "Research square",
+    "year": 2025,
+    "doi": "10.21203/rs.3.rs-6075879/v1",
+    "publication_types": [
+      "Journal Article",
+      "Preprint"
+    ],
+    "missing": {},
+    "provenance": {
+      "source": "NCBI E-utilities",
+      "endpoint": "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi",
+      "params": {
+        "db": "pubmed",
+        "retmode": "xml",
+        "tool": "crn-pipeline"
+      },
+      "retrieved_at": "2026-10-30T03:00:43Z"
+    }
+  },
+  {
+    "pmid": "34049094",
+    "title": "Change in marijuana use and its associated factors among persons living with HIV (PLWH) during the COVID-19 pandemic: Findings from a prospective cohort.",
+    "authors": [
+      "Wang Y",
+      "Ibañez GE",
+      "Vaddiparti K",
+      "Stetten NE",
+      "Sajdeya R",
+      "Porges EC",
+      "Cohen RA",
+      "Cook RL"
+    ],
+    "journal": "Drug and alcohol dependence",
+    "year": 2021,
+    "doi": "10.1016/j.drugalcdep.2021.108770",
+    "publication_types": [
+      "Journal Article",
+      "Research Support, N.I.H., Extramural"
+    ],
+    "missing": {},
+    "provenance": {
+      "source": "NCBI E-utilities",
+      "endpoint": "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi",
+      "params": {
+        "db": "pubmed",
+        "retmode": "xml",
+        "tool": "crn-pipeline"
+      },
+      "retrieved_at": "2026-10-30T03:00:43Z"
+    }
+  },
+  {
+    "pmid": "36726135",
+    "title": "Documenting cannabis use in primary care: a descriptive cross-sectional study using electronic medical record data in Alberta, Canada.",
+    "authors": [
+      "Soos B",
+      "Garies S",
+      "Cornect-Benoit A",
+      "Montgomery L",
+      "Sharpe H",
+      "Rittenbach K",
+      "Manca D",
+      "Duerksen K",
+      "Forst B",
+      "Drummond N"
+    ],
+    "journal": "BMC research notes",
+    "year": 2023,
+    "doi": "10.1186/s13104-023-06274-6",
+    "publication_types": [
+      "Journal Article"
+    ],
+    "missing": {},
+    "provenance": {
+      "source": "NCBI E-utilities",
+      "endpoint": "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi",
+      "params": {
+        "db": "pubmed",
+        "retmode": "xml",
+        "tool": "crn-pipeline"
+      },
+      "retrieved_at": "2026-10-30T03:00:43Z"
+    }
+  },
+  {
+    "pmid": "41394520",
+    "title": "Cannabis Use from Early Adolescence to the Mid-Twenties in Children of Immigrant and Nonimmigrant Parents: Findings from a Prospective Longitudinal Cohort Study.",
+    "authors": [
+      "Steinhoff A",
+      "Bechtiger L",
+      "Birchler K",
+      "Ribeaud D",
+      "Eisner M",
+      "Quednow BB",
+      "Shanahan L"
+    ],
+    "journal": "International journal of mental health and addiction",
+    "year": 2025,
+    "doi": "10.1007/s11469-024-01359-0",
+    "publication_types": [
+      "Journal Article"
+    ],
+    "missing": {},
+    "provenance": {
+      "source": "NCBI E-utilities",
+      "endpoint": "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi",
+      "params": {
+        "db": "pubmed",
+        "retmode": "xml",
+        "tool": "crn-pipeline"
+      },
+      "retrieved_at": "2026-10-30T03:00:43Z"
+    }
+  }
+]
