@@ -57,6 +57,27 @@ class TestErrorMessageLeaks(unittest.TestCase):
         self._assert_generic(r)
         self.assertTrue(any("SECRET-DETAIL" in line for line in logs.output))
 
+    def _citation_graph_raising(self, method):
+        cg = MagicMock()
+        getattr(cg, method).side_effect = RuntimeError(SECRET)
+        return patch.object(self.m, "CitationGraph", return_value=cg)
+
+    def test_references_hides_exception_text(self):
+        with patch.object(self.m, "DatabaseManager", return_value=MagicMock()), \
+                self._citation_graph_raising("get_references"), \
+                self.assertLogs(self.m.app.logger, level="ERROR") as logs:
+            r = self.client.get("/api/papers/90001/references")
+        self._assert_generic(r)
+        self.assertTrue(any("SECRET-DETAIL" in line for line in logs.output))
+
+    def test_cited_by_hides_exception_text(self):
+        with patch.object(self.m, "DatabaseManager", return_value=MagicMock()), \
+                self._citation_graph_raising("get_cited_by"), \
+                self.assertLogs(self.m.app.logger, level="ERROR") as logs:
+            r = self.client.get("/api/papers/90001/cited-by")
+        self._assert_generic(r)
+        self.assertTrue(any("SECRET-DETAIL" in line for line in logs.output))
+
     def _login_admin(self):
         from auth_test_helpers import login_session
         login_session(self.client, next(iter(self.m.ADMIN_EMAILS)))
