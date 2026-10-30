@@ -9297,7 +9297,7 @@
             fetch("/api/graph/network?max_nodes=2000&_t=" + Date.now())
                 .then(r => r.json())
                 .then(data => {
-                    if (data.error) { overlay.innerHTML = '<div style="color:#ff8a65;">Error: ' + data.error + '</div>'; return; }
+                    if (data.error) { overlay.innerHTML = ''; const errDiv = document.createElement('div'); errDiv.style.color = '#ff8a65'; errDiv.textContent = 'Error: ' + String(data.error); overlay.appendChild(errDiv); return; }
                     data = { nodes: Array.isArray(data.nodes) ? data.nodes : [], edges: Array.isArray(data.edges) ? data.edges : [] };
                     cyGraphData = data;
                     cyNodeMap = {};
@@ -11740,7 +11740,7 @@
                 const initials = name.substring(0, 2).toUpperCase();
                 
                 container.innerHTML = `
-                    <div role="button" tabindex="0" class="user-avatar" id="user-avatar-btn" onclick="toggleUserDropdown(event)">
+                    <div role="button" tabindex="0" class="user-avatar" id="user-avatar-btn" aria-label="Account menu" aria-haspopup="true" onclick="toggleUserDropdown(event)">
                         ${initials}
                     </div>
                     <div class="user-dropdown" id="user-dropdown-menu">
@@ -11805,6 +11805,25 @@
             if (e.key === "Escape" && modal && modal.style.display === "flex") {
                 e.preventDefault();
                 closeAuthModal();
+                return;
+            }
+            if (e.key === "Tab" && modal && modal.style.display === "flex") {
+                const focusables = Array.from(modal.querySelectorAll(
+                    'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
+                )).filter(el => el.offsetParent !== null || el === document.activeElement);
+                if (!focusables.length) { e.preventDefault(); return; }
+                const first = focusables[0];
+                const last = focusables[focusables.length - 1];
+                if (!modal.contains(document.activeElement)) {
+                    e.preventDefault();
+                    (e.shiftKey ? last : first).focus();
+                } else if (e.shiftKey && document.activeElement === first) {
+                    e.preventDefault();
+                    last.focus();
+                } else if (!e.shiftKey && document.activeElement === last) {
+                    e.preventDefault();
+                    first.focus();
+                }
             }
         });
 

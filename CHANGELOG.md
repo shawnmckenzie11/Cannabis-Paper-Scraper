@@ -8,6 +8,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- Methods contract v0.3 (`wp1.3.0-draft`, fields only): gold_badge `decision`/`awarded_by`/`work_id`; new `relevance_grade` (grade 0/1/2 PLACEHOLDER), `correction` (append-only supersede) and `paper_pmid_mapping` (no pmid ⇒ excluded from manifests); reference_value `work_id`/`split`/`storage`; locked_store requires `rater_verified` + `rationale_format`; gold_badge split excludes `train` intentionally. See docs/methods/field-dictionary.md.
+- **Intentional draft break:** v0.3 locked-store records (gold_badge/reference_value/relevance_grade with storage=locked_store) now require rater_verified=true, rationale_format=free_text and split=test; such v0.2 locked-store records without these no longer validate.
 - Methods contract `wp1.1.0-draft` adds `$defs.expert_review` (expert-review form record). Top-level `schema_version` accepts both `wp1.0.0-draft` and `wp1.1.0-draft`; wp1.0.0-draft records remain valid during the draft period.
 
 ## [2.6.0] - 2026-06-22
