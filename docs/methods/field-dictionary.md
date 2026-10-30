@@ -281,4 +281,9 @@ Preprint status is **derivable** from `publication_types` (contains `"Preprint"`
 | `run_event` | `$defs` | Run-log event with ids and a reason code only (`quote_not_found`, `extraction_failed`, `parse_downgrade_abstract_only`). | technical |
 
 Also in v0.5: `test` records must live in `locked_store` (now enforced both ways), `run_event.field` must be a contract field name, and the run manifest's `contract_version` is pinned to `"0.5"`.
-- `extraction_run_manifest.excluded[].reason` also accepts `consecutive_failures`, for papers skipped after the runner stops on repeated failures.
+
+### v0.5 changelog
+
+The contract version stays `"0.5"`; these are additive changes, and every record valid before them is still valid.
+
+- #109: `extraction_run_manifest.excluded[].reason` accepts `consecutive_failures`, for papers skipped after the runner stops on repeated failures. The full set is `budget_cap`, `pmid_missing`, `source_unavailable`, `consecutive_failures`. Evaluation leaves `budget_cap` papers out of the score and counts `consecutive_failures` papers as recall misses.
