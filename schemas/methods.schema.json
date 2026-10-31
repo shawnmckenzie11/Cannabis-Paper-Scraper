@@ -22,9 +22,10 @@
         "wp1.4.0-draft",
         "wp1.5.0-draft",
         "wp1.6.0-draft",
-        "wp1.7.0-draft"
+        "wp1.7.0-draft",
+        "wp1.8.0-draft"
       ],
-      "description": "Methods contract version. wp1.0.0-draft records remain valid while wp1.1.0 is in draft. wp1.3.0-draft = Methods contract v0.3 (eval gaps, fields only). wp1.4.0-draft = Methods contract v0.4 (pubmed_metadata_record). wp1.5.0-draft = Methods contract v0.5 (pmc_oa_xml tier, source_license, validation split, extraction run manifest; record_id required). wp1.6.0-draft = Methods contract v0.6 (MCK-425 product/strain vocabulary: product as origin + preparation + substance normalized fields, strain_normalized name cleaning only, chemotype_reported, widened normalization_status; record_id required; vocabulary phd_to_confirm). wp1.7.0-draft = Methods contract v0.7 (per-field reporting block, completeness tiers computed from statuses, supplier / vehicle_solvent / storage / form / cannabinoids fields, oral_diet vs oral_gavage route values; all pending_biomedical)."
+      "description": "Methods contract version. wp1.0.0-draft records remain valid while wp1.1.0 is in draft. wp1.3.0-draft = Methods contract v0.3 (eval gaps, fields only). wp1.4.0-draft = Methods contract v0.4 (pubmed_metadata_record). wp1.5.0-draft = Methods contract v0.5 (pmc_oa_xml tier, source_license, validation split, extraction run manifest; record_id required). wp1.6.0-draft = Methods contract v0.6 (MCK-425 product/strain vocabulary: product as origin + preparation + substance normalized fields, strain_normalized name cleaning only, chemotype_reported, widened normalization_status; record_id required; vocabulary phd_to_confirm). wp1.7.0-draft = Methods contract v0.7 (per-field reporting block, completeness tiers computed from statuses, supplier / vehicle_solvent / storage / form / cannabinoids fields, oral_diet vs oral_gavage route values; all pending_biomedical). wp1.8.0-draft = Methods contract v0.8 (technical follow-ups: condition value_source, honesty_label rule_based, product_name_verbatim, numeric ranges (value_min/value_max), could_not_check_pointer, run-manifest exclusion not_original_research; all additive)."
     },
     "paper_id": {
       "type": "integer",
@@ -44,12 +45,13 @@
     },
     "honesty_label": {
       "type": "string",
-      "description": "UI-facing honesty chip derived from provenance (technical).",
+      "description": "UI-facing honesty chip derived from provenance (technical). v0.8: rule_based = written by a deterministic rule-based extractor (no LLM, no human review), e.g. crn_extraction.",
       "enum": [
         "ai_assisted",
         "human_reviewed",
         "hand_tagged",
-        "mixed"
+        "mixed",
+        "rule_based"
       ]
     },
     "fields": {
@@ -487,6 +489,10 @@
         "supplier_program_verbatim": {
           "$ref": "#/$defs/string_field",
           "description": "v0.7 (P2, Shawn 2026-10-31): the government/agency supply program exactly as written when no supplier is named (e.g. 'obtained through the NIDA Drug Supply Program'). Recorded only, not scored; pairs with not_reported_reason government_program_unnamed on supplier."
+        },
+        "product_name_verbatim": {
+          "$ref": "#/$defs/string_field",
+          "description": "v0.8 (Pipeline #119 gap 1): product / substance name exactly as written in the paper (free text, e.g. a commercial or study-drug name). Recorded only; not normalized, not scored, never affects any tier. Normalized product stays in fields.product."
         }
       }
     },
@@ -954,8 +960,67 @@
         "pending_biomedical": {
           "type": "boolean",
           "default": true
+        },
+        "value_min": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "description": "v0.8 (Pipeline #119 gap 4): lower bound when the paper reports a range (e.g. '5-10 mg/kg'). Range as written; no midpoint is computed. value stays null unless the paper also states a single value."
+        },
+        "value_max": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "description": "v0.8: upper bound of a reported range. Set together with value_min."
         }
-      }
+      },
+      "allOf": [
+        {
+          "if": {
+            "anyOf": [
+              {
+                "properties": {
+                  "value_min": {
+                    "type": "number"
+                  }
+                },
+                "required": [
+                  "value_min"
+                ]
+              },
+              {
+                "properties": {
+                  "value_max": {
+                    "type": "number"
+                  }
+                },
+                "required": [
+                  "value_max"
+                ]
+              }
+            ]
+          },
+          "then": {
+            "required": [
+              "value_min",
+              "value_max"
+            ],
+            "properties": {
+              "value_min": {
+                "type": "number"
+              },
+              "value_max": {
+                "type": "number"
+              },
+              "missingness": {
+                "const": "reported"
+              }
+            }
+          }
+        }
+      ]
     },
     "integer_field": {
       "type": "object",
@@ -991,8 +1056,67 @@
         "pending_biomedical": {
           "type": "boolean",
           "default": true
+        },
+        "value_min": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "description": "v0.8 (Pipeline #119 gap 4): lower bound when the paper reports a range (e.g. '5-10 mg/kg'). Range as written; no midpoint is computed. value stays null unless the paper also states a single value."
+        },
+        "value_max": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "description": "v0.8: upper bound of a reported range. Set together with value_min."
         }
-      }
+      },
+      "allOf": [
+        {
+          "if": {
+            "anyOf": [
+              {
+                "properties": {
+                  "value_min": {
+                    "type": "integer"
+                  }
+                },
+                "required": [
+                  "value_min"
+                ]
+              },
+              {
+                "properties": {
+                  "value_max": {
+                    "type": "integer"
+                  }
+                },
+                "required": [
+                  "value_max"
+                ]
+              }
+            ]
+          },
+          "then": {
+            "required": [
+              "value_min",
+              "value_max"
+            ],
+            "properties": {
+              "value_min": {
+                "type": "integer"
+              },
+              "value_max": {
+                "type": "integer"
+              },
+              "missingness": {
+                "const": "reported"
+              }
+            }
+          }
+        }
+      ]
     },
     "boolean_field": {
       "type": "object",
@@ -2332,7 +2456,8 @@
           "enum": [
             "0.5",
             "0.6",
-            "0.7"
+            "0.7",
+            "0.8"
           ],
           "description": "Pinned to the contract version the run was validated against."
         },
@@ -2400,12 +2525,13 @@
                   "budget_cap",
                   "pmid_missing",
                   "source_unavailable",
-                  "consecutive_failures"
+                  "consecutive_failures",
+                  "not_original_research"
                 ]
               }
             }
           },
-          "description": "Papers not extracted. Evaluation leaves budget_cap papers out of the score; pmid_missing, source_unavailable and consecutive_failures papers count as recall misses on every gold field for that paper. The manifest reports each reason's count separately."
+          "description": "Papers not extracted. Evaluation leaves budget_cap papers out of the score; pmid_missing, source_unavailable and consecutive_failures papers count as recall misses on every gold field for that paper. The manifest reports each reason's count separately. v0.8: not_original_research = the paper is not original research (surveys, market studies, re-analyses; Q7, Shawn 2026-10-29) and is out of the study set: left out of the score like budget_cap, never a recall miss."
         },
         "events": {
           "type": "array",
@@ -2512,7 +2638,8 @@
             "supplier_program_verbatim",
             "system_type",
             "treatment_duration",
-            "vehicle_solvent"
+            "vehicle_solvent",
+            "product_name_verbatim"
           ],
           "description": "A methods field name from properties.fields; never free text."
         },
@@ -3046,6 +3173,33 @@
             }
           ],
           "description": "How value_source was decided. inferred_from_row_version = legacy backfill rule (the old pass did not record which fields it wrote)."
+        },
+        "could_not_check_pointer": {
+          "anyOf": [
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "location"
+              ],
+              "properties": {
+                "location": {
+                  "$ref": "#/$defs/reporting_location"
+                },
+                "ref": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "description": "Free-text pointer as labelled in the paper, e.g. 'Figure 2B', 'Supplementary Table S3'."
+                }
+              }
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "v0.8 (Pipeline #119 gap 6): where the unchecked detail sits, so a reviewer can go straight to it. Only with status could_not_check (location stays reported-only). Never affects any tier."
         }
       },
       "allOf": [
@@ -3159,6 +3313,26 @@
             ]
           },
           "then": false
+        },
+        {
+          "if": {
+            "properties": {
+              "status": {
+                "const": "could_not_check"
+              }
+            },
+            "required": [
+              "status"
+            ]
+          },
+          "then": {},
+          "else": {
+            "properties": {
+              "could_not_check_pointer": {
+                "type": "null"
+              }
+            }
+          }
         }
       ]
     },
@@ -3296,6 +3470,10 @@
         },
         "label": {
           "type": "string"
+        },
+        "value_source": {
+          "$ref": "#/$defs/value_source",
+          "description": "v0.8: who assigned this condition (existing value_source vocabulary). legacy_llm_fullpdf entries are comparison input only and are stripped by labelling_export (reviewers never see legacy or MeSH values; nothing is pre-filled). MeSH is never a source: mesh_from_pubmed is never copied into conditions. Optional; absent on records written before v0.8."
         }
       }
     },
@@ -3602,7 +3780,7 @@
       ]
     }
   },
-  "x-contract-version": "0.7",
+  "x-contract-version": "0.8",
   "allOf": [
     {
       "if": {
@@ -3655,6 +3833,35 @@
         "properties": {
           "schema_version": {
             "const": "wp1.7.0-draft"
+          }
+        },
+        "required": [
+          "schema_version"
+        ]
+      },
+      "then": {
+        "required": [
+          "record_id"
+        ],
+        "properties": {
+          "fields": {
+            "properties": {
+              "product": {
+                "$ref": "#/$defs/product_field"
+              },
+              "strain_normalized": {
+                "$ref": "#/$defs/strain_normalized_field"
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "schema_version": {
+            "const": "wp1.8.0-draft"
           }
         },
         "required": [

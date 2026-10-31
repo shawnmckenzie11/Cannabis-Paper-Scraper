@@ -43,7 +43,7 @@
           ],
           "satisfied_by": "any_measured_cannabinoid",
           "approved": "Any measured cannabinoid counts as 'major' (Biomedical lead, 2026-10-31, approved default 8).",
-          "grading": "v0.7.1 read time (default 8): reported when fields.cannabinoids has any measured entry (numeric amount + unit), unless Pipeline set an explicit not_reported_reason other than absent, or status could_not_check."
+          "grading": "Read time (default 8, since v0.7.1): reported when fields.cannabinoids has any measured entry (numeric amount AND unit, v0.7.2), unless Pipeline set an explicit not_reported_reason other than absent, or status could_not_check."
         },
         {
           "key": "route",
@@ -662,7 +662,7 @@
         "approved": "Biomedical lead, 2026-10-31"
       }
     ],
-    "grading": "v0.7.1: applied at read time in methods_completeness.compute. Default 3: a route group with expected fields is reported if any one of its fields is reported (reporting item status, else Pipeline's per-field missingness). Default 6: for groups with cannabinoid fields, any measured cannabinoid (fields.cannabinoids entry with numeric amount AND unit; a value without unit is missing_units, not measured) counts, for every route. v0.7.2: default 6 is per-field like default 8: an explicit not_reported_reason other than absent (cited_elsewhere, missing_units) fails only that field, not the whole group. None of the route's fields reported -> universal missing 'route_fields' (near_gold); fields could not be checked -> not_checked (unverified), carrying every check_failure_reason. Raw fields are never changed."
+    "grading": "Applied at read time in methods_completeness.compute (since v0.7.1). Default 3: a route group with expected fields is reported if any one of its fields is reported (reporting item status, else Pipeline's per-field missingness). Default 6: for groups with cannabinoid fields, any measured cannabinoid (fields.cannabinoids entry with numeric amount AND unit; a value without unit is missing_units, not measured) counts, for every route; per-field like default 8 (v0.7.2): an explicit not_reported_reason other than absent (cited_elsewhere, missing_units) fails only that field, not the whole group. None of the route's fields reported -> universal missing 'route_fields' (near_gold). Fields could not be checked -> not_checked entry {key: route_fields, check_failure_reason: first reason} (unverified); the entry also carries check_failure_reasons (every distinct reason, in field order) only when there is more than one. Raw fields are never changed."
   },
   "secondary_cutoff": {
     "default": 0.8,
