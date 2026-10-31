@@ -240,7 +240,7 @@
     "route": {
       "version": "0.1.0",
       "status": "phd_to_confirm",
-      "note": "Oral split into diet vs gavage: dose is uncertain when mixed in food. sublingual, intranasal, intratracheal added (values only, Biomedical lead 2026-10-31); they carry the approved 'no requirement' route rule.",
+      "note": "Oral split into diet vs gavage: dose is uncertain when mixed in food. sublingual, intranasal, intratracheal added (values only, Biomedical lead 2026-10-31); they carry the approved 'no requirement' route rule. smoke, vapor (US spelling) added as in vitro routes (values only, v0.7.1) with the approved 'no requirement' rule.",
       "values": [
         {
           "value": "inhaled",
@@ -288,6 +288,14 @@
         },
         {
           "value": "intratracheal",
+          "external_id": null
+        },
+        {
+          "value": "smoke",
+          "external_id": null
+        },
+        {
+          "value": "vapor",
           "external_id": null
         }
       ]

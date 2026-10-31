@@ -59,6 +59,81 @@ def _apply_references(rep, reference_links):
     return rep, ref_fields, [k for k in noted if k not in ref_fields]
 
 
+CANNABINOID_FIELD_MARKERS = ("thc", "cbd")
+
+
+def _measured_cannabinoids(fields):
+    """Default 6/8: entries in Pipeline's fields.cannabinoids with a numeric amount and a unit.
+
+    A number without units is not measured (TOP3, missing_units). Raw fields are only read.
+    """
+    c = (fields or {}).get("cannabinoids") or {}
+    if c.get("missingness") != "reported":
+        return []
+    out = []
+    for e in c.get("value") or []:
+        a = e.get("amount")
+        if isinstance(a, numbers.Number) and not isinstance(a, bool) and e.get("unit"):
+            out.append(e.get("name"))
+    return out
+
+
+def _field_status(rep, fields, f):
+    """Status of one flowchart field: the reporting item if present, else Pipeline's per-field missingness."""
+    if f in rep:
+        return _status(rep, f)
+    m = ((fields or {}).get(f) or {}).get("missingness")
+    if m == "reported":
+        return "reported"
+    if m in ("not_reported", "could_not_check", "not_applicable"):
+        return m
+    return "not_yet_assessed"
+
+
+def _apply_tier_defaults(rep, record, rule):
+    """Approved defaults 3, 6, 8 (Biomedical lead, 2026-10-31), applied at read time on a copy.
+
+    Default 8: major_cannabinoids counts as reported when any cannabinoid content was measured.
+    Pipeline's own status and reason codes are kept; never applied over an explicit
+    not_reported_reason other than absent, nor when nothing was measured.
+    """
+    rep = dict(rep)
+    applied = []
+    measured = _measured_cannabinoids(record.get("fields"))
+    item = [i for i in rule["tiers"]["universal"]["items"] if i["key"] == "major_cannabinoids"]
+    if item and item[0].get("satisfied_by") == "any_measured_cannabinoid" and measured:
+        cur = rep.get("major_cannabinoids") or {}
+        reason = cur.get("not_reported_reason")
+        if cur.get("status", "not_yet_assessed") in ("not_reported", "not_yet_assessed") and reason in (None, "absent"):
+            rep["major_cannabinoids"] = {"status": "reported", "location": cur.get("location"),
+                                         "derived_from": "fields.cannabinoids", "default": 8}
+            applied.append({"default": 8, "item": "major_cannabinoids", "measured": measured})
+    return rep, applied, measured
+
+
+def route_fields_status(record, study_type, rule, rep=None, measured=None):
+    """Defaults 3 + 6: a route group is reported if ANY one of its flowchart fields is reported,
+    or (for groups with cannabinoid fields) any measured cannabinoid, for every route.
+    Returns None when the route is not reported or has no requirement."""
+    rr = route_requirements(record, study_type, rule)
+    if not rr["route_reported"] or not rr["expected_fields"]:
+        return None
+    rep = rep if rep is not None else (record.get("reporting") or {})
+    fields = record.get("fields") or {}
+    measured = measured if measured is not None else _measured_cannabinoids(fields)
+    sts = {f: _field_status(rep, fields, f) for f in rr["expected_fields"]}
+    hit = [f for f, st in sts.items() if st == "reported"]
+    if hit:
+        return {"status": "reported", "satisfied_by": hit[0], "default": 3}
+    if measured and any(m in f for f in sts for m in CANNABINOID_FIELD_MARKERS):
+        return {"status": "reported", "satisfied_by": "fields.cannabinoids", "default": 6}
+    if any(st == "could_not_check" for st in sts.values()):
+        return {"status": "could_not_check", "satisfied_by": None}
+    if all(st == "not_yet_assessed" for st in sts.values()):
+        return {"status": "not_yet_assessed", "satisfied_by": None}
+    return {"status": "not_reported", "satisfied_by": None}
+
+
 def compute(record, study_type, rule=None, secondary_cutoff=None, reference_links=None):
     """Return {rule_id, rule_version, universal, study_type, good_practice, reference_fields, signoff_set_hash}.
 
@@ -76,7 +151,7 @@ def compute(record, study_type, rule=None, secondary_cutoff=None, reference_link
         return dict({"rule_id": rule["rule_id"], "rule_version": rule["version"],
                      "universal": g, "study_type": g, "route_requirements": None, "good_practice": g,
                      "reference_fields": [], "tier_uses_reference_values": False,
-                     "missing_reference_available": []}, **meta)
+                     "missing_reference_available": [], "defaults_applied": []}, **meta)
 
     if study_type in rule.get("not_scored_study_types", []):
         return flat("not_scored", "study_type_" + study_type)
@@ -86,6 +161,7 @@ def compute(record, study_type, rule=None, secondary_cutoff=None, reference_link
         if gate != "scored":
             return flat(gate, "randomized_" + (r or "absent"))
     rep, ref_fields, ref_noted = _apply_references(record.get("reporting") or {}, reference_links)
+    rep, defaults_applied, measured = _apply_tier_defaults(rep, record, rule)
     tiers = rule["tiers"]
 
     def counts(items):
@@ -109,6 +185,13 @@ def compute(record, study_type, rule=None, secondary_cutoff=None, reference_link
             lists["not_checked"].append({"key": i["key"], "check_failure_reason": r.get("check_failure_reason")})
         elif st in ("not_yet_assessed", "not_applicable"):
             lists[st].append(i["key"])
+    rfs = route_fields_status(record, study_type, rule, rep, measured)
+    if rfs and rfs.get("default"):
+        defaults_applied.append({"default": rfs["default"], "item": "route_fields", "satisfied_by": rfs["satisfied_by"]})
+    if rfs and rfs["status"] == "not_reported":
+        lists["missing"].append("route_fields")
+    elif rfs and rfs["status"] == "could_not_check":
+        lists["not_checked"].append({"key": "route_fields", "check_failure_reason": None})
     if uc["not_yet_assessed"] == len(uitems):
         grade = "not_yet_assessed"
     elif lists["missing"]:
@@ -126,7 +209,8 @@ def compute(record, study_type, rule=None, secondary_cutoff=None, reference_link
         out["study_type"] = {"tier": study_type, "fraction": frac, "counts": c}
         if "required_always" in tier:
             out["study_type"].update(grade_required_secondary(rep, tier, cut_used))
-    out["route_requirements"] = route_requirements(record, study_type, rule)
+    out["route_requirements"] = dict(route_requirements(record, study_type, rule), fields_status=rfs)
+    out["defaults_applied"] = defaults_applied
     gc, _ = counts(tiers["good_practice"]["items"])
     out["good_practice"] = {"recorded_only": True, "counts": gc,
                             "reported": [i["key"] for i in tiers["good_practice"]["items"] if _status(rep, i["key"]) == "reported"]}

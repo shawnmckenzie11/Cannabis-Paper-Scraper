@@ -150,7 +150,7 @@ def test_tier_rule_is_valid_and_every_field_exists():
 
 def test_completeness_is_computed_per_tier_without_combined_score():
     res = mc.compute(FULL_V07, "in_vivo", TIERS)
-    assert set(res) == {"rule_id", "rule_version", "universal", "study_type", "route_requirements", "good_practice", "reference_fields", "missing_reference_available", "secondary_cutoff", "signoff_set_hash", "tier_uses_reference_values", "condition_list_version"}
+    assert set(res) == {"rule_id", "rule_version", "universal", "study_type", "route_requirements", "good_practice", "reference_fields", "missing_reference_available", "secondary_cutoff", "signoff_set_hash", "tier_uses_reference_values", "condition_list_version", "defaults_applied"}
     assert res["universal"]["grade"] == "gold"  # location (supplementary) is never a pass condition
     assert res["study_type"]["fraction"] == 0.5 and res["study_type"]["counts"]["could_not_check"] == 1
     assert res["good_practice"]["recorded_only"] is True and res["good_practice"]["reported"] == ["storage_temperature"]
@@ -289,11 +289,10 @@ def test_nine_approved_defaults_behaviour():
     voc = json.loads((ROOT / "schemas/normalization_rules.json").read_text())["vocabularies"]["route"]
     vals = {x["value"] for x in voc["values"]}
     assert {"sublingual", "intranasal", "intratracheal"} <= vals
-    assert not any("smoke" in x or "vapo" in x for x in vals | set(sum(rr["no_requirement_routes"].values(), [])))
-    pend = rr["no_requirement_pending_vocabulary"]
-    assert [(x["study_type"], x["route_value"], x["approved_rule"]) for x in pend] == [("in_vitro", None, "no requirement")]
+    assert {"smoke", "vapor"} <= vals and rr["no_requirement_routes"]["in_vitro"] == ["smoke", "vapor"]
+    assert "no_requirement_pending_vocabulary" not in rr and "vapour" not in vals
     for st, route in (("in_vivo", "sublingual"), ("in_vivo", "intranasal"), ("in_vivo", "intratracheal"),
-                      ("clinical", "sublingual"), ("clinical", "topical")):
+                      ("clinical", "sublingual"), ("clinical", "topical"), ("in_vitro", "smoke"), ("in_vitro", "vapor")):
         rec = copy.deepcopy(FULL_V07)
         rec["fields"]["route"] = {"value": [route], "missingness": "reported"}
         if st == "clinical":
@@ -303,7 +302,7 @@ def test_nine_approved_defaults_behaviour():
         assert out["tracks_per_paper"] == 1
     # prospective / retrospective clinical (non-randomized) is not scored for gold
     rec = copy.deepcopy(FULL_V07); rec["fields"]["randomized"] = {"value": "no", "missingness": "reported"}
-    assert mc.compute(rec, "clinical", TIERS)["universal"]["grade"] == "out_of_scope"
+    assert mc.compute(rec, "clinical", TIERS)["universal"]["grade"] == "not_scored"
     mc_item = [i for i in TIERS["tiers"]["universal"]["items"] if i["key"] == "major_cannabinoids"][0]
     assert mc_item["satisfied_by"] == "any_measured_cannabinoid"
 
@@ -392,7 +391,7 @@ def test_clinical_required_unchecked_is_unverified():
 def test_clinical_age_or_sex_single_item_and_open_questions():
     item = [i for i in TIERS["tiers"]["clinical"]["items"] if i["key"] == "participant_age_or_sex"][0]
     assert item["satisfied_by"] == "either" and set(item["fields"]) == {"sgba_population_age", "sgba_sex_reported"}
-    assert set(TIERS["resolved"]) >= {"Q1", "Q2"} and "either" in TIERS["resolved"]["Q1"] and "out of scope" in TIERS["resolved"]["Q2"]
+    assert set(TIERS["resolved"]) >= {"Q1", "Q2"} and "either" in TIERS["resolved"]["Q1"] and "not_scored" in TIERS["resolved"]["Q2"]
 
 
 def test_comparison_group_confidence_and_needs_review():
@@ -436,7 +435,8 @@ def _rand(v):
 def test_randomized_scope_gate():
     assert _rand("yes")["study_type"]["grade"] == "gold"
     no = _rand("no")
-    assert all(no[t]["grade"] == "out_of_scope" for t in ("universal", "study_type", "good_practice"))
+    assert all(no[t]["grade"] == "not_scored" for t in ("universal", "study_type", "good_practice"))
+    assert TIERS["tiers"]["clinical"]["scope_gate"]["no"] == "not_scored"
     assert "comparison_group" not in json.dumps(no)
     assert _rand("unknown")["study_type"]["grade"] == "unverified"
     assert _rand("unknown")["study_type"]["reason"] == "randomized_unknown"
@@ -583,6 +583,7 @@ LINK = {"paper_id": "p1", "track_id": None, "field": "major_cannabinoids", "refe
 
 def test_reference_fields_numeric_signed_off_satisfies_item():
     rec = copy.deepcopy(FULL_V07); rec["reporting"]["major_cannabinoids"] = NR
+    rec["fields"]["cannabinoids"] = {"value": None, "missingness": "not_reported"}  # nothing measured (default 8 off)
     plain = mc.compute(rec, "in_vivo", TIERS)
     assert plain["universal"]["grade"] == "near_gold" and plain["reference_fields"] == []
     res = mc.compute(rec, "in_vivo", TIERS, reference_links=[LINK])
@@ -593,6 +594,7 @@ def test_reference_fields_numeric_signed_off_satisfies_item():
 
 def test_reference_non_numeric_is_option_a_and_revoked_reverts():
     rec = copy.deepcopy(FULL_V07); rec["reporting"]["major_cannabinoids"] = NR
+    rec["fields"]["cannabinoids"] = {"value": None, "missingness": "not_reported"}  # nothing measured (default 8 off)
     res = mc.compute(rec, "in_vivo", TIERS, reference_links=[dict(LINK, value="high THC")])
     assert res["universal"]["grade"] == "near_gold" and res["missing_reference_available"] == ["major_cannabinoids"]
     rev = mc.compute(rec, "in_vivo", TIERS, reference_links=[dict(LINK, revoked_at="2026-11-01")])
@@ -632,6 +634,8 @@ def test_top3_number_without_units_recorded_as_absent():
 def test_top4_any_missing_universal_item_always_blocks_gold(key, study):
     rec = copy.deepcopy(FULL_V07)
     rec["reporting"][key] = NR
+    if key == "major_cannabinoids":
+        rec["fields"]["cannabinoids"] = {"value": None, "missingness": "not_reported"}  # nothing measured (default 8 off)
     u = mc.compute(rec, study, TIERS)["universal"]
     assert u["grade"] == "near_gold" and key in u["missing"]
 
@@ -797,3 +801,76 @@ def test_legacy_backfill_attribution_rule():
     assert a["thc_mg_kg"]["classification_timestamp"] == row["classification_timestamp"]
     assert mc.legacy_backfill_attribution(dict(row, classifier_version="maude-2.6.0"), TIERS) == {}
     assert "expert" in SCHEMA["$defs"]["value_source"]["enum"]
+
+
+# ---- v0.7.1: approved defaults 3, 6, 8 applied at read time ----
+
+def _route_rec(route="oral_gavage", fields=None, reporting=None, cannabinoids=None):
+    rec = copy.deepcopy(FULL_V07)
+    rec["fields"]["route"] = {"value": [route], "missingness": "reported"}
+    rec["reporting"]["route"] = rep()
+    if cannabinoids is not None:
+        rec["fields"]["cannabinoids"] = cannabinoids
+    rec["fields"].update(fields or {})
+    rec["reporting"].update(reporting or {})
+    return rec
+
+
+NOCANN = {"value": None, "missingness": "not_reported"}
+
+
+def test_tier_rule_version_bumped_and_carried():
+    assert TIERS["version"] == "0.7.1"
+    assert mc.compute(FULL_V07, "in_vivo", TIERS)["rule_version"] == "0.7.1"
+    assert mc.compute(FULL_V07, "in_vivo")["rule_version"] == "0.7.1"
+
+
+def test_default3_any_one_flowchart_field_counts():
+    exp = mc.route_requirements(_route_rec(), "in_vivo", TIERS)["expected_fields"]
+    rec = _route_rec(reporting={f: NR for f in exp} | {"dose_thc_mg_kg": rep()}, cannabinoids=NOCANN)
+    raw = copy.deepcopy(rec)
+    out = mc.compute(rec, "in_vivo", TIERS)
+    assert out["route_requirements"]["fields_status"] == {"status": "reported", "satisfied_by": "dose_thc_mg_kg", "default": 3}
+    assert "route_fields" not in out["universal"]["missing"]
+    assert rec == raw  # raw fields and statuses unchanged
+    # Pipeline per-field missingness also counts when there is no reporting item
+    rec2 = _route_rec(fields={"duration_days": {"value": 14, "missingness": "reported"}}, cannabinoids=NOCANN)
+    assert mc.route_fields_status(rec2, "in_vivo", TIERS)["satisfied_by"] == "duration_days"
+    # fail: none of the fields reported
+    bad = _route_rec(reporting={f: NR for f in exp}, cannabinoids=NOCANN)
+    o = mc.compute(bad, "in_vivo", TIERS)
+    assert o["route_requirements"]["fields_status"]["status"] == "not_reported"
+    assert "route_fields" in o["universal"]["missing"] and o["universal"]["grade"] == "near_gold"
+    # unchecked (Pipeline reason code) -> not a miss, unverified
+    unk = _route_rec(reporting={f: dict(status="could_not_check", location=None, check_failure_reason="figure_not_read") for f in exp}, cannabinoids=NOCANN)
+    assert mc.route_fields_status(unk, "in_vivo", TIERS)["status"] == "could_not_check"
+
+
+def test_default6_any_measured_cannabinoid_every_route():
+    meas = {"value": [{"name": "CBG", "amount": 2.0, "unit": "mg/kg", "source_span": "2 mg/kg CBG"}], "missingness": "reported", "source_span": "2 mg/kg CBG"}
+    for st, route in (("in_vivo", "inhaled"), ("in_vivo", "oral_gavage"), ("in_vitro", "in_vitro_media"), ("clinical", "inhaled")):
+        exp = mc.route_requirements(_route_rec(route), st, TIERS)["expected_fields"]
+        rec = _route_rec(route, reporting={f: NR for f in exp}, cannabinoids=meas)
+        assert mc.route_fields_status(rec, st, TIERS) == {"status": "reported", "satisfied_by": "fields.cannabinoids", "default": 6}, (st, route)
+        # fail: amount without unit is not measured (TOP3)
+        nounit = copy.deepcopy(meas); nounit["value"][0]["unit"] = None
+        rec = _route_rec(route, reporting={f: NR for f in exp}, cannabinoids=nounit)
+        assert mc.route_fields_status(rec, st, TIERS)["status"] == "not_reported", (st, route)
+
+
+def test_default8_any_measured_cannabinoid_is_major():
+    meas = {"value": [{"name": "THCV", "amount": 0.4, "unit": "%", "source_span": "0.4% THCV"}], "missingness": "reported", "source_span": "0.4% THCV"}
+    rec = _route_rec(reporting={"major_cannabinoids": NR}, cannabinoids=meas)
+    raw = copy.deepcopy(rec)
+    out = mc.compute(rec, "in_vivo", TIERS)
+    assert "major_cannabinoids" not in out["universal"]["missing"]
+    assert {"default": 8, "item": "major_cannabinoids", "measured": ["THCV"]} in out["defaults_applied"]
+    assert rec == raw and rec["reporting"]["major_cannabinoids"]["status"] == "not_reported"
+    # fail: nothing measured
+    none = {"value": [{"name": "THC", "amount": None, "unit": None}], "missingness": "reported", "source_span": "THC"}
+    out = mc.compute(_route_rec(reporting={"major_cannabinoids": NR}, cannabinoids=none), "in_vivo", TIERS)
+    assert "major_cannabinoids" in out["universal"]["missing"]
+    # fail: Pipeline's explicit reason code is respected
+    cited = dict(NR, not_reported_reason="cited_elsewhere")
+    out = mc.compute(_route_rec(reporting={"major_cannabinoids": cited}, cannabinoids=meas), "in_vivo", TIERS)
+    assert "major_cannabinoids" in out["universal"]["missing"]
