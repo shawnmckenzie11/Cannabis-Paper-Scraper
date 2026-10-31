@@ -8,7 +8,7 @@ No LLM. `crn_extraction/extractor.py` is deterministic: regex cues in `crn_extra
 Rules: record only what the paper says; never fill gaps, never use product labels/monographs, never fetch cited papers; no tier is computed (Methods' `methods_completeness.compute` does that; defaults 3/6/8 are not applied here). Every record is validated against the full schema.
 
 ## Sources
-`crn_extraction/sources.py`: PMC Open Access JATS XML only (stdlib XML parser). Supplementary material, acknowledgements, references and the contributor block are dropped and never fetched. XML is parsed with `defusedxml`; responses over 20 MB are rejected (`fetch_failed`). NCBI: 2.5 req/s including retries, HTTP 429/5xx retried with exponential backoff (1, 2, 4, 8 s), ≤200 ids per call, `tool=crn_pipeline`, email from `CRN_NCBI_EMAIL` else a placeholder, no API key; neither is written to provenance. A failed PMID→PMC lookup batch is retried per PMID, so only the failing paper is `fetch_failed`.
+`crn_extraction/sources.py`: PMC Open Access JATS XML only, parsed with `defusedxml`. Supplementary material, acknowledgements, references and the contributor block are dropped and never fetched. Responses over 20 MB are rejected (`fetch_failed`). NCBI: 2.5 req/s including retries, HTTP 429/5xx retried with exponential backoff (1, 2, 4, 8 s), ≤200 ids per call, `tool=crn_pipeline`, email from `CRN_NCBI_EMAIL` else a placeholder, no API key; neither is written to provenance. A failed PMID→PMC lookup batch is retried per PMID, so only the failing paper is `fetch_failed`.
 
 ## Reason codes
 | Code | Emitted when |

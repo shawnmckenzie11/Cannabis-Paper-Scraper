@@ -152,6 +152,23 @@ def test_pmids_allowlist_only(tmp_path, monkeypatch):
         benchmark.read_pmids(leg)
 
 
+def test_pmids_allowlist_uses_realpath(tmp_path, monkeypatch):
+    real = tmp_path / "eval" / "dev_pmids.txt"
+    real.parent.mkdir()
+    real.write_text("900000001\n")
+    monkeypatch.setattr(benchmark, "ALLOWED_PMID_FILES", (real,))
+    assert benchmark.read_pmids(tmp_path / "eval" / ".." / "eval" / "dev_pmids.txt") == ["900000001"]
+    alias = tmp_path / "alias.txt"
+    alias.symlink_to(real)
+    assert benchmark.read_pmids(alias) == ["900000001"]  # same file once resolved
+    other = tmp_path / "other.txt"
+    other.write_text("900000009\n")
+    sneaky = tmp_path / "eval" / "sneaky_dev_pmids.txt"
+    sneaky.symlink_to(other)
+    with pytest.raises(benchmark.Refused):
+        benchmark.read_pmids(sneaky)
+
+
 def test_pending_when_dev_file_missing(tmp_path, monkeypatch, capsys):
     dev = tmp_path / "dev_pmids.txt"
     monkeypatch.setattr(benchmark, "ALLOWED_PMID_FILES", (dev,))

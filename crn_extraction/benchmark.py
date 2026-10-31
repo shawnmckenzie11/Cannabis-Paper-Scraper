@@ -36,8 +36,8 @@ def _resolved(path):
 
 
 def guard_pmids_path(path):
-    p = _resolved(path)
-    if p not in {_resolved(a) for a in ALLOWED_PMID_FILES}:
+    p = pathlib.Path(os.path.realpath(_resolved(path)))  # resolves symlinks and '..'
+    if p not in {pathlib.Path(os.path.realpath(_resolved(a))) for a in ALLOWED_PMID_FILES}:
         raise Refused(f"refused PMID input (allowlist: {', '.join(map(str, ALLOWED_PMID_FILES))}): {path}")
     return p
 
