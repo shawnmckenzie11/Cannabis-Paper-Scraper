@@ -36,16 +36,27 @@ def _resolved(path):
     return pathlib.Path(os.path.abspath(os.path.expanduser(str(path))))
 
 
+# Symlink checks cover only components BELOW the allowlist root. Default root = the matched
+# entry's parent directory; ancestors at or above the root may be symlinks (host layout).
+ALLOWLIST_ROOT = None
+
+
+def _allowlist_root(entry):
+    if ALLOWLIST_ROOT is not None:
+        root = pathlib.Path(os.path.abspath(str(ALLOWLIST_ROOT)))
+        if root in entry.parents:
+            return root
+    return entry.parent
+
+
 def guard_pmids_path(path):
     """Lexically resolve '..' (no symlink following), then require an exact allowlist match.
-    Allowlist entries are never realpath'd; any symlink as the final component is refused."""
+    Allowlist entries are never realpath'd. Returns (path, allowlist_root)."""
     p = pathlib.Path(os.path.abspath(os.path.expanduser(str(path))))
     allowed = {pathlib.Path(os.path.abspath(str(a))) for a in ALLOWED_PMID_FILES}
     if p not in allowed:
         raise Refused(f"refused PMID input (allowlist: {', '.join(map(str, ALLOWED_PMID_FILES))}): {path}")
-    if os.path.islink(p):
-        raise Refused(f"refused PMID input: {path} is a symlink")
-    return p
+    return p, _allowlist_root(p)
 
 
 def guard_out_path(path):
@@ -56,10 +67,11 @@ def guard_out_path(path):
     return p
 
 
-def _refuse_symlink_components(path):
-    """lstat every component of the normalized absolute path; refuse if any is a symlink."""
-    cur = pathlib.Path(path.anchor)
-    for part in path.parts[1:]:
+def _refuse_symlink_components(path, root):
+    """lstat each component from below the allowlist root down to the file; refuse any symlink.
+    Components at or above the root are not checked (they may be host symlinks)."""
+    cur = root
+    for part in path.relative_to(root).parts:
         cur = cur / part
         try:
             st = os.lstat(cur)
@@ -70,26 +82,27 @@ def _refuse_symlink_components(path):
     return True
 
 
-def _read_nofollow(path):
-    """Open without following any symlink: walk directory fds (O_DIRECTORY|O_NOFOLLOW) from '/',
-    then open the file relative to its parent fd with O_NOFOLLOW, and fstat/read that one fd.
-    Closes the TOCTOU window for intermediate directories as well as the final component."""
-    path = pathlib.Path(path)
-    if not _refuse_symlink_components(path):
+def _read_nofollow(path, root):
+    """Open the allowlist root normally (symlinks above/at it are followed), then walk the
+    directories below it with O_DIRECTORY|O_NOFOLLOW and open the file relative to its parent
+    fd with O_NOFOLLOW; fstat/read that one fd. Closes the TOCTOU window below the root."""
+    path, root = pathlib.Path(path), pathlib.Path(root)
+    if not _refuse_symlink_components(path, root):
         return None
     nf = getattr(os, "O_NOFOLLOW", 0)
     cloexec = getattr(os, "O_CLOEXEC", 0)
-    dflags = os.O_RDONLY | getattr(os, "O_DIRECTORY", 0) | nf | cloexec
+    odir = getattr(os, "O_DIRECTORY", 0)
+    rel = path.relative_to(root).parts
     fds = []
     try:
         try:
-            fds.append(os.open(path.anchor, os.O_RDONLY | getattr(os, "O_DIRECTORY", 0) | cloexec))
-            for part in path.parts[1:-1]:
-                fds.append(os.open(part, dflags, dir_fd=fds[-1]))
-            fd = os.open(path.name, os.O_RDONLY | nf | cloexec, dir_fd=fds[-1])
+            fds.append(os.open(root, os.O_RDONLY | odir | cloexec))
+            for part in rel[:-1]:
+                fds.append(os.open(part, os.O_RDONLY | odir | nf | cloexec, dir_fd=fds[-1]))
+            fd = os.open(rel[-1], os.O_RDONLY | nf | cloexec, dir_fd=fds[-1])
         except FileNotFoundError:
             return None
-        except OSError as e:  # ELOOP / ENOTDIR: a symlink raced in somewhere on the path
+        except OSError as e:  # ELOOP / ENOTDIR: a symlink raced in below the root
             raise Refused(f"refused PMID input: cannot open without following links ({type(e).__name__})") from None
     finally:
         for d in fds:
@@ -102,8 +115,8 @@ def _read_nofollow(path):
 
 
 def read_pmids(path=DEV_PMIDS):
-    path = guard_pmids_path(path)
-    text = _read_nofollow(path)
+    path, root = guard_pmids_path(path)
+    text = _read_nofollow(path, root)
     if text is None:
         return None
     out = []

@@ -173,7 +173,7 @@ def test_allowlisted_entry_that_is_a_symlink_is_refused(tmp_path, monkeypatch):
     with pytest.raises(benchmark.Refused):
         benchmark.read_pmids(dev)
     with pytest.raises(benchmark.Refused):  # O_NOFOLLOW backstop even if the check is bypassed
-        benchmark._read_nofollow(dev)
+        benchmark._read_nofollow(dev, dev.parent)
     d = tmp_path / "dir_pmids.txt"
     d.mkdir()
     monkeypatch.setattr(benchmark, "ALLOWED_PMID_FILES", (d,))
@@ -181,18 +181,33 @@ def test_allowlisted_entry_that_is_a_symlink_is_refused(tmp_path, monkeypatch):
         benchmark.read_pmids(d)
 
 
-def test_symlinked_parent_dir_is_refused(tmp_path, monkeypatch):
+def test_symlinked_middle_folder_below_root_is_refused(tmp_path, monkeypatch):
+    root = tmp_path / "evalroot"
+    root.mkdir()
     other = tmp_path / "other_dir"
     other.mkdir()
     (other / "dev_pmids.txt").write_text("900000009\n")
-    (tmp_path / "eval").symlink_to(other, target_is_directory=True)
-    dev = tmp_path / "eval" / "dev_pmids.txt"
+    (root / "mid").symlink_to(other, target_is_directory=True)
+    dev = root / "mid" / "dev_pmids.txt"
     monkeypatch.setattr(benchmark, "ALLOWED_PMID_FILES", (dev,))
+    monkeypatch.setattr(benchmark, "ALLOWLIST_ROOT", root)
     with pytest.raises(benchmark.Refused):
         benchmark.read_pmids(dev)
-    monkeypatch.setattr(benchmark, "_refuse_symlink_components", lambda p: True)  # fd walk alone
+    monkeypatch.setattr(benchmark, "_refuse_symlink_components", lambda p, r: True)  # fd walk alone
     with pytest.raises(benchmark.Refused):
-        benchmark._read_nofollow(dev)
+        benchmark._read_nofollow(dev, root)
+
+
+def test_symlinked_ancestor_above_root_is_accepted(tmp_path, monkeypatch):
+    real = tmp_path / "real_ws" / "crn-eval"
+    real.mkdir(parents=True)
+    (real / "dev_pmids.txt").write_text("900000001\n")
+    (tmp_path / "workspace").symlink_to(tmp_path / "real_ws", target_is_directory=True)
+    dev = tmp_path / "workspace" / "crn-eval" / "dev_pmids.txt"
+    monkeypatch.setattr(benchmark, "ALLOWED_PMID_FILES", (dev,))
+    assert benchmark.read_pmids(dev) == ["900000001"]  # default root = entry's parent
+    monkeypatch.setattr(benchmark, "ALLOWLIST_ROOT", tmp_path / "workspace" / "crn-eval")
+    assert benchmark.read_pmids(dev) == ["900000001"]
 
 
 def test_nested_real_dirs_accepted(tmp_path, monkeypatch):
