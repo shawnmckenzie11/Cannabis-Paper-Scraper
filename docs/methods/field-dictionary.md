@@ -305,3 +305,51 @@ The contract version stays `"0.5"`; these are additive changes, and every record
 | `external_id` | vocab values + `normalized_field` | 3C: empty nullable slot for later ChEBI / RxNorm. | technical |
 
 Also in v0.6: `record_id` is required on `wp1.6.0-draft` records, `run_event.field` includes `chemotype_reported`, and the run manifest `contract_version` accepts `"0.5"` or `"0.6"`.
+
+## v0.7 additions (wp1.7.0-draft): reporting completeness — pending_biomedical
+
+`x-contract-version: "0.7"`. Based on the PhD lead conversation of Oct 31, 2026. All additive: nothing existing is removed or renamed, and every earlier record stays valid. **Every value, tier and vocabulary below is `pending_biomedical` / `phd_to_confirm`.**
+
+The idea: for this database, a paper's quality is how well it reports the details we need to reproduce the work. What counts as "needed" depends on how sure we are of the study type.
+
+| Name | Where | Meaning | Status |
+|---|---|---|---|
+| `reporting` | top level (new) | One `field_reporting` entry per completeness item key (`research_type`, `strain_or_product_name`, `supplier`, `form`, `major_cannabinoids`, `route`, `dose`, `frequency`, `duration`, `vehicle_solvent`, `storage`). A missing key means `not_yet_assessed`. | technical |
+| `field_reporting.status` | `$defs` | `reported`, `not_reported` (section read, detail absent), `could_not_check` (section not fetched or parsed), `not_applicable` (set by the decision-tree branch / study type), `not_yet_assessed` (default). Records written before v0.7 are `not_yet_assessed`, **never** backfilled as `not_reported`. | technical |
+| `field_reporting.location` | `$defs` | `methods`, `supplementary`, `cited_prior_paper`, `elsewhere_in_paper`, `unknown`. Required when status is `reported`; must be null or absent otherwise. | technical |
+| `field_reporting.evidence_quote` | `$defs` | Verbatim span supporting the status, optional. | technical |
+| `field_reporting.check_failure_reason` | `$defs` | `fetch_failed`, `parse_failed`, `source_not_available`, `budget_cap`. Required when status is `could_not_check`; null or absent otherwise. The contract only records the reason. **How each reason is scored is owned by CRN Evaluation's scorer** (Pipeline proposes `fetch_failed` / `parse_failed` count as misses). | technical |
+| `supplier` | `fields` (new) | Company or source the product was procured from. | pending_biomedical |
+| `vehicle_solvent` | `fields` (new) | Vehicle or solvent used to deliver the product (oil does not dissolve in cell media). | pending_biomedical |
+| `storage` | `fields` (new) | How the product was stored (frozen, milled, protected from light). Good practice, not required. | pending_biomedical |
+| `form` | `fields` (new) | Physical form; vocabulary `product_form` (includes `topical`). | phd_to_confirm |
+| `cannabinoids` | `fields` (new) | List of cannabinoids as reported (not THC/CBD only), each with optional amount/unit/span. A non-empty list needs `missingness: reported` and a `source_span`, same gating as `chemotype_reported`. The existing THC/CBD numeric fields stay. | phd_to_confirm |
+| `route` | `fields` | Unchanged shape. New vocabulary `route` splits oral into `oral_diet` and `oral_gavage` (dose is uncertain when mixed in food). Route stays separate from product (MCK-425). | phd_to_confirm |
+
+### Completeness tiers (`schemas/completeness_rules.json`, rule `crn_reporting_completeness` v0.1.0, pending_biomedical)
+
+| Tier | Items |
+|---|---|
+| universal (every study) | research type, strain/product name, supplier, form, major cannabinoids (must be in the methods) |
+| in_vivo | route, dose, frequency |
+| in_vitro | delivery vehicle/solvent, dose |
+| clinical | dose, frequency, duration |
+| good_practice | storage (reported separately, never affects pass/fail) |
+
+Completeness is **computed** from the statuses (`methods_completeness.compute`), never stored as truth. Output per tier: universal pass/fail, a study-type fraction (reported / (reported + not_reported); `could_not_check` and `not_yet_assessed` counted separately), and good practice on its own. **There is no combined score.**
+
+### Open PhD questions (not decided)
+
+1. Does "as previously described [ref]" count as reported in the methods? (Today it is recorded as `location: cited_prior_paper`; whether that passes the universal tier is open.)
+2. Which cannabinoids are "major"?
+3. Does a vague report (e.g. a dose without units) count as reported?
+
+### Storage / database
+
+This PR changes the contract only. Writing `reporting` to the database is a **separate later migration**, gated on CRN Reliability fixing Alembic on prod (missing psycopg, unknown stamped revision, backups off).
+
+Also in v0.7: `record_id` is required on `wp1.7.0-draft` records (same as v0.6), `run_event.field` includes the new fields, and the run manifest `contract_version` accepts `"0.7"`.
+
+### Changelog
+
+- **v0.7 (wp1.7.0-draft, 2026-10-31):** per-field reporting block with `check_failure_reason`; completeness tiers as a versioned rule; `supplier`, `vehicle_solvent`, `storage`, `form`, `cannabinoids` fields; `product_form` and `route` vocabularies. Additive only.

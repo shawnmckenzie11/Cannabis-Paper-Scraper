@@ -60,6 +60,22 @@
       "status": "pending_biomedical",
       "confirm": "phd_to_confirm",
       "note": "MCK-425; not approved until the Biomedical lead signs off."
+    },
+    {
+      "id": "v07_product_form",
+      "kind": "vocabulary_map",
+      "vocabulary": "product_form",
+      "status": "pending_biomedical",
+      "confirm": "phd_to_confirm",
+      "note": "v0.7; not approved until the Biomedical lead signs off."
+    },
+    {
+      "id": "v07_route",
+      "kind": "vocabulary_map",
+      "vocabulary": "route",
+      "status": "pending_biomedical",
+      "confirm": "phd_to_confirm",
+      "note": "v0.7; not approved until the Biomedical lead signs off."
     }
   ],
   "vocabularies": {
@@ -170,6 +186,91 @@
         }
       ],
       "note": "Set only when the paper reports cannabinoid content; never inferred from strain name."
+    },
+    "product_form": {
+      "version": "0.1.0",
+      "status": "phd_to_confirm",
+      "values": [
+        {
+          "value": "dried_flower",
+          "external_id": null
+        },
+        {
+          "value": "oil",
+          "external_id": null
+        },
+        {
+          "value": "edible",
+          "external_id": null
+        },
+        {
+          "value": "tincture",
+          "external_id": null
+        },
+        {
+          "value": "smoke",
+          "external_id": null
+        },
+        {
+          "value": "vapor",
+          "external_id": null
+        },
+        {
+          "value": "extract",
+          "external_id": null
+        },
+        {
+          "value": "pill_capsule",
+          "external_id": null
+        },
+        {
+          "value": "topical",
+          "external_id": null
+        }
+      ]
+    },
+    "route": {
+      "version": "0.1.0",
+      "status": "phd_to_confirm",
+      "note": "Oral split into diet vs gavage: dose is uncertain when mixed in food.",
+      "values": [
+        {
+          "value": "inhaled",
+          "external_id": null
+        },
+        {
+          "value": "oral_diet",
+          "external_id": null
+        },
+        {
+          "value": "oral_gavage",
+          "external_id": null
+        },
+        {
+          "value": "oral_other",
+          "external_id": null
+        },
+        {
+          "value": "intraperitoneal",
+          "external_id": null
+        },
+        {
+          "value": "intravenous",
+          "external_id": null
+        },
+        {
+          "value": "subcutaneous",
+          "external_id": null
+        },
+        {
+          "value": "topical",
+          "external_id": null
+        },
+        {
+          "value": "in_vitro_media",
+          "external_id": null
+        }
+      ]
     }
   },
   "review_policy": {

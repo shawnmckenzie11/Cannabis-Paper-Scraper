@@ -43,10 +43,10 @@ def whole(rec):
 
 def test_version_bump():
     jsonschema.Draft202012Validator.check_schema(SCHEMA)
-    assert SCHEMA["x-contract-version"] == "0.6"
+    assert SCHEMA["x-contract-version"] in ("0.6", "0.7")  # v0.7 is additive
     assert "wp1.6.0-draft" in SCHEMA["properties"]["schema_version"]["enum"]
     assert "wp1.5.0-draft" in SCHEMA["properties"]["schema_version"]["enum"]
-    assert SCHEMA["$defs"]["extraction_run_manifest"]["properties"]["contract_version"]["enum"] == ["0.5", "0.6"]
+    assert SCHEMA["$defs"]["extraction_run_manifest"]["properties"]["contract_version"]["enum"][:2] == ["0.5", "0.6"]
 
 
 def test_full_v06_record_validates_against_whole_schema():

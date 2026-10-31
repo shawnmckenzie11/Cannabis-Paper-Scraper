@@ -1,0 +1,150 @@
+{
+  "rule_id": "crn_reporting_completeness",
+  "version": "0.1.0",
+  "status": "pending_biomedical",
+  "contract_version": "0.7",
+  "note": "Completeness is computed from reporting statuses, never stored. Output per tier: universal pass/fail, study-type fraction, good_practice separate. No combined score. Tier membership pending the PhD lead.",
+  "computation": {
+    "universal": "pass iff every item has status reported (and, where required_location is set, location matches)",
+    "study_type": "fraction reported / (items not not_applicable); not_yet_assessed and could_not_check are counted separately, not as misses",
+    "good_practice": "fraction reported, reported separately; never affects pass/fail"
+  },
+  "tiers": {
+    "universal": {
+      "applies_to": "all",
+      "items": [
+        {
+          "key": "research_type",
+          "fields": [
+            "research_type"
+          ]
+        },
+        {
+          "key": "strain_or_product_name",
+          "fields": [
+            "strain_reported",
+            "product"
+          ]
+        },
+        {
+          "key": "supplier",
+          "fields": [
+            "supplier"
+          ]
+        },
+        {
+          "key": "form",
+          "fields": [
+            "form"
+          ]
+        },
+        {
+          "key": "major_cannabinoids",
+          "fields": [
+            "cannabinoids"
+          ],
+          "required_location": "methods"
+        }
+      ]
+    },
+    "in_vivo": {
+      "applies_to": "in_vivo",
+      "items": [
+        {
+          "key": "route",
+          "fields": [
+            "route"
+          ]
+        },
+        {
+          "key": "dose",
+          "fields": [
+            "dose_mg",
+            "dose_thc_mg_kg",
+            "dose_cbd_mg_kg",
+            "dose_thc_mg_g",
+            "dose_cbd_mg_g",
+            "conc_thc_mg_ml",
+            "conc_cbd_mg_ml",
+            "conc_thc_uM",
+            "conc_cbd_uM"
+          ]
+        },
+        {
+          "key": "frequency",
+          "fields": [
+            "administration_frequency"
+          ]
+        }
+      ]
+    },
+    "in_vitro": {
+      "applies_to": "in_vitro",
+      "items": [
+        {
+          "key": "vehicle_solvent",
+          "fields": [
+            "vehicle_solvent"
+          ]
+        },
+        {
+          "key": "dose",
+          "fields": [
+            "dose_mg",
+            "dose_thc_mg_kg",
+            "dose_cbd_mg_kg",
+            "dose_thc_mg_g",
+            "dose_cbd_mg_g",
+            "conc_thc_mg_ml",
+            "conc_cbd_mg_ml",
+            "conc_thc_uM",
+            "conc_cbd_uM"
+          ]
+        }
+      ]
+    },
+    "clinical": {
+      "applies_to": "clinical",
+      "items": [
+        {
+          "key": "dose",
+          "fields": [
+            "dose_mg",
+            "dose_thc_mg_kg",
+            "dose_cbd_mg_kg",
+            "dose_thc_mg_g",
+            "dose_cbd_mg_g",
+            "conc_thc_mg_ml",
+            "conc_cbd_mg_ml",
+            "conc_thc_uM",
+            "conc_cbd_uM"
+          ]
+        },
+        {
+          "key": "frequency",
+          "fields": [
+            "administration_frequency"
+          ]
+        },
+        {
+          "key": "duration",
+          "fields": [
+            "treatment_duration",
+            "duration_days"
+          ]
+        }
+      ]
+    },
+    "good_practice": {
+      "applies_to": "all",
+      "items": [
+        {
+          "key": "storage",
+          "fields": [
+            "storage"
+          ]
+        }
+      ]
+    }
+  }
+}

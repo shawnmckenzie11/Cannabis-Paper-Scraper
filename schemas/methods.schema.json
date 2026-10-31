@@ -21,9 +21,10 @@
         "wp1.3.0-draft",
         "wp1.4.0-draft",
         "wp1.5.0-draft",
-        "wp1.6.0-draft"
+        "wp1.6.0-draft",
+        "wp1.7.0-draft"
       ],
-      "description": "Methods contract version. wp1.0.0-draft records remain valid while wp1.1.0 is in draft. wp1.3.0-draft = Methods contract v0.3 (eval gaps, fields only). wp1.4.0-draft = Methods contract v0.4 (pubmed_metadata_record). wp1.5.0-draft = Methods contract v0.5 (pmc_oa_xml tier, source_license, validation split, extraction run manifest; record_id required). wp1.6.0-draft = Methods contract v0.6 (MCK-425 product/strain vocabulary: product as origin + preparation + substance normalized fields, strain_normalized name cleaning only, chemotype_reported, widened normalization_status; record_id required; vocabulary phd_to_confirm)."
+      "description": "Methods contract version. wp1.0.0-draft records remain valid while wp1.1.0 is in draft. wp1.3.0-draft = Methods contract v0.3 (eval gaps, fields only). wp1.4.0-draft = Methods contract v0.4 (pubmed_metadata_record). wp1.5.0-draft = Methods contract v0.5 (pmc_oa_xml tier, source_license, validation split, extraction run manifest; record_id required). wp1.6.0-draft = Methods contract v0.6 (MCK-425 product/strain vocabulary: product as origin + preparation + substance normalized fields, strain_normalized name cleaning only, chemotype_reported, widened normalization_status; record_id required; vocabulary phd_to_confirm). wp1.7.0-draft = Methods contract v0.7 (per-field reporting block, completeness tiers computed from statuses, supplier / vehicle_solvent / storage / form / cannabinoids fields, oral_diet vs oral_gavage route values; all pending_biomedical)."
     },
     "paper_id": {
       "type": "integer",
@@ -77,7 +78,7 @@
         },
         "route": {
           "$ref": "#/$defs/string_array_field",
-          "description": "Route / administration / exposure modality. Enum pending_biomedical (Q5)."
+          "description": "Route / administration / exposure modality. Enum pending_biomedical (Q5). v0.7: values from vocabulary route in normalization_rules.json; oral is split into oral_diet and oral_gavage. Route stays separate from product (MCK-425)."
         },
         "disease_or_experimental_model": {
           "$ref": "#/$defs/string_field",
@@ -207,6 +208,25 @@
         },
         "chemotype_reported": {
           "$ref": "#/$defs/chemotype_reported_field"
+        },
+        "supplier": {
+          "$ref": "#/$defs/string_field",
+          "description": "v0.7: company / source the product was procured from, as reported (e.g. NIDA, a named LP). pending_biomedical."
+        },
+        "vehicle_solvent": {
+          "$ref": "#/$defs/string_field",
+          "description": "v0.7: vehicle or solvent used to deliver the product (e.g. DMSO, ethanol, sesame oil), as reported. pending_biomedical."
+        },
+        "storage": {
+          "$ref": "#/$defs/string_field",
+          "description": "v0.7 (good practice, not required): how the product was stored (frozen, milled, protected from light), as reported."
+        },
+        "form": {
+          "$ref": "#/$defs/string_array_field",
+          "description": "v0.7: physical form of the product (vocabulary product_form in normalization_rules.json, includes topical). pending_biomedical."
+        },
+        "cannabinoids": {
+          "$ref": "#/$defs/cannabinoids_field"
         }
       }
     },
@@ -236,6 +256,46 @@
     },
     "record_id": {
       "$ref": "#/$defs/record_id"
+    },
+    "reporting": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "v0.7 per-field reporting block, keyed by completeness-rule item key (schemas/completeness_rules.json). A missing key means not_yet_assessed.",
+      "properties": {
+        "research_type": {
+          "$ref": "#/$defs/field_reporting"
+        },
+        "strain_or_product_name": {
+          "$ref": "#/$defs/field_reporting"
+        },
+        "supplier": {
+          "$ref": "#/$defs/field_reporting"
+        },
+        "form": {
+          "$ref": "#/$defs/field_reporting"
+        },
+        "major_cannabinoids": {
+          "$ref": "#/$defs/field_reporting"
+        },
+        "route": {
+          "$ref": "#/$defs/field_reporting"
+        },
+        "dose": {
+          "$ref": "#/$defs/field_reporting"
+        },
+        "frequency": {
+          "$ref": "#/$defs/field_reporting"
+        },
+        "duration": {
+          "$ref": "#/$defs/field_reporting"
+        },
+        "vehicle_solvent": {
+          "$ref": "#/$defs/field_reporting"
+        },
+        "storage": {
+          "$ref": "#/$defs/field_reporting"
+        }
+      }
     }
   },
   "$defs": {
@@ -1910,7 +1970,8 @@
         "contract_version": {
           "enum": [
             "0.5",
-            "0.6"
+            "0.6",
+            "0.7"
           ],
           "description": "Pinned to the contract version the run was validated against."
         },
@@ -2037,6 +2098,7 @@
         "field": {
           "enum": [
             "administration_frequency",
+            "cannabinoids",
             "chemotype_reported",
             "clinical_subtype",
             "conc_cbd_mg_ml",
@@ -2051,6 +2113,7 @@
             "dose_thc_mg_kg",
             "duration_days",
             "exposure_regimen_bin",
+            "form",
             "ideas_representation_notes",
             "inhaled_exposure_duration",
             "multiple_doses",
@@ -2072,10 +2135,13 @@
             "sgba_reporting_present",
             "sgba_sex_reported",
             "species_or_biological_system",
+            "storage",
             "strain_normalized",
             "strain_reported",
             "study_type_legacy",
-            "treatment_duration"
+            "supplier",
+            "treatment_duration",
+            "vehicle_solvent"
           ],
           "description": "A methods field name from properties.fields; never free text."
         },
@@ -2399,9 +2465,244 @@
           }
         }
       ]
+    },
+    "reporting_status": {
+      "type": "string",
+      "enum": [
+        "reported",
+        "not_reported",
+        "could_not_check",
+        "not_applicable",
+        "not_yet_assessed"
+      ],
+      "default": "not_yet_assessed",
+      "description": "v0.7 per-field reporting status. reported = the paper states it; not_reported = the section was read and it is absent; could_not_check = the section was not fetched or parsed (see check_failure_reason); not_applicable = set by the decision-tree branch / study type; not_yet_assessed = default for records written before v0.7 (never backfilled as not_reported)."
+    },
+    "reporting_location": {
+      "type": "string",
+      "enum": [
+        "methods",
+        "supplementary",
+        "cited_prior_paper",
+        "elsewhere_in_paper",
+        "unknown"
+      ],
+      "description": "Where a reported detail was found. Only set when status is reported."
+    },
+    "check_failure_reason": {
+      "type": "string",
+      "enum": [
+        "fetch_failed",
+        "parse_failed",
+        "source_not_available",
+        "budget_cap"
+      ],
+      "description": "Why a field could not be checked. Required when status is could_not_check, null/absent otherwise. The contract only records the reason; how each reason is scored is owned by CRN Evaluation's scorer."
+    },
+    "field_reporting": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "status"
+      ],
+      "description": "v0.7 (pending_biomedical): how well the paper reports one required detail. Completeness is computed from these statuses; it is never stored as truth.",
+      "properties": {
+        "status": {
+          "$ref": "#/$defs/reporting_status"
+        },
+        "location": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/reporting_location"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "evidence_quote": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Verbatim span supporting the status, when there is one."
+        },
+        "check_failure_reason": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/check_failure_reason"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "status": {
+                "const": "reported"
+              }
+            },
+            "required": [
+              "status"
+            ]
+          },
+          "then": {
+            "required": [
+              "location"
+            ],
+            "properties": {
+              "location": {
+                "$ref": "#/$defs/reporting_location"
+              }
+            }
+          },
+          "else": {
+            "properties": {
+              "location": {
+                "type": "null"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "status": {
+                "const": "could_not_check"
+              }
+            },
+            "required": [
+              "status"
+            ]
+          },
+          "then": {
+            "required": [
+              "check_failure_reason"
+            ],
+            "properties": {
+              "check_failure_reason": {
+                "$ref": "#/$defs/check_failure_reason"
+              }
+            }
+          },
+          "else": {
+            "properties": {
+              "check_failure_reason": {
+                "type": "null"
+              }
+            }
+          }
+        }
+      ]
+    },
+    "cannabinoid_entry": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "name"
+      ],
+      "properties": {
+        "name": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Cannabinoid as reported (THC, CBD, CBG, CBN, THCV, ...); not limited to THC/CBD."
+        },
+        "amount": {
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "unit": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "source_span": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      }
+    },
+    "cannabinoids_field": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "value",
+        "missingness"
+      ],
+      "description": "v0.7 (pending_biomedical): list of cannabinoids the paper reports. Same gating as chemotype_reported: a non-empty list needs missingness reported and a source_span; never inferred from strain name.",
+      "properties": {
+        "value": {
+          "type": [
+            "array",
+            "null"
+          ],
+          "items": {
+            "$ref": "#/$defs/cannabinoid_entry"
+          }
+        },
+        "missingness": {
+          "$ref": "#/$defs/missingness"
+        },
+        "source_span": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "confidence": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0,
+          "maximum": 1
+        },
+        "pending_biomedical": {
+          "type": "boolean",
+          "default": true
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "value": {
+                "type": "array",
+                "minItems": 1
+              }
+            },
+            "required": [
+              "value"
+            ]
+          },
+          "then": {
+            "required": [
+              "source_span"
+            ],
+            "properties": {
+              "missingness": {
+                "const": "reported"
+              },
+              "source_span": {
+                "type": "string",
+                "minLength": 1
+              }
+            }
+          }
+        }
+      ]
     }
   },
-  "x-contract-version": "0.6",
+  "x-contract-version": "0.7",
   "allOf": [
     {
       "if": {
@@ -2425,6 +2726,35 @@
         "properties": {
           "schema_version": {
             "const": "wp1.6.0-draft"
+          }
+        },
+        "required": [
+          "schema_version"
+        ]
+      },
+      "then": {
+        "required": [
+          "record_id"
+        ],
+        "properties": {
+          "fields": {
+            "properties": {
+              "product": {
+                "$ref": "#/$defs/product_field"
+              },
+              "strain_normalized": {
+                "$ref": "#/$defs/strain_normalized_field"
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "schema_version": {
+            "const": "wp1.7.0-draft"
           }
         },
         "required": [
