@@ -65,6 +65,8 @@ The `ai-seed-fom/` inputs are not added by this PR.
 
 **v0.6 (wp1.6.0-draft, MCK-425, PhD to confirm):** product becomes origin + preparation (+ named substance) normalized fields, `strain_normalized` is name cleaning only, new `chemotype_reported` (only when cannabinoid content is reported), `normalization_status` widens to `pending_biomedical` / `approved` / `unmapped` / `needs_review`, rare raw strings (N=3 placeholder) go to review. Vocabulary versioned in `schemas/normalization_rules.json`. Earlier records stay valid. See `field-dictionary.md`.
 
+**v0.8 (wp1.8.0-draft, technical follow-ups; tier rule stays 0.7.2):** condition JSON pinned and rebuildable from the pinned CSVs (`scripts/build_condition_json.py`, CSVs in `schemas/condition_sources/`); optional `value_source` on condition entries (existing vocabulary; legacy entries stripped by `labelling_export`); `honesty_label` `rule_based`; `fields.product_name_verbatim`; numeric ranges (`value_min` / `value_max`); `could_not_check_pointer`; run-manifest exclusion `not_original_research` (Q7). No scientific definitions changed. No DB migration. See `field-dictionary.md`.
+
 **v0.7.2 (tier rule 0.7.2):** biomedical-lead rulings: measured (defaults 6, 8) needs numeric value + unit; default 3 with no route field reported -> `route_fields` miss (near_gold), unchecked -> unverified with all can't-check reasons; default 6 is per-field (an explicit `cited_elsewhere` / `missing_units` fails only that field).
 
 **v0.7.1 (tier rule 0.7.1):** approved defaults 3, 6, 8 applied at read time in tier grading; in vitro `smoke` / `vapor` routes (no requirement); non-RCT clinical studies grade `not_scored`; TOP2 fully answered.

@@ -65,9 +65,9 @@ FULL_V07 = {
 
 def test_version_bump():
     jsonschema.Draft202012Validator.check_schema(SCHEMA)
-    assert SCHEMA["x-contract-version"] == "0.7"
+    assert SCHEMA["x-contract-version"] in ("0.7", "0.8")  # v0.8 is additive
     assert {"wp1.6.0-draft", "wp1.7.0-draft"} <= set(SCHEMA["properties"]["schema_version"]["enum"])
-    assert SCHEMA["$defs"]["extraction_run_manifest"]["properties"]["contract_version"]["enum"] == ["0.5", "0.6", "0.7"]
+    assert SCHEMA["$defs"]["extraction_run_manifest"]["properties"]["contract_version"]["enum"][:3] == ["0.5", "0.6", "0.7"]
     assert TIERS["contract_version"] == "0.7"
 
 

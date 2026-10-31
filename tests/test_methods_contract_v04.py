@@ -20,7 +20,7 @@ def bad(rec):
 
 def test_schema_valid_and_version():
     jsonschema.Draft202012Validator.check_schema(SCHEMA)
-    assert SCHEMA["x-contract-version"] in ("0.6", "0.7")  # v0.7 is additive
+    assert SCHEMA["x-contract-version"] in ("0.6", "0.7", "0.8")  # v0.7-v0.8 are additive
     assert "wp1.4.0-draft" in SCHEMA["properties"]["schema_version"]["enum"]
     assert "wp1.3.0-draft" in SCHEMA["properties"]["schema_version"]["enum"]
 

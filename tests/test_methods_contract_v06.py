@@ -43,7 +43,7 @@ def whole(rec):
 
 def test_version_bump():
     jsonschema.Draft202012Validator.check_schema(SCHEMA)
-    assert SCHEMA["x-contract-version"] in ("0.6", "0.7")  # v0.7 is additive
+    assert SCHEMA["x-contract-version"] in ("0.6", "0.7", "0.8")  # v0.7-v0.8 are additive
     assert "wp1.6.0-draft" in SCHEMA["properties"]["schema_version"]["enum"]
     assert "wp1.5.0-draft" in SCHEMA["properties"]["schema_version"]["enum"]
     assert SCHEMA["$defs"]["extraction_run_manifest"]["properties"]["contract_version"]["enum"][:2] == ["0.5", "0.6"]

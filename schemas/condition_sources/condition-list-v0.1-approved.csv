@@ -1,0 +1,251 @@
+descriptor_ui,preferred_term,in_C,in_F03,c_tree_numbers,f03_tree_numbers,entry_terms
+D000013,Congenital Abnormalities,Y,N,C16.131,,"Abnormality, Congenital; Congenital Abnormality; Abnormalities, Congenital; Birth Defects; Birth Defect"
+D000069451,Long Term Adverse Effects,Y,N,C23.550.543,,"Adverse Effects, Long Term"
+D000071896,Medically Unexplained Symptoms,Y,N,C23.888.541,,"Medically Unexplained Symptom; Symptom, Medically Unexplained; Symptoms, Medically Unexplained; Unexplained Symptom, Medically; Unexplained Symptoms, Medically"
+D000073296,Noncommunicable Diseases,Y,N,C23.550.291.898,,Noncommunicable Disease; Noninfectious Diseases; Noninfectious Disease; Non-infectious Diseases; Non-infectious Disease
+D000077260,Sleepiness,Y,N,C23.888.900,,Somnolence
+D000082643,Cerebral Cortical Thinning,Y,N,C10.597.210;C23.300.220;C23.888.592.206,,"Cortical Thinning, Cerebral; Thinning, Cerebral Cortical; Cortical Thinning; Thinning, Cortical"
+D000084462,Hyperthermia,Y,N,C23.888.119.455;C26.522.750,,Hyperthermias; Hyperpyrexia; Hyperpyrexias
+D000208,Acute Disease,Y,N,C23.550.291.125,,"Acute Diseases; Disease, Acute; Diseases, Acute"
+D000419,Albuminuria,Y,N,C12.050.351.968.934.734.269;C12.200.777.934.734.269;C12.950.934.734.269;C23.888.942.750.269,,Albuminurias
+D000505,Alopecia,Y,N,C17.800.329.937.122;C23.300.035,,"Baldness; Hair Loss; Hair Losses; Losses, Hair; Loss, Hair"
+D000592,"Amino Acid Metabolism, Inborn Errors",Y,N,C16.320.565.100;C18.452.648.100,,"Amino Acid Metabolism Disorders, Inborn; Amino Acidopathies, Inborn; Amino Acidopathy, Inborn; Inborn Amino Acidopathies; Inborn Amino Acidopathy"
+D000755,"Anemia, Sickle Cell",Y,N,C15.378.050.141.150.150;C15.378.420.155;C16.320.070.150;C16.320.365.155,,"Anemias, Sickle Cell; Sickle Cell Anemias; Hemoglobin S Disease; Disease, Hemoglobin S; Hemoglobin S Diseases"
+D000855,Anorexia,Y,N,C23.888.821.108,,Anorexias
+D000860,Hypoxia,Y,N,C23.888.852.079,,"Deficiency, Oxygen; Deficiencies, Oxygen; Oxygen Deficiencies; Oxygen Deficiency; Anoxemia"
+D001049,Apnea,Y,N,C08.618.085;C23.888.852.130,,Apneas
+D001068,Feeding and Eating Disorders,Y,Y,C23.888.821.329,F03.400,"Eating and Feeding Disorders; Appetite Disorders; Appetite Disorder; Eating Disorders; Disorder, Eating"
+D001145,"Arrhythmias, Cardiac",Y,N,C14.280.067;C23.550.073,,"Arrhythmia, Cardiac; Arrhythmia; Arrythmia; Cardiac Arrhythmia; Cardiac Arrhythmias"
+D001284,Atrophy,Y,N,C23.300.070,,Atrophies
+D001523,Mental Disorders,N,Y,,F03,Mental Disorder; Psychiatric Disorders; Psychiatric Disorder; Psychiatric Diseases; Psychiatric Disease
+D001750,"Urinary Bladder, Neurogenic",Y,N,C10.597.900;C12.050.351.968.829.760;C12.200.777.829.839;C12.950.829.760;C23.888.592.900,,"Neurogenic Urinary Bladder; Bladder, Neurogenic; Neurogenic Bladder; Neurogenic Bladder Disorder; Neurogenic Dysfunction of the Urinary Bladder"
+D001835,Body Weight,Y,N,C23.888.144,,"Body Weights; Weight, Body; Weights, Body"
+D002012,Bruxism,Y,N,C07.793.099,,"Bruxomania; Teeth Grinding Disorder; Disorder, Teeth Grinding; Grinding Disorder, Teeth; Teeth Grinding Disorders"
+D002318,Cardiovascular Diseases,Y,N,C14,,"Cardiovascular Disease; Disease, Cardiovascular; Cardiac Events; Cardiac Event; Event, Cardiac"
+D002357,Cartilage Diseases,Y,N,C05.182;C17.300.182,,Cartilage Disease; Chondromalacia; Chondromalacias
+D002371,Cat Diseases,Y,N,C22.180,,"Cat Disease; Disease, Cat; Diseases, Cat; Feline Diseases; Disease, Feline"
+D002418,Cattle Diseases,Y,N,C22.196,,"Cattle Disease; Disease, Cattle; Diseases, Cattle; Bovine Diseases; Bovine Disease"
+D002869,Chromosome Aberrations,Y,N,C23.550.210,,"Aberration, Chromosome; Aberrations, Chromosome; Chromosome Aberration; Abnormalities, Chromosomal; Abnormality, Chromosomal"
+D002908,Chronic Disease,Y,N,C23.550.291.500,,"Chronic Diseases; Disease, Chronic; Chronic Illness; Chronic Illnesses; Illness, Chronic"
+D003111,Colonic Polyps,Y,N,C23.300.825.411.235,,"Colonic Polyp; Polyp, Colonic; Polyps, Colonic"
+D003141,Communicable Diseases,Y,N,C01.221;C23.550.291.531,,"Communicable Disease; Disease, Communicable; Diseases, Communicable; Infectious Diseases; Disease, Infectious"
+D003248,Constipation,Y,N,C23.888.821.150,,Colonic Inertia; Dyschezia
+D003251,"Constriction, Pathologic",Y,N,C23.300.287,,"Constrictions, Pathologic; Pathologic Constrictions; Constriction, Pathological; Pathological Constriction; Pathologic Constriction"
+D003371,Cough,Y,N,C08.618.248;C23.888.852.293,,Coughs
+D003409,Congenital Hypothyroidism,Y,N,C05.116.099.343.347;C05.116.132.256;C16.320.240.625;C19.297.155;C19.874.482.281,,"Hypothyroidism, Congenital; Cretinism; Myxedema, Congenital; Endemic Cretinism; Cretinism, Endemic"
+D003490,Cyanosis,Y,N,C23.888.248,,Cyanoses
+D003550,Cystic Fibrosis,Y,N,C06.689.202;C08.381.187;C16.320.190;C16.614.213,,"Fibrosis, Cystic; Mucoviscidosis; Pancreatic Cystic Fibrosis; Cystic Fibrosis, Pancreatic; Cystic Fibrosis of Pancreas"
+D003643,Death,Y,N,C23.550.260,,End Of Life; End-Of-Life; Determination of Death; Near-Death Experience; Cardiac Death
+D003655,Decerebrate State,Y,N,C10.597.305;C23.888.592.298,,"Decerebrate States; State, Decerebrate; States, Decerebrate; Rigidity, Decerebrate; Decerebrate Rigidity"
+D003680,Deglutition Disorders,Y,N,C06.405.117.119;C09.775.174,,"Deglutition Disorder; Disorders, Deglutition; Dysphagia; Swallowing Disorders; Swallowing Disorder"
+D003681,Dehydration,Y,N,C18.452.950.179;C23.550.274,,"Water Stress; Stress, Water"
+D003731,Dental Caries,Y,N,C07.793.720.210,,"Carious Lesions; Carious Lesion; Lesion, Carious; Lesions, Carious; Caries, Dental"
+D003773,Dental Plaque,Y,N,C07.793.208.377,,"Plaque, Dental"
+D003876,"Dermatitis, Atopic",Y,N,C16.320.850.210;C17.800.174.193;C17.800.815.193;C17.800.827.210;C20.543.480.343,,"Atopic Dermatitis; Eczema, Atopic; Atopic Eczema; Neurodermatitis, Atopic; Atopic Neurodermatitis"
+D003882,Dermatomyositis,Y,N,C05.651.594.819.500;C10.668.491.562.575.500;C17.300.250;C17.800.185,,"Polymyositis-Dermatomyositis; Polymyositis Dermatomyositis; Dermatopolymyositis; Dermatomyositis, Adult Type; Adult Type Dermatomyositis"
+D003967,Diarrhea,Y,N,C23.888.821.214,,Diarrheas
+D004062,DiGeorge Syndrome,Y,N,C05.660.207.103.500;C14.240.400.021.500;C14.280.400.044.500;C15.604.451.249.500;C16.131.077.019.500;C16.131.240.400.021.500;C16.131.260.019.500;C16.131.482.249.500;C16.131.621.207.103.500;C16.320.180.019.500;C19.642.482.500.500,,"Syndrome, DiGeorge; DiGeorge Anomaly; DiGeorge Sequence; Familial Third and Fourth Pharyngeal Pouch Syndrome; Hypoplasia of Thymus and Parathyroids"
+D004066,Digestive System Diseases,Y,N,C06,,"Digestive System Disease; Digestive System Disorders; Digestive System Disorder; System Disorders, Digestive; Hepatobiliary Disorders"
+D004108,"Dilatation, Pathologic",Y,N,C23.300.325,,"Dilatation, Pathological; Pathological Dilatation; Pathological Dilatations; Dilatations, Pathologic; Dilatations, Pathological"
+D004194,Disease,Y,N,C23.550.288,,Diseases
+D004195,"Disease Models, Animal",Y,N,C22.232,,"Animal Disease Model; Animal Disease Models; Disease Model, Animal"
+D004198,Disease Susceptibility,Y,N,C23.550.291.687,,"Diathesis; Diatheses; Susceptibility, Disease; Disease Susceptibilities; Susceptibilities, Disease"
+D004200,Diseases in Twins,Y,N,C23.550.291.750,,"Diseases in Twin; in Twin, Diseases; in Twins, Diseases; Twin, Diseases in; Twins, Diseases in"
+D004244,Dizziness,Y,N,C23.888.592.763.237,,Dizzyness; Lightheadedness; Light-Headedness; Light Headedness; Orthostasis
+D004283,Dog Diseases,Y,N,C22.268,,"Disease, Dog; Diseases, Dog; Dog Disease; Canine Diseases; Canine Disease"
+D004408,Dysgeusia,Y,N,C10.597.751.861.479;C23.888.592.763.861.479,,"Dysgeusias; Taste, Distorted; Distorted Taste; Taste, Altered; Altered Taste"
+D004415,Dyspepsia,Y,N,C23.888.821.236,,Dyspepsias; Indigestion; Indigestions
+D004417,Dyspnea,Y,N,C08.618.326;C23.888.852.371,,Breathlessness; Shortness of Breath; Breath Shortness; Orthopnea; Recumbent Dyspnea
+D004427,Ear Diseases,Y,N,C09.218,,"Disease, Ear; Ear Disease; Otological Diseases; Disease, Otological; Otological Disease"
+D004487,Edema,Y,N,C23.888.277,,Dropsy; Hydrops; Anasarca
+D004535,Ehlers-Danlos Syndrome,Y,N,C14.907.454.240;C15.378.463.515.240;C16.131.831.428;C16.320.850.260;C17.300.200.310;C17.800.804.428;C17.800.827.260,,"Ehlers Danlos Syndrome; Syndrome, Ehlers-Danlos; Ehlers-Danlos Disease; Disease, Ehlers-Danlos; Cutis Elastica"
+D004630,Emergencies,Y,N,C23.550.291.781,,Emergency
+D004646,Emphysema,Y,N,C23.550.325,,
+D004700,Endocrine System Diseases,Y,N,C19,,"Disease, Endocrine System; Diseases, Endocrine System; Endocrine System Disease; System Disease, Endocrine; System Diseases, Endocrine"
+D004820,Epidermolysis Bullosa,Y,N,C16.131.831.493;C16.320.850.275;C17.800.804.493;C17.800.827.275;C17.800.865.410,,Acantholysis Bullosa
+D004890,Erythema,Y,N,C17.800.229;C23.888.885.328,,Erythemas
+D005128,Eye Diseases,Y,N,C11,,Eye Disease; Eye Disorders; Eye Disorder
+D005221,Fatigue,Y,N,C23.888.369,,Lassitude
+D005315,Fetal Diseases,Y,N,C12.050.703.277;C16.300,,"Disease, Fetal; Diseases, Fetal; Fetal Disease; Embryopathies; Embryopathy"
+D005317,Fetal Growth Retardation,Y,N,C12.050.703.277.370;C16.300.390;C23.550.393.450,,"Intrauterine Growth Restriction; Fetal Growth Restriction; Growth Retardation, Intrauterine; Intrauterine Growth Retardation"
+D005334,Fever,Y,N,C23.888.119.344,,Fevers; Pyrexia; Pyrexias
+D005355,Fibrosis,Y,N,C23.550.355,,Fibroses; Cirrhosis
+D005831,"Genital Diseases, Female",Y,N,C12.050.351.500;C12.100.250,,"Female Genital Diseases; Diseases, Female Genital; Female Genital Disease; Genital Disease, Female; Gynecologic Diseases"
+D005833,"Genital Neoplasms, Female",Y,N,C04.588.945.418;C12.050.351.500.242;C12.050.351.937.418;C12.100.250.242;C12.900.418,,"Female Genital Neoplasm; Genital Neoplasm, Female; Neoplasm, Female Genital; Female Genital Neoplasms; Neoplasms, Female Genital"
+D005879,Tourette Syndrome,Y,Y,C10.228.140.079.898;C10.228.662.825.800;C10.574.500.850;C16.320.400.820,F03.625.992.850,"Syndrome, Tourette; Tic Disorder, Combined Vocal and Multiple Motor; Tourette Disease; Tourette Disorder; Tourette's Disease"
+D005911,Gliosis,Y,N,C23.550.369,,Astrocytosis; Astrocytoses; Astrogliosis; Glial Scar; Glial Scars
+D006402,Hematologic Diseases,Y,N,C15.378,,"Disease, Hematologic; Diseases, Hematologic; Hematologic Disease; Blood Diseases; Blood Disease"
+D006461,Hemolysis,Y,N,C23.550.403,,"Haemolysis; Haemolyses; Intravascular Hemolysis; Hemolyses, Intravascular; Hemolysis, Intravascular"
+D006469,Hemoptysis,Y,N,C08.381.348;C23.550.414.896;C23.888.852.430,,Hemoptyses
+D006470,Hemorrhage,Y,N,C23.550.414,,Hemorrhages; Bleeding
+D006548,"Hernia, Diaphragmatic",Y,N,C23.300.707.960.500,,"Diaphragmatic Hernias; Hernias, Diaphragmatic; Diaphragmatic Hernia"
+D006552,"Hernia, Inguinal",Y,N,C23.300.707.374.875,,"Hernias, Inguinal; Inguinal Hernias; Inguinal Hernia; Inguinal Hernia, Indirect; Hernia, Indirect Inguinal"
+D006555,"Hernia, Ventral",Y,N,C23.300.707.374.937,,"Hernias, Ventral; Ventral Hernias; Ventral Hernia"
+D006646,"Histiocytosis, Langerhans-Cell",Y,N,C08.381.483.375;C15.604.250.400,,"Histiocytosis, Langerhans Cell; Histiocytosis X; Histiocytosis, Generalized; Generalized Histiocytoses; Generalized Histiocytosis"
+D006734,Horse Diseases,Y,N,C22.488,,"Disease, Horse; Diseases, Horse; Horse Disease; Equine Diseases; Disease, Equine"
+D006816,Huntington Disease,Y,Y,C10.228.140.079.545;C10.228.140.380.278;C10.228.662.262.249.750;C10.574.500.497;C16.320.400.430,F03.615.250.400;F03.615.400.390,"Progressive Chorea, Hereditary, Chronic (Huntington); Chronic Progressive Hereditary Chorea (Huntington); Huntington's Chorea; Chorea, Huntington's; Huntington Chorea"
+D006930,Hyperalgesia,Y,N,C10.597.751.791.400;C23.888.592.763.770.400,,"Hyperalgesias; Hyperalgia; Hyperalgesic Sensations; Hyperalgesic Sensation; Sensation, Hyperalgesic"
+D006935,Hypercapnia,Y,N,C23.888.852.544,,
+D006963,Hyperphagia,Y,N,C23.888.821.645,,Overeating; Polyphagia; Polyphagias
+D006965,Hyperplasia,Y,N,C23.550.444,,Hyperplasias
+D006984,Hypertrophy,Y,N,C23.300.775,,Hypertrophies
+D006985,Hyperventilation,Y,N,C08.618.501;C23.888.852.591,,Hyperventilations
+D007014,Hypophosphatasia,Y,N,C16.320.565.618.482;C18.452.648.618.482,,Hypophosphatasias
+D007035,Hypothermia,Y,N,C23.888.119.565,,"Hypothermias; Hypothermia, Accidental; Accidental Hypothermia; Accidental Hypothermias; Hypothermias, Accidental"
+D007049,Iatrogenic Disease,Y,N,C23.550.291.875,,"Disease, Iatrogenic; Diseases, Iatrogenic; Iatrogenic Diseases; Hospital-Acquired Condition; Condition, Hospital-Acquired"
+D007154,Immune System Diseases,Y,N,C20,,"Disease, Immune System; Immune System Disease; Immunologic Diseases; Disease, Immunologic; Immunologic Disease"
+D007172,Erectile Dysfunction,Y,Y,C12.100.500.214;C12.100.875.486;C12.200.294.214,F03.835.400,"Dysfunction, Erectile; Impotence; Male Impotence; Impotence, Male; Male Sexual Impotence"
+D007232,"Infant, Newborn, Diseases",Y,N,C16.614,,"Neonatal Diseases; Disease, Neonatal; Diseases, Neonatal; Neonatal Disease"
+D007239,Infections,Y,N,C01,,Infection; Infection and Infestation; Infestation and Infection; Infections and Infestations; Infestations and Infections
+D007244,Infectious Mononucleosis,Y,N,C01.925.256.466.313.400;C15.378.553.381;C15.604.515.516;C20.683.515.515,,"Glandular Fever; Fever, Glandular; Mononucleosis, Infectious"
+D007246,Infertility,Y,N,C12.100.750,,"Sterility, Reproductive; Reproductive Sterility; Sterility; Subfertility; Sub-Fertility"
+D007248,"Infertility, Male",Y,N,C12.100.500.430;C12.100.750.700;C12.200.294.430,,"Male Infertility; Sterility, Male; Male Sterility; Subfertility, Male; Male Subfertility"
+D007249,Inflammation,Y,N,C23.550.470,,"Inflammations; Innate Inflammatory Response; Inflammatory Response, Innate; Innate Inflammatory Responses"
+D007412,Intestinal Fistula,Y,N,C06.267.550;C06.405.469.471;C23.300.575.185.550,,"Fistula, Intestinal; Enterocutaneous Fistula; Fistula, Enterocutaneous; Cholecystoduodenal Fistula; Fistula, Cholecystoduodenal"
+D007511,Ischemia,Y,N,C23.550.513,,Ischemias
+D007794,"Lameness, Animal",Y,N,C22.510,,"Animal Lameness; Animal Lamenesses; Lamenesses, Animal; Gait Disorders, Animal; Animal Gait Disorder"
+D007818,Laryngeal Diseases,Y,N,C08.360;C09.400,,"Disease, Laryngeal; Diseases, Laryngeal; Laryngeal Disease; Larynx Diseases; Disease, Larynx"
+D007888,Leigh Disease,Y,N,C10.228.140.163.100.412;C16.320.565.189.412;C16.320.565.202.810.444;C18.452.132.100.412;C18.452.648.189.412;C18.452.648.202.810.444;C18.452.660.520,,"Encephalomyelitis, Subacute Necrotizing; Encephalomyelitides, Subacute Necrotizing; Necrotizing Encephalomyelitides, Subacute; Necrotizing Encephalomyelitis, Subacute; Subacute Necrotizing Encephalomyelitides"
+D008052,"Lipid Metabolism, Inborn Errors",Y,N,C16.320.565.398;C18.452.584.563;C18.452.648.398,,"Lipid Metabolism, Inborn Error"
+D008180,"Lupus Erythematosus, Systemic",Y,N,C17.300.480;C20.111.590,,"Lupus Erythematosus Disseminatus; Systemic Lupus Erythematosus; Libman-Sacks Disease; Disease, Libman-Sacks; Libman Sacks Disease"
+D008209,Lymphedema,Y,N,C15.604.496,,"Lymphedemas; Milroy Disease; Congenital Hereditary Lymphedema; Congenital Hereditary Lymphedemas; Hereditary Lymphedema, Congenital"
+D008223,Lymphoma,Y,N,C04.557.386;C15.604.515.569;C20.683.515.761,,"Lymphomas; Germinoblastoma; Germinoblastomas; Lymphoma, Malignant; Lymphomas, Malignant"
+D008310,Malocclusion,Y,N,C07.793.494,,"Malocclusions; Tooth Crowding; Crowdings, Tooth; Crowding, Tooth; Crossbite"
+D008599,Menstruation Disturbances,Y,N,C23.550.568,,"Disturbance, Menstruation; Disturbances, Menstruation; Menstruation Disturbance; Menstruation Disorders; Disorder, Menstruation"
+D008659,Metabolic Diseases,Y,N,C18.452,,"Disease, Metabolic; Metabolic Disease; Diseases, Metabolic; Thesaurismosis; Thesaurismoses"
+D009041,Motion Sickness,Y,N,C23.888.571,,"Sickness, Motion; Airsickness; Air Sickness; Sickness, Air; Carsickness"
+D009059,Mouth Diseases,Y,N,C07.465,,"Disease, Mouth; Diseases, Mouth; Mouth Disease"
+D009083,Mucopolysaccharidoses,Y,N,C16.320.565.202.715;C16.320.565.595.600;C17.300.550.575;C18.452.648.202.715;C18.452.648.595.600,,Mucopolysaccharidosis
+D009128,Muscle Spasticity,Y,N,C05.651.512;C10.597.613.550.550;C23.888.592.608.550.550,,"Spasticity, Muscle; Clasp-Knife Spasticity; Clasp Knife Spasticity; Spasticity, Clasp-Knife; Spastic"
+D009133,Muscular Atrophy,Y,N,C10.597.613.612;C23.300.070.500;C23.888.592.608.612,,"Atrophies, Muscular; Atrophy, Muscular; Muscular Atrophies; Atrophy, Muscle; Atrophies, Muscle"
+D009136,Muscular Dystrophies,Y,N,C05.651.534.500;C10.668.491.175.500;C16.320.577,,"Muscular Dystrophy; Dystrophies, Muscular; Dystrophy, Muscular; Myodystrophica; Myodystrophicas"
+D009140,Musculoskeletal Diseases,Y,N,C05,,Musculoskeletal Disease; Orthopedic Disorders; Orthopedic Disorder
+D009222,Myotonia,Y,N,C10.597.613.700;C23.888.592.608.700,,"Myotonias; Myotonic Phenomenon; Myotonic Phenomenons; Phenomenon, Myotonic; Phenomenons, Myotonic"
+D009261,Nail-Patella Syndrome,Y,N,C05.550.629;C16.131.077.606;C16.320.600;C17.800.529.400,,"Nail Patella Syndrome; Syndrome, Nail-Patella; Fong Disease; Disease, Fong; Onychoosteodysplasia"
+D009325,Nausea,Y,N,C23.888.821.712,,
+D009336,Necrosis,Y,N,C23.550.717,,
+D009361,Neoplasm Invasiveness,Y,N,C04.697.645;C23.550.727.645,,"Invasiveness, Neoplasm; Neoplasm Invasion; Invasion, Neoplasm"
+D009362,Neoplasm Metastasis,Y,N,C04.697.650;C23.550.727.650,,"Metastase; Metastases; Metastasis; Metastases, Neoplasm; Metastasis, Neoplasm"
+D009364,"Neoplasm Recurrence, Local",Y,N,C04.697.655;C23.550.727.655,,"Neoplasm Recurrence, Locoregional; Locoregional Neoplasm Recurrences; Neoplasm Recurrences, Locoregional; Recurrences, Locoregional Neoplasm; Neoplasm Recurrences, Local"
+D009369,Neoplasms,Y,N,C04,,Tumors; Neoplasia; Neoplasias; Neoplasm; Tumor
+D009389,"Neovascularization, Pathologic",Y,N,C23.550.589.500,,"Angiogenesis, Pathologic; Angiogenesis, Pathological; Pathological Angiogenesis; Neovascularization, Pathological; Pathological Neovascularization"
+D009410,Nerve Degeneration,Y,N,C23.550.737,,"Degeneration, Nerve; Degenerations, Nerve; Nerve Degenerations; Neuron Degeneration; Degeneration, Neuron"
+D009422,Nervous System Diseases,Y,N,C10,,"Disease, Nervous System; Diseases, Nervous System; Nervous System Disease; Nervous System Disorders; Disorder, Nervous System"
+D009456,Neurofibromatosis 1,Y,N,C04.557.580.600.580.590.650;C04.700.631.650;C10.562.600.500;C10.574.500.549.400;C10.668.829.675;C16.320.400.560.400;C16.320.700.633.650,,"Recklinghausen Disease, Nerve; Neurofibromatosis, Peripheral, NF1; Recklinghausen Disease of Nerve; Recklinghausens Disease of Nerve; Recklinghausen's Disease of Nerve"
+D009472,Neuronal Ceroid-Lipofuscinoses,Y,N,C10.574.500.550;C16.320.400.600;C16.320.565.398.641.509;C18.452.584.563.641.509;C18.452.648.398.641.509,,"Neuronal Ceroid Lipofuscinoses; Ceroid-Lipofuscinosis, Neuronal; Lipofuscinosis, Neuronal Ceroid; Neuronal Ceroid Lipofuscinosis; Ceroid Lipofuscinosis, Neuronal"
+D009784,Occupational Diseases,Y,N,C24,,"Disease, Occupational; Occupational Disease; Diseases, Occupational; Occupational Illnesses; Illnesse, Occupational"
+D009959,Oropharyngeal Neoplasms,Y,N,C04.588.443.665.710.684;C07.550.745.671;C09.647.710.685;C09.775.549.685,,"Neoplasm, Oropharyngeal; Oropharyngeal Neoplasm; Neoplasms, Oropharyngeal; Oropharynx Neoplasms; Neoplasm, Oropharynx"
+D010146,Pain,Y,N,C23.888.592.612,,"Suffering, Physical; Physical Suffering; Physical Sufferings; Sufferings, Physical; Ache"
+D010243,Paralysis,Y,N,C10.597.622;C23.888.592.636,,Paralyses; Palsy; Palsies; Plegia; Plegias
+D010291,Paresis,Y,N,C10.597.636;C23.888.592.643,,"Pareses; Muscle Paresis; Muscle Pareses; Pareses, Muscle; Paresis, Muscle"
+D010292,Paresthesia,Y,N,C10.597.751.791.875;C23.888.592.763.770.875,,"Paresthesias; Formication; Formications; Paresthesia, Distal; Distal Paresthesia"
+D010859,Pigmentation Disorders,Y,N,C17.800.621;C23.550.755,,"Disorder, Pigmentation; Disorders, Pigmentation; Pigmentation Disorder; Ito Syndrome; Syndrome, Ito"
+D011041,Poisoning,Y,N,C25.723,,Poisonings
+D011183,Postoperative Complications,Y,N,C23.550.767,,"Complication, Postoperative; Complications, Postoperative; Postoperative Complication"
+D011201,Poultry Diseases,Y,N,C22.131.728,,"Disease, Poultry; Diseases, Poultry; Poultry Disease"
+D011218,Prader-Willi Syndrome,Y,N,C10.597.606.360.690;C16.131.077.730;C16.131.260.700;C16.320.180.700;C16.320.447.500;C18.654.726.750.500.740,,"Prader Willi Syndrome; Syndrome, Prader-Willi; Labhart-Willi Syndrome; Labhart Willi Syndrome; Syndrome, Labhart-Willi"
+D011248,Pregnancy Complications,Y,N,C12.050.703,,"Complication, Pregnancy; Pregnancy Complication; Complications, Pregnancy; Adverse Birth Outcomes; Adverse Birth Outcome"
+D011297,Prenatal Exposure Delayed Effects,Y,N,C12.050.703.824.500,,"Delayed Effects, Prenatal Exposure; Late Effects, Prenatal Exposure"
+D011317,Priapism,Y,N,C12.100.500.494.786;C12.200.294.494.786,,Priapisms
+D011470,Prostatic Hyperplasia,Y,N,C12.100.500.565.500;C12.200.294.565.500,,"Hyperplasia, Prostatic; Adenoma, Prostatic; Adenomas, Prostatic; Prostatic Adenomas; Prostatic Adenoma"
+D011471,Prostatic Neoplasms,Y,N,C04.588.945.440.770;C12.100.500.260.750;C12.100.500.565.625;C12.200.294.260.750;C12.200.294.565.625;C12.200.758.409.750;C12.900.619.750,,"Neoplasms, Prostatic; Neoplasm, Prostatic; Prostatic Neoplasm; Prostate Neoplasms; Neoplasms, Prostate"
+D011472,Prostatitis,Y,N,C12.100.500.565.750;C12.200.294.565.750,,"Prostatitides; Acute Bacterial Prostatitis; Acute Bacterial Prostatitides; Bacterial Prostatitides, Acute; Bacterial Prostatitis, Acute"
+D011537,Pruritus,Y,N,C17.800.685;C23.888.885.625,,Itching; Pruritis
+D011671,Pulpitis,Y,N,C07.793.237.820,,"Pulpitides; Inflammation, Endodontic; Endodontic Inflammation; Endodontic Inflammations; Inflammations, Endodontic"
+D012008,Recurrence,Y,N,C23.550.291.937,,Recurrences; Relapse; Relapses; Recrudescence; Recrudescences
+D012135,Respiratory Sounds,Y,N,C23.888.852.779,,"Respiratory Sound; Sound, Respiratory; Lung Sounds; Lung Sound; Sound, Lung"
+D012140,Respiratory Tract Diseases,Y,N,C08,,"Disease, Respiratory Tract; Respiratory Tract Disease; Respiratory System Diseases; Disease, Respiratory System; Respiratory System Disease"
+D012174,Retinitis Pigmentosa,Y,N,C11.270.684;C11.768.585.658.500;C16.320.290.684,,"Pigmentary Retinopathy; Pigmentary Retinopathies; Retinopathies, Pigmentary; Retinopathy, Pigmentary; Tapetoretinal Degeneration"
+D012216,Rheumatic Diseases,Y,N,C05.799;C17.300.775,,"Disease, Rheumatic; Diseases, Rheumatic; Rheumatic Disease; Rheumatism"
+D012220,Rhinitis,Y,N,C01.748.674;C08.460.799;C08.730.674;C09.603.799,,"Rhinitides; Nasal Catarrh; Catarrh, Nasal; Catarrhs, Nasal; Nasal Catarrhs"
+D012594,"Scleroderma, Localized",Y,N,C17.300.787;C17.800.767,,"Localized Scleroderma; Sclerodermas, Localized; Scleroderma, Circumscribed; Circumscribed Scleroderma; Dermatosclerosis"
+D012595,"Scleroderma, Systemic",Y,N,C17.300.799;C17.800.784,,"Sclerosis, Systemic; Systemic Scleroderma; Systemic Sclerosis"
+D012598,Sclerosis,Y,N,C23.550.823,,Scleroses
+D012640,Seizures,Y,N,C10.597.742;C23.888.592.742,,"Seizure; Jacksonian Seizure; Seizure, Jacksonian; Single Seizure; Seizure, Single"
+D012735,"Sexual Dysfunction, Physiological",Y,N,C12.100.875,,"Physiological Sexual Dysfunction; Physiological Sexual Dysfunctions; Sex Disorders; Sexual Disorders, Physiological; Physiological Sexual Disorder"
+D012749,Sexually Transmitted Diseases,Y,N,C01.221.812;C01.778;C12.100.937;C23.550.291.531.937,,"Disease, Sexually Transmitted; Diseases, Sexually Transmitted; Sexually Transmitted Disease; STIs; STI"
+D012771,"Shock, Hemorrhagic",Y,N,C23.550.414.980;C23.550.835.650,,Hemorrhagic Shock
+D012852,Sinusitis,Y,N,C01.748.749;C08.460.692.752;C08.730.749;C09.603.692.752,,"Sinusitides; Sinus Infections; Infection, Sinus; Infections, Sinus; Sinus Infection"
+D012871,Skin Diseases,Y,N,C17.800,,Skin Disease; Dermatosis; Dermatoses; Skin and Subcutaneous Tissue Disorders
+D012893,Sleep Wake Disorders,Y,Y,C10.886;C23.888.592.796,F03.870,"Disorder, Sleep Wake; Disorders, Sleep Wake; Sleep Wake Disorder; Wake Disorder, Sleep; Wake Disorders, Sleep"
+D013035,Spasm,Y,N,C10.597.613.750;C23.888.592.608.750,,"Spasms; Muscle Spasm; Muscle Spasms; Spasm, Muscle; Spasms, Muscle"
+D013553,Swine Diseases,Y,N,C22.905,,"Diseases, Swine; Disease, Swine; Swine Disease"
+D013705,Temporomandibular Joint Disorders,Y,N,C05.500.607.221.897;C05.550.905;C05.651.243.897;C07.320.610.291.897;C07.678,,"Disorders, Temporomandibular Joint; Disorder, Temporomandibular Joint; Joint Disorders, Temporomandibular; Joint Disorder, Temporomandibular; Temporomandibular Joint Disorder"
+D013733,Testicular Diseases,Y,N,C12.100.500.829;C12.200.294.829;C19.391.829,,"Diseases, Testicular; Disease, Testicular; Testicular Disease"
+D013736,Testicular Neoplasms,Y,N,C04.588.322.762;C04.588.945.440.915;C12.100.500.260.937;C12.200.294.260.937;C12.200.758.409.937;C12.900.619.937;C19.344.762;C19.391.829.782,,"Testicular Tumor; Tumors, Testicular; Tumor, Testicular; Testicular Neoplasm; Neoplasm, Testicular"
+D014012,Tinnitus,Y,N,C09.218.458.670;C10.597.751.418.670;C23.888.592.763.393.670,,"Ringing-Buzzing-Tinnitus; Ringing Buzzing Tinnitus; Pulsatile Tinnitus; Tinnitus, Pulsatile; Tinnitus of Vascular Origin"
+D014077,Tooth Erosion,Y,N,C07.793.720.605;C07.793.818.500,,"Erosion, Tooth; Tooth Erosions; Dental Erosion; Dental Erosions; Erosion, Dental"
+D014098,Toothache,Y,N,C07.793.929;C23.888.592.612.330.500,,Toothaches; Odontalgia; Odontalgias
+D014402,Tuberous Sclerosis,Y,N,C04.445.810;C04.651.800;C04.700.700;C10.500.507.400.750;C10.562.850;C10.574.500.865;C16.131.666.507.400.750;C16.320.400.880;C16.320.700.700,,"Sclerosis, Tuberous; Bourneville Disease; Bourneville Phakomatosis; Bourneville Syndrome; Syndrome, Bourneville"
+D014456,Ulcer,Y,N,C23.550.891,,Ulcers
+D014545,Urinary Calculi,Y,N,C12.050.351.968.967.500;C12.200.777.967.500;C12.950.967.500;C23.300.175.850,,"Calculi, Urinary; Calculus, Urinary; Urinary Calculus; Urinary Stones; Stones, Urinary"
+D014570,Urologic Diseases,Y,N,C12.050.351.968;C12.200.777;C12.950,,"Diseases, Urologic; Disease, Urologic; Urologic Disease; Urinary Tract Diseases; Diseases, Urinary Tract"
+D014571,Urologic Neoplasms,Y,N,C04.588.945.947;C12.050.351.937.820;C12.200.758.820;C12.900.820;C12.950.983,,"Neoplasms, Urologic; Neoplasm, Urologic; Urologic Neoplasm; Urological Neoplasms; Neoplasms, Urological"
+D014717,Vertigo,Y,N,C09.218.568.900.883;C10.597.951;C23.888.592.958,,"Vertigos; Spinning Sensation; Sensation, Spinning; Sensations, Spinning; Spinning Sensations"
+D014786,Vision Disorders,Y,N,C10.597.751.941;C11.966;C23.888.592.763.941,,"Vision Disorder; Visual Disorders; Disorders, Visual; Disorder, Visual; Visual Disorder"
+D014832,Voice Disorders,Y,N,C08.360.940;C09.400.940;C10.597.975;C23.888.592.979,,"Voice Disorder; Voice Disorder, Neurologic; Neurologic Voice Disorder; Neurologic Voice Disorders; Voice Disorders, Neurologic"
+D014839,Vomiting,Y,N,C23.888.821.937,,Emesis
+D014947,Wounds and Injuries,Y,N,C26,,"Injuries and Wounds; Injuries, Wounds; Wounds and Injury; Injury and Wounds; Wounds, Injury"
+D015047,Zoonoses,Y,N,C01.973;C22.969,,"Zoonotic Diseases; Diseases, Zoonotic; Disease, Zoonotic; Zoonotic Disease; Zoonotic Infections"
+D015451,"Leukemia, Lymphocytic, Chronic, B-Cell",Y,N,C04.557.337.428.080.125;C15.378.508.428.080.125;C15.604.515.560.080.125;C20.683.515.528.080.125;C23.550.291.500.483,,"Lymphoma, Lymphocytic; Small-Cell Lymphoma; Small Cell Lymphoma; Lymphoma, Small-Cell; Lymphoma, Small Cell"
+D015674,"Mammary Neoplasms, Animal",Y,N,C04.588.531;C22.520,,"Animal Mammary Neoplasm; Animal Mammary Neoplasms; Mammary Neoplasm, Animal; Neoplasm, Animal Mammary; Neoplasms, Animal Mammary"
+D015746,Abdominal Pain,Y,N,C23.888.592.612.054;C23.888.821.030,,"Abdominal Pains; Pain, Abdominal; Pains, Abdominal; Colicky Pain; Colicky Pains"
+D016097,Simian Acquired Immunodeficiency Syndrome,Y,N,C01.925.782.815.616.850;C01.925.839.850;C22.735.500.850,,Simian AIDS; SAIDS; Simian Acquired Immune Deficiency Syndrome; Simian Acquired Immuno-Deficiency Syndrome; Simian Acquired Immuno Deficiency Syndrome
+D016108,Epidermolysis Bullosa Dystrophica,Y,N,C16.131.831.493.160;C16.320.850.275.160;C17.300.200.367;C17.800.804.493.160;C17.800.827.275.160;C17.800.865.410.160,,"Bullosa Dystrophica, Epidermolysis; Bullosa Dystrophicas, Epidermolysis; Dystrophica, Epidermolysis Bullosa; Dystrophicas, Epidermolysis Bullosa; Epidermolysis Bullosa Dystrophicas"
+D016388,Tooth Loss,Y,N,C07.465.714.804;C07.793.870,,"Loss, Tooth"
+D016553,"Purpura, Thrombocytopenic, Idiopathic",Y,N,C15.378.100.802.687.600;C15.378.140.855.925.750.600;C15.378.243.937.925.750.600;C15.378.463.740;C20.111.759;C20.841.600;C23.550.414.950.687.600;C23.888.885.687.687.600,,"Autoimmune Thrombocytopenia; Autoimmune Thrombocytopenias; Thrombocytopenia, Autoimmune; Thrombocytopenias, Autoimmune; Immune Thrombocytopenic Purpura"
+D016638,Critical Illness,Y,N,C23.550.291.625,,"Critical Illnesses; Illness, Critical; Illnesses, Critical; Critically Ill"
+D016891,"Polycystic Kidney, Autosomal Dominant",Y,N,C12.050.351.968.419.403.875.500;C12.200.777.419.403.875.500;C12.950.419.403.875.500;C16.131.077.717.500;C16.320.184.625.500,,"Autosomal Dominant Polycystic Kidney; Kidney, Polycystic, Autosomal Dominant; ADPKD; Adult Polycystic Kidney Disease; Polycystic Kidney Disease, Autosomal Dominant"
+D017094,"Porphyrias, Hepatic",Y,N,C06.552.830;C16.320.850.742;C17.800.827.742;C18.452.811.400,,"Hepatic Porphyrias; Hepatic Porphyria; Porphyria, Hepatic"
+D017204,Angelman Syndrome,Y,N,C10.228.662.075;C16.131.077.095;C16.131.260.040;C16.320.180.040;C16.320.447.250,,"Syndrome, Angelman; Happy Puppet Syndrome; Syndrome, Happy Puppet; Puppet Children; Children, Puppet"
+D018450,Disease Progression,Y,N,C23.550.291.656,,"Progression, Disease; Disease Exacerbation; Exacerbation, Disease; Clinical Course; Clinical Progression"
+D018496,Hyperoxia,Y,N,C23.888.852.567,,Hyperoxias
+D018746,Systemic Inflammatory Response Syndrome,Y,N,C23.550.470.790;C23.550.835.900,,"Inflammatory Response Syndrome, Systemic; Sepsis Syndrome; Sepsis Syndromes; Syndrome, Sepsis; Syndromes, Sepsis"
+D018981,Congenital Disorders of Glycosylation,Y,N,C16.320.565.202.125;C18.452.648.202.125,,"Carbohydrate-Deficient Glycoprotein Syndrome; Carbohydrate Deficient Glycoprotein Syndrome; Carbohydrate-Deficient Glycoprotein Syndromes; Syndrome, Carbohydrate-Deficient Glycoprotein; Syndromes, Carbohydrate-Deficient Glycoprotein"
+D019584,Hot Flashes,Y,N,C23.888.475,,"Flashes, Hot"
+D019588,"Aging, Premature",Y,N,C23.888.069,,Premature Aging
+D019954,Neurobehavioral Manifestations,Y,N,C10.597.606;C23.888.592.604,,"Manifestation, Neurobehavioral; Manifestations, Neurobehavioral; Neurobehavioral Manifestation; Cognitive Manifestations; Cognitive Manifestation"
+D019966,Substance-Related Disorders,Y,Y,C25.775,F03.900,"Substance Related Disorder; Disorders, Substance Related; Disorder, Substance Related; Related Disorders, Substance; Related Disorder, Substance"
+D020139,Gastroschisis,Y,N,C05.660.417;C16.131.621.417;C23.300.707.374.500,,Gastroschises; Congenital Fissure of the Abdominal Cavity
+D020179,Jet Lag Syndrome,Y,Y,C10.281.440;C10.886.425.200.500;C23.888.914.500,F03.870.400.200.500,"Jet Lag Syndromes; Jet Lag; Jet Lags; Lag, Jet; Lags, Jet"
+D020233,"Gait Disorders, Neurologic",Y,N,C10.597.404;C23.888.592.413,,"Gait Disorder, Neurologic; Neurologic Gait Disorder; Neurologic Gait Disorders; Ambulation Disorders, Neurologic; Ambulation Disorder, Neurologic"
+D020257,Ventricular Remodeling,Y,N,C23.300.985,,"Remodelings, Ventricular; Remodeling, Ventricular; Ventricular Remodelings; Cardiac Remodeling, Ventricular; Cardiac Remodelings, Ventricular"
+D020739,"Brain Diseases, Metabolic, Inborn",Y,N,C10.228.140.163.100;C16.320.565.189;C18.452.132.100;C18.452.648.189,,"Brain Syndrome, Metabolic, Inborn; Encephalopathies, Metabolic, Inborn; Inborn Errors of Metabolism, Brain; Inborn Metabolic Brain Diseases; Inborn Metabolic Brain Disorders"
+D020752,Neurocutaneous Syndromes,Y,N,C10.562;C16.131.077.350.712;C16.131.831.350.712;C16.320.850.250.712;C17.800.804.350.712;C17.800.827.250.712,,"Neurocutaneous Syndrome; Syndrome, Neurocutaneous; Syndromes, Neurocutaneous; Neuroectodermal Dysplasia Syndromes; Neuroectodermal Dysplasia Syndrome"
+D020754,Spinocerebellar Ataxias,Y,N,C10.228.140.252.190.530;C10.228.140.252.700.700;C10.228.854.787.875;C10.574.500.825.700;C10.597.350.090.500.530;C16.320.400.780.875,,"Ataxia, Spinocerebellar; Ataxias, Spinocerebellar; Spinocerebellar Ataxia; Spinocerebellar Atrophies; Atrophies, Spinocerebellar"
+D020820,Dyskinesias,Y,N,C10.228.662.262;C10.597.350;C23.888.592.350,,"Dyskinesia; Abnormal Movements; Abnormal Movement; Movement, Abnormal; Movements, Abnormal"
+D025063,Chromosome Disorders,Y,N,C16.131.260;C16.320.180,,"Chromosome Disorder; Disorder, Chromosome; Disorders, Chromosome; Chromosomal Disorders; Chromosomal Disorder"
+D033461,Hyperuricemia,Y,N,C23.550.449,,
+D034381,Hearing Loss,Y,N,C09.218.458.341;C10.597.751.418.341;C23.888.592.763.393.341,,"Loss, Hearing; Hearing Impairment; Hypoacusis; Hypoacuses; Deafness, Transitory"
+D035583,Rare Diseases,Y,N,C23.550.291.906,,"Disease, Rare; Rare Disease; Orphan Diseases; Disease, Orphan; Orphan Disease"
+D038901,X-Linked Intellectual Disability,Y,N,C10.597.606.360.455;C16.320.322.500;C16.320.400.525,,"Disabilities, X-Linked Intellectual; Disability, X-Linked Intellectual; Intellectual Disabilities, X-Linked; Intellectual Disability, X-Linked; X-Linked Intellectual Disabilities"
+D040181,"Genetic Diseases, X-Linked",Y,N,C16.320.322,,"Diseases, X-Linked Genetic; Disease, X-Linked Genetic; Genetic Diseases, X Linked; Genetic Disease, X-Linked; X-Linked Genetic Disease"
+D044342,Malnutrition,Y,N,C18.654.521,,Malnourishment; Malnourishments; Undernutrition; Nutritional Deficiency; Nutritional Deficiencies
+D045888,Ganglion Cysts,Y,N,C04.182.347;C17.300.550.274,,"Cyst, Ganglion; Cysts, Ganglion; Ganglion Cyst; Ganglionic Cysts; Cyst, Ganglionic"
+D045908,"Mpox, Monkeypox",Y,N,C01.925.256.743.615;C22.735.750;C22.795.600,,Monkey Pox; Monkey Poxs; Monkeypox; Monkeypoxs; Mpox
+D049970,Graves Ophthalmopathy,Y,N,C11.270.240;C11.675.349.500.500;C16.320.290.410;C19.874.283.605.500;C19.874.397.370.500;C20.111.555.500,,"Ophthalmopathy, Graves; Graves Orbitopathy; Orbitopathy, Graves; Ophthalmopathies, Thyroid-Associated; Thyroid-Associated Ophthalmopathies"
+D050177,Overweight,Y,N,C18.654.726.750;C23.888.144.699,,
+D051346,Mobility Limitation,Y,N,C23.888.550,,"Limitation, Mobility; Mobility Limitations; Ambulation Difficulty; Ambulation Difficulties; Difficulties, Ambulation"
+D052556,"Niemann-Pick Disease, Type C",Y,N,C10.228.140.163.100.435.825.700.875;C15.604.250.410.625.875;C16.320.565.189.435.825.700.875;C16.320.565.398.641.803.730.875;C16.320.565.595.554.825.700.875;C18.452.132.100.435.825.700.875;C18.452.584.563.641.803.730.875;C18.452.648.189.435.825.700.875;C18.452.648.398.641.803.730.875;C18.452.648.595.554.825.700.875,,"Niemann Pick Disease, Type C; Niemann-Pick Type C Disease; Niemann Pick Type C Disease; Niemann-Pick's Disease Type C; Niemann Pick's Disease Type C"
+D053447,Channelopathies,Y,N,C23.550.177,,Channelopathy
+D054198,Precursor Cell Lymphoblastic Leukemia-Lymphoma,Y,N,C04.557.337.428.600;C15.378.508.428.600;C15.604.515.560.600;C20.683.515.528.600,,"Precursor Cell Lymphoblastic Leukemia Lymphoma; Leukemia, Lymphoid, Acute; Lymphoblastic Leukemia; Lymphoblastic Leukemia, Acute; Lymphoblastic Lymphoma"
+D056151,Airway Remodeling,Y,N,C23.300.017,,"Airway Remodelings; Remodeling, Airway; Remodelings, Airway; Airway Remodelling; Airway Remodellings"
+D056587,Cryopyrin-Associated Periodic Syndromes,Y,N,C16.320.382.500;C17.800.827.368.500;C17.800.862.945.533.500.500;C17.800.862.945.766.500;C20.543.480.904.533.500.500;C20.543.480.904.766.500;C23.550.291.500.360.500.500,,Cryopyrin-Associated Periodic Syndrome; Cryopyrin Associated Periodic Syndromes; Cryopyrin Associated Periodic Syndrome; Cryopyrinopathy; Cryopyrinopathies
+D058225,"Plaque, Amyloid",Y,N,C23.300.821,,"Amyloid Plaque; Amyloid Deposits; Amyloid Deposit; Deposit, Amyloid; Deposits, Amyloid"
+D058226,"Plaque, Atherosclerotic",Y,N,C23.300.823,,"Atherosclerotic Plaque; Atherosclerotic Plaques; Fatty Streak, Arterial; Arterial Fatty Streak; Arterial Fatty Streaks"
+D058447,Eye Pain,Y,N,C11.300.500;C23.888.307.625;C23.888.592.612.316,,"Eye Pains; Pain, Eye; Pains, Eye"
+D058540,Aicardi Syndrome,Y,N,C10.500.034.687;C11.270.019;C16.131.162;C16.131.666.034.687;C16.320.290.019;C16.320.322.030,,"Syndrome, Aicardi; Corpus Callosum, Agenesis Of, With Chorioretinal Abnormality; Aicardi's Syndrome; Syndrome, Aicardi's; Agenesis of Corpus Callosum with Infantile Spasms and Ocular Abnormalities"
+D059246,Tachypnea,Y,N,C08.618.961;C23.888.852.944,,Tachypneas
+D059411,Lower Urinary Tract Symptoms,Y,N,C23.888.942.343,,Lower Urinary Tract Symptom
+D059607,"Polydipsia, Psychogenic",Y,N,C23.550.759.500;C23.888.663.500,,"Polydipsias, Psychogenic; Psychogenic Polydipsia; Psychogenic Polydipsias; Polydipsia, Primary; Polydipsias, Primary"
+D059952,Pelvic Floor Disorders,Y,N,C12.050.351.625;C12.050.703.565;C12.200.483;C12.400,,"Disorder, Pelvic Floor; Disorders, Pelvic Floor; Pelvic Floor Disorder; Pelvic Floor Diseases; Disease, Pelvic Floor"
+D060467,Disease Resistance,Y,N,C23.550.291.671,,"Disease Resistances; Resistances, Disease; Resistance, Disease"
+D062706,Prodromal Symptoms,Y,N,C23.888.672,,"Prodromal Symptom; Symptom, Prodromal; Symptoms, Prodromal; Prodromal Characteristics; Characteristic, Prodromal"
+D063646,Carcinogenesis,Y,N,C04.697.098;C23.550.727.098,,Carcinogeneses; Oncogenesis; Oncogeneses; Tumorigenesis; Tumorigeneses
+D064420,Drug-Related Side Effects and Adverse Reactions,Y,N,C25.100,,Drug Related Side Effects and Adverse Reactions; Side Effects of Drugs; Drug-Related Side Effects and Adverse Reaction; Drug Related Side Effects and Adverse Reaction; Adverse Drug Reaction
+D064793,Teratogenesis,Y,N,C23.550.863,,
+D064806,Dysbiosis,Y,N,C23.550.308,,Dysbioses; Dys-symbiosis; Dys-symbioses; Dys symbiosis; Disbiosis
+D065768,Lennox Gastaut Syndrome,Y,N,C10.228.140.490.493.750;C16.320.495,,Lennox Gastaut Syndromes; Lennox-Gastaut Syndrome
+D066126,Cardiotoxicity,Y,N,C14.280.260;C23.550.161;C25.100.389;C26.733.266,,"Cardiotoxicities; Cardiac Toxicity; Cardiac Toxicities; Toxicity, Cardiac"
+D066253,Vascular Remodeling,Y,N,C23.300.977;C23.550.918,,"Remodelings, Vascular; Remodeling, Vascular; Vascular Remodelings; Pulmonary Arterial Remodeling; Arterial Remodeling, Pulmonary"
+D066263,"Protein Aggregation, Pathological",Y,N,C23.550.770,,"Aggregation, Pathological Protein; Pathological Protein Aggregation"

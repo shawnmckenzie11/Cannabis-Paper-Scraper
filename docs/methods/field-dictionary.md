@@ -475,3 +475,24 @@ Also in v0.7: `record_id` is required on `wp1.7.0-draft` records (same as v0.6),
 ### Changelog
 
 - **v0.7 (wp1.7.0-draft, 2026-10-31):** per-field reporting block with `check_failure_reason`; completeness tiers as a versioned rule; `supplier`, `vehicle_solvent`, `storage`, `form`, `cannabinoids` fields; `product_form` and `route` vocabularies. Additive only.
+
+## v0.8 additions (wp1.8.0-draft): technical follow-ups
+
+`x-contract-version: "0.8"`. Technical contract only, all additive: every v0.7 and earlier record stays valid. No scientific definition, tier or vocabulary changes; the tier rule stays `crn_reporting_completeness` **0.7.2** (only its note text was corrected). `wp1.8.0-draft` records get the same gates as `wp1.7.0-draft` (`record_id` required, strict product / strain fields). Run manifest `contract_version` accepts `"0.8"`.
+
+| Field / rule | Where | Meaning | Status |
+|---|---|---|---|
+| Condition JSON pins | `schemas/condition_list.json`, `schemas/condition_rollup.json` | Source CSVs (copied to `schemas/condition_sources/`): approved list sha256 `40a9be45cab10ddd1dcdae7b479033cba632686468f834ba43eb846df05cadcc`, rollup sha256 `16e12f4629e55fd45ea48fc327051958f89f23b2a0305a83994135d48eedeb48`. Built JSON: `condition_list.json` sha256 `4d62e3d632d7ba37ccb3a9fc7dd2d629fc880163aa2ef9437cc1ddcf2182a16c`, `condition_rollup.json` sha256 `fe996d39dcd587300e460f330bc4139da96575cb238121853b170db2168512f9` (same pins as `methods_view.load_conditions()`). `scripts/build_condition_json.py` rebuilds both JSON files byte-for-byte from the CSVs (header metadata from the committed JSON) and refuses CSVs that do not match the pins. | technical |
+| `condition_entry.value_source` | `$defs` | Optional. Who assigned the condition, from the existing `value_source` vocabulary (`paper`, `signed_off`, `legacy_llm_fullpdf`, `expert`). MeSH is never a source (`mesh_from_pubmed` is never copied into `conditions`). `labelling_export` drops `legacy_llm_fullpdf` conditions and `mesh_from_pubmed`: reviewers never see legacy or MeSH values, and nothing is pre-filled. The vocabulary JSON files are unchanged (this is a per-record property). | technical |
+| `honesty_label` `rule_based` | top level | Written by a deterministic rule-based extractor (no LLM, no human review), e.g. `crn_extraction`. | technical |
+| `fields.product_name_verbatim` | `fields` (string_field) | Pipeline #119 gap 1: product / substance name exactly as written. Recorded only; not normalized, never affects any tier. | technical |
+| `extraction_run_manifest.excluded[].reason` `not_original_research` | `$defs` | Pipeline #119 gap 2: surveys, market studies and re-analyses are not original research (Q7, Shawn) and are out of the study set. Left out of the score like `budget_cap`; never a recall miss. | technical |
+| `value_min` / `value_max` | `number_field`, `integer_field` | Pipeline #119 gap 4: a range as reported (e.g. "5-10 mg/kg"). Both bounds are required together and need `missingness` `reported`; `value` stays null unless the paper also gives a single value. No midpoint is computed. Tier grading reads statuses only, so ranges do not change any grade. | technical |
+| `field_reporting.could_not_check_pointer` | `$defs` | Pipeline #119 gap 6: `{location, ref}` for a `could_not_check` item, e.g. `{"location": "figure", "ref": "Figure 2B"}`. Only with status `could_not_check` (`location` itself stays reported-only). Never affects any tier. | technical |
+| `check_failure_reasons` (computed output) | `methods_completeness.compute` → `universal.not_checked[]` | **Optional.** A `not_checked` entry always has `check_failure_reason` (the first reason). The `route_fields` entry also carries `check_failure_reasons` (every distinct reason, in field order) only when there is more than one; readers must not expect it otherwise. | technical |
+
+Pipeline #119 gap 3 (clinical participant counts) and gap 5 (= `rule_based`, above) are handled as noted; gap 3 is out of scope for v0.8.
+
+### Changelog (v0.8)
+
+- **v0.8 (wp1.8.0-draft, 2026-10-31):** condition JSON pins + rebuild check; `condition_entry.value_source`; `honesty_label` `rule_based`; `product_name_verbatim`; numeric ranges; `could_not_check_pointer`; manifest exclusion `not_original_research`; completeness note text corrected (rule stays 0.7.2). Additive only. No DB migration.

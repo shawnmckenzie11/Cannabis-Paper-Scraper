@@ -1,0 +1,1848 @@
+child_descriptor_ui,child_preferred_term,child_tree_number,parent_descriptor_ui,parent_preferred_term,parent_tree_number
+D000008,Abdominal Neoplasms,C04.588.033,D009369,Neoplasms,C04
+D000014,"Abnormalities, Drug-Induced",C16.131.042,D000013,Congenital Abnormalities,C16.131
+D000022,"Abortion, Spontaneous",C12.050.703.039,D011248,Pregnancy Complications,C12.050.703
+D000037,Abruptio Placentae,C12.050.703.420.078,D011248,Pregnancy Complications,C12.050.703
+D000037,Abruptio Placentae,C12.050.703.590.132,D011248,Pregnancy Complications,C12.050.703
+D000067073,Psychological Trauma,F03.950.750.375,D001523,Mental Disorders,F03
+D000067877,Autism Spectrum Disorder,F03.625.164.113,D001523,Mental Disorders,F03
+D000068079,Motor Disorders,F03.608,D001523,Mental Disorders,F03
+D000068376,Compassion Fatigue,C23.888.369.500.500,D005221,Fatigue,C23.888.369
+D000069279,Drug Resistant Epilepsy,C10.228.140.490.125,D009422,Nervous System Diseases,C10
+D000070598,Anterior Cruciate Ligament Injuries,C26.558.554.213,D014947,Wounds and Injuries,C26
+D000070636,Rotator Cuff Injuries,C26.761.340,D014947,Wounds and Injuries,C26
+D000070636,Rotator Cuff Injuries,C26.803.063,D014947,Wounds and Injuries,C26
+D000070636,Rotator Cuff Injuries,C26.874.400,D014947,Wounds and Injuries,C26
+D000070642,"Brain Injuries, Traumatic",C10.228.140.199.444,D009422,Nervous System Diseases,C10
+D000070642,"Brain Injuries, Traumatic",C10.900.300.087.235,D009422,Nervous System Diseases,C10
+D000070642,"Brain Injuries, Traumatic",C26.915.300.200.194,D014947,Wounds and Injuries,C26
+D000071017,Hyperekplexia,C10.228.590,D009422,Nervous System Diseases,C10
+D000071057,Tardive Dyskinesia,C10.228.662.262.500.500,D020820,Dyskinesias,C10.228.662.262
+D000071057,Tardive Dyskinesia,C10.597.350.275.500,D020820,Dyskinesias,C10.597.350
+D000071057,Tardive Dyskinesia,C23.888.592.350.275.500,D020820,Dyskinesias,C23.888.592.350
+D000071243,Zika Virus Infection,C01.920.852.937,D007239,Infections,C01
+D000071243,Zika Virus Infection,C01.925.081.990,D007239,Infections,C01
+D000071243,Zika Virus Infection,C01.925.782.350.250.990,D007239,Infections,C01
+D000072657,ST Elevation Myocardial Infarction,C14.280.647.500.875,D002318,Cardiovascular Diseases,C14
+D000072657,ST Elevation Myocardial Infarction,C14.907.585.500.875,D002318,Cardiovascular Diseases,C14
+D000072657,ST Elevation Myocardial Infarction,C23.550.513.355.750.875,D007511,Ischemia,C23.550.513
+D000072657,ST Elevation Myocardial Infarction,C23.550.717.489.750.875,D009336,Necrosis,C23.550.717
+D000072716,Cancer Pain,C23.888.592.612.212,D010146,Pain,C23.888.592.612
+D000072836,Surgical Wound,C26.859,D014947,Wounds and Injuries,C26
+D000072861,"Phobia, Social",F03.080.725.500,D001523,Mental Disorders,F03
+D000073376,Epileptic Syndromes,C10.228.140.490.493,D009422,Nervous System Diseases,C10
+D000073397,Occupational Stress,C24.580,D009784,Occupational Diseases,C24
+D000073818,Procedural Pain,C23.888.592.612.860,D010146,Pain,C23.888.592.612
+D000073932,Food Addiction,F03.400.813,D001068,Feeding and Eating Disorders,F03.400
+D000074609,Marijuana Use,F03.900.643,D019966,Substance-Related Disorders,F03.900
+D000075222,Essential Hypertension,C14.907.489.165,D002318,Cardiovascular Diseases,C14
+D000076064,Drug Misuse,C25.775.342,D019966,Substance-Related Disorders,C25.775
+D000076064,Drug Misuse,F03.900.384,D019966,Substance-Related Disorders,F03.900
+D000077195,Squamous Cell Carcinoma of Head and Neck,C04.557.470.200.400.565,D009369,Neoplasms,C04
+D000077195,Squamous Cell Carcinoma of Head and Neck,C04.588.443.177,D009369,Neoplasms,C04
+D000077216,"Carcinoma, Ovarian Epithelial",C04.557.470.200.295,D009369,Neoplasms,C04
+D000077216,"Carcinoma, Ovarian Epithelial",C04.588.322.455.199,D009369,Neoplasms,C04
+D000077216,"Carcinoma, Ovarian Epithelial",C12.050.351.500.056.630.705.350,D005831,"Genital Diseases, Female",C12.050.351.500
+D000077216,"Carcinoma, Ovarian Epithelial",C12.050.351.937.418.685.350,D005833,"Genital Neoplasms, Female",C12.050.351.937.418
+D000077216,"Carcinoma, Ovarian Epithelial",C12.100.250.056.630.705.350,D005831,"Genital Diseases, Female",C12.100.250
+D000077216,"Carcinoma, Ovarian Epithelial",C12.900.418.685.350,D005833,"Genital Neoplasms, Female",C12.900.418
+D000077216,"Carcinoma, Ovarian Epithelial",C19.344.410.199,D004700,Endocrine System Diseases,C19
+D000077216,"Carcinoma, Ovarian Epithelial",C19.391.630.705.350,D004700,Endocrine System Diseases,C19
+D000077273,"Thyroid Cancer, Papillary",C04.557.470.200.025.085.612,D009369,Neoplasms,C04
+D000077273,"Thyroid Cancer, Papillary",C04.588.322.894.400,D009369,Neoplasms,C04
+D000077273,"Thyroid Cancer, Papillary",C04.588.443.915.400,D009369,Neoplasms,C04
+D000077273,"Thyroid Cancer, Papillary",C19.344.894.400,D004700,Endocrine System Diseases,C19
+D000077273,"Thyroid Cancer, Papillary",C19.874.788.400,D004700,Endocrine System Diseases,C19
+D000079262,Pregnancy in Obesity,C12.050.703.417,D011248,Pregnancy Complications,C12.050.703
+D000079262,Pregnancy in Obesity,C18.654.726.750.500.633,D050177,Overweight,C18.654.726.750
+D000079262,Pregnancy in Obesity,C23.888.144.699.500.125,D050177,Overweight,C23.888.144.699
+D000079690,Postoperative Cognitive Complications,C23.550.767.831,D011183,Postoperative Complications,C23.550.767
+D000079690,Postoperative Cognitive Complications,F03.615.250.700.500,D001523,Mental Disorders,F03
+D000080146,Avoidant Restrictive Food Intake Disorder,F03.400.157,D001068,Feeding and Eating Disorders,F03.400
+D000080424,Cytokine Release Syndrome,C23.550.470.790.250,D018746,Systemic Inflammatory Response Syndrome,C23.550.470.790
+D000080424,Cytokine Release Syndrome,C23.550.835.900.356,D018746,Systemic Inflammatory Response Syndrome,C23.550.835.900
+D000080874,Synucleinopathies,C10.574.928,D009422,Nervous System Diseases,C10
+D000080874,Synucleinopathies,C18.452.845.650,D008659,Metabolic Diseases,C18.452
+D000081029,Pulmonary Arterial Hypertension,C08.381.423.847,D012140,Respiratory Tract Diseases,C08
+D000081084,Accidental Injuries,C26.040,D014947,Wounds and Injuries,C26
+D000083023,Colitis-Associated Neoplasms,C04.588.274.476.411.307.180.400,D009369,Neoplasms,C04
+D000083023,Colitis-Associated Neoplasms,C06.301.371.411.307.180.400,D004066,Digestive System Diseases,C06
+D000083023,Colitis-Associated Neoplasms,C06.405.249.411.307.180.400,D004066,Digestive System Diseases,C06
+D000083023,Colitis-Associated Neoplasms,C06.405.469.158.356.180.400,D004066,Digestive System Diseases,C06
+D000083023,Colitis-Associated Neoplasms,C06.405.469.491.307.180.400,D004066,Digestive System Diseases,C06
+D000083102,Reinjuries,C26.741,D014947,Wounds and Injuries,C26
+D000083242,Ischemic Stroke,C10.228.140.300.775.400,D009422,Nervous System Diseases,C10
+D000083242,Ischemic Stroke,C14.907.253.855.400,D002318,Cardiovascular Diseases,C14
+D000083302,Hemorrhagic Stroke,C10.228.140.300.775.300,D009422,Nervous System Diseases,C10
+D000083302,Hemorrhagic Stroke,C14.907.253.855.300,D002318,Cardiovascular Diseases,C14
+D000083682,Opiate Overdose,C25.775.342.500.500.500,D019966,Substance-Related Disorders,C25.775
+D000083682,Opiate Overdose,C25.775.643.500.700,D019966,Substance-Related Disorders,C25.775
+D000083682,Opiate Overdose,F03.900.384.500.500.500,D019966,Substance-Related Disorders,F03.900
+D000083682,Opiate Overdose,F03.900.647.500.700,D019966,Substance-Related Disorders,F03.900
+D000084063,Reinfection,C23.550.291.937.250,D012008,Recurrence,C23.550.291.937
+D000084202,Chemotherapy-Related Cognitive Impairment,C25.100.429,D064420,Drug-Related Side Effects and Adverse Reactions,C25.100
+D000084202,Chemotherapy-Related Cognitive Impairment,F03.615.250.700.250,D001523,Mental Disorders,F03
+D000086382,COVID-19,C01.748.610.763.500,D007239,Infections,C01
+D000086382,COVID-19,C01.925.705.500,D007239,Infections,C01
+D000086382,COVID-19,C01.925.782.600.550.200.163,D007239,Infections,C01
+D000086382,COVID-19,C08.381.677.807.500,D012140,Respiratory Tract Diseases,C08
+D000086382,COVID-19,C08.730.610.763.500,D012140,Respiratory Tract Diseases,C08
+D000087122,Mania,C10.597.606.483,D019954,Neurobehavioral Manifestations,C10.597.606
+D000087122,Mania,C23.888.592.604.487,D019954,Neurobehavioral Manifestations,C23.888.592.604
+D000088282,Corticobasal Degeneration,C10.574.945.312,D009422,Nervous System Diseases,C10
+D000089965,Erythema Ab Igne,C17.800.229.100,D004890,Erythema,C17.800.229
+D000089965,Erythema Ab Igne,C23.888.885.328.500,D004890,Erythema,C23.888.885.328
+D000089965,Erythema Ab Igne,C26.200.413,D014947,Wounds and Injuries,C26
+D000090663,"Schizophrenia, Treatment-Resistant",F03.700.750.650,D001523,Mental Disorders,F03
+D000090862,Neuroinflammatory Diseases,C10.586,D009422,Nervous System Diseases,C10
+D000090862,Neuroinflammatory Diseases,C23.550.470.544,D007249,Inflammation,C23.550.470
+D000091323,Psychogenic Nonepileptic Seizures,C10.597.742.357,D012640,Seizures,C10.597.742
+D000091323,Psychogenic Nonepileptic Seizures,C23.888.592.742.357,D012640,Seizures,C23.888.592.742
+D000092122,Bronchiolitis Obliterans Syndrome,C08.127.446.135.140.600.500,D012140,Respiratory Tract Diseases,C08
+D000092122,Bronchiolitis Obliterans Syndrome,C08.381.495.146.135.140.600.500,D012140,Respiratory Tract Diseases,C08
+D000092122,Bronchiolitis Obliterans Syndrome,C20.452.500,D007154,Immune System Diseases,C20
+D000092222,Focal Cortical Dysplasia,C10.500.507.400.125,D009422,Nervous System Diseases,C10
+D000092222,Focal Cortical Dysplasia,C16.131.666.507.400.125,D000013,Congenital Abnormalities,C16.131
+D000092223,Hippocampal Sclerosis,C10.500.507.400.187,D009422,Nervous System Diseases,C10
+D000092223,Hippocampal Sclerosis,C16.131.666.507.400.187,D000013,Congenital Abnormalities,C16.131
+D000092503,Wrist Fractures,C26.088.906.500,D014947,Wounds and Injuries,C26
+D000092503,Wrist Fractures,C26.404.968,D014947,Wounds and Injuries,C26
+D000094024,Post-Acute COVID-19 Syndrome,C01.748.610.763.500.500,D007239,Infections,C01
+D000094024,Post-Acute COVID-19 Syndrome,C01.925.705.500.500,D007239,Infections,C01
+D000094024,Post-Acute COVID-19 Syndrome,C01.925.782.600.550.200.163.500,D007239,Infections,C01
+D000094024,Post-Acute COVID-19 Syndrome,C08.381.677.807.500.500,D012140,Respiratory Tract Diseases,C08
+D000094024,Post-Acute COVID-19 Syndrome,C08.730.610.763.500.500,D012140,Respiratory Tract Diseases,C08
+D000094024,Post-Acute COVID-19 Syndrome,C23.550.291.500.829.375,D002908,Chronic Disease,C23.550.291.500
+D000094629,"Dissection, Thoracic Aorta",C14.907.055.448.250.128,D002318,Cardiovascular Diseases,C14
+D000094629,"Dissection, Thoracic Aorta",C14.907.109.070.500.128,D002318,Cardiovascular Diseases,C14
+D000094665,"Dissection, Blood Vessel",C14.907.055.448,D002318,Cardiovascular Diseases,C14
+D000096003,Hypertensive Crisis,C14.907.489.723,D002318,Cardiovascular Diseases,C14
+D000096142,Cutaneous Malignant Melanoma,C04.557.465.625.650.510.520,D009369,Neoplasms,C04
+D000096142,Cutaneous Malignant Melanoma,C04.557.580.625.650.510.520,D009369,Neoplasms,C04
+D000096142,Cutaneous Malignant Melanoma,C04.557.665.510.520,D009369,Neoplasms,C04
+D000096142,Cutaneous Malignant Melanoma,C04.588.805.444,D009369,Neoplasms,C04
+D000096142,Cutaneous Malignant Melanoma,C17.800.882.534,D012871,Skin Diseases,C17.800
+D000096442,Genetic Risk Score,C23.550.291.687.500.750,D004198,Disease Susceptibility,C23.550.291.687
+D000096583,Compulsive Sexual Behavior Disorder,F03.835.750.500,D001523,Mental Disorders,F03
+D000096704,Cannabinoid Hyperemesis Syndrome,C25.775.635.500,D019966,Substance-Related Disorders,C25.775
+D000096704,Cannabinoid Hyperemesis Syndrome,F03.900.635.500,D019966,Substance-Related Disorders,F03.900
+D000096705,Excoriation Disorder,F03.080.600.125,D001523,Mental Disorders,F03
+D000096705,Excoriation Disorder,F03.250.150,D001523,Mental Disorders,F03
+D000096825,Rhinosinusitis,C01.748.674.500,D012220,Rhinitis,C01.748.674
+D000096825,Rhinosinusitis,C01.748.749.703,D012852,Sinusitis,C01.748.749
+D000096825,Rhinosinusitis,C08.460.692.752.703,D012852,Sinusitis,C08.460.692.752
+D000096825,Rhinosinusitis,C08.460.799.955,D012220,Rhinitis,C08.460.799
+D000096825,Rhinosinusitis,C08.730.674.500,D012220,Rhinitis,C08.730.674
+D000096825,Rhinosinusitis,C08.730.749.703,D012852,Sinusitis,C08.730.749
+D000096825,Rhinosinusitis,C09.603.692.752.703,D012852,Sinusitis,C09.603.692.752
+D000096825,Rhinosinusitis,C09.603.799.955,D012220,Rhinitis,C09.603.799
+D000097815,Emotional Exhaustion,C23.888.369.250,D005221,Fatigue,C23.888.369
+D000098647,Generalized Anxiety Disorder,F03.080.400,D001523,Mental Disorders,F03
+D000098653,Nociplastic Pain,C23.888.592.612.748,D010146,Pain,C23.888.592.612
+D000151,Acinetobacter Infections,C01.150.252.400.560.022,D007239,Infections,C01
+D000152,Acne Vulgaris,C17.800.030.150,D012871,Skin Diseases,C17.800
+D000152,Acne Vulgaris,C17.800.794.111,D012871,Skin Diseases,C17.800
+D000163,Acquired Immunodeficiency Syndrome,C01.221.250.875.040,D003141,Communicable Diseases,C01.221
+D000163,Acquired Immunodeficiency Syndrome,C01.221.812.640.400.040,D012749,Sexually Transmitted Diseases,C01.221.812
+D000163,Acquired Immunodeficiency Syndrome,C01.778.640.400.040,D012749,Sexually Transmitted Diseases,C01.778
+D000163,Acquired Immunodeficiency Syndrome,C01.925.782.815.616.400.040,D007239,Infections,C01
+D000163,Acquired Immunodeficiency Syndrome,C01.925.813.400.040,D007239,Infections,C01
+D000163,Acquired Immunodeficiency Syndrome,C01.925.839.040,D007239,Infections,C01
+D000163,Acquired Immunodeficiency Syndrome,C12.100.937.640.400.040,D012749,Sexually Transmitted Diseases,C12.100.937
+D000163,Acquired Immunodeficiency Syndrome,C20.673.480.040,D007154,Immune System Diseases,C20
+D000230,Adenocarcinoma,C04.557.470.200.025,D009369,Neoplasms,C04
+D000236,Adenoma,C04.557.470.035,D009369,Neoplasms,C04
+D000267,Tissue Adhesions,C23.550.355.274.840,D005355,Fibrosis,C23.550.355
+D000310,Adrenal Gland Neoplasms,C04.588.322.078,D009369,Neoplasms,C04
+D000310,Adrenal Gland Neoplasms,C19.053.347,D004700,Endocrine System Diseases,C19
+D000310,Adrenal Gland Neoplasms,C19.344.078,D004700,Endocrine System Diseases,C19
+D000341,"Affective Disorders, Psychotic",F03.700.150,D001523,Mental Disorders,F03
+D000379,Agoraphobia,F03.080.725.250,D001523,Mental Disorders,F03
+D000382,Agricultural Workers' Diseases,C24.080,D009784,Occupational Diseases,C24
+D000402,Airway Obstruction,C08.618.846.185,D012140,Respiratory Tract Diseases,C08
+D000435,Alcoholic Intoxication,C25.775.100.175,D019966,Substance-Related Disorders,C25.775
+D000435,Alcoholic Intoxication,F03.900.100.300,D019966,Substance-Related Disorders,F03.900
+D000437,Alcoholism,C25.775.100.250,D019966,Substance-Related Disorders,C25.775
+D000437,Alcoholism,F03.900.100.350,D019966,Substance-Related Disorders,F03.900
+D000506,Alopecia Areata,C17.800.329.937.122.147,D000505,Alopecia,C17.800.329.937.122
+D000544,Alzheimer Disease,C10.228.140.380.100,D009422,Nervous System Diseases,C10
+D000544,Alzheimer Disease,C10.574.945.249,D009422,Nervous System Diseases,C10
+D000544,Alzheimer Disease,F03.615.400.100,D001523,Mental Disorders,F03
+D000647,Amnesia,C10.597.606.525.100,D019954,Neurobehavioral Manifestations,C10.597.606
+D000647,Amnesia,C23.888.592.604.529.100,D019954,Neurobehavioral Manifestations,C23.888.592.604
+D000647,Amnesia,F03.615.200,D001523,Mental Disorders,F03
+D000686,Amyloidosis,C18.452.845.500,D008659,Metabolic Diseases,C18.452
+D000690,Amyotrophic Lateral Sclerosis,C10.228.854.139,D009422,Nervous System Diseases,C10
+D000690,Amyotrophic Lateral Sclerosis,C10.574.562.250,D009422,Nervous System Diseases,C10
+D000690,Amyotrophic Lateral Sclerosis,C10.574.950.050,D009422,Nervous System Diseases,C10
+D000690,Amyotrophic Lateral Sclerosis,C10.668.467.250,D009422,Nervous System Diseases,C10
+D000690,Amyotrophic Lateral Sclerosis,C18.452.845.800.050,D008659,Metabolic Diseases,C18.452
+D000707,Anaphylaxis,C20.543.480.099,D007154,Immune System Diseases,C20
+D000740,Anemia,C15.378.050,D006402,Hematologic Diseases,C15.378
+D000757,Anencephaly,C10.500.680.196,D009422,Nervous System Diseases,C10
+D000757,Anencephaly,C16.131.085.197,D000013,Congenital Abnormalities,C16.131
+D000757,Anencephaly,C16.131.666.680.196,D000013,Congenital Abnormalities,C16.131
+D000782,Aneuploidy,C23.550.210.050,D002869,Chromosome Aberrations,C23.550.210
+D000784,Aortic Dissection,C14.907.055.448.250,D002318,Cardiovascular Diseases,C14
+D000784,Aortic Dissection,C14.907.109.070.500,D002318,Cardiovascular Diseases,C14
+D000787,Angina Pectoris,C14.280.647.187,D002318,Cardiovascular Diseases,C14
+D000787,Angina Pectoris,C14.907.585.187,D002318,Cardiovascular Diseases,C14
+D000787,Angina Pectoris,C23.888.592.612.233.500,D010146,Pain,C23.888.592.612
+D000789,"Angina, Unstable",C14.280.647.187.150,D002318,Cardiovascular Diseases,C14
+D000789,"Angina, Unstable",C14.907.585.187.150,D002318,Cardiovascular Diseases,C14
+D000789,"Angina, Unstable",C23.888.592.612.233.500.150,D010146,Pain,C23.888.592.612
+D000799,Angioedema,C14.907.079,D002318,Cardiovascular Diseases,C14
+D000799,Angioedema,C17.800.862.945.066,D012871,Skin Diseases,C17.800
+D000799,Angioedema,C20.543.480.904.066,D007154,Immune System Diseases,C20
+D000856,Anorexia Nervosa,F03.400.125,D001068,Feeding and Eating Disorders,F03.400
+D000987,Antisocial Personality Disorder,F03.675.050,D001523,Mental Disorders,F03
+D001008,Anxiety Disorders,F03.080,D001523,Mental Disorders,F03
+D001018,Aortic Diseases,C14.907.109,D002318,Cardiovascular Diseases,C14
+D001167,Arteritis,C14.907.940.090,D002318,Cardiovascular Diseases,C14
+D001168,Arthritis,C05.550.114,D009140,Musculoskeletal Diseases,C05
+D001169,"Arthritis, Experimental",C05.550.114.015,D009140,Musculoskeletal Diseases,C05
+D001170,"Arthritis, Infectious",C01.100,D007239,Infections,C01
+D001170,"Arthritis, Infectious",C05.550.114.099,D009140,Musculoskeletal Diseases,C05
+D001171,"Arthritis, Juvenile",C05.550.114.122,D009140,Musculoskeletal Diseases,C05
+D001171,"Arthritis, Juvenile",C05.799.056,D012216,Rheumatic Diseases,C05.799
+D001171,"Arthritis, Juvenile",C17.300.775.049,D012216,Rheumatic Diseases,C17.300.775
+D001171,"Arthritis, Juvenile",C20.111.198,D007154,Immune System Diseases,C20
+D001172,"Arthritis, Rheumatoid",C05.550.114.154,D009140,Musculoskeletal Diseases,C05
+D001172,"Arthritis, Rheumatoid",C05.799.114,D012216,Rheumatic Diseases,C05.799
+D001172,"Arthritis, Rheumatoid",C17.300.775.099,D012216,Rheumatic Diseases,C17.300.775
+D001172,"Arthritis, Rheumatoid",C20.111.199,D007154,Immune System Diseases,C20
+D001237,Asphyxia,C23.550.260.095,D003643,Death,C23.550.260
+D001237,Asphyxia,C26.103,D014947,Wounds and Injuries,C26
+D001249,Asthma,C08.127.108,D012140,Respiratory Tract Diseases,C08
+D001249,Asthma,C08.381.495.108,D012140,Respiratory Tract Diseases,C08
+D001249,Asthma,C08.674.095,D012140,Respiratory Tract Diseases,C08
+D001249,Asthma,C20.543.480.680.095,D007154,Immune System Diseases,C20
+D001259,Ataxia,C10.597.350.090,D020820,Dyskinesias,C10.597.350
+D001259,Ataxia,C23.888.592.350.090,D020820,Dyskinesias,C23.888.592.350
+D001265,Athletic Injuries,C26.115,D014947,Wounds and Injuries,C26
+D001281,Atrial Fibrillation,C14.280.067.198,D001145,"Arrhythmias, Cardiac",C14.280.067
+D001281,Atrial Fibrillation,C23.550.073.198,D001145,"Arrhythmias, Cardiac",C23.550.073
+D001289,Attention Deficit Disorder with Hyperactivity,F03.625.094.150,D001523,Mental Disorders,F03
+D001321,Autistic Disorder,F03.625.164.113.500,D001523,Mental Disorders,F03
+D001327,Autoimmune Diseases,C20.111,D007154,Immune System Diseases,C20
+D001329,Autolysis,C23.550.260.224.617.236,D003643,Death,C23.550.260
+D001342,Autonomic Nervous System Diseases,C10.177,D009422,Nervous System Diseases,C10
+D001416,Back Pain,C23.888.592.612.107,D010146,Pain,C23.888.592.612
+D001424,Bacterial Infections,C01.150.252,D007239,Infections,C01
+D001471,Barrett Esophagus,C04.834.154,D009369,Neoplasms,C04
+D001471,Barrett Esophagus,C06.405.117.102,D004066,Digestive System Diseases,C06
+D001650,Bile Duct Neoplasms,C04.588.274.120.250,D009369,Neoplasms,C04
+D001650,Bile Duct Neoplasms,C06.130.120.120,D004066,Digestive System Diseases,C06
+D001650,Bile Duct Neoplasms,C06.130.320.120,D004066,Digestive System Diseases,C06
+D001650,Bile Duct Neoplasms,C06.301.120.250,D004066,Digestive System Diseases,C06
+D001660,Biliary Tract Diseases,C06.130,D004066,Digestive System Diseases,C06
+D001714,Bipolar Disorder,F03.600.150.500,D001523,Mental Disorders,F03
+D001724,Birth Weight,C23.888.144.186,D001835,Body Weight,C23.888.144
+D001733,Bites and Stings,C25.723.127,D011041,Poisoning,C25.723
+D001733,Bites and Stings,C26.176,D014947,Wounds and Injuries,C26
+D001745,Urinary Bladder Diseases,C12.050.351.968.829,D014570,Urologic Diseases,C12.050.351.968
+D001745,Urinary Bladder Diseases,C12.200.777.829,D014570,Urologic Diseases,C12.200.777
+D001745,Urinary Bladder Diseases,C12.950.829,D014570,Urologic Diseases,C12.950
+D001748,Urinary Bladder Neck Obstruction,C12.050.351.968.767.700.850,D014570,Urologic Diseases,C12.050.351.968
+D001748,Urinary Bladder Neck Obstruction,C12.050.351.968.829.601,D014570,Urologic Diseases,C12.050.351.968
+D001748,Urinary Bladder Neck Obstruction,C12.200.777.767.700.962,D014570,Urologic Diseases,C12.200.777
+D001748,Urinary Bladder Neck Obstruction,C12.200.777.829.760,D014570,Urologic Diseases,C12.200.777
+D001748,Urinary Bladder Neck Obstruction,C12.950.767.700.850,D014570,Urologic Diseases,C12.950
+D001748,Urinary Bladder Neck Obstruction,C12.950.829.601,D014570,Urologic Diseases,C12.950
+D001749,Urinary Bladder Neoplasms,C04.588.945.947.960,D014571,Urologic Neoplasms,C04.588.945.947
+D001749,Urinary Bladder Neoplasms,C12.050.351.937.820.945,D014571,Urologic Neoplasms,C12.050.351.937.820
+D001749,Urinary Bladder Neoplasms,C12.050.351.968.829.707,D014570,Urologic Diseases,C12.050.351.968
+D001749,Urinary Bladder Neoplasms,C12.200.758.820.968,D014571,Urologic Neoplasms,C12.200.758.820
+D001749,Urinary Bladder Neoplasms,C12.200.777.829.813,D014570,Urologic Diseases,C12.200.777
+D001749,Urinary Bladder Neoplasms,C12.900.820.945,D014571,Urologic Neoplasms,C12.900.820
+D001749,Urinary Bladder Neoplasms,C12.950.829.707,D014570,Urologic Diseases,C12.950
+D001749,Urinary Bladder Neoplasms,C12.950.983.945,D014571,Urologic Neoplasms,C12.950.983
+D001753,Blast Injuries,C26.120.126,D014947,Wounds and Injuries,C26
+D001764,Blepharospasm,C11.338.250,D005128,Eye Diseases,C11
+D001778,Blood Coagulation Disorders,C15.378.100,D006402,Hematologic Diseases,C15.378
+D001847,Bone Diseases,C05.116,D009140,Musculoskeletal Diseases,C05
+D001851,"Bone Diseases, Metabolic",C05.116.198,D009140,Musculoskeletal Diseases,C05
+D001851,"Bone Diseases, Metabolic",C18.452.104,D008659,Metabolic Diseases,C18.452
+D001859,Bone Neoplasms,C04.588.149,D009369,Neoplasms,C04
+D001859,Bone Neoplasms,C05.116.231,D009140,Musculoskeletal Diseases,C05
+D001862,Bone Resorption,C05.116.264,D009140,Musculoskeletal Diseases,C05
+D001883,Borderline Personality Disorder,F03.675.100,D001523,Mental Disorders,F03
+D001919,Bradycardia,C14.280.067.319,D001145,"Arrhythmias, Cardiac",C14.280.067
+D001919,Bradycardia,C23.550.073.300,D001145,"Arrhythmias, Cardiac",C23.550.073
+D001924,Brain Concussion,C10.228.140.199.444.250,D009422,Nervous System Diseases,C10
+D001924,Brain Concussion,C10.900.300.087.235.250,D009422,Nervous System Diseases,C10
+D001924,Brain Concussion,C10.900.300.350.300,D009422,Nervous System Diseases,C10
+D001924,Brain Concussion,C26.915.300.200.194.250,D014947,Wounds and Injuries,C26
+D001924,Brain Concussion,C26.915.300.450.500,D014947,Wounds and Injuries,C26
+D001924,Brain Concussion,C26.974.382.200,D014947,Wounds and Injuries,C26
+D001926,Brain Death,C10.228.140.151,D009422,Nervous System Diseases,C10
+D001926,Brain Death,C10.597.606.358.800.200.100,D019954,Neurobehavioral Manifestations,C10.597.606
+D001926,Brain Death,C23.550.260.159,D003643,Death,C23.550.260
+D001927,Brain Diseases,C10.228.140,D009422,Nervous System Diseases,C10
+D001928,"Brain Diseases, Metabolic",C10.228.140.163,D009422,Nervous System Diseases,C10
+D001928,"Brain Diseases, Metabolic",C18.452.132,D008659,Metabolic Diseases,C18.452
+D001929,Brain Edema,C10.228.140.187,D009422,Nervous System Diseases,C10
+D001930,Brain Injuries,C10.228.140.199,D009422,Nervous System Diseases,C10
+D001930,Brain Injuries,C10.900.300.087,D009422,Nervous System Diseases,C10
+D001930,Brain Injuries,C26.915.300.200,D014947,Wounds and Injuries,C26
+D001932,Brain Neoplasms,C04.588.614.250.195,D009369,Neoplasms,C04
+D001932,Brain Neoplasms,C10.228.140.211,D009422,Nervous System Diseases,C10
+D001932,Brain Neoplasms,C10.551.240.250,D009422,Nervous System Diseases,C10
+D001943,Breast Neoplasms,C04.588.180,D009369,Neoplasms,C04
+D001943,Breast Neoplasms,C17.800.090.500,D012871,Skin Diseases,C17.800
+D001991,Bronchitis,C01.748.099,D007239,Infections,C01
+D001991,Bronchitis,C08.127.446,D012140,Respiratory Tract Diseases,C08
+D001991,Bronchitis,C08.381.495.146,D012140,Respiratory Tract Diseases,C08
+D001991,Bronchitis,C08.730.099,D012140,Respiratory Tract Diseases,C08
+D001997,Bronchopulmonary Dysplasia,C08.381.520.750.500,D012140,Respiratory Tract Diseases,C08
+D001997,Bronchopulmonary Dysplasia,C16.614.521.125,D007232,"Infant, Newborn, Diseases",C16.614
+D002032,Bulimia,C23.888.821.645.500,D006963,Hyperphagia,C23.888.821.645
+D002051,Burkitt Lymphoma,C01.925.256.466.313.165,D007239,Infections,C01
+D002051,Burkitt Lymphoma,C01.925.928.313.165,D007239,Infections,C01
+D002051,Burkitt Lymphoma,C04.557.386.480.150.165,D008223,Lymphoma,C04.557.386
+D002051,Burkitt Lymphoma,C15.604.515.569.480.150.165,D008223,Lymphoma,C15.604.515.569
+D002051,Burkitt Lymphoma,C20.683.515.761.480.150.165,D008223,Lymphoma,C20.683.515.761
+D002054,Burning Mouth Syndrome,C07.465.114,D009059,Mouth Diseases,C07.465
+D002055,"Burnout, Professional",C24.580.500,D009784,Occupational Diseases,C24
+D002056,Burns,C26.200,D014947,Wounds and Injuries,C26
+D002057,"Burns, Chemical",C26.200.156,D014947,Wounds and Injuries,C26
+D002100,Cachexia,C23.888.144.243.963.250,D001835,Body Weight,C23.888.144
+D002100,Cachexia,C23.888.144.828.250,D001835,Body Weight,C23.888.144
+D002105,Cadmium Poisoning,C25.723.522.625,D011041,Poisoning,C25.723
+D002115,Calciphylaxis,C18.452.174.130.186,D008659,Metabolic Diseases,C18.452
+D002177,Candidiasis,C01.150.703.160,D007239,Infections,C01
+D002189,Marijuana Abuse,C25.775.635,D019966,Substance-Related Disorders,C25.775
+D002189,Marijuana Abuse,F03.900.635,D019966,Substance-Related Disorders,F03.900
+D002249,Carbon Monoxide Poisoning,C25.723.455.245,D011041,Poisoning,C25.723
+D002277,Carcinoma,C04.557.470.200,D009369,Neoplasms,C04
+D002279,"Carcinoma 256, Walker",C04.557.435.290.210,D009369,Neoplasms,C04
+D002279,"Carcinoma 256, Walker",C04.557.450.795.290.210,D009369,Neoplasms,C04
+D002279,"Carcinoma 256, Walker",C04.619.045,D009369,Neoplasms,C04
+D002289,"Carcinoma, Non-Small-Cell Lung",C04.588.894.797.520.109.220.249,D009369,Neoplasms,C04
+D002289,"Carcinoma, Non-Small-Cell Lung",C08.381.540.140.500,D012140,Respiratory Tract Diseases,C08
+D002289,"Carcinoma, Non-Small-Cell Lung",C08.785.520.100.220.500,D012140,Respiratory Tract Diseases,C08
+D002292,"Carcinoma, Renal Cell",C04.557.470.200.025.390,D009369,Neoplasms,C04
+D002292,"Carcinoma, Renal Cell",C04.588.945.947.535.160,D014571,Urologic Neoplasms,C04.588.945.947
+D002292,"Carcinoma, Renal Cell",C12.050.351.937.820.535.160,D014571,Urologic Neoplasms,C12.050.351.937.820
+D002292,"Carcinoma, Renal Cell",C12.050.351.968.419.473.160,D014570,Urologic Diseases,C12.050.351.968
+D002292,"Carcinoma, Renal Cell",C12.200.758.820.750.160,D014571,Urologic Neoplasms,C12.200.758.820
+D002292,"Carcinoma, Renal Cell",C12.200.777.419.473.160,D014570,Urologic Diseases,C12.200.777
+D002292,"Carcinoma, Renal Cell",C12.900.820.535.160,D014571,Urologic Neoplasms,C12.900.820
+D002292,"Carcinoma, Renal Cell",C12.950.419.473.160,D014570,Urologic Diseases,C12.950
+D002292,"Carcinoma, Renal Cell",C12.950.983.535.160,D014571,Urologic Neoplasms,C12.950.983
+D002294,"Carcinoma, Squamous Cell",C04.557.470.200.400,D009369,Neoplasms,C04
+D002294,"Carcinoma, Squamous Cell",C04.557.470.700.400,D009369,Neoplasms,C04
+D002305,Cardiac Tamponade,C14.280.155,D002318,Cardiovascular Diseases,C14
+D002340,Carotid Artery Diseases,C10.228.140.300.200,D009422,Nervous System Diseases,C10
+D002340,Carotid Artery Diseases,C14.907.253.123,D002318,Cardiovascular Diseases,C14
+D002349,Carpal Tunnel Syndrome,C10.668.829.500.500.200,D009422,Nervous System Diseases,C10
+D002349,Carpal Tunnel Syndrome,C10.668.829.550.200,D009422,Nervous System Diseases,C10
+D002349,Carpal Tunnel Syndrome,C26.844.150.206,D014947,Wounds and Injuries,C26
+D002375,Catalepsy,C10.597.350.200,D020820,Dyskinesias,C10.597.350
+D002375,Catalepsy,C23.888.592.350.200,D020820,Dyskinesias,C23.888.592.350
+D002386,Cataract,C11.510.245,D005128,Eye Diseases,C11
+D002389,Catatonia,C10.597.606.115,D019954,Neurobehavioral Manifestations,C10.597.606
+D002389,Catatonia,C23.888.592.604.115,D019954,Neurobehavioral Manifestations,C23.888.592.604
+D002471,"Cell Transformation, Neoplastic",C04.697.098.500,D063646,Carcinogenesis,C04.697.098
+D002471,"Cell Transformation, Neoplastic",C23.550.727.098.500,D063646,Carcinogenesis,C23.550.727.098
+D002493,Central Nervous System Diseases,C10.228,D009422,Nervous System Diseases,C10
+D002524,Cerebellar Ataxia,C10.228.140.252.190,D009422,Nervous System Diseases,C10
+D002524,Cerebellar Ataxia,C10.597.350.090.500,D020820,Dyskinesias,C10.597.350
+D002524,Cerebellar Ataxia,C23.888.592.350.090.200,D020820,Dyskinesias,C23.888.592.350
+D002526,Cerebellar Diseases,C10.228.140.252,D009422,Nervous System Diseases,C10
+D002528,Cerebellar Neoplasms,C04.588.614.250.195.411.211,D009369,Neoplasms,C04
+D002528,Cerebellar Neoplasms,C10.228.140.211.500.200,D009422,Nervous System Diseases,C10
+D002528,Cerebellar Neoplasms,C10.228.140.252.200,D009422,Nervous System Diseases,C10
+D002528,Cerebellar Neoplasms,C10.551.240.250.400.300,D009422,Nervous System Diseases,C10
+D002532,Intracranial Aneurysm,C10.228.140.300.510.600,D009422,Nervous System Diseases,C10
+D002532,Intracranial Aneurysm,C14.907.055.635,D002318,Cardiovascular Diseases,C14
+D002532,Intracranial Aneurysm,C14.907.253.560.300,D002318,Cardiovascular Diseases,C14
+D002538,Intracranial Arteriovenous Malformations,C10.228.140.300.520,D009422,Nervous System Diseases,C10
+D002538,Intracranial Arteriovenous Malformations,C10.500.190.500,D009422,Nervous System Diseases,C10
+D002538,Intracranial Arteriovenous Malformations,C14.240.850.750.295,D002318,Cardiovascular Diseases,C14
+D002538,Intracranial Arteriovenous Malformations,C14.240.850.875.500,D002318,Cardiovascular Diseases,C14
+D002538,Intracranial Arteriovenous Malformations,C14.907.150.295,D002318,Cardiovascular Diseases,C14
+D002538,Intracranial Arteriovenous Malformations,C14.907.253.560.400,D002318,Cardiovascular Diseases,C14
+D002538,Intracranial Arteriovenous Malformations,C16.131.240.850.750.295,D000013,Congenital Abnormalities,C16.131
+D002538,Intracranial Arteriovenous Malformations,C16.131.240.850.875.500,D000013,Congenital Abnormalities,C16.131
+D002538,Intracranial Arteriovenous Malformations,C16.131.666.190.500,D000013,Congenital Abnormalities,C16.131
+D002543,Cerebral Hemorrhage,C10.228.140.300.535.200,D009422,Nervous System Diseases,C10
+D002543,Cerebral Hemorrhage,C14.907.253.573.200,D002318,Cardiovascular Diseases,C14
+D002543,Cerebral Hemorrhage,C23.550.414.913.100,D006470,Hemorrhage,C23.550.414
+D002544,Cerebral Infarction,C10.228.140.300.150.477.200,D009422,Nervous System Diseases,C10
+D002544,Cerebral Infarction,C10.228.140.300.775.200.200,D009422,Nervous System Diseases,C10
+D002544,Cerebral Infarction,C14.907.253.092.477.200,D002318,Cardiovascular Diseases,C14
+D002544,Cerebral Infarction,C14.907.253.855.200.200,D002318,Cardiovascular Diseases,C14
+D002544,Cerebral Infarction,C23.550.513.355.250.200,D007511,Ischemia,C23.550.513
+D002544,Cerebral Infarction,C23.550.717.489.250.200,D009336,Necrosis,C23.550.717
+D002545,Brain Ischemia,C10.228.140.300.150,D009422,Nervous System Diseases,C10
+D002545,Brain Ischemia,C14.907.253.092,D002318,Cardiovascular Diseases,C14
+D002546,"Ischemic Attack, Transient",C10.228.140.300.150.836,D009422,Nervous System Diseases,C10
+D002546,"Ischemic Attack, Transient",C14.907.253.092.836,D002318,Cardiovascular Diseases,C14
+D002547,Cerebral Palsy,C10.228.140.140.254,D009422,Nervous System Diseases,C10
+D002561,Cerebrovascular Disorders,C10.228.140.300,D009422,Nervous System Diseases,C10
+D002561,Cerebrovascular Disorders,C14.907.253,D002318,Cardiovascular Diseases,C14
+D002583,Uterine Cervical Neoplasms,C04.588.945.418.948.850,D005833,"Genital Neoplasms, Female",C04.588.945.418
+D002583,Uterine Cervical Neoplasms,C12.050.351.500.852.593.131,D005831,"Genital Diseases, Female",C12.050.351.500
+D002583,Uterine Cervical Neoplasms,C12.050.351.500.852.762.850,D005831,"Genital Diseases, Female",C12.050.351.500
+D002583,Uterine Cervical Neoplasms,C12.050.351.937.418.875.850,D005833,"Genital Neoplasms, Female",C12.050.351.937.418
+D002583,Uterine Cervical Neoplasms,C12.100.250.852.593.131,D005831,"Genital Diseases, Female",C12.100.250
+D002583,Uterine Cervical Neoplasms,C12.100.250.852.762.850,D005831,"Genital Diseases, Female",C12.100.250
+D002583,Uterine Cervical Neoplasms,C12.900.418.875.850,D005833,"Genital Neoplasms, Female",C12.900.418
+D002637,Chest Pain,C23.888.592.612.233,D010146,Pain,C23.888.592.612
+D002653,Child Behavior Disorders,F03.625.141,D001523,Mental Disorders,F03
+D002658,Developmental Disabilities,F03.625.421,D001523,Mental Disorders,F03
+D002690,Chlamydia Infections,C01.150.252.400.210.125,D007239,Infections,C01
+D002690,Chlamydia Infections,C01.150.252.734.301,D007239,Infections,C01
+D002690,Chlamydia Infections,C01.221.812.281.301,D012749,Sexually Transmitted Diseases,C01.221.812
+D002690,Chlamydia Infections,C01.778.281.301,D012749,Sexually Transmitted Diseases,C01.778
+D002690,Chlamydia Infections,C12.100.937.281.301,D012749,Sexually Transmitted Diseases,C12.100.937
+D002796,Choline Deficiency,C18.654.521.500.133.699.160,D044342,Malnutrition,C18.654.521
+D002813,Chondrosarcoma,C04.557.450.565.280,D009369,Neoplasms,C04
+D002813,Chondrosarcoma,C04.557.450.795.300,D009369,Neoplasms,C04
+D002822,Choriocarcinoma,C04.557.465.955.207,D009369,Neoplasms,C04
+D002822,Choriocarcinoma,C04.557.470.200.025.455,D009369,Neoplasms,C04
+D002822,Choriocarcinoma,C04.850.908.208,D009369,Neoplasms,C04
+D002822,Choriocarcinoma,C12.050.703.720.949.208,D011248,Pregnancy Complications,C12.050.703
+D002872,Chromosome Deletion,C23.550.210.050.500.500,D002869,Chromosome Aberrations,C23.550.210
+D002921,Cicatrix,C23.550.355.274,D005355,Fibrosis,C23.550.355
+D003015,Clostridium Infections,C01.150.252.410.222,D007239,Infections,C01
+D003072,Cognition Disorders,F03.615.250,D001523,Mental Disorders,F03
+D003085,Colic,C16.614.166,D007232,"Infant, Newborn, Diseases",C16.614
+D003092,Colitis,C06.405.205.265,D004066,Digestive System Diseases,C06
+D003092,Colitis,C06.405.469.158.188,D004066,Digestive System Diseases,C06
+D003093,"Colitis, Ulcerative",C06.405.205.265.231,D004066,Digestive System Diseases,C06
+D003093,"Colitis, Ulcerative",C06.405.205.731.249,D004066,Digestive System Diseases,C06
+D003093,"Colitis, Ulcerative",C06.405.469.158.188.231,D004066,Digestive System Diseases,C06
+D003093,"Colitis, Ulcerative",C06.405.469.432.249,D004066,Digestive System Diseases,C06
+D003110,Colonic Neoplasms,C04.588.274.476.411.307.180,D009369,Neoplasms,C04
+D003110,Colonic Neoplasms,C06.301.371.411.307.180,D004066,Digestive System Diseases,C06
+D003110,Colonic Neoplasms,C06.405.249.411.307.180,D004066,Digestive System Diseases,C06
+D003110,Colonic Neoplasms,C06.405.469.158.356.180,D004066,Digestive System Diseases,C06
+D003110,Colonic Neoplasms,C06.405.469.491.307.180,D004066,Digestive System Diseases,C06
+D003128,Coma,C10.597.606.358.800.200,D019954,Neurobehavioral Manifestations,C10.597.606
+D003128,Coma,C23.888.592.604.359.800.200,D019954,Neurobehavioral Manifestations,C23.888.592.604
+D003221,Confusion,C10.597.606.337,D019954,Neurobehavioral Manifestations,C10.597.606
+D003221,Confusion,C23.888.592.604.339,D019954,Neurobehavioral Manifestations,C23.888.592.604
+D003244,Consciousness Disorders,C10.597.606.358,D019954,Neurobehavioral Manifestations,C10.597.606
+D003244,Consciousness Disorders,C23.888.592.604.359,D019954,Neurobehavioral Manifestations,C23.888.592.604
+D003244,Consciousness Disorders,F03.615.300,D001523,Mental Disorders,F03
+D003291,Conversion Disorder,F03.875.300,D001523,Mental Disorders,F03
+D003294,"Seizures, Febrile",C10.597.742.571,D012640,Seizures,C10.597.742
+D003294,"Seizures, Febrile",C23.888.592.742.571,D012640,Seizures,C23.888.592.742
+D003324,Coronary Artery Disease,C14.280.647.250.260,D002318,Cardiovascular Diseases,C14
+D003324,Coronary Artery Disease,C14.907.137.126.339,D002318,Cardiovascular Diseases,C14
+D003324,Coronary Artery Disease,C14.907.585.250.260,D002318,Cardiovascular Diseases,C14
+D003327,Coronary Disease,C14.280.647.250,D002318,Cardiovascular Diseases,C14
+D003327,Coronary Disease,C14.907.585.250,D002318,Cardiovascular Diseases,C14
+D003328,Coronary Thrombosis,C14.280.647.250.290,D002318,Cardiovascular Diseases,C14
+D003328,Coronary Thrombosis,C14.907.355.830.220,D002318,Cardiovascular Diseases,C14
+D003328,Coronary Thrombosis,C14.907.585.250.290,D002318,Cardiovascular Diseases,C14
+D003329,Coronary Vasospasm,C14.280.647.250.295,D002318,Cardiovascular Diseases,C14
+D003329,Coronary Vasospasm,C14.907.585.250.295,D002318,Cardiovascular Diseases,C14
+D003330,Coronary Vessel Anomalies,C14.240.400.210,D002318,Cardiovascular Diseases,C14
+D003330,Coronary Vessel Anomalies,C14.280.400.210,D002318,Cardiovascular Diseases,C14
+D003330,Coronary Vessel Anomalies,C16.131.240.400.210,D000013,Congenital Abnormalities,C16.131
+D003424,Crohn Disease,C06.405.205.731.500,D004066,Digestive System Diseases,C06
+D003424,Crohn Disease,C06.405.469.432.500,D004066,Digestive System Diseases,C06
+D003428,Cross Infection,C01.248,D007239,Infections,C01
+D003428,Cross Infection,C23.550.291.875.500,D007049,Iatrogenic Disease,C23.550.291.875
+D003453,Cryptococcosis,C01.150.703.248,D007239,Infections,C01
+D003480,Cushing Syndrome,C19.053.800.367,D004700,Endocrine System Diseases,C19
+D003556,Cystitis,C12.050.351.968.829.495,D014570,Urologic Diseases,C12.050.351.968
+D003556,Cystitis,C12.200.777.829.495,D014570,Urologic Diseases,C12.200.777
+D003556,Cystitis,C12.950.829.495,D014570,Urologic Diseases,C12.950
+D003586,Cytomegalovirus Infections,C01.925.256.466.245,D007239,Infections,C01
+D003638,Deafness,C09.218.458.341.186,D034381,Hearing Loss,C09.218.458.341
+D003638,Deafness,C10.597.751.418.341.186,D034381,Hearing Loss,C10.597.751.418.341
+D003638,Deafness,C23.888.592.763.393.341.186,D034381,Hearing Loss,C23.888.592.763.393.341
+D003645,"Death, Sudden",C23.550.260.322,D003643,Death,C23.550.260
+D003668,Pressure Ulcer,C17.800.893.665,D012871,Skin Diseases,C17.800
+D003693,Delirium,C10.597.606.337.500,D019954,Neurobehavioral Manifestations,C10.597.606
+D003693,Delirium,C23.888.592.604.339.500,D019954,Neurobehavioral Manifestations,C23.888.592.604
+D003693,Delirium,F03.615.350,D001523,Mental Disorders,F03
+D003704,Dementia,C10.228.140.380,D009422,Nervous System Diseases,C10
+D003704,Dementia,F03.615.400,D001523,Mental Disorders,F03
+D003711,Demyelinating Diseases,C10.314,D009422,Nervous System Diseases,C10
+D003715,Dengue,C01.920.852.157,D007239,Infections,C01
+D003715,Dengue,C01.925.081.270,D007239,Infections,C01
+D003715,Dengue,C01.925.782.350.250.214,D007239,Infections,C01
+D003715,Dengue,C01.925.782.417.214,D007239,Infections,C01
+D003865,Major Depressive Disorder,F03.600.300.375,D001523,Mental Disorders,F03
+D003866,Depressive Disorder,F03.600.300,D001523,Mental Disorders,F03
+D003872,Dermatitis,C17.800.174,D012871,Skin Diseases,C17.800
+D003875,Drug Eruptions,C17.800.174.600,D012871,Skin Diseases,C17.800
+D003875,Drug Eruptions,C25.100.468.380,D064420,Drug-Related Side Effects and Adverse Reactions,C25.100
+D003877,"Dermatitis, Contact",C17.800.174.255,D012871,Skin Diseases,C17.800
+D003877,"Dermatitis, Contact",C17.800.815.255,D012871,Skin Diseases,C17.800
+D003920,Diabetes Mellitus,C18.452.394.750,D008659,Metabolic Diseases,C18.452
+D003920,Diabetes Mellitus,C19.246,D004700,Endocrine System Diseases,C19
+D003921,"Diabetes Mellitus, Experimental",C18.452.394.750.074,D008659,Metabolic Diseases,C18.452
+D003921,"Diabetes Mellitus, Experimental",C19.246.240,D004700,Endocrine System Diseases,C19
+D003922,"Diabetes Mellitus, Type 1",C18.452.394.750.124,D008659,Metabolic Diseases,C18.452
+D003922,"Diabetes Mellitus, Type 1",C19.246.267,D004700,Endocrine System Diseases,C19
+D003922,"Diabetes Mellitus, Type 1",C20.111.327,D007154,Immune System Diseases,C20
+D003924,"Diabetes Mellitus, Type 2",C18.452.394.750.149,D008659,Metabolic Diseases,C18.452
+D003924,"Diabetes Mellitus, Type 2",C19.246.300,D004700,Endocrine System Diseases,C19
+D003925,Diabetic Angiopathies,C14.907.320,D002318,Cardiovascular Diseases,C14
+D003925,Diabetic Angiopathies,C19.246.099.500,D004700,Endocrine System Diseases,C19
+D003928,Diabetic Nephropathies,C12.050.351.968.419.192,D014570,Urologic Diseases,C12.050.351.968
+D003928,Diabetic Nephropathies,C12.200.777.419.192,D014570,Urologic Diseases,C12.200.777
+D003928,Diabetic Nephropathies,C12.950.419.192,D014570,Urologic Diseases,C12.950
+D003928,Diabetic Nephropathies,C19.246.099.875,D004700,Endocrine System Diseases,C19
+D003929,Diabetic Neuropathies,C10.668.829.300,D009422,Nervous System Diseases,C10
+D003929,Diabetic Neuropathies,C19.246.099.937,D004700,Endocrine System Diseases,C19
+D003930,Diabetic Retinopathy,C11.768.257,D005128,Eye Diseases,C11
+D003930,Diabetic Retinopathy,C14.907.320.382,D002318,Cardiovascular Diseases,C14
+D003930,Diabetic Retinopathy,C19.246.099.500.382,D004700,Endocrine System Diseases,C19
+D004213,Dissociative Disorders,F03.300,D001523,Mental Disorders,F03
+D004314,Down Syndrome,C10.597.606.360.220,D019954,Neurobehavioral Manifestations,C10.597.606
+D004314,Down Syndrome,C16.131.077.327,D000013,Congenital Abnormalities,C16.131
+D004314,Down Syndrome,C16.131.260.260,D025063,Chromosome Disorders,C16.131.260
+D004314,Down Syndrome,C16.320.180.260,D025063,Chromosome Disorders,C16.320.180
+D004409,"Dyskinesia, Drug-Induced",C10.228.662.262.500,D020820,Dyskinesias,C10.228.662.262
+D004409,"Dyskinesia, Drug-Induced",C10.597.350.275,D020820,Dyskinesias,C10.597.350
+D004409,"Dyskinesia, Drug-Induced",C10.720.312,D009422,Nervous System Diseases,C10
+D004409,"Dyskinesia, Drug-Induced",C23.888.592.350.275,D020820,Dyskinesias,C23.888.592.350
+D004409,"Dyskinesia, Drug-Induced",C25.100.750,D064420,Drug-Related Side Effects and Adverse Reactions,C25.100
+D004409,"Dyskinesia, Drug-Induced",C25.723.705.200,D011041,Poisoning,C25.723
+D004412,Dysmenorrhea,C23.550.568.750,D008599,Menstruation Disturbances,C23.550.568
+D004412,Dysmenorrhea,C23.888.592.612.944.500,D010146,Pain,C23.888.592.612
+D004421,Dystonia,C10.597.350.300,D020820,Dyskinesias,C10.597.350
+D004421,Dystonia,C23.888.592.350.300,D020820,Dyskinesias,C23.888.592.350
+D004437,Ebstein Anomaly,C14.240.400.395,D002318,Cardiovascular Diseases,C14
+D004437,Ebstein Anomaly,C14.280.400.395,D002318,Cardiovascular Diseases,C14
+D004437,Ebstein Anomaly,C16.131.240.400.395,D000013,Congenital Abnormalities,C16.131
+D004443,Echinococcosis,C01.610.335.190.396,D007239,Infections,C01
+D004485,Eczema,C17.800.174.620,D012871,Skin Diseases,C17.800
+D004485,Eczema,C17.800.815.620,D012871,Skin Diseases,C17.800
+D004489,"Edema, Cardiac",C14.280.434.482,D002318,Cardiovascular Diseases,C14
+D004489,"Edema, Cardiac",C23.888.277.197,D004487,Edema,C23.888.277
+D004660,Encephalitis,C10.228.140.430,D009422,Nervous System Diseases,C10
+D004660,Encephalitis,C10.586.250,D009422,Nervous System Diseases,C10
+D004681,"Encephalomyelitis, Autoimmune, Experimental",C10.114.703.300,D009422,Nervous System Diseases,C10
+D004681,"Encephalomyelitis, Autoimmune, Experimental",C10.228.140.695.562.250,D009422,Nervous System Diseases,C10
+D004681,"Encephalomyelitis, Autoimmune, Experimental",C10.314.350.250,D009422,Nervous System Diseases,C10
+D004681,"Encephalomyelitis, Autoimmune, Experimental",C20.111.258.625.300,D007154,Immune System Diseases,C20
+D004715,Endometriosis,C12.050.351.500.163,D005831,"Genital Diseases, Female",C12.050.351.500
+D004715,Endometriosis,C12.100.250.163,D005831,"Genital Diseases, Female",C12.100.250
+D004751,Enteritis,C06.405.205.462,D004066,Digestive System Diseases,C06
+D004751,Enteritis,C06.405.469.326,D004066,Digestive System Diseases,C06
+D004756,Enterobacteriaceae Infections,C01.150.252.400.310,D007239,Infections,C01
+D004827,Epilepsy,C10.228.140.490,D009422,Nervous System Diseases,C10
+D004828,"Epilepsies, Partial",C10.228.140.490.360,D009422,Nervous System Diseases,C10
+D004829,"Epilepsy, Generalized",C10.228.140.490.375,D009422,Nervous System Diseases,C10
+D004830,"Epilepsy, Tonic-Clonic",C10.228.140.490.375.290,D009422,Nervous System Diseases,C10
+D004831,"Epilepsies, Myoclonic",C10.228.140.490.375.130,D009422,Nervous System Diseases,C10
+D004831,"Epilepsies, Myoclonic",C10.228.140.490.493.063,D009422,Nervous System Diseases,C10
+D004832,"Epilepsy, Absence",C10.228.140.490.375.260,D009422,Nervous System Diseases,C10
+D004832,"Epilepsy, Absence",C10.228.140.490.493.125,D009422,Nervous System Diseases,C10
+D004833,"Epilepsy, Temporal Lobe",C10.228.140.490.360.290,D009422,Nervous System Diseases,C10
+D004833,"Epilepsy, Temporal Lobe",C10.228.140.490.493.375,D009422,Nervous System Diseases,C10
+D004834,"Epilepsy, Post-Traumatic",C10.228.140.199.650,D009422,Nervous System Diseases,C10
+D004834,"Epilepsy, Post-Traumatic",C10.228.140.490.380,D009422,Nervous System Diseases,C10
+D004834,"Epilepsy, Post-Traumatic",C10.900.300.087.600,D009422,Nervous System Diseases,C10
+D004834,"Epilepsy, Post-Traumatic",C26.915.300.200.475,D014947,Wounds and Injuries,C26
+D004927,Escherichia coli Infections,C01.150.252.400.310.330,D007239,Infections,C01
+D004931,Esophageal Achalasia,C06.405.117.119.500.432,D003680,Deglutition Disorders,C06.405.117.119
+D004938,Esophageal Neoplasms,C04.588.274.476.205,D009369,Neoplasms,C04
+D004938,Esophageal Neoplasms,C04.588.443.353,D009369,Neoplasms,C04
+D004938,Esophageal Neoplasms,C06.301.371.205,D004066,Digestive System Diseases,C06
+D004938,Esophageal Neoplasms,C06.405.117.430,D004066,Digestive System Diseases,C06
+D004938,Esophageal Neoplasms,C06.405.249.205,D004066,Digestive System Diseases,C06
+D004941,Esophagitis,C06.405.117.620,D004066,Digestive System Diseases,C06
+D004941,Esophagitis,C06.405.205.663,D004066,Digestive System Diseases,C06
+D005076,Exanthema,C17.800.257,D012871,Skin Diseases,C17.800
+D005126,Eye Burns,C10.900.300.284.250.250,D009422,Nervous System Diseases,C10
+D005126,Eye Burns,C26.200.503,D014947,Wounds and Injuries,C26
+D005126,Eye Burns,C26.915.300.425.250.250,D014947,Wounds and Injuries,C26
+D005131,Eye Injuries,C10.900.300.284.250,D009422,Nervous System Diseases,C10
+D005131,Eye Injuries,C11.297,D005128,Eye Diseases,C11
+D005131,Eye Injuries,C26.915.300.425.250,D014947,Wounds and Injuries,C26
+D005151,Facial Injuries,C10.900.300.284,D009422,Nervous System Diseases,C10
+D005151,Facial Injuries,C26.915.300.425,D014947,Wounds and Injuries,C26
+D005157,Facial Pain,C23.888.592.612.330,D010146,Pain,C23.888.592.612
+D005234,Fatty Liver,C06.552.241,D004066,Digestive System Diseases,C06
+D005235,"Fatty Liver, Alcoholic",C06.552.241.390,D004066,Digestive System Diseases,C06
+D005235,"Fatty Liver, Alcoholic",C06.552.645.390,D004066,Digestive System Diseases,C06
+D005235,"Fatty Liver, Alcoholic",C25.775.100.087.645.390,D019966,Substance-Related Disorders,C25.775
+D005313,Fetal Death,C12.050.703.223,D011248,Pregnancy Complications,C12.050.703
+D005313,Fetal Death,C23.550.260.585,D003643,Death,C23.550.260
+D005354,Fibrosarcoma,C04.557.450.565.590.350,D009369,Neoplasms,C04
+D005354,Fibrosarcoma,C04.557.450.795.350,D009369,Neoplasms,C04
+D005356,Fibromyalgia,C05.651.324,D009140,Musculoskeletal Diseases,C05
+D005356,Fibromyalgia,C05.799.321,D012216,Rheumatic Diseases,C05.799
+D005356,Fibromyalgia,C10.668.491.425,D009422,Nervous System Diseases,C10
+D005512,Food Hypersensitivity,C20.543.480.370,D007154,Immune System Diseases,C20
+D005517,Foodborne Diseases,C25.723.415,D011041,Poisoning,C25.723
+D005534,Foot Diseases,C05.360,D009140,Musculoskeletal Diseases,C05
+D005534,Foot Diseases,C17.800.321,D012871,Skin Diseases,C17.800
+D005547,Foreign Bodies,C26.392,D014947,Wounds and Injuries,C26
+D005597,"Fractures, Open",C26.404.311,D014947,Wounds and Injuries,C26
+D005599,"Fractures, Ununited",C26.404.468,D014947,Wounds and Injuries,C26
+D005600,Fragile X Syndrome,C10.597.606.360.455.500,D038901,X-Linked Intellectual Disability,C10.597.606.360.455
+D005600,Fragile X Syndrome,C16.131.260.830.300,D025063,Chromosome Disorders,C16.131.260
+D005600,Fragile X Syndrome,C16.320.180.830.300,D025063,Chromosome Disorders,C16.320.180
+D005600,Fragile X Syndrome,C16.320.322.500.500,D038901,X-Linked Intellectual Disability,C16.320.322.500
+D005600,Fragile X Syndrome,C16.320.400.525.500,D038901,X-Linked Intellectual Disability,C16.320.400.525
+D005674,Fusobacterium Infections,C01.150.252.400.388.350,D007239,Infections,C01
+D005715,Gambling,F03.250.400,D001523,Mental Disorders,F03
+D005734,Gangrene,C23.550.717.427,D009336,Necrosis,C23.550.717
+D005759,Gastroenteritis,C06.405.205,D004066,Digestive System Diseases,C06
+D005764,Gastroesophageal Reflux,C06.405.117.119.500.484,D003680,Deglutition Disorders,C06.405.117.119
+D005767,Gastrointestinal Diseases,C06.405,D004066,Digestive System Diseases,C06
+D005770,Gastrointestinal Neoplasms,C04.588.274.476,D009369,Neoplasms,C04
+D005770,Gastrointestinal Neoplasms,C06.301.371,D004066,Digestive System Diseases,C06
+D005770,Gastrointestinal Neoplasms,C06.405.249,D004066,Digestive System Diseases,C06
+D005870,Giant Cell Tumors,C04.557.450.565.380,D009369,Neoplasms,C04
+D005891,Gingivitis,C01.408,D007239,Infections,C01
+D005891,Gingivitis,C07.465.714.258.480,D009059,Mouth Diseases,C07.465
+D005901,Glaucoma,C11.525.381,D005128,Eye Diseases,C11
+D005902,"Glaucoma, Open-Angle",C11.525.381.407,D005128,Eye Diseases,C11
+D005909,Glioblastoma,C04.557.465.625.600.380.080.335,D009369,Neoplasms,C04
+D005909,Glioblastoma,C04.557.470.670.380.080.335,D009369,Neoplasms,C04
+D005909,Glioblastoma,C04.557.580.625.600.380.080.335,D009369,Neoplasms,C04
+D005910,Glioma,C04.557.465.625.600.380,D009369,Neoplasms,C04
+D005910,Glioma,C04.557.470.670.380,D009369,Neoplasms,C04
+D005910,Glioma,C04.557.580.625.600.380,D009369,Neoplasms,C04
+D006069,Gonorrhea,C01.150.252.400.625.275,D007239,Infections,C01
+D006069,Gonorrhea,C01.150.252.734.401,D007239,Infections,C01
+D006069,Gonorrhea,C01.221.812.281.401,D012749,Sexually Transmitted Diseases,C01.221.812
+D006069,Gonorrhea,C01.778.281.401,D012749,Sexually Transmitted Diseases,C01.778
+D006069,Gonorrhea,C12.100.937.281.401,D012749,Sexually Transmitted Diseases,C12.100.937
+D006086,Graft vs Host Disease,C20.452,D007154,Immune System Diseases,C20
+D006106,Granulosa Cell Tumor,C04.557.475.750.656,D009369,Neoplasms,C04
+D006106,Granulosa Cell Tumor,C04.588.322.455.398,D009369,Neoplasms,C04
+D006106,Granulosa Cell Tumor,C12.050.351.500.056.630.705.398,D005831,"Genital Diseases, Female",C12.050.351.500
+D006106,Granulosa Cell Tumor,C12.050.351.937.418.685.398,D005833,"Genital Neoplasms, Female",C12.050.351.937.418
+D006106,Granulosa Cell Tumor,C12.100.250.056.630.705.398,D005831,"Genital Diseases, Female",C12.100.250
+D006106,Granulosa Cell Tumor,C12.900.418.685.398,D005833,"Genital Neoplasms, Female",C12.900.418
+D006106,Granulosa Cell Tumor,C19.344.410.398,D004700,Endocrine System Diseases,C19
+D006106,Granulosa Cell Tumor,C19.391.630.705.398,D004700,Endocrine System Diseases,C19
+D006212,Hallucinations,C10.597.606.762.300,D019954,Neurobehavioral Manifestations,C10.597.606
+D006212,Hallucinations,C23.888.592.604.764.300,D019954,Neurobehavioral Manifestations,C23.888.592.604
+D006258,Head and Neck Neoplasms,C04.588.443,D009369,Neoplasms,C04
+D006259,Craniocerebral Trauma,C10.900.300,D009422,Nervous System Diseases,C10
+D006259,Craniocerebral Trauma,C26.915.300,D014947,Wounds and Injuries,C26
+D006261,Headache,C23.888.592.612.441,D010146,Pain,C23.888.592.612
+D006319,"Hearing Loss, Sensorineural",C09.218.458.341.887,D034381,Hearing Loss,C09.218.458.341
+D006319,"Hearing Loss, Sensorineural",C10.597.751.418.341.887,D034381,Hearing Loss,C10.597.751.418.341
+D006319,"Hearing Loss, Sensorineural",C23.888.592.763.393.341.887,D034381,Hearing Loss,C23.888.592.763.393.341
+D006323,Heart Arrest,C14.280.383,D002318,Cardiovascular Diseases,C14
+D006327,Heart Block,C14.280.067.558,D001145,"Arrhythmias, Cardiac",C14.280.067
+D006327,Heart Block,C14.280.123.500,D002318,Cardiovascular Diseases,C14
+D006327,Heart Block,C23.550.073.425,D001145,"Arrhythmias, Cardiac",C23.550.073
+D006330,"Heart Defects, Congenital",C14.240.400,D002318,Cardiovascular Diseases,C14
+D006330,"Heart Defects, Congenital",C14.280.400,D002318,Cardiovascular Diseases,C14
+D006330,"Heart Defects, Congenital",C16.131.240.400,D000013,Congenital Abnormalities,C16.131
+D006331,Heart Diseases,C14.280,D002318,Cardiovascular Diseases,C14
+D006332,Cardiomegaly,C14.280.195,D002318,Cardiovascular Diseases,C14
+D006332,Cardiomegaly,C23.300.775.250,D006984,Hypertrophy,C23.300.775
+D006333,Heart Failure,C14.280.434,D002318,Cardiovascular Diseases,C14
+D006335,Heart Injuries,C26.891.375,D014947,Wounds and Injuries,C26
+D006344,"Heart Septal Defects, Atrial",C14.240.400.560.375,D002318,Cardiovascular Diseases,C14
+D006344,"Heart Septal Defects, Atrial",C14.280.400.560.375,D002318,Cardiovascular Diseases,C14
+D006344,"Heart Septal Defects, Atrial",C16.131.240.400.560.375,D000013,Congenital Abnormalities,C16.131
+D006345,"Heart Septal Defects, Ventricular",C14.240.400.560.540,D002318,Cardiovascular Diseases,C14
+D006345,"Heart Septal Defects, Ventricular",C14.280.400.560.540,D002318,Cardiovascular Diseases,C14
+D006345,"Heart Septal Defects, Ventricular",C16.131.240.400.560.540,D000013,Congenital Abnormalities,C16.131
+D006429,Hemiplegia,C10.597.622.295,D010243,Paralysis,C10.597.622
+D006429,Hemiplegia,C23.888.592.636.312,D010243,Paralysis,C23.888.592.636
+D006471,Gastrointestinal Hemorrhage,C06.405.227,D004066,Digestive System Diseases,C06
+D006471,Gastrointestinal Hemorrhage,C23.550.414.788,D006470,Hemorrhage,C23.550.414
+D006501,Hepatic Encephalopathy,C06.552.308.500.356,D004066,Digestive System Diseases,C06
+D006501,Hepatic Encephalopathy,C10.228.140.163.360,D009422,Nervous System Diseases,C10
+D006501,Hepatic Encephalopathy,C18.452.132.360,D008659,Metabolic Diseases,C18.452
+D006504,Hepatic Veno-Occlusive Disease,C06.552.360,D004066,Digestive System Diseases,C06
+D006504,Hepatic Veno-Occlusive Disease,C14.907.460,D002318,Cardiovascular Diseases,C14
+D006505,Hepatitis,C06.552.380,D004066,Digestive System Diseases,C06
+D006509,Hepatitis B,C01.221.250.500,D003141,Communicable Diseases,C01.221
+D006509,Hepatitis B,C01.925.256.430.400,D007239,Infections,C01
+D006509,Hepatitis B,C01.925.440.435,D007239,Infections,C01
+D006509,Hepatitis B,C06.552.380.705.437,D004066,Digestive System Diseases,C06
+D006526,Hepatitis C,C01.221.250.750,D003141,Communicable Diseases,C01.221
+D006526,Hepatitis C,C01.925.440.440,D007239,Infections,C01
+D006526,Hepatitis C,C01.925.782.350.350,D007239,Infections,C01
+D006526,Hepatitis C,C06.552.380.705.440,D004066,Digestive System Diseases,C06
+D006528,"Carcinoma, Hepatocellular",C04.557.470.200.025.255,D009369,Neoplasms,C04
+D006528,"Carcinoma, Hepatocellular",C04.588.274.623.160,D009369,Neoplasms,C04
+D006528,"Carcinoma, Hepatocellular",C06.301.623.160,D004066,Digestive System Diseases,C06
+D006528,"Carcinoma, Hepatocellular",C06.552.697.160,D004066,Digestive System Diseases,C06
+D006530,Hepatorenal Syndrome,C06.552.465,D004066,Digestive System Diseases,C06
+D006530,Hepatorenal Syndrome,C12.050.351.968.419.291,D014570,Urologic Diseases,C12.050.351.968
+D006530,Hepatorenal Syndrome,C12.200.777.419.291,D014570,Urologic Diseases,C12.200.777
+D006530,Hepatorenal Syndrome,C12.950.419.291,D014570,Urologic Diseases,C12.950
+D006554,"Hernia, Umbilical",C16.614.378,D007232,"Infant, Newborn, Diseases",C16.614
+D006554,"Hernia, Umbilical",C23.300.707.374.937.500,D006555,"Hernia, Ventral",C23.300.707.374.937
+D006556,Heroin Dependence,C25.775.643.500.400,D019966,Substance-Related Disorders,C25.775
+D006556,Heroin Dependence,F03.900.647.500.300,D019966,Substance-Related Disorders,F03.900
+D006561,Herpes Simplex,C01.925.256.466.382,D007239,Infections,C01
+D006561,Herpes Simplex,C01.925.825.320,D007239,Infections,C01
+D006561,Herpes Simplex,C17.800.838.790.320,D012871,Skin Diseases,C17.800
+D006617,Hip Dislocation,C05.550.518.384,D009140,Musculoskeletal Diseases,C05
+D006617,Hip Dislocation,C26.289.384,D014947,Wounds and Injuries,C26
+D006617,Hip Dislocation,C26.531.500,D014947,Wounds and Injuries,C26
+D006620,Hip Fractures,C26.404.061.425,D014947,Wounds and Injuries,C26
+D006620,Hip Fractures,C26.531.750,D014947,Wounds and Injuries,C26
+D006620,Hip Fractures,C26.558.276.425,D014947,Wounds and Injuries,C26
+D006679,HIV Seropositivity,C01.221.250.875.500,D003141,Communicable Diseases,C01.221
+D006679,HIV Seropositivity,C01.221.812.640.400.500,D012749,Sexually Transmitted Diseases,C01.221.812
+D006679,HIV Seropositivity,C01.778.640.400.500,D012749,Sexually Transmitted Diseases,C01.778
+D006679,HIV Seropositivity,C01.925.782.815.616.400.500,D007239,Infections,C01
+D006679,HIV Seropositivity,C01.925.813.400.500,D007239,Infections,C01
+D006679,HIV Seropositivity,C12.100.937.640.400.500,D012749,Sexually Transmitted Diseases,C12.100.937
+D006679,HIV Seropositivity,C20.673.480.500,D007154,Immune System Diseases,C20
+D006869,Hydronephrosis,C12.050.351.968.419.307,D014570,Urologic Diseases,C12.050.351.968
+D006869,Hydronephrosis,C12.200.777.419.307,D014570,Urologic Diseases,C12.200.777
+D006869,Hydronephrosis,C12.950.419.307,D014570,Urologic Diseases,C12.950
+D006937,Hypercholesterolemia,C18.452.584.500.500.396,D008659,Metabolic Diseases,C18.452
+D006939,Hyperemesis Gravidarum,C12.050.703.407.500,D011248,Pregnancy Complications,C12.050.703
+D006939,Hyperemesis Gravidarum,C23.888.821.937.049.500,D014839,Vomiting,C23.888.821.937
+D006943,Hyperglycemia,C18.452.394.952,D008659,Metabolic Diseases,C18.452
+D006945,Hyperhidrosis,C17.800.946.350,D012871,Skin Diseases,C17.800
+D006946,Hyperinsulinism,C18.452.394.968,D008659,Metabolic Diseases,C18.452
+D006948,Hyperkinesis,C10.597.350.350,D020820,Dyskinesias,C10.597.350
+D006948,Hyperkinesis,C23.888.592.350.350,D020820,Dyskinesias,C23.888.592.350
+D006967,Hypersensitivity,C20.543,D007154,Immune System Diseases,C20
+D006968,"Hypersensitivity, Delayed",C20.543.418,D007154,Immune System Diseases,C20
+D006969,"Hypersensitivity, Immediate",C20.543.480,D007154,Immune System Diseases,C20
+D006970,Disorders of Excessive Somnolence,C10.886.425.800.200,D012893,Sleep Wake Disorders,C10.886
+D006970,Disorders of Excessive Somnolence,F03.870.400.800.200,D012893,Sleep Wake Disorders,F03.870
+D006973,Hypertension,C14.907.489,D002318,Cardiovascular Diseases,C14
+D006975,"Hypertension, Portal",C06.552.494,D004066,Digestive System Diseases,C06
+D006976,"Hypertension, Pulmonary",C08.381.423,D012140,Respiratory Tract Diseases,C08
+D006976,"Hypertension, Pulmonary",C14.907.489.556,D002318,Cardiovascular Diseases,C14
+D006978,"Hypertension, Renovascular",C12.050.351.968.419.331.490,D014570,Urologic Diseases,C12.050.351.968
+D006978,"Hypertension, Renovascular",C12.200.777.419.331.490,D014570,Urologic Diseases,C12.200.777
+D006978,"Hypertension, Renovascular",C12.950.419.331.490,D014570,Urologic Diseases,C12.950
+D006978,"Hypertension, Renovascular",C14.907.489.631.485,D002318,Cardiovascular Diseases,C14
+D006980,Hyperthyroidism,C19.874.397,D004700,Endocrine System Diseases,C19
+D007003,Hypoglycemia,C18.452.394.984,D008659,Metabolic Diseases,C18.452
+D007006,Hypogonadism,C19.391.482,D004700,Endocrine System Diseases,C19
+D007008,Hypokalemia,C18.452.950.565,D008659,Metabolic Diseases,C18.452
+D007010,Hyponatremia,C18.452.950.620,D008659,Metabolic Diseases,C18.452
+D007022,Hypotension,C14.907.514,D002318,Cardiovascular Diseases,C14
+D007037,Hypothyroidism,C19.874.482,D004700,Endocrine System Diseases,C19
+D007079,Ileitis,C06.405.205.462.624,D004066,Digestive System Diseases,C06
+D007079,Ileitis,C06.405.469.326.875,D004066,Digestive System Diseases,C06
+D007079,Ileitis,C06.405.469.420.520,D004066,Digestive System Diseases,C06
+D007088,Illusions,C10.597.606.762.400,D019954,Neurobehavioral Manifestations,C10.597.606
+D007088,Illusions,C23.888.592.604.764.400,D019954,Neurobehavioral Manifestations,C23.888.592.604
+D007174,"Disruptive, Impulse Control, and Conduct Disorders",F03.250,D001523,Mental Disorders,F03
+D007238,Infarction,C23.550.513.355,D007511,Ischemia,C23.550.513
+D007238,Infarction,C23.550.717.489,D009336,Necrosis,C23.550.717
+D007247,"Infertility, Female",C12.050.351.500.498,D005831,"Genital Diseases, Female",C12.050.351.500
+D007247,"Infertility, Female",C12.100.250.498,D005831,"Genital Diseases, Female",C12.100.250
+D007247,"Infertility, Female",C12.100.750.350,D007246,Infertility,C12.100.750
+D007251,"Influenza, Human",C01.748.310,D007239,Infections,C01
+D007251,"Influenza, Human",C01.925.782.620.365,D007239,Infections,C01
+D007251,"Influenza, Human",C08.730.310,D012140,Respiratory Tract Diseases,C08
+D007319,Sleep Initiation and Maintenance Disorders,C10.886.425.800.800,D012893,Sleep Wake Disorders,C10.886
+D007319,Sleep Initiation and Maintenance Disorders,F03.870.400.800.800,D012893,Sleep Wake Disorders,F03.870
+D007333,Insulin Resistance,C18.452.394.968.500,D008659,Metabolic Diseases,C18.452
+D007410,Intestinal Diseases,C06.405.469,D004066,Digestive System Diseases,C06
+D007443,Intussusception,C06.405.469.531.577,D004066,Digestive System Diseases,C06
+D007592,Joint Diseases,C05.550,D009140,Musculoskeletal Diseases,C05
+D007593,Joint Instability,C05.550.521,D009140,Musculoskeletal Diseases,C05
+D007674,Kidney Diseases,C12.050.351.968.419,D014570,Urologic Diseases,C12.050.351.968
+D007674,Kidney Diseases,C12.200.777.419,D014570,Urologic Diseases,C12.200.777
+D007674,Kidney Diseases,C12.950.419,D014570,Urologic Diseases,C12.950
+D007676,"Kidney Failure, Chronic",C12.050.351.968.419.780.750.500,D014570,Urologic Diseases,C12.050.351.968
+D007676,"Kidney Failure, Chronic",C12.200.777.419.780.750.500,D014570,Urologic Diseases,C12.200.777
+D007676,"Kidney Failure, Chronic",C12.950.419.780.750.500,D014570,Urologic Diseases,C12.950
+D007676,"Kidney Failure, Chronic",C23.550.291.500.906.500,D002908,Chronic Disease,C23.550.291.500
+D007680,Kidney Neoplasms,C04.588.945.947.535,D014571,Urologic Neoplasms,C04.588.945.947
+D007680,Kidney Neoplasms,C12.050.351.937.820.535,D014571,Urologic Neoplasms,C12.050.351.937.820
+D007680,Kidney Neoplasms,C12.050.351.968.419.473,D014570,Urologic Diseases,C12.050.351.968
+D007680,Kidney Neoplasms,C12.200.758.820.750,D014571,Urologic Neoplasms,C12.200.758.820
+D007680,Kidney Neoplasms,C12.200.777.419.473,D014570,Urologic Diseases,C12.200.777
+D007680,Kidney Neoplasms,C12.900.820.535,D014571,Urologic Neoplasms,C12.900.820
+D007680,Kidney Neoplasms,C12.950.419.473,D014570,Urologic Diseases,C12.950
+D007680,Kidney Neoplasms,C12.950.983.535,D014571,Urologic Neoplasms,C12.950.983
+D007710,Klebsiella Infections,C01.150.252.400.310.503,D007239,Infections,C01
+D007752,"Obstetric Labor, Premature",C12.050.703.420.491,D011248,Pregnancy Complications,C12.050.703
+D007859,Learning Disabilities,C10.597.606.150.550,D019954,Neurobehavioral Manifestations,C10.597.606
+D007859,Learning Disabilities,C23.888.592.604.150.550,D019954,Neurobehavioral Manifestations,C23.888.592.604
+D007859,Learning Disabilities,F03.625.374.188,D001523,Mental Disorders,F03
+D007859,Learning Disabilities,F03.625.562,D001523,Mental Disorders,F03
+D007869,Leg Injuries,C26.558,D014947,Wounds and Injuries,C26
+D007871,Leg Ulcer,C17.800.893.592,D012871,Skin Diseases,C17.800
+D007938,Leukemia,C04.557.337,D009369,Neoplasms,C04
+D007938,Leukemia,C15.378.508,D006402,Hematologic Diseases,C15.378
+D007942,"Leukemia, Experimental",C04.557.337.372,D009369,Neoplasms,C04
+D007942,"Leukemia, Experimental",C04.619.531,D009369,Neoplasms,C04
+D007942,"Leukemia, Experimental",C15.378.508.372,D006402,Hematologic Diseases,C15.378
+D008088,Listeriosis,C01.150.252.410.514,D007239,Infections,C01
+D008103,Liver Cirrhosis,C06.552.630,D004066,Digestive System Diseases,C06
+D008103,Liver Cirrhosis,C23.550.355.412,D005355,Fibrosis,C23.550.355
+D008104,"Liver Cirrhosis, Alcoholic",C06.552.630.380,D004066,Digestive System Diseases,C06
+D008104,"Liver Cirrhosis, Alcoholic",C06.552.645.590,D004066,Digestive System Diseases,C06
+D008104,"Liver Cirrhosis, Alcoholic",C23.550.355.412.380,D005355,Fibrosis,C23.550.355
+D008104,"Liver Cirrhosis, Alcoholic",C25.775.100.087.645.550,D019966,Substance-Related Disorders,C25.775
+D008106,"Liver Cirrhosis, Experimental",C06.552.630.467,D004066,Digestive System Diseases,C06
+D008106,"Liver Cirrhosis, Experimental",C23.550.355.412.467,D005355,Fibrosis,C23.550.355
+D008107,Liver Diseases,C06.552,D004066,Digestive System Diseases,C06
+D008108,"Liver Diseases, Alcoholic",C06.552.645,D004066,Digestive System Diseases,C06
+D008108,"Liver Diseases, Alcoholic",C25.775.100.087.645,D019966,Substance-Related Disorders,C25.775
+D008113,Liver Neoplasms,C04.588.274.623,D009369,Neoplasms,C04
+D008113,Liver Neoplasms,C06.301.623,D004066,Digestive System Diseases,C06
+D008113,Liver Neoplasms,C06.552.697,D004066,Digestive System Diseases,C06
+D008133,Long QT Syndrome,C14.280.067.565,D001145,"Arrhythmias, Cardiac",C14.280.067
+D008133,Long QT Syndrome,C14.280.123.625,D002318,Cardiovascular Diseases,C14
+D008133,Long QT Syndrome,C16.131.240.400.715,D000013,Congenital Abnormalities,C16.131
+D008133,Long QT Syndrome,C23.550.073.547,D001145,"Arrhythmias, Cardiac",C23.550.073
+D008171,Lung Diseases,C08.381,D012140,Respiratory Tract Diseases,C08
+D008175,Lung Neoplasms,C04.588.894.797.520,D009369,Neoplasms,C04
+D008175,Lung Neoplasms,C08.381.540,D012140,Respiratory Tract Diseases,C08
+D008175,Lung Neoplasms,C08.785.520,D012140,Respiratory Tract Diseases,C08
+D008228,"Lymphoma, Non-Hodgkin",C04.557.386.480,D008223,Lymphoma,C04.557.386
+D008228,"Lymphoma, Non-Hodgkin",C15.604.515.569.480,D008223,Lymphoma,C15.604.515.569
+D008228,"Lymphoma, Non-Hodgkin",C20.683.515.761.480,D008223,Lymphoma,C20.683.515.761
+D008268,Macular Degeneration,C11.768.585.439,D005128,Eye Diseases,C11
+D008269,Macular Edema,C11.768.585.439.245,D005128,Eye Diseases,C11
+D008288,Malaria,C01.610.752.530,D007239,Infections,C01
+D008288,Malaria,C01.920.852.750,D007239,Infections,C01
+D008337,Mandibular Fractures,C10.900.300.284.500.400.255,D009422,Nervous System Diseases,C10
+D008337,Mandibular Fractures,C26.404.750.467.441,D014947,Wounds and Injuries,C26
+D008337,Mandibular Fractures,C26.915.300.425.500.400.255,D014947,Wounds and Injuries,C26
+D008375,Maple Syrup Urine Disease,C10.228.140.163.100.520,D020739,"Brain Diseases, Metabolic, Inborn",C10.228.140.163.100
+D008375,Maple Syrup Urine Disease,C16.320.565.100.608,D000592,"Amino Acid Metabolism, Inborn Errors",C16.320.565.100
+D008375,Maple Syrup Urine Disease,C16.320.565.189.520,D020739,"Brain Diseases, Metabolic, Inborn",C16.320.565.189
+D008375,Maple Syrup Urine Disease,C18.452.132.100.520,D020739,"Brain Diseases, Metabolic, Inborn",C18.452.132.100
+D008375,Maple Syrup Urine Disease,C18.452.648.100.608,D000592,"Amino Acid Metabolism, Inborn Errors",C18.452.648.100
+D008375,Maple Syrup Urine Disease,C18.452.648.189.520,D020739,"Brain Diseases, Metabolic, Inborn",C18.452.648.189
+D008414,"Mastitis, Bovine",C22.196.581,D002418,Cattle Diseases,C22.196
+D008415,Mastocytosis,C04.557.450.565.465,D009369,Neoplasms,C04
+D008415,Mastocytosis,C20.762.750,D007154,Immune System Diseases,C20
+D008457,Measles,C01.925.782.580.600.500.500,D007239,Infections,C01
+D008478,Mediastinal Emphysema,C08.846.187.290,D012140,Respiratory Tract Diseases,C08
+D008478,Mediastinal Emphysema,C23.550.325.250,D004646,Emphysema,C23.550.325
+D008527,Medulloblastoma,C04.557.465.625.600.380.515,D009369,Neoplasms,C04
+D008527,Medulloblastoma,C04.557.465.625.600.590.500,D009369,Neoplasms,C04
+D008527,Medulloblastoma,C04.557.470.670.380.515,D009369,Neoplasms,C04
+D008527,Medulloblastoma,C04.557.470.670.590.500,D009369,Neoplasms,C04
+D008527,Medulloblastoma,C04.557.580.625.600.380.515,D009369,Neoplasms,C04
+D008527,Medulloblastoma,C04.557.580.625.600.590.500,D009369,Neoplasms,C04
+D008545,Melanoma,C04.557.465.625.650.510,D009369,Neoplasms,C04
+D008545,Melanoma,C04.557.580.625.650.510,D009369,Neoplasms,C04
+D008545,Melanoma,C04.557.665.510,D009369,Neoplasms,C04
+D008545,Melanoma,C04.588.805.377,D009369,Neoplasms,C04
+D008545,Melanoma,C17.800.882.445,D012871,Skin Diseases,C17.800
+D008546,"Melanoma, Experimental",C04.557.465.625.650.510.525,D009369,Neoplasms,C04
+D008546,"Melanoma, Experimental",C04.557.580.625.650.510.525,D009369,Neoplasms,C04
+D008546,"Melanoma, Experimental",C04.557.665.510.525,D009369,Neoplasms,C04
+D008546,"Melanoma, Experimental",C04.619.600,D009369,Neoplasms,C04
+D008569,Memory Disorders,C10.597.606.525,D019954,Neurobehavioral Manifestations,C10.597.606
+D008569,Memory Disorders,C23.888.592.604.529,D019954,Neurobehavioral Manifestations,C23.888.592.604
+D008577,Meningeal Neoplasms,C04.588.614.250.580,D009369,Neoplasms,C04
+D008577,Meningeal Neoplasms,C10.551.240.500,D009422,Nervous System Diseases,C10
+D008579,Meningioma,C04.557.580.520,D009369,Neoplasms,C04
+D008579,Meningioma,C04.557.645.520,D009369,Neoplasms,C04
+D008579,Meningioma,C04.588.614.250.580.500,D009369,Neoplasms,C04
+D008579,Meningioma,C10.551.240.500.500,D009422,Nervous System Diseases,C10
+D008581,Meningitis,C10.586.625,D009422,Nervous System Diseases,C10
+D008607,Intellectual Disability,C10.597.606.360,D019954,Neurobehavioral Manifestations,C10.597.606
+D008607,Intellectual Disability,C23.888.592.604.646,D019954,Neurobehavioral Manifestations,C23.888.592.604
+D008607,Intellectual Disability,F03.625.539,D001523,Mental Disorders,F03
+D008850,Microphthalmos,C11.250.566,D005128,Eye Diseases,C11
+D008850,Microphthalmos,C16.131.384.666,D000013,Congenital Abnormalities,C16.131
+D008881,Migraine Disorders,C10.228.140.546.399.750,D009422,Nervous System Diseases,C10
+D008924,Mite Infestations,C01.610.858.211.480,D007239,Infections,C01
+D009021,Morphine Dependence,C25.775.643.500.600,D019966,Substance-Related Disorders,C25.775
+D009021,Morphine Dependence,F03.900.647.500.600,D019966,Substance-Related Disorders,F03.900
+D009062,Mouth Neoplasms,C04.588.443.591,D009369,Neoplasms,C04
+D009062,Mouth Neoplasms,C07.465.530,D009059,Mouth Diseases,C07.465
+D009069,Movement Disorders,C10.228.662,D009422,Nervous System Diseases,C10
+D009101,Multiple Myeloma,C04.557.595.500,D009369,Neoplasms,C04
+D009101,Multiple Myeloma,C14.907.454.460,D002318,Cardiovascular Diseases,C14
+D009101,Multiple Myeloma,C15.378.147.780.650,D006402,Hematologic Diseases,C15.378
+D009101,Multiple Myeloma,C15.378.463.515.460,D006402,Hematologic Diseases,C15.378
+D009101,Multiple Myeloma,C20.683.515.845,D007154,Immune System Diseases,C20
+D009101,Multiple Myeloma,C20.683.780.650,D007154,Immune System Diseases,C20
+D009103,Multiple Sclerosis,C10.114.375.500,D009422,Nervous System Diseases,C10
+D009103,Multiple Sclerosis,C10.314.350.500,D009422,Nervous System Diseases,C10
+D009103,Multiple Sclerosis,C20.111.258.250.500,D007154,Immune System Diseases,C20
+D009107,Mumps,C01.925.782.580.600.680.500,D007239,Infections,C01
+D009107,Mumps,C07.465.815.470.800.630,D009059,Mouth Diseases,C07.465
+D009135,Muscular Diseases,C05.651,D009140,Musculoskeletal Diseases,C05
+D009135,Muscular Diseases,C10.668.491,D009422,Nervous System Diseases,C10
+D009145,Mushroom Poisoning,C25.723.415.551,D011041,Poisoning,C25.723
+D009145,Mushroom Poisoning,C25.723.680.551,D011041,Poisoning,C25.723
+D009157,Myasthenia Gravis,C04.588.614.550.500,D009369,Neoplasms,C04
+D009157,Myasthenia Gravis,C04.730.856.490,D009369,Neoplasms,C04
+D009157,Myasthenia Gravis,C10.114.656,D009422,Nervous System Diseases,C10
+D009157,Myasthenia Gravis,C10.574.781.588,D009422,Nervous System Diseases,C10
+D009157,Myasthenia Gravis,C10.668.758.725,D009422,Nervous System Diseases,C10
+D009157,Myasthenia Gravis,C20.111.258.500,D007154,Immune System Diseases,C20
+D009181,Mycoses,C01.150.703,D007239,Infections,C01
+D009202,Cardiomyopathies,C14.280.238,D002318,Cardiovascular Diseases,C14
+D009203,Myocardial Infarction,C14.280.647.500,D002318,Cardiovascular Diseases,C14
+D009203,Myocardial Infarction,C14.907.585.500,D002318,Cardiovascular Diseases,C14
+D009203,Myocardial Infarction,C23.550.513.355.750,D007511,Ischemia,C23.550.513
+D009203,Myocardial Infarction,C23.550.717.489.750,D009336,Necrosis,C23.550.717
+D009205,Myocarditis,C14.280.238.625,D002318,Cardiovascular Diseases,C14
+D009207,Myoclonus,C10.597.350.500,D020820,Dyskinesias,C10.597.350
+D009207,Myoclonus,C23.888.592.350.500,D020820,Dyskinesias,C23.888.592.350
+D009209,Myofascial Pain Syndromes,C05.651.550,D009140,Musculoskeletal Diseases,C05
+D009216,Myopia,C11.744.636,D005128,Eye Diseases,C11
+D009290,Narcolepsy,C10.886.425.800.200.750,D012893,Sleep Wake Disorders,C10.886
+D009290,Narcolepsy,F03.870.400.800.200.750,D012893,Sleep Wake Disorders,F03.870
+D009293,Opioid-Related Disorders,C25.775.643.500,D019966,Substance-Related Disorders,C25.775
+D009293,Opioid-Related Disorders,F03.900.647.500,D019966,Substance-Related Disorders,F03.900
+D009357,Neonatal Abstinence Syndrome,C16.614.610,D007232,"Infant, Newborn, Diseases",C16.614
+D009357,Neonatal Abstinence Syndrome,C25.775.650,D019966,Substance-Related Disorders,C25.775
+D009357,Neonatal Abstinence Syndrome,F03.900.650,D019966,Substance-Related Disorders,F03.900
+D009373,"Neoplasms, Germ Cell and Embryonal",C04.557.465,D009369,Neoplasms,C04
+D009374,"Neoplasms, Experimental",C04.619,D009369,Neoplasms,C04
+D009376,"Neoplasms, Hormone-Dependent",C04.626,D009369,Neoplasms,C04
+D009395,"Nephritis, Interstitial",C12.050.351.968.419.570.643,D014570,Urologic Diseases,C12.050.351.968
+D009395,"Nephritis, Interstitial",C12.200.777.419.570.643,D014570,Urologic Diseases,C12.200.777
+D009395,"Nephritis, Interstitial",C12.950.419.570.643,D014570,Urologic Diseases,C12.950
+D009436,Neural Tube Defects,C10.500.680,D009422,Nervous System Diseases,C10
+D009436,Neural Tube Defects,C16.131.666.680,D000013,Congenital Abnormalities,C16.131
+D009437,Neuralgia,C10.668.829.600,D009422,Nervous System Diseases,C10
+D009437,Neuralgia,C23.888.592.612.664,D010146,Pain,C23.888.592.612
+D009447,Neuroblastoma,C04.557.465.625.600.590.650.550,D009369,Neoplasms,C04
+D009447,Neuroblastoma,C04.557.470.670.590.650.550,D009369,Neoplasms,C04
+D009447,Neuroblastoma,C04.557.580.625.600.590.650.550,D009369,Neoplasms,C04
+D009468,Neuromuscular Diseases,C10.668,D009422,Nervous System Diseases,C10
+D009765,Obesity,C18.654.726.750.500,D050177,Overweight,C18.654.726.750
+D009765,Obesity,C23.888.144.699.500,D050177,Overweight,C23.888.144.699
+D009767,"Obesity, Morbid",C18.654.726.750.500.700,D050177,Overweight,C18.654.726.750
+D009767,"Obesity, Morbid",C23.888.144.699.500.500,D050177,Overweight,C23.888.144.699
+D009771,Obsessive-Compulsive Disorder,F03.080.600,D001523,Mental Disorders,F03
+D009783,"Dermatitis, Occupational",C17.800.174.255.700,D012871,Skin Diseases,C17.800
+D009783,"Dermatitis, Occupational",C17.800.815.255.700,D012871,Skin Diseases,C17.800
+D009783,"Dermatitis, Occupational",C24.270,D009784,Occupational Diseases,C24
+D009798,Ocular Hypertension,C11.525,D005128,Eye Diseases,C11
+D010003,Osteoarthritis,C05.550.114.606,D009140,Musculoskeletal Diseases,C05
+D010003,Osteoarthritis,C05.799.613,D012216,Rheumatic Diseases,C05.799
+D010014,Osteolysis,C05.116.264.579,D009140,Musculoskeletal Diseases,C05
+D010015,"Osteolysis, Essential",C05.116.099.736,D009140,Musculoskeletal Diseases,C05
+D010015,"Osteolysis, Essential",C05.116.264.579.704,D009140,Musculoskeletal Diseases,C05
+D010019,Osteomyelitis,C01.160.495,D007239,Infections,C01
+D010019,Osteomyelitis,C05.116.165.495,D009140,Musculoskeletal Diseases,C05
+D010024,Osteoporosis,C05.116.198.579,D009140,Musculoskeletal Diseases,C05
+D010024,Osteoporosis,C18.452.104.579,D008659,Metabolic Diseases,C18.452
+D010049,Ovarian Diseases,C12.050.351.500.056.630,D005831,"Genital Diseases, Female",C12.050.351.500
+D010049,Ovarian Diseases,C12.100.250.056.630,D005831,"Genital Diseases, Female",C12.100.250
+D010049,Ovarian Diseases,C19.391.630,D004700,Endocrine System Diseases,C19
+D010051,Ovarian Neoplasms,C04.588.322.455,D009369,Neoplasms,C04
+D010051,Ovarian Neoplasms,C12.050.351.500.056.630.705,D005831,"Genital Diseases, Female",C12.050.351.500
+D010051,Ovarian Neoplasms,C12.050.351.937.418.685,D005833,"Genital Neoplasms, Female",C12.050.351.937.418
+D010051,Ovarian Neoplasms,C12.100.250.056.630.705,D005831,"Genital Diseases, Female",C12.100.250
+D010051,Ovarian Neoplasms,C12.900.418.685,D005833,"Genital Neoplasms, Female",C12.900.418
+D010051,Ovarian Neoplasms,C19.344.410,D004700,Endocrine System Diseases,C19
+D010051,Ovarian Neoplasms,C19.391.630.705,D004700,Endocrine System Diseases,C19
+D010148,Intractable Pain,C23.888.592.612.776,D010146,Pain,C23.888.592.612
+D010149,Postoperative Pain,C23.550.767.700,D011183,Postoperative Complications,C23.550.767
+D010149,Postoperative Pain,C23.888.592.612.832,D010146,Pain,C23.888.592.612
+D010182,Pancreatic Diseases,C06.689,D004066,Digestive System Diseases,C06
+D010190,Pancreatic Neoplasms,C04.588.274.761,D009369,Neoplasms,C04
+D010190,Pancreatic Neoplasms,C04.588.322.475,D009369,Neoplasms,C04
+D010190,Pancreatic Neoplasms,C06.301.761,D004066,Digestive System Diseases,C06
+D010190,Pancreatic Neoplasms,C06.689.667,D004066,Digestive System Diseases,C06
+D010190,Pancreatic Neoplasms,C19.344.421,D004700,Endocrine System Diseases,C19
+D010195,Pancreatitis,C06.689.750,D004066,Digestive System Diseases,C06
+D010235,Paraganglioma,C04.557.465.625.650.700,D009369,Neoplasms,C04
+D010235,Paraganglioma,C04.557.580.625.650.700,D009369,Neoplasms,C04
+D010259,Paranoid Disorders,F03.700.450,D001523,Mental Disorders,F03
+D010300,Parkinson Disease,C10.228.140.079.862.500,D009422,Nervous System Diseases,C10
+D010300,Parkinson Disease,C10.228.662.600.400,D009422,Nervous System Diseases,C10
+D010300,Parkinson Disease,C10.574.928.750,D009422,Nervous System Diseases,C10
+D010302,"Parkinson Disease, Secondary",C10.228.140.079.862.800,D009422,Nervous System Diseases,C10
+D010302,"Parkinson Disease, Secondary",C10.228.662.600.700,D009422,Nervous System Diseases,C10
+D010468,Perceptual Disorders,C10.597.606.762,D019954,Neurobehavioral Manifestations,C10.597.606
+D010468,Perceptual Disorders,C23.888.592.604.764,D019954,Neurobehavioral Manifestations,C23.888.592.604
+D010493,Pericarditis,C14.280.720,D002318,Cardiovascular Diseases,C14
+D010510,Periodontal Diseases,C07.465.714,D009059,Mouth Diseases,C07.465
+D010518,Periodontitis,C07.465.714.533,D009059,Mouth Diseases,C07.465
+D010523,Peripheral Nervous System Diseases,C10.668.829,D009422,Nervous System Diseases,C10
+D010532,Peritoneal Diseases,C06.844,D004066,Digestive System Diseases,C06
+D010534,Peritoneal Neoplasms,C04.588.033.513,D009369,Neoplasms,C04
+D010534,Peritoneal Neoplasms,C04.588.274.780,D009369,Neoplasms,C04
+D010534,Peritoneal Neoplasms,C06.301.780,D004066,Digestive System Diseases,C06
+D010534,Peritoneal Neoplasms,C06.844.620,D004066,Digestive System Diseases,C06
+D010538,Peritonitis,C01.463.600,D007239,Infections,C01
+D010538,Peritonitis,C06.844.640,D004066,Digestive System Diseases,C06
+D010554,Personality Disorders,F03.675,D001523,Mental Disorders,F03
+D010673,Pheochromocytoma,C04.557.465.625.650.700.725,D009369,Neoplasms,C04
+D010673,Pheochromocytoma,C04.557.580.625.650.700.725,D009369,Neoplasms,C04
+D010689,Phlebitis,C14.907.617.718,D002318,Cardiovascular Diseases,C14
+D010689,Phlebitis,C14.907.940.740,D002318,Cardiovascular Diseases,C14
+D010698,Phobic Disorders,F03.080.725,D001523,Mental Disorders,F03
+D010922,Placenta Diseases,C12.050.703.590,D011248,Pregnancy Complications,C12.050.703
+D010923,Placenta Previa,C12.050.703.420.714,D011248,Pregnancy Complications,C12.050.703
+D010923,Placenta Previa,C12.050.703.590.734,D011248,Pregnancy Complications,C12.050.703
+D010939,Plant Poisoning,C25.723.756,D011041,Poisoning,C25.723
+D010996,Pleural Effusion,C08.528.652,D012140,Respiratory Tract Diseases,C08
+D011014,Pneumonia,C01.748.610,D007239,Infections,C01
+D011014,Pneumonia,C08.381.677,D012140,Respiratory Tract Diseases,C08
+D011014,Pneumonia,C08.730.610,D012140,Respiratory Tract Diseases,C08
+D011015,"Pneumonia, Aspiration",C01.748.610.529,D007239,Infections,C01
+D011015,"Pneumonia, Aspiration",C08.381.677.529,D012140,Respiratory Tract Diseases,C08
+D011015,"Pneumonia, Aspiration",C08.730.610.529,D012140,Respiratory Tract Diseases,C08
+D011017,"Pneumonia, Lipid",C01.748.610.529.612,D007239,Infections,C01
+D011017,"Pneumonia, Lipid",C08.381.677.529.612,D012140,Respiratory Tract Diseases,C08
+D011017,"Pneumonia, Lipid",C08.730.610.529.612,D012140,Respiratory Tract Diseases,C08
+D011024,"Pneumonia, Viral",C01.748.610.763,D007239,Infections,C01
+D011024,"Pneumonia, Viral",C01.925.705,D007239,Infections,C01
+D011024,"Pneumonia, Viral",C08.381.677.807,D012140,Respiratory Tract Diseases,C08
+D011024,"Pneumonia, Viral",C08.730.610.763,D012140,Respiratory Tract Diseases,C08
+D011026,Pneumopericardium,C14.280.763,D002318,Cardiovascular Diseases,C14
+D011027,Pneumoperitoneum,C06.844.670,D004066,Digestive System Diseases,C06
+D011030,Pneumothorax,C08.528.778,D012140,Respiratory Tract Diseases,C08
+D011085,Polycystic Ovary Syndrome,C04.182.612.765,D009369,Neoplasms,C04
+D011085,Polycystic Ovary Syndrome,C12.050.351.500.056.630.580.765,D005831,"Genital Diseases, Female",C12.050.351.500
+D011085,Polycystic Ovary Syndrome,C12.100.250.056.630.580.765,D005831,"Genital Diseases, Female",C12.100.250
+D011085,Polycystic Ovary Syndrome,C19.391.630.580.765,D004700,Endocrine System Diseases,C19
+D011115,Polyneuropathies,C10.668.829.800,D009422,Nervous System Diseases,C10
+D011123,Polyploidy,C23.550.210.702,D002869,Chromosome Aberrations,C23.550.210
+D011180,Postmortem Changes,C23.550.260.224.617,D003643,Death,C23.550.260
+D011225,Pre-Eclampsia,C12.050.703.395.249,D011248,Pregnancy Complications,C12.050.703
+D011236,Prediabetic State,C18.452.394.750.774,D008659,Metabolic Diseases,C18.452
+D011236,Prediabetic State,C19.246.774,D004700,Endocrine System Diseases,C19
+D011251,"Pregnancy Complications, Infectious",C01.674,D007239,Infections,C01
+D011251,"Pregnancy Complications, Infectious",C12.050.703.700,D011248,Pregnancy Complications,C12.050.703
+D011293,Premenstrual Syndrome,C23.550.568.968,D008599,Menstruation Disturbances,C23.550.568
+D011304,Presbycusis,C09.218.458.341.887.772,D034381,Hearing Loss,C09.218.458.341
+D011304,Presbycusis,C10.597.751.418.341.887.772,D034381,Hearing Loss,C10.597.751.418.341
+D011304,Presbycusis,C23.888.592.763.393.341.887.772,D034381,Hearing Loss,C23.888.592.763.393.341
+D011542,Pseudarthrosis,C26.404.468.627,D014947,Wounds and Injuries,C26
+D011552,Pseudomonas Infections,C01.150.252.400.739,D007239,Infections,C01
+D011565,Psoriasis,C17.800.859.675,D012871,Skin Diseases,C17.800
+D011595,Psychomotor Agitation,C10.597.350.600,D020820,Dyskinesias,C10.597.350
+D011595,Psychomotor Agitation,C10.597.606.881.700,D019954,Neurobehavioral Manifestations,C10.597.606
+D011595,Psychomotor Agitation,C23.888.592.350.600,D020820,Dyskinesias,C23.888.592.350
+D011595,Psychomotor Agitation,C23.888.592.604.882.700,D019954,Neurobehavioral Manifestations,C23.888.592.604
+D011596,Psychomotor Disorders,C10.597.606.881,D019954,Neurobehavioral Manifestations,C10.597.606
+D011596,Psychomotor Disorders,C23.888.592.604.882,D019954,Neurobehavioral Manifestations,C23.888.592.604
+D011605,"Psychoses, Substance-Induced",C25.723.809,D011041,Poisoning,C25.723
+D011605,"Psychoses, Substance-Induced",C25.775.746,D019966,Substance-Related Disorders,C25.775
+D011605,"Psychoses, Substance-Induced",F03.700.675.600,D001523,Mental Disorders,F03
+D011605,"Psychoses, Substance-Induced",F03.900.746,D019966,Substance-Related Disorders,F03.900
+D011618,Psychotic Disorders,F03.700.675,D001523,Mental Disorders,F03
+D011644,Puerperal Disorders,C12.050.703.844,D011248,Pregnancy Complications,C12.050.703
+D011654,Pulmonary Edema,C08.381.742,D012140,Respiratory Tract Diseases,C08
+D011655,Pulmonary Embolism,C08.381.746,D012140,Respiratory Tract Diseases,C08
+D011655,Pulmonary Embolism,C14.907.355.350.700,D002318,Cardiovascular Diseases,C14
+D011656,Pulmonary Emphysema,C08.381.495.389.750,D012140,Respiratory Tract Diseases,C08
+D011656,Pulmonary Emphysema,C23.550.291.500.875.875,D002908,Chronic Disease,C23.550.291.500
+D011657,Pulmonary Eosinophilia,C08.381.750,D012140,Respiratory Tract Diseases,C08
+D011657,Pulmonary Eosinophilia,C15.378.553.231.549.750,D006402,Hematologic Diseases,C15.378
+D011658,Pulmonary Fibrosis,C08.381.483.652,D012140,Respiratory Tract Diseases,C08
+D011658,Pulmonary Fibrosis,C23.550.355.644,D005355,Fibrosis,C23.550.355
+D011818,Rabies,C01.925.782.580.830.750,D007239,Infections,C01
+D011832,Radiation Injuries,C26.733,D014947,Wounds and Injuries,C26
+D011833,"Radiation Injuries, Experimental",C26.733.720,D014947,Wounds and Injuries,C26
+D011885,Radius Fractures,C26.088.268.556,D014947,Wounds and Injuries,C26
+D011885,Radius Fractures,C26.404.562,D014947,Wounds and Injuries,C26
+D012019,Reflex Sympathetic Dystrophy,C10.177.195.800,D009422,Nervous System Diseases,C10
+D012019,Reflex Sympathetic Dystrophy,C10.668.829.250.800,D009422,Nervous System Diseases,C10
+D012120,Respiration Disorders,C08.618,D012140,Respiratory Tract Diseases,C08
+D012128,Respiratory Distress Syndrome,C08.381.840,D012140,Respiratory Tract Diseases,C08
+D012128,Respiratory Distress Syndrome,C08.618.840,D012140,Respiratory Tract Diseases,C08
+D012131,Respiratory Insufficiency,C08.618.846,D012140,Respiratory Tract Diseases,C08
+D012141,Respiratory Tract Infections,C01.748,D007239,Infections,C01
+D012141,Respiratory Tract Infections,C08.730,D012140,Respiratory Tract Diseases,C08
+D012148,Restless Legs Syndrome,C10.803,D009422,Nervous System Diseases,C10
+D012148,Restless Legs Syndrome,C10.886.425.800.700,D012893,Sleep Wake Disorders,C10.886
+D012148,Restless Legs Syndrome,C10.886.659.634,D012893,Sleep Wake Disorders,C10.886
+D012148,Restless Legs Syndrome,F03.870.400.800.700,D012893,Sleep Wake Disorders,F03.870
+D012148,Restless Legs Syndrome,F03.870.664.634,D012893,Sleep Wake Disorders,F03.870
+D012162,Retinal Degeneration,C11.270.612,D005128,Eye Diseases,C11
+D012162,Retinal Degeneration,C11.768.585,D005128,Eye Diseases,C11
+D012163,Retinal Detachment,C11.768.648,D005128,Eye Diseases,C11
+D012164,Retinal Diseases,C11.768,D005128,Eye Diseases,C11
+D012170,Retinal Vein Occlusion,C11.768.760,D005128,Eye Diseases,C11
+D012170,Retinal Vein Occlusion,C14.907.355.830.925.650,D002318,Cardiovascular Diseases,C14
+D012170,Retinal Vein Occlusion,C14.907.760,D002318,Cardiovascular Diseases,C14
+D012175,Retinoblastoma,C04.557.465.625.600.725,D009369,Neoplasms,C04
+D012175,Retinoblastoma,C04.557.470.670.725,D009369,Neoplasms,C04
+D012175,Retinoblastoma,C04.557.580.625.600.725,D009369,Neoplasms,C04
+D012175,Retinoblastoma,C04.588.364.818.760,D009369,Neoplasms,C04
+D012175,Retinoblastoma,C11.270.862,D005128,Eye Diseases,C11
+D012175,Retinoblastoma,C11.319.475.760,D005128,Eye Diseases,C11
+D012175,Retinoblastoma,C11.768.717.760,D005128,Eye Diseases,C11
+D012178,Retinopathy of Prematurity,C11.768.836,D005128,Eye Diseases,C11
+D012178,Retinopathy of Prematurity,C16.614.521.731,D007232,"Infant, Newborn, Diseases",C16.614
+D012206,Rhabdomyolysis,C05.651.807,D009140,Musculoskeletal Diseases,C05
+D012393,Rosacea,C17.800.716,D012871,Skin Diseases,C17.800
+D012409,Rubella,C01.925.782.930.700.700,D007239,Infections,C01
+D012509,Sarcoma,C04.557.450.795,D009369,Neoplasms,C04
+D012512,"Sarcoma, Ewing",C04.557.450.565.575.650.800,D009369,Neoplasms,C04
+D012512,"Sarcoma, Ewing",C04.557.450.795.620.800,D009369,Neoplasms,C04
+D012516,Osteosarcoma,C04.557.450.565.575.650,D009369,Neoplasms,C04
+D012516,Osteosarcoma,C04.557.450.795.620,D009369,Neoplasms,C04
+D012559,Schizophrenia,F03.700.750,D001523,Mental Disorders,F03
+D012563,"Schizophrenia, Paranoid",F03.700.750.600,D001523,Mental Disorders,F03
+D012569,Schizotypal Personality Disorder,F03.675.725,D001523,Mental Disorders,F03
+D012585,Sciatica,C10.668.829.500.675.800,D009422,Nervous System Diseases,C10
+D012585,Sciatica,C10.668.829.600.800,D009422,Nervous System Diseases,C10
+D012585,Sciatica,C23.888.592.612.664.800,D010146,Pain,C23.888.592.612
+D012600,Scoliosis,C05.116.900.800.875,D009140,Musculoskeletal Diseases,C05
+D012628,"Dermatitis, Seborrheic",C17.800.174.580,D012871,Skin Diseases,C17.800
+D012628,"Dermatitis, Seborrheic",C17.800.794.230,D012871,Skin Diseases,C17.800
+D012628,"Dermatitis, Seborrheic",C17.800.815.580,D012871,Skin Diseases,C17.800
+D012628,"Dermatitis, Seborrheic",C17.800.859.350,D012871,Skin Diseases,C17.800
+D012652,Self Mutilation,C26.780,D014947,Wounds and Injuries,C26
+D012784,Shoulder Fractures,C26.404.625,D014947,Wounds and Injuries,C26
+D012784,Shoulder Fractures,C26.803.250,D014947,Wounds and Injuries,C26
+D012829,Silicosis,C08.381.483.581.760,D012140,Respiratory Tract Diseases,C08
+D012829,Silicosis,C08.381.520.702.760,D012140,Respiratory Tract Diseases,C08
+D012829,Silicosis,C24.800.834,D009784,Occupational Diseases,C24
+D012878,Skin Neoplasms,C04.588.805,D009369,Neoplasms,C04
+D012878,Skin Neoplasms,C17.800.882,D012871,Skin Diseases,C17.800
+D012883,Skin Ulcer,C17.800.893,D012871,Skin Diseases,C17.800
+D012887,Skull Fractures,C10.900.300.918,D009422,Nervous System Diseases,C10
+D012887,Skull Fractures,C26.404.750,D014947,Wounds and Injuries,C26
+D012887,Skull Fractures,C26.915.300.745,D014947,Wounds and Injuries,C26
+D012891,Sleep Apnea Syndromes,C08.618.085.852,D001049,Apnea,C08.618.085
+D012891,Sleep Apnea Syndromes,C10.886.425.800.750,D012893,Sleep Wake Disorders,C10.886
+D012892,Sleep Deprivation,C10.886.425.175,D012893,Sleep Wake Disorders,C10.886
+D012892,Sleep Deprivation,C23.888.592.796.772,D012893,Sleep Wake Disorders,C23.888.592.796
+D012892,Sleep Deprivation,F03.870.400.099,D012893,Sleep Wake Disorders,F03.870
+D012909,Snake Bites,C25.723.127.442,D011041,Poisoning,C25.723
+D012909,Snake Bites,C26.176.724,D014947,Wounds and Injuries,C26
+D012913,Snoring,C23.888.852.779.850,D012135,Respiratory Sounds,C23.888.852.779
+D013001,Somatoform Disorders,F03.875,D001523,Mental Disorders,F03
+D013036,"Spasms, Infantile",C10.228.140.490.375.760,D009422,Nervous System Diseases,C10
+D013036,"Spasms, Infantile",C10.228.140.490.493.875,D009422,Nervous System Diseases,C10
+D013119,Spinal Cord Injuries,C10.228.854.763,D009422,Nervous System Diseases,C10
+D013119,Spinal Cord Injuries,C10.900.850,D009422,Nervous System Diseases,C10
+D013119,Spinal Cord Injuries,C26.819,D014947,Wounds and Injuries,C26
+D013122,Spinal Diseases,C05.116.900,D009140,Musculoskeletal Diseases,C05
+D013167,"Spondylitis, Ankylosing",C05.116.900.853.625.800.744.500,D009140,Musculoskeletal Diseases,C05
+D013167,"Spondylitis, Ankylosing",C05.550.069.340.500,D009140,Musculoskeletal Diseases,C05
+D013167,"Spondylitis, Ankylosing",C05.550.114.865.800.744.500,D009140,Musculoskeletal Diseases,C05
+D013168,Spondylolisthesis,C05.116.900.938.500.500,D009140,Musculoskeletal Diseases,C05
+D013203,Staphylococcal Infections,C01.150.252.410.868,D007239,Infections,C01
+D013226,Status Epilepticus,C10.597.742.785,D012640,Seizures,C10.597.742
+D013226,Status Epilepticus,C23.888.592.742.785,D012640,Seizures,C23.888.592.742
+D013274,Stomach Neoplasms,C04.588.274.476.767,D009369,Neoplasms,C04
+D013274,Stomach Neoplasms,C06.301.371.767,D004066,Digestive System Diseases,C06
+D013274,Stomach Neoplasms,C06.405.249.767,D004066,Digestive System Diseases,C06
+D013274,Stomach Neoplasms,C06.405.748.789,D004066,Digestive System Diseases,C06
+D013276,Stomach Ulcer,C06.405.469.275.800.849,D004066,Digestive System Diseases,C06
+D013276,Stomach Ulcer,C06.405.748.586.849,D004066,Digestive System Diseases,C06
+D013280,Stomatitis,C07.465.864,D009059,Mouth Diseases,C07.465
+D013281,"Stomatitis, Aphthous",C07.465.864.750,D009059,Mouth Diseases,C07.465
+D013290,Streptococcal Infections,C01.150.252.410.890,D007239,Infections,C01
+D013313,"Stress Disorders, Post-Traumatic",F03.950.750.500,D001523,Mental Disorders,F03
+D013341,Sturge-Weber Syndrome,C04.557.645.375.850,D009369,Neoplasms,C04
+D013341,Sturge-Weber Syndrome,C10.562.800,D020752,Neurocutaneous Syndromes,C10.562
+D013341,Sturge-Weber Syndrome,C14.907.077.850,D002318,Cardiovascular Diseases,C14
+D013345,Subarachnoid Hemorrhage,C10.228.140.300.535.800,D009422,Nervous System Diseases,C10
+D013345,Subarachnoid Hemorrhage,C14.907.253.573.800,D002318,Cardiovascular Diseases,C14
+D013345,Subarachnoid Hemorrhage,C23.550.414.913.850,D006470,Hemorrhage,C23.550.414
+D013352,Subcutaneous Emphysema,C23.550.325.500,D004646,Emphysema,C23.550.325
+D013375,Substance Withdrawal Syndrome,C25.775.835,D019966,Substance-Related Disorders,C25.775
+D013375,Substance Withdrawal Syndrome,F03.900.825,D019966,Substance-Related Disorders,F03.900
+D013478,Superior Mesenteric Artery Syndrome,C06.405.469.275.395.890,D004066,Digestive System Diseases,C06
+D013530,Surgical Wound Infection,C01.947.692,D007239,Infections,C01
+D013530,Surgical Wound Infection,C23.550.767.925,D011183,Postoperative Complications,C23.550.767
+D013575,Syncope,C10.597.606.358.800.600,D019954,Neurobehavioral Manifestations,C10.597.606
+D013575,Syncope,C23.888.592.604.359.800.600,D019954,Neurobehavioral Manifestations,C23.888.592.604
+D013577,Syndrome,C23.550.288.500,D004194,Disease,C23.550.288
+D013585,Synovitis,C05.550.870,D009140,Musculoskeletal Diseases,C05
+D013587,Syphilis,C01.150.252.400.794.840.500,D007239,Infections,C01
+D013587,Syphilis,C01.150.252.400.840.500,D007239,Infections,C01
+D013587,Syphilis,C01.150.252.734.859,D007239,Infections,C01
+D013587,Syphilis,C01.221.812.281.859,D012749,Sexually Transmitted Diseases,C01.221.812
+D013587,Syphilis,C01.778.281.859,D012749,Sexually Transmitted Diseases,C01.778
+D013587,Syphilis,C12.100.937.281.859,D012749,Sexually Transmitted Diseases,C12.100.937
+D013590,"Syphilis, Congenital",C01.150.252.400.794.840.500.937,D007239,Infections,C01
+D013590,"Syphilis, Congenital",C01.150.252.400.840.500.937,D007239,Infections,C01
+D013590,"Syphilis, Congenital",C16.614.868,D007232,"Infant, Newborn, Diseases",C16.614
+D013610,Tachycardia,C14.280.067.845,D001145,"Arrhythmias, Cardiac",C14.280.067
+D013610,Tachycardia,C14.280.123.875,D002318,Cardiovascular Diseases,C14
+D013610,Tachycardia,C23.550.073.845,D001145,"Arrhythmias, Cardiac",C23.550.073
+D013617,"Tachycardia, Supraventricular",C14.280.067.845.880,D001145,"Arrhythmias, Cardiac",C14.280.067
+D013617,"Tachycardia, Supraventricular",C14.280.123.875.880,D002318,Cardiovascular Diseases,C14
+D013617,"Tachycardia, Supraventricular",C23.550.073.845.880,D001145,"Arrhythmias, Cardiac",C23.550.073
+D013706,Temporomandibular Joint Dysfunction Syndrome,C05.500.607.221.897.897,D013705,Temporomandibular Joint Disorders,C05.500.607.221.897
+D013706,Temporomandibular Joint Dysfunction Syndrome,C05.550.905.905,D013705,Temporomandibular Joint Disorders,C05.550.905
+D013706,Temporomandibular Joint Dysfunction Syndrome,C05.651.243.897.897,D013705,Temporomandibular Joint Disorders,C05.651.243.897
+D013706,Temporomandibular Joint Dysfunction Syndrome,C05.651.550.905,D009140,Musculoskeletal Diseases,C05
+D013706,Temporomandibular Joint Dysfunction Syndrome,C07.320.610.291.897.897,D013705,Temporomandibular Joint Disorders,C07.320.610.291.897
+D013706,Temporomandibular Joint Dysfunction Syndrome,C07.678.949,D013705,Temporomandibular Joint Disorders,C07.678
+D013851,Thinness,C23.888.144.828,D001835,Body Weight,C23.888.144
+D013898,Thoracic Injuries,C26.891,D014947,Wounds and Injuries,C26
+D013919,Thromboangiitis Obliterans,C14.907.137.870,D002318,Cardiovascular Diseases,C14
+D013919,Thromboangiitis Obliterans,C14.907.940.905,D002318,Cardiovascular Diseases,C14
+D013921,Thrombocytopenia,C15.378.140.855,D006402,Hematologic Diseases,C15.378
+D013921,Thrombocytopenia,C15.378.243.937,D006402,Hematologic Diseases,C15.378
+D013924,Thrombophlebitis,C14.907.355.830.925.770,D002318,Cardiovascular Diseases,C14
+D013924,Thrombophlebitis,C14.907.617.718.788,D002318,Cardiovascular Diseases,C14
+D013924,Thrombophlebitis,C14.907.940.740.910,D002318,Cardiovascular Diseases,C14
+D013927,Thrombosis,C14.907.355.830,D002318,Cardiovascular Diseases,C14
+D013964,Thyroid Neoplasms,C04.588.322.894,D009369,Neoplasms,C04
+D013964,Thyroid Neoplasms,C04.588.443.915,D009369,Neoplasms,C04
+D013964,Thyroid Neoplasms,C19.344.894,D004700,Endocrine System Diseases,C19
+D013964,Thyroid Neoplasms,C19.874.788,D004700,Endocrine System Diseases,C19
+D013978,Tibial Fractures,C26.404.875,D014947,Wounds and Injuries,C26
+D013978,Tibial Fractures,C26.558.857,D014947,Wounds and Injuries,C26
+D013981,Tic Disorders,C10.228.662.825,D009422,Nervous System Diseases,C10
+D013981,Tic Disorders,F03.625.992,D001523,Mental Disorders,F03
+D013984,Tick Infestations,C01.610.858.211.857,D007239,Infections,C01
+D014029,Tobacco Use Disorder,C25.775.912,D019966,Substance-Related Disorders,C25.775
+D014029,Tobacco Use Disorder,F03.900.912,D019966,Substance-Related Disorders,F03.900
+D014062,Tongue Neoplasms,C04.588.443.591.925,D009369,Neoplasms,C04
+D014062,Tongue Neoplasms,C07.465.530.925,D009059,Mouth Diseases,C07.465
+D014062,Tongue Neoplasms,C07.465.910.470,D009059,Mouth Diseases,C07.465
+D014123,Toxoplasmosis,C01.610.752.250.800,D007239,Infections,C01
+D014202,Tremor,C10.597.350.850,D020820,Dyskinesias,C10.597.350
+D014202,Tremor,C23.888.592.350.850,D020820,Dyskinesias,C23.888.592.350
+D014256,Trichotillomania,F03.080.600.625,D001523,Mental Disorders,F03
+D014256,Trichotillomania,F03.250.800,D001523,Mental Disorders,F03
+D014277,Trigeminal Neuralgia,C07.465.299.625.500.700,D009059,Mouth Diseases,C07.465
+D014277,Trigeminal Neuralgia,C10.292.319.625.700.700,D009422,Nervous System Diseases,C10
+D014314,Trisomy,C23.550.210.050.750,D002869,Chromosome Aberrations,C23.550.210
+D014314,Trisomy,C23.550.210.182.500,D002869,Chromosome Aberrations,C23.550.210
+D014376,Tuberculosis,C01.150.252.410.040.552.846,D007239,Infections,C01
+D014391,"Tuberculosis, Miliary",C01.150.252.410.040.552.846.505.001,D007239,Infections,C01
+D014397,"Tuberculosis, Pulmonary",C01.150.252.410.040.552.846.899,D007239,Infections,C01
+D014397,"Tuberculosis, Pulmonary",C01.748.939,D007239,Infections,C01
+D014397,"Tuberculosis, Pulmonary",C08.381.922,D012140,Respiratory Tract Diseases,C08
+D014397,"Tuberculosis, Pulmonary",C08.730.939,D012140,Respiratory Tract Diseases,C08
+D014412,Tumor Virus Infections,C01.925.928,D007239,Infections,C01
+D014428,"Twins, Conjoined",C16.131.085.806,D000013,Congenital Abnormalities,C16.131
+D014474,Unconsciousness,C10.597.606.358.800,D019954,Neurobehavioral Manifestations,C10.597.606
+D014474,Unconsciousness,C23.888.592.604.359.800,D019954,Neurobehavioral Manifestations,C23.888.592.604
+D014511,Uremia,C12.050.351.968.419.936,D014570,Urologic Diseases,C12.050.351.968
+D014511,Uremia,C12.200.777.419.936,D014570,Urologic Diseases,C12.200.777
+D014511,Uremia,C12.950.419.936,D014570,Urologic Diseases,C12.950
+D014514,Ureteral Calculi,C12.050.351.968.725.938.500,D014570,Urologic Diseases,C12.050.351.968
+D014514,Ureteral Calculi,C12.050.351.968.967.374.500,D014570,Urologic Diseases,C12.050.351.968
+D014514,Ureteral Calculi,C12.050.351.968.967.500.851,D014545,Urinary Calculi,C12.050.351.968.967.500
+D014514,Ureteral Calculi,C12.200.777.725.938.500,D014570,Urologic Diseases,C12.200.777
+D014514,Ureteral Calculi,C12.200.777.967.374.500,D014570,Urologic Diseases,C12.200.777
+D014514,Ureteral Calculi,C12.200.777.967.500.851,D014545,Urinary Calculi,C12.200.777.967.500
+D014514,Ureteral Calculi,C12.950.725.938.500,D014570,Urologic Diseases,C12.950
+D014514,Ureteral Calculi,C12.950.967.374.500,D014570,Urologic Diseases,C12.950
+D014514,Ureteral Calculi,C12.950.967.500.851,D014545,Urinary Calculi,C12.950.967.500
+D014514,Ureteral Calculi,C23.300.175.850.750,D014545,Urinary Calculi,C23.300.175.850
+D014517,Ureteral Obstruction,C12.050.351.968.725.776,D014570,Urologic Diseases,C12.050.351.968
+D014517,Ureteral Obstruction,C12.200.777.725.776,D014570,Urologic Diseases,C12.200.777
+D014517,Ureteral Obstruction,C12.950.725.776,D014570,Urologic Diseases,C12.950
+D014524,Urethral Obstruction,C12.050.351.968.767.700,D014570,Urologic Diseases,C12.050.351.968
+D014524,Urethral Obstruction,C12.200.777.767.700,D014570,Urologic Diseases,C12.200.777
+D014524,Urethral Obstruction,C12.950.767.700,D014570,Urologic Diseases,C12.950
+D014549,Urinary Incontinence,C12.050.351.968.934.814,D014570,Urologic Diseases,C12.050.351.968
+D014549,Urinary Incontinence,C12.200.777.934.852,D014570,Urologic Diseases,C12.200.777
+D014549,Urinary Incontinence,C12.950.934.814,D014570,Urologic Diseases,C12.950
+D014549,Urinary Incontinence,C23.888.942.343.800,D059411,Lower Urinary Tract Symptoms,C23.888.942.343
+D014552,Urinary Tract Infections,C01.915,D007239,Infections,C01
+D014552,Urinary Tract Infections,C12.050.351.968.892,D014570,Urologic Diseases,C12.050.351.968
+D014552,Urinary Tract Infections,C12.200.777.892,D014570,Urologic Diseases,C12.200.777
+D014552,Urinary Tract Infections,C12.950.892,D014570,Urologic Diseases,C12.950
+D014581,Urticaria,C17.800.862.945,D012871,Skin Diseases,C17.800
+D014581,Urticaria,C20.543.480.904,D007154,Immune System Diseases,C20
+D014591,Uterine Diseases,C12.050.351.500.852,D005831,"Genital Diseases, Female",C12.050.351.500
+D014591,Uterine Diseases,C12.100.250.852,D005831,"Genital Diseases, Female",C12.100.250
+D014594,Uterine Neoplasms,C04.588.945.418.948,D005833,"Genital Neoplasms, Female",C04.588.945.418
+D014594,Uterine Neoplasms,C12.050.351.500.852.762,D005831,"Genital Diseases, Female",C12.050.351.500
+D014594,Uterine Neoplasms,C12.050.351.937.418.875,D005833,"Genital Neoplasms, Female",C12.050.351.937.418
+D014594,Uterine Neoplasms,C12.100.250.852.762,D005831,"Genital Diseases, Female",C12.100.250
+D014594,Uterine Neoplasms,C12.900.418.875,D005833,"Genital Neoplasms, Female",C12.900.418
+D014605,Uveitis,C11.941.879,D005128,Eye Diseases,C11
+D014647,Varicose Ulcer,C14.907.927.730,D002318,Cardiovascular Diseases,C14
+D014647,Varicose Ulcer,C17.800.893.592.730,D012871,Skin Diseases,C17.800
+D014652,Vascular Diseases,C14.907,D002318,Cardiovascular Diseases,C14
+D014657,Vasculitis,C14.907.940,D002318,Cardiovascular Diseases,C14
+D014693,Ventricular Fibrillation,C14.280.067.922,D001145,"Arrhythmias, Cardiac",C14.280.067
+D014693,Ventricular Fibrillation,C23.550.073.922,D001145,"Arrhythmias, Cardiac",C23.550.073
+D014766,Viremia,C01.925.937,D007239,Infections,C01
+D014766,Viremia,C23.550.470.790.500.900,D018746,Systemic Inflammatory Response Syndrome,C23.550.470.790
+D014777,Virus Diseases,C01.925,D007239,Infections,C01
+D014820,Vitiligo,C17.800.621.440.895,D010859,Pigmentation Disorders,C17.800.621
+D014883,Water-Electrolyte Imbalance,C18.452.950,D008659,Metabolic Diseases,C18.452
+D014946,Wound Infection,C01.947,D007239,Infections,C01
+D014948,"Wounds, Gunshot",C26.986.900,D014947,Wounds and Injuries,C26
+D014949,"Wounds, Nonpenetrating",C26.974,D014947,Wounds and Injuries,C26
+D014950,"Wounds, Penetrating",C26.986,D014947,Wounds and Injuries,C26
+D014951,"Wounds, Stab",C26.986.950,D014947,Wounds and Injuries,C26
+D014954,Wrist Injuries,C26.088.906,D014947,Wounds and Injuries,C26
+D014987,Xerostomia,C07.465.815.929,D009059,Mouth Diseases,C07.465
+D015004,Yellow Fever,C01.920.852.875,D007239,Infections,C01
+D015004,Yellow Fever,C01.925.081.980,D007239,Infections,C01
+D015004,Yellow Fever,C01.925.782.350.250.980,D007239,Infections,C01
+D015004,Yellow Fever,C01.925.782.417.881,D007239,Infections,C01
+D015140,"Dementia, Vascular",C10.228.140.300.400,D009422,Nervous System Diseases,C10
+D015140,"Dementia, Vascular",C10.228.140.300.510.800.500,D009422,Nervous System Diseases,C10
+D015140,"Dementia, Vascular",C10.228.140.380.230,D009422,Nervous System Diseases,C10
+D015140,"Dementia, Vascular",C10.228.140.695.500,D009422,Nervous System Diseases,C10
+D015140,"Dementia, Vascular",C14.907.137.126.372.500,D002318,Cardiovascular Diseases,C14
+D015140,"Dementia, Vascular",C14.907.253.560.350.500,D002318,Cardiovascular Diseases,C14
+D015140,"Dementia, Vascular",F03.615.400.350,D001523,Mental Disorders,F03
+D015154,Esophageal Motility Disorders,C06.405.117.119.500,D003680,Deglutition Disorders,C06.405.117.119
+D015179,Colorectal Neoplasms,C04.588.274.476.411.307,D009369,Neoplasms,C04
+D015179,Colorectal Neoplasms,C06.301.371.411.307,D004066,Digestive System Diseases,C06
+D015179,Colorectal Neoplasms,C06.405.249.411.307,D004066,Digestive System Diseases,C06
+D015179,Colorectal Neoplasms,C06.405.469.158.356,D004066,Digestive System Diseases,C06
+D015179,Colorectal Neoplasms,C06.405.469.491.307,D004066,Digestive System Diseases,C06
+D015179,Colorectal Neoplasms,C06.405.469.860.180,D004066,Digestive System Diseases,C06
+D015207,"Osteoarthritis, Hip",C05.550.114.606.400,D009140,Musculoskeletal Diseases,C05
+D015207,"Osteoarthritis, Hip",C05.799.613.400,D012216,Rheumatic Diseases,C05.799
+D015212,Inflammatory Bowel Diseases,C06.405.205.731,D004066,Digestive System Diseases,C06
+D015212,Inflammatory Bowel Diseases,C06.405.469.432,D004066,Digestive System Diseases,C06
+D015228,Hypertriglyceridemia,C18.452.584.500.500.851,D008659,Metabolic Diseases,C18.452
+D015352,Dry Eye Syndromes,C11.496.260,D005128,Eye Diseases,C11
+D015427,Reperfusion Injury,C14.907.725,D002318,Cardiovascular Diseases,C14
+D015427,Reperfusion Injury,C23.550.767.877,D011183,Postoperative Complications,C23.550.767
+D015428,Myocardial Reperfusion Injury,C14.280.238.615,D002318,Cardiovascular Diseases,C14
+D015428,Myocardial Reperfusion Injury,C14.280.647.625,D002318,Cardiovascular Diseases,C14
+D015428,Myocardial Reperfusion Injury,C14.907.585.625,D002318,Cardiovascular Diseases,C14
+D015428,Myocardial Reperfusion Injury,C14.907.725.600,D002318,Cardiovascular Diseases,C14
+D015428,Myocardial Reperfusion Injury,C23.550.767.877.500,D011183,Postoperative Complications,C23.550.767
+D015430,Weight Gain,C23.888.144.243.926,D001835,Body Weight,C23.888.144
+D015431,Weight Loss,C23.888.144.243.963,D001835,Body Weight,C23.888.144
+D015464,"Leukemia, Myelogenous, Chronic, BCR-ABL Positive",C04.557.337.539.250,D009369,Neoplasms,C04
+D015464,"Leukemia, Myelogenous, Chronic, BCR-ABL Positive",C15.378.190.636.370,D006402,Hematologic Diseases,C15.378
+D015464,"Leukemia, Myelogenous, Chronic, BCR-ABL Positive",C15.378.508.539.250,D006402,Hematologic Diseases,C15.378
+D015464,"Leukemia, Myelogenous, Chronic, BCR-ABL Positive",C23.550.291.500.485,D002908,Chronic Disease,C23.550.291.500
+D015470,"Leukemia, Myeloid, Acute",C04.557.337.539.275,D009369,Neoplasms,C04
+D015470,"Leukemia, Myeloid, Acute",C15.378.508.539.275,D006402,Hematologic Diseases,C15.378
+D015471,"Leukemia, Basophilic, Acute",C04.557.337.539.275.125,D009369,Neoplasms,C04
+D015471,"Leukemia, Basophilic, Acute",C15.378.508.539.275.125,D006402,Hematologic Diseases,C15.378
+D015493,"Paraparesis, Tropical Spastic",C01.207.618.500,D007239,Infections,C01
+D015493,"Paraparesis, Tropical Spastic",C01.925.782.815.200.470.710,D007239,Infections,C01
+D015493,"Paraparesis, Tropical Spastic",C10.228.228.618.500,D009422,Nervous System Diseases,C10
+D015493,"Paraparesis, Tropical Spastic",C10.228.854.525.700,D009422,Nervous System Diseases,C10
+D015493,"Paraparesis, Tropical Spastic",C10.586.750.700,D009422,Nervous System Diseases,C10
+D015518,Rett Syndrome,C10.597.606.360.455.937,D038901,X-Linked Intellectual Disability,C10.597.606.360.455
+D015518,Rett Syndrome,C16.320.322.500.937,D038901,X-Linked Intellectual Disability,C16.320.322.500
+D015518,Rett Syndrome,C16.320.400.525.937,D038901,X-Linked Intellectual Disability,C16.320.400.525
+D015526,AIDS Dementia Complex,C01.221.250.875.049,D003141,Communicable Diseases,C01.221
+D015526,AIDS Dementia Complex,C01.221.812.640.400.070,D012749,Sexually Transmitted Diseases,C01.221.812
+D015526,AIDS Dementia Complex,C01.778.640.400.070,D012749,Sexually Transmitted Diseases,C01.778
+D015526,AIDS Dementia Complex,C01.925.782.815.616.400.049,D007239,Infections,C01
+D015526,AIDS Dementia Complex,C01.925.813.400.070,D007239,Infections,C01
+D015526,AIDS Dementia Complex,C10.228.140.380.070,D009422,Nervous System Diseases,C10
+D015526,AIDS Dementia Complex,C12.100.937.640.400.070,D012749,Sexually Transmitted Diseases,C12.100.937
+D015526,AIDS Dementia Complex,C20.673.480.070,D007154,Immune System Diseases,C20
+D015526,AIDS Dementia Complex,F03.615.400.050,D001523,Mental Disorders,F03
+D015535,"Arthritis, Psoriatic",C05.116.900.853.625.800.424,D009140,Musculoskeletal Diseases,C05
+D015535,"Arthritis, Psoriatic",C05.550.114.145,D009140,Musculoskeletal Diseases,C05
+D015535,"Arthritis, Psoriatic",C05.550.114.865.800.424,D009140,Musculoskeletal Diseases,C05
+D015535,"Arthritis, Psoriatic",C17.800.859.675.175,D012871,Skin Diseases,C17.800
+D015658,HIV Infections,C01.221.250.875,D003141,Communicable Diseases,C01.221
+D015658,HIV Infections,C01.221.812.640.400,D012749,Sexually Transmitted Diseases,C01.221.812
+D015658,HIV Infections,C01.778.640.400,D012749,Sexually Transmitted Diseases,C01.778
+D015658,HIV Infections,C01.925.782.815.616.400,D007239,Infections,C01
+D015658,HIV Infections,C01.925.813.400,D007239,Infections,C01
+D015658,HIV Infections,C12.100.937.640.400,D012749,Sexually Transmitted Diseases,C12.100.937
+D015658,HIV Infections,C20.673.480,D007154,Immune System Diseases,C20
+D015663,"Osteoporosis, Postmenopausal",C05.116.198.579.610,D009140,Musculoskeletal Diseases,C05
+D015663,"Osteoporosis, Postmenopausal",C18.452.104.579.610,D008659,Metabolic Diseases,C18.452
+D015673,"Fatigue Syndrome, Chronic",C05.651.310,D009140,Musculoskeletal Diseases,C05
+D015673,"Fatigue Syndrome, Chronic",C10.586.500.600,D009422,Nervous System Diseases,C10
+D015673,"Fatigue Syndrome, Chronic",C10.668.364,D009422,Nervous System Diseases,C10
+D015673,"Fatigue Syndrome, Chronic",C23.550.291.500.392,D002908,Chronic Disease,C23.550.291.500
+D015775,"Fractures, Stress",C26.404.437,D014947,Wounds and Injuries,C26
+D015819,"Substance Abuse, Intravenous",C25.775.793,D019966,Substance-Related Disorders,C25.775
+D015819,"Substance Abuse, Intravenous",F03.900.793,D019966,Substance-Related Disorders,F03.900
+D016135,Spinal Dysraphism,C10.500.680.800,D009422,Nervous System Diseases,C10
+D016135,Spinal Dysraphism,C16.131.666.680.800,D000013,Congenital Abnormalities,C16.131
+D016171,Torsades de Pointes,C14.280.067.845.940.700,D001145,"Arrhythmias, Cardiac",C14.280.067
+D016171,Torsades de Pointes,C14.280.123.875.940.700,D002318,Cardiovascular Diseases,C14
+D016171,Torsades de Pointes,C23.550.073.845.940.700,D001145,"Arrhythmias, Cardiac",C23.550.073
+D016301,Alveolar Bone Loss,C05.116.264.150,D009140,Musculoskeletal Diseases,C05
+D016301,Alveolar Bone Loss,C07.465.714.354.500,D009059,Mouth Diseases,C07.465
+D016403,"Lymphoma, Large B-Cell, Diffuse",C04.557.386.480.150.585,D008223,Lymphoma,C04.557.386
+D016403,"Lymphoma, Large B-Cell, Diffuse",C15.604.515.569.480.150.585,D008223,Lymphoma,C15.604.515.569
+D016403,"Lymphoma, Large B-Cell, Diffuse",C20.683.515.761.480.150.585,D008223,Lymphoma,C20.683.515.761
+D016459,Prosthesis-Related Infections,C01.685,D007239,Infections,C01
+D016459,Prosthesis-Related Infections,C23.550.767.868,D011183,Postoperative Complications,C23.550.767
+D016471,Ovarian Hyperstimulation Syndrome,C12.050.351.500.056.630.642,D005831,"Genital Diseases, Female",C12.050.351.500
+D016471,Ovarian Hyperstimulation Syndrome,C12.100.250.056.630.642,D005831,"Genital Diseases, Female",C12.100.250
+D016471,Ovarian Hyperstimulation Syndrome,C19.391.630.642,D004700,Endocrine System Diseases,C19
+D016472,Motor Neuron Disease,C10.574.562,D009422,Nervous System Diseases,C10
+D016472,Motor Neuron Disease,C10.668.467,D009422,Nervous System Diseases,C10
+D016481,Helicobacter Infections,C01.150.252.400.466,D007239,Infections,C01
+D016491,Peripheral Vascular Diseases,C14.907.617,D002318,Cardiovascular Diseases,C14
+D016510,Corneal Neovascularization,C11.204.290,D005128,Eye Diseases,C11
+D016510,Corneal Neovascularization,C23.550.589.500.435,D009389,"Neovascularization, Pathologic",C23.550.589.500
+D016543,Central Nervous System Neoplasms,C04.588.614.250,D009369,Neoplasms,C04
+D016543,Central Nervous System Neoplasms,C10.551.240,D009422,Nervous System Diseases,C10
+D016584,Panic Disorder,F03.080.700,D001523,Mental Disorders,F03
+D016640,"Diabetes, Gestational",C12.050.703.170,D011248,Pregnancy Complications,C12.050.703
+D016640,"Diabetes, Gestational",C18.452.394.750.448,D008659,Metabolic Diseases,C18.452
+D016640,"Diabetes, Gestational",C19.246.200,D004700,Endocrine System Diseases,C19
+D016757,"Death, Sudden, Cardiac",C14.280.383.220,D002318,Cardiovascular Diseases,C14
+D016757,"Death, Sudden, Cardiac",C23.550.260.322.250,D003643,Death,C23.550.260
+D016773,"Leishmaniasis, Cutaneous",C01.610.752.300.500.400,D007239,Infections,C01
+D016773,"Leishmaniasis, Cutaneous",C01.610.858.560.400,D007239,Infections,C01
+D016773,"Leishmaniasis, Cutaneous",C01.920.813.400,D007239,Infections,C01
+D016773,"Leishmaniasis, Cutaneous",C17.800.838.775.560.400,D012871,Skin Diseases,C17.800
+D016883,Diabetic Ketoacidosis,C18.452.076.176.652.500,D008659,Metabolic Diseases,C18.452
+D016883,Diabetic Ketoacidosis,C19.246.099.812,D004700,Endocrine System Diseases,C19
+D016889,Endometrial Neoplasms,C04.588.945.418.948.585,D005833,"Genital Neoplasms, Female",C04.588.945.418
+D016889,Endometrial Neoplasms,C12.050.351.500.852.762.200,D005831,"Genital Diseases, Female",C12.050.351.500
+D016889,Endometrial Neoplasms,C12.050.351.937.418.875.200,D005833,"Genital Neoplasms, Female",C12.050.351.937.418
+D016889,Endometrial Neoplasms,C12.100.250.852.762.200,D005831,"Genital Diseases, Female",C12.100.250
+D016889,Endometrial Neoplasms,C12.900.418.875.200,D005833,"Genital Neoplasms, Female",C12.900.418
+D017088,AIDS-Related Opportunistic Infections,C01.221.250.875.100,D003141,Communicable Diseases,C01.221
+D017088,AIDS-Related Opportunistic Infections,C01.597.050,D007239,Infections,C01
+D017088,AIDS-Related Opportunistic Infections,C01.925.782.815.616.400.100,D007239,Infections,C01
+D017088,AIDS-Related Opportunistic Infections,C20.673.480.100,D007154,Immune System Diseases,C20
+D017109,"Akathisia, Drug-Induced",C10.228.662.037,D009422,Nervous System Diseases,C10
+D017109,"Akathisia, Drug-Induced",C10.720.075,D009422,Nervous System Diseases,C10
+D017109,"Akathisia, Drug-Induced",C23.888.592.350.600.500,D020820,Dyskinesias,C23.888.592.350
+D017109,"Akathisia, Drug-Induced",C25.100.249,D064420,Drug-Related Side Effects and Adverse Reactions,C25.100
+D017109,"Akathisia, Drug-Induced",C25.723.705.100,D011041,Poisoning,C25.723
+D017116,Low Back Pain,C23.888.592.612.107.400,D010146,Pain,C23.888.592.612
+D017118,"Porphyria, Acute Intermittent",C06.552.830.150,D017094,"Porphyrias, Hepatic",C06.552.830
+D017118,"Porphyria, Acute Intermittent",C16.320.850.742.150,D017094,"Porphyrias, Hepatic",C16.320.850.742
+D017118,"Porphyria, Acute Intermittent",C17.800.827.742.150,D017094,"Porphyrias, Hepatic",C17.800.827.742
+D017118,"Porphyria, Acute Intermittent",C18.452.811.400.150,D017094,"Porphyrias, Hepatic",C18.452.811.400
+D017180,"Tachycardia, Ventricular",C14.280.067.845.940,D001145,"Arrhythmias, Cardiac",C14.280.067
+D017180,"Tachycardia, Ventricular",C14.280.123.875.940,D002318,Cardiovascular Diseases,C14
+D017180,"Tachycardia, Ventricular",C23.550.073.845.940,D001145,"Arrhythmias, Cardiac",C23.550.073
+D017202,Myocardial Ischemia,C14.280.647,D002318,Cardiovascular Diseases,C14
+D017202,Myocardial Ischemia,C14.907.585,D002318,Cardiovascular Diseases,C14
+D017205,Spirurida Infections,C01.610.335.508.700.750,D007239,Infections,C01
+D017206,Strongylida Infections,C01.610.335.508.700.775,D007239,Infections,C01
+D017379,"Hypertrophy, Left Ventricular",C14.280.195.400,D002318,Cardiovascular Diseases,C14
+D017379,"Hypertrophy, Left Ventricular",C23.300.775.250.400,D006984,Hypertrophy,C23.300.775
+D017380,"Hypertrophy, Right Ventricular",C14.280.195.410,D002318,Cardiovascular Diseases,C14
+D017380,"Hypertrophy, Right Ventricular",C23.300.775.250.401,D006984,Hypertrophy,C23.300.775
+D017439,"Cicatrix, Hypertrophic",C23.550.355.274.505,D005355,Fibrosis,C23.550.355
+D017449,"Dermatitis, Allergic Contact",C17.800.174.255.100,D012871,Skin Diseases,C17.800
+D017449,"Dermatitis, Allergic Contact",C17.800.815.255.100,D012871,Skin Diseases,C17.800
+D017449,"Dermatitis, Allergic Contact",C20.543.418.150,D007154,Immune System Diseases,C20
+D017453,"Dermatitis, Irritant",C17.800.174.255.400,D012871,Skin Diseases,C17.800
+D017453,"Dermatitis, Irritant",C17.800.815.255.400,D012871,Skin Diseases,C17.800
+D017484,"Dermatitis, Phototoxic",C17.800.174.255.400.225,D012871,Skin Diseases,C17.800
+D017484,"Dermatitis, Phototoxic",C17.800.600.335,D012871,Skin Diseases,C17.800
+D017484,"Dermatitis, Phototoxic",C17.800.815.255.400.225,D012871,Skin Diseases,C17.800
+D017497,Hidradenitis Suppurativa,C01.150.252.819.420,D007239,Infections,C01
+D017497,Hidradenitis Suppurativa,C01.800.720.420,D007239,Infections,C01
+D017497,Hidradenitis Suppurativa,C01.830.499,D007239,Infections,C01
+D017497,Hidradenitis Suppurativa,C17.800.838.765.420,D012871,Skin Diseases,C17.800
+D017497,Hidradenitis Suppurativa,C17.800.946.315.320,D012871,Skin Diseases,C17.800
+D017511,Pyoderma Gangrenosum,C17.800.695.675,D012871,Skin Diseases,C17.800
+D017511,Pyoderma Gangrenosum,C17.800.862.675,D012871,Skin Diseases,C17.800
+D017511,Pyoderma Gangrenosum,C17.800.893.675,D012871,Skin Diseases,C17.800
+D017542,"Aneurysm, Ruptured",C14.907.055.185,D002318,Cardiovascular Diseases,C14
+D017545,"Aortic Aneurysm, Thoracic",C14.907.055.239.125,D002318,Cardiovascular Diseases,C14
+D017545,"Aortic Aneurysm, Thoracic",C14.907.109.139.125,D002318,Cardiovascular Diseases,C14
+D017563,"Lung Diseases, Interstitial",C08.381.483,D012140,Respiratory Tract Diseases,C08
+D017676,"Lichen Planus, Oral",C07.465.397,D009059,Mouth Diseases,C07.465
+D017676,"Lichen Planus, Oral",C17.800.859.475.560.397,D012871,Skin Diseases,C17.800
+D017699,Pelvic Pain,C23.888.592.612.944,D010146,Pain,C23.888.592.612
+D017759,"Fractures, Malunited",C26.404.249,D014947,Wounds and Injuries,C26
+D018149,Glucose Intolerance,C18.452.394.952.500,D008659,Metabolic Diseases,C18.452
+D018177,Flavivirus Infections,C01.925.782.350.250,D007239,Infections,C01
+D018207,Angiomyolipoma,C04.557.450.550.125,D009369,Neoplasms,C04
+D018207,Angiomyolipoma,C04.557.450.692.249,D009369,Neoplasms,C04
+D018239,Seminoma,C04.557.465.330.800,D009369,Neoplasms,C04
+D018269,"Carcinoma, Endometrioid",C04.557.470.200.025.240,D009369,Neoplasms,C04
+D018269,"Carcinoma, Endometrioid",C04.588.945.418.948.585.124,D005833,"Genital Neoplasms, Female",C04.588.945.418
+D018269,"Carcinoma, Endometrioid",C12.050.351.500.056.630.705.331,D005831,"Genital Diseases, Female",C12.050.351.500
+D018269,"Carcinoma, Endometrioid",C12.050.351.937.418.685.331,D005833,"Genital Neoplasms, Female",C12.050.351.937.418
+D018269,"Carcinoma, Endometrioid",C12.050.351.937.418.875.200.124,D005833,"Genital Neoplasms, Female",C12.050.351.937.418
+D018269,"Carcinoma, Endometrioid",C12.100.250.056.630.705.331,D005831,"Genital Diseases, Female",C12.100.250
+D018269,"Carcinoma, Endometrioid",C12.900.418.685.331,D005833,"Genital Neoplasms, Female",C12.900.418
+D018269,"Carcinoma, Endometrioid",C12.900.418.875.200.124,D005833,"Genital Neoplasms, Female",C12.900.418
+D018269,"Carcinoma, Endometrioid",C19.391.630.705.331,D004700,Endocrine System Diseases,C19
+D018281,Cholangiocarcinoma,C04.557.470.200.025.450,D009369,Neoplasms,C04
+D018284,"Cystadenocarcinoma, Serous",C04.557.470.200.025.480.240,D009369,Neoplasms,C04
+D018284,"Cystadenocarcinoma, Serous",C04.557.470.590.480.240,D009369,Neoplasms,C04
+D018352,Coronavirus Infections,C01.925.782.600.550.200,D007239,Infections,C01
+D018354,Alphavirus Infections,C01.920.313.078,D007239,Infections,C01
+D018354,Alphavirus Infections,C01.920.852.032,D007239,Infections,C01
+D018354,Alphavirus Infections,C01.925.782.930.100,D007239,Infections,C01
+D018358,Neuroendocrine Tumors,C04.557.465.625.650,D009369,Neoplasms,C04
+D018358,Neuroendocrine Tumors,C04.557.580.625.650,D009369,Neoplasms,C04
+D018410,"Pneumonia, Bacterial",C01.150.252.620,D007239,Infections,C01
+D018410,"Pneumonia, Bacterial",C01.748.610.540,D007239,Infections,C01
+D018410,"Pneumonia, Bacterial",C08.381.677.540,D012140,Respiratory Tract Diseases,C08
+D018410,"Pneumonia, Bacterial",C08.730.610.540,D012140,Respiratory Tract Diseases,C08
+D018461,Soft Tissue Infections,C01.820,D007239,Infections,C01
+D018487,"Ventricular Dysfunction, Left",C14.280.945.900,D002318,Cardiovascular Diseases,C14
+D018497,"Ventricular Dysfunction, Right",C14.280.945.910,D002318,Cardiovascular Diseases,C14
+D018512,Parasitemia,C01.610.695,D007239,Infections,C01
+D018512,Parasitemia,C23.550.470.790.500.580,D018746,Systemic Inflammatory Response Syndrome,C23.550.470.790
+D018589,Gastroparesis,C06.405.748.543,D004066,Digestive System Diseases,C06
+D018589,Gastroparesis,C23.888.592.636.263,D010243,Paralysis,C23.888.592.636
+D018630,"Vitreoretinopathy, Proliferative",C11.768.890,D005128,Eye Diseases,C11
+D018771,Arthralgia,C05.550.091,D009140,Musculoskeletal Diseases,C05
+D018771,Arthralgia,C23.888.592.612.094,D010146,Pain,C23.888.592.612
+D018784,Abdominal Abscess,C01.830.025.020,D007239,Infections,C01
+D018805,Sepsis,C01.757,D007239,Infections,C01
+D018805,Sepsis,C23.550.470.790.500,D018746,Systemic Inflammatory Response Syndrome,C23.550.470.790
+D018827,"Carcinoma, Lewis Lung",C04.557.470.200.280,D009369,Neoplasms,C04
+D018827,"Carcinoma, Lewis Lung",C04.619.230,D009369,Neoplasms,C04
+D018856,"Cystitis, Interstitial",C12.050.351.968.829.495.500,D014570,Urologic Diseases,C12.050.351.968
+D018856,"Cystitis, Interstitial",C12.200.777.829.495.500,D014570,Urologic Diseases,C12.200.777
+D018856,"Cystitis, Interstitial",C12.950.829.495.500,D014570,Urologic Diseases,C12.950
+D018879,Ventricular Premature Complexes,C14.280.067.325.500,D001145,"Arrhythmias, Cardiac",C14.280.067
+D018879,Ventricular Premature Complexes,C14.280.123.375.500,D002318,Cardiovascular Diseases,C14
+D018879,Ventricular Premature Complexes,C23.550.073.325.800,D001145,"Arrhythmias, Cardiac",C23.550.073
+D018882,Heat Stress Disorders,C26.522,D014947,Wounds and Injuries,C26
+D018923,Persian Gulf Syndrome,C24.653,D009784,Occupational Diseases,C24
+D018923,Persian Gulf Syndrome,C26.946.500,D014947,Wounds and Injuries,C26
+D018980,Williams Syndrome,C10.597.606.360.970,D019954,Neurobehavioral Manifestations,C10.597.606
+D018980,Williams Syndrome,C14.280.484.048.750.535.960,D002318,Cardiovascular Diseases,C14
+D018980,Williams Syndrome,C16.131.260.970,D025063,Chromosome Disorders,C16.131.260
+D018980,Williams Syndrome,C16.320.180.970,D025063,Chromosome Disorders,C16.320.180
+D019052,"Depression, Postpartum",C12.050.703.844.253,D011248,Pregnancy Complications,C12.050.703
+D019052,"Depression, Postpartum",F03.600.300.350,D001523,Mental Disorders,F03
+D019106,Postoperative Hemorrhage,C23.550.414.941,D006470,Hemorrhage,C23.550.414
+D019106,Postoperative Hemorrhage,C23.550.767.850,D011183,Postoperative Complications,C23.550.767
+D019142,"Hemorrhagic Fever, Ebola",C01.925.782.417.415,D007239,Infections,C01
+D019142,"Hemorrhagic Fever, Ebola",C01.925.782.580.250.400,D007239,Infections,C01
+D019190,Iron Overload,C18.452.565.500,D008659,Metabolic Diseases,C18.452
+D019226,Oral Ulcer,C07.465.672,D009059,Mouth Diseases,C07.465
+D019292,Skull Base Neoplasms,C04.588.149.721.828,D009369,Neoplasms,C04
+D019292,Skull Base Neoplasms,C05.116.231.754.829,D009140,Musculoskeletal Diseases,C05
+D019337,Hematologic Neoplasms,C04.588.448,D009369,Neoplasms,C04
+D019337,Hematologic Neoplasms,C15.378.400,D006402,Hematologic Diseases,C15.378
+D019446,Endotoxemia,C01.757.100.275,D007239,Infections,C01
+D019446,Endotoxemia,C01.861.375,D007239,Infections,C01
+D019446,Endotoxemia,C23.550.470.790.500.100.275,D018746,Systemic Inflammatory Response Syndrome,C23.550.470.790
+D019465,Craniofacial Abnormalities,C05.660.207,D009140,Musculoskeletal Diseases,C05
+D019465,Craniofacial Abnormalities,C16.131.621.207,D000013,Congenital Abnormalities,C16.131
+D019512,"Pancreatitis, Alcoholic",C06.689.750.660,D004066,Digestive System Diseases,C06
+D019512,"Pancreatitis, Alcoholic",C25.775.100.087.730,D019966,Substance-Related Disorders,C25.775
+D019572,Retinal Neoplasms,C04.588.364.818,D009369,Neoplasms,C04
+D019572,Retinal Neoplasms,C11.319.475,D005128,Eye Diseases,C11
+D019572,Retinal Neoplasms,C11.768.717,D005128,Eye Diseases,C11
+D019578,Multiple System Atrophy,C10.177.575.550,D009422,Nervous System Diseases,C10
+D019578,Multiple System Atrophy,C10.228.140.079.612,D009422,Nervous System Diseases,C10
+D019578,Multiple System Atrophy,C10.228.662.550,D009422,Nervous System Diseases,C10
+D019578,Multiple System Atrophy,C10.574.928.625,D009422,Nervous System Diseases,C10
+D019636,Neurodegenerative Diseases,C10.574,D009422,Nervous System Diseases,C10
+D019693,"Hepatitis, Autoimmune",C06.552.380.350.300,D004066,Digestive System Diseases,C06
+D019693,"Hepatitis, Autoimmune",C20.111.567,D007154,Immune System Diseases,C20
+D019698,"Hepatitis C, Chronic",C01.221.250.750.120,D003141,Communicable Diseases,C01.221
+D019698,"Hepatitis C, Chronic",C01.925.440.440.120,D007239,Infections,C01
+D019698,"Hepatitis C, Chronic",C01.925.782.350.350.120,D007239,Infections,C01
+D019698,"Hepatitis C, Chronic",C06.552.380.350.120,D004066,Digestive System Diseases,C06
+D019698,"Hepatitis C, Chronic",C06.552.380.705.440.120,D004066,Digestive System Diseases,C06
+D019698,"Hepatitis C, Chronic",C23.550.291.500.477.750,D002908,Chronic Disease,C23.550.291.500
+D019955,Conduct Disorder,F03.625.094.300,D001523,Mental Disorders,F03
+D019957,Motor Skills Disorders,F03.625.813,D001523,Mental Disorders,F03
+D019958,Attention Deficit and Disruptive Behavior Disorders,F03.625.094,D001523,Mental Disorders,F03
+D019964,Mood Disorders,F03.600,D001523,Mental Disorders,F03
+D019965,Neurocognitive Disorders,F03.615,D001523,Mental Disorders,F03
+D019969,Amphetamine-Related Disorders,C25.775.225,D019966,Substance-Related Disorders,C25.775
+D019969,Amphetamine-Related Disorders,F03.900.225,D019966,Substance-Related Disorders,F03.900
+D019970,Cocaine-Related Disorders,C25.775.300,D019966,Substance-Related Disorders,C25.775
+D019970,Cocaine-Related Disorders,F03.900.300,D019966,Substance-Related Disorders,F03.900
+D019973,Alcohol-Related Disorders,C25.775.100,D019966,Substance-Related Disorders,C25.775
+D019973,Alcohol-Related Disorders,F03.900.100,D019966,Substance-Related Disorders,F03.900
+D020018,"Sexual Dysfunctions, Psychological",F03.835,D001523,Mental Disorders,F03
+D020022,Genetic Predisposition to Disease,C23.550.291.687.500,D004198,Disease Susceptibility,C23.550.291.687
+D020078,Neurogenic Inflammation,C10.597.609,D009422,Nervous System Diseases,C10
+D020078,Neurogenic Inflammation,C23.550.470.448,D007249,Inflammation,C23.550.470
+D020181,"Sleep Apnea, Obstructive",C08.618.085.852.850,D001049,Apnea,C08.618.085
+D020181,"Sleep Apnea, Obstructive",C10.886.425.800.750.850,D012893,Sleep Wake Disorders,C10.886
+D020187,REM Sleep Behavior Disorder,C10.886.659.633.700,D012893,Sleep Wake Disorders,C10.886
+D020187,REM Sleep Behavior Disorder,F03.870.664.633.700,D012893,Sleep Wake Disorders,F03.870
+D020195,"Epilepsy, Reflex",C10.228.140.490.450,D009422,Nervous System Diseases,C10
+D020196,"Trauma, Nervous System",C10.900,D009422,Nervous System Diseases,C10
+D020196,"Trauma, Nervous System",C26.915,D014947,Wounds and Injuries,C26
+D020230,Serotonin Syndrome,C25.100.875,D064420,Drug-Related Side Effects and Adverse Reactions,C25.100
+D020234,Gait Ataxia,C10.597.350.090.750,D020820,Dyskinesias,C10.597.350
+D020234,Gait Ataxia,C10.597.404.450,D020233,"Gait Disorders, Neurologic",C10.597.404
+D020234,Gait Ataxia,C23.888.592.350.090.600,D020820,Dyskinesias,C23.888.592.350
+D020234,Gait Ataxia,C23.888.592.413.450,D020233,"Gait Disorders, Neurologic",C23.888.592.413
+D020244,"Infarction, Middle Cerebral Artery",C10.228.140.300.150.477.200.450,D009422,Nervous System Diseases,C10
+D020244,"Infarction, Middle Cerebral Artery",C10.228.140.300.510.200.387,D009422,Nervous System Diseases,C10
+D020244,"Infarction, Middle Cerebral Artery",C10.228.140.300.775.200.200.450,D009422,Nervous System Diseases,C10
+D020244,"Infarction, Middle Cerebral Artery",C14.907.253.092.477.200.450,D002318,Cardiovascular Diseases,C14
+D020244,"Infarction, Middle Cerebral Artery",C14.907.253.560.200.387,D002318,Cardiovascular Diseases,C14
+D020244,"Infarction, Middle Cerebral Artery",C14.907.253.855.200.200.450,D002318,Cardiovascular Diseases,C14
+D020244,"Infarction, Middle Cerebral Artery",C23.550.513.355.250.200.450,D007511,Ischemia,C23.550.513
+D020244,"Infarction, Middle Cerebral Artery",C23.550.717.489.250.200.450,D009336,Necrosis,C23.550.717
+D020250,Postoperative Nausea and Vomiting,C23.550.767.859,D011183,Postoperative Complications,C23.550.767
+D020250,Postoperative Nausea and Vomiting,C23.888.821.712.700,D009325,Nausea,C23.888.821.712
+D020250,Postoperative Nausea and Vomiting,C23.888.821.937.059,D014839,Vomiting,C23.888.821.937
+D020258,Neurotoxicity Syndromes,C10.720,D009422,Nervous System Diseases,C10
+D020258,Neurotoxicity Syndromes,C25.723.705,D011041,Poisoning,C25.723
+D020267,MPTP Poisoning,C10.228.140.079.862.800.300,D009422,Nervous System Diseases,C10
+D020267,MPTP Poisoning,C10.228.662.600.700.250,D009422,Nervous System Diseases,C10
+D020267,MPTP Poisoning,C10.720.606,D009422,Nervous System Diseases,C10
+D020267,MPTP Poisoning,C25.723.705.400,D011041,Poisoning,C25.723
+D020268,"Alcohol-Induced Disorders, Nervous System",C10.720.112,D009422,Nervous System Diseases,C10
+D020268,"Alcohol-Induced Disorders, Nervous System",C25.723.705.150,D011041,Poisoning,C25.723
+D020268,"Alcohol-Induced Disorders, Nervous System",C25.775.100.087.193,D019966,Substance-Related Disorders,C25.775
+D020274,Autoimmune Diseases of the Nervous System,C10.114,D009422,Nervous System Diseases,C10
+D020274,Autoimmune Diseases of the Nervous System,C20.111.258,D007154,Immune System Diseases,C20
+D020301,"Vasospasm, Intracranial",C10.228.140.300.900,D009422,Nervous System Diseases,C10
+D020301,"Vasospasm, Intracranial",C14.907.253.951,D002318,Cardiovascular Diseases,C14
+D020323,Tics,C10.597.350.700,D020820,Dyskinesias,C10.597.350
+D020323,Tics,C23.888.592.350.700,D020820,Dyskinesias,C23.888.592.350
+D020325,Migraine with Aura,C10.228.140.546.399.750.250,D009422,Nervous System Diseases,C10
+D020329,Essential Tremor,C10.228.662.350,D009422,Nervous System Diseases,C10
+D020339,Optic Nerve Glioma,C04.557.465.625.600.380.795,D009369,Neoplasms,C04
+D020339,Optic Nerve Glioma,C04.557.470.670.380.795,D009369,Neoplasms,C04
+D020339,Optic Nerve Glioma,C04.557.580.625.600.380.795,D009369,Neoplasms,C04
+D020339,Optic Nerve Glioma,C04.588.614.300.600.600,D009369,Neoplasms,C04
+D020339,Optic Nerve Glioma,C04.588.614.596.240.240.500,D009369,Neoplasms,C04
+D020339,Optic Nerve Glioma,C10.292.225.800.500,D009422,Nervous System Diseases,C10
+D020339,Optic Nerve Glioma,C10.292.700.500.500,D009422,Nervous System Diseases,C10
+D020339,Optic Nerve Glioma,C10.551.360.500.500,D009422,Nervous System Diseases,C10
+D020339,Optic Nerve Glioma,C10.551.775.250.500.500,D009422,Nervous System Diseases,C10
+D020339,Optic Nerve Glioma,C11.640.544.500,D005128,Eye Diseases,C11
+D020370,"Osteoarthritis, Knee",C05.550.114.606.500,D009140,Musculoskeletal Diseases,C05
+D020370,"Osteoarthritis, Knee",C05.799.613.500,D012216,Rheumatic Diseases,C05.799
+D020388,"Muscular Dystrophy, Duchenne",C05.651.534.500.300,D009136,Muscular Dystrophies,C05.651.534.500
+D020388,"Muscular Dystrophy, Duchenne",C10.668.491.175.500.300,D009136,Muscular Dystrophies,C10.668.491.175.500
+D020388,"Muscular Dystrophy, Duchenne",C16.320.322.562,D040181,"Genetic Diseases, X-Linked",C16.320.322
+D020388,"Muscular Dystrophy, Duchenne",C16.320.577.300,D009136,Muscular Dystrophies,C16.320.577
+D020426,Sciatic Neuropathy,C10.668.829.500.675,D009422,Nervous System Diseases,C10
+D020447,Parasomnias,C10.886.659,D012893,Sleep Wake Disorders,C10.886
+D020447,Parasomnias,F03.870.664,D012893,Sleep Wake Disorders,F03.870
+D020520,Brain Infarction,C10.228.140.300.150.477,D009422,Nervous System Diseases,C10
+D020520,Brain Infarction,C10.228.140.300.775.200,D009422,Nervous System Diseases,C10
+D020520,Brain Infarction,C14.907.253.092.477,D002318,Cardiovascular Diseases,C14
+D020520,Brain Infarction,C14.907.253.855.200,D002318,Cardiovascular Diseases,C14
+D020520,Brain Infarction,C23.550.513.355.250,D007511,Ischemia,C23.550.513
+D020520,Brain Infarction,C23.550.717.489.250,D009336,Necrosis,C23.550.717
+D020521,Stroke,C10.228.140.300.775,D009422,Nervous System Diseases,C10
+D020521,Stroke,C14.907.253.855,D002318,Cardiovascular Diseases,C14
+D020528,"Multiple Sclerosis, Chronic Progressive",C10.114.375.500.200,D009422,Nervous System Diseases,C10
+D020528,"Multiple Sclerosis, Chronic Progressive",C10.314.350.500.200,D009422,Nervous System Diseases,C10
+D020528,"Multiple Sclerosis, Chronic Progressive",C20.111.258.250.500.200,D007154,Immune System Diseases,C20
+D020528,"Multiple Sclerosis, Chronic Progressive",C23.550.291.500.625,D002908,Chronic Disease,C23.550.291.500
+D020529,"Multiple Sclerosis, Relapsing-Remitting",C10.114.375.500.600,D009422,Nervous System Diseases,C10
+D020529,"Multiple Sclerosis, Relapsing-Remitting",C10.314.350.500.600,D009422,Nervous System Diseases,C10
+D020529,"Multiple Sclerosis, Relapsing-Remitting",C20.111.258.250.500.600,D007154,Immune System Diseases,C20
+D020567,Fetal Weight,C23.888.144.300,D001835,Body Weight,C23.888.144
+D020734,Parkinsonian Disorders,C10.228.140.079.862,D009422,Nervous System Diseases,C10
+D020734,Parkinsonian Disorders,C10.228.662.600,D009422,Nervous System Diseases,C10
+D020773,Headache Disorders,C10.228.140.546,D009422,Nervous System Diseases,C10
+D020790,"Diabetes Insipidus, Neurogenic",C12.050.351.968.419.135.750,D014570,Urologic Diseases,C12.050.351.968
+D020790,"Diabetes Insipidus, Neurogenic",C12.200.777.419.135.750,D014570,Urologic Diseases,C12.200.777
+D020790,"Diabetes Insipidus, Neurogenic",C12.950.419.135.750,D014570,Urologic Diseases,C12.950
+D020790,"Diabetes Insipidus, Neurogenic",C19.700.159.750,D004700,Endocrine System Diseases,C19
+D020821,Dystonic Disorders,C10.228.662.300,D009422,Nervous System Diseases,C10
+D020918,Complex Regional Pain Syndromes,C10.177.195,D009422,Nervous System Diseases,C10
+D020918,Complex Regional Pain Syndromes,C10.668.829.250,D009422,Nervous System Diseases,C10
+D020920,Dyssomnias,C10.886.425,D012893,Sleep Wake Disorders,C10.886
+D020920,Dyssomnias,F03.870.400,D012893,Sleep Wake Disorders,F03.870
+D020925,"Hypoxia-Ischemia, Brain",C10.228.140.300.150.716,D009422,Nervous System Diseases,C10
+D020925,"Hypoxia-Ischemia, Brain",C10.228.140.624.500,D009422,Nervous System Diseases,C10
+D020925,"Hypoxia-Ischemia, Brain",C14.907.253.092.716,D002318,Cardiovascular Diseases,C14
+D020925,"Hypoxia-Ischemia, Brain",C23.888.852.079.797.500,D000860,Hypoxia,C23.888.852.079
+D021081,Chronobiology Disorders,C10.281,D009422,Nervous System Diseases,C10
+D021183,Peanut Hypersensitivity,C20.543.480.370.572.750,D007154,Immune System Diseases,C20
+D021441,"Carcinoma, Pancreatic Ductal",C04.557.470.200.025.232.750,D009369,Neoplasms,C04
+D021441,"Carcinoma, Pancreatic Ductal",C04.557.470.615.132.750,D009369,Neoplasms,C04
+D021441,"Carcinoma, Pancreatic Ductal",C04.588.274.761.750,D009369,Neoplasms,C04
+D021441,"Carcinoma, Pancreatic Ductal",C04.588.322.475.750,D009369,Neoplasms,C04
+D021441,"Carcinoma, Pancreatic Ductal",C06.301.761.750,D004066,Digestive System Diseases,C06
+D021441,"Carcinoma, Pancreatic Ductal",C06.689.667.625,D004066,Digestive System Diseases,C06
+D021441,"Carcinoma, Pancreatic Ductal",C19.344.421.750,D004700,Endocrine System Diseases,C19
+D024801,Tauopathies,C10.574.945,D009422,Nervous System Diseases,C10
+D024821,Metabolic Syndrome,C18.452.394.968.500.570,D008659,Metabolic Diseases,C18.452
+D024821,Metabolic Syndrome,C18.452.625,D008659,Metabolic Diseases,C18.452
+D028361,Mitochondrial Diseases,C18.452.660,D008659,Metabolic Diseases,C18.452
+D029424,"Pulmonary Disease, Chronic Obstructive",C08.381.495.389,D012140,Respiratory Tract Diseases,C08
+D029424,"Pulmonary Disease, Chronic Obstructive",C23.550.291.500.875,D002908,Chronic Disease,C23.550.291.500
+D029481,"Bronchitis, Chronic",C01.748.099.567,D007239,Infections,C01
+D029481,"Bronchitis, Chronic",C08.127.446.567,D012140,Respiratory Tract Diseases,C08
+D029481,"Bronchitis, Chronic",C08.381.495.146.567,D012140,Respiratory Tract Diseases,C08
+D029481,"Bronchitis, Chronic",C08.381.495.389.500,D012140,Respiratory Tract Diseases,C08
+D029481,"Bronchitis, Chronic",C08.730.099.567,D012140,Respiratory Tract Diseases,C08
+D029481,"Bronchitis, Chronic",C23.550.291.500.875.750,D002908,Chronic Disease,C23.550.291.500
+D030361,Papillomavirus Infections,C01.221.812.640.700,D012749,Sexually Transmitted Diseases,C01.221.812
+D030361,Papillomavirus Infections,C01.778.640.700,D012749,Sexually Transmitted Diseases,C01.778
+D030361,Papillomavirus Infections,C01.925.256.650,D007239,Infections,C01
+D030361,Papillomavirus Infections,C01.925.813.700,D007239,Infections,C01
+D030361,Papillomavirus Infections,C01.925.928.725,D007239,Infections,C01
+D030361,Papillomavirus Infections,C12.100.937.640.700,D012749,Sexually Transmitted Diseases,C12.100.937
+D030361,Papillomavirus Infections,C23.550.291.531.937.640.500,D012749,Sexually Transmitted Diseases,C23.550.291.531.937
+D038223,Post-Concussion Syndrome,C10.900.300.350.300.500,D009422,Nervous System Diseases,C10
+D038223,Post-Concussion Syndrome,C26.915.300.450.500.500,D014947,Wounds and Injuries,C26
+D038223,Post-Concussion Syndrome,C26.974.382.200.500,D014947,Wounds and Injuries,C26
+D040701,"Stress Disorders, Traumatic, Acute",F03.950.750.550,D001523,Mental Disorders,F03
+D042101,Acalculous Cholecystitis,C06.130.564.263.249,D004066,Digestive System Diseases,C06
+D043183,Irritable Bowel Syndrome,C06.405.469.158.272.608,D004066,Digestive System Diseases,C06
+D044882,Glucose Metabolism Disorders,C18.452.394,D008659,Metabolic Diseases,C18.452
+D045743,"Scleroderma, Diffuse",C17.300.799.602,D012595,"Scleroderma, Systemic",C17.300.799
+D045743,"Scleroderma, Diffuse",C17.800.784.602,D012595,"Scleroderma, Systemic",C17.800.784
+D046110,"Hypertension, Pregnancy-Induced",C12.050.703.395,D011248,Pregnancy Complications,C12.050.703
+D046110,"Hypertension, Pregnancy-Induced",C14.907.489.480,D002318,Cardiovascular Diseases,C14
+D046351,"Protoporphyria, Erythropoietic",C06.552.830.812,D017094,"Porphyrias, Hepatic",C06.552.830
+D046351,"Protoporphyria, Erythropoietic",C16.320.850.742.812,D017094,"Porphyrias, Hepatic",C16.320.850.742
+D046351,"Protoporphyria, Erythropoietic",C17.800.827.742.812,D017094,"Porphyrias, Hepatic",C17.800.827.742
+D046351,"Protoporphyria, Erythropoietic",C18.452.811.400.812,D017094,"Porphyrias, Hepatic",C18.452.811.400
+D047928,Premature Birth,C12.050.703.420.491.500,D011248,Pregnancy Complications,C12.050.703
+D048070,Fetal Nutrition Disorders,C12.050.703.277.677,D005315,Fetal Diseases,C12.050.703.277
+D048070,Fetal Nutrition Disorders,C18.654.521.625,D044342,Malnutrition,C18.654.521
+D048629,"Micronuclei, Chromosome-Defective",C23.550.210.570,D002869,Chromosome Aberrations,C23.550.210
+D048909,Diabetes Complications,C19.246.099,D004700,Endocrine System Diseases,C19
+D048968,Morning Sickness,C12.050.703.407,D011248,Pregnancy Complications,C12.050.703
+D048968,Morning Sickness,C23.888.821.937.049,D014839,Vomiting,C23.888.821.937
+D049188,Prenatal Injuries,C12.050.703.824,D011248,Pregnancy Complications,C12.050.703
+D050171,Dyslipidemias,C18.452.584.500,D008659,Metabolic Diseases,C18.452
+D050197,Atherosclerosis,C14.907.137.126.307,D002318,Cardiovascular Diseases,C14
+D050497,Stillbirth,C12.050.703.223.650,D011248,Pregnancy Complications,C12.050.703
+D050497,Stillbirth,C23.550.260.585.630,D003643,Death,C23.550.260
+D050500,"Pancreatitis, Chronic",C06.689.750.830,D004066,Digestive System Diseases,C06
+D050500,"Pancreatitis, Chronic",C23.550.291.500.750,D002908,Chronic Disease,C23.550.291.500
+D050723,"Fractures, Bone",C26.404,D014947,Wounds and Injuries,C26
+D051271,"Headache Disorders, Secondary",C10.228.140.546.699,D009422,Nervous System Diseases,C10
+D051298,Post-Traumatic Headache,C10.228.140.546.699.249,D009422,Nervous System Diseases,C10
+D051303,Trigeminal Autonomic Cephalalgias,C10.228.140.546.399.937,D009422,Nervous System Diseases,C10
+D051436,"Renal Insufficiency, Chronic",C12.050.351.968.419.780.750,D014570,Urologic Diseases,C12.050.351.968
+D051436,"Renal Insufficiency, Chronic",C12.200.777.419.780.750,D014570,Urologic Diseases,C12.200.777
+D051436,"Renal Insufficiency, Chronic",C12.950.419.780.750,D014570,Urologic Diseases,C12.950
+D051436,"Renal Insufficiency, Chronic",C23.550.291.500.906,D002908,Chronic Disease,C23.550.291.500
+D051437,Renal Insufficiency,C12.050.351.968.419.780,D014570,Urologic Diseases,C12.050.351.968
+D051437,Renal Insufficiency,C12.200.777.419.780,D014570,Urologic Diseases,C12.200.777
+D051437,Renal Insufficiency,C12.950.419.780,D014570,Urologic Diseases,C12.950
+D052016,Mucositis,C06.405.205.798,D004066,Digestive System Diseases,C06
+D052016,Mucositis,C07.465.584,D009059,Mouth Diseases,C07.465
+D052018,Bulimia Nervosa,F03.400.250,D001068,Feeding and Eating Disorders,F03.400
+D053158,Nocturia,C23.888.942.343.550,D059411,Lower Urinary Tract Symptoms,C23.888.942.343
+D053201,"Urinary Bladder, Overactive",C12.050.351.968.829.813,D014570,Urologic Diseases,C12.050.351.968
+D053201,"Urinary Bladder, Overactive",C12.200.777.829.866,D014570,Urologic Diseases,C12.200.777
+D053201,"Urinary Bladder, Overactive",C12.950.829.813,D014570,Urologic Diseases,C12.950
+D053201,"Urinary Bladder, Overactive",C23.888.942.343.780,D059411,Lower Urinary Tract Symptoms,C23.888.942.343
+D053627,Asthenozoospermia,C12.100.500.430.253,D007248,"Infertility, Male",C12.100.500.430
+D053627,Asthenozoospermia,C12.100.750.700.253,D007248,"Infertility, Male",C12.100.750.700
+D053627,Asthenozoospermia,C12.200.294.430.253,D007248,"Infertility, Male",C12.200.294.430
+D054038,Posterior Leukoencephalopathy Syndrome,C10.228.140.631.500.500,D009422,Nervous System Diseases,C10
+D054038,Posterior Leukoencephalopathy Syndrome,C10.228.140.695.875,D009422,Nervous System Diseases,C10
+D054058,Acute Coronary Syndrome,C14.280.647.124,D002318,Cardiovascular Diseases,C14
+D054058,Acute Coronary Syndrome,C14.907.585.124,D002318,Cardiovascular Diseases,C14
+D054084,Myocardial Bridging,C14.240.400.210.500,D002318,Cardiovascular Diseases,C14
+D054084,Myocardial Bridging,C14.280.400.210.500,D002318,Cardiovascular Diseases,C14
+D054084,Myocardial Bridging,C16.131.240.400.210.500,D000013,Congenital Abnormalities,C16.131
+D054218,Precursor T-Cell Lymphoblastic Leukemia-Lymphoma,C04.557.337.428.600.620,D054198,Precursor Cell Lymphoblastic Leukemia-Lymphoma,C04.557.337.428.600
+D054218,Precursor T-Cell Lymphoblastic Leukemia-Lymphoma,C15.378.508.428.600.620,D054198,Precursor Cell Lymphoblastic Leukemia-Lymphoma,C15.378.508.428.600
+D054218,Precursor T-Cell Lymphoblastic Leukemia-Lymphoma,C15.604.515.560.600.620,D054198,Precursor Cell Lymphoblastic Leukemia-Lymphoma,C15.604.515.560.600
+D054218,Precursor T-Cell Lymphoblastic Leukemia-Lymphoma,C20.683.515.528.600.620,D054198,Precursor Cell Lymphoblastic Leukemia-Lymphoma,C20.683.515.528.600
+D054220,Malformations of Cortical Development,C10.500.507,D009422,Nervous System Diseases,C10
+D054220,Malformations of Cortical Development,C16.131.666.507,D000013,Congenital Abnormalities,C16.131
+D054537,Atrioventricular Block,C14.280.067.558.230,D001145,"Arrhythmias, Cardiac",C14.280.067
+D054537,Atrioventricular Block,C14.280.123.500.230,D002318,Cardiovascular Diseases,C14
+D054537,Atrioventricular Block,C23.550.073.425.062,D001145,"Arrhythmias, Cardiac",C23.550.073
+D054549,Takotsubo Cardiomyopathy,C14.280.238.906,D002318,Cardiovascular Diseases,C14
+D054549,Takotsubo Cardiomyopathy,C14.280.945.900.500,D002318,Cardiovascular Diseases,C14
+D054556,Venous Thromboembolism,C14.907.355.590.700,D002318,Cardiovascular Diseases,C14
+D054969,Primary Dysautonomias,C10.177.575,D009422,Nervous System Diseases,C10
+D054990,Idiopathic Pulmonary Fibrosis,C08.381.483.652.500,D012140,Respiratory Tract Diseases,C08
+D055031,Primary Graft Dysfunction,C14.907.725.675,D002318,Cardiovascular Diseases,C14
+D055031,Primary Graft Dysfunction,C23.550.767.877.750,D011183,Postoperative Complications,C23.550.767
+D055154,Dysphonia,C08.360.940.325,D014832,Voice Disorders,C08.360.940
+D055154,Dysphonia,C09.400.940.325,D014832,Voice Disorders,C09.400.940
+D055154,Dysphonia,C10.597.975.325,D014832,Voice Disorders,C10.597.975
+D055154,Dysphonia,C23.888.592.979.325,D014832,Voice Disorders,C23.888.592.979
+D055370,Lung Injury,C08.381.520,D012140,Respiratory Tract Diseases,C08
+D055370,Lung Injury,C26.891.554,D014947,Wounds and Injuries,C26
+D055371,Acute Lung Injury,C08.381.520.500,D012140,Respiratory Tract Diseases,C08
+D055948,Sarcopenia,C10.597.613.612.500,D009133,Muscular Atrophy,C10.597.613.612
+D055948,Sarcopenia,C23.300.070.500.500,D009133,Muscular Atrophy,C23.300.070.500
+D055948,Sarcopenia,C23.888.592.608.612.500,D009133,Muscular Atrophy,C23.888.592.608.612
+D056486,Chemical and Drug Induced Liver Injury,C06.552.100,D004066,Digestive System Diseases,C06
+D056486,Chemical and Drug Induced Liver Injury,C25.100.562,D064420,Drug-Related Side Effects and Adverse Reactions,C25.100
+D056486,Chemical and Drug Induced Liver Injury,C25.723.260,D011041,Poisoning,C25.723
+D056784,Leukoencephalopathies,C10.228.140.695,D009422,Nervous System Diseases,C10
+D056889,Barth Syndrome,C14.240.400.172,D002318,Cardiovascular Diseases,C14
+D056889,Barth Syndrome,C14.280.400.172,D002318,Cardiovascular Diseases,C14
+D056889,Barth Syndrome,C16.131.077.121,D000013,Congenital Abnormalities,C16.131
+D056889,Barth Syndrome,C16.131.240.400.172,D000013,Congenital Abnormalities,C16.131
+D056889,Barth Syndrome,C16.320.322.068,D040181,"Genetic Diseases, X-Linked",C16.320.322
+D056889,Barth Syndrome,C16.320.565.398.224,D008052,"Lipid Metabolism, Inborn Errors",C16.320.565.398
+D056889,Barth Syndrome,C18.452.584.563.224,D008052,"Lipid Metabolism, Inborn Errors",C18.452.584.563
+D056889,Barth Syndrome,C18.452.648.398.224,D008052,"Lipid Metabolism, Inborn Errors",C18.452.648.398
+D056912,Binge-Eating Disorder,F03.400.188,D001068,Feeding and Eating Disorders,F03.400
+D057068,Periprosthetic Fractures,C26.404.550,D014947,Wounds and Injuries,C26
+D057165,Proteostasis Deficiencies,C18.452.845,D008659,Metabolic Diseases,C18.452
+D057180,Frontotemporal Dementia,C10.228.140.380.266.299,D009422,Nervous System Diseases,C10
+D057180,Frontotemporal Dementia,C10.574.950.300.299,D009422,Nervous System Diseases,C10
+D057180,Frontotemporal Dementia,C18.452.845.800.300.299,D008659,Metabolic Diseases,C18.452
+D057180,Frontotemporal Dementia,F03.615.400.380.299,D001523,Mental Disorders,F03
+D057765,Eosinophilic Esophagitis,C06.405.117.620.209,D004066,Digestive System Diseases,C06
+D057765,Eosinophilic Esophagitis,C06.405.205.663.209,D004066,Digestive System Diseases,C06
+D057765,Eosinophilic Esophagitis,C15.378.553.231.341,D006402,Hematologic Diseases,C15.378
+D057765,Eosinophilic Esophagitis,C20.543.480.356,D007154,Immune System Diseases,C20
+D057891,Tetraploidy,C23.550.210.702.249,D002869,Chromosome Aberrations,C23.550.210
+D058065,Diabetic Cardiomyopathies,C14.280.238.235,D002318,Cardiovascular Diseases,C14
+D058065,Diabetic Cardiomyopathies,C19.246.099.625,D004700,Endocrine System Diseases,C19
+D058186,Acute Kidney Injury,C12.050.351.968.419.780.050,D014570,Urologic Diseases,C12.050.351.968
+D058186,Acute Kidney Injury,C12.200.777.419.780.050,D014570,Urologic Diseases,C12.200.777
+D058186,Acute Kidney Injury,C12.950.419.780.050,D014570,Urologic Diseases,C12.950
+D058625,End Stage Liver Disease,C06.552.308.500.177,D004066,Digestive System Diseases,C06
+D058674,Chromosome Duplication,C23.550.210.182,D002869,Chromosome Aberrations,C23.550.210
+D058729,Peripheral Arterial Disease,C14.907.137.126.307.500,D002318,Cardiovascular Diseases,C14
+D058729,Peripheral Arterial Disease,C14.907.617.671,D002318,Cardiovascular Diseases,C14
+D058866,Osteoporotic Fractures,C26.404.545,D014947,Wounds and Injuries,C26
+D059226,Nociceptive Pain,C23.888.592.612.720,D010146,Pain,C23.888.592.612
+D059265,Visceral Pain,C23.888.592.612.720.500,D010146,Pain,C23.888.592.612
+D059348,Peripheral Nerve Injuries,C10.668.829.712,D009422,Nervous System Diseases,C10
+D059348,Peripheral Nerve Injuries,C10.900.575,D009422,Nervous System Diseases,C10
+D059348,Peripheral Nerve Injuries,C26.915.650,D014947,Wounds and Injuries,C26
+D059350,Chronic Pain,C23.888.592.612.274,D010146,Pain,C23.888.592.612
+D059352,Musculoskeletal Pain,C05.651.538,D009140,Musculoskeletal Diseases,C05
+D059352,Musculoskeletal Pain,C23.888.592.612.547,D010146,Pain,C23.888.592.612
+D059366,"Asthma, Occupational",C08.127.108.495,D012140,Respiratory Tract Diseases,C08
+D059366,"Asthma, Occupational",C08.674.095.495,D012140,Respiratory Tract Diseases,C08
+D059366,"Asthma, Occupational",C20.543.480.680.095.495,D007154,Immune System Diseases,C20
+D059366,"Asthma, Occupational",C24.102,D009784,Occupational Diseases,C24
+D059445,Anhedonia,C10.597.606.057,D019954,Neurobehavioral Manifestations,C10.597.606
+D059445,Anhedonia,C23.888.592.604.039,D019954,Neurobehavioral Manifestations,C23.888.592.604
+D059787,Acute Pain,C23.888.592.612.081,D010146,Pain,C23.888.592.612
+D060051,Occupational Injuries,C26.716,D014947,Wounds and Injuries,C26
+D060426,Anti-N-Methyl-D-Aspartate Receptor Encephalitis,C04.588.614.550.112,D009369,Neoplasms,C04
+D060426,Anti-N-Methyl-D-Aspartate Receptor Encephalitis,C04.730.856.112,D009369,Neoplasms,C04
+D060426,Anti-N-Methyl-D-Aspartate Receptor Encephalitis,C10.228.140.430.124,D009422,Nervous System Diseases,C10
+D060426,Anti-N-Methyl-D-Aspartate Receptor Encephalitis,C10.574.781.249,D009422,Nervous System Diseases,C10
+D060426,Anti-N-Methyl-D-Aspartate Receptor Encephalitis,C10.586.250.124,D009422,Nervous System Diseases,C10
+D060426,Anti-N-Methyl-D-Aspartate Receptor Encephalitis,C20.111.258.124,D007154,Immune System Diseases,C20
+D060825,Cognitive Dysfunction,F03.615.250.700,D001523,Mental Disorders,F03
+D061205,Vascular Calcification,C18.452.174.130.780,D008659,Metabolic Diseases,C18.452
+D061218,"Depressive Disorder, Treatment-Resistant",F03.600.300.388,D001523,Mental Disorders,F03
+D061221,Trigeminal Nerve Injuries,C07.465.299.625.500.349,D009059,Mouth Diseases,C07.465
+D061221,Trigeminal Nerve Injuries,C10.292.200.875,D009422,Nervous System Diseases,C10
+D061221,Trigeminal Nerve Injuries,C10.292.319.625.700.349,D009422,Nervous System Diseases,C10
+D061221,Trigeminal Nerve Injuries,C10.900.300.218.775,D009422,Nervous System Diseases,C10
+D061221,Trigeminal Nerve Injuries,C26.915.300.400.825,D014947,Wounds and Injuries,C26
+D062787,Drug Overdose,C25.775.342.500.500,D019966,Substance-Related Disorders,C25.775
+D062787,Drug Overdose,F03.900.384.500.500,D019966,Substance-Related Disorders,F03.900
+D062788,Adenomyosis,C12.050.351.500.852.113,D005831,"Genital Diseases, Female",C12.050.351.500
+D062788,Adenomyosis,C12.100.250.852.113,D005831,"Genital Diseases, Female",C12.100.250
+D063425,Binge Drinking,C25.775.100.437,D019966,Substance-Related Disorders,C25.775
+D063425,Binge Drinking,F03.900.100.550,D019966,Substance-Related Disorders,F03.900
+D063487,Prescription Drug Misuse,C25.775.342.500,D019966,Substance-Related Disorders,C25.775
+D063487,Prescription Drug Misuse,F03.900.384.500,D019966,Substance-Related Disorders,F03.900
+D063647,Fetal Alcohol Spectrum Disorders,C12.050.703.277.220,D005315,Fetal Diseases,C12.050.703.277
+D063647,Fetal Alcohol Spectrum Disorders,C16.300.070,D005315,Fetal Diseases,C16.300
+D063647,Fetal Alcohol Spectrum Disorders,C25.775.100.087.323,D019966,Substance-Related Disorders,C25.775
+D063766,Pediatric Obesity,C18.654.726.750.500.720,D050177,Overweight,C18.654.726.750
+D063766,Pediatric Obesity,C23.888.144.699.500.750,D050177,Overweight,C23.888.144.699
+D063806,Myalgia,C05.651.542,D009140,Musculoskeletal Diseases,C05
+D063806,Myalgia,C10.668.491.525,D009422,Nervous System Diseases,C10
+D063806,Myalgia,C23.888.592.612.547.249,D010146,Pain,C23.888.592.612
+D064386,Ankle Fractures,C26.404.014,D014947,Wounds and Injuries,C26
+D064386,Ankle Fractures,C26.558.100.500,D014947,Wounds and Injuries,C26
+D064726,Triple Negative Breast Neoplasms,C04.588.180.788,D009369,Neoplasms,C04
+D064726,Triple Negative Breast Neoplasms,C17.800.090.500.788,D012871,Skin Diseases,C17.800
+D065166,Sepsis-Associated Encephalopathy,C10.228.140.807,D009422,Nervous System Diseases,C10
+D065290,Acute-On-Chronic Liver Failure,C06.552.308.500.750.249,D004066,Digestive System Diseases,C06
+D065306,Corneal Injuries,C10.900.300.284.250.124,D009422,Nervous System Diseases,C10
+D065306,Corneal Injuries,C11.204.284,D005128,Eye Diseases,C11
+D065306,Corneal Injuries,C11.297.374,D005128,Eye Diseases,C11
+D065306,Corneal Injuries,C26.915.300.425.250.124,D014947,Wounds and Injuries,C26
+D065446,Premenstrual Dysphoric Disorder,C23.550.568.968.500,D008599,Menstruation Disturbances,C23.550.568
+D065446,Premenstrual Dysphoric Disorder,F03.600.300.550,D001523,Mental Disorders,F03
+D065626,Non-alcoholic Fatty Liver Disease,C06.552.241.519,D004066,Digestive System Diseases,C06
+D065631,"Rhinitis, Allergic",C08.460.799.315,D012220,Rhinitis,C08.460.799
+D065631,"Rhinitis, Allergic",C08.674.453,D012140,Respiratory Tract Diseases,C08
+D065631,"Rhinitis, Allergic",C09.603.799.315,D012220,Rhinitis,C09.603.799
+D065631,"Rhinitis, Allergic",C20.543.480.680.443,D007154,Immune System Diseases,C20
+D065632,Chikungunya Fever,C01.920.313.078.184,D007239,Infections,C01
+D065632,Chikungunya Fever,C01.920.852.032.184,D007239,Infections,C01
+D065632,Chikungunya Fever,C01.925.081.198,D007239,Infections,C01
+D065632,Chikungunya Fever,C01.925.782.930.100.184,D007239,Infections,C01
+D065703,"Malformations of Cortical Development, Group I",C10.500.507.400,D009422,Nervous System Diseases,C10
+D065703,"Malformations of Cortical Development, Group I",C16.131.666.507.400,D000013,Congenital Abnormalities,C16.131
+D065886,Neurodevelopmental Disorders,F03.625,D001523,Mental Disorders,F03
+D066087,Perinatal Death,C12.050.703.572,D011248,Pregnancy Complications,C12.050.703
+D066087,Perinatal Death,C23.550.260.865,D003643,Death,C23.550.260
