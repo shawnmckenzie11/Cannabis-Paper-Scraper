@@ -469,6 +469,56 @@
       ],
       "values_status": "locked",
       "candidates_status": "pending_phd_not_scored"
+    },
+    "duration_category": {
+      "version": "0.7.0",
+      "status": "phd_to_confirm",
+      "closed": true,
+      "note": "C2: filter label only, never scored; no time thresholds.",
+      "values": [
+        {
+          "value": "acute",
+          "synonyms": [
+            "acute",
+            "single dose",
+            "single administration"
+          ]
+        },
+        {
+          "value": "subacute",
+          "synonyms": [
+            "subacute",
+            "sub-acute"
+          ]
+        },
+        {
+          "value": "subchronic",
+          "synonyms": [
+            "subchronic",
+            "sub-chronic"
+          ]
+        },
+        {
+          "value": "chronic",
+          "synonyms": [
+            "chronic",
+            "repeated"
+          ]
+        },
+        {
+          "value": "long_term",
+          "synonyms": [
+            "long-term",
+            "long term",
+            "prolonged",
+            "extended"
+          ]
+        },
+        {
+          "value": "other",
+          "synonyms": []
+        }
+      ]
     }
   },
   "review_policy": {

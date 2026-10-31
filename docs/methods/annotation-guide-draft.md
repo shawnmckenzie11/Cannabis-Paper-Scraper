@@ -170,6 +170,10 @@ Record contract: `schemas/methods.schema.json` → `$defs.expert_review`; fixtur
 - Splits are assigned before review (`split_assignment_ref`).
 - Test-split labels are unreadable by tuning code/processes.
 - A two-reviewer agreement sample is drawn for inter-rater checks.
+- Test-set papers are labelled only via the write-only locked store. Those labels never enter training data or annotation exports.
+- Training uses dev/validation labels only.
+- An independent second reviewer labels a small dev subset for inter-reviewer agreement on completeness tracks (sample size set by CRN Evaluation).
+- Tracks and tiers are computed at read time; annotators record statuses, never grades.
 - Scoring runs with Sentry off.
 - `label_status` is `review_note`; `gold`/`training` pending Q16 (MCK-90).
 

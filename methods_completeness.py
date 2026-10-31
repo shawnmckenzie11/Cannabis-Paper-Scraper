@@ -4,7 +4,9 @@ Completeness is derived, never stored. Output is per tier; there is no combined 
 Universal grade: gold / near_gold (something not_reported) / unverified (nothing missing, something unchecked).
 Rule: schemas/completeness_rules.json (pending_biomedical).
 """
+import hashlib
 import json
+import numbers
 import pathlib
 
 RULES_PATH = pathlib.Path(__file__).resolve().parent / "schemas" / "completeness_rules.json"
@@ -18,15 +20,53 @@ def _status(reporting, key):
     return (reporting.get(key) or {}).get("status", "not_yet_assessed")
 
 
-def compute(record, study_type, rule=None, secondary_cutoff=None):
-    """Return {rule_id, rule_version, universal, study_type, good_practice} for one record."""
+def signoff_set_hash(reference_links):
+    """sha256 of the active (not revoked) paper_reference_link rows, order-independent."""
+    active = sorted(json.dumps(l, sort_keys=True, default=str)
+                    for l in (reference_links or []) if not l.get("revoked_at"))
+    return hashlib.sha256(json.dumps(active).encode()).hexdigest()
+
+
+def _apply_references(rep, reference_links):
+    """P1: a numeric signed-off value satisfies a not_reported item (value_source=signed_off).
+
+    Non-numeric signed-off values follow option A: no tier effect, only noted.
+    The paper's own status is never overwritten in the record; this works on a copy.
+    """
+    rep = dict(rep)
+    ref_fields, noted = [], []
+    for l in reference_links or []:
+        if l.get("revoked_at"):
+            continue
+        k = l["field"]
+        if _status(rep, k) != "not_reported":
+            continue
+        v = l.get("value")
+        if isinstance(v, numbers.Number) and not isinstance(v, bool):
+            rep[k] = {"status": "reported", "location": None, "value_source": "signed_off"}
+            if k not in ref_fields:
+                ref_fields.append(k)
+        elif k not in noted:
+            noted.append(k)
+    return rep, ref_fields, [k for k in noted if k not in ref_fields]
+
+
+def compute(record, study_type, rule=None, secondary_cutoff=None, reference_links=None):
+    """Return {rule_id, rule_version, universal, study_type, good_practice, reference_fields, signoff_set_hash}.
+
+    Computed at read time, never stored.
+    """
     rule = rule or load_rule()
+    cut_used = secondary_cutoff if secondary_cutoff is not None else rule["secondary_cutoff"]["default"]
+    meta = {"secondary_cutoff": cut_used, "signoff_set_hash": signoff_set_hash(reference_links)}
+
     def flat(grade, reason):
         g = {"grade": grade, "reason": reason}
         if grade == "not_scored":
             g["not_scored"] = True
-        return {"rule_id": rule["rule_id"], "rule_version": rule["version"],
-                "universal": g, "study_type": g, "route_requirements": None, "good_practice": g}
+        return dict({"rule_id": rule["rule_id"], "rule_version": rule["version"],
+                     "universal": g, "study_type": g, "route_requirements": None, "good_practice": g,
+                     "reference_fields": [], "missing_reference_available": []}, **meta)
 
     if study_type in rule.get("not_scored_study_types", []):
         return flat("not_scored", "study_type_" + study_type)
@@ -35,7 +75,7 @@ def compute(record, study_type, rule=None, secondary_cutoff=None):
         gate = rule["tiers"]["clinical"]["scope_gate"].get(r or "absent", "not_yet_assessed")
         if gate != "scored":
             return flat(gate, "randomized_" + (r or "absent"))
-    rep = record.get("reporting") or {}
+    rep, ref_fields, ref_noted = _apply_references(record.get("reporting") or {}, reference_links)
     tiers = rule["tiers"]
 
     def counts(items):
@@ -75,12 +115,14 @@ def compute(record, study_type, rule=None, secondary_cutoff=None):
         c, frac = counts(tier["items"])
         out["study_type"] = {"tier": study_type, "fraction": frac, "counts": c}
         if "required_always" in tier:
-            cut = secondary_cutoff if secondary_cutoff is not None else rule["secondary_cutoff"]["default"]
-            out["study_type"].update(grade_required_secondary(rep, tier, cut))
+            out["study_type"].update(grade_required_secondary(rep, tier, cut_used))
     out["route_requirements"] = route_requirements(record, study_type, rule)
     gc, _ = counts(tiers["good_practice"]["items"])
     out["good_practice"] = {"recorded_only": True, "counts": gc,
                             "reported": [i["key"] for i in tiers["good_practice"]["items"] if _status(rep, i["key"]) == "reported"]}
+    out["reference_fields"] = ref_fields
+    out["missing_reference_available"] = ref_noted
+    out.update(meta)
     return out
 
 

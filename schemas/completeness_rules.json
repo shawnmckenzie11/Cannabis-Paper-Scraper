@@ -54,6 +54,81 @@
     },
     "in_vivo": {
       "applies_to": "in_vivo",
+      "status": "provisional",
+      "answered": "V1 (Shawn 2026-10-31, provisional)",
+      "required_always": [
+        {
+          "key": "route",
+          "fields": [
+            "route"
+          ]
+        },
+        {
+          "key": "dose",
+          "fields": [
+            "dose_mg",
+            "dose_thc_mg_kg",
+            "dose_cbd_mg_kg",
+            "dose_thc_mg_g",
+            "dose_cbd_mg_g",
+            "conc_thc_mg_ml",
+            "conc_cbd_mg_ml",
+            "conc_thc_uM",
+            "conc_cbd_uM"
+          ]
+        },
+        {
+          "key": "duration",
+          "fields": [
+            "duration_days",
+            "treatment_duration"
+          ]
+        },
+        {
+          "key": "number_of_animals",
+          "fields": [
+            "sample_size"
+          ]
+        }
+      ],
+      "secondary": [
+        {
+          "key": "species",
+          "fields": [
+            "species_or_biological_system"
+          ]
+        },
+        {
+          "key": "animal_strain",
+          "fields": [
+            "species_or_biological_system"
+          ]
+        },
+        {
+          "key": "sex",
+          "fields": [
+            "sgba_sex_reported"
+          ]
+        },
+        {
+          "key": "age_or_weight",
+          "fields": [
+            "sgba_population_age"
+          ]
+        },
+        {
+          "key": "frequency",
+          "fields": [
+            "administration_frequency"
+          ]
+        },
+        {
+          "key": "vehicle_solvent",
+          "fields": [
+            "vehicle_solvent"
+          ]
+        }
+      ],
       "items": [
         {
           "key": "route",
@@ -76,9 +151,52 @@
           ]
         },
         {
+          "key": "duration",
+          "fields": [
+            "duration_days",
+            "treatment_duration"
+          ]
+        },
+        {
+          "key": "number_of_animals",
+          "fields": [
+            "sample_size"
+          ]
+        },
+        {
+          "key": "species",
+          "fields": [
+            "species_or_biological_system"
+          ]
+        },
+        {
+          "key": "animal_strain",
+          "fields": [
+            "species_or_biological_system"
+          ]
+        },
+        {
+          "key": "sex",
+          "fields": [
+            "sgba_sex_reported"
+          ]
+        },
+        {
+          "key": "age_or_weight",
+          "fields": [
+            "sgba_population_age"
+          ]
+        },
+        {
           "key": "frequency",
           "fields": [
             "administration_frequency"
+          ]
+        },
+        {
+          "key": "vehicle_solvent",
+          "fields": [
+            "vehicle_solvent"
           ]
         }
       ]
@@ -318,7 +436,7 @@
     },
     "good_practice": {
       "applies_to": "all",
-      "answered": "V4 (Shawn 2026-10-31, provisional)",
+      "answered": "G1 (Shawn 2026-10-31): exactly storage_temperature, milled_ground, protected_from_light. Replaces V4 set; storage_duration dropped. No contamination or batch-testing fields. Recorded only, never affects any tier.",
       "note": "Recorded only; never counts toward gold or any share.",
       "items": [
         {
@@ -328,15 +446,15 @@
           ]
         },
         {
-          "key": "storage_light",
+          "key": "milled_ground",
           "fields": [
-            "storage_light"
+            "milled_ground"
           ]
         },
         {
-          "key": "storage_duration",
+          "key": "protected_from_light",
           "fields": [
-            "storage_duration"
+            "protected_from_light"
           ]
         }
       ]
@@ -361,11 +479,17 @@
     "case_report"
   ],
   "not_scored_note": "Reviews, case reports, observational and self-reported studies skip every current tier (grade not_scored). Only future exposure fields would be scored for observational/self-report, after the PhD lead signs off.",
-  "previously_described_policy": "'As previously described [ref]' is recorded as status not_reported until the PhD lead answers open question TOP1. Keeping the cited reference as provenance is a pending option; no field for it yet. There is no cited_prior_paper location value.",
+  "previously_described_policy": "TOP1 (Shawn, 2026-10-31, final): 'As previously described [ref]' = not_reported (not_reported_reason cited_elsewhere). Cited papers are never fetched. There is no cited_prior_paper location value.",
   "answered": {
     "U1": "Shawn, 2026-10-31: universal = strain/product name, supplier, form, major cannabinoids, all status reported for gold.",
-    "TOP4": "Shawn, 2026-10-31: location is never a pass condition; it is still recorded.",
-    "U2": "Shawn, 2026-10-31: supplier is its own field, separate from strain/product name; for clinical studies supplier is not_applicable (not required, never counted missing)."
+    "TOP4": "Shawn, 2026-10-31: location is never a pass condition; it is still recorded. Confirmed (Shawn, 2026-10-31): a missing (not_reported) universal item always blocks gold, no exceptions. Resolved: TOP4 applies only to items required for the study type; supplier stays not_applicable for clinical.",
+    "U2": "Shawn, 2026-10-31: supplier is its own field, separate from strain/product name; for clinical studies supplier is not_applicable (not required, never counted missing).",
+    "V1": "In vivo tier: required_always route, dose, duration, number_of_animals; secondary species, animal_strain, sex, age_or_weight, frequency, vehicle (key vehicle_solvent); secondary_cutoff default 0.80, overridable.",
+    "C1": "Shawn, 2026-10-31: a dose given only as a range (e.g. 5-20 mg/kg) counts as reported. 'Per protocol' counts as reported only if the paper or its cited protocol gives an actual number; otherwise dose = not_reported.",
+    "C2": "Shawn, 2026-10-31: vague duration terms ('chronic', 'long-term', 'acute', ...) with no actual time do not count as duration reported (duration stays not_reported). The term is kept as reporting.duration.duration_category (+ _verbatim), a filter label that never affects any tier.",
+    "G1": "G1 (Shawn 2026-10-31): exactly storage_temperature, milled_ground, protected_from_light. Replaces V4 set; storage_duration dropped. No contamination or batch-testing fields. Recorded only, never affects any tier.",
+    "TOP1": "TOP1 (Shawn, 2026-10-31, final): 'As previously described [ref]' = not_reported (not_reported_reason cited_elsewhere). Cited papers are never fetched. There is no cited_prior_paper location value.",
+    "TOP3": "Shawn, 2026-10-31: a numeric value without units (e.g. a dose number, no unit) = not_reported (not_reported_reason missing_units)."
   },
   "route_requirements": {
     "status": "provisional",

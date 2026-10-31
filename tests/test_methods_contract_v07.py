@@ -11,7 +11,7 @@ import methods_completeness as mc
 
 STATUSES = ["reported", "not_reported", "could_not_check", "not_applicable", "not_yet_assessed"]
 LOCATIONS = ["methods", "supplementary", "abstract", "discussion", "unknown"]
-REASONS = ["fetch_failed", "parse_failed", "source_not_available", "budget_cap", "source_not_fetched"]
+REASONS = ["fetch_failed", "parse_failed", "source_not_available", "budget_cap", "source_not_fetched", "figure_not_read", "low_confidence_read"]
 
 
 def ok(name, rec):
@@ -136,19 +136,21 @@ def test_tier_rule_is_valid_and_every_field_exists():
     assert [i["key"] for i in TIERS["tiers"]["classification"]["items"]] == ["research_type"]
     assert not any("required_location" in i for t in TIERS["tiers"].values() for i in t["items"])
     assert set(TIERS["answered"]) >= {"U1", "U2", "TOP4"}
-    assert {i["key"] for i in TIERS["tiers"]["in_vivo"]["items"]} == {"route", "dose", "frequency"}
+    iv = TIERS["tiers"]["in_vivo"]
+    assert [i["key"] for i in iv["required_always"]] == ["route", "dose", "duration", "number_of_animals"]
+    assert [i["key"] for i in iv["secondary"]] == ["species", "animal_strain", "sex", "age_or_weight", "frequency", "vehicle_solvent"]
     iv = TIERS["tiers"]["in_vitro"]
     assert [i["key"] for i in iv["required_always"]] == ["cell_line_or_tissue_source", "concentration", "exposure_time"]
     assert [i["key"] for i in iv["secondary"]] == ["species_of_origin", "vehicle_solvent", "replicates"]
     assert TIERS["secondary_cutoff"]["default"] == 0.80 and TIERS["secondary_cutoff"]["overridable"] is True
     assert [i["key"] for i in TIERS["tiers"]["clinical"]["required_always"]] == ["number_of_participants", "route", "dose", "frequency", "duration", "participant_age_or_sex", "diagnosis_or_condition", "comparison_group"]
     assert TIERS["tiers"]["clinical"]["secondary"] == [] and TIERS["tiers"]["clinical"]["applies_to"] == "clinical_rct"
-    assert {i["key"] for i in TIERS["tiers"]["good_practice"]["items"]} == {"storage_temperature", "storage_light", "storage_duration"}
+    assert {i["key"] for i in TIERS["tiers"]["good_practice"]["items"]} == {"storage_temperature", "milled_ground", "protected_from_light"}
 
 
 def test_completeness_is_computed_per_tier_without_combined_score():
     res = mc.compute(FULL_V07, "in_vivo", TIERS)
-    assert set(res) == {"rule_id", "rule_version", "universal", "study_type", "route_requirements", "good_practice"}
+    assert set(res) == {"rule_id", "rule_version", "universal", "study_type", "route_requirements", "good_practice", "reference_fields", "missing_reference_available", "secondary_cutoff", "signoff_set_hash"}
     assert res["universal"]["grade"] == "gold"  # location (supplementary) is never a pass condition
     assert res["study_type"]["fraction"] == 0.5 and res["study_type"]["counts"]["could_not_check"] == 1
     assert res["good_practice"]["recorded_only"] is True and res["good_practice"]["reported"] == ["storage_temperature"]
@@ -416,8 +418,181 @@ def test_arms_and_blinding_recorded_only():
 
 def test_storage_good_practice_never_affects_grade():
     rec = copy.deepcopy(FULL_V07)
-    for k in ("storage_temperature", "storage_light", "storage_duration"):
+    for k in ("storage_temperature", "milled_ground", "protected_from_light"):
         rec["reporting"][k] = NR
     a, b = mc.compute(rec, "in_vivo", TIERS), mc.compute(FULL_V07, "in_vivo", TIERS)
     assert a["universal"] == b["universal"] and a["study_type"] == b["study_type"]
     assert a["good_practice"]["recorded_only"] is True and "grade" not in a["good_practice"]
+
+
+IVV_REQ = ("route", "dose", "duration", "number_of_animals")
+IVV_SEC = ("species", "animal_strain", "sex", "age_or_weight", "frequency", "vehicle_solvent")
+
+
+def _ivv(over=None, cutoff=None):
+    rec = copy.deepcopy(FULL_V07)
+    rec["reporting"].update({k: rep() for k in IVV_REQ + IVV_SEC})
+    rec["reporting"].update(over or {})
+    assert whole(rec)
+    return mc.compute(rec, "in_vivo", TIERS, secondary_cutoff=cutoff)["study_type"]
+
+
+CNC = {"status": "could_not_check", "location": None, "check_failure_reason": "source_not_fetched"}
+
+
+def test_in_vivo_v1_gold_and_outputs_both_shares():
+    s = _ivv()
+    assert s["grade"] == "gold" and s["secondary_share_worst"] == s["secondary_share_best"] == 1.0
+    assert s["missing"] == [] and s["not_checked"] == [] and s["secondary_cutoff"] == 0.8
+
+
+def test_in_vivo_required_not_reported_beats_unchecked():
+    s = _ivv({"number_of_animals": NR, "dose": CNC})
+    assert s["grade"] == "near_gold" and s["missing"] == ["number_of_animals"]
+    assert s["not_checked"] == [{"key": "dose", "check_failure_reason": "source_not_fetched"}]
+
+
+def test_in_vivo_required_unchecked_is_unverified():
+    assert _ivv({"duration": CNC})["grade"] == "unverified"
+
+
+def test_in_vivo_secondary_branches_and_cutoff_override():
+    # 6 secondary: 1 missing -> worst 5/6 = 0.833 >= 0.80 gold
+    assert _ivv({"sex": NR})["grade"] == "gold"
+    # 2 missing -> 4/6 best < 0.80 near_gold
+    assert _ivv({"sex": NR, "species": NR})["grade"] == "near_gold"
+    # 1 missing + 1 unchecked -> worst 4/6, best 5/6 -> unverified
+    s = _ivv({"sex": NR, "species": CNC})
+    assert s["grade"] == "unverified" and s["secondary_not_reported"] == ["sex"]
+    # override
+    assert _ivv({"sex": NR, "species": NR}, cutoff=0.6)["grade"] == "gold"
+
+
+def test_in_vivo_not_applicable_excluded_from_denominator():
+    na = {"status": "not_applicable", "location": None}
+    s = _ivv({"animal_strain": na, "age_or_weight": na, "sex": NR})
+    assert s["secondary_share_worst"] == 0.75 and s["grade"] == "near_gold"
+
+
+def test_comparison_group_extraction_confidence_and_review_reason():
+    rec = copy.deepcopy(FULL_V07); rec["reporting"].update(CLR)
+    rec["reporting"]["comparison_group"] = dict(rep(), extraction_confidence="low", needs_review=True,
+                                                review_reason="arm_only_in_table_or_figure")
+    assert whole(rec)
+    for bad in ({"extraction_confidence": "very_low"}, {"review_reason": "unclear"},
+                {"needs_review": False, "review_reason": "other"}):
+        r2 = copy.deepcopy(rec); r2["reporting"]["comparison_group"].update(bad)
+        assert not whole(r2)
+    for rr in ("no_named_control_arm", "arm_only_in_table_or_figure", "other"):
+        rec["reporting"]["comparison_group"]["review_reason"] = rr
+        assert whole(rec)
+
+
+def test_k1_location_enum_exact():
+    assert SCHEMA["$defs"]["reporting_location"]["enum"] == ["methods", "supplementary", "abstract", "discussion", "unknown"]
+
+
+def test_locked_cannabinoids_exact():
+    v = json.loads((ROOT / "schemas/normalization_rules.json").read_text())["vocabularies"]["cannabinoid"]
+    assert {x["value"] for x in v["values"]} == {"thc", "cbd", "cbg", "cbn", "cbc", "thcv", "cbdv", "thca", "cbda",
+                                                 "delta8_thc", "cbga", "cbl", "11_oh_thc"}
+    assert {x["value"] for x in v["candidates_pending_phd"]} == {"thc_cooh", "cbca", "thcva", "cbdva", "cbe", "cbt"}
+    assert all(x["full_name"] and x["synonyms"] for x in v["values"] + v["candidates_pending_phd"])
+
+
+@pytest.mark.parametrize("why", ["figure_not_read", "low_confidence_read"])
+def test_figure_reasons_are_could_not_check_never_a_miss(why):
+    cnc = {"status": "could_not_check", "location": None, "check_failure_reason": why}
+    s = _ivv({"dose": cnc})
+    assert s["grade"] == "unverified" and s["missing"] == []
+    assert s["not_checked"] == [{"key": "dose", "check_failure_reason": why}]
+    u = _u({"form": cnc})
+    assert u["grade"] == "unverified" and u["missing"] == []
+
+
+def test_c1_dose_range_and_per_protocol_recorded():
+    c1 = TIERS["answered"]["C1"]
+    assert "range" in c1 and "per protocol" in c1.lower() and "not_reported" in c1
+
+
+def test_c2_duration_category_label_never_affects_tier():
+    vocab = json.loads((ROOT / "schemas/normalization_rules.json").read_text())["vocabularies"]["duration_category"]
+    assert [v["value"] for v in vocab["values"]] == ["acute", "subacute", "subchronic", "chronic", "long_term", "other"]
+    assert "single dose" in vocab["values"][0]["synonyms"] and "prolonged" in vocab["values"][4]["synonyms"]
+    vague = {"status": "not_reported", "location": None, "duration_category": "chronic", "duration_category_verbatim": "chronic"}
+    s = _ivv({"duration": vague})
+    assert s["grade"] == "near_gold" and s["missing"] == ["duration"]
+    timed = dict(rep(), duration_category="long_term", duration_category_verbatim="long-term")
+    assert _ivv({"duration": timed}) == _ivv()
+    rec = copy.deepcopy(FULL_V07); rec["reporting"]["duration"] = dict(vague, duration_category="very_long")
+    assert not whole(rec)
+    assert "C2" in TIERS["answered"]
+
+
+def test_g1_good_practice_set_and_storage_duration_gone():
+    f = SCHEMA["properties"]["fields"]["properties"]
+    assert "storage_duration" not in f and "storage_light" not in f
+    assert f["milled_ground"]["properties"]["value"]["enum"] == ["yes", "no", "not_reported", None]
+    rec = copy.deepcopy(FULL_V07)
+    rec["fields"]["milled_ground"] = {"value": "yes", "missingness": "reported"}
+    rec["fields"]["protected_from_light"] = {"value": "no", "missingness": "reported"}
+    assert whole(rec)
+
+
+LINK = {"paper_id": "p1", "track_id": None, "field": "major_cannabinoids", "reference_value_id": "r1",
+        "value": 22.5, "linked_at": "2026-10-31", "linked_by": "biomedical_lead:1", "revoked_at": None}
+
+
+def test_reference_fields_numeric_signed_off_satisfies_item():
+    rec = copy.deepcopy(FULL_V07); rec["reporting"]["major_cannabinoids"] = NR
+    plain = mc.compute(rec, "in_vivo", TIERS)
+    assert plain["universal"]["grade"] == "near_gold" and plain["reference_fields"] == []
+    res = mc.compute(rec, "in_vivo", TIERS, reference_links=[LINK])
+    assert res["reference_fields"] == ["major_cannabinoids"] and res["universal"]["grade"] == "gold"
+    assert rec["reporting"]["major_cannabinoids"] == NR  # paper status never overwritten
+    assert res["signoff_set_hash"] != plain["signoff_set_hash"]
+
+
+def test_reference_non_numeric_is_option_a_and_revoked_reverts():
+    rec = copy.deepcopy(FULL_V07); rec["reporting"]["major_cannabinoids"] = NR
+    res = mc.compute(rec, "in_vivo", TIERS, reference_links=[dict(LINK, value="high THC")])
+    assert res["universal"]["grade"] == "near_gold" and res["missing_reference_available"] == ["major_cannabinoids"]
+    rev = mc.compute(rec, "in_vivo", TIERS, reference_links=[dict(LINK, revoked_at="2026-11-01")])
+    assert rev["universal"]["grade"] == "near_gold" and rev["reference_fields"] == []
+    assert rev["signoff_set_hash"] == mc.compute(rec, "in_vivo", TIERS)["signoff_set_hash"]
+
+
+def test_signoff_hash_order_independent_and_cutoff_in_output():
+    l2 = dict(LINK, reference_value_id="r2", field="form")
+    assert mc.signoff_set_hash([LINK, l2]) == mc.signoff_set_hash([l2, LINK])
+    assert mc.compute(FULL_V07, "in_vivo", TIERS, secondary_cutoff=0.6)["secondary_cutoff"] == 0.6
+
+
+def test_top1_final_and_not_reported_reason():
+    assert "final" in TIERS["answered"]["TOP1"] and not any("TOP1" in q for q in TIERS["open_questions"])
+    reasons = ["cited_elsewhere", "vague_term_only", "protocol_without_number", "government_program_unnamed",
+               "product_named_content_missing", "missing_units", "absent"]
+    for why in reasons:
+        rec = copy.deepcopy(FULL_V07)
+        rec["reporting"]["dose"] = dict(NR, not_reported_reason=why)
+        assert whole(rec)
+    rec["reporting"]["dose"] = dict(NR, not_reported_reason="unknown_reason")
+    assert not whole(rec)
+    rec["reporting"]["dose"] = dict(rep(), not_reported_reason="absent")
+    assert not whole(rec)
+    a = _ivv({"dose": dict(NR, not_reported_reason="cited_elsewhere")})
+    assert a == _ivv({"dose": NR})
+
+
+def test_top3_number_without_units_recorded_as_absent():
+    assert "not_reported" in TIERS["answered"]["TOP3"] and "missing_units" in TIERS["answered"]["TOP3"]
+    assert "missing_units" in SCHEMA["$defs"]["field_reporting"]["properties"]["not_reported_reason"]["anyOf"][0]["enum"]
+
+
+@pytest.mark.parametrize("key", ["strain_or_product_name", "supplier", "form", "major_cannabinoids"])
+@pytest.mark.parametrize("study", ["in_vivo", "in_vitro"])
+def test_top4_any_missing_universal_item_always_blocks_gold(key, study):
+    rec = copy.deepcopy(FULL_V07)
+    rec["reporting"][key] = NR
+    u = mc.compute(rec, study, TIERS)["universal"]
+    assert u["grade"] == "near_gold" and key in u["missing"]

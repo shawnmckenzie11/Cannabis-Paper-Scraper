@@ -322,7 +322,7 @@ The idea: for this database, a paper's quality is how well it reports the detail
 | `supplier` | `fields` (new) | Company or source the product was procured from. Its own field, separate from strain/product name (**U2, answered**). Not applicable for clinical studies. | pending_biomedical |
 | `vehicle_solvent` | `fields` (new) | Vehicle or solvent used to deliver the product (oil does not dissolve in cell media). | pending_biomedical |
 | `storage` | `fields` (new) | How the product was stored, free text. Good practice, not required. |
-| `storage_temperature`, `storage_light`, `storage_duration` | `fields` (new) | V4 good-practice storage details, recorded only. |
+| `storage_temperature`, `milled_ground`, `protected_from_light` | `fields` (new) | G1 good-practice storage details (temperature as reported; milled/ground and light protection = `yes`/`no`/`not_reported`). Recorded only, never affects any tier. |
 | `randomized` / `arms` / `blinding` | `fields` (new) | Clinical design. `randomized` (`yes`/`no`/`unknown`) is the scope gate; `arms` (`single_arm`/`controlled`/`unknown`) and `blinding` (`open_label`/`single_blind`/`double_blind`/`unknown`) are recorded only. |
 | `cell_line_or_tissue_source`, `comparison_group` | `fields` (new) | In vitro source (V2) and clinical comparison arm (V3). |
 | `field_reporting.confidence`, `.needs_review` | `$defs` | Optional extraction confidence and human-review flag on any reporting item. | pending_biomedical |
@@ -336,10 +336,10 @@ The idea: for this database, a paper's quality is how well it reports the detail
 |---|---|
 | classification | research type (picks the study-type tier; recorded, not part of gold) |
 | universal (every study) | strain/product name, supplier (not applicable for clinical), form, major cannabinoids, route (provisional). All must be `reported` for gold. Location is recorded but never a pass condition. |
-| in_vivo | route, dose, frequency |
+| in_vivo (V1, provisional) | required always: route, dose, duration, number of animals. Secondary: species, animal strain, sex, age or weight, frequency, vehicle (key `vehicle_solvent`). Same algorithm and `secondary_cutoff` as in vitro. |
 | in_vitro (V2, provisional) | required always: cell line or tissue source, concentration, exposure time. Secondary: species of origin, vehicle/solvent, replicates. |
 | clinical (V3, provisional; RCTs only) | all required, no share: number of participants, route, dose, frequency, duration, participant age or sex (either counts), diagnosis or condition, comparison group (may carry `confidence` + `needs_review`). Scope gate on `randomized`: `yes` → scored; `no` → `out_of_scope`; `unknown` → `unverified` (never guessed). `arms` and `blinding` are recorded only. |
-| good_practice (V4, provisional) | storage temperature, storage light, storage duration. Recorded only; never counts toward gold or any share. |
+| good_practice (G1) | storage temperature, milled/ground, protected from light. Recorded only; never counts toward gold or any share. No contamination or batch-testing fields. (Replaces V4; `storage_duration` dropped: it existed only in this draft.) |
 
 **Grades are explicit, never blank:** `gold`, `near_gold`, `unverified`, `not_scored` (reviews, case reports, observational / self-report), `out_of_scope` (non-randomized interventional trials), `not_yet_assessed` (default).
 
@@ -374,14 +374,64 @@ Items marked `not_applicable` (status, or supplier on clinical studies) are left
 - **V3 (provisional):** clinical tier for RCTs only, as above.
 - **Non-randomized interventional trials** (single-arm, open-label non-randomized) are out of scope: no gold rule, no comparison-group check.
 - **Q1:** age or sex, either counts (provisional). **Q2:** resolved by the out-of-scope rule.
-- **V4 (provisional):** storage temperature / light / duration are good practice only.
+- **G1 (replaces V4):** good practice is exactly storage temperature, milled/ground, protected from light. Never affects tier.
+- **C1 (dose wording):** a dose given only as a range counts as `reported`. "Per protocol" counts as `reported` only if the paper or its cited protocol gives an actual number; otherwise dose is `not_reported`. Examples:
+  - "mice received 5–20 mg/kg THC i.p." → reported (range).
+  - "dosed per protocol (10 mg/kg, see Ref 12)" → reported.
+  - "dosed per protocol [12]", and ref 12 states 3 mg/kg → reported (put the number and source in `evidence_quote`).
+  - "dosed per protocol" with no number anywhere → not_reported.
+- **C2 (vague duration):** "chronic", "long-term", "acute" etc. with no actual time do **not** count as duration reported; duration stays `not_reported`. The term is kept on the duration reporting item as `duration_category` (closed enum: `acute` — acute, single dose, single administration; `subacute` — sub-acute; `subchronic` — sub-chronic; `chronic` — chronic, repeated; `long_term` — long-term, prolonged, extended; `other`) plus `duration_category_verbatim` (author's words). Search/filter label only; never affects any tier; no time thresholds (authors' wording only). Synonyms live in `normalization_rules.json` → `duration_category`. It sits in the per-field reporting block, so it moves into each track's reporting block when the track shape lands.
+  - "chronic THC exposure" (no time) → duration `not_reported`, `duration_category: chronic`, verbatim "chronic".
+  - "chronic (21 days) THC" → duration `reported`, `duration_category: chronic`.
+- **TOP1 (final):** "as previously described [ref]" = `not_reported` (`not_reported_reason: cited_elsewhere`). Cited papers are never fetched. Example: "Rats were dosed as previously described (Smith 2015)." → dose `not_reported`, the sentence goes in `evidence_quote`.
+- **TOP3:** a number without units = `not_reported` (`not_reported_reason: missing_units`). Example: "animals received 10 of THC daily" → dose `not_reported`; "10 mg/kg" → reported.
+- **TOP4 (confirmed, closed):** a missing universal item always blocks gold, no exceptions (even with a signed-off reference value: only a numeric one fills `reference_fields`, see P1). TOP4 applies only to items required for the study type, so supplier stays `not_applicable` for clinical (resolved).
 - **U2:** supplier is its own field, separate from strain/product name; for clinical studies it is `not_applicable`.
 
 ### Open PhD questions (not decided)
 
-1. **TOP1:** Does "as previously described [ref]" count as reported in the methods? Until the PhD answers, it is scored as `not_reported` (the wording can go in `evidence_quote`). Keeping the cited reference as provenance is a pending option; no field is added for it.
-2. Which cannabinoids are "major"? Pending Shawn. Default until then: any cannabinoid content the paper measured counts as reported.
-3. Does a vague report (e.g. a dose without units) count as reported?
+1. Which cannabinoids are "major"? Pending Shawn. Default until then: any cannabinoid content the paper measured counts as reported.
+2. **P1 tier effect:** do signed-off reference values affect the tier (A no effect / B counts as reported / C separate flag)? Default A for non-numeric values; numeric signed-off values currently fill `reference_fields` (see P1 section).
+
+### not_reported_reason (optional, never affects tier)
+
+Allowed only when status is `not_reported`: `cited_elsewhere` (TOP1), `vague_term_only` (C2 duration), `protocol_without_number` (C1), `government_program_unnamed` (P2), `product_named_content_missing` (P1 gap-log cases), `missing_units` (TOP3: number without units), `absent` (default: nothing found).
+
+### Check-failure reasons (all mean `could_not_check`)
+
+`fetch_failed`, `parse_failed`, `source_not_available`, `budget_cap`, `source_not_fetched` (deliberate scope choice, distinct from `fetch_failed`), `figure_not_read` (a figure holds the detail but reading it was not attempted; no figure-reading budget yet), `low_confidence_read` (read, but too uncertain to score). None of these is ever a miss: they are excluded from precision/recall and counted separately. Additive only; no value renamed or removed.
+
+### comparison_group review fields (V3)
+
+`extraction_confidence` (`high`/`medium`/`low`), `needs_review` (bool), `review_reason` (`no_named_control_arm`/`arm_only_in_table_or_figure`/`other`, only allowed when `needs_review` is true). Available on any reporting item; used for comparison_group.
+
+### Computed track shape (never stored)
+
+Per track (universal, study-type tier): `tier`, `missing`, `not_checked`; plus `overall_tier`. All are **computed at read time** from the stored reporting statuses and never written to the database. API responses carry them together with `rule_version` and the `secondary_cutoff` used, so any grade can be reproduced.
+
+### P1: product reference values (Shawn, 2026-10-31; design only, no DB migration)
+
+No auto-fill of cannabinoid content from labels or monographs. If the paper does not report it, the field stays `not_reported`.
+
+Proposed tables (not in the schema yet; land with the gated DB migration):
+
+1. `product_content_gap_log`: `log_id`, `paper_id`, `track_id` (nullable until tracks land), `product_name` (verbatim), `product_key` (normalized), `field` (e.g. cannabinoid THC content), `logged_at`, `extraction_run_id`, `status` (`open` | `resolved`).
+2. `product_reference_value`: one signed-off known value per `product_key` + `field`: `value`, `unit`, `source_citation` (label / monograph / DOI / URL), `signed_off_by` (role `biomedical_lead` | `grad_reviewer` + id), `signed_off_at`, `rule_version`, `superseded_by`.
+3. `paper_reference_link`: `paper_id`, `track_id`, `field`, `reference_value_id`, `linked_at`, `linked_by`, `revoked_at`. Signed-off values live only in `product_reference_value` and attach through this link table; they never write over paper fields. The apply step is idempotent, with unique key (`paper_id`, `track_id`, `field`, `reference_value_id`). Revoking sets `revoked_at`, and the shown value reverts to the paper's (`not_reported`).
+4. Per-field flag `value_source` = `paper` | `signed_off`. The reporting status stays `not_reported`, and the signed-off value is shown with its own provenance.
+
+The first prod run needs Shawn's go-ahead and a fresh snapshot.
+
+Evaluation excludes reference values from extraction accuracy.
+
+**Tier effect: OPEN QUESTION for Shawn.**
+- A) No effect: the paper stays `near_gold`, with the missing list annotated "reference value available". **Default until answered.**
+- B) Counts as reported for gold.
+- C) A separate tier flag, e.g. `gold_with_reference`.
+
+### Computed tier output (P1 additions)
+
+`compute()` also returns `reference_fields` (items satisfied only by a numeric signed-off value, `value_source: signed_off`; empty if none), `missing_reference_available` (items with a non-numeric signed-off value: option A, no tier effect), `signoff_set_hash` (sha256 of the active `paper_reference_link` rows, so frozen runs are reproducible), `rule_version` and `secondary_cutoff` used. **Any future tier cache must be invalidated when `rule_version`, the cutoff, or the sign-off set changes (add, replace or revoke).**
 
 ### Storage / database
 
