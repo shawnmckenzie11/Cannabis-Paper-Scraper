@@ -820,9 +820,9 @@ NOCANN = {"value": None, "missingness": "not_reported"}
 
 
 def test_tier_rule_version_bumped_and_carried():
-    assert TIERS["version"] == "0.7.1"
-    assert mc.compute(FULL_V07, "in_vivo", TIERS)["rule_version"] == "0.7.1"
-    assert mc.compute(FULL_V07, "in_vivo")["rule_version"] == "0.7.1"
+    assert TIERS["version"] == "0.7.2"
+    assert mc.compute(FULL_V07, "in_vivo", TIERS)["rule_version"] == "0.7.2"
+    assert mc.compute(FULL_V07, "in_vivo")["rule_version"] == "0.7.2"
 
 
 def test_default3_any_one_flowchart_field_counts():
@@ -881,13 +881,66 @@ def test_default8_any_measured_cannabinoid_is_major():
     assert "major_cannabinoids" in out["universal"]["missing"]
 
 
+MEAS = {"value": [{"name": "CBG", "amount": 2.0, "unit": "mg/kg", "source_span": "2 mg/kg CBG"}], "missingness": "reported", "source_span": "2 mg/kg CBG"}
+
+
 @pytest.mark.parametrize("why", ["missing_units", "cited_elsewhere"])
-def test_default6_does_not_override_explicit_reason(why):
-    meas = {"value": [{"name": "CBG", "amount": 2.0, "unit": "mg/kg", "source_span": "2 mg/kg CBG"}], "missingness": "reported", "source_span": "2 mg/kg CBG"}
+def test_default6_never_overrides_explicit_reason_on_that_field(why):
+    """v0.7.2: per-field. Explicit reasons are never overridden on the field itself;
+    when every field in the group carries one, default 6 has nothing to satisfy."""
     exp = mc.route_requirements(_route_rec(), "in_vivo", TIERS)["expected_fields"]
-    rec = _route_rec(reporting={f: dict(NR, not_reported_reason=why) for f in exp}, cannabinoids=meas)
+    rec = _route_rec(reporting={f: dict(NR, not_reported_reason=why) for f in exp}, cannabinoids=MEAS)
+    raw = copy.deepcopy(rec)
     assert mc.route_fields_status(rec, "in_vivo", TIERS)["status"] == "not_reported"
     out = mc.compute(rec, "in_vivo", TIERS)
     assert out["universal"]["grade"] != "gold"
     assert "route_fields" in out["universal"]["missing"]
     assert not any(d.get("default") == 6 for d in out["defaults_applied"])
+    assert rec == raw and all(rec["reporting"][f]["not_reported_reason"] == why for f in exp)
+
+
+@pytest.mark.parametrize("why", ["missing_units", "cited_elsewhere"])
+def test_default6_per_field_mixed_group_is_gold(why):
+    """v0.7.2 ruling 3: 1 field with an explicit reason + the rest absent, otherwise gold -> gold."""
+    exp = mc.route_requirements(_route_rec(), "in_vivo", TIERS)["expected_fields"]
+    assert len(exp) == 9
+    cann = [f for f in exp if any(m in f for m in mc.CANNABINOID_FIELD_MARKERS)]
+    first = cann[0]
+    reporting = {f: dict(NR, not_reported_reason="absent") for f in exp}
+    reporting[first] = dict(NR, not_reported_reason=why)
+    rec = _route_rec(reporting=reporting, cannabinoids=MEAS)
+    raw = copy.deepcopy(rec)
+    assert mc.route_fields_status(rec, "in_vivo", TIERS) == {"status": "reported", "satisfied_by": "fields.cannabinoids", "default": 6}
+    out = mc.compute(rec, "in_vivo", TIERS)
+    assert out["universal"]["grade"] == "gold"
+    assert rec == raw and rec["reporting"][first]["not_reported_reason"] == why
+
+
+def test_measured_requires_value_and_unit_for_defaults_6_and_8():
+    """v0.7.2 ruling 1: value without unit is missing_units, not measured."""
+    nounit = copy.deepcopy(MEAS); nounit["value"][0]["unit"] = None
+    noval = copy.deepcopy(MEAS); noval["value"][0]["amount"] = None
+    exp = mc.route_requirements(_route_rec(), "in_vivo", TIERS)["expected_fields"]
+    for c in (nounit, noval):
+        rec = _route_rec(reporting={f: NR for f in exp} | {"major_cannabinoids": NR}, cannabinoids=c)
+        out = mc.compute(rec, "in_vivo", TIERS)
+        assert {"major_cannabinoids", "route_fields"} <= set(out["universal"]["missing"])
+        assert out["defaults_applied"] == []
+
+
+def test_default3_none_reported_near_gold_unchecked_carries_all_reasons():
+    """v0.7.2 ruling 2."""
+    exp = mc.route_requirements(_route_rec(), "in_vivo", TIERS)["expected_fields"]
+    o = mc.compute(_route_rec(reporting={f: NR for f in exp}, cannabinoids=NOCANN), "in_vivo", TIERS)
+    assert o["universal"]["grade"] == "near_gold" and "route_fields" in o["universal"]["missing"]
+    cnc = lambda r: dict(status="could_not_check", location=None, check_failure_reason=r)
+    reporting = {f: cnc("figure_not_read") for f in exp}
+    reporting[exp[-1]] = cnc("source_not_fetched")
+    unk = _route_rec(reporting=reporting, cannabinoids=NOCANN)
+    s = mc.route_fields_status(unk, "in_vivo", TIERS)
+    assert s["check_failure_reason"] == "figure_not_read"
+    assert s["check_failure_reasons"] == ["figure_not_read", "source_not_fetched"]
+    ou = mc.compute(unk, "in_vivo", TIERS)
+    assert ou["universal"]["grade"] == "unverified"
+    assert {"key": "route_fields", "check_failure_reason": "figure_not_read",
+            "check_failure_reasons": ["figure_not_read", "source_not_fetched"]} in ou["universal"]["not_checked"]

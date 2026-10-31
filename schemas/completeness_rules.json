@@ -1,6 +1,6 @@
 {
   "rule_id": "crn_reporting_completeness",
-  "version": "0.7.1",
+  "version": "0.7.2",
   "status": "pending_biomedical",
   "contract_version": "0.7",
   "note": "Completeness is computed from reporting statuses, never stored. Output per tier: universal gold/near_gold, study-type fraction, good_practice separate. No combined score. Tier membership pending the PhD lead.",
@@ -662,7 +662,7 @@
         "approved": "Biomedical lead, 2026-10-31"
       }
     ],
-    "grading": "v0.7.1: applied at read time in methods_completeness.compute. Default 3: a route group with expected fields is reported if any one of its fields is reported (reporting item status, else Pipeline's per-field missingness). Default 6: for groups with cannabinoid fields, any measured cannabinoid (fields.cannabinoids entry with numeric amount and unit) counts, for every route. Missing -> universal missing 'route_fields'. Raw fields are never changed."
+    "grading": "v0.7.1: applied at read time in methods_completeness.compute. Default 3: a route group with expected fields is reported if any one of its fields is reported (reporting item status, else Pipeline's per-field missingness). Default 6: for groups with cannabinoid fields, any measured cannabinoid (fields.cannabinoids entry with numeric amount AND unit; a value without unit is missing_units, not measured) counts, for every route. v0.7.2: default 6 is per-field like default 8: an explicit not_reported_reason other than absent (cited_elsewhere, missing_units) fails only that field, not the whole group. None of the route's fields reported -> universal missing 'route_fields' (near_gold); fields could not be checked -> not_checked (unverified), carrying every check_failure_reason. Raw fields are never changed."
   },
   "secondary_cutoff": {
     "default": 0.8,

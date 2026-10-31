@@ -132,16 +132,25 @@ def route_fields_status(record, study_type, rule, rep=None, measured=None):
     hit = [f for f, st in sts.items() if st == "reported"]
     if hit:
         return {"status": "reported", "satisfied_by": hit[0], "default": 3}
-    # Same guard as default 8: never applied over an explicit not_reported_reason other than absent
-    # (e.g. missing_units, cited_elsewhere) on any field in the group.
-    explicit = any(_reason(rep, fields, f) not in (None, "absent") for f in sts)
-    if measured and not explicit and any(m in f for f in sts for m in CANNABINOID_FIELD_MARKERS):
+    # v0.7.2 (ruling 3): default 6 is per-field, like default 8. A field with an explicit
+    # not_reported_reason other than absent (e.g. missing_units, cited_elsewhere) fails only that
+    # field; default 6 can still satisfy the group via its other cannabinoid fields.
+    eligible = [f for f in sts if _reason(rep, fields, f) in (None, "absent")
+                and any(m in f for m in CANNABINOID_FIELD_MARKERS)]
+    if measured and eligible:
         return {"status": "reported", "satisfied_by": "fields.cannabinoids", "default": 6}
     if any(st == "could_not_check" for st in sts.values()):
-        why = next((r for f, st in sts.items() if st == "could_not_check"
-                    for r in [((rep.get(f) or {}).get("check_failure_reason")
-                               or ((fields.get(f) or {}).get("check_failure_reason")))] if r), None)
-        return {"status": "could_not_check", "satisfied_by": None, "check_failure_reason": why}
+        whys = []
+        for f, st in sts.items():
+            if st != "could_not_check":
+                continue
+            r = ((rep.get(f) or {}).get("check_failure_reason")
+                 or (((fields or {}).get(f) or {}).get("check_failure_reason")))
+            if r and r not in whys:
+                whys.append(r)
+        why = next(iter(whys), None)
+        return {"status": "could_not_check", "satisfied_by": None, "check_failure_reason": why,
+                "check_failure_reasons": whys}
     if all(st == "not_yet_assessed" for st in sts.values()):
         return {"status": "not_yet_assessed", "satisfied_by": None}
     return {"status": "not_reported", "satisfied_by": None}
@@ -204,7 +213,10 @@ def compute(record, study_type, rule=None, secondary_cutoff=None, reference_link
     if rfs and rfs["status"] == "not_reported":
         lists["missing"].append("route_fields")
     elif rfs and rfs["status"] == "could_not_check":
-        lists["not_checked"].append({"key": "route_fields", "check_failure_reason": rfs.get("check_failure_reason")})
+        nc = {"key": "route_fields", "check_failure_reason": rfs.get("check_failure_reason")}
+        if len(rfs.get("check_failure_reasons") or []) > 1:
+            nc["check_failure_reasons"] = rfs["check_failure_reasons"]
+        lists["not_checked"].append(nc)
     if uc["not_yet_assessed"] == len(uitems):
         grade = "not_yet_assessed"
     elif lists["missing"]:
