@@ -1,7 +1,7 @@
 {
   "config_id": "crn_rule_extractor",
-  "version": "0.1.0",
-  "contract_version": "0.7",
+  "version": "0.2.0",
+  "contract_version": "0.8",
   "note": "Deterministic regex cues only. Vocabularies (route, cannabinoid, duration_category) are loaded from schemas/normalization_rules.json at runtime and are NOT copied here. Cues were written from the contract text and fake fixtures only; no gold, qrels, grades or legacy_llm_fullpdf values were used. Case-insensitive.",
   "section_location": {"methods": "methods", "abstract": "abstract", "discussion": "discussion", "table": "table", "figure_caption": "figure", "results": "unknown", "introduction": "unknown", "body": "unknown"},
   "section_priority": ["methods", "table", "results", "body", "abstract", "figure_caption", "discussion", "introduction"],
@@ -48,6 +48,9 @@
   "product_named": "\\b(sativex|nabiximols|epidiolex|dronabinol|nabilone|marinol|cesamet|bedrocan|bediol|strain [A-Z][\\w-]+)\\b",
   "supplier": {
     "cue": "\\b(?:obtained|purchased|provided|supplied|donated|procured|sourced)\\s+(?:by|from)\\s+(?:the\\s+)?([^,.;()]+)",
+    "clause": "(?:\\b(?:was|were|is|are)\\s+)?\\b(?:obtained|purchased|provided|supplied|donated|procured|sourced)\\s+(?:by|from)\\s+(?:the\\s+)?([^,.;()]+?)(?=\\s+(?:and|while|whereas)\\s|[,.;()]|$)|\\b(?:and|while|whereas)\\s+(?:the\\s+)?([^,.;()]+?)\\s+(?:was\\s+|were\\s+)?from\\s+(?:the\\s+)?([^,.;()]+?)(?=\\s+(?:and|while|whereas)\\s|[,.;()]|$)",
+    "animal_source": "\\b(rats?|mice|mouse|animals?|pups?|dams?|breeders?|colon(?:y|ies)|litters?|zebrafish|rabbits?|dogs?|pigs?|primates?|macaques?|monkeys?|guinea pigs?|hamsters?|vivarium|breeding|animal (?:facility|house|centre|center|vendor|supplier))\\b",
+    "test_compound": "\\b(cannabis|marijuana|marihuana|hemp|extracts?|plant material|materials?|study (?:drug|medication|product)|drugs?|compounds?|test (?:compound|substance|article)s?|reagents?|chemicals?|antagonists?|agonists?)\\b",
     "government_unnamed": "^(?:a |an )?(?:government|national|federal|state)(?:\\s+(?:supply|drug|research|cannabis))*\\s*(?:program(?:me)?|agency|supplier|government)?\\s*$"
   },
   "dose": {
