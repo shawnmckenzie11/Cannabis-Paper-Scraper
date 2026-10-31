@@ -20,7 +20,7 @@ def bad(rec):
 
 def test_schema_valid_and_version():
     jsonschema.Draft202012Validator.check_schema(SCHEMA)
-    assert SCHEMA["x-contract-version"] == "0.5"
+    assert SCHEMA["x-contract-version"] == "0.6"
     assert "wp1.4.0-draft" in SCHEMA["properties"]["schema_version"]["enum"]
     assert "wp1.3.0-draft" in SCHEMA["properties"]["schema_version"]["enum"]
 
@@ -77,8 +77,3 @@ def test_provenance_params_reject_email_and_api_key():
     for k in ("email", "api_key"):
         assert not v.is_valid({"db": "pubmed", k: "x"})
 
-
-
-def vd(name, rec):
-    s = dict(SCHEMA["$defs"][name], **{"$defs": SCHEMA["$defs"]})
-    jsonschema.Draft202012Validator(s).validate(rec)

@@ -61,3 +61,5 @@ The `ai-seed-fom/` inputs are not added by this PR.
 3. Eng implements storage/pipeline in a **separate** unlocked PR.
 
 **v0.5 (wp1.5.0-draft):** adds the `pmc_oa_xml` tier, optional `source_license` (full-text storage pinned off pending Shawn), the `validation` split, `extraction_run_manifest` and `run_event`, and requires `record_id` on new records. All additive; earlier records stay valid. See `field-dictionary.md`.
+
+**v0.6 (wp1.6.0-draft, MCK-425, PhD to confirm):** product becomes origin + preparation (+ named substance) normalized fields, `strain_normalized` is name cleaning only, new `chemotype_reported` (only when cannabinoid content is reported), `normalization_status` widens to `pending_biomedical` / `approved` / `unmapped` / `needs_review`, rare raw strings (N=3 placeholder) go to review. Vocabulary versioned in `schemas/normalization_rules.json`. Earlier records stay valid. See `field-dictionary.md`.

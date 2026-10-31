@@ -227,7 +227,7 @@ Definitions for annotators: `annotation-guide-draft.md`. Not biomedical ontology
 - **study_group_id**: equals `paper_id` (Q7, Shawn Oct 29 2026).
 - **reference_value**: `paper_id, field, value, raw_text, status (draft|expert_checked), checked_by, checked_at`. Internal only.
 - **gold_badge**: paper-level; `paper_id, rater (verified sign-in), timestamp, raw_transcript, submitted_rationale` (separate), no audio. `split=test` ⇒ `storage=locked_store`. Rationale format pending_biomedical (free text for now).
-- **normalized_field**: `raw_text` + `normalized_value` with `normalization_status: pending_biomedical`. Rules: `schemas/normalization_rules.json` (range formatting allowed; "once daily" vs "daily" pending_biomedical).
+- **normalized_field**: `raw_text` + `normalized_value` with `normalization_status: pending_biomedical` (widened in v0.6, see below). Rules: `schemas/normalization_rules.json` (range formatting allowed; "once daily" vs "daily" pending_biomedical).
 - **work_id**: grouping key; preprint/published versions and duplicate records of one work share a `work_id`. Splits are assigned by `work_id` (not paper_id). `study_group_id` stays = `paper_id`. DOI/title matches across splits produce a `work_merge_flag` for Methods confirmation — never auto-merged; a confirmed merge requires a new manifest version.
 
 ## v0.3 additions (wp1.3.0-draft) — eval gaps, fields only
@@ -287,3 +287,21 @@ Also in v0.5: `test` records must live in `locked_store` (now enforced both ways
 The contract version stays `"0.5"`; these are additive changes, and every record valid before them is still valid.
 
 - #109: `extraction_run_manifest.excluded[].reason` accepts `consecutive_failures`, for papers skipped after the runner stops on repeated failures. The full set is `budget_cap`, `pmid_missing`, `source_unavailable`, `consecutive_failures`. Evaluation leaves `budget_cap` papers out of the score; `pmid_missing`, `source_unavailable` and `consecutive_failures` papers count as recall misses on every gold field for that paper, with each reason's count reported separately.
+
+## v0.6 additions (wp1.6.0-draft, MCK-425): product and strain vocabulary — PhD to confirm
+
+`x-contract-version: "0.6"`. Shawn's picks (Oct 30, 2026). **Every value and rule below is `phd_to_confirm`** until the Biomedical lead signs off. Vocabularies live in `schemas/normalization_rules.json` (`vocabularies`, `review_policy`, rules `mck425_*`).
+
+| Name | Where | Meaning | Status |
+|---|---|---|---|
+| `normalized_field` | `$defs` (changed) | `raw_text` (verbatim, required, never overwritten) + `normalized_value` + `normalization_status` + `rule_id` + `vocabulary_version` + optional nullable `external_id`. A non-null `normalized_value` must carry `rule_id` and `vocabulary_version`. | technical |
+| `normalization_status` | in `normalized_field` | Widened from const `pending_biomedical` to `pending_biomedical`, `approved`, `unmapped`, `needs_review` (4C). `unmapped` keeps raw only (`normalized_value` null), never guessed. | phd_to_confirm |
+| `product` | `fields` | 1B: list of `product_entry` = `origin` (`plant_derived`, `synthetic`, `biosynthetic`) + `preparation` (`whole_flower`, `full_spectrum_extract`, `broad_spectrum_extract`, `isolate`, `formulated_drug`) + optional `substance`, each a `normalized_field`. Required shape on `wp1.6.0-draft`; older records keep the free string list. | phd_to_confirm |
+| `substance` | in `product_entry` | Receptor agonists/antagonists and named drugs (e.g. Epidiolex, nabilone, dronabinol) are their own values, not collapsed into a class. Vocabulary seeded only with those three drugs. | phd_to_confirm |
+| `route` | `fields` | Unchanged; stays a separate field from product. | — |
+| `strain_normalized` | `fields` | 2D: name cleaning only (case, spelling, alias) as a `normalized_field`; carries no chemistry. Required shape on `wp1.6.0-draft`. | phd_to_confirm |
+| `chemotype_reported` | `fields` (new) | 2D: `I` / `II` / `III` set only when the paper reports cannabinoid content (`cannabinoid_content_reported: true` + `source_span`); otherwise null with `not_in_available_source`. A strain name never implies chemotype. | phd_to_confirm |
+| `review_policy.rare_raw_string_threshold_n` | `normalization_rules.json` | 4C: a rule is approved once by the Biomedical lead; raw strings seen fewer than N times go to `needs_review`. **N=3 is a PLACEHOLDER — PhD / Shawn to confirm.** | placeholder |
+| `external_id` | vocab values + `normalized_field` | 3C: empty nullable slot for later ChEBI / RxNorm. | technical |
+
+Also in v0.6: `record_id` is required on `wp1.6.0-draft` records, `run_event.field` includes `chemotype_reported`, and the run manifest `contract_version` accepts `"0.5"` or `"0.6"`.

@@ -1,22 +1,9 @@
 """Contract tests for methods schema v0.5 (wp1.5.0-draft) additions."""
-import copy, json, pathlib
+import json, pathlib
 import pytest
 jsonschema = pytest.importorskip("jsonschema")
 ROOT = pathlib.Path(__file__).resolve().parents[1]
 SCHEMA = json.loads((ROOT / "schemas/methods.schema.json").read_text())
-DATA = json.loads((ROOT / "data/pubmed_metadata_split_v0.1.json").read_text())
-PREPRINTS = {"40502036", "36993751", "40235472"}
-
-
-def v(rec):
-    s = dict(SCHEMA["$defs"]["pubmed_metadata_record"], **{"$defs": SCHEMA["$defs"]})
-    jsonschema.Draft202012Validator(s).validate(rec)
-
-
-def bad(rec):
-    with pytest.raises(jsonschema.ValidationError):
-        v(rec)
-
 
 
 def vd(name, rec):
