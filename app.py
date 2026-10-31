@@ -2935,9 +2935,11 @@ def api_list_analyses():
 def _fetch_analysis_papers(db, chart_data, filter_settings, *, limit=None, offset=0):
     """Load slim paper rows for an analysis from stored paper_ids (paged)."""
     paper_ids = list(chart_data.get("paper_ids") or filter_settings.get("paper_ids") or [])
-    total = len(paper_ids)
     if not paper_ids:
         return [], 0
+    # Same topic gate as search/count/export: totals and pages count only visible papers.
+    paper_ids = db.visible_paper_ids(paper_ids)
+    total = len(paper_ids)
     if limit is not None:
         paper_ids = paper_ids[int(offset): int(offset) + int(limit)]
     if not paper_ids:
@@ -3098,47 +3100,30 @@ def api_export_analysis_csv(analysis_id):
     papers = []
 
     if paper_ids:
-        import sqlite3
-        conn = db.get_connection()
-        conn.row_factory = sqlite3.Row
-        cursor = conn.cursor()
         try:
-            placeholders = ",".join(["?"] * len(paper_ids))
-            sql = f"SELECT * FROM papers WHERE id IN ({placeholders})"
-            # Same topic gate as search/count (only topic_gate_pass == False is hidden).
-            from repository.filters import topic_gate_clause
-            try:
-                cols = {r[1] for r in conn.execute("PRAGMA table_info(papers)").fetchall()}
-            except Exception:
-                cols = set()
-            gate_sql = topic_gate_clause("topic_match" in cols)
-            if gate_sql:
-                sql += " AND " + gate_sql
-            cursor.execute(sql, paper_ids)
-            rows = cursor.fetchall()
-            for row in rows:
-                res = dict(row)
-                for json_field in ["authors", "outcome_domain"]:
-                    if res.get(json_field):
-                        try:
-                            res[json_field] = json.loads(res[json_field])
-                        except Exception:
-                            res[json_field] = []
-                    else:
-                        res[json_field] = []
-                for json_field in ["study_type", "exposure_method", "cannabis_type", "expert_locked_fields"]:
-                    if res.get(json_field):
-                        try:
-                            val = res[json_field].strip()
-                            if val.startswith("[") and val.endswith("]"):
-                                res[json_field] = json.loads(res[json_field])
-                        except Exception:
-                            pass
-                papers.append(res)
+            rows = db.get_papers_by_ids_full(paper_ids)
         except Exception as e:
             app.logger.error(f"Error querying papers by IDs: {e}")
-        finally:
-            conn.close()
+            rows = []
+        for row in rows:
+            res = dict(row)
+            for json_field in ["authors", "outcome_domain"]:
+                if res.get(json_field):
+                    try:
+                        res[json_field] = json.loads(res[json_field])
+                    except Exception:
+                        res[json_field] = []
+                else:
+                    res[json_field] = []
+            for json_field in ["study_type", "exposure_method", "cannabis_type", "expert_locked_fields"]:
+                if res.get(json_field):
+                    try:
+                        val = res[json_field].strip()
+                        if val.startswith("[") and val.endswith("]"):
+                            res[json_field] = json.loads(res[json_field])
+                    except Exception:
+                        pass
+            papers.append(res)
     else:
         # Fallback to querying using filter settings
         filter_settings["limit"] = 100000

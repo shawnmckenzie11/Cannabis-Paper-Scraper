@@ -5,6 +5,7 @@ import io
 import json
 import os
 import pathlib
+import re
 import sys
 import tempfile
 
@@ -82,7 +83,7 @@ def test_search_with_query_still_gated(gated_db):
     assert total == len(rows) == 2
 
 
-def _csv(monkeypatch, db, chart):
+def _client(monkeypatch, db, chart):
     import app as app_module
     from db_manager import DatabaseManager
     monkeypatch.setattr(DatabaseManager, "get_user_by_id", lambda self, uid: {"id": 1, "email": "t@example.com"}, raising=False)
@@ -93,9 +94,19 @@ def _csv(monkeypatch, db, chart):
     with client.session_transaction() as s:
         s["user_id"] = 1
         s["logged_in"] = True
-    resp = client.get("/api/analyses/5/export-csv")
+    return client
+
+
+def _csv(monkeypatch, db, chart):
+    resp = _client(monkeypatch, db, chart).get("/api/analyses/5/export-csv")
     assert resp.status_code == 200, resp.data
     return list(csv.DictReader(io.StringIO(resp.get_data(as_text=True))))
+
+
+def _analysis_view(monkeypatch, db, chart):
+    resp = _client(monkeypatch, db, chart).get("/api/analyses/5/papers")
+    assert resp.status_code == 200, resp.data
+    return resp.get_json()
 
 
 def test_csv_export_uses_same_gate_filter_path(monkeypatch, gated_db):
@@ -111,32 +122,61 @@ def test_csv_export_uses_same_gate_paper_ids_path(monkeypatch, gated_db):
     assert _titles(rows) == {"Gate true cannabis paper", "Gate null unassessed paper"}
 
 
-# --- badge ----------------------------------------------------------------------------------
-
-def _computed(grade, uses_ref=False):
-    return {"rule_id": "r", "rule_version": "9.9-test", "secondary_cutoff": 0.8,
-            "universal": {"grade": grade}, "tier_uses_reference_values": uses_ref}
-
-
-@pytest.mark.parametrize("tier", ["gold", "near_gold", "unverified", "not_scored", "out_of_scope", "not_yet_assessed"])
-def test_badge_reads_computed_values(tier):
-    b = mv.tier_badge(_computed(tier))
-    assert b["tier"] == tier and b["known_tier"] and b["rule_version"] == "9.9-test" and b["cutoff"] == 0.8
+def test_analysis_view_hides_false_keeps_null_and_true(monkeypatch, gated_db):
+    db, ids = gated_db
+    body = _analysis_view(monkeypatch, db, {"paper_ids": list(ids.values())})
+    assert _titles(body["papers"]) == {"Gate true cannabis paper", "Gate null unassessed paper"}
+    assert body["total_count"] == 2 and body["truncated"] is False
+    assert _titles(db.search_papers_by_ids(list(ids.values()))) == _titles(body["papers"])
 
 
-def test_badge_reference_values_wording():
-    assert mv.tier_badge(_computed("gold", True))["label"] == "gold, includes signed-off product values"
+class _PgStyleInspector:
+    """Column listing as Postgres reports it; any PRAGMA reaching the engine fails the test."""
+
+    def __init__(self, engine):
+        self.engine = engine
+
+    def get_columns(self, table):
+        import sqlite3
+        conn = sqlite3.connect(self.engine.url.database)
+        try:
+            return [{"name": r[1]} for r in conn.execute(f"PRAGMA table_info({table})")]
+        finally:
+            conn.close()
 
 
-def test_badge_tolerates_unknown_tier_and_missing():
-    b = mv.tier_badge(_computed("some_future_tier"))
-    assert b["tier"] == "some_future_tier" and not b["known_tier"] and b["label"]
-    assert mv.tier_badge(None) is None
+def test_pg_style_connection_without_pragma_still_filters(monkeypatch, gated_db):
+    from sqlalchemy import event
+    import repository.papers as rp
+    db, ids = gated_db
+    repo = db._papers_repo()
+    repo._topic_match_cache = None
+    monkeypatch.setattr(rp, "inspect", _PgStyleInspector)
+
+    def no_pragma(conn, cursor, statement, *a):
+        assert "PRAGMA" not in statement.upper(), statement
+    event.listen(repo.engine, "before_cursor_execute", no_pragma)
+    try:
+        all_ids = list(ids.values())
+        assert repo.topic_match_column_exists() is True
+        assert _titles(_csv(monkeypatch, db, {"paper_ids": all_ids})) == {"Gate true cannabis paper", "Gate null unassessed paper"}
+        assert _titles(_analysis_view(monkeypatch, db, {"paper_ids": all_ids})["papers"]) == {
+            "Gate true cannabis paper", "Gate null unassessed paper"}
+    finally:
+        event.remove(repo.engine, "before_cursor_execute", no_pragma)
 
 
-def test_badge_from_real_compute_not_scored():
-    out = mc.compute({}, "observational")
-    assert mv.tier_badge(out)["tier"] == "not_scored"
+def test_inspection_failure_is_not_swallowed(monkeypatch, gated_db):
+    import repository.papers as rp
+    db, _ = gated_db
+    repo = db._papers_repo()
+    repo._topic_match_cache = None
+
+    def boom(_engine):
+        raise RuntimeError("inspect failed")
+    monkeypatch.setattr(rp, "inspect", boom)
+    with pytest.raises(RuntimeError):
+        repo.visible_paper_ids([1, 2, 3])
 
 
 # --- detail / csv ---------------------------------------------------------------------------
@@ -159,7 +199,6 @@ def test_detail_view_labels_and_comparator():
     d = mv.detail_view(RECORD)
     src = {f["key"]: f for f in d["fields"]}
     assert src["route"]["value_source_label"] == "Earlier AI classification, not reviewed"
-    assert src["route"]["counts_toward_badge"] is False and src["dose"]["counts_toward_badge"] is True
     assert src["duration"]["value_source"] == "paper"
     assert d["comparator"]["label"] == "Extracted, not yet validated"
     assert d["experimental_model_verbatim"] == "<script>x</script> rat CCI model"
@@ -175,20 +214,43 @@ def test_csv_cells():
 
 # --- conditions -------------------------------------------------------------------------------
 
-METHODS_DIR = pathlib.Path("/workspace/crn-methods")
+def test_condition_json_runtime_pins_match_committed_files():
+    assert hashlib.sha256(mv.CONDITION_LIST_PATH.read_bytes()).hexdigest() == mv.CONDITION_LIST_SHA256 == \
+        "4d62e3d632d7ba37ccb3a9fc7dd2d629fc880163aa2ef9437cc1ddcf2182a16c"
+    assert hashlib.sha256(mv.CONDITION_ROLLUP_PATH.read_bytes()).hexdigest() == mv.CONDITION_ROLLUP_SHA256 == \
+        "fe996d39dcd587300e460f330bc4139da96575cb238121853b170db2168512f9"
+    assert mv.load_conditions() is not None and mv.condition_filter_enabled()
 
 
-def test_condition_json_records_approved_hashes():
-    meta = json.loads(mv.CONDITION_LIST_PATH.read_text())
-    assert meta["list_version"] == "0.1.0" and meta["mesh_release"] == "MeSH 2026"
-    assert meta["approval"]["approved_csv_sha256"] == "40a9be45cab10ddd1dcdae7b479033cba632686468f834ba43eb846df05cadcc"
-    assert meta["approval"]["rollup_csv_sha256"] == "16e12f4629e55fd45ea48fc327051958f89f23b2a0305a83994135d48eedeb48"
+def test_condition_json_loaded_once(monkeypatch):
+    mv._load_conditions_cached.cache_clear()
+    calls = []
+    real = mv._read_pinned
+    monkeypatch.setattr(mv, "_read_pinned", lambda *a: calls.append(a) or real(*a))
+    for _ in range(3):
+        mv.expand_condition("neoplasms")
+    assert len(calls) == 2
+    mv._load_conditions_cached.cache_clear()
 
 
-@pytest.mark.skipif(not METHODS_DIR.exists(), reason="approved CSVs only on the dev box")
-def test_condition_csvs_verify():
-    assert mv.verify_condition_sources(METHODS_DIR / "condition-list-v0.1-approved.csv",
-                                       METHODS_DIR / "condition-rollup-v0.1.csv") == {"list": True, "rollup": True}
+@pytest.mark.parametrize("case", ["mismatch", "missing"])
+def test_condition_json_bad_file_disables_filter(tmp_path, caplog, case):
+    lst = tmp_path / "condition_list.json"
+    if case == "mismatch":
+        lst.write_bytes(mv.CONDITION_LIST_PATH.read_bytes() + b" ")
+    with caplog.at_level("ERROR", logger="methods_view"):
+        assert mv.load_conditions(lst, mv.CONDITION_ROLLUP_PATH) is None
+    assert "condition filter disabled" in caplog.text
+    mv._load_conditions_cached.cache_clear()
+
+
+def test_condition_filter_disabled_is_ignored_not_500(monkeypatch, caplog):
+    monkeypatch.setattr(mv, "CONDITION_LIST_PATH", pathlib.Path("/nonexistent/condition_list.json"))
+    monkeypatch.setattr(mv.load_conditions, "__defaults__", (mv.CONDITION_LIST_PATH, mv.CONDITION_ROLLUP_PATH))
+    mv._load_conditions_cached.cache_clear()
+    assert mv.expand_condition("neoplasms") == set()
+    assert mv.matches_filters(RECORD, condition_keys=["neoplasms"]) is True
+    mv._load_conditions_cached.cache_clear()
 
 
 def test_parent_includes_rollup_children():
@@ -218,12 +280,21 @@ def test_record_filters():
     assert not mv.matches_filters({}, duration_categories=["acute"])
 
 
+def test_escapehtml_legacy_callers_unchanged():
+    html = (ROOT / "templates" / "index.html").read_text()
+    start = html.index("// Methods contract (#117)")
+    end = html.index("function escapeHtml(text)", start)
+    outside = html[:start] + html[end + len("function escapeHtml(text)"):]
+    assert not re.search(r"(?<![\w.])escapeHtml\(", outside.replace("escapeHtml(text || \"\")", ""))
+    assert "function escapeHtmlLegacy(text)" in html
+
+
 def test_template_escapes_and_never_computes_tier():
     html = (ROOT / "templates" / "index.html").read_text()
     assert 'String(text ?? "")' in html
     start = html.index("// Methods contract (#117)")
     block = html[start:html.index("function escapeHtml", start)]
-    assert "compute" not in block.replace("computed", "")
+    assert "compute(" not in block and "tier-badge" not in block
     assert "Earlier AI classification, not reviewed" in block
     assert 'id="card-methods"' in html and 'aria-labelledby="label-methods"' in html
     assert 'tabindex="-1"' not in block

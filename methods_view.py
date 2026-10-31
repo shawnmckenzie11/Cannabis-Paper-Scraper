@@ -1,26 +1,20 @@
 """Read-only presentation helpers for the methods contract (#117, wp1.7.0-draft).
 
-Nothing here computes a tier. Badges are read from `methods_completeness.compute(...)` output
-(rule_version, secondary_cutoff, universal.grade, tier_uses_reference_values). Unknown tier,
-route or value_source values are passed through with a neutral label instead of raising.
+Nothing here computes a tier. No tier badge is rendered yet: the API cannot call
+methods_completeness.compute() until a study-type mapping exists (contract gap, see PR #120).
+Unknown route or value_source values are passed through with a neutral label instead of raising.
 """
+import functools
 import hashlib
 import json
+import logging
 import pathlib
+
+log = logging.getLogger(__name__)
 
 SCHEMAS = pathlib.Path(__file__).resolve().parent / "schemas"
 CONDITION_LIST_PATH = SCHEMAS / "condition_list.json"
 CONDITION_ROLLUP_PATH = SCHEMAS / "condition_rollup.json"
-
-TIER_LABELS = {
-    "gold": "Gold",
-    "near_gold": "Near gold",
-    "unverified": "Unverified",
-    "not_scored": "Not scored",
-    "out_of_scope": "Out of scope",
-    "not_yet_assessed": "Not yet assessed",
-}
-GOLD_WITH_REFERENCE_LABEL = "gold, includes signed-off product values"
 
 VALUE_SOURCE_LABELS = {
     "paper": "From the paper",
@@ -28,9 +22,6 @@ VALUE_SOURCE_LABELS = {
     "legacy_llm_fullpdf": "Earlier AI classification, not reviewed",
     "expert": "Expert-entered",
 }
-# Sources that may never count toward a badge (contract: legacy values are silver baseline only).
-NON_BADGE_SOURCES = frozenset({"legacy_llm_fullpdf"})
-
 DURATION_CATEGORIES = ("acute", "subacute", "subchronic", "chronic", "long_term", "other")
 COMPARATOR_STATUS_LABEL = "Extracted, not yet validated"
 
@@ -51,26 +42,6 @@ def load_methods_record(paper):
     table or API field). Returns None until that lands, so CSV cells and the detail view stay blank.
     """
     return None
-
-
-def tier_badge(computed):
-    """Badge for one paper from compute() output. Returns None when there is no computed result."""
-    if not computed:
-        return None
-    universal = computed.get("universal") or {}
-    tier = universal.get("grade")
-    if tier is None:
-        tier = "not_yet_assessed"
-    uses_ref = bool(computed.get("tier_uses_reference_values"))
-    label = GOLD_WITH_REFERENCE_LABEL if (uses_ref and tier == "gold") else _label(tier, TIER_LABELS)
-    return {
-        "tier": tier,
-        "known_tier": tier in TIER_LABELS,
-        "label": label,
-        "rule_version": computed.get("rule_version"),
-        "cutoff": computed.get("secondary_cutoff"),
-        "tier_uses_reference_values": uses_ref,
-    }
 
 
 def value_source_label(source):
@@ -103,16 +74,14 @@ def comparator(record):
     }
 
 
-def detail_view(record, computed=None):
+def detail_view(record):
     """Plain data for the paper detail drawer. All strings are raw; the template escapes them."""
     record = record or {}
     rep = record.get("reporting") or {}
     duration = rep.get("duration") or {}
     return {
-        "badge": tier_badge(computed),
         "fields": [
-            {"key": k, "value_source": s, "value_source_label": value_source_label(s),
-             "counts_toward_badge": s not in NON_BADGE_SOURCES}
+            {"key": k, "value_source": s, "value_source_label": value_source_label(s)}
             for k, s in sorted(field_sources(record).items())
         ],
         "duration_category": duration.get("duration_category"),
@@ -141,23 +110,47 @@ def csv_cells(record):
 
 # --- conditions -------------------------------------------------------------------------------
 
-def _sha256(path):
-    return hashlib.sha256(pathlib.Path(path).read_bytes()).hexdigest()
+# Runtime pins for the JSON the app loads (published by Methods; match main @ e56de84).
+# The CSV pins (list 40a9be45..., rollup 16e12f46...) live in condition_list.json["approval"];
+# rebuilding the JSON from those CSVs is Methods' check, not this module's.
+CONDITION_LIST_SHA256 = "4d62e3d632d7ba37ccb3a9fc7dd2d629fc880163aa2ef9437cc1ddcf2182a16c"
+CONDITION_ROLLUP_SHA256 = "fe996d39dcd587300e460f330bc4139da96575cb238121853b170db2168512f9"
 
 
-def verify_condition_sources(list_csv, rollup_csv, list_path=CONDITION_LIST_PATH):
-    """Check the approved CSVs match the sha256 recorded in condition_list.json."""
-    meta = json.loads(pathlib.Path(list_path).read_text())["approval"]
-    return {
-        "list": _sha256(list_csv) == meta["approved_csv_sha256"],
-        "rollup": _sha256(rollup_csv) == meta["rollup_csv_sha256"],
-    }
+def _read_pinned(path, expected):
+    """Bytes of `path` if present and its sha256 matches `expected`; else None (logged)."""
+    try:
+        raw = pathlib.Path(path).read_bytes()
+    except OSError as exc:
+        log.error("condition filter disabled: cannot read %s (%s)", path, exc.__class__.__name__)
+        return None
+    got = hashlib.sha256(raw).hexdigest()
+    if got != expected:
+        log.error("condition filter disabled: sha256 mismatch for %s (got %s, expected %s)", path, got, expected)
+        return None
+    return raw
+
+
+@functools.lru_cache(maxsize=None)
+def _load_conditions_cached(list_path, rollup_path):
+    lraw = _read_pinned(list_path, CONDITION_LIST_SHA256)
+    rraw = _read_pinned(rollup_path, CONDITION_ROLLUP_SHA256)
+    if lraw is None or rraw is None:
+        return None
+    try:
+        return json.loads(lraw), json.loads(rraw)
+    except ValueError:
+        log.error("condition filter disabled: condition JSON did not parse")
+        return None
 
 
 def load_conditions(list_path=CONDITION_LIST_PATH, rollup_path=CONDITION_ROLLUP_PATH):
-    clist = json.loads(pathlib.Path(list_path).read_text())
-    rollup = json.loads(pathlib.Path(rollup_path).read_text())
-    return clist, rollup
+    """(condition_list, rollup) after the sha256 check, loaded once; None disables the filter."""
+    return _load_conditions_cached(str(list_path), str(rollup_path))
+
+
+def condition_filter_enabled():
+    return load_conditions() is not None
 
 
 def _under(tree, parents):
@@ -168,7 +161,10 @@ def expand_condition(key, clist=None, rollup=None):
     """MeSH descriptor ids matched by picking `key`: itself, approved entries nested under it,
     and every rollup child mapped to it. Standalone study-design headings never fold into a parent."""
     if clist is None or rollup is None:
-        clist, rollup = load_conditions()
+        loaded = load_conditions()
+        if loaded is None:
+            return set()
+        clist, rollup = loaded
     entries = {e["key"]: e for e in clist["entries"]}
     entry = entries.get(key)
     if entry is None:
@@ -187,7 +183,9 @@ def expand_condition(key, clist=None, rollup=None):
     return ids
 
 
-# --- record predicates (same semantics the server filter must use) -----------------------------
+# --- record predicates ---------------------------------------------------------------------------
+# Reference semantics only. Not wired into search: these move into SQL (repository/filters.py)
+# before any search/count/CSV path uses them, so all three stay on one server-side rule.
 
 def matches_filters(record, *, duration_categories=(), condition_keys=(), outcome_domains=(),
                     primary_outcome_only=False, clist=None, rollup=None):
@@ -197,6 +195,8 @@ def matches_filters(record, *, duration_categories=(), condition_keys=(), outcom
         if ((rep.get("duration") or {}).get("duration_category")) not in set(duration_categories):
             return False
     if condition_keys:
+        if (clist is None or rollup is None) and not condition_filter_enabled():
+            return True  # filter disabled (missing/mismatched condition JSON): facet ignored, logged at load
         wanted = set()
         for k in condition_keys:
             wanted |= expand_condition(k, clist, rollup)

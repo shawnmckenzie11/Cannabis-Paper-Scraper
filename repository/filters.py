@@ -120,7 +120,9 @@ def topic_gate_clause(topic_match_column_exists: bool) -> str:
 
     topic_match NULL -> topic_gate_pass None (kept); > 0 -> True (kept); 0 -> False (hidden).
     Without a topic_match column every paper is unassessed (None), so nothing is hidden.
-    Always on: search, count and CSV export all go through build_filter_clauses.
+    Callers get the column flag from PapersRepository.topic_match_column_exists() (dialect-neutral
+    SQLAlchemy inspection). Used by build_filter_clauses (search + count + CSV filter branch) and
+    PapersRepository.search_papers_by_ids / get_papers_by_ids_full (analysis view + CSV by-ID branch).
     """
     return TOPIC_GATE_SQL if topic_match_column_exists else ""
 

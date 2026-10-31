@@ -5288,7 +5288,7 @@
             list.innerHTML = chips.map((chip) => {
                 const key = encodeURIComponent(chip.key);
                 const value = encodeURIComponent(chip.value);
-                const label = escapeHtml(chip.label);
+                const label = escapeHtmlLegacy(chip.label);
                 return `<span class="active-filter-chip" title="${label}">`
                     + `<span class="active-filter-chip-label">${label}</span>`
                     + `<button type="button" class="active-filter-chip-remove" aria-label="Remove ${label}" `
@@ -6386,11 +6386,6 @@
                     openDrawer(p);
                 });
                 titleTd.appendChild(titleBtn);
-                if (p.tier_badge) {
-                    const tierWrap = document.createElement("span");
-                    tierWrap.innerHTML = " " + renderTierBadgeHtml(p.tier_badge);
-                    titleTd.appendChild(tierWrap);
-                }
                 const recentRange = document.getElementById("filter-recent-range").value;
                 if (recentRange && p.newly_harvested) {
                     const newBadge = document.createElement("span");
@@ -7325,13 +7320,13 @@
                     if (c.publication_type) metaParts.push(String(c.publication_type));
                     metaParts.push(`#${c.id}`);
                     return `
-                    <button type="button" class="pdf-match-option" data-id="${escapeHtml(c.id)}" onclick="selectPdfMatchCandidate(${Number(c.id)})">
+                    <button type="button" class="pdf-match-option" data-id="${escapeHtmlLegacy(c.id)}" onclick="selectPdfMatchCandidate(${Number(c.id)})">
                         <span class="pdf-match-rank">${idx + 1}.</span>
                         <span>
-                            <div class="pdf-match-title">${escapeHtml(c.title || "Untitled")}</div>
-                            <div class="pdf-match-meta">${escapeHtml(metaParts.join(" · "))}</div>
+                            <div class="pdf-match-title">${escapeHtmlLegacy(c.title || "Untitled")}</div>
+                            <div class="pdf-match-meta">${escapeHtmlLegacy(metaParts.join(" · "))}</div>
                         </span>
-                        <span class="pdf-match-score">${escapeHtml(pct)}</span>
+                        <span class="pdf-match-score">${escapeHtmlLegacy(pct)}</span>
                     </button>`;
                 }).join("");
             }
@@ -7417,13 +7412,13 @@
         }
 
         function buildPdfReviewOtherControl(field, schema) {
-            const safeField = escapeHtml(field);
+            const safeField = escapeHtmlLegacy(field);
             const inputMeta = (schema && schema[field]) || { input_type: "text" };
             const commonAttrs = `class="pdf-review-custom-input" data-field="${safeField}" onclick="event.stopPropagation(); selectPdfReviewChoice('${String(field).replace(/'/g, "\\'")}', 'custom', event)"`;
 
             if (inputMeta.input_type === "enum") {
                 const options = (inputMeta.options || []).map(opt =>
-                    `<option value="${escapeHtml(opt)}">${escapeHtml(opt)}</option>`
+                    `<option value="${escapeHtmlLegacy(opt)}">${escapeHtmlLegacy(opt)}</option>`
                 ).join("");
                 if (inputMeta.multiple) {
                     return `<select ${commonAttrs} multiple size="4"><option value="">—</option>${options}</select>`;
@@ -7482,16 +7477,16 @@
                 const field = String(row.field).replace(/'/g, "\\'");
                 const otherControl = buildPdfReviewOtherControl(row.field, pendingPdfMerge.field_inputs);
                 return `
-                <div class="pdf-review-row ${rowClass}" data-field="${escapeHtml(row.field)}" data-pick="${defaultPick}">
-                    <div class="pdf-review-field-label">${escapeHtml(row.label)}</div>
+                <div class="pdf-review-row ${rowClass}" data-field="${escapeHtmlLegacy(row.field)}" data-pick="${defaultPick}">
+                    <div class="pdf-review-field-label">${escapeHtmlLegacy(row.label)}</div>
                     ${showExisting ? `
                     <button type="button" class="pdf-review-choice ${defaultPick === "existing" ? "selected" : ""}" data-pick="existing" onclick="selectPdfReviewChoice('${field}', 'existing', event)">
                         <span class="pdf-review-choice-label">Database</span>
-                        <span class="pdf-review-choice-value">${escapeHtml(row.existing || "—")}</span>
+                        <span class="pdf-review-choice-value">${escapeHtmlLegacy(row.existing || "—")}</span>
                     </button>` : `<div class="pdf-review-choice" style="cursor:default;opacity:0.45;"><span class="pdf-review-choice-label">Database</span><span class="pdf-review-choice-value">—</span></div>`}
                     <button type="button" class="pdf-review-choice ${defaultPick === "uploaded" ? "selected" : ""}" data-pick="uploaded" onclick="selectPdfReviewChoice('${field}', 'uploaded', event)">
                         <span class="pdf-review-choice-label">PDF</span>
-                        <span class="pdf-review-choice-value">${escapeHtml(row.uploaded || "—")}</span>
+                        <span class="pdf-review-choice-value">${escapeHtmlLegacy(row.uploaded || "—")}</span>
                     </button>
                     <button type="button" class="pdf-review-choice ${defaultPick === "custom" ? "selected" : ""}" data-pick="custom" onclick="selectPdfReviewChoice('${field}', 'custom', event)">
                         <span class="pdf-review-choice-label">Other</span>
@@ -7549,27 +7544,15 @@
             return collectPdfReviewSelections().selections;
         }
 
-        // Methods contract (#117) rendering. Read-only: tiers come from the server's computed values,
-        // never from the browser. Unknown tier / value_source strings render as plain escaped text.
-        const METHODS_TIER_LABELS = {
-            gold: "Gold", near_gold: "Near gold", unverified: "Unverified", not_scored: "Not scored",
-            out_of_scope: "Out of scope", not_yet_assessed: "Not yet assessed"
-        };
+        // Methods contract (#117) rendering. Read-only; the browser never computes a tier, and no tier
+        // badge is shown until the API serves the contract's computed output. Unknown value_source strings render as escaped text.
         const METHODS_VALUE_SOURCE_LABELS = {
             paper: "From the paper", signed_off: "Signed-off reference value",
             legacy_llm_fullpdf: "Earlier AI classification, not reviewed", expert: "Expert-entered"
         };
-        function renderTierBadgeHtml(badge) {
-            if (!badge) return "";
-            const label = badge.label ?? METHODS_TIER_LABELS[badge.tier] ?? badge.tier ?? "";
-            const title = `Rule ${badge.rule_version ?? ""}, cutoff ${badge.cutoff ?? ""}`;
-            return `<span class="badge tier-badge" data-tier="${escapeHtml(badge.tier ?? "")}" title="${escapeHtml(title)}">${escapeHtml(label)}</span>` +
-                ` <span class="meta-label">${escapeHtml(title)}</span>`;
-        }
         function renderMethodsDetailHtml(d) {
             if (!d) return "";
             const parts = [];
-            if (d.badge) parts.push(`<div class="meta-item"><span class="meta-label">Reporting tier</span><span class="meta-value">${renderTierBadgeHtml(d.badge)}</span></div>`);
             if (d.duration_category) parts.push(`<div class="meta-item"><span class="meta-label">Duration category</span><span class="meta-value">${escapeHtml(d.duration_category ?? "")}</span></div>`);
             const conds = (d.conditions || []).map(c => escapeHtml(c.label ?? c.condition_key ?? "")).join(", ");
             if (conds) parts.push(`<div class="meta-item"><span class="meta-label">Conditions</span><span class="meta-value">${conds}</span></div>`);
@@ -7603,6 +7586,11 @@
                 .replace(/'/g, "&#39;");
         }
 
+        // Pre-#120 callers: keep their old output (0 / false / "" render blank, as before `??`).
+        function escapeHtmlLegacy(text) {
+            return escapeHtml(text || "");
+        }
+
         function clearPdfUploadResults() {
             pdfUploadResults = [];
             const panel = document.getElementById("pdf-upload-results");
@@ -7623,8 +7611,8 @@
             panel.classList.add("visible");
             const item = document.createElement("div");
             item.className = `pdf-upload-result-item ${entry.kind || "success"}`;
-            item.innerHTML = `<div class="pdf-upload-result-filename">${escapeHtml(entry.filename || "PDF")}</div>`
-                + `<div class="pdf-upload-result-detail">${escapeHtml(entry.message || "")}</div>`;
+            item.innerHTML = `<div class="pdf-upload-result-filename">${escapeHtmlLegacy(entry.filename || "PDF")}</div>`
+                + `<div class="pdf-upload-result-detail">${escapeHtmlLegacy(entry.message || "")}</div>`;
             list.appendChild(item);
 
             if (summary) {
@@ -8113,7 +8101,7 @@
                                 fill.style.background = "var(--accent-red)";
                             }
                             document.getElementById("harvest-spinner").style.display = "none";
-                            msg.innerHTML = `<span style="color: var(--accent-red);">Error: ${escapeHtml(status.error || "Execution failed")}</span>`;
+                            msg.innerHTML = `<span style="color: var(--accent-red);">Error: ${escapeHtmlLegacy(status.error || "Execution failed")}</span>`;
                         }
                     })
                     .catch(err => console.error("Harvest status poll failed:", err));
@@ -9670,10 +9658,10 @@
                 .then(r => r.json())
                 .then(papers => {
                     resultsDiv.innerHTML = papers.map(p =>
-                        `<div role="button" tabindex="0" class="connect-search-item" data-id="${escapeHtml(p.id)}" onclick="selectConnectPaper(${Number(p.id)})"
+                        `<div role="button" tabindex="0" class="connect-search-item" data-id="${escapeHtmlLegacy(p.id)}" onclick="selectConnectPaper(${Number(p.id)})"
                               style="padding: 10px 14px; cursor: pointer; border-bottom: 1px solid rgba(255,255,255,0.05); display: flex; justify-content: space-between; align-items: center;">
-                              <span style="color: var(--text-primary);">${escapeHtml(p.title)}</span>
-                              <span style="color: var(--text-secondary); font-size: 0.8rem;">${escapeHtml(p.year || '—')}</span>
+                              <span style="color: var(--text-primary);">${escapeHtmlLegacy(p.title)}</span>
+                              <span style="color: var(--text-secondary); font-size: 0.8rem;">${escapeHtmlLegacy(p.year || '—')}</span>
                          </div>`
                     ).join('');
                     resultsDiv.style.display = papers.length ? "block" : "none";
@@ -9779,7 +9767,7 @@
                                 rateColor = '#ff9800'; // orange for >0% and <=10%
                             }
                             return `<tr>
-                                <td style="color: var(--accent-blue); font-weight: 700; font-family: monospace;">${escapeHtml(v.version)}</td>
+                                <td style="color: var(--accent-blue); font-weight: 700; font-family: monospace;">${escapeHtmlLegacy(v.version)}</td>
                                 <td style="text-align: right; font-weight: 600; color: var(--text-primary);">${v.total_classified}</td>
                                 <td style="text-align: right; color: #4caf50; font-weight: 600;">${(v.avg_confidence * 100).toFixed(1)}%</td>
                                 <td style="text-align: right; color: var(--text-secondary);">${v.corrected_count}</td>
@@ -9799,9 +9787,9 @@
                             const formattedId = formatBatchLabel(b.batch_id);
                             const timeStr = b.batch_time ? b.batch_time.split('T')[0] + ' ' + b.batch_time.split('T')[1].substring(0, 5) : '—';
                             return `<tr>
-                                <td style="color: var(--accent-blue); font-weight: 600;">${escapeHtml(formattedId)}</td>
-                                <td style="font-size: 0.8rem; color: var(--text-secondary);">${escapeHtml(timeStr)}</td>
-                                <td style="font-size: 0.8rem; color: var(--text-secondary);">${escapeHtml(b.model)}</td>
+                                <td style="color: var(--accent-blue); font-weight: 600;">${escapeHtmlLegacy(formattedId)}</td>
+                                <td style="font-size: 0.8rem; color: var(--text-secondary);">${escapeHtmlLegacy(timeStr)}</td>
+                                <td style="font-size: 0.8rem; color: var(--text-secondary);">${escapeHtmlLegacy(b.model)}</td>
                                 <td style="text-align: right; font-weight: 700;">${b.paper_count}</td>
                                 <td style="text-align: right; color: var(--text-secondary);">${b.avg_input}</td>
                                 <td style="text-align: right; color: var(--accent-blue);">${b.avg_cache_read}</td>
@@ -11899,12 +11887,12 @@
                 
                 container.innerHTML = `
                     <div role="button" tabindex="0" class="user-avatar" id="user-avatar-btn" aria-label="Account menu" aria-haspopup="true" onclick="toggleUserDropdown(event)">
-                        ${escapeHtml(initials)}
+                        ${escapeHtmlLegacy(initials)}
                     </div>
                     <div class="user-dropdown" id="user-dropdown-menu">
                         <div class="user-info">
-                            <div class="username">${escapeHtml(name)}</div>
-                            <div style="font-size: 0.75rem; color: var(--text-secondary); word-break: break-all;">${escapeHtml(CURRENT_USER.email || "")}</div>
+                            <div class="username">${escapeHtmlLegacy(name)}</div>
+                            <div style="font-size: 0.75rem; color: var(--text-secondary); word-break: break-all;">${escapeHtmlLegacy(CURRENT_USER.email || "")}</div>
                             ${CURRENT_USER.is_google ? '<div style="font-size: 0.7rem; color: var(--accent-blue); margin-top: 4px;">Google Account</div>' : ''}
                         </div>
                         <a href="/settings" class="btn-signout" style="text-decoration: none; margin-bottom: 8px; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08);">Settings</a>

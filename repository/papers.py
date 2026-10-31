@@ -19,7 +19,7 @@ from repository.constants import (
 )
 from repository.dialect import DialectSQL
 from repository.engine import get_engine
-from repository.filters import apply_sort_sql, build_filter_clauses, clean_fts_query, resolve_tab_sql
+from repository.filters import apply_sort_sql, build_filter_clauses, clean_fts_query, resolve_tab_sql, topic_gate_clause
 from repository.session import execute, fetchall, fetchone, inserted_id
 
 logger = logging.getLogger(__name__)
@@ -148,9 +148,12 @@ class PapersRepository:
         cached = getattr(self, "_topic_match_cache", None)
         if cached is not None:
             return cached
+        # Only "no papers table" means no column; any other inspection failure must surface,
+        # never silently disable the gate.
+        from sqlalchemy.exc import NoSuchTableError
         try:
             columns = {col["name"] for col in inspect(self.engine).get_columns("papers")}
-        except Exception:
+        except NoSuchTableError:
             return False
         self._topic_match_cache = "topic_match" in columns
         return self._topic_match_cache
@@ -579,10 +582,39 @@ class PapersRepository:
         list_columns_sql = ", ".join(TABLE_LIST_COLUMNS)
         placeholders = ",".join(["?"] * len(ids))
         sql = f"SELECT {list_columns_sql} FROM papers WHERE papers.id IN ({placeholders})"
+        sql += self._topic_gate_and()
         with self.engine.connect() as conn:
             rows = fetchall(conn, sql, ids)
         by_id = {int(row["id"]): parse_list_row(row) for row in rows}
         return [by_id[item] for item in ids if item in by_id]
+
+    def get_papers_by_ids_full(self, paper_ids: List[Any]) -> List[Dict[str, Any]]:
+        """All columns for the given ids (CSV export by-ID branch), topic-gated like search."""
+        ids = [int(x) for x in paper_ids if str(x).strip().lstrip("-").isdigit()]
+        if not ids:
+            return []
+        placeholders = ",".join(["?"] * len(ids))
+        sql = f"SELECT * FROM papers WHERE papers.id IN ({placeholders})" + self._topic_gate_and()
+        with self.engine.connect() as conn:
+            return [dict(r) for r in fetchall(conn, sql, ids)]
+
+    def visible_paper_ids(self, paper_ids: List[Any]) -> List[int]:
+        """Ids (in given order) that pass the topic gate; used for analysis totals and paging."""
+        ids = [int(x) for x in paper_ids if str(x).strip().lstrip("-").isdigit()]
+        gate = self._topic_gate_and()
+        if not ids or not gate:
+            return ids
+        keep = set()
+        for start in range(0, len(ids), 500):
+            chunk = ids[start:start + 500]
+            sql = f"SELECT papers.id FROM papers WHERE papers.id IN ({','.join(['?'] * len(chunk))})" + gate
+            with self.engine.connect() as conn:
+                keep |= {int(r["id"]) for r in fetchall(conn, sql, chunk)}
+        return [i for i in ids if i in keep]
+
+    def _topic_gate_and(self) -> str:
+        clause = topic_gate_clause(self.topic_match_column_exists())
+        return f" AND {clause}" if clause else ""
 
     def get_metadata(self, key: str, default: Optional[str] = None) -> Optional[str]:
         """Read one system_metadata value."""
