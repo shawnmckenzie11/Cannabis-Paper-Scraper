@@ -1,7 +1,7 @@
 """Main-text completeness benchmark harness (train+dev papers only, never test).
 
-Reads PMIDs ONLY from /workspace/crn-eval/dev_pmids.txt (written by CRN Evaluation). Refuses
-gold / qrels / grades / split-manifest / mixed-manifest paths. Supplements are never fetched:
+Reads PMIDs ONLY from the allowlisted Evaluation files /workspace/crn-eval/dev_pmids.txt and
+/workspace/crn-eval/legacy32_pmids.txt; any other path is refused. --out may not be inside the repo. Supplements are never fetched:
 items whose detail the main text points to a supplement get could_not_check source_not_fetched.
 Output: per-item status counts + reason counts. No tier is computed or scored here.
 
@@ -12,37 +12,120 @@ Usage:
 import argparse
 import collections
 import json
+import os
 import pathlib
 import re
+import stat
 import subprocess
 import sys
 
 from crn_extraction import extractor, sources
 
 DEV_PMIDS = pathlib.Path("/workspace/crn-eval/dev_pmids.txt")
-FORBIDDEN = re.compile(r"(golden_dataset|qrels|grades?\b|grades\.|split-manifest|split_manifest|manifest_pmids)", re.I)
+LEGACY32_PMIDS = pathlib.Path("/workspace/crn-eval/legacy32_pmids.txt")
+# Only these PMID lists are ever read (Evaluation-owned, PMID-only files). Everything else is refused.
+ALLOWED_PMID_FILES = (DEV_PMIDS, LEGACY32_PMIDS)
+FIXTURES_ROOT = extractor.ROOT / "tests" / "fixtures"
 
 
 class Refused(RuntimeError):
     pass
 
 
-def guard_path(path):
-    if FORBIDDEN.search(str(path)):
-        raise Refused(f"refused input path (test-label guard): {path}")
-    return pathlib.Path(path)
+def _resolved(path):
+    return pathlib.Path(os.path.abspath(os.path.expanduser(str(path))))
+
+
+# Symlink checks cover only components BELOW the allowlist root (default /workspace/crn-eval;
+# overridable for tests). Entries outside it fall back to their parent directory as root;
+# ancestors at or above the root may be symlinks (host layout).
+ALLOWLIST_ROOT = pathlib.Path("/workspace/crn-eval")
+
+
+def _allowlist_root(entry):
+    if ALLOWLIST_ROOT is not None:
+        root = pathlib.Path(os.path.abspath(str(ALLOWLIST_ROOT)))
+        if root in entry.parents:
+            return root
+    return entry.parent
+
+
+def guard_pmids_path(path):
+    """Lexically resolve '..' (no symlink following), then require an exact allowlist match.
+    Allowlist entries are never realpath'd. Returns (path, allowlist_root)."""
+    p = pathlib.Path(os.path.abspath(os.path.expanduser(str(path))))
+    allowed = {pathlib.Path(os.path.abspath(str(a))) for a in ALLOWED_PMID_FILES}
+    if p not in allowed:
+        raise Refused(f"refused PMID input (allowlist: {', '.join(map(str, ALLOWED_PMID_FILES))}): {path}")
+    return p, _allowlist_root(p)
+
+
+def guard_out_path(path):
+    p = pathlib.Path(os.path.realpath(_resolved(path)))
+    root = pathlib.Path(os.path.realpath(extractor.ROOT))
+    if p == root or root in p.parents:
+        raise Refused(f"refused --out inside the repo: {path}")
+    return p
+
+
+def _refuse_symlink_components(path, root):
+    """lstat each component from below the allowlist root down to the file; refuse any symlink.
+    Components at or above the root are not checked (they may be host symlinks)."""
+    cur = root
+    for part in path.relative_to(root).parts:
+        cur = cur / part
+        try:
+            st = os.lstat(cur)
+        except FileNotFoundError:
+            return False  # rest does not exist -> pending
+        if stat.S_ISLNK(st.st_mode):
+            raise Refused(f"refused PMID input: path component {cur} is a symlink")
+    return True
+
+
+def _read_nofollow(path, root):
+    """Open the allowlist root normally (symlinks above/at it are followed), then walk the
+    directories below it with O_DIRECTORY|O_NOFOLLOW and open the file relative to its parent
+    fd with O_NOFOLLOW; fstat/read that one fd. Closes the TOCTOU window below the root."""
+    path, root = pathlib.Path(path), pathlib.Path(root)
+    if not _refuse_symlink_components(path, root):
+        return None
+    nf = getattr(os, "O_NOFOLLOW", 0)
+    cloexec = getattr(os, "O_CLOEXEC", 0)
+    odir = getattr(os, "O_DIRECTORY", 0)
+    rel = path.relative_to(root).parts
+    fds = []
+    try:
+        try:
+            fds.append(os.open(root, os.O_RDONLY | odir | cloexec))
+            for part in rel[:-1]:
+                fds.append(os.open(part, os.O_RDONLY | odir | nf | cloexec, dir_fd=fds[-1]))
+            fd = os.open(rel[-1], os.O_RDONLY | nf | cloexec, dir_fd=fds[-1])
+        except FileNotFoundError:
+            return None
+        except OSError as e:  # ELOOP / ENOTDIR: a symlink raced in below the root
+            raise Refused(f"refused PMID input: cannot open without following links ({type(e).__name__})") from None
+    finally:
+        for d in fds:
+            os.close(d)
+    if not stat.S_ISREG(os.fstat(fd).st_mode):
+        os.close(fd)
+        raise Refused(f"refused PMID input: {path} is not a regular file")
+    with os.fdopen(fd, "rb") as fh:
+        return fh.read().decode("utf-8")
 
 
 def read_pmids(path=DEV_PMIDS):
-    path = guard_path(path)
-    if not path.exists():
+    path, root = guard_pmids_path(path)
+    text = _read_nofollow(path, root)
+    if text is None:
         return None
     out = []
-    for line in path.read_text().splitlines():
-        t = line.strip().split(",")[0].strip()
+    for line in text.splitlines():
+        t = line.strip()
         if t and not t.startswith("#"):
             if not t.isdigit():
-                raise Refused(f"non-PMID line in {path.name}: only a PMID column is accepted")
+                raise Refused(f"non-PMID line in {path.name}: only one PMID per line is accepted")
             out.append(t)
     return out
 
@@ -95,7 +178,8 @@ def manifest(summary, run_id, split="dev"):
     """Contract extraction_run_manifest (mode scored; model_ids {} because no model is used)."""
     try:
         sha = subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=extractor.ROOT, text=True).strip()
-    except Exception:
+    except Exception as e:  # noqa: BLE001
+        print(f"git rev-parse failed ({type(e).__name__})", file=sys.stderr)
         sha = "unknown"
     return {"run_id": run_id, "mode": "scored", "split": split, "contract_version": extractor.CONTRACT_VERSION,
             "git_ref": sha, "config_hash": extractor.config_hash(), "prompt_hashes": {}, "model_ids": {},
@@ -104,7 +188,9 @@ def manifest(summary, run_id, split="dev"):
 
 
 def load_fixtures(d):
-    d = guard_path(d)
+    d = pathlib.Path(os.path.realpath(_resolved(d)))
+    if not (d == FIXTURES_ROOT or FIXTURES_ROOT in d.parents):
+        raise Refused(f"fixtures must live under {FIXTURES_ROOT}: {d}")
     return [json.loads(p.read_text()) for p in sorted(pathlib.Path(d).glob("*.json"))]
 
 
@@ -116,6 +202,7 @@ def main(argv=None):
     ap.add_argument("--max-papers", type=int, default=None)
     ap.add_argument("--out")
     a = ap.parse_args(argv)
+    out_path = guard_out_path(a.out) if a.out else None
     if a.fixtures:
         papers = load_fixtures(a.fixtures)
         run_id = "fixtures"
@@ -134,8 +221,8 @@ def main(argv=None):
     out = {k: v for k, v in s.items() if k != "_records"}
     out["manifest"] = manifest(s, run_id)
     text = json.dumps(out, indent=2)
-    if a.out:
-        pathlib.Path(a.out).write_text(text)
+    if out_path:
+        out_path.write_text(text)
     print(text)
     return 0
 

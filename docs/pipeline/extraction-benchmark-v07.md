@@ -8,7 +8,7 @@ No LLM. `crn_extraction/extractor.py` is deterministic: regex cues in `crn_extra
 Rules: record only what the paper says; never fill gaps, never use product labels/monographs, never fetch cited papers; no tier is computed (Methods' `methods_completeness.compute` does that; defaults 3/6/8 are not applied here). Every record is validated against the full schema.
 
 ## Sources
-`crn_extraction/sources.py`: PMC Open Access JATS XML only (stdlib XML parser). Supplementary material, acknowledgements, references and the contributor block are dropped and never fetched. NCBI: 2.5 req/s, ≤200 ids per call, `tool=crn_pipeline`, placeholder email, no API key; neither is written to provenance.
+`crn_extraction/sources.py`: PMC Open Access JATS XML only, parsed with `defusedxml`. Supplementary material, acknowledgements, references and the contributor block are dropped and never fetched. Responses over 20 MB are rejected (`fetch_failed`). NCBI: 2.5 req/s including retries, HTTP 429/5xx retried with exponential backoff (1, 2, 4, 8 s), ≤200 ids per call, `tool=crn_pipeline`, email from `CRN_NCBI_EMAIL` else a placeholder, no API key; neither is written to provenance. A failed PMID→PMC lookup batch is retried per PMID, so only the failing paper is `fetch_failed`.
 
 ## Reason codes
 | Code | Emitted when |
@@ -31,7 +31,7 @@ Rules: record only what the paper says; never fill gaps, never use product label
 Also: C1 ranges count as reported (number field value left null, span kept — no number invented); `comparison_group` with `extraction_confidence`, `needs_review`/`review_reason`, `comparator_validated: false` always; `group_sample_sizes` only from numeric `X group (n = N)`; `value_source: paper` on every status (no `source_attribution`, that is legacy-only); `mesh_from_pubmed` copied from PubMed MeSH ids as cross-check only, never into `reporting.conditions`. Q7: surveys, market studies and re-analyses get no record and are listed in `excluded_not_original_research` of the benchmark summary.
 
 ## Benchmark
-`python -m crn_extraction.benchmark --fetch` reads PMIDs **only** from `/workspace/crn-eval/dev_pmids.txt` (the 21 train+dev papers, written by Evaluation; test excluded). It refuses gold/qrels/grades/split-manifest/`manifest_pmids.txt` paths. If the file is missing it prints `pending` and exits 2. Output: per-item status counts, reason counts, schema-invalid records, and a contract `extraction_run_manifest` (`model_ids: {}` — no model). `--fixtures tests/fixtures/crn_extraction` runs on fake papers (fake PMIDs 9000000xx, no PII).
+`python -m crn_extraction.benchmark --fetch` reads PMIDs **only** from the allowlist `/workspace/crn-eval/dev_pmids.txt` (21 train+dev papers; test excluded) or `/workspace/crn-eval/legacy32_pmids.txt` (`--pmids`), one PMID per line; any other path is refused. `--out` inside the repo is refused. If the file is missing it prints `pending` and exits 2. Output: per-item status counts, reason counts, schema-invalid records, and a contract `extraction_run_manifest` (`model_ids: {}` — no model). `--fixtures tests/fixtures/crn_extraction` runs on fake papers (fake PMIDs 9000000xx, no PII).
 
 ## Known limits
 Number words ("Forty rats") are not read as sample sizes; regex cues are English-only; figure images are not read.
