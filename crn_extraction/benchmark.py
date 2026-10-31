@@ -56,15 +56,44 @@ def guard_out_path(path):
     return p
 
 
+def _refuse_symlink_components(path):
+    """lstat every component of the normalized absolute path; refuse if any is a symlink."""
+    cur = pathlib.Path(path.anchor)
+    for part in path.parts[1:]:
+        cur = cur / part
+        try:
+            st = os.lstat(cur)
+        except FileNotFoundError:
+            return False  # rest does not exist -> pending
+        if stat.S_ISLNK(st.st_mode):
+            raise Refused(f"refused PMID input: path component {cur} is a symlink")
+    return True
+
+
 def _read_nofollow(path):
-    """Open once without following a final symlink, then fstat/read that fd (limits TOCTOU)."""
-    flags = os.O_RDONLY | getattr(os, "O_NOFOLLOW", 0) | getattr(os, "O_CLOEXEC", 0)
-    try:
-        fd = os.open(path, flags)
-    except FileNotFoundError:
+    """Open without following any symlink: walk directory fds (O_DIRECTORY|O_NOFOLLOW) from '/',
+    then open the file relative to its parent fd with O_NOFOLLOW, and fstat/read that one fd.
+    Closes the TOCTOU window for intermediate directories as well as the final component."""
+    path = pathlib.Path(path)
+    if not _refuse_symlink_components(path):
         return None
-    except OSError as e:  # ELOOP: final component is a symlink (raced in after the check)
-        raise Refused(f"refused PMID input: cannot open without following links ({type(e).__name__})") from None
+    nf = getattr(os, "O_NOFOLLOW", 0)
+    cloexec = getattr(os, "O_CLOEXEC", 0)
+    dflags = os.O_RDONLY | getattr(os, "O_DIRECTORY", 0) | nf | cloexec
+    fds = []
+    try:
+        try:
+            fds.append(os.open(path.anchor, os.O_RDONLY | getattr(os, "O_DIRECTORY", 0) | cloexec))
+            for part in path.parts[1:-1]:
+                fds.append(os.open(part, dflags, dir_fd=fds[-1]))
+            fd = os.open(path.name, os.O_RDONLY | nf | cloexec, dir_fd=fds[-1])
+        except FileNotFoundError:
+            return None
+        except OSError as e:  # ELOOP / ENOTDIR: a symlink raced in somewhere on the path
+            raise Refused(f"refused PMID input: cannot open without following links ({type(e).__name__})") from None
+    finally:
+        for d in fds:
+            os.close(d)
     if not stat.S_ISREG(os.fstat(fd).st_mode):
         os.close(fd)
         raise Refused(f"refused PMID input: {path} is not a regular file")

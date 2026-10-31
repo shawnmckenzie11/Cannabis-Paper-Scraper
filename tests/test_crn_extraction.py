@@ -181,6 +181,31 @@ def test_allowlisted_entry_that_is_a_symlink_is_refused(tmp_path, monkeypatch):
         benchmark.read_pmids(d)
 
 
+def test_symlinked_parent_dir_is_refused(tmp_path, monkeypatch):
+    other = tmp_path / "other_dir"
+    other.mkdir()
+    (other / "dev_pmids.txt").write_text("900000009\n")
+    (tmp_path / "eval").symlink_to(other, target_is_directory=True)
+    dev = tmp_path / "eval" / "dev_pmids.txt"
+    monkeypatch.setattr(benchmark, "ALLOWED_PMID_FILES", (dev,))
+    with pytest.raises(benchmark.Refused):
+        benchmark.read_pmids(dev)
+    monkeypatch.setattr(benchmark, "_refuse_symlink_components", lambda p: True)  # fd walk alone
+    with pytest.raises(benchmark.Refused):
+        benchmark._read_nofollow(dev)
+
+
+def test_nested_real_dirs_accepted(tmp_path, monkeypatch):
+    dev = tmp_path / "a" / "b" / "c" / "dev_pmids.txt"
+    dev.parent.mkdir(parents=True)
+    dev.write_text("900000001\n900000002\n")
+    monkeypatch.setattr(benchmark, "ALLOWED_PMID_FILES", (dev,))
+    assert benchmark.read_pmids(dev) == ["900000001", "900000002"]
+    missing = tmp_path / "nope" / "dev_pmids.txt"
+    monkeypatch.setattr(benchmark, "ALLOWED_PMID_FILES", (missing,))
+    assert benchmark.read_pmids(missing) is None
+
+
 def test_pending_when_dev_file_missing(tmp_path, monkeypatch, capsys):
     dev = tmp_path / "dev_pmids.txt"
     monkeypatch.setattr(benchmark, "ALLOWED_PMID_FILES", (dev,))
