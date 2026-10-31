@@ -138,16 +138,20 @@ def compute(record, study_type, rule=None, secondary_cutoff=None, reference_link
 
 
 def route_requirements(record, study_type, rule=None):
-    """Fields the extraction flowchart expects for this study type + route (provisional, TOP2).
+    """Fields the extraction flowchart expects for this study type + route (TOP2; route questions closed).
 
     Route not reported: no route-dependent requirement (route itself is already missing in universal).
+    Approved defaults (Biomedical lead, 2026-10-31): routes in no_requirement_routes add no expected
+    fields and no misses; any one of an item's flowchart fields counts (satisfied_by any_one_field);
+    any measured cannabinoid counts for every route; one track per paper.
     """
     rule = rule or load_rule()
     rr = rule.get("route_requirements", {})
     st = ((record.get("reporting") or {}).get("route") or {}).get("status", "not_yet_assessed")
     routes = (((record.get("fields") or {}).get("route") or {}).get("value")) or []
     if st != "reported" or not routes:
-        return {"route_reported": False, "expected_fields": [], "status": rr.get("status")}
+        return {"route_reported": False, "expected_fields": [], "status": rr.get("status"),
+                "satisfied_by": rr.get("satisfied_by"), "tracks_per_paper": tracks_per_paper(rule)}
     groups = rr.get("route_groups", {}).get(study_type, {})
     expected, matched = [], set()
     for g in groups.values():
@@ -155,8 +159,17 @@ def route_requirements(record, study_type, rule=None):
         if hit:
             matched |= hit
             expected += [f for f in g["fields"] if f not in expected]
+    no_req = set(rr.get("no_requirement_routes", {}).get(study_type, []))
     return {"route_reported": True, "routes": routes, "expected_fields": expected,
-            "unmapped_routes": [r for r in routes if r not in matched], "status": rr.get("status")}
+            "no_requirement_routes": [r for r in routes if r in no_req and r not in matched],
+            "unmapped_routes": [r for r in routes if r not in matched and r not in no_req],
+            "status": rr.get("status"), "satisfied_by": rr.get("satisfied_by"),
+            "tracks_per_paper": tracks_per_paper(rule)}
+
+
+def tracks_per_paper(rule=None):
+    """Approved default 9: one track per paper until Evaluation's dev counts are in."""
+    return int(((rule or load_rule()).get("tracks") or {}).get("per_paper", 1))
 
 
 UNCHECKED = ("could_not_check", "not_yet_assessed")

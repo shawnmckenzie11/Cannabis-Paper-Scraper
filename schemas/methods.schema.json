@@ -230,11 +230,11 @@
         },
         "cell_line_or_tissue_source": {
           "$ref": "#/$defs/string_field",
-          "description": "v0.7 (V2, approved by the Biomedical lead, 2026-10-31): cell line, primary cells or tissue source used in vitro, as reported."
+          "description": "v0.7 (V2, provisional): cell line, primary cells or tissue source used in vitro, as reported."
         },
         "comparison_group": {
           "$ref": "#/$defs/string_field",
-          "description": "v0.7 (V3, approved by the Biomedical lead, 2026-10-31): control / comparison arm in an interventional clinical trial (placebo, active comparator, usual care), as reported."
+          "description": "v0.7 (V3, provisional): control / comparison arm in an interventional clinical trial (placebo, active comparator, usual care), as reported."
         },
         "randomized": {
           "type": "object",
@@ -243,7 +243,7 @@
             "value",
             "missingness"
           ],
-          "description": "v0.7 clinical (Shawn 2026-10-31, approved by the Biomedical lead, 2026-10-31): scope rule. yes = in scope for clinical gold; no = out_of_scope; unknown = tier unverified (counted separately, never guessed).",
+          "description": "v0.7 clinical (Shawn 2026-10-31, provisional): scope rule. yes = in scope for clinical gold; no = out_of_scope; unknown = tier unverified (counted separately, never guessed).",
           "properties": {
             "value": {
               "enum": [
@@ -2976,7 +2976,7 @@
               "type": "null"
             }
           ],
-          "description": "C2 (Shawn 2026-10-31, approved by the Biomedical lead, 2026-10-31): author's duration term normalised to a closed enum (synonyms in normalization_rules.json vocabularies.duration_category). Search/filter label only; never affects any tier. No time thresholds: authors' wording only. A vague term with no actual time leaves duration not_reported. Used on the duration item."
+          "description": "C2 (Shawn 2026-10-31, provisional): author's duration term normalised to a closed enum (synonyms in normalization_rules.json vocabularies.duration_category). Search/filter label only; never affects any tier. No time thresholds: authors' wording only. A vague term with no actual time leaves duration not_reported. Used on the duration item."
         },
         "duration_category_verbatim": {
           "type": [

@@ -338,10 +338,10 @@ The idea: for this database, a paper's quality is how well it reports the detail
 | Tier | Items |
 |---|---|
 | classification | research type (picks the study-type tier; recorded, not part of gold) |
-| universal (every study) | strain/product name, supplier (not applicable for clinical), form, major cannabinoids, route (approved). All must be `reported` for gold. Location is recorded but never a pass condition. |
-| in_vivo (V1, approved) | required always: route, dose, duration, number of animals. Secondary: species, animal strain, sex, age or weight, frequency, vehicle (key `vehicle_solvent`). Same algorithm and `secondary_cutoff` as in vitro. |
-| in_vitro (V2 + A10, approved) | required always: cell type (line / tissue source), source species, concentration, exposure time. Secondary share: vehicle/solvent, replicates. `system_type` (primary, cell_line, co_culture, organoid, pcls, other) is recorded, not scored. |
-| clinical (V3, approved; RCTs only) | all required, no share: number of participants, route, dose, frequency, duration, participant age or sex (either counts), diagnosis or condition, comparison group (may carry `confidence` + `needs_review`). Scope gate on `randomized`: `yes` → scored; `no` → `out_of_scope`; `unknown` → `unverified` (never guessed). `arms` and `blinding` are recorded only. |
+| universal (every study) | strain/product name, supplier (not applicable for clinical), form, major cannabinoids, route (provisional). All must be `reported` for gold. Location is recorded but never a pass condition. |
+| in_vivo (V1, provisional) | required always: route, dose, duration, number of animals. Secondary: species, animal strain, sex, age or weight, frequency, vehicle (key `vehicle_solvent`). Same algorithm and `secondary_cutoff` as in vitro. |
+| in_vitro (V2 + A10, provisional) | required always: cell type (line / tissue source), source species, concentration, exposure time. Secondary share: vehicle/solvent, replicates. `system_type` (primary, cell_line, co_culture, organoid, pcls, other) is recorded, not scored. |
+| clinical (V3, provisional; RCTs only) | all required, no share: number of participants, route, dose, frequency, duration, participant age or sex (either counts), diagnosis or condition, comparison group (may carry `confidence` + `needs_review`). Scope gate on `randomized`: `yes` → scored; `no` → `out_of_scope`; `unknown` → `unverified` (never guessed). `arms` and `blinding` are recorded only. |
 | good_practice (G1) | storage temperature, milled/ground, protected from light. Recorded only; never counts toward gold or any share. No contamination or batch-testing fields. (Replaces V4; `storage_duration` dropped: it existed only in this draft.) |
 
 **Grades are explicit, never blank:** `gold`, `near_gold`, `unverified`, `not_scored` (reviews, case reports, observational / self-report), `out_of_scope` (non-randomized interventional trials), `not_yet_assessed` (default).
@@ -364,7 +364,7 @@ Items marked `not_applicable` (status, or supplier on clinical studies) are left
 2. Else any required item `could_not_check` → `unverified`.
 3. Else secondary share, worst case (unchecked counted as not reported; denominator = applicable items including unchecked) and best case (unchecked counted as reported). Worst ≥ cutoff → `gold`; best < cutoff → `near_gold` (share too low); otherwise `unverified`. Both shares and the `missing` / `not_checked` lists are returned.
 
-**Route requirements (TOP2, partially answered; route rule approved).** Route of administration is required (universal item). Which dose / cannabinoid fields are expected then depends on study type + route, encoded in `route_requirements` from the extraction flowchart (`Cannabis_Classification_Decision_Tree`, Node 2A / 6 / 7) only. If route is not reported, route counts as missing (`near_gold`) and route-dependent fields get no requirement (not counted as extra misses); this rule is approved by the Biomedical lead, 2026-10-31. What the flowchart doesn't settle is listed under `route_requirements.open`.
+**Route requirements (TOP2, partially answered, provisional).** Route of administration is required (universal item). Which dose / cannabinoid fields are expected then depends on study type + route, encoded in `route_requirements` from the extraction flowchart (`Cannabis_Classification_Decision_Tree`, Node 2A / 6 / 7) only. If route is not reported, route counts as missing (`near_gold`) and route-dependent fields get no requirement (not counted as extra misses); this rule is provisional pending Shawn. The questions the flowchart didn't settle are closed (`route_requirements.open` is empty, status `approved`, Biomedical lead 2026-10-31): sublingual / intranasal / intratracheal in vivo, in vitro smoke or vapour, clinical sublingual and clinical topical have no route-specific requirement; any one of an item's flowchart fields counts; any measured cannabinoid counts for every route.
 
 **Cannabinoid vocabulary.** `values` are locked (including Δ8-THC, CBGA, CBL, 11-OH-THC confirmed by the PhD on 2026-10-31); each has `full_name` and `synonyms`. THC-COOH, CBCA, THCVA, CBDVA, CBE, CBT sit in `candidates_pending_phd`: recorded, never scored.
 
@@ -372,11 +372,11 @@ Items marked `not_applicable` (status, or supplier on clinical studies) are left
 
 - **U1:** universal = strain/product name, supplier, form, major cannabinoids; all must be reported for gold.
 - **TOP4:** location is never a pass condition anywhere in the universal tier; it is still recorded.
-- **V2 (approved):** in vitro tier as above.
-- **TOP2 (partial):** requirements depend on study type and route, per the flowchart; open items listed in `completeness_rules.json`.
-- **V3 (approved):** clinical tier for RCTs only, as above.
+- **V2 (provisional):** in vitro tier as above.
+- **TOP2 (partial):** requirements depend on study type and route, per the flowchart; the open route items are now closed with "no requirement" (approved defaults 1-7 below).
+- **V3 (provisional):** clinical tier for RCTs only, as above.
 - **Non-randomized interventional trials** (single-arm, open-label non-randomized) are out of scope: no gold rule, no comparison-group check.
-- **Q1:** age or sex, either counts (approved). **Q2:** resolved by the out-of-scope rule.
+- **Q1:** age or sex, either counts (provisional). **Q2:** resolved by the out-of-scope rule.
 - **G1 (replaces V4):** good practice is exactly storage temperature, milled/ground, protected from light. Never affects tier.
 - **C1 (dose wording):** a dose given only as a range counts as `reported`. "Per protocol" counts as `reported` only if the paper or its cited protocol gives an actual number; otherwise dose is `not_reported`. Examples:
   - "mice received 5–20 mg/kg THC i.p." → reported (range).
@@ -396,11 +396,22 @@ Items marked `not_applicable` (status, or supplier on clinical studies) are left
 
 ### Approved defaults (Biomedical lead, 2026-10-31)
 
-The nine lenient defaults below were marked provisional/open in #117 and are now approved rulings; values unchanged: route required in universal; route not reported -> no extra route-dependent misses; V1 in vivo tier; V2 in vitro tier; V3 clinical tier; Q1 age or sex either counts; randomized scope gate (unknown -> unverified); C2 duration_category; major cannabinoids = any cannabinoid content the paper measured counts as reported.
+These nine defaults are approved (closing the TOP2 route questions with "no requirement"); recorded in `completeness_rules.json` (`route_requirements.approved_defaults`, `tracks`):
+
+1. In vivo sublingual, intranasal and intratracheal routes have no route-specific requirement.
+2. In vitro smoke or vapour has no requirement.
+3. Any one of an item's flowchart fields counts.
+4. Prospective and retrospective clinical studies aren't scored; gold stays RCT-only.
+5. Clinical sublingual has no requirement.
+6. Any measured cannabinoid counts, for every route.
+7. Clinical topical has no requirement.
+8. Any measured cannabinoid counts as 'major'.
+9. One track per paper until Evaluation's dev counts are in.
 
 ### Formerly open PhD questions
 
-1. **P1 tier effect (resolved, see P1 below):** do signed-off reference values affect the tier (A no effect / B counts as reported / C separate flag)? Default A for non-numeric values; numeric signed-off values currently fill `reference_fields` (see P1 section).
+1. Which cannabinoids are "major"? Approved (item 8): any cannabinoid content the paper measured counts as reported.
+2. **P1 tier effect (resolved, see P1 below):** do signed-off reference values affect the tier (A no effect / B counts as reported / C separate flag)? Default A for non-numeric values; numeric signed-off values currently fill `reference_fields` (see P1 section).
 
 ### not_reported_reason (optional, never affects tier)
 

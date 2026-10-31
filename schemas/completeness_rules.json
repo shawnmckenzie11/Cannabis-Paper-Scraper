@@ -40,22 +40,24 @@
           "key": "major_cannabinoids",
           "fields": [
             "cannabinoids"
-          ]
+          ],
+          "satisfied_by": "any_measured_cannabinoid",
+          "approved": "Any measured cannabinoid counts as 'major' (Biomedical lead, 2026-10-31, approved default 8)."
         },
         {
           "key": "route",
           "fields": [
             "route"
           ],
-          "approved": "approved by the Biomedical lead, 2026-10-31",
-          "note": "Route of administration is required (Shawn, TOP2). Not reported -> missing -> near_gold. Approved (approved by the Biomedical lead, 2026-10-31)."
+          "provisional": true,
+          "note": "Route of administration is required (Shawn, TOP2). Not reported -> missing -> near_gold. Provisional pending Shawn."
         }
       ]
     },
     "in_vivo": {
       "applies_to": "in_vivo",
-      "status": "approved",
-      "answered": "V1 (Shawn 2026-10-31; approved by the Biomedical lead, 2026-10-31)",
+      "status": "provisional",
+      "answered": "V1 (Shawn 2026-10-31, provisional)",
       "required_always": [
         {
           "key": "route",
@@ -203,8 +205,7 @@
     },
     "in_vitro": {
       "applies_to": "in_vitro",
-      "status": "approved",
-      "approved": "approved by the Biomedical lead, 2026-10-31",
+      "status": "provisional",
       "answered": "V2 + A10 (Shawn 2026-10-31): required cell type (line/tissue source), source species, concentration, exposure time; secondary vehicle, replicates. system_type recorded, not scored.",
       "required_always": [
         {
@@ -295,8 +296,8 @@
     },
     "clinical": {
       "applies_to": "clinical_rct",
-      "status": "approved",
-      "answered": "V3 (Shawn 2026-10-31; approved by the Biomedical lead, 2026-10-31)",
+      "status": "provisional",
+      "answered": "V3 (Shawn 2026-10-31, provisional)",
       "note": "Gold rule for RCTs only (Shawn 2026-10-31). Non-randomized interventional trials are out_of_scope: no gold rule, no comparison-group check. Observational / self-report / reviews / case reports are not_scored. Supplier stays not_applicable for clinical.",
       "required_always": [
         {
@@ -345,7 +346,7 @@
             "sgba_sex_reported"
           ],
           "satisfied_by": "either",
-          "note": "Either age or sex counts (Q1; approved by the Biomedical lead, 2026-10-31)."
+          "note": "Either age or sex counts (Q1 default confirmed, provisional)."
         },
         {
           "key": "diagnosis_or_condition",
@@ -409,7 +410,7 @@
             "sgba_sex_reported"
           ],
           "satisfied_by": "either",
-          "approved": "Either age or sex counts (approved by the Biomedical lead, 2026-10-31)."
+          "open": "Are both age and sex needed?"
         },
         {
           "key": "diagnosis_or_condition",
@@ -502,11 +503,10 @@
     "A15": "group_sample_sizes optional (only when numeric); never affects tier; total animal count stays required for in vivo."
   },
   "route_requirements": {
-    "status": "approved_with_open_items",
-    "approved": "Route required and route_not_reported rule approved by the Biomedical lead, 2026-10-31; items under open have no default and stay open",
+    "status": "approved",
     "answered": "TOP2 partially (Shawn 2026-10-31): requirements depend on study type and route, per the extraction flowchart.",
     "source": "Cannabis_Classification_Decision_Tree (transcription of 'EXPERT FEEDBACK TREE & CUES + Decision Tree.pdf', 2026-06-18): Node 2A, Node 7, Node 6. Only fields the flowchart lists are encoded; flowchart says EXTRACT, which this rule reads as 'expected'.",
-    "route_not_reported": "route counts as missing in universal (near_gold); route-dependent fields get no requirement and are not counted as extra misses. Approved (approved by the Biomedical lead, 2026-10-31).",
+    "route_not_reported": "route counts as missing in universal (near_gold); route-dependent fields get no requirement and are not counted as extra misses. Provisional pending Shawn.",
     "route_groups": {
       "in_vivo": {
         "smoke_vapor": {
@@ -595,14 +595,71 @@
         }
       }
     },
-    "open": [
-      "In vivo sub-lingual, intranasal, intratracheal (Node 7e-7g): the Decision_Tree text lists these routes but gives no field list. Same as injection/oral, or own list?",
-      "In vitro smoke/vapor conditioned media (6a) and direct cell exposure (6b): fields come from cannabis_type (dried flower / vape pen: mg_ml, puff_count, pct), not route. There is no route value for these in the route vocabulary. Add route values, or key by cannabis_type?",
-      "Flowchart says EXTRACT. Does every extracted field count as required for completeness, or only some (e.g. one of mg/kg or mg/g is enough)?",
-      "Clinical: Node 2A lists dose_mg etc. only for RCTs; prospective/retrospective list sample_size and duration_days only. Are prospective/retrospective clinical studies scored on dose and frequency?",
-      "Clinical sublingual has no route value in the route vocabulary. Add one?",
-      "Which cannabinoids must be reported per route: the flowchart only names THC and CBD fields (pct, mg/kg, mg/ml, uM). Do other locked cannabinoids count, or only THC/CBD?",
-      "Clinical topical: not in the flowchart (exposure set is inhaled/oral/sublingual/injected). Requirements?"
+    "open": [],
+    "approved": "Approved by the Biomedical lead, 2026-10-31: the open route questions are closed with 'no requirement' (items 1-9 in approved_defaults).",
+    "satisfied_by": "any_one_field",
+    "no_requirement_routes": {
+      "in_vivo": [
+        "sublingual",
+        "intranasal",
+        "intratracheal"
+      ],
+      "in_vitro": [
+        "smoke_vapor_conditioned_media",
+        "direct_smoke_vapor_exposure"
+      ],
+      "clinical": [
+        "sublingual",
+        "topical"
+      ]
+    },
+    "cannabinoids": "any_measured_counts_every_route",
+    "approved_defaults": [
+      {
+        "id": 1,
+        "rule": "In vivo sublingual, intranasal and intratracheal routes have no route-specific requirement.",
+        "approved": "Biomedical lead, 2026-10-31"
+      },
+      {
+        "id": 2,
+        "rule": "In vitro smoke or vapour has no requirement.",
+        "approved": "Biomedical lead, 2026-10-31"
+      },
+      {
+        "id": 3,
+        "rule": "Any one of an item's flowchart fields counts.",
+        "approved": "Biomedical lead, 2026-10-31"
+      },
+      {
+        "id": 4,
+        "rule": "Prospective and retrospective clinical studies aren't scored; gold stays RCT-only.",
+        "approved": "Biomedical lead, 2026-10-31"
+      },
+      {
+        "id": 5,
+        "rule": "Clinical sublingual has no requirement.",
+        "approved": "Biomedical lead, 2026-10-31"
+      },
+      {
+        "id": 6,
+        "rule": "Any measured cannabinoid counts, for every route.",
+        "approved": "Biomedical lead, 2026-10-31"
+      },
+      {
+        "id": 7,
+        "rule": "Clinical topical has no requirement.",
+        "approved": "Biomedical lead, 2026-10-31"
+      },
+      {
+        "id": 8,
+        "rule": "Any measured cannabinoid counts as 'major'.",
+        "approved": "Biomedical lead, 2026-10-31"
+      },
+      {
+        "id": 9,
+        "rule": "One track per paper until Evaluation's dev counts are in.",
+        "approved": "Biomedical lead, 2026-10-31"
+      }
     ]
   },
   "secondary_cutoff": {
@@ -620,7 +677,7 @@
     "not_yet_assessed"
   ],
   "resolved": {
-    "Q1": "Age or sex: either counts (Shawn 2026-10-31; approved by the Biomedical lead, 2026-10-31).",
+    "Q1": "Age or sex: either counts (provisional, Shawn 2026-10-31).",
     "Q2": "Non-randomized interventional trials (incl. single-arm) are out of scope: no gold rule, no comparison-group check (Shawn 2026-10-31)."
   },
   "legacy_backfill": {
@@ -646,5 +703,10 @@
     ],
     "rule": "Non-null column on a row whose classifier_version matches -> value_source legacy_llm_fullpdf, unless the column is in expert_locked_fields (-> expert). source_attribution inferred_from_row_version; classifier_version and classification_timestamp kept in provenance. Doc-level rule; applying it to any database is a separate, gated step.",
     "source_attribution": "inferred_from_row_version"
+  },
+  "tracks": {
+    "per_paper": 1,
+    "approved": "Biomedical lead, 2026-10-31",
+    "note": "One track per paper until Evaluation's dev counts are in (approved default 9)."
   }
 }

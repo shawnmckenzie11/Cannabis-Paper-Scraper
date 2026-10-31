@@ -264,7 +264,7 @@ def test_route_not_reported_is_missing_and_adds_no_route_requirements():
     assert res["universal"]["grade"] == "near_gold" and "route" in res["universal"]["missing"]
     assert res["route_requirements"]["route_reported"] is False and res["route_requirements"]["expected_fields"] == []
     assert res["universal"]["missing"] == ["route"]
-    assert TIERS["route_requirements"]["status"] == "approved_with_open_items"
+    assert TIERS["route_requirements"]["status"] == "approved"
 
 
 def test_route_requirements_follow_flowchart_and_fields_exist():
@@ -277,7 +277,29 @@ def test_route_requirements_follow_flowchart_and_fields_exist():
     assert rr["route_reported"] and "dose_thc_mg_kg" in rr["expected_fields"] and "puff_count" not in rr["expected_fields"]
     rec = copy.deepcopy(FULL_V07); rec["fields"]["route"]["value"] = ["inhaled"]
     assert "puff_count" in mc.compute(rec, "clinical", TIERS)["route_requirements"]["expected_fields"]
-    assert TIERS["route_requirements"]["open"]
+    assert TIERS["route_requirements"]["open"] == []
+
+
+def test_nine_approved_defaults_behaviour():
+    rr = TIERS["route_requirements"]
+    assert [d["id"] for d in rr["approved_defaults"]] == list(range(1, 10))
+    assert all(d["approved"] == "Biomedical lead, 2026-10-31" for d in rr["approved_defaults"])
+    assert rr["satisfied_by"] == "any_one_field" and rr["cannabinoids"] == "any_measured_counts_every_route"
+    assert TIERS["tracks"]["per_paper"] == 1 and mc.tracks_per_paper(TIERS) == 1
+    for st, route in (("in_vivo", "sublingual"), ("in_vivo", "intranasal"), ("in_vivo", "intratracheal"),
+                      ("clinical", "sublingual"), ("clinical", "topical")):
+        rec = copy.deepcopy(FULL_V07)
+        rec["fields"]["route"] = {"value": [route], "missingness": "reported"}
+        if st == "clinical":
+            rec["fields"]["randomized"] = {"value": "yes", "missingness": "reported"}
+        out = mc.route_requirements(rec, st, TIERS)
+        assert out["expected_fields"] == [] and out["unmapped_routes"] == [] and out["no_requirement_routes"] == [route]
+        assert out["tracks_per_paper"] == 1
+    # prospective / retrospective clinical (non-randomized) is not scored for gold
+    rec = copy.deepcopy(FULL_V07); rec["fields"]["randomized"] = {"value": "no", "missingness": "reported"}
+    assert mc.compute(rec, "clinical", TIERS)["universal"]["grade"] == "out_of_scope"
+    mc_item = [i for i in TIERS["tiers"]["universal"]["items"] if i["key"] == "major_cannabinoids"][0]
+    assert mc_item["satisfied_by"] == "any_measured_cannabinoid"
 
 
 IVR = {"cell_line_or_tissue_source": rep(), "concentration": rep(), "exposure_time": rep(),
