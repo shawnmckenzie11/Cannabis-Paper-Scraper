@@ -227,6 +227,10 @@
         },
         "cannabinoids": {
           "$ref": "#/$defs/cannabinoids_field"
+        },
+        "cell_line_or_tissue_source": {
+          "$ref": "#/$defs/string_field",
+          "description": "v0.7 (V2, provisional): cell line, primary cells or tissue source used in vitro, as reported."
         }
       }
     },
@@ -293,6 +297,21 @@
           "$ref": "#/$defs/field_reporting"
         },
         "storage": {
+          "$ref": "#/$defs/field_reporting"
+        },
+        "cell_line_or_tissue_source": {
+          "$ref": "#/$defs/field_reporting"
+        },
+        "concentration": {
+          "$ref": "#/$defs/field_reporting"
+        },
+        "exposure_time": {
+          "$ref": "#/$defs/field_reporting"
+        },
+        "species_of_origin": {
+          "$ref": "#/$defs/field_reporting"
+        },
+        "replicates": {
           "$ref": "#/$defs/field_reporting"
         }
       }
@@ -2099,6 +2118,7 @@
           "enum": [
             "administration_frequency",
             "cannabinoids",
+            "cell_line_or_tissue_source",
             "chemotype_reported",
             "clinical_subtype",
             "conc_cbd_mg_ml",
@@ -2483,11 +2503,11 @@
       "enum": [
         "methods",
         "supplementary",
-        "cited_prior_paper",
-        "elsewhere_in_paper",
+        "abstract",
+        "discussion",
         "unknown"
       ],
-      "description": "Where a reported detail was found. Only set when status is reported."
+      "description": "Where a reported detail was found. Only set when status is reported. No cited_prior_paper value: 'as previously described [ref]' is not_reported (K1 / TOP1)."
     },
     "check_failure_reason": {
       "type": "string",
@@ -2495,9 +2515,10 @@
         "fetch_failed",
         "parse_failed",
         "source_not_available",
-        "budget_cap"
+        "budget_cap",
+        "source_not_fetched"
       ],
-      "description": "Why a field could not be checked. Required when status is could_not_check, null/absent otherwise. The contract only records the reason; how each reason is scored is owned by CRN Evaluation's scorer."
+      "description": "Why a field could not be checked. Required when status is could_not_check, null/absent otherwise. The contract only records the reason; how each reason is scored is owned by CRN Evaluation's scorer. source_not_fetched = deliberate scope choice (e.g. a main-text-only run that skips supplements); distinct from fetch_failed, which is an error."
     },
     "field_reporting": {
       "type": "object",

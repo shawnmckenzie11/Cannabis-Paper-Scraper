@@ -10,8 +10,8 @@ import sys; sys.path.insert(0, str(ROOT))
 import methods_completeness as mc
 
 STATUSES = ["reported", "not_reported", "could_not_check", "not_applicable", "not_yet_assessed"]
-LOCATIONS = ["methods", "supplementary", "cited_prior_paper", "elsewhere_in_paper", "unknown"]
-REASONS = ["fetch_failed", "parse_failed", "source_not_available", "budget_cap"]
+LOCATIONS = ["methods", "supplementary", "abstract", "discussion", "unknown"]
+REASONS = ["fetch_failed", "parse_failed", "source_not_available", "budget_cap", "source_not_fetched"]
 
 
 def ok(name, rec):
@@ -70,9 +70,10 @@ def test_version_bump():
 def test_enums():
     assert SCHEMA["$defs"]["reporting_status"]["enum"] == STATUSES
     assert SCHEMA["$defs"]["reporting_location"]["enum"] == LOCATIONS
+    assert not ok("field_reporting", rep("cited_prior_paper")) and not ok("field_reporting", rep("elsewhere_in_paper"))
     assert SCHEMA["$defs"]["check_failure_reason"]["enum"] == REASONS
     assert not ok("field_reporting", {"status": "partially_reported"})
-    assert not ok("field_reporting", {"status": "reported", "location": "abstract"})
+    assert not ok("field_reporting", {"status": "reported", "location": "results"})
 
 
 def test_full_v07_record_validates():
@@ -92,7 +93,7 @@ def test_default_is_not_yet_assessed_and_existing_records_stay_valid():
     assert whole(old)
     res = mc.compute(old, "in_vivo", TIERS)
     assert res["universal"]["counts"]["not_yet_assessed"] == 5 and res["universal"]["counts"]["not_reported"] == 0
-    assert res["universal"]["pass"] is False and res["study_type"]["fraction"] is None
+    assert res["universal"]["grade"] == "unverified" and res["universal"]["missing"] == [] and res["study_type"]["fraction"] is None
 
 
 def test_location_only_when_reported():
@@ -120,28 +121,32 @@ def test_check_failure_reason_only_for_could_not_check():
 
 def test_tier_rule_is_valid_and_every_field_exists():
     assert TIERS["status"] == "pending_biomedical" and TIERS["rule_id"] and TIERS["version"]
-    assert set(TIERS["tiers"]) == {"universal", "in_vivo", "in_vitro", "clinical", "good_practice"}
+    assert set(TIERS["tiers"]) == {"classification", "universal", "in_vivo", "in_vitro", "clinical", "good_practice"}
     fields = SCHEMA["properties"]["fields"]["properties"]
     keys = SCHEMA["properties"]["reporting"]["properties"]
     for tier in TIERS["tiers"].values():
         for item in tier["items"]:
             assert item["key"] in keys
             assert item["fields"] and all(f in fields for f in item["fields"]), item
-    assert {i["key"] for i in TIERS["tiers"]["universal"]["items"]} == {"research_type", "strain_or_product_name", "supplier", "form", "major_cannabinoids"}
+    assert {i["key"] for i in TIERS["tiers"]["universal"]["items"]} == {"strain_or_product_name", "supplier", "form", "major_cannabinoids", "route"}
+    assert [i["key"] for i in TIERS["tiers"]["classification"]["items"]] == ["research_type"]
+    assert not any("required_location" in i for t in TIERS["tiers"].values() for i in t["items"])
+    assert set(TIERS["answered"]) >= {"U1", "U2", "TOP4"}
     assert {i["key"] for i in TIERS["tiers"]["in_vivo"]["items"]} == {"route", "dose", "frequency"}
-    assert {i["key"] for i in TIERS["tiers"]["in_vitro"]["items"]} == {"vehicle_solvent", "dose"}
+    iv = TIERS["tiers"]["in_vitro"]
+    assert [i["key"] for i in iv["required_always"]] == ["cell_line_or_tissue_source", "concentration", "exposure_time"]
+    assert [i["key"] for i in iv["secondary"]] == ["species_of_origin", "vehicle_solvent", "replicates"]
+    assert TIERS["secondary_cutoff"]["default"] == 0.80 and TIERS["secondary_cutoff"]["overridable"] is True
     assert {i["key"] for i in TIERS["tiers"]["clinical"]["items"]} == {"dose", "frequency", "duration"}
     assert {i["key"] for i in TIERS["tiers"]["good_practice"]["items"]} == {"storage"}
 
 
 def test_completeness_is_computed_per_tier_without_combined_score():
     res = mc.compute(FULL_V07, "in_vivo", TIERS)
-    assert set(res) == {"rule_id", "rule_version", "universal", "study_type", "good_practice"}
-    assert res["universal"]["pass"] is False  # cannabinoids only in supplementary
+    assert set(res) == {"rule_id", "rule_version", "universal", "study_type", "route_requirements", "good_practice"}
+    assert res["universal"]["grade"] == "gold"  # location (supplementary) is never a pass condition
     assert res["study_type"]["fraction"] == 0.5 and res["study_type"]["counts"]["could_not_check"] == 1
     assert res["good_practice"]["fraction"] == 1.0
-    rec = copy.deepcopy(FULL_V07); rec["reporting"]["major_cannabinoids"] = rep()
-    assert mc.compute(rec, "in_vivo", TIERS)["universal"]["pass"] is True
     assert "completeness" not in SCHEMA["properties"]
 
 
@@ -179,9 +184,137 @@ def test_observational_and_self_reported_are_not_scored_on_any_tier():
 
 
 def test_as_previously_described_scored_not_reported_until_phd_answers():
-    assert "not_reported" in TIERS["cited_prior_paper_policy"]
+    assert "not_reported" in TIERS["previously_described_policy"]
     rec = copy.deepcopy(FULL_V07)
     rec["reporting"]["supplier"] = {"status": "not_reported", "location": None, "evidence_quote": "as previously described [12]"}
     assert whole(rec)
-    assert mc.compute(rec, "in_vivo", TIERS)["universal"]["pass"] is False
+    u = mc.compute(rec, "in_vivo", TIERS)["universal"]
+    assert u["grade"] == "near_gold" and u["missing"] == ["supplier"]
     assert "cited_reference" not in json.dumps(SCHEMA["$defs"]["field_reporting"])
+
+
+def _u(reporting, study="in_vivo"):
+    rec = copy.deepcopy(FULL_V07); rec["reporting"].update(reporting)
+    assert whole(rec)
+    return mc.compute(rec, study, TIERS)["universal"]
+
+
+NR = {"status": "not_reported", "location": None}
+
+
+def test_universal_gold_when_all_reported():
+    u = _u({})
+    assert u["grade"] == "gold" and u["missing"] == [] and u["not_checked"] == []
+
+
+def test_universal_near_gold_lists_missing_and_not_checked_missing_takes_precedence():
+    u = _u({"form": NR, "supplier": {"status": "could_not_check", "check_failure_reason": "source_not_fetched"}})
+    assert u["grade"] == "near_gold" and u["missing"] == ["form"]
+    assert u["not_checked"] == [{"key": "supplier", "check_failure_reason": "source_not_fetched"}]
+
+
+def test_universal_unverified_when_only_unchecked():
+    u = _u({"major_cannabinoids": {"status": "could_not_check", "check_failure_reason": "fetch_failed"}})
+    assert u["grade"] == "unverified" and u["missing"] == []
+    assert u["not_checked"] == [{"key": "major_cannabinoids", "check_failure_reason": "fetch_failed"}]
+
+
+def test_source_not_fetched_distinct_from_fetch_failed():
+    assert "source_not_fetched" in REASONS and "fetch_failed" in REASONS
+    assert "deliberate scope" in SCHEMA["$defs"]["check_failure_reason"]["description"]
+
+
+def test_supplier_not_applicable_for_clinical_never_missing():
+    sup = [i for i in TIERS["tiers"]["universal"]["items"] if i["key"] == "supplier"][0]
+    assert sup["fields"] == ["supplier"] and sup["not_applicable_for"] == ["clinical"]
+    assert "supplier" not in [i["key"] for i in TIERS["tiers"]["clinical"]["items"]]
+    u = _u({"supplier": NR}, study="clinical")
+    assert u["grade"] == "gold" and u["missing"] == [] and u["not_applicable"] == ["supplier"]
+    assert _u({"supplier": NR}, study="in_vivo")["grade"] == "near_gold"
+
+
+def test_cannabinoid_vocabulary_names_synonyms_and_no_drug_names():
+    voc = RULES["vocabularies"]["cannabinoid"]
+    by = {x["value"]: x for x in voc["values"]}
+    assert {"thc", "cbd", "cbg", "thca"} <= set(by)
+    assert by["cbg"]["full_name"] == "cannabigerol" and by["cbd"]["full_name"] == "cannabidiol"
+    assert {"Δ9-THCA", "THCA-A", "tetrahydrocannabinolic acid"} <= set(by["thca"]["synonyms"])
+    assert {"Δ9-THC", "delta-9-THC"} <= set(by["thc"]["synonyms"])
+    drugs = {x["value"] for x in RULES["vocabularies"]["product_substance"]["values"]}
+    syns = {s.lower() for x in voc["values"] for s in x["synonyms"] + [x["full_name"]]}
+    assert not (drugs & syns) and "dronabinol" not in syns
+    assert all("tier" not in x and x["external_id"] is None for x in voc["values"])
+    assert {"delta8_thc", "cbga", "cbl", "11_oh_thc"} <= set(by)
+    assert voc["values_status"] == "locked" and voc["candidates_status"] == "pending_phd_not_scored"
+    cand = {x["value"] for x in voc["candidates_pending_phd"]}
+    assert cand == {"thc_cooh", "cbca", "thcva", "cbdva", "cbe", "cbt"} and not (cand & set(by))
+    assert all(x["full_name"] and x["synonyms"] for x in voc["values"] + voc["candidates_pending_phd"])
+
+
+def test_route_not_reported_is_missing_and_adds_no_route_requirements():
+    rec = copy.deepcopy(FULL_V07); rec["reporting"]["route"] = NR
+    res = mc.compute(rec, "in_vivo", TIERS)
+    assert res["universal"]["grade"] == "near_gold" and "route" in res["universal"]["missing"]
+    assert res["route_requirements"]["route_reported"] is False and res["route_requirements"]["expected_fields"] == []
+    assert res["universal"]["missing"] == ["route"]
+    assert TIERS["route_requirements"]["status"] == "provisional"
+
+
+def test_route_requirements_follow_flowchart_and_fields_exist():
+    fields = SCHEMA["properties"]["fields"]["properties"]
+    for groups in TIERS["route_requirements"]["route_groups"].values():
+        for g in groups.values():
+            assert g["flowchart"] and all(f in fields for f in g["fields"])
+            assert set(g["routes"]) <= {v["value"] for v in RULES["vocabularies"]["route"]["values"]}
+    rr = mc.compute(FULL_V07, "in_vivo", TIERS)["route_requirements"]
+    assert rr["route_reported"] and "dose_thc_mg_kg" in rr["expected_fields"] and "puff_count" not in rr["expected_fields"]
+    rec = copy.deepcopy(FULL_V07); rec["fields"]["route"]["value"] = ["inhaled"]
+    assert "puff_count" in mc.compute(rec, "clinical", TIERS)["route_requirements"]["expected_fields"]
+    assert TIERS["route_requirements"]["open"]
+
+
+IVR = {"cell_line_or_tissue_source": rep(), "concentration": rep(), "exposure_time": rep(),
+       "species_of_origin": rep(), "vehicle_solvent": rep(), "replicates": rep()}
+CNC = {"status": "could_not_check", "check_failure_reason": "source_not_fetched"}
+
+
+def _iv(changes, cutoff=None):
+    rec = copy.deepcopy(FULL_V07); rec["reporting"].update(IVR); rec["reporting"].update(changes)
+    assert whole(rec)
+    return mc.compute(rec, "in_vitro", TIERS, secondary_cutoff=cutoff)["study_type"]
+
+
+def test_in_vitro_gold():
+    s = _iv({})
+    assert s["grade"] == "gold" and s["secondary_share_worst"] == 1.0 and s["secondary_cutoff"] == 0.80
+
+
+def test_in_vitro_required_not_reported_is_near_gold_even_if_another_unchecked():
+    s = _iv({"concentration": NR, "exposure_time": CNC})
+    assert s["grade"] == "near_gold" and s["missing"] == ["concentration"]
+    assert {"key": "exposure_time", "check_failure_reason": "source_not_fetched"} in s["not_checked"]
+
+
+def test_in_vitro_required_unchecked_is_unverified():
+    s = _iv({"exposure_time": CNC})
+    assert s["grade"] == "unverified" and s["grade_reason"] == "required_not_checked" and s["missing"] == []
+
+
+def test_in_vitro_secondary_share_too_low_is_near_gold():
+    s = _iv({"species_of_origin": NR, "replicates": CNC})
+    assert s["secondary_share_best"] < 0.8 and s["grade"] == "near_gold" and s["grade_reason"] == "secondary_share_too_low"
+
+
+def test_in_vitro_secondary_depends_on_unchecked_is_unverified():
+    s = _iv({"replicates": CNC})
+    assert s["secondary_share_worst"] == pytest.approx(2 / 3) and s["secondary_share_best"] == 1.0
+    assert s["grade"] == "unverified" and s["grade_reason"] == "secondary_share_depends_on_unchecked"
+
+
+def test_in_vitro_cutoff_boundary_and_override():
+    s = _iv({"replicates": NR})  # 2/3 secondary reported
+    assert s["grade"] == "near_gold"
+    assert _iv({"replicates": NR}, cutoff=2 / 3)["grade"] == "gold"  # worst == cutoff -> gold
+    assert _iv({"replicates": NR}, cutoff=0.67)["grade"] == "near_gold"
+    s = _iv({"replicates": {"status": "not_applicable"}, "species_of_origin": NR}, cutoff=0.5)
+    assert s["secondary_share_worst"] == 0.5 and s["grade"] == "gold"  # not_applicable leaves the denominator

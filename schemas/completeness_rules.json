@@ -1,24 +1,19 @@
 {
   "rule_id": "crn_reporting_completeness",
-  "version": "0.1.0",
+  "version": "0.4.0",
   "status": "pending_biomedical",
   "contract_version": "0.7",
-  "note": "Completeness is computed from reporting statuses, never stored. Output per tier: universal pass/fail, study-type fraction, good_practice separate. No combined score. Tier membership pending the PhD lead.",
+  "note": "Completeness is computed from reporting statuses, never stored. Output per tier: universal gold/near_gold, study-type fraction, good_practice separate. No combined score. Tier membership pending the PhD lead.",
   "computation": {
-    "universal": "pass iff every item has status reported (and, where required_location is set, location matches)",
+    "universal": "Applicable items exclude status not_applicable and items whose not_applicable_for includes the study type. gold = all applicable items reported. near_gold = >=1 applicable item not_reported (missing list, plus not_checked list if any); missing takes precedence. unverified = none missing but >=1 could_not_check or not_yet_assessed (not_checked list with check_failure_reason). Location is never a pass condition (U1/TOP4). Paper is kept, never dropped.",
     "study_type": "fraction reported / (items not not_applicable); not_yet_assessed and could_not_check are counted separately, not as misses",
-    "good_practice": "fraction reported, reported separately; never affects pass/fail"
+    "good_practice": "fraction reported, reported separately; never affects pass/fail",
+    "required_secondary_tiers": "(1) any required item not_reported -> near_gold. (2) else any required item could_not_check (or not_yet_assessed) -> unverified. (3) else secondary share: worst = reported / applicable (unchecked counted not reported; denominator = applicable items incl. unchecked); best = (reported + unchecked) / applicable. worst >= cutoff -> gold; best < cutoff -> near_gold (share too low); otherwise unverified. Output both shares and the missing / not_checked lists."
   },
   "tiers": {
     "universal": {
       "applies_to": "all",
       "items": [
-        {
-          "key": "research_type",
-          "fields": [
-            "research_type"
-          ]
-        },
         {
           "key": "strain_or_product_name",
           "fields": [
@@ -30,6 +25,9 @@
           "key": "supplier",
           "fields": [
             "supplier"
+          ],
+          "not_applicable_for": [
+            "clinical"
           ]
         },
         {
@@ -42,8 +40,15 @@
           "key": "major_cannabinoids",
           "fields": [
             "cannabinoids"
+          ]
+        },
+        {
+          "key": "route",
+          "fields": [
+            "route"
           ],
-          "required_location": "methods"
+          "provisional": true,
+          "note": "Route of administration is required (Shawn, TOP2). Not reported -> missing -> near_gold. Provisional pending Shawn."
         }
       ]
     },
@@ -80,7 +85,38 @@
     },
     "in_vitro": {
       "applies_to": "in_vitro",
-      "items": [
+      "status": "provisional",
+      "answered": "V2 (Shawn 2026-10-31, provisional)",
+      "required_always": [
+        {
+          "key": "cell_line_or_tissue_source",
+          "fields": [
+            "cell_line_or_tissue_source"
+          ]
+        },
+        {
+          "key": "concentration",
+          "fields": [
+            "conc_thc_uM",
+            "conc_cbd_uM",
+            "conc_thc_mg_ml",
+            "conc_cbd_mg_ml"
+          ]
+        },
+        {
+          "key": "exposure_time",
+          "fields": [
+            "treatment_duration"
+          ]
+        }
+      ],
+      "secondary": [
+        {
+          "key": "species_of_origin",
+          "fields": [
+            "species_or_biological_system"
+          ]
+        },
         {
           "key": "vehicle_solvent",
           "fields": [
@@ -88,17 +124,52 @@
           ]
         },
         {
-          "key": "dose",
+          "key": "replicates",
           "fields": [
-            "dose_mg",
-            "dose_thc_mg_kg",
-            "dose_cbd_mg_kg",
-            "dose_thc_mg_g",
-            "dose_cbd_mg_g",
-            "conc_thc_mg_ml",
-            "conc_cbd_mg_ml",
+            "replicates_notes",
+            "sample_size"
+          ]
+        }
+      ],
+      "items": [
+        {
+          "key": "cell_line_or_tissue_source",
+          "fields": [
+            "cell_line_or_tissue_source"
+          ]
+        },
+        {
+          "key": "concentration",
+          "fields": [
             "conc_thc_uM",
-            "conc_cbd_uM"
+            "conc_cbd_uM",
+            "conc_thc_mg_ml",
+            "conc_cbd_mg_ml"
+          ]
+        },
+        {
+          "key": "exposure_time",
+          "fields": [
+            "treatment_duration"
+          ]
+        },
+        {
+          "key": "species_of_origin",
+          "fields": [
+            "species_or_biological_system"
+          ]
+        },
+        {
+          "key": "vehicle_solvent",
+          "fields": [
+            "vehicle_solvent"
+          ]
+        },
+        {
+          "key": "replicates",
+          "fields": [
+            "replicates_notes",
+            "sample_size"
           ]
         }
       ]
@@ -145,6 +216,18 @@
           ]
         }
       ]
+    },
+    "classification": {
+      "applies_to": "all",
+      "items": [
+        {
+          "key": "research_type",
+          "fields": [
+            "research_type"
+          ]
+        }
+      ],
+      "note": "Research type picks the study-type tier; recorded but not part of gold (U1)."
     }
   },
   "not_scored_study_types": [
@@ -152,5 +235,118 @@
     "self_reported"
   ],
   "not_scored_note": "Observational / self-reported studies skip every current tier, including universal (universal items are product items). Only future exposure fields would be scored for them, after the PhD lead signs off.",
-  "cited_prior_paper_policy": "'As previously described [ref]' is recorded as status not_reported until the PhD lead answers open question TOP1. Keeping the cited reference as provenance is a pending option; no field for it yet."
+  "previously_described_policy": "'As previously described [ref]' is recorded as status not_reported until the PhD lead answers open question TOP1. Keeping the cited reference as provenance is a pending option; no field for it yet. There is no cited_prior_paper location value.",
+  "answered": {
+    "U1": "Shawn, 2026-10-31: universal = strain/product name, supplier, form, major cannabinoids, all status reported for gold.",
+    "TOP4": "Shawn, 2026-10-31: location is never a pass condition; it is still recorded.",
+    "U2": "Shawn, 2026-10-31: supplier is its own field, separate from strain/product name; for clinical studies supplier is not_applicable (not required, never counted missing)."
+  },
+  "route_requirements": {
+    "status": "provisional",
+    "answered": "TOP2 partially (Shawn 2026-10-31): requirements depend on study type and route, per the extraction flowchart.",
+    "source": "Cannabis_Classification_Decision_Tree (transcription of 'EXPERT FEEDBACK TREE & CUES + Decision Tree.pdf', 2026-06-18): Node 2A, Node 7, Node 6. Only fields the flowchart lists are encoded; flowchart says EXTRACT, which this rule reads as 'expected'.",
+    "route_not_reported": "route counts as missing in universal (near_gold); route-dependent fields get no requirement and are not counted as extra misses. Provisional pending Shawn.",
+    "route_groups": {
+      "in_vivo": {
+        "smoke_vapor": {
+          "flowchart": "Node 7a/7b whole body or nose only smoke/vapor",
+          "routes": [
+            "inhaled"
+          ],
+          "fields": [
+            "puff_count",
+            "inhaled_exposure_duration",
+            "pct_thc",
+            "pct_cbd",
+            "conc_thc_mg_ml",
+            "conc_cbd_mg_ml",
+            "duration_days",
+            "administration_frequency"
+          ]
+        },
+        "injection_or_oral": {
+          "flowchart": "Node 7c/7d injection cannabinoids, oral administration",
+          "routes": [
+            "oral_diet",
+            "oral_gavage",
+            "oral_other",
+            "intraperitoneal",
+            "intravenous",
+            "subcutaneous"
+          ],
+          "fields": [
+            "dose_thc_mg_kg",
+            "dose_cbd_mg_kg",
+            "dose_thc_mg_g",
+            "dose_cbd_mg_g",
+            "pct_thc",
+            "pct_cbd",
+            "dose_mg",
+            "duration_days",
+            "administration_frequency"
+          ]
+        }
+      },
+      "clinical": {
+        "any": {
+          "flowchart": "Node 2A (RCT 4a)",
+          "routes": [
+            "inhaled",
+            "oral_other",
+            "intravenous",
+            "subcutaneous"
+          ],
+          "fields": [
+            "dose_mg",
+            "pct_thc",
+            "pct_cbd",
+            "duration_days",
+            "administration_frequency"
+          ],
+          "note": "Flowchart clinical routes: inhaled, oral, sublingual, injected. oral_diet/oral_gavage are animal routes."
+        },
+        "inhaled_extra": {
+          "flowchart": "Node 2A IF inhaled",
+          "routes": [
+            "inhaled"
+          ],
+          "fields": [
+            "inhaled_exposure_duration",
+            "puff_count"
+          ]
+        }
+      },
+      "in_vitro": {
+        "dissolved_in_media": {
+          "flowchart": "Node 6c + cannabis_type pure cannabinoid",
+          "routes": [
+            "in_vitro_media"
+          ],
+          "fields": [
+            "conc_thc_uM",
+            "conc_cbd_uM",
+            "conc_thc_mg_ml",
+            "conc_cbd_mg_ml",
+            "pct_thc",
+            "pct_cbd",
+            "treatment_duration"
+          ]
+        }
+      }
+    },
+    "open": [
+      "In vivo sub-lingual, intranasal, intratracheal (Node 7e-7g): the Decision_Tree text lists these routes but gives no field list. Same as injection/oral, or own list?",
+      "In vitro smoke/vapor conditioned media (6a) and direct cell exposure (6b): fields come from cannabis_type (dried flower / vape pen: mg_ml, puff_count, pct), not route. There is no route value for these in the route vocabulary. Add route values, or key by cannabis_type?",
+      "Flowchart says EXTRACT. Does every extracted field count as required for completeness, or only some (e.g. one of mg/kg or mg/g is enough)?",
+      "Clinical: Node 2A lists dose_mg etc. only for RCTs; prospective/retrospective list sample_size and duration_days only. Are prospective/retrospective clinical studies scored on dose and frequency?",
+      "Clinical sublingual has no route value in the route vocabulary. Add one?",
+      "Which cannabinoids must be reported per route: the flowchart only names THC and CBD fields (pct, mg/kg, mg/ml, uM). Do other locked cannabinoids count, or only THC/CBD?",
+      "Clinical topical: not in the flowchart (exposure set is inhaled/oral/sublingual/injected). Requirements?"
+    ]
+  },
+  "secondary_cutoff": {
+    "default": 0.8,
+    "overridable": true,
+    "note": "Shared by every tier with secondary items. Override with compute(..., secondary_cutoff=x)."
+  }
 }

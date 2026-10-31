@@ -316,34 +316,61 @@ The idea: for this database, a paper's quality is how well it reports the detail
 |---|---|---|---|
 | `reporting` | top level (new) | One `field_reporting` entry per completeness item key (`research_type`, `strain_or_product_name`, `supplier`, `form`, `major_cannabinoids`, `route`, `dose`, `frequency`, `duration`, `vehicle_solvent`, `storage`). A missing key means `not_yet_assessed`. | technical |
 | `field_reporting.status` | `$defs` | `reported`, `not_reported` (section read, detail absent), `could_not_check` (section not fetched or parsed), `not_applicable` (set by the decision-tree branch / study type), `not_yet_assessed` (default). Records written before v0.7 are `not_yet_assessed`, **never** backfilled as `not_reported`. | technical |
-| `field_reporting.location` | `$defs` | `methods`, `supplementary`, `cited_prior_paper`, `elsewhere_in_paper`, `unknown`. Required when status is `reported`; must be null or absent otherwise. | technical |
+| `field_reporting.location` | `$defs` | `methods`, `supplementary`, `abstract`, `discussion`, `unknown` (no `cited_prior_paper`: "as previously described [ref]" is `not_reported`, K1). Required when status is `reported`; must be null or absent otherwise. | technical |
 | `field_reporting.evidence_quote` | `$defs` | Verbatim span supporting the status, optional. | technical |
-| `field_reporting.check_failure_reason` | `$defs` | `fetch_failed`, `parse_failed`, `source_not_available`, `budget_cap`. Required when status is `could_not_check`; null or absent otherwise. The contract only records the reason. **How each reason is scored is owned by CRN Evaluation's scorer** (Pipeline proposes `fetch_failed` / `parse_failed` count as misses). | technical |
-| `supplier` | `fields` (new) | Company or source the product was procured from. | pending_biomedical |
+| `field_reporting.check_failure_reason` | `$defs` | `fetch_failed`, `parse_failed`, `source_not_available`, `budget_cap`, `source_not_fetched`. `source_not_fetched` is a **deliberate scope choice** (e.g. a main-text-only run that skips supplements), distinct from `fetch_failed`, which is an error. Required when status is `could_not_check`; null or absent otherwise. The contract only records the reason. **How each reason is scored is owned by CRN Evaluation's scorer** (Pipeline proposes `fetch_failed` / `parse_failed` count as misses). | technical |
+| `supplier` | `fields` (new) | Company or source the product was procured from. Its own field, separate from strain/product name (**U2, answered**). Not applicable for clinical studies. | pending_biomedical |
 | `vehicle_solvent` | `fields` (new) | Vehicle or solvent used to deliver the product (oil does not dissolve in cell media). | pending_biomedical |
 | `storage` | `fields` (new) | How the product was stored (frozen, milled, protected from light). Good practice, not required. | pending_biomedical |
 | `form` | `fields` (new) | Physical form; vocabulary `product_form` (includes `topical`). | phd_to_confirm |
-| `cannabinoids` | `fields` (new) | List of cannabinoids as reported (not THC/CBD only), each with optional amount/unit/span. A non-empty list needs `missingness: reported` and a `source_span`, same gating as `chemotype_reported`. The existing THC/CBD numeric fields stay. | phd_to_confirm |
+| `cannabinoids` | `fields` (new) | List of cannabinoids as reported (not THC/CBD only), each with optional amount/unit/span. Names from vocabulary `cannabinoid` (each value has `full_name` and `synonyms`; THC/CBD `core`, others `candidate`; drug names like dronabinol stay in `product_substance` per MCK-425). A non-empty list needs `missingness: reported` and a `source_span`, same gating as `chemotype_reported`. The existing THC/CBD numeric fields stay. | phd_to_confirm |
 | `route` | `fields` | Unchanged shape. New vocabulary `route` splits oral into `oral_diet` and `oral_gavage` (dose is uncertain when mixed in food). Route stays separate from product (MCK-425). | phd_to_confirm |
 
-### Completeness tiers (`schemas/completeness_rules.json`, rule `crn_reporting_completeness` v0.1.0, pending_biomedical)
+### Completeness tiers (`schemas/completeness_rules.json`, rule `crn_reporting_completeness` v0.4.0, pending_biomedical)
 
 | Tier | Items |
 |---|---|
-| universal (every study) | research type, strain/product name, supplier, form, major cannabinoids (must be in the methods) |
+| classification | research type (picks the study-type tier; recorded, not part of gold) |
+| universal (every study) | strain/product name, supplier (not applicable for clinical), form, major cannabinoids, route (provisional). All must be `reported` for gold. Location is recorded but never a pass condition. |
 | in_vivo | route, dose, frequency |
-| in_vitro | delivery vehicle/solvent, dose |
+| in_vitro (V2, provisional) | required always: cell line or tissue source, concentration, exposure time. Secondary: species of origin, vehicle/solvent, replicates. |
 | clinical | dose, frequency, duration |
 | good_practice | storage (reported separately, never affects pass/fail) |
 
 **Observational / self-reported studies** skip every current tier, including universal (the universal items are product items): the helper returns `not_scored` for all tiers. Only future exposure fields would be scored for them, after the PhD lead signs off.
 
-Completeness is **computed** from the statuses (`methods_completeness.compute`), never stored as truth. Output per tier: universal pass/fail, a study-type fraction (reported / (reported + not_reported); `could_not_check` and `not_yet_assessed` counted separately), and good practice on its own. **There is no combined score.**
+Completeness is **computed** from the statuses (`methods_completeness.compute`), never stored as truth. Output per tier: a universal grade, a study-type fraction (reported / (reported + not_reported); `could_not_check` and `not_yet_assessed` counted separately), and good practice on its own. **There is no combined score.**
+
+Universal grade (papers are always kept, never dropped):
+
+- `gold`: every applicable universal item is `reported`.
+- `near_gold`: at least one applicable item is `not_reported`. Returns a `missing` list, plus a `not_checked` list if any. Missing takes precedence over unchecked.
+- `unverified`: nothing missing, but at least one item `could_not_check` (or `not_yet_assessed`). Returns `not_checked` with each item's `check_failure_reason`. This is not a reporting gap.
+
+Items marked `not_applicable` (status, or supplier on clinical studies) are left out and never counted missing.
+
+**Required + secondary tiers (in vitro now; same mechanics planned for in vivo).** `secondary_cutoff` default 0.80, overridable per call.
+
+1. Any required item `not_reported` → `near_gold`.
+2. Else any required item `could_not_check` → `unverified`.
+3. Else secondary share, worst case (unchecked counted as not reported; denominator = applicable items including unchecked) and best case (unchecked counted as reported). Worst ≥ cutoff → `gold`; best < cutoff → `near_gold` (share too low); otherwise `unverified`. Both shares and the `missing` / `not_checked` lists are returned.
+
+**Route requirements (TOP2, partially answered, provisional).** Route of administration is required (universal item). Which dose / cannabinoid fields are expected then depends on study type + route, encoded in `route_requirements` from the extraction flowchart (`Cannabis_Classification_Decision_Tree`, Node 2A / 6 / 7) only. If route is not reported, route counts as missing (`near_gold`) and route-dependent fields get no requirement (not counted as extra misses); this rule is provisional pending Shawn. What the flowchart doesn't settle is listed under `route_requirements.open`.
+
+**Cannabinoid vocabulary.** `values` are locked (including Δ8-THC, CBGA, CBL, 11-OH-THC confirmed by the PhD on 2026-10-31); each has `full_name` and `synonyms`. THC-COOH, CBCA, THCVA, CBDVA, CBE, CBT sit in `candidates_pending_phd`: recorded, never scored.
+
+### Answered (Shawn, 2026-10-31)
+
+- **U1:** universal = strain/product name, supplier, form, major cannabinoids; all must be reported for gold.
+- **TOP4:** location is never a pass condition anywhere in the universal tier; it is still recorded.
+- **V2 (provisional):** in vitro tier as above.
+- **TOP2 (partial):** requirements depend on study type and route, per the flowchart; open items listed in `completeness_rules.json`.
+- **U2:** supplier is its own field, separate from strain/product name; for clinical studies it is `not_applicable`.
 
 ### Open PhD questions (not decided)
 
 1. **TOP1:** Does "as previously described [ref]" count as reported in the methods? Until the PhD answers, it is scored as `not_reported` (the wording can go in `evidence_quote`). Keeping the cited reference as provenance is a pending option; no field is added for it.
-2. Which cannabinoids are "major"?
+2. Which cannabinoids are "major"? Pending Shawn. Default until then: any cannabinoid content the paper measured counts as reported.
 3. Does a vague report (e.g. a dose without units) count as reported?
 
 ### Storage / database
