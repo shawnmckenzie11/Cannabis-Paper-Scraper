@@ -1,0 +1,3844 @@
+{
+  "$comment": "Fixed condition list for reporting.conditions (A11). Approved v0.1 by the Biomedical lead (Shawn), 2026-10-31.",
+  "list_version": "0.1.0",
+  "mesh_release_year": 2026,
+  "mesh_release": "MeSH 2026",
+  "status": "approved",
+  "approval": {
+    "approved_by": "Biomedical lead (Shawn)",
+    "approved_on": "2026-10-31",
+    "relayed_by": "dr eggbot",
+    "source_candidate": "condition-list-candidate-v0.1.csv (1100 descriptors, MeSH C + F03)",
+    "rules": [
+      "keep study-design headings (Disease Models, Animal D004195; Prenatal Exposure Delayed Effects D011297)",
+      "include F03 mental disorder headings",
+      "broad parent terms only: mechanical reduction drops a descriptor only if EVERY one of its tree numbers has an ancestor tree number owned by a descriptor that stays on the list (fixpoint); any uncovered tree number keeps it; the two study-design headings are always kept"
+    ],
+    "approved_csv": "condition-list-v0.1-approved.csv",
+    "approved_csv_sha256": "40a9be45cab10ddd1dcdae7b479033cba632686468f834ba43eb846df05cadcc",
+    "reduction_script": "build/condition_list_v0_1_reduce.py",
+    "rollup_csv": "condition-rollup-v0.1.csv",
+    "rollup_csv_sha256": "16e12f4629e55fd45ea48fc327051958f89f23b2a0305a83994135d48eedeb48",
+    "counts": {
+      "candidate": 1100,
+      "approved": 250,
+      "dropped": 850
+    }
+  },
+  "filter_expansion": "Each entry matches itself and every narrower MeSH descriptor whose tree number falls under one of the entry's tree_numbers (MeSH 2026 tree).",
+  "entry_shape": {
+    "key": "snake_case condition key",
+    "mesh_descriptor_id": "MeSH D-number",
+    "preferred_term": "MeSH preferred term",
+    "tree_numbers": [
+      "MeSH 2026 tree numbers (C / F03)"
+    ],
+    "entry_terms": [
+      "MeSH entry-term synonyms (up to 5, from candidate)"
+    ]
+  },
+  "entries": [
+    {
+      "key": "congenital_abnormalities",
+      "mesh_descriptor_id": "D000013",
+      "preferred_term": "Congenital Abnormalities",
+      "tree_numbers": [
+        "C16.131"
+      ],
+      "entry_terms": [
+        "Abnormality, Congenital",
+        "Congenital Abnormality",
+        "Abnormalities, Congenital",
+        "Birth Defects",
+        "Birth Defect"
+      ]
+    },
+    {
+      "key": "long_term_adverse_effects",
+      "mesh_descriptor_id": "D000069451",
+      "preferred_term": "Long Term Adverse Effects",
+      "tree_numbers": [
+        "C23.550.543"
+      ],
+      "entry_terms": [
+        "Adverse Effects, Long Term"
+      ]
+    },
+    {
+      "key": "medically_unexplained_symptoms",
+      "mesh_descriptor_id": "D000071896",
+      "preferred_term": "Medically Unexplained Symptoms",
+      "tree_numbers": [
+        "C23.888.541"
+      ],
+      "entry_terms": [
+        "Medically Unexplained Symptom",
+        "Symptom, Medically Unexplained",
+        "Symptoms, Medically Unexplained",
+        "Unexplained Symptom, Medically",
+        "Unexplained Symptoms, Medically"
+      ]
+    },
+    {
+      "key": "noncommunicable_diseases",
+      "mesh_descriptor_id": "D000073296",
+      "preferred_term": "Noncommunicable Diseases",
+      "tree_numbers": [
+        "C23.550.291.898"
+      ],
+      "entry_terms": [
+        "Noncommunicable Disease",
+        "Noninfectious Diseases",
+        "Noninfectious Disease",
+        "Non-infectious Diseases",
+        "Non-infectious Disease"
+      ]
+    },
+    {
+      "key": "sleepiness",
+      "mesh_descriptor_id": "D000077260",
+      "preferred_term": "Sleepiness",
+      "tree_numbers": [
+        "C23.888.900"
+      ],
+      "entry_terms": [
+        "Somnolence"
+      ]
+    },
+    {
+      "key": "cerebral_cortical_thinning",
+      "mesh_descriptor_id": "D000082643",
+      "preferred_term": "Cerebral Cortical Thinning",
+      "tree_numbers": [
+        "C10.597.210",
+        "C23.300.220",
+        "C23.888.592.206"
+      ],
+      "entry_terms": [
+        "Cortical Thinning, Cerebral",
+        "Thinning, Cerebral Cortical",
+        "Cortical Thinning",
+        "Thinning, Cortical"
+      ]
+    },
+    {
+      "key": "hyperthermia",
+      "mesh_descriptor_id": "D000084462",
+      "preferred_term": "Hyperthermia",
+      "tree_numbers": [
+        "C23.888.119.455",
+        "C26.522.750"
+      ],
+      "entry_terms": [
+        "Hyperthermias",
+        "Hyperpyrexia",
+        "Hyperpyrexias"
+      ]
+    },
+    {
+      "key": "acute_disease",
+      "mesh_descriptor_id": "D000208",
+      "preferred_term": "Acute Disease",
+      "tree_numbers": [
+        "C23.550.291.125"
+      ],
+      "entry_terms": [
+        "Acute Diseases",
+        "Disease, Acute",
+        "Diseases, Acute"
+      ]
+    },
+    {
+      "key": "albuminuria",
+      "mesh_descriptor_id": "D000419",
+      "preferred_term": "Albuminuria",
+      "tree_numbers": [
+        "C12.050.351.968.934.734.269",
+        "C12.200.777.934.734.269",
+        "C12.950.934.734.269",
+        "C23.888.942.750.269"
+      ],
+      "entry_terms": [
+        "Albuminurias"
+      ]
+    },
+    {
+      "key": "alopecia",
+      "mesh_descriptor_id": "D000505",
+      "preferred_term": "Alopecia",
+      "tree_numbers": [
+        "C17.800.329.937.122",
+        "C23.300.035"
+      ],
+      "entry_terms": [
+        "Baldness",
+        "Hair Loss",
+        "Hair Losses",
+        "Losses, Hair",
+        "Loss, Hair"
+      ]
+    },
+    {
+      "key": "amino_acid_metabolism_inborn_errors",
+      "mesh_descriptor_id": "D000592",
+      "preferred_term": "Amino Acid Metabolism, Inborn Errors",
+      "tree_numbers": [
+        "C16.320.565.100",
+        "C18.452.648.100"
+      ],
+      "entry_terms": [
+        "Amino Acid Metabolism Disorders, Inborn",
+        "Amino Acidopathies, Inborn",
+        "Amino Acidopathy, Inborn",
+        "Inborn Amino Acidopathies",
+        "Inborn Amino Acidopathy"
+      ]
+    },
+    {
+      "key": "anemia_sickle_cell",
+      "mesh_descriptor_id": "D000755",
+      "preferred_term": "Anemia, Sickle Cell",
+      "tree_numbers": [
+        "C15.378.050.141.150.150",
+        "C15.378.420.155",
+        "C16.320.070.150",
+        "C16.320.365.155"
+      ],
+      "entry_terms": [
+        "Anemias, Sickle Cell",
+        "Sickle Cell Anemias",
+        "Hemoglobin S Disease",
+        "Disease, Hemoglobin S",
+        "Hemoglobin S Diseases"
+      ]
+    },
+    {
+      "key": "anorexia",
+      "mesh_descriptor_id": "D000855",
+      "preferred_term": "Anorexia",
+      "tree_numbers": [
+        "C23.888.821.108"
+      ],
+      "entry_terms": [
+        "Anorexias"
+      ]
+    },
+    {
+      "key": "hypoxia",
+      "mesh_descriptor_id": "D000860",
+      "preferred_term": "Hypoxia",
+      "tree_numbers": [
+        "C23.888.852.079"
+      ],
+      "entry_terms": [
+        "Deficiency, Oxygen",
+        "Deficiencies, Oxygen",
+        "Oxygen Deficiencies",
+        "Oxygen Deficiency",
+        "Anoxemia"
+      ]
+    },
+    {
+      "key": "apnea",
+      "mesh_descriptor_id": "D001049",
+      "preferred_term": "Apnea",
+      "tree_numbers": [
+        "C08.618.085",
+        "C23.888.852.130"
+      ],
+      "entry_terms": [
+        "Apneas"
+      ]
+    },
+    {
+      "key": "feeding_and_eating_disorders",
+      "mesh_descriptor_id": "D001068",
+      "preferred_term": "Feeding and Eating Disorders",
+      "tree_numbers": [
+        "C23.888.821.329",
+        "F03.400"
+      ],
+      "entry_terms": [
+        "Eating and Feeding Disorders",
+        "Appetite Disorders",
+        "Appetite Disorder",
+        "Eating Disorders",
+        "Disorder, Eating"
+      ]
+    },
+    {
+      "key": "arrhythmias_cardiac",
+      "mesh_descriptor_id": "D001145",
+      "preferred_term": "Arrhythmias, Cardiac",
+      "tree_numbers": [
+        "C14.280.067",
+        "C23.550.073"
+      ],
+      "entry_terms": [
+        "Arrhythmia, Cardiac",
+        "Arrhythmia",
+        "Arrythmia",
+        "Cardiac Arrhythmia",
+        "Cardiac Arrhythmias"
+      ]
+    },
+    {
+      "key": "atrophy",
+      "mesh_descriptor_id": "D001284",
+      "preferred_term": "Atrophy",
+      "tree_numbers": [
+        "C23.300.070"
+      ],
+      "entry_terms": [
+        "Atrophies"
+      ]
+    },
+    {
+      "key": "mental_disorders",
+      "mesh_descriptor_id": "D001523",
+      "preferred_term": "Mental Disorders",
+      "tree_numbers": [
+        "F03"
+      ],
+      "entry_terms": [
+        "Mental Disorder",
+        "Psychiatric Disorders",
+        "Psychiatric Disorder",
+        "Psychiatric Diseases",
+        "Psychiatric Disease"
+      ]
+    },
+    {
+      "key": "urinary_bladder_neurogenic",
+      "mesh_descriptor_id": "D001750",
+      "preferred_term": "Urinary Bladder, Neurogenic",
+      "tree_numbers": [
+        "C10.597.900",
+        "C12.050.351.968.829.760",
+        "C12.200.777.829.839",
+        "C12.950.829.760",
+        "C23.888.592.900"
+      ],
+      "entry_terms": [
+        "Neurogenic Urinary Bladder",
+        "Bladder, Neurogenic",
+        "Neurogenic Bladder",
+        "Neurogenic Bladder Disorder",
+        "Neurogenic Dysfunction of the Urinary Bladder"
+      ]
+    },
+    {
+      "key": "body_weight",
+      "mesh_descriptor_id": "D001835",
+      "preferred_term": "Body Weight",
+      "tree_numbers": [
+        "C23.888.144"
+      ],
+      "entry_terms": [
+        "Body Weights",
+        "Weight, Body",
+        "Weights, Body"
+      ]
+    },
+    {
+      "key": "bruxism",
+      "mesh_descriptor_id": "D002012",
+      "preferred_term": "Bruxism",
+      "tree_numbers": [
+        "C07.793.099"
+      ],
+      "entry_terms": [
+        "Bruxomania",
+        "Teeth Grinding Disorder",
+        "Disorder, Teeth Grinding",
+        "Grinding Disorder, Teeth",
+        "Teeth Grinding Disorders"
+      ]
+    },
+    {
+      "key": "cardiovascular_diseases",
+      "mesh_descriptor_id": "D002318",
+      "preferred_term": "Cardiovascular Diseases",
+      "tree_numbers": [
+        "C14"
+      ],
+      "entry_terms": [
+        "Cardiovascular Disease",
+        "Disease, Cardiovascular",
+        "Cardiac Events",
+        "Cardiac Event",
+        "Event, Cardiac"
+      ]
+    },
+    {
+      "key": "cartilage_diseases",
+      "mesh_descriptor_id": "D002357",
+      "preferred_term": "Cartilage Diseases",
+      "tree_numbers": [
+        "C05.182",
+        "C17.300.182"
+      ],
+      "entry_terms": [
+        "Cartilage Disease",
+        "Chondromalacia",
+        "Chondromalacias"
+      ]
+    },
+    {
+      "key": "cat_diseases",
+      "mesh_descriptor_id": "D002371",
+      "preferred_term": "Cat Diseases",
+      "tree_numbers": [
+        "C22.180"
+      ],
+      "entry_terms": [
+        "Cat Disease",
+        "Disease, Cat",
+        "Diseases, Cat",
+        "Feline Diseases",
+        "Disease, Feline"
+      ]
+    },
+    {
+      "key": "cattle_diseases",
+      "mesh_descriptor_id": "D002418",
+      "preferred_term": "Cattle Diseases",
+      "tree_numbers": [
+        "C22.196"
+      ],
+      "entry_terms": [
+        "Cattle Disease",
+        "Disease, Cattle",
+        "Diseases, Cattle",
+        "Bovine Diseases",
+        "Bovine Disease"
+      ]
+    },
+    {
+      "key": "chromosome_aberrations",
+      "mesh_descriptor_id": "D002869",
+      "preferred_term": "Chromosome Aberrations",
+      "tree_numbers": [
+        "C23.550.210"
+      ],
+      "entry_terms": [
+        "Aberration, Chromosome",
+        "Aberrations, Chromosome",
+        "Chromosome Aberration",
+        "Abnormalities, Chromosomal",
+        "Abnormality, Chromosomal"
+      ]
+    },
+    {
+      "key": "chronic_disease",
+      "mesh_descriptor_id": "D002908",
+      "preferred_term": "Chronic Disease",
+      "tree_numbers": [
+        "C23.550.291.500"
+      ],
+      "entry_terms": [
+        "Chronic Diseases",
+        "Disease, Chronic",
+        "Chronic Illness",
+        "Chronic Illnesses",
+        "Illness, Chronic"
+      ]
+    },
+    {
+      "key": "colonic_polyps",
+      "mesh_descriptor_id": "D003111",
+      "preferred_term": "Colonic Polyps",
+      "tree_numbers": [
+        "C23.300.825.411.235"
+      ],
+      "entry_terms": [
+        "Colonic Polyp",
+        "Polyp, Colonic",
+        "Polyps, Colonic"
+      ]
+    },
+    {
+      "key": "communicable_diseases",
+      "mesh_descriptor_id": "D003141",
+      "preferred_term": "Communicable Diseases",
+      "tree_numbers": [
+        "C01.221",
+        "C23.550.291.531"
+      ],
+      "entry_terms": [
+        "Communicable Disease",
+        "Disease, Communicable",
+        "Diseases, Communicable",
+        "Infectious Diseases",
+        "Disease, Infectious"
+      ]
+    },
+    {
+      "key": "constipation",
+      "mesh_descriptor_id": "D003248",
+      "preferred_term": "Constipation",
+      "tree_numbers": [
+        "C23.888.821.150"
+      ],
+      "entry_terms": [
+        "Colonic Inertia",
+        "Dyschezia"
+      ]
+    },
+    {
+      "key": "constriction_pathologic",
+      "mesh_descriptor_id": "D003251",
+      "preferred_term": "Constriction, Pathologic",
+      "tree_numbers": [
+        "C23.300.287"
+      ],
+      "entry_terms": [
+        "Constrictions, Pathologic",
+        "Pathologic Constrictions",
+        "Constriction, Pathological",
+        "Pathological Constriction",
+        "Pathologic Constriction"
+      ]
+    },
+    {
+      "key": "cough",
+      "mesh_descriptor_id": "D003371",
+      "preferred_term": "Cough",
+      "tree_numbers": [
+        "C08.618.248",
+        "C23.888.852.293"
+      ],
+      "entry_terms": [
+        "Coughs"
+      ]
+    },
+    {
+      "key": "congenital_hypothyroidism",
+      "mesh_descriptor_id": "D003409",
+      "preferred_term": "Congenital Hypothyroidism",
+      "tree_numbers": [
+        "C05.116.099.343.347",
+        "C05.116.132.256",
+        "C16.320.240.625",
+        "C19.297.155",
+        "C19.874.482.281"
+      ],
+      "entry_terms": [
+        "Hypothyroidism, Congenital",
+        "Cretinism",
+        "Myxedema, Congenital",
+        "Endemic Cretinism",
+        "Cretinism, Endemic"
+      ]
+    },
+    {
+      "key": "cyanosis",
+      "mesh_descriptor_id": "D003490",
+      "preferred_term": "Cyanosis",
+      "tree_numbers": [
+        "C23.888.248"
+      ],
+      "entry_terms": [
+        "Cyanoses"
+      ]
+    },
+    {
+      "key": "cystic_fibrosis",
+      "mesh_descriptor_id": "D003550",
+      "preferred_term": "Cystic Fibrosis",
+      "tree_numbers": [
+        "C06.689.202",
+        "C08.381.187",
+        "C16.320.190",
+        "C16.614.213"
+      ],
+      "entry_terms": [
+        "Fibrosis, Cystic",
+        "Mucoviscidosis",
+        "Pancreatic Cystic Fibrosis",
+        "Cystic Fibrosis, Pancreatic",
+        "Cystic Fibrosis of Pancreas"
+      ]
+    },
+    {
+      "key": "death",
+      "mesh_descriptor_id": "D003643",
+      "preferred_term": "Death",
+      "tree_numbers": [
+        "C23.550.260"
+      ],
+      "entry_terms": [
+        "End Of Life",
+        "End-Of-Life",
+        "Determination of Death",
+        "Near-Death Experience",
+        "Cardiac Death"
+      ]
+    },
+    {
+      "key": "decerebrate_state",
+      "mesh_descriptor_id": "D003655",
+      "preferred_term": "Decerebrate State",
+      "tree_numbers": [
+        "C10.597.305",
+        "C23.888.592.298"
+      ],
+      "entry_terms": [
+        "Decerebrate States",
+        "State, Decerebrate",
+        "States, Decerebrate",
+        "Rigidity, Decerebrate",
+        "Decerebrate Rigidity"
+      ]
+    },
+    {
+      "key": "deglutition_disorders",
+      "mesh_descriptor_id": "D003680",
+      "preferred_term": "Deglutition Disorders",
+      "tree_numbers": [
+        "C06.405.117.119",
+        "C09.775.174"
+      ],
+      "entry_terms": [
+        "Deglutition Disorder",
+        "Disorders, Deglutition",
+        "Dysphagia",
+        "Swallowing Disorders",
+        "Swallowing Disorder"
+      ]
+    },
+    {
+      "key": "dehydration",
+      "mesh_descriptor_id": "D003681",
+      "preferred_term": "Dehydration",
+      "tree_numbers": [
+        "C18.452.950.179",
+        "C23.550.274"
+      ],
+      "entry_terms": [
+        "Water Stress",
+        "Stress, Water"
+      ]
+    },
+    {
+      "key": "dental_caries",
+      "mesh_descriptor_id": "D003731",
+      "preferred_term": "Dental Caries",
+      "tree_numbers": [
+        "C07.793.720.210"
+      ],
+      "entry_terms": [
+        "Carious Lesions",
+        "Carious Lesion",
+        "Lesion, Carious",
+        "Lesions, Carious",
+        "Caries, Dental"
+      ]
+    },
+    {
+      "key": "dental_plaque",
+      "mesh_descriptor_id": "D003773",
+      "preferred_term": "Dental Plaque",
+      "tree_numbers": [
+        "C07.793.208.377"
+      ],
+      "entry_terms": [
+        "Plaque, Dental"
+      ]
+    },
+    {
+      "key": "dermatitis_atopic",
+      "mesh_descriptor_id": "D003876",
+      "preferred_term": "Dermatitis, Atopic",
+      "tree_numbers": [
+        "C16.320.850.210",
+        "C17.800.174.193",
+        "C17.800.815.193",
+        "C17.800.827.210",
+        "C20.543.480.343"
+      ],
+      "entry_terms": [
+        "Atopic Dermatitis",
+        "Eczema, Atopic",
+        "Atopic Eczema",
+        "Neurodermatitis, Atopic",
+        "Atopic Neurodermatitis"
+      ]
+    },
+    {
+      "key": "dermatomyositis",
+      "mesh_descriptor_id": "D003882",
+      "preferred_term": "Dermatomyositis",
+      "tree_numbers": [
+        "C05.651.594.819.500",
+        "C10.668.491.562.575.500",
+        "C17.300.250",
+        "C17.800.185"
+      ],
+      "entry_terms": [
+        "Polymyositis-Dermatomyositis",
+        "Polymyositis Dermatomyositis",
+        "Dermatopolymyositis",
+        "Dermatomyositis, Adult Type",
+        "Adult Type Dermatomyositis"
+      ]
+    },
+    {
+      "key": "diarrhea",
+      "mesh_descriptor_id": "D003967",
+      "preferred_term": "Diarrhea",
+      "tree_numbers": [
+        "C23.888.821.214"
+      ],
+      "entry_terms": [
+        "Diarrheas"
+      ]
+    },
+    {
+      "key": "digeorge_syndrome",
+      "mesh_descriptor_id": "D004062",
+      "preferred_term": "DiGeorge Syndrome",
+      "tree_numbers": [
+        "C05.660.207.103.500",
+        "C14.240.400.021.500",
+        "C14.280.400.044.500",
+        "C15.604.451.249.500",
+        "C16.131.077.019.500",
+        "C16.131.240.400.021.500",
+        "C16.131.260.019.500",
+        "C16.131.482.249.500",
+        "C16.131.621.207.103.500",
+        "C16.320.180.019.500",
+        "C19.642.482.500.500"
+      ],
+      "entry_terms": [
+        "Syndrome, DiGeorge",
+        "DiGeorge Anomaly",
+        "DiGeorge Sequence",
+        "Familial Third and Fourth Pharyngeal Pouch Syndrome",
+        "Hypoplasia of Thymus and Parathyroids"
+      ]
+    },
+    {
+      "key": "digestive_system_diseases",
+      "mesh_descriptor_id": "D004066",
+      "preferred_term": "Digestive System Diseases",
+      "tree_numbers": [
+        "C06"
+      ],
+      "entry_terms": [
+        "Digestive System Disease",
+        "Digestive System Disorders",
+        "Digestive System Disorder",
+        "System Disorders, Digestive",
+        "Hepatobiliary Disorders"
+      ]
+    },
+    {
+      "key": "dilatation_pathologic",
+      "mesh_descriptor_id": "D004108",
+      "preferred_term": "Dilatation, Pathologic",
+      "tree_numbers": [
+        "C23.300.325"
+      ],
+      "entry_terms": [
+        "Dilatation, Pathological",
+        "Pathological Dilatation",
+        "Pathological Dilatations",
+        "Dilatations, Pathologic",
+        "Dilatations, Pathological"
+      ]
+    },
+    {
+      "key": "disease",
+      "mesh_descriptor_id": "D004194",
+      "preferred_term": "Disease",
+      "tree_numbers": [
+        "C23.550.288"
+      ],
+      "entry_terms": [
+        "Diseases"
+      ]
+    },
+    {
+      "key": "disease_models_animal",
+      "mesh_descriptor_id": "D004195",
+      "preferred_term": "Disease Models, Animal",
+      "tree_numbers": [
+        "C22.232"
+      ],
+      "entry_terms": [
+        "Animal Disease Model",
+        "Animal Disease Models",
+        "Disease Model, Animal"
+      ]
+    },
+    {
+      "key": "disease_susceptibility",
+      "mesh_descriptor_id": "D004198",
+      "preferred_term": "Disease Susceptibility",
+      "tree_numbers": [
+        "C23.550.291.687"
+      ],
+      "entry_terms": [
+        "Diathesis",
+        "Diatheses",
+        "Susceptibility, Disease",
+        "Disease Susceptibilities",
+        "Susceptibilities, Disease"
+      ]
+    },
+    {
+      "key": "diseases_in_twins",
+      "mesh_descriptor_id": "D004200",
+      "preferred_term": "Diseases in Twins",
+      "tree_numbers": [
+        "C23.550.291.750"
+      ],
+      "entry_terms": [
+        "Diseases in Twin",
+        "in Twin, Diseases",
+        "in Twins, Diseases",
+        "Twin, Diseases in",
+        "Twins, Diseases in"
+      ]
+    },
+    {
+      "key": "dizziness",
+      "mesh_descriptor_id": "D004244",
+      "preferred_term": "Dizziness",
+      "tree_numbers": [
+        "C23.888.592.763.237"
+      ],
+      "entry_terms": [
+        "Dizzyness",
+        "Lightheadedness",
+        "Light-Headedness",
+        "Light Headedness",
+        "Orthostasis"
+      ]
+    },
+    {
+      "key": "dog_diseases",
+      "mesh_descriptor_id": "D004283",
+      "preferred_term": "Dog Diseases",
+      "tree_numbers": [
+        "C22.268"
+      ],
+      "entry_terms": [
+        "Disease, Dog",
+        "Diseases, Dog",
+        "Dog Disease",
+        "Canine Diseases",
+        "Canine Disease"
+      ]
+    },
+    {
+      "key": "dysgeusia",
+      "mesh_descriptor_id": "D004408",
+      "preferred_term": "Dysgeusia",
+      "tree_numbers": [
+        "C10.597.751.861.479",
+        "C23.888.592.763.861.479"
+      ],
+      "entry_terms": [
+        "Dysgeusias",
+        "Taste, Distorted",
+        "Distorted Taste",
+        "Taste, Altered",
+        "Altered Taste"
+      ]
+    },
+    {
+      "key": "dyspepsia",
+      "mesh_descriptor_id": "D004415",
+      "preferred_term": "Dyspepsia",
+      "tree_numbers": [
+        "C23.888.821.236"
+      ],
+      "entry_terms": [
+        "Dyspepsias",
+        "Indigestion",
+        "Indigestions"
+      ]
+    },
+    {
+      "key": "dyspnea",
+      "mesh_descriptor_id": "D004417",
+      "preferred_term": "Dyspnea",
+      "tree_numbers": [
+        "C08.618.326",
+        "C23.888.852.371"
+      ],
+      "entry_terms": [
+        "Breathlessness",
+        "Shortness of Breath",
+        "Breath Shortness",
+        "Orthopnea",
+        "Recumbent Dyspnea"
+      ]
+    },
+    {
+      "key": "ear_diseases",
+      "mesh_descriptor_id": "D004427",
+      "preferred_term": "Ear Diseases",
+      "tree_numbers": [
+        "C09.218"
+      ],
+      "entry_terms": [
+        "Disease, Ear",
+        "Ear Disease",
+        "Otological Diseases",
+        "Disease, Otological",
+        "Otological Disease"
+      ]
+    },
+    {
+      "key": "edema",
+      "mesh_descriptor_id": "D004487",
+      "preferred_term": "Edema",
+      "tree_numbers": [
+        "C23.888.277"
+      ],
+      "entry_terms": [
+        "Dropsy",
+        "Hydrops",
+        "Anasarca"
+      ]
+    },
+    {
+      "key": "ehlers_danlos_syndrome",
+      "mesh_descriptor_id": "D004535",
+      "preferred_term": "Ehlers-Danlos Syndrome",
+      "tree_numbers": [
+        "C14.907.454.240",
+        "C15.378.463.515.240",
+        "C16.131.831.428",
+        "C16.320.850.260",
+        "C17.300.200.310",
+        "C17.800.804.428",
+        "C17.800.827.260"
+      ],
+      "entry_terms": [
+        "Ehlers Danlos Syndrome",
+        "Syndrome, Ehlers-Danlos",
+        "Ehlers-Danlos Disease",
+        "Disease, Ehlers-Danlos",
+        "Cutis Elastica"
+      ]
+    },
+    {
+      "key": "emergencies",
+      "mesh_descriptor_id": "D004630",
+      "preferred_term": "Emergencies",
+      "tree_numbers": [
+        "C23.550.291.781"
+      ],
+      "entry_terms": [
+        "Emergency"
+      ]
+    },
+    {
+      "key": "emphysema",
+      "mesh_descriptor_id": "D004646",
+      "preferred_term": "Emphysema",
+      "tree_numbers": [
+        "C23.550.325"
+      ],
+      "entry_terms": []
+    },
+    {
+      "key": "endocrine_system_diseases",
+      "mesh_descriptor_id": "D004700",
+      "preferred_term": "Endocrine System Diseases",
+      "tree_numbers": [
+        "C19"
+      ],
+      "entry_terms": [
+        "Disease, Endocrine System",
+        "Diseases, Endocrine System",
+        "Endocrine System Disease",
+        "System Disease, Endocrine",
+        "System Diseases, Endocrine"
+      ]
+    },
+    {
+      "key": "epidermolysis_bullosa",
+      "mesh_descriptor_id": "D004820",
+      "preferred_term": "Epidermolysis Bullosa",
+      "tree_numbers": [
+        "C16.131.831.493",
+        "C16.320.850.275",
+        "C17.800.804.493",
+        "C17.800.827.275",
+        "C17.800.865.410"
+      ],
+      "entry_terms": [
+        "Acantholysis Bullosa"
+      ]
+    },
+    {
+      "key": "erythema",
+      "mesh_descriptor_id": "D004890",
+      "preferred_term": "Erythema",
+      "tree_numbers": [
+        "C17.800.229",
+        "C23.888.885.328"
+      ],
+      "entry_terms": [
+        "Erythemas"
+      ]
+    },
+    {
+      "key": "eye_diseases",
+      "mesh_descriptor_id": "D005128",
+      "preferred_term": "Eye Diseases",
+      "tree_numbers": [
+        "C11"
+      ],
+      "entry_terms": [
+        "Eye Disease",
+        "Eye Disorders",
+        "Eye Disorder"
+      ]
+    },
+    {
+      "key": "fatigue",
+      "mesh_descriptor_id": "D005221",
+      "preferred_term": "Fatigue",
+      "tree_numbers": [
+        "C23.888.369"
+      ],
+      "entry_terms": [
+        "Lassitude"
+      ]
+    },
+    {
+      "key": "fetal_diseases",
+      "mesh_descriptor_id": "D005315",
+      "preferred_term": "Fetal Diseases",
+      "tree_numbers": [
+        "C12.050.703.277",
+        "C16.300"
+      ],
+      "entry_terms": [
+        "Disease, Fetal",
+        "Diseases, Fetal",
+        "Fetal Disease",
+        "Embryopathies",
+        "Embryopathy"
+      ]
+    },
+    {
+      "key": "fetal_growth_retardation",
+      "mesh_descriptor_id": "D005317",
+      "preferred_term": "Fetal Growth Retardation",
+      "tree_numbers": [
+        "C12.050.703.277.370",
+        "C16.300.390",
+        "C23.550.393.450"
+      ],
+      "entry_terms": [
+        "Intrauterine Growth Restriction",
+        "Fetal Growth Restriction",
+        "Growth Retardation, Intrauterine",
+        "Intrauterine Growth Retardation"
+      ]
+    },
+    {
+      "key": "fever",
+      "mesh_descriptor_id": "D005334",
+      "preferred_term": "Fever",
+      "tree_numbers": [
+        "C23.888.119.344"
+      ],
+      "entry_terms": [
+        "Fevers",
+        "Pyrexia",
+        "Pyrexias"
+      ]
+    },
+    {
+      "key": "fibrosis",
+      "mesh_descriptor_id": "D005355",
+      "preferred_term": "Fibrosis",
+      "tree_numbers": [
+        "C23.550.355"
+      ],
+      "entry_terms": [
+        "Fibroses",
+        "Cirrhosis"
+      ]
+    },
+    {
+      "key": "genital_diseases_female",
+      "mesh_descriptor_id": "D005831",
+      "preferred_term": "Genital Diseases, Female",
+      "tree_numbers": [
+        "C12.050.351.500",
+        "C12.100.250"
+      ],
+      "entry_terms": [
+        "Female Genital Diseases",
+        "Diseases, Female Genital",
+        "Female Genital Disease",
+        "Genital Disease, Female",
+        "Gynecologic Diseases"
+      ]
+    },
+    {
+      "key": "genital_neoplasms_female",
+      "mesh_descriptor_id": "D005833",
+      "preferred_term": "Genital Neoplasms, Female",
+      "tree_numbers": [
+        "C04.588.945.418",
+        "C12.050.351.500.242",
+        "C12.050.351.937.418",
+        "C12.100.250.242",
+        "C12.900.418"
+      ],
+      "entry_terms": [
+        "Female Genital Neoplasm",
+        "Genital Neoplasm, Female",
+        "Neoplasm, Female Genital",
+        "Female Genital Neoplasms",
+        "Neoplasms, Female Genital"
+      ]
+    },
+    {
+      "key": "tourette_syndrome",
+      "mesh_descriptor_id": "D005879",
+      "preferred_term": "Tourette Syndrome",
+      "tree_numbers": [
+        "C10.228.140.079.898",
+        "C10.228.662.825.800",
+        "C10.574.500.850",
+        "C16.320.400.820",
+        "F03.625.992.850"
+      ],
+      "entry_terms": [
+        "Syndrome, Tourette",
+        "Tic Disorder, Combined Vocal and Multiple Motor",
+        "Tourette Disease",
+        "Tourette Disorder",
+        "Tourette's Disease"
+      ]
+    },
+    {
+      "key": "gliosis",
+      "mesh_descriptor_id": "D005911",
+      "preferred_term": "Gliosis",
+      "tree_numbers": [
+        "C23.550.369"
+      ],
+      "entry_terms": [
+        "Astrocytosis",
+        "Astrocytoses",
+        "Astrogliosis",
+        "Glial Scar",
+        "Glial Scars"
+      ]
+    },
+    {
+      "key": "hematologic_diseases",
+      "mesh_descriptor_id": "D006402",
+      "preferred_term": "Hematologic Diseases",
+      "tree_numbers": [
+        "C15.378"
+      ],
+      "entry_terms": [
+        "Disease, Hematologic",
+        "Diseases, Hematologic",
+        "Hematologic Disease",
+        "Blood Diseases",
+        "Blood Disease"
+      ]
+    },
+    {
+      "key": "hemolysis",
+      "mesh_descriptor_id": "D006461",
+      "preferred_term": "Hemolysis",
+      "tree_numbers": [
+        "C23.550.403"
+      ],
+      "entry_terms": [
+        "Haemolysis",
+        "Haemolyses",
+        "Intravascular Hemolysis",
+        "Hemolyses, Intravascular",
+        "Hemolysis, Intravascular"
+      ]
+    },
+    {
+      "key": "hemoptysis",
+      "mesh_descriptor_id": "D006469",
+      "preferred_term": "Hemoptysis",
+      "tree_numbers": [
+        "C08.381.348",
+        "C23.550.414.896",
+        "C23.888.852.430"
+      ],
+      "entry_terms": [
+        "Hemoptyses"
+      ]
+    },
+    {
+      "key": "hemorrhage",
+      "mesh_descriptor_id": "D006470",
+      "preferred_term": "Hemorrhage",
+      "tree_numbers": [
+        "C23.550.414"
+      ],
+      "entry_terms": [
+        "Hemorrhages",
+        "Bleeding"
+      ]
+    },
+    {
+      "key": "hernia_diaphragmatic",
+      "mesh_descriptor_id": "D006548",
+      "preferred_term": "Hernia, Diaphragmatic",
+      "tree_numbers": [
+        "C23.300.707.960.500"
+      ],
+      "entry_terms": [
+        "Diaphragmatic Hernias",
+        "Hernias, Diaphragmatic",
+        "Diaphragmatic Hernia"
+      ]
+    },
+    {
+      "key": "hernia_inguinal",
+      "mesh_descriptor_id": "D006552",
+      "preferred_term": "Hernia, Inguinal",
+      "tree_numbers": [
+        "C23.300.707.374.875"
+      ],
+      "entry_terms": [
+        "Hernias, Inguinal",
+        "Inguinal Hernias",
+        "Inguinal Hernia",
+        "Inguinal Hernia, Indirect",
+        "Hernia, Indirect Inguinal"
+      ]
+    },
+    {
+      "key": "hernia_ventral",
+      "mesh_descriptor_id": "D006555",
+      "preferred_term": "Hernia, Ventral",
+      "tree_numbers": [
+        "C23.300.707.374.937"
+      ],
+      "entry_terms": [
+        "Hernias, Ventral",
+        "Ventral Hernias",
+        "Ventral Hernia"
+      ]
+    },
+    {
+      "key": "histiocytosis_langerhans_cell",
+      "mesh_descriptor_id": "D006646",
+      "preferred_term": "Histiocytosis, Langerhans-Cell",
+      "tree_numbers": [
+        "C08.381.483.375",
+        "C15.604.250.400"
+      ],
+      "entry_terms": [
+        "Histiocytosis, Langerhans Cell",
+        "Histiocytosis X",
+        "Histiocytosis, Generalized",
+        "Generalized Histiocytoses",
+        "Generalized Histiocytosis"
+      ]
+    },
+    {
+      "key": "horse_diseases",
+      "mesh_descriptor_id": "D006734",
+      "preferred_term": "Horse Diseases",
+      "tree_numbers": [
+        "C22.488"
+      ],
+      "entry_terms": [
+        "Disease, Horse",
+        "Diseases, Horse",
+        "Horse Disease",
+        "Equine Diseases",
+        "Disease, Equine"
+      ]
+    },
+    {
+      "key": "huntington_disease",
+      "mesh_descriptor_id": "D006816",
+      "preferred_term": "Huntington Disease",
+      "tree_numbers": [
+        "C10.228.140.079.545",
+        "C10.228.140.380.278",
+        "C10.228.662.262.249.750",
+        "C10.574.500.497",
+        "C16.320.400.430",
+        "F03.615.250.400",
+        "F03.615.400.390"
+      ],
+      "entry_terms": [
+        "Progressive Chorea, Hereditary, Chronic (Huntington)",
+        "Chronic Progressive Hereditary Chorea (Huntington)",
+        "Huntington's Chorea",
+        "Chorea, Huntington's",
+        "Huntington Chorea"
+      ]
+    },
+    {
+      "key": "hyperalgesia",
+      "mesh_descriptor_id": "D006930",
+      "preferred_term": "Hyperalgesia",
+      "tree_numbers": [
+        "C10.597.751.791.400",
+        "C23.888.592.763.770.400"
+      ],
+      "entry_terms": [
+        "Hyperalgesias",
+        "Hyperalgia",
+        "Hyperalgesic Sensations",
+        "Hyperalgesic Sensation",
+        "Sensation, Hyperalgesic"
+      ]
+    },
+    {
+      "key": "hypercapnia",
+      "mesh_descriptor_id": "D006935",
+      "preferred_term": "Hypercapnia",
+      "tree_numbers": [
+        "C23.888.852.544"
+      ],
+      "entry_terms": []
+    },
+    {
+      "key": "hyperphagia",
+      "mesh_descriptor_id": "D006963",
+      "preferred_term": "Hyperphagia",
+      "tree_numbers": [
+        "C23.888.821.645"
+      ],
+      "entry_terms": [
+        "Overeating",
+        "Polyphagia",
+        "Polyphagias"
+      ]
+    },
+    {
+      "key": "hyperplasia",
+      "mesh_descriptor_id": "D006965",
+      "preferred_term": "Hyperplasia",
+      "tree_numbers": [
+        "C23.550.444"
+      ],
+      "entry_terms": [
+        "Hyperplasias"
+      ]
+    },
+    {
+      "key": "hypertrophy",
+      "mesh_descriptor_id": "D006984",
+      "preferred_term": "Hypertrophy",
+      "tree_numbers": [
+        "C23.300.775"
+      ],
+      "entry_terms": [
+        "Hypertrophies"
+      ]
+    },
+    {
+      "key": "hyperventilation",
+      "mesh_descriptor_id": "D006985",
+      "preferred_term": "Hyperventilation",
+      "tree_numbers": [
+        "C08.618.501",
+        "C23.888.852.591"
+      ],
+      "entry_terms": [
+        "Hyperventilations"
+      ]
+    },
+    {
+      "key": "hypophosphatasia",
+      "mesh_descriptor_id": "D007014",
+      "preferred_term": "Hypophosphatasia",
+      "tree_numbers": [
+        "C16.320.565.618.482",
+        "C18.452.648.618.482"
+      ],
+      "entry_terms": [
+        "Hypophosphatasias"
+      ]
+    },
+    {
+      "key": "hypothermia",
+      "mesh_descriptor_id": "D007035",
+      "preferred_term": "Hypothermia",
+      "tree_numbers": [
+        "C23.888.119.565"
+      ],
+      "entry_terms": [
+        "Hypothermias",
+        "Hypothermia, Accidental",
+        "Accidental Hypothermia",
+        "Accidental Hypothermias",
+        "Hypothermias, Accidental"
+      ]
+    },
+    {
+      "key": "iatrogenic_disease",
+      "mesh_descriptor_id": "D007049",
+      "preferred_term": "Iatrogenic Disease",
+      "tree_numbers": [
+        "C23.550.291.875"
+      ],
+      "entry_terms": [
+        "Disease, Iatrogenic",
+        "Diseases, Iatrogenic",
+        "Iatrogenic Diseases",
+        "Hospital-Acquired Condition",
+        "Condition, Hospital-Acquired"
+      ]
+    },
+    {
+      "key": "immune_system_diseases",
+      "mesh_descriptor_id": "D007154",
+      "preferred_term": "Immune System Diseases",
+      "tree_numbers": [
+        "C20"
+      ],
+      "entry_terms": [
+        "Disease, Immune System",
+        "Immune System Disease",
+        "Immunologic Diseases",
+        "Disease, Immunologic",
+        "Immunologic Disease"
+      ]
+    },
+    {
+      "key": "erectile_dysfunction",
+      "mesh_descriptor_id": "D007172",
+      "preferred_term": "Erectile Dysfunction",
+      "tree_numbers": [
+        "C12.100.500.214",
+        "C12.100.875.486",
+        "C12.200.294.214",
+        "F03.835.400"
+      ],
+      "entry_terms": [
+        "Dysfunction, Erectile",
+        "Impotence",
+        "Male Impotence",
+        "Impotence, Male",
+        "Male Sexual Impotence"
+      ]
+    },
+    {
+      "key": "infant_newborn_diseases",
+      "mesh_descriptor_id": "D007232",
+      "preferred_term": "Infant, Newborn, Diseases",
+      "tree_numbers": [
+        "C16.614"
+      ],
+      "entry_terms": [
+        "Neonatal Diseases",
+        "Disease, Neonatal",
+        "Diseases, Neonatal",
+        "Neonatal Disease"
+      ]
+    },
+    {
+      "key": "infections",
+      "mesh_descriptor_id": "D007239",
+      "preferred_term": "Infections",
+      "tree_numbers": [
+        "C01"
+      ],
+      "entry_terms": [
+        "Infection",
+        "Infection and Infestation",
+        "Infestation and Infection",
+        "Infections and Infestations",
+        "Infestations and Infections"
+      ]
+    },
+    {
+      "key": "infectious_mononucleosis",
+      "mesh_descriptor_id": "D007244",
+      "preferred_term": "Infectious Mononucleosis",
+      "tree_numbers": [
+        "C01.925.256.466.313.400",
+        "C15.378.553.381",
+        "C15.604.515.516",
+        "C20.683.515.515"
+      ],
+      "entry_terms": [
+        "Glandular Fever",
+        "Fever, Glandular",
+        "Mononucleosis, Infectious"
+      ]
+    },
+    {
+      "key": "infertility",
+      "mesh_descriptor_id": "D007246",
+      "preferred_term": "Infertility",
+      "tree_numbers": [
+        "C12.100.750"
+      ],
+      "entry_terms": [
+        "Sterility, Reproductive",
+        "Reproductive Sterility",
+        "Sterility",
+        "Subfertility",
+        "Sub-Fertility"
+      ]
+    },
+    {
+      "key": "infertility_male",
+      "mesh_descriptor_id": "D007248",
+      "preferred_term": "Infertility, Male",
+      "tree_numbers": [
+        "C12.100.500.430",
+        "C12.100.750.700",
+        "C12.200.294.430"
+      ],
+      "entry_terms": [
+        "Male Infertility",
+        "Sterility, Male",
+        "Male Sterility",
+        "Subfertility, Male",
+        "Male Subfertility"
+      ]
+    },
+    {
+      "key": "inflammation",
+      "mesh_descriptor_id": "D007249",
+      "preferred_term": "Inflammation",
+      "tree_numbers": [
+        "C23.550.470"
+      ],
+      "entry_terms": [
+        "Inflammations",
+        "Innate Inflammatory Response",
+        "Inflammatory Response, Innate",
+        "Innate Inflammatory Responses"
+      ]
+    },
+    {
+      "key": "intestinal_fistula",
+      "mesh_descriptor_id": "D007412",
+      "preferred_term": "Intestinal Fistula",
+      "tree_numbers": [
+        "C06.267.550",
+        "C06.405.469.471",
+        "C23.300.575.185.550"
+      ],
+      "entry_terms": [
+        "Fistula, Intestinal",
+        "Enterocutaneous Fistula",
+        "Fistula, Enterocutaneous",
+        "Cholecystoduodenal Fistula",
+        "Fistula, Cholecystoduodenal"
+      ]
+    },
+    {
+      "key": "ischemia",
+      "mesh_descriptor_id": "D007511",
+      "preferred_term": "Ischemia",
+      "tree_numbers": [
+        "C23.550.513"
+      ],
+      "entry_terms": [
+        "Ischemias"
+      ]
+    },
+    {
+      "key": "lameness_animal",
+      "mesh_descriptor_id": "D007794",
+      "preferred_term": "Lameness, Animal",
+      "tree_numbers": [
+        "C22.510"
+      ],
+      "entry_terms": [
+        "Animal Lameness",
+        "Animal Lamenesses",
+        "Lamenesses, Animal",
+        "Gait Disorders, Animal",
+        "Animal Gait Disorder"
+      ]
+    },
+    {
+      "key": "laryngeal_diseases",
+      "mesh_descriptor_id": "D007818",
+      "preferred_term": "Laryngeal Diseases",
+      "tree_numbers": [
+        "C08.360",
+        "C09.400"
+      ],
+      "entry_terms": [
+        "Disease, Laryngeal",
+        "Diseases, Laryngeal",
+        "Laryngeal Disease",
+        "Larynx Diseases",
+        "Disease, Larynx"
+      ]
+    },
+    {
+      "key": "leigh_disease",
+      "mesh_descriptor_id": "D007888",
+      "preferred_term": "Leigh Disease",
+      "tree_numbers": [
+        "C10.228.140.163.100.412",
+        "C16.320.565.189.412",
+        "C16.320.565.202.810.444",
+        "C18.452.132.100.412",
+        "C18.452.648.189.412",
+        "C18.452.648.202.810.444",
+        "C18.452.660.520"
+      ],
+      "entry_terms": [
+        "Encephalomyelitis, Subacute Necrotizing",
+        "Encephalomyelitides, Subacute Necrotizing",
+        "Necrotizing Encephalomyelitides, Subacute",
+        "Necrotizing Encephalomyelitis, Subacute",
+        "Subacute Necrotizing Encephalomyelitides"
+      ]
+    },
+    {
+      "key": "lipid_metabolism_inborn_errors",
+      "mesh_descriptor_id": "D008052",
+      "preferred_term": "Lipid Metabolism, Inborn Errors",
+      "tree_numbers": [
+        "C16.320.565.398",
+        "C18.452.584.563",
+        "C18.452.648.398"
+      ],
+      "entry_terms": [
+        "Lipid Metabolism, Inborn Error"
+      ]
+    },
+    {
+      "key": "lupus_erythematosus_systemic",
+      "mesh_descriptor_id": "D008180",
+      "preferred_term": "Lupus Erythematosus, Systemic",
+      "tree_numbers": [
+        "C17.300.480",
+        "C20.111.590"
+      ],
+      "entry_terms": [
+        "Lupus Erythematosus Disseminatus",
+        "Systemic Lupus Erythematosus",
+        "Libman-Sacks Disease",
+        "Disease, Libman-Sacks",
+        "Libman Sacks Disease"
+      ]
+    },
+    {
+      "key": "lymphedema",
+      "mesh_descriptor_id": "D008209",
+      "preferred_term": "Lymphedema",
+      "tree_numbers": [
+        "C15.604.496"
+      ],
+      "entry_terms": [
+        "Lymphedemas",
+        "Milroy Disease",
+        "Congenital Hereditary Lymphedema",
+        "Congenital Hereditary Lymphedemas",
+        "Hereditary Lymphedema, Congenital"
+      ]
+    },
+    {
+      "key": "lymphoma",
+      "mesh_descriptor_id": "D008223",
+      "preferred_term": "Lymphoma",
+      "tree_numbers": [
+        "C04.557.386",
+        "C15.604.515.569",
+        "C20.683.515.761"
+      ],
+      "entry_terms": [
+        "Lymphomas",
+        "Germinoblastoma",
+        "Germinoblastomas",
+        "Lymphoma, Malignant",
+        "Lymphomas, Malignant"
+      ]
+    },
+    {
+      "key": "malocclusion",
+      "mesh_descriptor_id": "D008310",
+      "preferred_term": "Malocclusion",
+      "tree_numbers": [
+        "C07.793.494"
+      ],
+      "entry_terms": [
+        "Malocclusions",
+        "Tooth Crowding",
+        "Crowdings, Tooth",
+        "Crowding, Tooth",
+        "Crossbite"
+      ]
+    },
+    {
+      "key": "menstruation_disturbances",
+      "mesh_descriptor_id": "D008599",
+      "preferred_term": "Menstruation Disturbances",
+      "tree_numbers": [
+        "C23.550.568"
+      ],
+      "entry_terms": [
+        "Disturbance, Menstruation",
+        "Disturbances, Menstruation",
+        "Menstruation Disturbance",
+        "Menstruation Disorders",
+        "Disorder, Menstruation"
+      ]
+    },
+    {
+      "key": "metabolic_diseases",
+      "mesh_descriptor_id": "D008659",
+      "preferred_term": "Metabolic Diseases",
+      "tree_numbers": [
+        "C18.452"
+      ],
+      "entry_terms": [
+        "Disease, Metabolic",
+        "Metabolic Disease",
+        "Diseases, Metabolic",
+        "Thesaurismosis",
+        "Thesaurismoses"
+      ]
+    },
+    {
+      "key": "motion_sickness",
+      "mesh_descriptor_id": "D009041",
+      "preferred_term": "Motion Sickness",
+      "tree_numbers": [
+        "C23.888.571"
+      ],
+      "entry_terms": [
+        "Sickness, Motion",
+        "Airsickness",
+        "Air Sickness",
+        "Sickness, Air",
+        "Carsickness"
+      ]
+    },
+    {
+      "key": "mouth_diseases",
+      "mesh_descriptor_id": "D009059",
+      "preferred_term": "Mouth Diseases",
+      "tree_numbers": [
+        "C07.465"
+      ],
+      "entry_terms": [
+        "Disease, Mouth",
+        "Diseases, Mouth",
+        "Mouth Disease"
+      ]
+    },
+    {
+      "key": "mucopolysaccharidoses",
+      "mesh_descriptor_id": "D009083",
+      "preferred_term": "Mucopolysaccharidoses",
+      "tree_numbers": [
+        "C16.320.565.202.715",
+        "C16.320.565.595.600",
+        "C17.300.550.575",
+        "C18.452.648.202.715",
+        "C18.452.648.595.600"
+      ],
+      "entry_terms": [
+        "Mucopolysaccharidosis"
+      ]
+    },
+    {
+      "key": "muscle_spasticity",
+      "mesh_descriptor_id": "D009128",
+      "preferred_term": "Muscle Spasticity",
+      "tree_numbers": [
+        "C05.651.512",
+        "C10.597.613.550.550",
+        "C23.888.592.608.550.550"
+      ],
+      "entry_terms": [
+        "Spasticity, Muscle",
+        "Clasp-Knife Spasticity",
+        "Clasp Knife Spasticity",
+        "Spasticity, Clasp-Knife",
+        "Spastic"
+      ]
+    },
+    {
+      "key": "muscular_atrophy",
+      "mesh_descriptor_id": "D009133",
+      "preferred_term": "Muscular Atrophy",
+      "tree_numbers": [
+        "C10.597.613.612",
+        "C23.300.070.500",
+        "C23.888.592.608.612"
+      ],
+      "entry_terms": [
+        "Atrophies, Muscular",
+        "Atrophy, Muscular",
+        "Muscular Atrophies",
+        "Atrophy, Muscle",
+        "Atrophies, Muscle"
+      ]
+    },
+    {
+      "key": "muscular_dystrophies",
+      "mesh_descriptor_id": "D009136",
+      "preferred_term": "Muscular Dystrophies",
+      "tree_numbers": [
+        "C05.651.534.500",
+        "C10.668.491.175.500",
+        "C16.320.577"
+      ],
+      "entry_terms": [
+        "Muscular Dystrophy",
+        "Dystrophies, Muscular",
+        "Dystrophy, Muscular",
+        "Myodystrophica",
+        "Myodystrophicas"
+      ]
+    },
+    {
+      "key": "musculoskeletal_diseases",
+      "mesh_descriptor_id": "D009140",
+      "preferred_term": "Musculoskeletal Diseases",
+      "tree_numbers": [
+        "C05"
+      ],
+      "entry_terms": [
+        "Musculoskeletal Disease",
+        "Orthopedic Disorders",
+        "Orthopedic Disorder"
+      ]
+    },
+    {
+      "key": "myotonia",
+      "mesh_descriptor_id": "D009222",
+      "preferred_term": "Myotonia",
+      "tree_numbers": [
+        "C10.597.613.700",
+        "C23.888.592.608.700"
+      ],
+      "entry_terms": [
+        "Myotonias",
+        "Myotonic Phenomenon",
+        "Myotonic Phenomenons",
+        "Phenomenon, Myotonic",
+        "Phenomenons, Myotonic"
+      ]
+    },
+    {
+      "key": "nail_patella_syndrome",
+      "mesh_descriptor_id": "D009261",
+      "preferred_term": "Nail-Patella Syndrome",
+      "tree_numbers": [
+        "C05.550.629",
+        "C16.131.077.606",
+        "C16.320.600",
+        "C17.800.529.400"
+      ],
+      "entry_terms": [
+        "Nail Patella Syndrome",
+        "Syndrome, Nail-Patella",
+        "Fong Disease",
+        "Disease, Fong",
+        "Onychoosteodysplasia"
+      ]
+    },
+    {
+      "key": "nausea",
+      "mesh_descriptor_id": "D009325",
+      "preferred_term": "Nausea",
+      "tree_numbers": [
+        "C23.888.821.712"
+      ],
+      "entry_terms": []
+    },
+    {
+      "key": "necrosis",
+      "mesh_descriptor_id": "D009336",
+      "preferred_term": "Necrosis",
+      "tree_numbers": [
+        "C23.550.717"
+      ],
+      "entry_terms": []
+    },
+    {
+      "key": "neoplasm_invasiveness",
+      "mesh_descriptor_id": "D009361",
+      "preferred_term": "Neoplasm Invasiveness",
+      "tree_numbers": [
+        "C04.697.645",
+        "C23.550.727.645"
+      ],
+      "entry_terms": [
+        "Invasiveness, Neoplasm",
+        "Neoplasm Invasion",
+        "Invasion, Neoplasm"
+      ]
+    },
+    {
+      "key": "neoplasm_metastasis",
+      "mesh_descriptor_id": "D009362",
+      "preferred_term": "Neoplasm Metastasis",
+      "tree_numbers": [
+        "C04.697.650",
+        "C23.550.727.650"
+      ],
+      "entry_terms": [
+        "Metastase",
+        "Metastases",
+        "Metastasis",
+        "Metastases, Neoplasm",
+        "Metastasis, Neoplasm"
+      ]
+    },
+    {
+      "key": "neoplasm_recurrence_local",
+      "mesh_descriptor_id": "D009364",
+      "preferred_term": "Neoplasm Recurrence, Local",
+      "tree_numbers": [
+        "C04.697.655",
+        "C23.550.727.655"
+      ],
+      "entry_terms": [
+        "Neoplasm Recurrence, Locoregional",
+        "Locoregional Neoplasm Recurrences",
+        "Neoplasm Recurrences, Locoregional",
+        "Recurrences, Locoregional Neoplasm",
+        "Neoplasm Recurrences, Local"
+      ]
+    },
+    {
+      "key": "neoplasms",
+      "mesh_descriptor_id": "D009369",
+      "preferred_term": "Neoplasms",
+      "tree_numbers": [
+        "C04"
+      ],
+      "entry_terms": [
+        "Tumors",
+        "Neoplasia",
+        "Neoplasias",
+        "Neoplasm",
+        "Tumor"
+      ]
+    },
+    {
+      "key": "neovascularization_pathologic",
+      "mesh_descriptor_id": "D009389",
+      "preferred_term": "Neovascularization, Pathologic",
+      "tree_numbers": [
+        "C23.550.589.500"
+      ],
+      "entry_terms": [
+        "Angiogenesis, Pathologic",
+        "Angiogenesis, Pathological",
+        "Pathological Angiogenesis",
+        "Neovascularization, Pathological",
+        "Pathological Neovascularization"
+      ]
+    },
+    {
+      "key": "nerve_degeneration",
+      "mesh_descriptor_id": "D009410",
+      "preferred_term": "Nerve Degeneration",
+      "tree_numbers": [
+        "C23.550.737"
+      ],
+      "entry_terms": [
+        "Degeneration, Nerve",
+        "Degenerations, Nerve",
+        "Nerve Degenerations",
+        "Neuron Degeneration",
+        "Degeneration, Neuron"
+      ]
+    },
+    {
+      "key": "nervous_system_diseases",
+      "mesh_descriptor_id": "D009422",
+      "preferred_term": "Nervous System Diseases",
+      "tree_numbers": [
+        "C10"
+      ],
+      "entry_terms": [
+        "Disease, Nervous System",
+        "Diseases, Nervous System",
+        "Nervous System Disease",
+        "Nervous System Disorders",
+        "Disorder, Nervous System"
+      ]
+    },
+    {
+      "key": "neurofibromatosis_1",
+      "mesh_descriptor_id": "D009456",
+      "preferred_term": "Neurofibromatosis 1",
+      "tree_numbers": [
+        "C04.557.580.600.580.590.650",
+        "C04.700.631.650",
+        "C10.562.600.500",
+        "C10.574.500.549.400",
+        "C10.668.829.675",
+        "C16.320.400.560.400",
+        "C16.320.700.633.650"
+      ],
+      "entry_terms": [
+        "Recklinghausen Disease, Nerve",
+        "Neurofibromatosis, Peripheral, NF1",
+        "Recklinghausen Disease of Nerve",
+        "Recklinghausens Disease of Nerve",
+        "Recklinghausen's Disease of Nerve"
+      ]
+    },
+    {
+      "key": "neuronal_ceroid_lipofuscinoses",
+      "mesh_descriptor_id": "D009472",
+      "preferred_term": "Neuronal Ceroid-Lipofuscinoses",
+      "tree_numbers": [
+        "C10.574.500.550",
+        "C16.320.400.600",
+        "C16.320.565.398.641.509",
+        "C18.452.584.563.641.509",
+        "C18.452.648.398.641.509"
+      ],
+      "entry_terms": [
+        "Neuronal Ceroid Lipofuscinoses",
+        "Ceroid-Lipofuscinosis, Neuronal",
+        "Lipofuscinosis, Neuronal Ceroid",
+        "Neuronal Ceroid Lipofuscinosis",
+        "Ceroid Lipofuscinosis, Neuronal"
+      ]
+    },
+    {
+      "key": "occupational_diseases",
+      "mesh_descriptor_id": "D009784",
+      "preferred_term": "Occupational Diseases",
+      "tree_numbers": [
+        "C24"
+      ],
+      "entry_terms": [
+        "Disease, Occupational",
+        "Occupational Disease",
+        "Diseases, Occupational",
+        "Occupational Illnesses",
+        "Illnesse, Occupational"
+      ]
+    },
+    {
+      "key": "oropharyngeal_neoplasms",
+      "mesh_descriptor_id": "D009959",
+      "preferred_term": "Oropharyngeal Neoplasms",
+      "tree_numbers": [
+        "C04.588.443.665.710.684",
+        "C07.550.745.671",
+        "C09.647.710.685",
+        "C09.775.549.685"
+      ],
+      "entry_terms": [
+        "Neoplasm, Oropharyngeal",
+        "Oropharyngeal Neoplasm",
+        "Neoplasms, Oropharyngeal",
+        "Oropharynx Neoplasms",
+        "Neoplasm, Oropharynx"
+      ]
+    },
+    {
+      "key": "pain",
+      "mesh_descriptor_id": "D010146",
+      "preferred_term": "Pain",
+      "tree_numbers": [
+        "C23.888.592.612"
+      ],
+      "entry_terms": [
+        "Suffering, Physical",
+        "Physical Suffering",
+        "Physical Sufferings",
+        "Sufferings, Physical",
+        "Ache"
+      ]
+    },
+    {
+      "key": "paralysis",
+      "mesh_descriptor_id": "D010243",
+      "preferred_term": "Paralysis",
+      "tree_numbers": [
+        "C10.597.622",
+        "C23.888.592.636"
+      ],
+      "entry_terms": [
+        "Paralyses",
+        "Palsy",
+        "Palsies",
+        "Plegia",
+        "Plegias"
+      ]
+    },
+    {
+      "key": "paresis",
+      "mesh_descriptor_id": "D010291",
+      "preferred_term": "Paresis",
+      "tree_numbers": [
+        "C10.597.636",
+        "C23.888.592.643"
+      ],
+      "entry_terms": [
+        "Pareses",
+        "Muscle Paresis",
+        "Muscle Pareses",
+        "Pareses, Muscle",
+        "Paresis, Muscle"
+      ]
+    },
+    {
+      "key": "paresthesia",
+      "mesh_descriptor_id": "D010292",
+      "preferred_term": "Paresthesia",
+      "tree_numbers": [
+        "C10.597.751.791.875",
+        "C23.888.592.763.770.875"
+      ],
+      "entry_terms": [
+        "Paresthesias",
+        "Formication",
+        "Formications",
+        "Paresthesia, Distal",
+        "Distal Paresthesia"
+      ]
+    },
+    {
+      "key": "pigmentation_disorders",
+      "mesh_descriptor_id": "D010859",
+      "preferred_term": "Pigmentation Disorders",
+      "tree_numbers": [
+        "C17.800.621",
+        "C23.550.755"
+      ],
+      "entry_terms": [
+        "Disorder, Pigmentation",
+        "Disorders, Pigmentation",
+        "Pigmentation Disorder",
+        "Ito Syndrome",
+        "Syndrome, Ito"
+      ]
+    },
+    {
+      "key": "poisoning",
+      "mesh_descriptor_id": "D011041",
+      "preferred_term": "Poisoning",
+      "tree_numbers": [
+        "C25.723"
+      ],
+      "entry_terms": [
+        "Poisonings"
+      ]
+    },
+    {
+      "key": "postoperative_complications",
+      "mesh_descriptor_id": "D011183",
+      "preferred_term": "Postoperative Complications",
+      "tree_numbers": [
+        "C23.550.767"
+      ],
+      "entry_terms": [
+        "Complication, Postoperative",
+        "Complications, Postoperative",
+        "Postoperative Complication"
+      ]
+    },
+    {
+      "key": "poultry_diseases",
+      "mesh_descriptor_id": "D011201",
+      "preferred_term": "Poultry Diseases",
+      "tree_numbers": [
+        "C22.131.728"
+      ],
+      "entry_terms": [
+        "Disease, Poultry",
+        "Diseases, Poultry",
+        "Poultry Disease"
+      ]
+    },
+    {
+      "key": "prader_willi_syndrome",
+      "mesh_descriptor_id": "D011218",
+      "preferred_term": "Prader-Willi Syndrome",
+      "tree_numbers": [
+        "C10.597.606.360.690",
+        "C16.131.077.730",
+        "C16.131.260.700",
+        "C16.320.180.700",
+        "C16.320.447.500",
+        "C18.654.726.750.500.740"
+      ],
+      "entry_terms": [
+        "Prader Willi Syndrome",
+        "Syndrome, Prader-Willi",
+        "Labhart-Willi Syndrome",
+        "Labhart Willi Syndrome",
+        "Syndrome, Labhart-Willi"
+      ]
+    },
+    {
+      "key": "pregnancy_complications",
+      "mesh_descriptor_id": "D011248",
+      "preferred_term": "Pregnancy Complications",
+      "tree_numbers": [
+        "C12.050.703"
+      ],
+      "entry_terms": [
+        "Complication, Pregnancy",
+        "Pregnancy Complication",
+        "Complications, Pregnancy",
+        "Adverse Birth Outcomes",
+        "Adverse Birth Outcome"
+      ]
+    },
+    {
+      "key": "prenatal_exposure_delayed_effects",
+      "mesh_descriptor_id": "D011297",
+      "preferred_term": "Prenatal Exposure Delayed Effects",
+      "tree_numbers": [
+        "C12.050.703.824.500"
+      ],
+      "entry_terms": [
+        "Delayed Effects, Prenatal Exposure",
+        "Late Effects, Prenatal Exposure"
+      ]
+    },
+    {
+      "key": "priapism",
+      "mesh_descriptor_id": "D011317",
+      "preferred_term": "Priapism",
+      "tree_numbers": [
+        "C12.100.500.494.786",
+        "C12.200.294.494.786"
+      ],
+      "entry_terms": [
+        "Priapisms"
+      ]
+    },
+    {
+      "key": "prostatic_hyperplasia",
+      "mesh_descriptor_id": "D011470",
+      "preferred_term": "Prostatic Hyperplasia",
+      "tree_numbers": [
+        "C12.100.500.565.500",
+        "C12.200.294.565.500"
+      ],
+      "entry_terms": [
+        "Hyperplasia, Prostatic",
+        "Adenoma, Prostatic",
+        "Adenomas, Prostatic",
+        "Prostatic Adenomas",
+        "Prostatic Adenoma"
+      ]
+    },
+    {
+      "key": "prostatic_neoplasms",
+      "mesh_descriptor_id": "D011471",
+      "preferred_term": "Prostatic Neoplasms",
+      "tree_numbers": [
+        "C04.588.945.440.770",
+        "C12.100.500.260.750",
+        "C12.100.500.565.625",
+        "C12.200.294.260.750",
+        "C12.200.294.565.625",
+        "C12.200.758.409.750",
+        "C12.900.619.750"
+      ],
+      "entry_terms": [
+        "Neoplasms, Prostatic",
+        "Neoplasm, Prostatic",
+        "Prostatic Neoplasm",
+        "Prostate Neoplasms",
+        "Neoplasms, Prostate"
+      ]
+    },
+    {
+      "key": "prostatitis",
+      "mesh_descriptor_id": "D011472",
+      "preferred_term": "Prostatitis",
+      "tree_numbers": [
+        "C12.100.500.565.750",
+        "C12.200.294.565.750"
+      ],
+      "entry_terms": [
+        "Prostatitides",
+        "Acute Bacterial Prostatitis",
+        "Acute Bacterial Prostatitides",
+        "Bacterial Prostatitides, Acute",
+        "Bacterial Prostatitis, Acute"
+      ]
+    },
+    {
+      "key": "pruritus",
+      "mesh_descriptor_id": "D011537",
+      "preferred_term": "Pruritus",
+      "tree_numbers": [
+        "C17.800.685",
+        "C23.888.885.625"
+      ],
+      "entry_terms": [
+        "Itching",
+        "Pruritis"
+      ]
+    },
+    {
+      "key": "pulpitis",
+      "mesh_descriptor_id": "D011671",
+      "preferred_term": "Pulpitis",
+      "tree_numbers": [
+        "C07.793.237.820"
+      ],
+      "entry_terms": [
+        "Pulpitides",
+        "Inflammation, Endodontic",
+        "Endodontic Inflammation",
+        "Endodontic Inflammations",
+        "Inflammations, Endodontic"
+      ]
+    },
+    {
+      "key": "recurrence",
+      "mesh_descriptor_id": "D012008",
+      "preferred_term": "Recurrence",
+      "tree_numbers": [
+        "C23.550.291.937"
+      ],
+      "entry_terms": [
+        "Recurrences",
+        "Relapse",
+        "Relapses",
+        "Recrudescence",
+        "Recrudescences"
+      ]
+    },
+    {
+      "key": "respiratory_sounds",
+      "mesh_descriptor_id": "D012135",
+      "preferred_term": "Respiratory Sounds",
+      "tree_numbers": [
+        "C23.888.852.779"
+      ],
+      "entry_terms": [
+        "Respiratory Sound",
+        "Sound, Respiratory",
+        "Lung Sounds",
+        "Lung Sound",
+        "Sound, Lung"
+      ]
+    },
+    {
+      "key": "respiratory_tract_diseases",
+      "mesh_descriptor_id": "D012140",
+      "preferred_term": "Respiratory Tract Diseases",
+      "tree_numbers": [
+        "C08"
+      ],
+      "entry_terms": [
+        "Disease, Respiratory Tract",
+        "Respiratory Tract Disease",
+        "Respiratory System Diseases",
+        "Disease, Respiratory System",
+        "Respiratory System Disease"
+      ]
+    },
+    {
+      "key": "retinitis_pigmentosa",
+      "mesh_descriptor_id": "D012174",
+      "preferred_term": "Retinitis Pigmentosa",
+      "tree_numbers": [
+        "C11.270.684",
+        "C11.768.585.658.500",
+        "C16.320.290.684"
+      ],
+      "entry_terms": [
+        "Pigmentary Retinopathy",
+        "Pigmentary Retinopathies",
+        "Retinopathies, Pigmentary",
+        "Retinopathy, Pigmentary",
+        "Tapetoretinal Degeneration"
+      ]
+    },
+    {
+      "key": "rheumatic_diseases",
+      "mesh_descriptor_id": "D012216",
+      "preferred_term": "Rheumatic Diseases",
+      "tree_numbers": [
+        "C05.799",
+        "C17.300.775"
+      ],
+      "entry_terms": [
+        "Disease, Rheumatic",
+        "Diseases, Rheumatic",
+        "Rheumatic Disease",
+        "Rheumatism"
+      ]
+    },
+    {
+      "key": "rhinitis",
+      "mesh_descriptor_id": "D012220",
+      "preferred_term": "Rhinitis",
+      "tree_numbers": [
+        "C01.748.674",
+        "C08.460.799",
+        "C08.730.674",
+        "C09.603.799"
+      ],
+      "entry_terms": [
+        "Rhinitides",
+        "Nasal Catarrh",
+        "Catarrh, Nasal",
+        "Catarrhs, Nasal",
+        "Nasal Catarrhs"
+      ]
+    },
+    {
+      "key": "scleroderma_localized",
+      "mesh_descriptor_id": "D012594",
+      "preferred_term": "Scleroderma, Localized",
+      "tree_numbers": [
+        "C17.300.787",
+        "C17.800.767"
+      ],
+      "entry_terms": [
+        "Localized Scleroderma",
+        "Sclerodermas, Localized",
+        "Scleroderma, Circumscribed",
+        "Circumscribed Scleroderma",
+        "Dermatosclerosis"
+      ]
+    },
+    {
+      "key": "scleroderma_systemic",
+      "mesh_descriptor_id": "D012595",
+      "preferred_term": "Scleroderma, Systemic",
+      "tree_numbers": [
+        "C17.300.799",
+        "C17.800.784"
+      ],
+      "entry_terms": [
+        "Sclerosis, Systemic",
+        "Systemic Scleroderma",
+        "Systemic Sclerosis"
+      ]
+    },
+    {
+      "key": "sclerosis",
+      "mesh_descriptor_id": "D012598",
+      "preferred_term": "Sclerosis",
+      "tree_numbers": [
+        "C23.550.823"
+      ],
+      "entry_terms": [
+        "Scleroses"
+      ]
+    },
+    {
+      "key": "seizures",
+      "mesh_descriptor_id": "D012640",
+      "preferred_term": "Seizures",
+      "tree_numbers": [
+        "C10.597.742",
+        "C23.888.592.742"
+      ],
+      "entry_terms": [
+        "Seizure",
+        "Jacksonian Seizure",
+        "Seizure, Jacksonian",
+        "Single Seizure",
+        "Seizure, Single"
+      ]
+    },
+    {
+      "key": "sexual_dysfunction_physiological",
+      "mesh_descriptor_id": "D012735",
+      "preferred_term": "Sexual Dysfunction, Physiological",
+      "tree_numbers": [
+        "C12.100.875"
+      ],
+      "entry_terms": [
+        "Physiological Sexual Dysfunction",
+        "Physiological Sexual Dysfunctions",
+        "Sex Disorders",
+        "Sexual Disorders, Physiological",
+        "Physiological Sexual Disorder"
+      ]
+    },
+    {
+      "key": "sexually_transmitted_diseases",
+      "mesh_descriptor_id": "D012749",
+      "preferred_term": "Sexually Transmitted Diseases",
+      "tree_numbers": [
+        "C01.221.812",
+        "C01.778",
+        "C12.100.937",
+        "C23.550.291.531.937"
+      ],
+      "entry_terms": [
+        "Disease, Sexually Transmitted",
+        "Diseases, Sexually Transmitted",
+        "Sexually Transmitted Disease",
+        "STIs",
+        "STI"
+      ]
+    },
+    {
+      "key": "shock_hemorrhagic",
+      "mesh_descriptor_id": "D012771",
+      "preferred_term": "Shock, Hemorrhagic",
+      "tree_numbers": [
+        "C23.550.414.980",
+        "C23.550.835.650"
+      ],
+      "entry_terms": [
+        "Hemorrhagic Shock"
+      ]
+    },
+    {
+      "key": "sinusitis",
+      "mesh_descriptor_id": "D012852",
+      "preferred_term": "Sinusitis",
+      "tree_numbers": [
+        "C01.748.749",
+        "C08.460.692.752",
+        "C08.730.749",
+        "C09.603.692.752"
+      ],
+      "entry_terms": [
+        "Sinusitides",
+        "Sinus Infections",
+        "Infection, Sinus",
+        "Infections, Sinus",
+        "Sinus Infection"
+      ]
+    },
+    {
+      "key": "skin_diseases",
+      "mesh_descriptor_id": "D012871",
+      "preferred_term": "Skin Diseases",
+      "tree_numbers": [
+        "C17.800"
+      ],
+      "entry_terms": [
+        "Skin Disease",
+        "Dermatosis",
+        "Dermatoses",
+        "Skin and Subcutaneous Tissue Disorders"
+      ]
+    },
+    {
+      "key": "sleep_wake_disorders",
+      "mesh_descriptor_id": "D012893",
+      "preferred_term": "Sleep Wake Disorders",
+      "tree_numbers": [
+        "C10.886",
+        "C23.888.592.796",
+        "F03.870"
+      ],
+      "entry_terms": [
+        "Disorder, Sleep Wake",
+        "Disorders, Sleep Wake",
+        "Sleep Wake Disorder",
+        "Wake Disorder, Sleep",
+        "Wake Disorders, Sleep"
+      ]
+    },
+    {
+      "key": "spasm",
+      "mesh_descriptor_id": "D013035",
+      "preferred_term": "Spasm",
+      "tree_numbers": [
+        "C10.597.613.750",
+        "C23.888.592.608.750"
+      ],
+      "entry_terms": [
+        "Spasms",
+        "Muscle Spasm",
+        "Muscle Spasms",
+        "Spasm, Muscle",
+        "Spasms, Muscle"
+      ]
+    },
+    {
+      "key": "swine_diseases",
+      "mesh_descriptor_id": "D013553",
+      "preferred_term": "Swine Diseases",
+      "tree_numbers": [
+        "C22.905"
+      ],
+      "entry_terms": [
+        "Diseases, Swine",
+        "Disease, Swine",
+        "Swine Disease"
+      ]
+    },
+    {
+      "key": "temporomandibular_joint_disorders",
+      "mesh_descriptor_id": "D013705",
+      "preferred_term": "Temporomandibular Joint Disorders",
+      "tree_numbers": [
+        "C05.500.607.221.897",
+        "C05.550.905",
+        "C05.651.243.897",
+        "C07.320.610.291.897",
+        "C07.678"
+      ],
+      "entry_terms": [
+        "Disorders, Temporomandibular Joint",
+        "Disorder, Temporomandibular Joint",
+        "Joint Disorders, Temporomandibular",
+        "Joint Disorder, Temporomandibular",
+        "Temporomandibular Joint Disorder"
+      ]
+    },
+    {
+      "key": "testicular_diseases",
+      "mesh_descriptor_id": "D013733",
+      "preferred_term": "Testicular Diseases",
+      "tree_numbers": [
+        "C12.100.500.829",
+        "C12.200.294.829",
+        "C19.391.829"
+      ],
+      "entry_terms": [
+        "Diseases, Testicular",
+        "Disease, Testicular",
+        "Testicular Disease"
+      ]
+    },
+    {
+      "key": "testicular_neoplasms",
+      "mesh_descriptor_id": "D013736",
+      "preferred_term": "Testicular Neoplasms",
+      "tree_numbers": [
+        "C04.588.322.762",
+        "C04.588.945.440.915",
+        "C12.100.500.260.937",
+        "C12.200.294.260.937",
+        "C12.200.758.409.937",
+        "C12.900.619.937",
+        "C19.344.762",
+        "C19.391.829.782"
+      ],
+      "entry_terms": [
+        "Testicular Tumor",
+        "Tumors, Testicular",
+        "Tumor, Testicular",
+        "Testicular Neoplasm",
+        "Neoplasm, Testicular"
+      ]
+    },
+    {
+      "key": "tinnitus",
+      "mesh_descriptor_id": "D014012",
+      "preferred_term": "Tinnitus",
+      "tree_numbers": [
+        "C09.218.458.670",
+        "C10.597.751.418.670",
+        "C23.888.592.763.393.670"
+      ],
+      "entry_terms": [
+        "Ringing-Buzzing-Tinnitus",
+        "Ringing Buzzing Tinnitus",
+        "Pulsatile Tinnitus",
+        "Tinnitus, Pulsatile",
+        "Tinnitus of Vascular Origin"
+      ]
+    },
+    {
+      "key": "tooth_erosion",
+      "mesh_descriptor_id": "D014077",
+      "preferred_term": "Tooth Erosion",
+      "tree_numbers": [
+        "C07.793.720.605",
+        "C07.793.818.500"
+      ],
+      "entry_terms": [
+        "Erosion, Tooth",
+        "Tooth Erosions",
+        "Dental Erosion",
+        "Dental Erosions",
+        "Erosion, Dental"
+      ]
+    },
+    {
+      "key": "toothache",
+      "mesh_descriptor_id": "D014098",
+      "preferred_term": "Toothache",
+      "tree_numbers": [
+        "C07.793.929",
+        "C23.888.592.612.330.500"
+      ],
+      "entry_terms": [
+        "Toothaches",
+        "Odontalgia",
+        "Odontalgias"
+      ]
+    },
+    {
+      "key": "tuberous_sclerosis",
+      "mesh_descriptor_id": "D014402",
+      "preferred_term": "Tuberous Sclerosis",
+      "tree_numbers": [
+        "C04.445.810",
+        "C04.651.800",
+        "C04.700.700",
+        "C10.500.507.400.750",
+        "C10.562.850",
+        "C10.574.500.865",
+        "C16.131.666.507.400.750",
+        "C16.320.400.880",
+        "C16.320.700.700"
+      ],
+      "entry_terms": [
+        "Sclerosis, Tuberous",
+        "Bourneville Disease",
+        "Bourneville Phakomatosis",
+        "Bourneville Syndrome",
+        "Syndrome, Bourneville"
+      ]
+    },
+    {
+      "key": "ulcer",
+      "mesh_descriptor_id": "D014456",
+      "preferred_term": "Ulcer",
+      "tree_numbers": [
+        "C23.550.891"
+      ],
+      "entry_terms": [
+        "Ulcers"
+      ]
+    },
+    {
+      "key": "urinary_calculi",
+      "mesh_descriptor_id": "D014545",
+      "preferred_term": "Urinary Calculi",
+      "tree_numbers": [
+        "C12.050.351.968.967.500",
+        "C12.200.777.967.500",
+        "C12.950.967.500",
+        "C23.300.175.850"
+      ],
+      "entry_terms": [
+        "Calculi, Urinary",
+        "Calculus, Urinary",
+        "Urinary Calculus",
+        "Urinary Stones",
+        "Stones, Urinary"
+      ]
+    },
+    {
+      "key": "urologic_diseases",
+      "mesh_descriptor_id": "D014570",
+      "preferred_term": "Urologic Diseases",
+      "tree_numbers": [
+        "C12.050.351.968",
+        "C12.200.777",
+        "C12.950"
+      ],
+      "entry_terms": [
+        "Diseases, Urologic",
+        "Disease, Urologic",
+        "Urologic Disease",
+        "Urinary Tract Diseases",
+        "Diseases, Urinary Tract"
+      ]
+    },
+    {
+      "key": "urologic_neoplasms",
+      "mesh_descriptor_id": "D014571",
+      "preferred_term": "Urologic Neoplasms",
+      "tree_numbers": [
+        "C04.588.945.947",
+        "C12.050.351.937.820",
+        "C12.200.758.820",
+        "C12.900.820",
+        "C12.950.983"
+      ],
+      "entry_terms": [
+        "Neoplasms, Urologic",
+        "Neoplasm, Urologic",
+        "Urologic Neoplasm",
+        "Urological Neoplasms",
+        "Neoplasms, Urological"
+      ]
+    },
+    {
+      "key": "vertigo",
+      "mesh_descriptor_id": "D014717",
+      "preferred_term": "Vertigo",
+      "tree_numbers": [
+        "C09.218.568.900.883",
+        "C10.597.951",
+        "C23.888.592.958"
+      ],
+      "entry_terms": [
+        "Vertigos",
+        "Spinning Sensation",
+        "Sensation, Spinning",
+        "Sensations, Spinning",
+        "Spinning Sensations"
+      ]
+    },
+    {
+      "key": "vision_disorders",
+      "mesh_descriptor_id": "D014786",
+      "preferred_term": "Vision Disorders",
+      "tree_numbers": [
+        "C10.597.751.941",
+        "C11.966",
+        "C23.888.592.763.941"
+      ],
+      "entry_terms": [
+        "Vision Disorder",
+        "Visual Disorders",
+        "Disorders, Visual",
+        "Disorder, Visual",
+        "Visual Disorder"
+      ]
+    },
+    {
+      "key": "voice_disorders",
+      "mesh_descriptor_id": "D014832",
+      "preferred_term": "Voice Disorders",
+      "tree_numbers": [
+        "C08.360.940",
+        "C09.400.940",
+        "C10.597.975",
+        "C23.888.592.979"
+      ],
+      "entry_terms": [
+        "Voice Disorder",
+        "Voice Disorder, Neurologic",
+        "Neurologic Voice Disorder",
+        "Neurologic Voice Disorders",
+        "Voice Disorders, Neurologic"
+      ]
+    },
+    {
+      "key": "vomiting",
+      "mesh_descriptor_id": "D014839",
+      "preferred_term": "Vomiting",
+      "tree_numbers": [
+        "C23.888.821.937"
+      ],
+      "entry_terms": [
+        "Emesis"
+      ]
+    },
+    {
+      "key": "wounds_and_injuries",
+      "mesh_descriptor_id": "D014947",
+      "preferred_term": "Wounds and Injuries",
+      "tree_numbers": [
+        "C26"
+      ],
+      "entry_terms": [
+        "Injuries and Wounds",
+        "Injuries, Wounds",
+        "Wounds and Injury",
+        "Injury and Wounds",
+        "Wounds, Injury"
+      ]
+    },
+    {
+      "key": "zoonoses",
+      "mesh_descriptor_id": "D015047",
+      "preferred_term": "Zoonoses",
+      "tree_numbers": [
+        "C01.973",
+        "C22.969"
+      ],
+      "entry_terms": [
+        "Zoonotic Diseases",
+        "Diseases, Zoonotic",
+        "Disease, Zoonotic",
+        "Zoonotic Disease",
+        "Zoonotic Infections"
+      ]
+    },
+    {
+      "key": "leukemia_lymphocytic_chronic_b_cell",
+      "mesh_descriptor_id": "D015451",
+      "preferred_term": "Leukemia, Lymphocytic, Chronic, B-Cell",
+      "tree_numbers": [
+        "C04.557.337.428.080.125",
+        "C15.378.508.428.080.125",
+        "C15.604.515.560.080.125",
+        "C20.683.515.528.080.125",
+        "C23.550.291.500.483"
+      ],
+      "entry_terms": [
+        "Lymphoma, Lymphocytic",
+        "Small-Cell Lymphoma",
+        "Small Cell Lymphoma",
+        "Lymphoma, Small-Cell",
+        "Lymphoma, Small Cell"
+      ]
+    },
+    {
+      "key": "mammary_neoplasms_animal",
+      "mesh_descriptor_id": "D015674",
+      "preferred_term": "Mammary Neoplasms, Animal",
+      "tree_numbers": [
+        "C04.588.531",
+        "C22.520"
+      ],
+      "entry_terms": [
+        "Animal Mammary Neoplasm",
+        "Animal Mammary Neoplasms",
+        "Mammary Neoplasm, Animal",
+        "Neoplasm, Animal Mammary",
+        "Neoplasms, Animal Mammary"
+      ]
+    },
+    {
+      "key": "abdominal_pain",
+      "mesh_descriptor_id": "D015746",
+      "preferred_term": "Abdominal Pain",
+      "tree_numbers": [
+        "C23.888.592.612.054",
+        "C23.888.821.030"
+      ],
+      "entry_terms": [
+        "Abdominal Pains",
+        "Pain, Abdominal",
+        "Pains, Abdominal",
+        "Colicky Pain",
+        "Colicky Pains"
+      ]
+    },
+    {
+      "key": "simian_acquired_immunodeficiency_syndrome",
+      "mesh_descriptor_id": "D016097",
+      "preferred_term": "Simian Acquired Immunodeficiency Syndrome",
+      "tree_numbers": [
+        "C01.925.782.815.616.850",
+        "C01.925.839.850",
+        "C22.735.500.850"
+      ],
+      "entry_terms": [
+        "Simian AIDS",
+        "SAIDS",
+        "Simian Acquired Immune Deficiency Syndrome",
+        "Simian Acquired Immuno-Deficiency Syndrome",
+        "Simian Acquired Immuno Deficiency Syndrome"
+      ]
+    },
+    {
+      "key": "epidermolysis_bullosa_dystrophica",
+      "mesh_descriptor_id": "D016108",
+      "preferred_term": "Epidermolysis Bullosa Dystrophica",
+      "tree_numbers": [
+        "C16.131.831.493.160",
+        "C16.320.850.275.160",
+        "C17.300.200.367",
+        "C17.800.804.493.160",
+        "C17.800.827.275.160",
+        "C17.800.865.410.160"
+      ],
+      "entry_terms": [
+        "Bullosa Dystrophica, Epidermolysis",
+        "Bullosa Dystrophicas, Epidermolysis",
+        "Dystrophica, Epidermolysis Bullosa",
+        "Dystrophicas, Epidermolysis Bullosa",
+        "Epidermolysis Bullosa Dystrophicas"
+      ]
+    },
+    {
+      "key": "tooth_loss",
+      "mesh_descriptor_id": "D016388",
+      "preferred_term": "Tooth Loss",
+      "tree_numbers": [
+        "C07.465.714.804",
+        "C07.793.870"
+      ],
+      "entry_terms": [
+        "Loss, Tooth"
+      ]
+    },
+    {
+      "key": "purpura_thrombocytopenic_idiopathic",
+      "mesh_descriptor_id": "D016553",
+      "preferred_term": "Purpura, Thrombocytopenic, Idiopathic",
+      "tree_numbers": [
+        "C15.378.100.802.687.600",
+        "C15.378.140.855.925.750.600",
+        "C15.378.243.937.925.750.600",
+        "C15.378.463.740",
+        "C20.111.759",
+        "C20.841.600",
+        "C23.550.414.950.687.600",
+        "C23.888.885.687.687.600"
+      ],
+      "entry_terms": [
+        "Autoimmune Thrombocytopenia",
+        "Autoimmune Thrombocytopenias",
+        "Thrombocytopenia, Autoimmune",
+        "Thrombocytopenias, Autoimmune",
+        "Immune Thrombocytopenic Purpura"
+      ]
+    },
+    {
+      "key": "critical_illness",
+      "mesh_descriptor_id": "D016638",
+      "preferred_term": "Critical Illness",
+      "tree_numbers": [
+        "C23.550.291.625"
+      ],
+      "entry_terms": [
+        "Critical Illnesses",
+        "Illness, Critical",
+        "Illnesses, Critical",
+        "Critically Ill"
+      ]
+    },
+    {
+      "key": "polycystic_kidney_autosomal_dominant",
+      "mesh_descriptor_id": "D016891",
+      "preferred_term": "Polycystic Kidney, Autosomal Dominant",
+      "tree_numbers": [
+        "C12.050.351.968.419.403.875.500",
+        "C12.200.777.419.403.875.500",
+        "C12.950.419.403.875.500",
+        "C16.131.077.717.500",
+        "C16.320.184.625.500"
+      ],
+      "entry_terms": [
+        "Autosomal Dominant Polycystic Kidney",
+        "Kidney, Polycystic, Autosomal Dominant",
+        "ADPKD",
+        "Adult Polycystic Kidney Disease",
+        "Polycystic Kidney Disease, Autosomal Dominant"
+      ]
+    },
+    {
+      "key": "porphyrias_hepatic",
+      "mesh_descriptor_id": "D017094",
+      "preferred_term": "Porphyrias, Hepatic",
+      "tree_numbers": [
+        "C06.552.830",
+        "C16.320.850.742",
+        "C17.800.827.742",
+        "C18.452.811.400"
+      ],
+      "entry_terms": [
+        "Hepatic Porphyrias",
+        "Hepatic Porphyria",
+        "Porphyria, Hepatic"
+      ]
+    },
+    {
+      "key": "angelman_syndrome",
+      "mesh_descriptor_id": "D017204",
+      "preferred_term": "Angelman Syndrome",
+      "tree_numbers": [
+        "C10.228.662.075",
+        "C16.131.077.095",
+        "C16.131.260.040",
+        "C16.320.180.040",
+        "C16.320.447.250"
+      ],
+      "entry_terms": [
+        "Syndrome, Angelman",
+        "Happy Puppet Syndrome",
+        "Syndrome, Happy Puppet",
+        "Puppet Children",
+        "Children, Puppet"
+      ]
+    },
+    {
+      "key": "disease_progression",
+      "mesh_descriptor_id": "D018450",
+      "preferred_term": "Disease Progression",
+      "tree_numbers": [
+        "C23.550.291.656"
+      ],
+      "entry_terms": [
+        "Progression, Disease",
+        "Disease Exacerbation",
+        "Exacerbation, Disease",
+        "Clinical Course",
+        "Clinical Progression"
+      ]
+    },
+    {
+      "key": "hyperoxia",
+      "mesh_descriptor_id": "D018496",
+      "preferred_term": "Hyperoxia",
+      "tree_numbers": [
+        "C23.888.852.567"
+      ],
+      "entry_terms": [
+        "Hyperoxias"
+      ]
+    },
+    {
+      "key": "systemic_inflammatory_response_syndrome",
+      "mesh_descriptor_id": "D018746",
+      "preferred_term": "Systemic Inflammatory Response Syndrome",
+      "tree_numbers": [
+        "C23.550.470.790",
+        "C23.550.835.900"
+      ],
+      "entry_terms": [
+        "Inflammatory Response Syndrome, Systemic",
+        "Sepsis Syndrome",
+        "Sepsis Syndromes",
+        "Syndrome, Sepsis",
+        "Syndromes, Sepsis"
+      ]
+    },
+    {
+      "key": "congenital_disorders_of_glycosylation",
+      "mesh_descriptor_id": "D018981",
+      "preferred_term": "Congenital Disorders of Glycosylation",
+      "tree_numbers": [
+        "C16.320.565.202.125",
+        "C18.452.648.202.125"
+      ],
+      "entry_terms": [
+        "Carbohydrate-Deficient Glycoprotein Syndrome",
+        "Carbohydrate Deficient Glycoprotein Syndrome",
+        "Carbohydrate-Deficient Glycoprotein Syndromes",
+        "Syndrome, Carbohydrate-Deficient Glycoprotein",
+        "Syndromes, Carbohydrate-Deficient Glycoprotein"
+      ]
+    },
+    {
+      "key": "hot_flashes",
+      "mesh_descriptor_id": "D019584",
+      "preferred_term": "Hot Flashes",
+      "tree_numbers": [
+        "C23.888.475"
+      ],
+      "entry_terms": [
+        "Flashes, Hot"
+      ]
+    },
+    {
+      "key": "aging_premature",
+      "mesh_descriptor_id": "D019588",
+      "preferred_term": "Aging, Premature",
+      "tree_numbers": [
+        "C23.888.069"
+      ],
+      "entry_terms": [
+        "Premature Aging"
+      ]
+    },
+    {
+      "key": "neurobehavioral_manifestations",
+      "mesh_descriptor_id": "D019954",
+      "preferred_term": "Neurobehavioral Manifestations",
+      "tree_numbers": [
+        "C10.597.606",
+        "C23.888.592.604"
+      ],
+      "entry_terms": [
+        "Manifestation, Neurobehavioral",
+        "Manifestations, Neurobehavioral",
+        "Neurobehavioral Manifestation",
+        "Cognitive Manifestations",
+        "Cognitive Manifestation"
+      ]
+    },
+    {
+      "key": "substance_related_disorders",
+      "mesh_descriptor_id": "D019966",
+      "preferred_term": "Substance-Related Disorders",
+      "tree_numbers": [
+        "C25.775",
+        "F03.900"
+      ],
+      "entry_terms": [
+        "Substance Related Disorder",
+        "Disorders, Substance Related",
+        "Disorder, Substance Related",
+        "Related Disorders, Substance",
+        "Related Disorder, Substance"
+      ]
+    },
+    {
+      "key": "gastroschisis",
+      "mesh_descriptor_id": "D020139",
+      "preferred_term": "Gastroschisis",
+      "tree_numbers": [
+        "C05.660.417",
+        "C16.131.621.417",
+        "C23.300.707.374.500"
+      ],
+      "entry_terms": [
+        "Gastroschises",
+        "Congenital Fissure of the Abdominal Cavity"
+      ]
+    },
+    {
+      "key": "jet_lag_syndrome",
+      "mesh_descriptor_id": "D020179",
+      "preferred_term": "Jet Lag Syndrome",
+      "tree_numbers": [
+        "C10.281.440",
+        "C10.886.425.200.500",
+        "C23.888.914.500",
+        "F03.870.400.200.500"
+      ],
+      "entry_terms": [
+        "Jet Lag Syndromes",
+        "Jet Lag",
+        "Jet Lags",
+        "Lag, Jet",
+        "Lags, Jet"
+      ]
+    },
+    {
+      "key": "gait_disorders_neurologic",
+      "mesh_descriptor_id": "D020233",
+      "preferred_term": "Gait Disorders, Neurologic",
+      "tree_numbers": [
+        "C10.597.404",
+        "C23.888.592.413"
+      ],
+      "entry_terms": [
+        "Gait Disorder, Neurologic",
+        "Neurologic Gait Disorder",
+        "Neurologic Gait Disorders",
+        "Ambulation Disorders, Neurologic",
+        "Ambulation Disorder, Neurologic"
+      ]
+    },
+    {
+      "key": "ventricular_remodeling",
+      "mesh_descriptor_id": "D020257",
+      "preferred_term": "Ventricular Remodeling",
+      "tree_numbers": [
+        "C23.300.985"
+      ],
+      "entry_terms": [
+        "Remodelings, Ventricular",
+        "Remodeling, Ventricular",
+        "Ventricular Remodelings",
+        "Cardiac Remodeling, Ventricular",
+        "Cardiac Remodelings, Ventricular"
+      ]
+    },
+    {
+      "key": "brain_diseases_metabolic_inborn",
+      "mesh_descriptor_id": "D020739",
+      "preferred_term": "Brain Diseases, Metabolic, Inborn",
+      "tree_numbers": [
+        "C10.228.140.163.100",
+        "C16.320.565.189",
+        "C18.452.132.100",
+        "C18.452.648.189"
+      ],
+      "entry_terms": [
+        "Brain Syndrome, Metabolic, Inborn",
+        "Encephalopathies, Metabolic, Inborn",
+        "Inborn Errors of Metabolism, Brain",
+        "Inborn Metabolic Brain Diseases",
+        "Inborn Metabolic Brain Disorders"
+      ]
+    },
+    {
+      "key": "neurocutaneous_syndromes",
+      "mesh_descriptor_id": "D020752",
+      "preferred_term": "Neurocutaneous Syndromes",
+      "tree_numbers": [
+        "C10.562",
+        "C16.131.077.350.712",
+        "C16.131.831.350.712",
+        "C16.320.850.250.712",
+        "C17.800.804.350.712",
+        "C17.800.827.250.712"
+      ],
+      "entry_terms": [
+        "Neurocutaneous Syndrome",
+        "Syndrome, Neurocutaneous",
+        "Syndromes, Neurocutaneous",
+        "Neuroectodermal Dysplasia Syndromes",
+        "Neuroectodermal Dysplasia Syndrome"
+      ]
+    },
+    {
+      "key": "spinocerebellar_ataxias",
+      "mesh_descriptor_id": "D020754",
+      "preferred_term": "Spinocerebellar Ataxias",
+      "tree_numbers": [
+        "C10.228.140.252.190.530",
+        "C10.228.140.252.700.700",
+        "C10.228.854.787.875",
+        "C10.574.500.825.700",
+        "C10.597.350.090.500.530",
+        "C16.320.400.780.875"
+      ],
+      "entry_terms": [
+        "Ataxia, Spinocerebellar",
+        "Ataxias, Spinocerebellar",
+        "Spinocerebellar Ataxia",
+        "Spinocerebellar Atrophies",
+        "Atrophies, Spinocerebellar"
+      ]
+    },
+    {
+      "key": "dyskinesias",
+      "mesh_descriptor_id": "D020820",
+      "preferred_term": "Dyskinesias",
+      "tree_numbers": [
+        "C10.228.662.262",
+        "C10.597.350",
+        "C23.888.592.350"
+      ],
+      "entry_terms": [
+        "Dyskinesia",
+        "Abnormal Movements",
+        "Abnormal Movement",
+        "Movement, Abnormal",
+        "Movements, Abnormal"
+      ]
+    },
+    {
+      "key": "chromosome_disorders",
+      "mesh_descriptor_id": "D025063",
+      "preferred_term": "Chromosome Disorders",
+      "tree_numbers": [
+        "C16.131.260",
+        "C16.320.180"
+      ],
+      "entry_terms": [
+        "Chromosome Disorder",
+        "Disorder, Chromosome",
+        "Disorders, Chromosome",
+        "Chromosomal Disorders",
+        "Chromosomal Disorder"
+      ]
+    },
+    {
+      "key": "hyperuricemia",
+      "mesh_descriptor_id": "D033461",
+      "preferred_term": "Hyperuricemia",
+      "tree_numbers": [
+        "C23.550.449"
+      ],
+      "entry_terms": []
+    },
+    {
+      "key": "hearing_loss",
+      "mesh_descriptor_id": "D034381",
+      "preferred_term": "Hearing Loss",
+      "tree_numbers": [
+        "C09.218.458.341",
+        "C10.597.751.418.341",
+        "C23.888.592.763.393.341"
+      ],
+      "entry_terms": [
+        "Loss, Hearing",
+        "Hearing Impairment",
+        "Hypoacusis",
+        "Hypoacuses",
+        "Deafness, Transitory"
+      ]
+    },
+    {
+      "key": "rare_diseases",
+      "mesh_descriptor_id": "D035583",
+      "preferred_term": "Rare Diseases",
+      "tree_numbers": [
+        "C23.550.291.906"
+      ],
+      "entry_terms": [
+        "Disease, Rare",
+        "Rare Disease",
+        "Orphan Diseases",
+        "Disease, Orphan",
+        "Orphan Disease"
+      ]
+    },
+    {
+      "key": "x_linked_intellectual_disability",
+      "mesh_descriptor_id": "D038901",
+      "preferred_term": "X-Linked Intellectual Disability",
+      "tree_numbers": [
+        "C10.597.606.360.455",
+        "C16.320.322.500",
+        "C16.320.400.525"
+      ],
+      "entry_terms": [
+        "Disabilities, X-Linked Intellectual",
+        "Disability, X-Linked Intellectual",
+        "Intellectual Disabilities, X-Linked",
+        "Intellectual Disability, X-Linked",
+        "X-Linked Intellectual Disabilities"
+      ]
+    },
+    {
+      "key": "genetic_diseases_x_linked",
+      "mesh_descriptor_id": "D040181",
+      "preferred_term": "Genetic Diseases, X-Linked",
+      "tree_numbers": [
+        "C16.320.322"
+      ],
+      "entry_terms": [
+        "Diseases, X-Linked Genetic",
+        "Disease, X-Linked Genetic",
+        "Genetic Diseases, X Linked",
+        "Genetic Disease, X-Linked",
+        "X-Linked Genetic Disease"
+      ]
+    },
+    {
+      "key": "malnutrition",
+      "mesh_descriptor_id": "D044342",
+      "preferred_term": "Malnutrition",
+      "tree_numbers": [
+        "C18.654.521"
+      ],
+      "entry_terms": [
+        "Malnourishment",
+        "Malnourishments",
+        "Undernutrition",
+        "Nutritional Deficiency",
+        "Nutritional Deficiencies"
+      ]
+    },
+    {
+      "key": "ganglion_cysts",
+      "mesh_descriptor_id": "D045888",
+      "preferred_term": "Ganglion Cysts",
+      "tree_numbers": [
+        "C04.182.347",
+        "C17.300.550.274"
+      ],
+      "entry_terms": [
+        "Cyst, Ganglion",
+        "Cysts, Ganglion",
+        "Ganglion Cyst",
+        "Ganglionic Cysts",
+        "Cyst, Ganglionic"
+      ]
+    },
+    {
+      "key": "mpox_monkeypox",
+      "mesh_descriptor_id": "D045908",
+      "preferred_term": "Mpox, Monkeypox",
+      "tree_numbers": [
+        "C01.925.256.743.615",
+        "C22.735.750",
+        "C22.795.600"
+      ],
+      "entry_terms": [
+        "Monkey Pox",
+        "Monkey Poxs",
+        "Monkeypox",
+        "Monkeypoxs",
+        "Mpox"
+      ]
+    },
+    {
+      "key": "graves_ophthalmopathy",
+      "mesh_descriptor_id": "D049970",
+      "preferred_term": "Graves Ophthalmopathy",
+      "tree_numbers": [
+        "C11.270.240",
+        "C11.675.349.500.500",
+        "C16.320.290.410",
+        "C19.874.283.605.500",
+        "C19.874.397.370.500",
+        "C20.111.555.500"
+      ],
+      "entry_terms": [
+        "Ophthalmopathy, Graves",
+        "Graves Orbitopathy",
+        "Orbitopathy, Graves",
+        "Ophthalmopathies, Thyroid-Associated",
+        "Thyroid-Associated Ophthalmopathies"
+      ]
+    },
+    {
+      "key": "overweight",
+      "mesh_descriptor_id": "D050177",
+      "preferred_term": "Overweight",
+      "tree_numbers": [
+        "C18.654.726.750",
+        "C23.888.144.699"
+      ],
+      "entry_terms": []
+    },
+    {
+      "key": "mobility_limitation",
+      "mesh_descriptor_id": "D051346",
+      "preferred_term": "Mobility Limitation",
+      "tree_numbers": [
+        "C23.888.550"
+      ],
+      "entry_terms": [
+        "Limitation, Mobility",
+        "Mobility Limitations",
+        "Ambulation Difficulty",
+        "Ambulation Difficulties",
+        "Difficulties, Ambulation"
+      ]
+    },
+    {
+      "key": "niemann_pick_disease_type_c",
+      "mesh_descriptor_id": "D052556",
+      "preferred_term": "Niemann-Pick Disease, Type C",
+      "tree_numbers": [
+        "C10.228.140.163.100.435.825.700.875",
+        "C15.604.250.410.625.875",
+        "C16.320.565.189.435.825.700.875",
+        "C16.320.565.398.641.803.730.875",
+        "C16.320.565.595.554.825.700.875",
+        "C18.452.132.100.435.825.700.875",
+        "C18.452.584.563.641.803.730.875",
+        "C18.452.648.189.435.825.700.875",
+        "C18.452.648.398.641.803.730.875",
+        "C18.452.648.595.554.825.700.875"
+      ],
+      "entry_terms": [
+        "Niemann Pick Disease, Type C",
+        "Niemann-Pick Type C Disease",
+        "Niemann Pick Type C Disease",
+        "Niemann-Pick's Disease Type C",
+        "Niemann Pick's Disease Type C"
+      ]
+    },
+    {
+      "key": "channelopathies",
+      "mesh_descriptor_id": "D053447",
+      "preferred_term": "Channelopathies",
+      "tree_numbers": [
+        "C23.550.177"
+      ],
+      "entry_terms": [
+        "Channelopathy"
+      ]
+    },
+    {
+      "key": "precursor_cell_lymphoblastic_leukemia_lymphoma",
+      "mesh_descriptor_id": "D054198",
+      "preferred_term": "Precursor Cell Lymphoblastic Leukemia-Lymphoma",
+      "tree_numbers": [
+        "C04.557.337.428.600",
+        "C15.378.508.428.600",
+        "C15.604.515.560.600",
+        "C20.683.515.528.600"
+      ],
+      "entry_terms": [
+        "Precursor Cell Lymphoblastic Leukemia Lymphoma",
+        "Leukemia, Lymphoid, Acute",
+        "Lymphoblastic Leukemia",
+        "Lymphoblastic Leukemia, Acute",
+        "Lymphoblastic Lymphoma"
+      ]
+    },
+    {
+      "key": "airway_remodeling",
+      "mesh_descriptor_id": "D056151",
+      "preferred_term": "Airway Remodeling",
+      "tree_numbers": [
+        "C23.300.017"
+      ],
+      "entry_terms": [
+        "Airway Remodelings",
+        "Remodeling, Airway",
+        "Remodelings, Airway",
+        "Airway Remodelling",
+        "Airway Remodellings"
+      ]
+    },
+    {
+      "key": "cryopyrin_associated_periodic_syndromes",
+      "mesh_descriptor_id": "D056587",
+      "preferred_term": "Cryopyrin-Associated Periodic Syndromes",
+      "tree_numbers": [
+        "C16.320.382.500",
+        "C17.800.827.368.500",
+        "C17.800.862.945.533.500.500",
+        "C17.800.862.945.766.500",
+        "C20.543.480.904.533.500.500",
+        "C20.543.480.904.766.500",
+        "C23.550.291.500.360.500.500"
+      ],
+      "entry_terms": [
+        "Cryopyrin-Associated Periodic Syndrome",
+        "Cryopyrin Associated Periodic Syndromes",
+        "Cryopyrin Associated Periodic Syndrome",
+        "Cryopyrinopathy",
+        "Cryopyrinopathies"
+      ]
+    },
+    {
+      "key": "plaque_amyloid",
+      "mesh_descriptor_id": "D058225",
+      "preferred_term": "Plaque, Amyloid",
+      "tree_numbers": [
+        "C23.300.821"
+      ],
+      "entry_terms": [
+        "Amyloid Plaque",
+        "Amyloid Deposits",
+        "Amyloid Deposit",
+        "Deposit, Amyloid",
+        "Deposits, Amyloid"
+      ]
+    },
+    {
+      "key": "plaque_atherosclerotic",
+      "mesh_descriptor_id": "D058226",
+      "preferred_term": "Plaque, Atherosclerotic",
+      "tree_numbers": [
+        "C23.300.823"
+      ],
+      "entry_terms": [
+        "Atherosclerotic Plaque",
+        "Atherosclerotic Plaques",
+        "Fatty Streak, Arterial",
+        "Arterial Fatty Streak",
+        "Arterial Fatty Streaks"
+      ]
+    },
+    {
+      "key": "eye_pain",
+      "mesh_descriptor_id": "D058447",
+      "preferred_term": "Eye Pain",
+      "tree_numbers": [
+        "C11.300.500",
+        "C23.888.307.625",
+        "C23.888.592.612.316"
+      ],
+      "entry_terms": [
+        "Eye Pains",
+        "Pain, Eye",
+        "Pains, Eye"
+      ]
+    },
+    {
+      "key": "aicardi_syndrome",
+      "mesh_descriptor_id": "D058540",
+      "preferred_term": "Aicardi Syndrome",
+      "tree_numbers": [
+        "C10.500.034.687",
+        "C11.270.019",
+        "C16.131.162",
+        "C16.131.666.034.687",
+        "C16.320.290.019",
+        "C16.320.322.030"
+      ],
+      "entry_terms": [
+        "Syndrome, Aicardi",
+        "Corpus Callosum, Agenesis Of, With Chorioretinal Abnormality",
+        "Aicardi's Syndrome",
+        "Syndrome, Aicardi's",
+        "Agenesis of Corpus Callosum with Infantile Spasms and Ocular Abnormalities"
+      ]
+    },
+    {
+      "key": "tachypnea",
+      "mesh_descriptor_id": "D059246",
+      "preferred_term": "Tachypnea",
+      "tree_numbers": [
+        "C08.618.961",
+        "C23.888.852.944"
+      ],
+      "entry_terms": [
+        "Tachypneas"
+      ]
+    },
+    {
+      "key": "lower_urinary_tract_symptoms",
+      "mesh_descriptor_id": "D059411",
+      "preferred_term": "Lower Urinary Tract Symptoms",
+      "tree_numbers": [
+        "C23.888.942.343"
+      ],
+      "entry_terms": [
+        "Lower Urinary Tract Symptom"
+      ]
+    },
+    {
+      "key": "polydipsia_psychogenic",
+      "mesh_descriptor_id": "D059607",
+      "preferred_term": "Polydipsia, Psychogenic",
+      "tree_numbers": [
+        "C23.550.759.500",
+        "C23.888.663.500"
+      ],
+      "entry_terms": [
+        "Polydipsias, Psychogenic",
+        "Psychogenic Polydipsia",
+        "Psychogenic Polydipsias",
+        "Polydipsia, Primary",
+        "Polydipsias, Primary"
+      ]
+    },
+    {
+      "key": "pelvic_floor_disorders",
+      "mesh_descriptor_id": "D059952",
+      "preferred_term": "Pelvic Floor Disorders",
+      "tree_numbers": [
+        "C12.050.351.625",
+        "C12.050.703.565",
+        "C12.200.483",
+        "C12.400"
+      ],
+      "entry_terms": [
+        "Disorder, Pelvic Floor",
+        "Disorders, Pelvic Floor",
+        "Pelvic Floor Disorder",
+        "Pelvic Floor Diseases",
+        "Disease, Pelvic Floor"
+      ]
+    },
+    {
+      "key": "disease_resistance",
+      "mesh_descriptor_id": "D060467",
+      "preferred_term": "Disease Resistance",
+      "tree_numbers": [
+        "C23.550.291.671"
+      ],
+      "entry_terms": [
+        "Disease Resistances",
+        "Resistances, Disease",
+        "Resistance, Disease"
+      ]
+    },
+    {
+      "key": "prodromal_symptoms",
+      "mesh_descriptor_id": "D062706",
+      "preferred_term": "Prodromal Symptoms",
+      "tree_numbers": [
+        "C23.888.672"
+      ],
+      "entry_terms": [
+        "Prodromal Symptom",
+        "Symptom, Prodromal",
+        "Symptoms, Prodromal",
+        "Prodromal Characteristics",
+        "Characteristic, Prodromal"
+      ]
+    },
+    {
+      "key": "carcinogenesis",
+      "mesh_descriptor_id": "D063646",
+      "preferred_term": "Carcinogenesis",
+      "tree_numbers": [
+        "C04.697.098",
+        "C23.550.727.098"
+      ],
+      "entry_terms": [
+        "Carcinogeneses",
+        "Oncogenesis",
+        "Oncogeneses",
+        "Tumorigenesis",
+        "Tumorigeneses"
+      ]
+    },
+    {
+      "key": "drug_related_side_effects_and_adverse_reactions",
+      "mesh_descriptor_id": "D064420",
+      "preferred_term": "Drug-Related Side Effects and Adverse Reactions",
+      "tree_numbers": [
+        "C25.100"
+      ],
+      "entry_terms": [
+        "Drug Related Side Effects and Adverse Reactions",
+        "Side Effects of Drugs",
+        "Drug-Related Side Effects and Adverse Reaction",
+        "Drug Related Side Effects and Adverse Reaction",
+        "Adverse Drug Reaction"
+      ]
+    },
+    {
+      "key": "teratogenesis",
+      "mesh_descriptor_id": "D064793",
+      "preferred_term": "Teratogenesis",
+      "tree_numbers": [
+        "C23.550.863"
+      ],
+      "entry_terms": []
+    },
+    {
+      "key": "dysbiosis",
+      "mesh_descriptor_id": "D064806",
+      "preferred_term": "Dysbiosis",
+      "tree_numbers": [
+        "C23.550.308"
+      ],
+      "entry_terms": [
+        "Dysbioses",
+        "Dys-symbiosis",
+        "Dys-symbioses",
+        "Dys symbiosis",
+        "Disbiosis"
+      ]
+    },
+    {
+      "key": "lennox_gastaut_syndrome",
+      "mesh_descriptor_id": "D065768",
+      "preferred_term": "Lennox Gastaut Syndrome",
+      "tree_numbers": [
+        "C10.228.140.490.493.750",
+        "C16.320.495"
+      ],
+      "entry_terms": [
+        "Lennox Gastaut Syndromes",
+        "Lennox-Gastaut Syndrome"
+      ]
+    },
+    {
+      "key": "cardiotoxicity",
+      "mesh_descriptor_id": "D066126",
+      "preferred_term": "Cardiotoxicity",
+      "tree_numbers": [
+        "C14.280.260",
+        "C23.550.161",
+        "C25.100.389",
+        "C26.733.266"
+      ],
+      "entry_terms": [
+        "Cardiotoxicities",
+        "Cardiac Toxicity",
+        "Cardiac Toxicities",
+        "Toxicity, Cardiac"
+      ]
+    },
+    {
+      "key": "vascular_remodeling",
+      "mesh_descriptor_id": "D066253",
+      "preferred_term": "Vascular Remodeling",
+      "tree_numbers": [
+        "C23.300.977",
+        "C23.550.918"
+      ],
+      "entry_terms": [
+        "Remodelings, Vascular",
+        "Remodeling, Vascular",
+        "Vascular Remodelings",
+        "Pulmonary Arterial Remodeling",
+        "Arterial Remodeling, Pulmonary"
+      ]
+    },
+    {
+      "key": "protein_aggregation_pathological",
+      "mesh_descriptor_id": "D066263",
+      "preferred_term": "Protein Aggregation, Pathological",
+      "tree_numbers": [
+        "C23.550.770"
+      ],
+      "entry_terms": [
+        "Aggregation, Pathological Protein",
+        "Pathological Protein Aggregation"
+      ]
+    }
+  ],
+  "rollup_lookup": "schemas/condition_rollup.json maps every dropped candidate descriptor + tree number to the approved parent covering it."
+}

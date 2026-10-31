@@ -237,6 +237,7 @@ Contract version **0.3** (`schema_version: wp1.3.0-draft`; `x-contract-version: 
 1. **gold_badge.decision** `gold|not_gold` and **awarded_by** (rater id). *Gold* = paper marked by the resident PhD as top-notch in structure/detail.
 2. **relevance_grade** (new, keyed on `(query_id, pmid)`): `query_id, pmid, grade, rater, query_set_version, query_set_sha256` (required); optional `rater_verified, timestamp, split, storage, rationale_format`. Names/types aligned with the eval locked-store `relevance_grade` proposal. **`grade` 0/1/2 is a PLACEHOLDER** pending the Biomedical lead's decision on a multi-axis linear relevance score.
    - **PROPOSED axes (NOT schema fields yet):** `topic_match` 0/1/2 (0 = hard exclude); `study_type` category `original|review_meta_analysis|survey|reanalysis|other`; `design_correctness` 1–5; `reporting_depth` 1–5; gold badge; `relevance = w1*topic + w2*original + w3*design + w4*reporting + w5*gold`, weights **w1–w5 UNSET placeholders**.
+   - **Topic gate ON (B3, Shawn 2026-10-31):** a paper not about cannabis/cannabinoids (`topic_match` = 0) gets relevance score 0 and is filtered out of results, whatever the other axes say. Recorded in `relevance_grade.x-topic-gate`. Closes the v4 topic-gate open question.
 3. **correction** (new): `record_id, supersedes_record_id, reason, corrected_by, at (ISO-8601 date-time), retracted (bool)`. State records are **append-only**; corrections supersede, never edit.
 4. **Mapping rule** (`$defs.paper_pmid_mapping`): `paper_id` resolves to `papers.pmid`. If pmid is null the record is flagged `pmid_missing: true` and `manifest_eligible: false` — **excluded from manifests** (encoded via if/then).
 5. **work_id** on `reference_value` and `gold_badge`, copied from the paper.
@@ -305,3 +306,175 @@ The contract version stays `"0.5"`; these are additive changes, and every record
 | `external_id` | vocab values + `normalized_field` | 3C: empty nullable slot for later ChEBI / RxNorm. | technical |
 
 Also in v0.6: `record_id` is required on `wp1.6.0-draft` records, `run_event.field` includes `chemotype_reported`, and the run manifest `contract_version` accepts `"0.5"` or `"0.6"`.
+
+## v0.7 additions (wp1.7.0-draft): reporting completeness — pending_biomedical
+
+`x-contract-version: "0.7"`. Based on the PhD lead conversation of Oct 31, 2026. All additive: nothing existing is removed or renamed, and every earlier record stays valid. **Every value, tier and vocabulary below is `pending_biomedical` / `phd_to_confirm`.**
+
+The idea: for this database, a paper's quality is how well it reports the details we need to reproduce the work. What counts as "needed" depends on how sure we are of the study type.
+
+| Name | Where | Meaning | Status |
+|---|---|---|---|
+| `reporting` | top level (new) | One `field_reporting` entry per completeness item key (`research_type`, `strain_or_product_name`, `supplier`, `form`, `major_cannabinoids`, `route`, `dose`, `frequency`, `duration`, `vehicle_solvent`, `storage`). A missing key means `not_yet_assessed`. | technical |
+| `field_reporting.status` | `$defs` | `reported`, `not_reported` (section read, detail absent), `could_not_check` (section not fetched or parsed), `not_applicable` (set by the decision-tree branch / study type), `not_yet_assessed` (default). Records written before v0.7 are `not_yet_assessed`, **never** backfilled as `not_reported`. | technical |
+| `field_reporting.location` | `$defs` | `methods`, `supplementary`, `abstract`, `discussion`, `unknown`, `table`, `figure` (T2; never affect tier) (no `cited_prior_paper`: "as previously described [ref]" is `not_reported`, K1). Required when status is `reported`; must be null or absent otherwise. | technical |
+| `field_reporting.evidence_quote` | `$defs` | Verbatim span supporting the status, optional. | technical |
+| `field_reporting.check_failure_reason` | `$defs` | `fetch_failed`, `parse_failed`, `source_not_available`, `budget_cap`, `source_not_fetched`. `source_not_fetched` is a **deliberate scope choice** (e.g. a main-text-only run that skips supplements), distinct from `fetch_failed`, which is an error. Required when status is `could_not_check`; null or absent otherwise. The contract only records the reason. **How each reason is scored is owned by CRN Evaluation's scorer** (Pipeline proposes `fetch_failed` / `parse_failed` count as misses). | technical |
+| `supplier` | `fields` (new) | Company or source the product was procured from. Its own field, separate from strain/product name (**U2, answered**). Not applicable for clinical studies. | pending_biomedical |
+| `vehicle_solvent` | `fields` (new) | Vehicle or solvent used to deliver the product (oil does not dissolve in cell media). | pending_biomedical |
+| `storage` | `fields` (new) | How the product was stored, free text. Good practice, not required. |
+| `storage_temperature`, `milled_ground`, `protected_from_light` | `fields` (new) | G1 good-practice storage details (temperature as reported; milled/ground and light protection = `yes`/`no`/`not_reported`). Recorded only, never affects any tier. |
+| `supplier_program_verbatim` | `fields` (new) | P2: unnamed government supply program as written. Recorded only. |
+| `system_type` | `fields` (new) | In vitro system (A10): `primary`, `cell_line`, `co_culture`, `organoid`, `pcls` (precision-cut lung slices), `other`. Recorded, not scored. |
+| `randomized` / `arms` / `blinding` | `fields` (new) | Clinical design. `randomized` (`yes`/`no`/`unknown`) is the scope gate; `arms` (`single_arm`/`controlled`/`unknown`) and `blinding` (`open_label`/`single_blind`/`double_blind`/`unknown`) are recorded only. |
+| `cell_line_or_tissue_source`, `comparison_group` | `fields` (new) | In vitro source (V2) and clinical comparison arm (V3). |
+| `field_reporting.confidence`, `.needs_review` | `$defs` | Optional extraction confidence and human-review flag on any reporting item. | pending_biomedical |
+| `form` | `fields` (new) | Physical form; vocabulary `product_form` (includes `topical`). | phd_to_confirm |
+| `cannabinoids` | `fields` (new) | List of cannabinoids as reported (not THC/CBD only), each with optional amount/unit/span. Names from vocabulary `cannabinoid` (each value has `full_name` and `synonyms`; THC/CBD `core`, others `candidate`; drug names like dronabinol stay in `product_substance` per MCK-425). A non-empty list needs `missingness: reported` and a `source_span`, same gating as `chemotype_reported`. The existing THC/CBD numeric fields stay. | phd_to_confirm |
+| `route` | `fields` | Unchanged shape. New vocabulary `route` splits oral into `oral_diet` and `oral_gavage` (dose is uncertain when mixed in food). Route stays separate from product (MCK-425). | phd_to_confirm |
+
+### Completeness tiers (`schemas/completeness_rules.json`, rule `crn_reporting_completeness` v0.7.0, pending_biomedical)
+
+| Tier | Items |
+|---|---|
+| classification | research type (picks the study-type tier; recorded, not part of gold) |
+| universal (every study) | strain/product name, supplier (not applicable for clinical), form, major cannabinoids, route (provisional). All must be `reported` for gold. Location is recorded but never a pass condition. |
+| in_vivo (V1, provisional) | required always: route, dose, duration, number of animals. Secondary: species, animal strain, sex, age or weight, frequency, vehicle (key `vehicle_solvent`). Same algorithm and `secondary_cutoff` as in vitro. |
+| in_vitro (V2 + A10, provisional) | required always: cell type (line / tissue source), source species, concentration, exposure time. Secondary share: vehicle/solvent, replicates. `system_type` (primary, cell_line, co_culture, organoid, pcls, other) is recorded, not scored. |
+| clinical (V3, provisional; RCTs only) | all required, no share: number of participants, route, dose, frequency, duration, participant age or sex (either counts), diagnosis or condition, comparison group (may carry `confidence` + `needs_review`). Scope gate on `randomized`: `yes` → scored; `no` → `out_of_scope`; `unknown` → `unverified` (never guessed). `arms` and `blinding` are recorded only. |
+| good_practice (G1) | storage temperature, milled/ground, protected from light. Recorded only; never counts toward gold or any share. No contamination or batch-testing fields. (Replaces V4; `storage_duration` dropped: it existed only in this draft.) |
+
+**Grades are explicit, never blank:** `gold`, `near_gold`, `unverified`, `not_scored` (reviews, case reports, observational / self-report), `out_of_scope` (non-randomized interventional trials), `not_yet_assessed` (default).
+
+**Observational / self-reported studies, reviews and case reports** skip every current tier, including universal: the helper returns `not_scored` for all tiers. Only future exposure fields would be scored for them, after the PhD lead signs off.
+
+Completeness is **computed** from the statuses (`methods_completeness.compute`), never stored as truth. Output per tier: a universal grade, a study-type fraction (reported / (reported + not_reported); `could_not_check` and `not_yet_assessed` counted separately), and good practice on its own. **There is no combined score.**
+
+Universal grade (papers are always kept, never dropped):
+
+- `gold`: every applicable universal item is `reported`.
+- `near_gold`: at least one applicable item is `not_reported`. Returns a `missing` list, plus a `not_checked` list if any. Missing takes precedence over unchecked.
+- `unverified`: nothing missing, but at least one item `could_not_check` (or `not_yet_assessed`). Returns `not_checked` with each item's `check_failure_reason`. This is not a reporting gap.
+
+Items marked `not_applicable` (status, or supplier on clinical studies) are left out and never counted missing.
+
+**Required + secondary tiers (in vitro now; same mechanics planned for in vivo).** `secondary_cutoff` default 0.80, overridable per call.
+
+1. Any required item `not_reported` → `near_gold`.
+2. Else any required item `could_not_check` → `unverified`.
+3. Else secondary share, worst case (unchecked counted as not reported; denominator = applicable items including unchecked) and best case (unchecked counted as reported). Worst ≥ cutoff → `gold`; best < cutoff → `near_gold` (share too low); otherwise `unverified`. Both shares and the `missing` / `not_checked` lists are returned.
+
+**Route requirements (TOP2, partially answered, provisional).** Route of administration is required (universal item). Which dose / cannabinoid fields are expected then depends on study type + route, encoded in `route_requirements` from the extraction flowchart (`Cannabis_Classification_Decision_Tree`, Node 2A / 6 / 7) only. If route is not reported, route counts as missing (`near_gold`) and route-dependent fields get no requirement (not counted as extra misses); this rule is provisional pending Shawn. The questions the flowchart didn't settle are closed (`route_requirements.open` is empty, status `approved`, Biomedical lead 2026-10-31): sublingual / intranasal / intratracheal in vivo, in vitro smoke or vapour, clinical sublingual and clinical topical have no route-specific requirement (route values `sublingual`, `intranasal`, `intratracheal` added to the route vocabulary; in vitro smoke/vapour has no route value yet and is recorded under `no_requirement_pending_vocabulary`, pending a Biomedical-lead name); any one of an item's flowchart fields counts; any measured cannabinoid counts for every route.
+
+**Cannabinoid vocabulary.** `values` are locked (including Δ8-THC, CBGA, CBL, 11-OH-THC confirmed by the PhD on 2026-10-31); each has `full_name` and `synonyms`. THC-COOH, CBCA, THCVA, CBDVA, CBE, CBT sit in `candidates_pending_phd`: recorded, never scored.
+
+### Answered (Shawn, 2026-10-31)
+
+- **U1:** universal = strain/product name, supplier, form, major cannabinoids; all must be reported for gold.
+- **TOP4:** location is never a pass condition anywhere in the universal tier; it is still recorded.
+- **V2 (provisional):** in vitro tier as above.
+- **TOP2 (partial):** requirements depend on study type and route, per the flowchart; the open route items are now closed with "no requirement" (approved defaults 1-7 below).
+- **V3 (provisional):** clinical tier for RCTs only, as above.
+- **Non-randomized interventional trials** (single-arm, open-label non-randomized) are out of scope: no gold rule, no comparison-group check.
+- **Q1:** age or sex, either counts (provisional). **Q2:** resolved by the out-of-scope rule.
+- **G1 (replaces V4):** good practice is exactly storage temperature, milled/ground, protected from light. Never affects tier.
+- **C1 (dose wording):** a dose given only as a range counts as `reported`. "Per protocol" counts as `reported` only if the paper or its cited protocol gives an actual number; otherwise dose is `not_reported`. Examples:
+  - "mice received 5–20 mg/kg THC i.p." → reported (range).
+  - "dosed per protocol (10 mg/kg, see Ref 12)" → reported.
+  - "dosed per protocol [12]", and ref 12 states 3 mg/kg → reported (put the number and source in `evidence_quote`).
+  - "dosed per protocol" with no number anywhere → not_reported.
+- **C2 (vague duration):** "chronic", "long-term", "acute" etc. with no actual time do **not** count as duration reported; duration stays `not_reported`. The term is kept on the duration reporting item as `duration_category` (closed enum: `acute` — acute, single dose, single administration; `subacute` — sub-acute; `subchronic` — sub-chronic; `chronic` — chronic, repeated; `long_term` — long-term, prolonged, extended; `other`) plus `duration_category_verbatim` (author's words). Search/filter label only; never affects any tier; no time thresholds (authors' wording only). Synonyms live in `normalization_rules.json` → `duration_category`. It sits in the per-field reporting block, so it moves into each track's reporting block when the track shape lands.
+  - "chronic THC exposure" (no time) → duration `not_reported`, `duration_category: chronic`, verbatim "chronic".
+  - "chronic (21 days) THC" → duration `reported`, `duration_category: chronic`.
+- **TOP1 (final):** "as previously described [ref]" = `not_reported` (`not_reported_reason: cited_elsewhere`). Cited papers are never fetched. Example: "Rats were dosed as previously described (Smith 2015)." → dose `not_reported`, the sentence goes in `evidence_quote`.
+- **TOP3:** a number without units = `not_reported` (`not_reported_reason: missing_units`). Example: "animals received 10 of THC daily" → dose `not_reported`; "10 mg/kg" → reported.
+- **TOP4 (confirmed, closed):** a missing universal item always blocks gold, no exceptions (a numeric signed-off reference value satisfies the item, see P1). TOP4 applies only to items required for the study type, so supplier stays `not_applicable` for clinical (resolved).
+- **A10:** in vitro source species moves to always-required (see tier table). Species fields apply to animal models only; studies in humans route to clinical. New in vitro `system_type` field, recorded only.
+- **T2:** new locations `table` and `figure` (never affect tier). Confident read from a table/figure = `reported`; not confident = `could_not_check` + `low_confidence_read`; figure not attempted = `could_not_check` + `figure_not_read`. Example: dose only in Table 1, read clearly → reported, location `table`.
+- **P2:** supplier given only as an unnamed government program → supplier `not_reported` (`government_program_unnamed`); the wording goes in `supplier_program_verbatim` (not scored). Example: "provided by the NIDA Drug Supply Program".
+- **U2:** supplier is its own field, separate from strain/product name; for clinical studies it is `not_applicable`.
+
+### Approved defaults (Biomedical lead, 2026-10-31)
+
+These nine defaults are approved (closing the TOP2 route questions with "no requirement"); recorded in `completeness_rules.json` (`route_requirements.approved_defaults`, `tracks`):
+
+1. In vivo sublingual, intranasal and intratracheal routes have no route-specific requirement.
+2. In vitro smoke or vapour has no requirement.
+3. Any one of an item's flowchart fields counts.
+4. Prospective and retrospective clinical studies aren't scored; gold stays RCT-only.
+5. Clinical sublingual has no requirement.
+6. Any measured cannabinoid counts, for every route.
+7. Clinical topical has no requirement.
+8. Any measured cannabinoid counts as 'major'.
+9. One track per paper until Evaluation's dev counts are in.
+
+### Formerly open PhD questions
+
+1. Which cannabinoids are "major"? Approved (item 8): any cannabinoid content the paper measured counts as reported.
+2. **P1 tier effect (resolved, see P1 below):** do signed-off reference values affect the tier (A no effect / B counts as reported / C separate flag)? Default A for non-numeric values; numeric signed-off values currently fill `reference_fields` (see P1 section).
+
+### not_reported_reason (optional, never affects tier)
+
+Allowed only when status is `not_reported`: `cited_elsewhere` (TOP1), `vague_term_only` (C2 duration), `protocol_without_number` (C1), `government_program_unnamed` (P2), `product_named_content_missing` (P1 gap-log cases), `missing_units` (TOP3: number without units), `absent` (default: nothing found).
+
+### Check-failure reasons (all mean `could_not_check`)
+
+`fetch_failed`, `parse_failed`, `source_not_available`, `budget_cap`, `source_not_fetched` (deliberate scope choice, distinct from `fetch_failed`), `figure_not_read` (a figure holds the detail but reading it was not attempted; no figure-reading budget yet), `low_confidence_read` (read, but too uncertain to score). None of these is ever a miss: they are excluded from precision/recall and counted separately. Additive only; no value renamed or removed.
+
+### comparison_group review fields (V3)
+
+`extraction_confidence` (`high`/`medium`/`low`), `needs_review` (bool), `review_reason` (`no_named_control_arm`/`arm_only_in_table_or_figure`/`other`, only allowed when `needs_review` is true). Available on any reporting item; used for comparison_group.
+
+### Computed track shape (never stored)
+
+Per track (universal, study-type tier): `tier`, `missing`, `not_checked`; plus `overall_tier`. All are **computed at read time** from the stored reporting statuses and never written to the database. API responses carry them together with `rule_version` and the `secondary_cutoff` used, so any grade can be reproduced.
+
+### P1: product reference values (Shawn, 2026-10-31; design only, no DB migration)
+
+No auto-fill of cannabinoid content from labels or monographs. If the paper does not report it, the field stays `not_reported`.
+
+Proposed tables (not in the schema yet; land with the gated DB migration):
+
+1. `product_content_gap_log`: `log_id`, `paper_id`, `track_id` (nullable until tracks land), `product_name` (verbatim), `product_key` (normalized), `field` (e.g. cannabinoid THC content), `logged_at`, `extraction_run_id`, `status` (`open` | `resolved`).
+2. `product_reference_value`: one signed-off known value per `product_key` + `field`: `value`, `unit`, `source_citation` (label / monograph / DOI / URL), `signed_off_by` (role `biomedical_lead` | `grad_reviewer` + id), `signed_off_at`, `rule_version`, `superseded_by`.
+3. `paper_reference_link`: `paper_id`, `track_id`, `field`, `reference_value_id`, `linked_at`, `linked_by`, `revoked_at`. Signed-off values live only in `product_reference_value` and attach through this link table; they never write over paper fields. The apply step is idempotent, with unique key (`paper_id`, `track_id`, `field`, `reference_value_id`). Revoking sets `revoked_at`, and the shown value reverts to the paper's (`not_reported`).
+4. Per-field flag `value_source` = `paper` | `signed_off`. The reporting status stays `not_reported`, and the signed-off value is shown with its own provenance.
+
+The first prod run needs Shawn's go-ahead and a fresh snapshot.
+
+Evaluation excludes reference values from extraction accuracy.
+
+**Tier effect (resolved, Shawn 2026-10-31):** a **numeric** signed-off value counts toward the tier (option B) and satisfies TOP4; the item is listed in `reference_fields` and `tier_uses_reference_values` is true. A **non-numeric** signed-off value has no tier effect (option A): the item stays missing and is listed in `missing_reference_available`.
+
+### Computed tier output (P1 additions)
+
+`compute()` also returns `tier_uses_reference_values` (true when any reference value was used), `reference_fields` (items satisfied only by a numeric signed-off value, `value_source: signed_off`; empty if none), `missing_reference_available` (items with a non-numeric signed-off value: option A, no tier effect), `signoff_set_hash` (sha256 of the active `paper_reference_link` rows, so frozen runs are reproducible), `rule_version` and `secondary_cutoff` used. **Any future tier cache must be invalidated when `rule_version`, the cutoff, or the sign-off set changes (add, replace or revoke).**
+
+### Conditions, outcome domains, group sizes, comparator validation (A11, A12, A13, A15; none affects any tier; A14 skipped/unused, it does not exist)
+
+- **`reporting.conditions`** (A11): list of `{condition_key, mesh_descriptor_id (D-number), label}`. Keys come from `schemas/condition_list.json` (`list_version`, pinned `mesh_release_year`; each entry: key, D-number, preferred term, entry-term synonyms). List v0.1.0 is **approved** (Biomedical lead, 2026-10-31; MeSH 2026): broad parent C and F03 headings plus kept study-design headings, reduced mechanically from Pipeline's candidate v0.1 (a descriptor is dropped only if every one of its tree numbers sits under a descriptor that stays on the list); `schemas/condition_rollup.json` maps each dropped descriptor + tree number to its approved parent; the filter expands each entry to its narrower terms by tree number. The approved CSV sha256 is recorded in the list file. `reporting.experimental_model_verbatim` keeps the model as written (provenance, not scored). Computed output records `condition_list_version`.
+- **`mesh_from_pubmed`** (top level, optional): MeSH D-numbers from the PubMed record. **Cross-check only; never copied into `conditions`.** **Contract rule:** reviewers must not see `mesh_from_pubmed` or any PubMed MeSH headings while labelling conditions; the labelling interface and annotation exports exclude it.
+- **`reporting.outcome_domains`** (A12): list of `{domain, is_primary}` from the existing 8-value filter (`dashboard_ui_config.OUTCOME_DOMAINS`: pain, anxiety, cognition, inflammation, addiction, oncology, neuroprotection, sleep), with exactly one `is_primary: true`.
+- **`reporting.group_sample_sizes`** (A15): optional `{group_label (verbatim), n (integer), unit: animals | replicates}`, only when the paper gives a number. Not required for gold; total animal count stays required for in vivo; in vitro replicates stays in the secondary share.
+- **`comparator_validated`** (A13, on the comparison_group reporting item next to `extraction_confidence`): boolean, default false, set only after CRN Evaluation's sign-off.
+- These sit in the per-field reporting block, so they move into each track's reporting block when the track shape lands.
+
+### value_source and legacy_llm_fullpdf
+
+Per-field `value_source`: `paper` (default), `signed_off` (P1 numeric reference value), `legacy_llm_fullpdf` (an earlier LLM pass over full PDFs). A field can carry a reviewer/paper value and a legacy value side by side (`legacy_llm_fullpdf: {value, status}` on the reporting item). The legacy value is a **silver baseline and comparison input only**: it never counts as reviewer gold or test truth, never fills a tier or scoring label, and is stripped from annotation and scoring-label exports (`methods_completeness.labelling_export`). A reporting item whose own `value_source` is `legacy_llm_fullpdf` is rejected by the schema.
+
+**Legacy backfill rule (contract rule; applying it to any database is a separate gated step).** The old pass did not record which fields it wrote. So on a `papers` row whose `classifier_version` matches `llm-pdf-reclassify-%`, every non-null classification column (study_type, exposure_method, cannabis_type, publication_type, outcome_domain, species, and the numeric dose/content columns: thc_pct, cbd_pct, dose_mg, thc_mg_ml, thc_mg_g, thc_mg_kg, cbd_mg_ml, cbd_mg_g, cbd_mg_kg, thc_um, cbd_um; prod column names are lowercase) gets `value_source: legacy_llm_fullpdf`, unless the column is in `expert_locked_fields` (then `value_source: expert`). Attribution is marked `source_attribution: inferred_from_row_version`; `classifier_version` and `classification_timestamp` are kept in provenance. Column list: `completeness_rules.json` → `legacy_backfill`; helper `methods_completeness.legacy_backfill_attribution(row)`.
+
+### Relevance topic gate output
+
+`methods_completeness.topic_gate(topic_match)` returns computed, tri-state `topic_gate_pass`, never stored: `null` when `topic_match` is not yet assessed (the paper is **not** filtered out), `false` when assessed as not about cannabis (`topic_match` 0: relevance score 0, filtered out), `true` otherwise. Only an explicit `false` is filtered. `labelling_export` strips legacy (`legacy_llm_fullpdf`) values recursively, including list items such as `conditions`. `legacy_backfill_attribution` logs a warning when `expert_locked_fields` is not valid JSON and the comma-split fallback is used.
+
+### Storage / database
+
+This PR changes the contract only. Writing `reporting` to the database is a **separate later migration**, gated on CRN Reliability fixing Alembic on prod (missing psycopg, unknown stamped revision, backups off).
+
+Also in v0.7: `record_id` is required on `wp1.7.0-draft` records (same as v0.6), `run_event.field` includes the new fields, and the run manifest `contract_version` accepts `"0.7"`.
+
+### Changelog
+
+- **v0.7 (wp1.7.0-draft, 2026-10-31):** per-field reporting block with `check_failure_reason`; completeness tiers as a versioned rule; `supplier`, `vehicle_solvent`, `storage`, `form`, `cannabinoids` fields; `product_form` and `route` vocabularies. Additive only.

@@ -1,0 +1,718 @@
+{
+  "rule_id": "crn_reporting_completeness",
+  "version": "0.7.0",
+  "status": "pending_biomedical",
+  "contract_version": "0.7",
+  "note": "Completeness is computed from reporting statuses, never stored. Output per tier: universal gold/near_gold, study-type fraction, good_practice separate. No combined score. Tier membership pending the PhD lead.",
+  "computation": {
+    "universal": "Applicable items exclude status not_applicable and items whose not_applicable_for includes the study type. gold = all applicable items reported. near_gold = >=1 applicable item not_reported (missing list, plus not_checked list if any); missing takes precedence. unverified = none missing but >=1 could_not_check or not_yet_assessed (not_checked list with check_failure_reason). Location is never a pass condition (U1/TOP4). Paper is kept, never dropped.",
+    "study_type": "fraction reported / (items not not_applicable); not_yet_assessed and could_not_check are counted separately, not as misses",
+    "good_practice": "fraction reported, reported separately; never affects pass/fail",
+    "required_secondary_tiers": "(1) any required item not_reported -> near_gold. (2) else any required item could_not_check (or not_yet_assessed) -> unverified. (3) else secondary share: worst = reported / applicable (unchecked counted not reported; denominator = applicable items incl. unchecked); best = (reported + unchecked) / applicable. worst >= cutoff -> gold; best < cutoff -> near_gold (share too low); otherwise unverified. Output both shares and the missing / not_checked lists."
+  },
+  "tiers": {
+    "universal": {
+      "applies_to": "all",
+      "items": [
+        {
+          "key": "strain_or_product_name",
+          "fields": [
+            "strain_reported",
+            "product"
+          ]
+        },
+        {
+          "key": "supplier",
+          "fields": [
+            "supplier"
+          ],
+          "not_applicable_for": [
+            "clinical"
+          ]
+        },
+        {
+          "key": "form",
+          "fields": [
+            "form"
+          ]
+        },
+        {
+          "key": "major_cannabinoids",
+          "fields": [
+            "cannabinoids"
+          ],
+          "satisfied_by": "any_measured_cannabinoid",
+          "approved": "Any measured cannabinoid counts as 'major' (Biomedical lead, 2026-10-31, approved default 8)."
+        },
+        {
+          "key": "route",
+          "fields": [
+            "route"
+          ],
+          "provisional": true,
+          "note": "Route of administration is required (Shawn, TOP2). Not reported -> missing -> near_gold. Provisional pending Shawn."
+        }
+      ]
+    },
+    "in_vivo": {
+      "applies_to": "in_vivo",
+      "status": "provisional",
+      "answered": "V1 (Shawn 2026-10-31, provisional)",
+      "required_always": [
+        {
+          "key": "route",
+          "fields": [
+            "route"
+          ]
+        },
+        {
+          "key": "dose",
+          "fields": [
+            "dose_mg",
+            "dose_thc_mg_kg",
+            "dose_cbd_mg_kg",
+            "dose_thc_mg_g",
+            "dose_cbd_mg_g",
+            "conc_thc_mg_ml",
+            "conc_cbd_mg_ml",
+            "conc_thc_uM",
+            "conc_cbd_uM"
+          ]
+        },
+        {
+          "key": "duration",
+          "fields": [
+            "duration_days",
+            "treatment_duration"
+          ]
+        },
+        {
+          "key": "number_of_animals",
+          "fields": [
+            "sample_size"
+          ]
+        }
+      ],
+      "secondary": [
+        {
+          "key": "species",
+          "fields": [
+            "species_or_biological_system"
+          ]
+        },
+        {
+          "key": "animal_strain",
+          "fields": [
+            "species_or_biological_system"
+          ]
+        },
+        {
+          "key": "sex",
+          "fields": [
+            "sgba_sex_reported"
+          ]
+        },
+        {
+          "key": "age_or_weight",
+          "fields": [
+            "sgba_population_age"
+          ]
+        },
+        {
+          "key": "frequency",
+          "fields": [
+            "administration_frequency"
+          ]
+        },
+        {
+          "key": "vehicle_solvent",
+          "fields": [
+            "vehicle_solvent"
+          ]
+        }
+      ],
+      "items": [
+        {
+          "key": "route",
+          "fields": [
+            "route"
+          ]
+        },
+        {
+          "key": "dose",
+          "fields": [
+            "dose_mg",
+            "dose_thc_mg_kg",
+            "dose_cbd_mg_kg",
+            "dose_thc_mg_g",
+            "dose_cbd_mg_g",
+            "conc_thc_mg_ml",
+            "conc_cbd_mg_ml",
+            "conc_thc_uM",
+            "conc_cbd_uM"
+          ]
+        },
+        {
+          "key": "duration",
+          "fields": [
+            "duration_days",
+            "treatment_duration"
+          ]
+        },
+        {
+          "key": "number_of_animals",
+          "fields": [
+            "sample_size"
+          ]
+        },
+        {
+          "key": "species",
+          "fields": [
+            "species_or_biological_system"
+          ]
+        },
+        {
+          "key": "animal_strain",
+          "fields": [
+            "species_or_biological_system"
+          ]
+        },
+        {
+          "key": "sex",
+          "fields": [
+            "sgba_sex_reported"
+          ]
+        },
+        {
+          "key": "age_or_weight",
+          "fields": [
+            "sgba_population_age"
+          ]
+        },
+        {
+          "key": "frequency",
+          "fields": [
+            "administration_frequency"
+          ]
+        },
+        {
+          "key": "vehicle_solvent",
+          "fields": [
+            "vehicle_solvent"
+          ]
+        }
+      ]
+    },
+    "in_vitro": {
+      "applies_to": "in_vitro",
+      "status": "provisional",
+      "answered": "V2 + A10 (Shawn 2026-10-31): required cell type (line/tissue source), source species, concentration, exposure time; secondary vehicle, replicates. system_type recorded, not scored.",
+      "required_always": [
+        {
+          "key": "cell_line_or_tissue_source",
+          "fields": [
+            "cell_line_or_tissue_source"
+          ]
+        },
+        {
+          "key": "species_of_origin",
+          "fields": [
+            "species_or_biological_system"
+          ]
+        },
+        {
+          "key": "concentration",
+          "fields": [
+            "conc_thc_uM",
+            "conc_cbd_uM",
+            "conc_thc_mg_ml",
+            "conc_cbd_mg_ml"
+          ]
+        },
+        {
+          "key": "exposure_time",
+          "fields": [
+            "treatment_duration"
+          ]
+        }
+      ],
+      "secondary": [
+        {
+          "key": "vehicle_solvent",
+          "fields": [
+            "vehicle_solvent"
+          ]
+        },
+        {
+          "key": "replicates",
+          "fields": [
+            "replicates_notes",
+            "sample_size"
+          ]
+        }
+      ],
+      "items": [
+        {
+          "key": "cell_line_or_tissue_source",
+          "fields": [
+            "cell_line_or_tissue_source"
+          ]
+        },
+        {
+          "key": "species_of_origin",
+          "fields": [
+            "species_or_biological_system"
+          ]
+        },
+        {
+          "key": "concentration",
+          "fields": [
+            "conc_thc_uM",
+            "conc_cbd_uM",
+            "conc_thc_mg_ml",
+            "conc_cbd_mg_ml"
+          ]
+        },
+        {
+          "key": "exposure_time",
+          "fields": [
+            "treatment_duration"
+          ]
+        },
+        {
+          "key": "vehicle_solvent",
+          "fields": [
+            "vehicle_solvent"
+          ]
+        },
+        {
+          "key": "replicates",
+          "fields": [
+            "replicates_notes",
+            "sample_size"
+          ]
+        }
+      ]
+    },
+    "clinical": {
+      "applies_to": "clinical_rct",
+      "status": "provisional",
+      "answered": "V3 (Shawn 2026-10-31, provisional)",
+      "note": "Gold rule for RCTs only (Shawn 2026-10-31). Non-randomized interventional trials are out_of_scope: no gold rule, no comparison-group check. Observational / self-report / reviews / case reports are not_scored. Supplier stays not_applicable for clinical.",
+      "required_always": [
+        {
+          "key": "number_of_participants",
+          "fields": [
+            "sample_size"
+          ]
+        },
+        {
+          "key": "route",
+          "fields": [
+            "route"
+          ]
+        },
+        {
+          "key": "dose",
+          "fields": [
+            "dose_mg",
+            "dose_thc_mg_kg",
+            "dose_cbd_mg_kg",
+            "dose_thc_mg_g",
+            "dose_cbd_mg_g",
+            "conc_thc_mg_ml",
+            "conc_cbd_mg_ml",
+            "conc_thc_uM",
+            "conc_cbd_uM"
+          ]
+        },
+        {
+          "key": "frequency",
+          "fields": [
+            "administration_frequency"
+          ]
+        },
+        {
+          "key": "duration",
+          "fields": [
+            "treatment_duration",
+            "duration_days"
+          ]
+        },
+        {
+          "key": "participant_age_or_sex",
+          "fields": [
+            "sgba_population_age",
+            "sgba_sex_reported"
+          ],
+          "satisfied_by": "either",
+          "note": "Either age or sex counts (Q1 default confirmed, provisional)."
+        },
+        {
+          "key": "diagnosis_or_condition",
+          "fields": [
+            "disease_or_experimental_model"
+          ]
+        },
+        {
+          "key": "comparison_group",
+          "fields": [
+            "comparison_group"
+          ],
+          "review": "confidence + needs_review on the reporting item"
+        }
+      ],
+      "secondary": [],
+      "items": [
+        {
+          "key": "number_of_participants",
+          "fields": [
+            "sample_size"
+          ]
+        },
+        {
+          "key": "route",
+          "fields": [
+            "route"
+          ]
+        },
+        {
+          "key": "dose",
+          "fields": [
+            "dose_mg",
+            "dose_thc_mg_kg",
+            "dose_cbd_mg_kg",
+            "dose_thc_mg_g",
+            "dose_cbd_mg_g",
+            "conc_thc_mg_ml",
+            "conc_cbd_mg_ml",
+            "conc_thc_uM",
+            "conc_cbd_uM"
+          ]
+        },
+        {
+          "key": "frequency",
+          "fields": [
+            "administration_frequency"
+          ]
+        },
+        {
+          "key": "duration",
+          "fields": [
+            "treatment_duration",
+            "duration_days"
+          ]
+        },
+        {
+          "key": "participant_age_or_sex",
+          "fields": [
+            "sgba_population_age",
+            "sgba_sex_reported"
+          ],
+          "satisfied_by": "either",
+          "open": "Are both age and sex needed?"
+        },
+        {
+          "key": "diagnosis_or_condition",
+          "fields": [
+            "disease_or_experimental_model"
+          ]
+        },
+        {
+          "key": "comparison_group",
+          "fields": [
+            "comparison_group"
+          ],
+          "review": "confidence + needs_review on the reporting item",
+          "open": "Single-arm trials with no comparison group: not_applicable or not_reported? Default not_reported (provisional)."
+        }
+      ],
+      "scope_gate": {
+        "field": "randomized",
+        "yes": "scored",
+        "no": "out_of_scope",
+        "unknown": "unverified",
+        "absent": "not_yet_assessed",
+        "note": "arms and blinding are recorded only."
+      }
+    },
+    "good_practice": {
+      "applies_to": "all",
+      "answered": "G1 (Shawn 2026-10-31): exactly storage_temperature, milled_ground, protected_from_light. Replaces V4 set; storage_duration dropped. No contamination or batch-testing fields. Recorded only, never affects any tier.",
+      "note": "Recorded only; never counts toward gold or any share.",
+      "items": [
+        {
+          "key": "storage_temperature",
+          "fields": [
+            "storage_temperature"
+          ]
+        },
+        {
+          "key": "milled_ground",
+          "fields": [
+            "milled_ground"
+          ]
+        },
+        {
+          "key": "protected_from_light",
+          "fields": [
+            "protected_from_light"
+          ]
+        }
+      ]
+    },
+    "classification": {
+      "applies_to": "all",
+      "items": [
+        {
+          "key": "research_type",
+          "fields": [
+            "research_type"
+          ]
+        }
+      ],
+      "note": "Research type picks the study-type tier; recorded but not part of gold (U1)."
+    }
+  },
+  "not_scored_study_types": [
+    "observational",
+    "self_reported",
+    "review",
+    "case_report"
+  ],
+  "not_scored_note": "Reviews, case reports, observational and self-reported studies skip every current tier (grade not_scored). Only future exposure fields would be scored for observational/self-report, after the PhD lead signs off.",
+  "previously_described_policy": "TOP1 (Shawn, 2026-10-31, final): 'As previously described [ref]' = not_reported (not_reported_reason cited_elsewhere). Cited papers are never fetched. There is no cited_prior_paper location value.",
+  "answered": {
+    "U1": "Shawn, 2026-10-31: universal = strain/product name, supplier, form, major cannabinoids, all status reported for gold.",
+    "TOP4": "Shawn, 2026-10-31: location is never a pass condition; it is still recorded. Confirmed (Shawn, 2026-10-31): a missing (not_reported) universal item always blocks gold, no exceptions. Resolved: TOP4 applies only to items required for the study type; supplier stays not_applicable for clinical. A numeric signed-off reference value satisfies the item (P1).",
+    "U2": "Shawn, 2026-10-31: supplier is its own field, separate from strain/product name; for clinical studies supplier is not_applicable (not required, never counted missing).",
+    "V1": "In vivo tier: required_always route, dose, duration, number_of_animals; secondary species, animal_strain, sex, age_or_weight, frequency, vehicle (key vehicle_solvent); secondary_cutoff default 0.80, overridable.",
+    "C1": "Shawn, 2026-10-31: a dose given only as a range (e.g. 5-20 mg/kg) counts as reported. 'Per protocol' counts as reported only if the paper or its cited protocol gives an actual number; otherwise dose = not_reported.",
+    "C2": "Shawn, 2026-10-31: vague duration terms ('chronic', 'long-term', 'acute', ...) with no actual time do not count as duration reported (duration stays not_reported). The term is kept as reporting.duration.duration_category (+ _verbatim), a filter label that never affects any tier.",
+    "G1": "G1 (Shawn 2026-10-31): exactly storage_temperature, milled_ground, protected_from_light. Replaces V4 set; storage_duration dropped. No contamination or batch-testing fields. Recorded only, never affects any tier.",
+    "TOP1": "TOP1 (Shawn, 2026-10-31, final): 'As previously described [ref]' = not_reported (not_reported_reason cited_elsewhere). Cited papers are never fetched. There is no cited_prior_paper location value.",
+    "TOP3": "Shawn, 2026-10-31: a numeric value without units (e.g. a dose number, no unit) = not_reported (not_reported_reason missing_units).",
+    "A10": "Shawn, 2026-10-31: in vitro source species (species_of_origin) is always required. Species fields apply to animal models only; human studies route to clinical. In vitro system_type (primary, cell_line, co_culture, organoid, pcls, other) is recorded, not scored.",
+    "T2": "Shawn, 2026-10-31: locations table and figure added; never affect tier. Confident read = reported; not confident = could_not_check low_confidence_read; figure not attempted = could_not_check figure_not_read.",
+    "P2": "Shawn, 2026-10-31: unnamed government supply program -> supplier not_reported (not_reported_reason government_program_unnamed); program wording kept in fields.supplier_program_verbatim, not scored.",
+    "P1": "Shawn, 2026-10-31 (resolved, option B for numeric): a numeric signed-off reference value counts toward the tier (and satisfies TOP4); non-numeric signed-off values follow option A (no tier effect, noted). Output flags tier_uses_reference_values.",
+    "A11": "Conditions: multi-valued reporting.conditions keyed by schemas/condition_list.json (v0.1.0 approved by the Biomedical lead 2026-10-31, MeSH 2026; filter expands to narrower terms by tree number) + experimental_model_verbatim; mesh_from_pubmed is a cross-check input only. Never affects tier.",
+    "A12": "Outcome domains: multi-valued from the existing 8-value filter with exactly one is_primary. Never affects tier.",
+    "A14": "Skipped / unused: A14 does not exist (Biomedical lead, 2026-10-31).",
+    "A13": "comparator_validated boolean (default false), set only after Evaluation sign-off; never affects tier.",
+    "A15": "group_sample_sizes optional (only when numeric); never affects tier; total animal count stays required for in vivo."
+  },
+  "route_requirements": {
+    "status": "approved",
+    "answered": "TOP2 partially (Shawn 2026-10-31): requirements depend on study type and route, per the extraction flowchart.",
+    "source": "Cannabis_Classification_Decision_Tree (transcription of 'EXPERT FEEDBACK TREE & CUES + Decision Tree.pdf', 2026-06-18): Node 2A, Node 7, Node 6. Only fields the flowchart lists are encoded; flowchart says EXTRACT, which this rule reads as 'expected'.",
+    "route_not_reported": "route counts as missing in universal (near_gold); route-dependent fields get no requirement and are not counted as extra misses. Provisional pending Shawn.",
+    "route_groups": {
+      "in_vivo": {
+        "smoke_vapor": {
+          "flowchart": "Node 7a/7b whole body or nose only smoke/vapor",
+          "routes": [
+            "inhaled"
+          ],
+          "fields": [
+            "puff_count",
+            "inhaled_exposure_duration",
+            "pct_thc",
+            "pct_cbd",
+            "conc_thc_mg_ml",
+            "conc_cbd_mg_ml",
+            "duration_days",
+            "administration_frequency"
+          ]
+        },
+        "injection_or_oral": {
+          "flowchart": "Node 7c/7d injection cannabinoids, oral administration",
+          "routes": [
+            "oral_diet",
+            "oral_gavage",
+            "oral_other",
+            "intraperitoneal",
+            "intravenous",
+            "subcutaneous"
+          ],
+          "fields": [
+            "dose_thc_mg_kg",
+            "dose_cbd_mg_kg",
+            "dose_thc_mg_g",
+            "dose_cbd_mg_g",
+            "pct_thc",
+            "pct_cbd",
+            "dose_mg",
+            "duration_days",
+            "administration_frequency"
+          ]
+        }
+      },
+      "clinical": {
+        "any": {
+          "flowchart": "Node 2A (RCT 4a)",
+          "routes": [
+            "inhaled",
+            "oral_other",
+            "intravenous",
+            "subcutaneous"
+          ],
+          "fields": [
+            "dose_mg",
+            "pct_thc",
+            "pct_cbd",
+            "duration_days",
+            "administration_frequency"
+          ],
+          "note": "Flowchart clinical routes: inhaled, oral, sublingual, injected. oral_diet/oral_gavage are animal routes."
+        },
+        "inhaled_extra": {
+          "flowchart": "Node 2A IF inhaled",
+          "routes": [
+            "inhaled"
+          ],
+          "fields": [
+            "inhaled_exposure_duration",
+            "puff_count"
+          ]
+        }
+      },
+      "in_vitro": {
+        "dissolved_in_media": {
+          "flowchart": "Node 6c + cannabis_type pure cannabinoid",
+          "routes": [
+            "in_vitro_media"
+          ],
+          "fields": [
+            "conc_thc_uM",
+            "conc_cbd_uM",
+            "conc_thc_mg_ml",
+            "conc_cbd_mg_ml",
+            "pct_thc",
+            "pct_cbd",
+            "treatment_duration"
+          ]
+        }
+      }
+    },
+    "open": [],
+    "approved": "Approved by the Biomedical lead, 2026-10-31: the open route questions are closed with 'no requirement' (items 1-9 in approved_defaults).",
+    "satisfied_by": "any_one_field",
+    "no_requirement_routes": {
+      "in_vivo": [
+        "sublingual",
+        "intranasal",
+        "intratracheal"
+      ],
+      "clinical": [
+        "sublingual",
+        "topical"
+      ]
+    },
+    "cannabinoids": "any_measured_counts_every_route",
+    "approved_defaults": [
+      {
+        "id": 1,
+        "rule": "In vivo sublingual, intranasal and intratracheal routes have no route-specific requirement.",
+        "approved": "Biomedical lead, 2026-10-31"
+      },
+      {
+        "id": 2,
+        "rule": "In vitro smoke or vapour has no requirement.",
+        "approved": "Biomedical lead, 2026-10-31"
+      },
+      {
+        "id": 3,
+        "rule": "Any one of an item's flowchart fields counts.",
+        "approved": "Biomedical lead, 2026-10-31"
+      },
+      {
+        "id": 4,
+        "rule": "Prospective and retrospective clinical studies aren't scored; gold stays RCT-only.",
+        "approved": "Biomedical lead, 2026-10-31"
+      },
+      {
+        "id": 5,
+        "rule": "Clinical sublingual has no requirement.",
+        "approved": "Biomedical lead, 2026-10-31"
+      },
+      {
+        "id": 6,
+        "rule": "Any measured cannabinoid counts, for every route.",
+        "approved": "Biomedical lead, 2026-10-31"
+      },
+      {
+        "id": 7,
+        "rule": "Clinical topical has no requirement.",
+        "approved": "Biomedical lead, 2026-10-31"
+      },
+      {
+        "id": 8,
+        "rule": "Any measured cannabinoid counts as 'major'.",
+        "approved": "Biomedical lead, 2026-10-31"
+      },
+      {
+        "id": 9,
+        "rule": "One track per paper until Evaluation's dev counts are in.",
+        "approved": "Biomedical lead, 2026-10-31"
+      }
+    ],
+    "no_requirement_pending_vocabulary": [
+      {
+        "study_type": "in_vitro",
+        "route": "smoke or vapour (conditioned media 6a / direct cell exposure 6b)",
+        "approved_rule": "no requirement",
+        "route_value": null,
+        "vocabulary_status": "pending_vocabulary (needs Biomedical-lead naming); no enum value",
+        "approved": "Biomedical lead, 2026-10-31"
+      }
+    ]
+  },
+  "secondary_cutoff": {
+    "default": 0.8,
+    "overridable": true,
+    "note": "Shared by every tier with secondary items. Override with compute(..., secondary_cutoff=x)."
+  },
+  "open_questions": [],
+  "grade_enum": [
+    "gold",
+    "near_gold",
+    "unverified",
+    "not_scored",
+    "out_of_scope",
+    "not_yet_assessed"
+  ],
+  "resolved": {
+    "Q1": "Age or sex: either counts (provisional, Shawn 2026-10-31).",
+    "Q2": "Non-randomized interventional trials (incl. single-arm) are out of scope: no gold rule, no comparison-group check (Shawn 2026-10-31)."
+  },
+  "legacy_backfill": {
+    "classifier_version_like": "llm-pdf-reclassify-%",
+    "columns": [
+      "study_type",
+      "exposure_method",
+      "cannabis_type",
+      "publication_type",
+      "outcome_domain",
+      "species",
+      "thc_pct",
+      "cbd_pct",
+      "dose_mg",
+      "thc_mg_ml",
+      "thc_mg_g",
+      "thc_mg_kg",
+      "cbd_mg_ml",
+      "cbd_mg_g",
+      "cbd_mg_kg",
+      "thc_um",
+      "cbd_um"
+    ],
+    "rule": "Non-null column on a row whose classifier_version matches -> value_source legacy_llm_fullpdf, unless the column is in expert_locked_fields (-> expert). source_attribution inferred_from_row_version; classifier_version and classification_timestamp kept in provenance. Doc-level rule; applying it to any database is a separate, gated step.",
+    "source_attribution": "inferred_from_row_version"
+  },
+  "tracks": {
+    "per_paper": 1,
+    "approved": "Biomedical lead, 2026-10-31",
+    "note": "One track per paper until Evaluation's dev counts are in (approved default 9)."
+  }
+}
