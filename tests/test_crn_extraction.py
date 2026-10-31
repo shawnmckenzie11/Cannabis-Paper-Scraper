@@ -198,6 +198,24 @@ def test_symlinked_middle_folder_below_root_is_refused(tmp_path, monkeypatch):
         benchmark._read_nofollow(dev, root)
 
 
+def test_eval_subdir_symlink_to_secret_outside_root_is_refused(tmp_path, monkeypatch):
+    root = tmp_path / "crn-eval"
+    root.mkdir()
+    secret = tmp_path / "secret"
+    secret.mkdir()
+    (secret / "dev_pmids.txt").write_text("900000007\n")
+    (root / "eval").symlink_to(secret, target_is_directory=True)
+    dev = root / "eval" / "dev_pmids.txt"
+    monkeypatch.setattr(benchmark, "ALLOWED_PMID_FILES", (dev,))
+    monkeypatch.setattr(benchmark, "ALLOWLIST_ROOT", root)
+    with pytest.raises(benchmark.Refused):
+        benchmark._refuse_symlink_components(dev, root)
+    with pytest.raises(benchmark.Refused):
+        benchmark._read_nofollow(dev, root)
+    with pytest.raises(benchmark.Refused):
+        benchmark.read_pmids(dev)
+
+
 def test_symlinked_ancestor_above_root_is_accepted(tmp_path, monkeypatch):
     real = tmp_path / "real_ws" / "crn-eval"
     real.mkdir(parents=True)
@@ -205,7 +223,7 @@ def test_symlinked_ancestor_above_root_is_accepted(tmp_path, monkeypatch):
     (tmp_path / "workspace").symlink_to(tmp_path / "real_ws", target_is_directory=True)
     dev = tmp_path / "workspace" / "crn-eval" / "dev_pmids.txt"
     monkeypatch.setattr(benchmark, "ALLOWED_PMID_FILES", (dev,))
-    assert benchmark.read_pmids(dev) == ["900000001"]  # default root = entry's parent
+    assert benchmark.read_pmids(dev) == ["900000001"]  # outside default root: falls back to parent
     monkeypatch.setattr(benchmark, "ALLOWLIST_ROOT", tmp_path / "workspace" / "crn-eval")
     assert benchmark.read_pmids(dev) == ["900000001"]
 

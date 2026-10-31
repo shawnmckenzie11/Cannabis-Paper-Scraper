@@ -36,9 +36,10 @@ def _resolved(path):
     return pathlib.Path(os.path.abspath(os.path.expanduser(str(path))))
 
 
-# Symlink checks cover only components BELOW the allowlist root. Default root = the matched
-# entry's parent directory; ancestors at or above the root may be symlinks (host layout).
-ALLOWLIST_ROOT = None
+# Symlink checks cover only components BELOW the allowlist root (default /workspace/crn-eval;
+# overridable for tests). Entries outside it fall back to their parent directory as root;
+# ancestors at or above the root may be symlinks (host layout).
+ALLOWLIST_ROOT = pathlib.Path("/workspace/crn-eval")
 
 
 def _allowlist_root(entry):
