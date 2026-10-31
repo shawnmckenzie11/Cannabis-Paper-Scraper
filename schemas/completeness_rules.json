@@ -47,15 +47,15 @@
           "fields": [
             "route"
           ],
-          "provisional": true,
-          "note": "Route of administration is required (Shawn, TOP2). Not reported -> missing -> near_gold. Provisional pending Shawn."
+          "approved": "approved by the Biomedical lead, 2026-10-31",
+          "note": "Route of administration is required (Shawn, TOP2). Not reported -> missing -> near_gold. Approved (approved by the Biomedical lead, 2026-10-31)."
         }
       ]
     },
     "in_vivo": {
       "applies_to": "in_vivo",
-      "status": "provisional",
-      "answered": "V1 (Shawn 2026-10-31, provisional)",
+      "status": "approved",
+      "answered": "V1 (Shawn 2026-10-31; approved by the Biomedical lead, 2026-10-31)",
       "required_always": [
         {
           "key": "route",
@@ -203,7 +203,8 @@
     },
     "in_vitro": {
       "applies_to": "in_vitro",
-      "status": "provisional",
+      "status": "approved",
+      "approved": "approved by the Biomedical lead, 2026-10-31",
       "answered": "V2 + A10 (Shawn 2026-10-31): required cell type (line/tissue source), source species, concentration, exposure time; secondary vehicle, replicates. system_type recorded, not scored.",
       "required_always": [
         {
@@ -294,8 +295,8 @@
     },
     "clinical": {
       "applies_to": "clinical_rct",
-      "status": "provisional",
-      "answered": "V3 (Shawn 2026-10-31, provisional)",
+      "status": "approved",
+      "answered": "V3 (Shawn 2026-10-31; approved by the Biomedical lead, 2026-10-31)",
       "note": "Gold rule for RCTs only (Shawn 2026-10-31). Non-randomized interventional trials are out_of_scope: no gold rule, no comparison-group check. Observational / self-report / reviews / case reports are not_scored. Supplier stays not_applicable for clinical.",
       "required_always": [
         {
@@ -344,7 +345,7 @@
             "sgba_sex_reported"
           ],
           "satisfied_by": "either",
-          "note": "Either age or sex counts (Q1 default confirmed, provisional)."
+          "note": "Either age or sex counts (Q1; approved by the Biomedical lead, 2026-10-31)."
         },
         {
           "key": "diagnosis_or_condition",
@@ -408,7 +409,7 @@
             "sgba_sex_reported"
           ],
           "satisfied_by": "either",
-          "open": "Are both age and sex needed?"
+          "approved": "Either age or sex counts (approved by the Biomedical lead, 2026-10-31)."
         },
         {
           "key": "diagnosis_or_condition",
@@ -494,16 +495,18 @@
     "T2": "Shawn, 2026-10-31: locations table and figure added; never affect tier. Confident read = reported; not confident = could_not_check low_confidence_read; figure not attempted = could_not_check figure_not_read.",
     "P2": "Shawn, 2026-10-31: unnamed government supply program -> supplier not_reported (not_reported_reason government_program_unnamed); program wording kept in fields.supplier_program_verbatim, not scored.",
     "P1": "Shawn, 2026-10-31 (resolved, option B for numeric): a numeric signed-off reference value counts toward the tier (and satisfies TOP4); non-numeric signed-off values follow option A (no tier effect, noted). Output flags tier_uses_reference_values.",
-    "A11": "Conditions: multi-valued reporting.conditions keyed by schemas/condition_list.json (candidate, empty until approved) + experimental_model_verbatim; mesh_from_pubmed is a cross-check input only. Never affects tier.",
+    "A11": "Conditions: multi-valued reporting.conditions keyed by schemas/condition_list.json (v0.1.0 approved by the Biomedical lead 2026-10-31, MeSH 2026; filter expands to narrower terms by tree number) + experimental_model_verbatim; mesh_from_pubmed is a cross-check input only. Never affects tier.",
     "A12": "Outcome domains: multi-valued from the existing 8-value filter with exactly one is_primary. Never affects tier.",
+    "A14": "Skipped / unused: A14 does not exist (Biomedical lead, 2026-10-31).",
     "A13": "comparator_validated boolean (default false), set only after Evaluation sign-off; never affects tier.",
     "A15": "group_sample_sizes optional (only when numeric); never affects tier; total animal count stays required for in vivo."
   },
   "route_requirements": {
-    "status": "provisional",
+    "status": "approved_with_open_items",
+    "approved": "Route required and route_not_reported rule approved by the Biomedical lead, 2026-10-31; items under open have no default and stay open",
     "answered": "TOP2 partially (Shawn 2026-10-31): requirements depend on study type and route, per the extraction flowchart.",
     "source": "Cannabis_Classification_Decision_Tree (transcription of 'EXPERT FEEDBACK TREE & CUES + Decision Tree.pdf', 2026-06-18): Node 2A, Node 7, Node 6. Only fields the flowchart lists are encoded; flowchart says EXTRACT, which this rule reads as 'expected'.",
-    "route_not_reported": "route counts as missing in universal (near_gold); route-dependent fields get no requirement and are not counted as extra misses. Provisional pending Shawn.",
+    "route_not_reported": "route counts as missing in universal (near_gold); route-dependent fields get no requirement and are not counted as extra misses. Approved (approved by the Biomedical lead, 2026-10-31).",
     "route_groups": {
       "in_vivo": {
         "smoke_vapor": {
@@ -617,7 +620,7 @@
     "not_yet_assessed"
   ],
   "resolved": {
-    "Q1": "Age or sex: either counts (provisional, Shawn 2026-10-31).",
+    "Q1": "Age or sex: either counts (Shawn 2026-10-31; approved by the Biomedical lead, 2026-10-31).",
     "Q2": "Non-randomized interventional trials (incl. single-arm) are out of scope: no gold rule, no comparison-group check (Shawn 2026-10-31)."
   },
   "legacy_backfill": {

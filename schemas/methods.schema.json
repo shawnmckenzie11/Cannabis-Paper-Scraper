@@ -71,10 +71,10 @@
               "$ref": "#/$defs/string_array_field"
             },
             {
-              "$ref": "#/$defs/product_field"
+              "$ref": "#/$defs/product_field_legacy"
             }
           ],
-          "description": "Product / substance. Pre-v0.6: free string list. v0.6 (wp1.6.0-draft, MCK-425 1B, phd_to_confirm): product_field with origin + preparation (+ optional substance) normalized fields."
+          "description": "Product / substance. Pre-v0.6: free string list. v0.6 (wp1.6.0-draft, MCK-425 1B, phd_to_confirm): product_field with origin + preparation (+ optional substance) normalized fields. Strict normalized_field rules are enforced only for wp1.6.0-draft and later (top-level allOf)."
         },
         "route": {
           "$ref": "#/$defs/string_array_field",
@@ -169,7 +169,7 @@
               "$ref": "#/$defs/string_field"
             },
             {
-              "$ref": "#/$defs/strain_normalized_field"
+              "$ref": "#/$defs/strain_normalized_field_legacy"
             }
           ],
           "description": "Pre-v0.6: free string. v0.6 (MCK-425 2D, phd_to_confirm): strain_normalized_field, name cleaning only, no chemistry."
@@ -230,11 +230,11 @@
         },
         "cell_line_or_tissue_source": {
           "$ref": "#/$defs/string_field",
-          "description": "v0.7 (V2, provisional): cell line, primary cells or tissue source used in vitro, as reported."
+          "description": "v0.7 (V2, approved by the Biomedical lead, 2026-10-31): cell line, primary cells or tissue source used in vitro, as reported."
         },
         "comparison_group": {
           "$ref": "#/$defs/string_field",
-          "description": "v0.7 (V3, provisional): control / comparison arm in an interventional clinical trial (placebo, active comparator, usual care), as reported."
+          "description": "v0.7 (V3, approved by the Biomedical lead, 2026-10-31): control / comparison arm in an interventional clinical trial (placebo, active comparator, usual care), as reported."
         },
         "randomized": {
           "type": "object",
@@ -243,7 +243,7 @@
             "value",
             "missingness"
           ],
-          "description": "v0.7 clinical (Shawn 2026-10-31, provisional): scope rule. yes = in scope for clinical gold; no = out_of_scope; unknown = tier unverified (counted separately, never guessed).",
+          "description": "v0.7 clinical (Shawn 2026-10-31, approved by the Biomedical lead, 2026-10-31): scope rule. yes = in scope for clinical gold; no = out_of_scope; unknown = tier unverified (counted separately, never guessed).",
           "properties": {
             "value": {
               "enum": [
@@ -1810,10 +1810,10 @@
       "x-topic-gate": {
         "enabled": true,
         "ruling": "B3 (Shawn, 2026-10-31)",
-        "rule": "A paper not about cannabis/cannabinoids (topic_match = 0) gets relevance score 0 and is filtered out of results, regardless of the other axes."
+        "rule": "A paper not about cannabis/cannabinoids (topic_match = 0) gets relevance score 0 and is filtered out of results, regardless of the other axes. Tri-state: an unassessed paper (topic_match null) has topic_gate_pass null and is NOT filtered out; only an explicit false is filtered."
       },
       "x-computed": {
-        "topic_gate_pass": "boolean, computed by methods_completeness.topic_gate(topic_match); false means relevance score 0 and filtered out of results. Never stored."
+        "topic_gate_pass": "true | false | null, computed by methods_completeness.topic_gate(topic_match): null = not yet assessed (not filtered), false = assessed not about cannabis (relevance score 0, filtered out), true otherwise. Only false is filtered. Never stored."
       }
     },
     "correction": {
@@ -2976,7 +2976,7 @@
               "type": "null"
             }
           ],
-          "description": "C2 (Shawn 2026-10-31, provisional): author's duration term normalised to a closed enum (synonyms in normalization_rules.json vocabularies.duration_category). Search/filter label only; never affects any tier. No time thresholds: authors' wording only. A vague term with no actual time leaves duration not_reported. Used on the duration item."
+          "description": "C2 (Shawn 2026-10-31, approved by the Biomedical lead, 2026-10-31): author's duration term normalised to a closed enum (synonyms in normalization_rules.json vocabularies.duration_category). Search/filter label only; never affects any tier. No time thresholds: authors' wording only. A vague term with no actual time leaves duration not_reported. Used on the duration item."
         },
         "duration_category_verbatim": {
           "type": [
@@ -3359,6 +3359,247 @@
         "expert"
       ],
       "description": "Per-field value source. paper = extracted/reviewed from the paper; signed_off = numeric signed-off reference value (P1); legacy_llm_fullpdf = earlier LLM pass over full PDFs: silver baseline and comparison input only, never reviewer gold or test truth, never fills tier or scoring labels, excluded from annotation and scoring-label exports. expert = field listed in the row's expert_locked_fields (legacy backfill)."
+    },
+    "normalized_field_legacy": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "Lenient normalized_field for records before wp1.6.0-draft (shape as in v0.5). The strict v0.6 rules (normalized_value string-or-null; rule_id + vocabulary_version required when the value is not null; raw_text non-empty) apply only to wp1.6.0-draft and later via the version gates in the top-level allOf.",
+      "required": [
+        "raw_text",
+        "normalized_value",
+        "normalization_status"
+      ],
+      "properties": {
+        "raw_text": {
+          "type": "string",
+          "description": "Verbatim source wording."
+        },
+        "source_span": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "normalized_value": {},
+        "normalization_status": {
+          "enum": [
+            "pending_biomedical",
+            "approved",
+            "unmapped",
+            "needs_review"
+          ],
+          "description": "4C (phd_to_confirm): approved = produced by a rule the Biomedical lead approved once; needs_review = raw string seen fewer than review_policy.rare_raw_string_threshold_n times (N=3 placeholder) or otherwise flagged; unmapped = no rule applies, raw kept, normalized_value null; pending_biomedical = rule not yet approved."
+        },
+        "rule_id": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Id from schemas/normalization_rules.json"
+        },
+        "vocabulary_version": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Version of the vocabulary in schemas/normalization_rules.json that produced normalized_value."
+        },
+        "external_id": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "3C: optional slot for a later external identifier (e.g. ChEBI, RxNorm). Empty (null) in v0.6."
+        }
+      }
+    },
+    "product_field_legacy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "value",
+        "missingness"
+      ],
+      "description": "v0.6 product (MCK-425 1B, phd_to_confirm): list of product_entry. Legacy variant (pre-wp1.6.0-draft): uses normalized_field_legacy.",
+      "properties": {
+        "value": {
+          "type": [
+            "array",
+            "null"
+          ],
+          "items": {
+            "$ref": "#/$defs/product_entry"
+          }
+        },
+        "missingness": {
+          "$ref": "#/$defs/missingness"
+        },
+        "confidence": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0,
+          "maximum": 1
+        },
+        "pending_biomedical": {
+          "type": "boolean",
+          "default": true
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "missingness": {
+                "const": "reported"
+              }
+            },
+            "required": [
+              "missingness"
+            ]
+          },
+          "then": {
+            "properties": {
+              "value": {
+                "type": "array",
+                "minItems": 1
+              }
+            }
+          },
+          "else": {
+            "properties": {
+              "value": {
+                "type": "null"
+              }
+            }
+          }
+        }
+      ]
+    },
+    "product_substance_field_legacy": {
+      "description": "MCK-425: named substance (named drug such as Epidiolex, nabilone, dronabinol, or a receptor agonist/antagonist) as its OWN value, not collapsed into a class. Allowed values live in vocabulary product_substance in schemas/normalization_rules.json. Vocabulary phd_to_confirm. Legacy variant (pre-wp1.6.0-draft): uses normalized_field_legacy.",
+      "allOf": [
+        {
+          "$ref": "#/$defs/normalized_field_legacy"
+        },
+        {
+          "properties": {
+            "normalized_value": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    "strain_normalized_field_legacy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "value",
+        "missingness"
+      ],
+      "description": "v0.6 strain_normalized (MCK-425 2D, phd_to_confirm): name cleaning only (case, spelling, alias). Carries no chemistry; a strain name never implies chemotype. Legacy variant (pre-wp1.6.0-draft): uses normalized_field_legacy.",
+      "properties": {
+        "value": {
+          "oneOf": [
+            {
+              "type": "null"
+            },
+            {
+              "$ref": "#/$defs/normalized_field_legacy"
+            }
+          ]
+        },
+        "missingness": {
+          "$ref": "#/$defs/missingness"
+        },
+        "confidence": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0,
+          "maximum": 1
+        },
+        "pending_biomedical": {
+          "type": "boolean",
+          "default": true
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "missingness": {
+                "const": "reported"
+              }
+            },
+            "required": [
+              "missingness"
+            ]
+          },
+          "then": {
+            "properties": {
+              "value": {
+                "type": "object"
+              }
+            }
+          },
+          "else": {
+            "properties": {
+              "value": {
+                "type": "null"
+              }
+            }
+          }
+        }
+      ]
+    },
+    "product_preparation_field_legacy": {
+      "description": "MCK-425 1B product preparation axis (vocabulary product_preparation). Vocabulary phd_to_confirm. Legacy variant (pre-wp1.6.0-draft): uses normalized_field_legacy.",
+      "allOf": [
+        {
+          "$ref": "#/$defs/normalized_field_legacy"
+        },
+        {
+          "properties": {
+            "normalized_value": {
+              "enum": [
+                "whole_flower",
+                "full_spectrum_extract",
+                "broad_spectrum_extract",
+                "isolate",
+                "formulated_drug",
+                null
+              ]
+            }
+          }
+        }
+      ]
+    },
+    "product_origin_field_legacy": {
+      "description": "MCK-425 1B product origin axis (vocabulary product_origin). Vocabulary phd_to_confirm. Legacy variant (pre-wp1.6.0-draft): uses normalized_field_legacy.",
+      "allOf": [
+        {
+          "$ref": "#/$defs/normalized_field_legacy"
+        },
+        {
+          "properties": {
+            "normalized_value": {
+              "enum": [
+                "plant_derived",
+                "synthetic",
+                "biosynthetic",
+                null
+              ]
+            }
+          }
+        }
+      ]
     }
   },
   "x-contract-version": "0.7",

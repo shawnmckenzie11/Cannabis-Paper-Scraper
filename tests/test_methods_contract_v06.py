@@ -153,3 +153,21 @@ def test_run_event_field_enum_matches_fields_keys_v06():
     enum = set(SCHEMA["$defs"]["run_event"]["properties"]["field"]["enum"])
     assert "chemotype_reported" in enum
     assert enum == set(SCHEMA["properties"]["fields"]["properties"])
+
+
+def test_strict_normalized_field_rules_only_from_v06():
+    lax = {"raw_text": "", "normalized_value": 5, "normalization_status": "pending_biomedical"}
+    pre = copy.deepcopy(FULL_V06)
+    pre["schema_version"] = "wp1.5.0-draft"
+    pre["fields"]["strain_normalized"] = {"value": lax, "missingness": "reported"}
+    assert whole(pre)  # pre-v0.6 record keeps the lenient shape
+    for ver in ("wp1.6.0-draft", "wp1.7.0-draft"):
+        strict = copy.deepcopy(pre); strict["schema_version"] = ver
+        assert not whole(strict)
+        for bad in ({"raw_text": "x", "normalized_value": 5, "normalization_status": "pending_biomedical"},
+                    {"raw_text": "", "normalized_value": None, "normalization_status": "unmapped"},
+                    {"raw_text": "x", "normalized_value": "y", "normalization_status": "pending_biomedical"}):
+            strict["fields"]["strain_normalized"]["value"] = bad
+            assert not whole(strict), (ver, bad)
+        strict["fields"]["strain_normalized"]["value"] = nf("O.G. Kush", "og kush", rule="mck425_strain_name_cleaning")
+        assert whole(strict)

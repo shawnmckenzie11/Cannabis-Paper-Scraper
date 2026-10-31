@@ -6,8 +6,11 @@ Rule: schemas/completeness_rules.json (pending_biomedical).
 """
 import hashlib
 import json
+import logging
 import numbers
 import pathlib
+
+log = logging.getLogger(__name__)
 
 RULES_PATH = pathlib.Path(__file__).resolve().parent / "schemas" / "completeness_rules.json"
 CONDITION_LIST_PATH = RULES_PATH.parent / "condition_list.json"
@@ -204,8 +207,15 @@ def grade_required_secondary(rep, tier, cutoff):
 
 
 def topic_gate(topic_match):
-    """B3: topic gate ON. topic_match 0 -> topic_gate_pass False, relevance score 0, filtered out."""
-    passed = topic_match is not None and topic_match > 0
+    """B3: topic gate ON, tri-state.
+
+    None (not yet assessed) -> topic_gate_pass None, not filtered, no score override.
+    0 (assessed, not about cannabis) -> False, relevance score 0, filtered out.
+    > 0 -> True. Only an explicit False is filtered out.
+    """
+    if topic_match is None:
+        return {"topic_gate_pass": None, "score_override": None, "filtered_out": False}
+    passed = topic_match > 0
     return {"topic_gate_pass": passed, "score_override": None if passed else 0, "filtered_out": not passed}
 
 
@@ -222,11 +232,20 @@ def labelling_export(record):
     out = json.loads(json.dumps(record))
     for k in BLINDED_TOP_LEVEL:
         out.pop(k, None)
-    for item in (out.get("reporting") or {}).values():
-        if isinstance(item, dict):
-            for k in BLINDED_FIELD_KEYS:
-                item.pop(k, None)
-    return out
+    return _strip_legacy(out)
+
+
+def _is_legacy(node):
+    return isinstance(node, dict) and node.get("value_source") in BLINDED_FIELD_KEYS
+
+
+def _strip_legacy(node):
+    """Recursively drop legacy keys and legacy-sourced dicts, including items inside lists (e.g. conditions)."""
+    if isinstance(node, dict):
+        return {k: _strip_legacy(v) for k, v in node.items() if k not in BLINDED_FIELD_KEYS and not _is_legacy(v)}
+    if isinstance(node, list):
+        return [_strip_legacy(v) for v in node if not _is_legacy(v)]
+    return node
 
 
 def legacy_backfill_attribution(row, rule=None):
@@ -244,6 +263,7 @@ def legacy_backfill_attribution(row, rule=None):
         try:
             locked = json.loads(locked)
         except ValueError:
+            log.warning("expert_locked_fields is not valid JSON; using comma-split fallback")
             locked = [x.strip() for x in locked.split(",") if x.strip()]
     out = {}
     for col in rule["columns"]:

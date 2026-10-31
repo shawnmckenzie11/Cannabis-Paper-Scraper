@@ -338,10 +338,10 @@ The idea: for this database, a paper's quality is how well it reports the detail
 | Tier | Items |
 |---|---|
 | classification | research type (picks the study-type tier; recorded, not part of gold) |
-| universal (every study) | strain/product name, supplier (not applicable for clinical), form, major cannabinoids, route (provisional). All must be `reported` for gold. Location is recorded but never a pass condition. |
-| in_vivo (V1, provisional) | required always: route, dose, duration, number of animals. Secondary: species, animal strain, sex, age or weight, frequency, vehicle (key `vehicle_solvent`). Same algorithm and `secondary_cutoff` as in vitro. |
-| in_vitro (V2 + A10, provisional) | required always: cell type (line / tissue source), source species, concentration, exposure time. Secondary share: vehicle/solvent, replicates. `system_type` (primary, cell_line, co_culture, organoid, pcls, other) is recorded, not scored. |
-| clinical (V3, provisional; RCTs only) | all required, no share: number of participants, route, dose, frequency, duration, participant age or sex (either counts), diagnosis or condition, comparison group (may carry `confidence` + `needs_review`). Scope gate on `randomized`: `yes` → scored; `no` → `out_of_scope`; `unknown` → `unverified` (never guessed). `arms` and `blinding` are recorded only. |
+| universal (every study) | strain/product name, supplier (not applicable for clinical), form, major cannabinoids, route (approved). All must be `reported` for gold. Location is recorded but never a pass condition. |
+| in_vivo (V1, approved) | required always: route, dose, duration, number of animals. Secondary: species, animal strain, sex, age or weight, frequency, vehicle (key `vehicle_solvent`). Same algorithm and `secondary_cutoff` as in vitro. |
+| in_vitro (V2 + A10, approved) | required always: cell type (line / tissue source), source species, concentration, exposure time. Secondary share: vehicle/solvent, replicates. `system_type` (primary, cell_line, co_culture, organoid, pcls, other) is recorded, not scored. |
+| clinical (V3, approved; RCTs only) | all required, no share: number of participants, route, dose, frequency, duration, participant age or sex (either counts), diagnosis or condition, comparison group (may carry `confidence` + `needs_review`). Scope gate on `randomized`: `yes` → scored; `no` → `out_of_scope`; `unknown` → `unverified` (never guessed). `arms` and `blinding` are recorded only. |
 | good_practice (G1) | storage temperature, milled/ground, protected from light. Recorded only; never counts toward gold or any share. No contamination or batch-testing fields. (Replaces V4; `storage_duration` dropped: it existed only in this draft.) |
 
 **Grades are explicit, never blank:** `gold`, `near_gold`, `unverified`, `not_scored` (reviews, case reports, observational / self-report), `out_of_scope` (non-randomized interventional trials), `not_yet_assessed` (default).
@@ -364,7 +364,7 @@ Items marked `not_applicable` (status, or supplier on clinical studies) are left
 2. Else any required item `could_not_check` → `unverified`.
 3. Else secondary share, worst case (unchecked counted as not reported; denominator = applicable items including unchecked) and best case (unchecked counted as reported). Worst ≥ cutoff → `gold`; best < cutoff → `near_gold` (share too low); otherwise `unverified`. Both shares and the `missing` / `not_checked` lists are returned.
 
-**Route requirements (TOP2, partially answered, provisional).** Route of administration is required (universal item). Which dose / cannabinoid fields are expected then depends on study type + route, encoded in `route_requirements` from the extraction flowchart (`Cannabis_Classification_Decision_Tree`, Node 2A / 6 / 7) only. If route is not reported, route counts as missing (`near_gold`) and route-dependent fields get no requirement (not counted as extra misses); this rule is provisional pending Shawn. What the flowchart doesn't settle is listed under `route_requirements.open`.
+**Route requirements (TOP2, partially answered; route rule approved).** Route of administration is required (universal item). Which dose / cannabinoid fields are expected then depends on study type + route, encoded in `route_requirements` from the extraction flowchart (`Cannabis_Classification_Decision_Tree`, Node 2A / 6 / 7) only. If route is not reported, route counts as missing (`near_gold`) and route-dependent fields get no requirement (not counted as extra misses); this rule is approved by the Biomedical lead, 2026-10-31. What the flowchart doesn't settle is listed under `route_requirements.open`.
 
 **Cannabinoid vocabulary.** `values` are locked (including Δ8-THC, CBGA, CBL, 11-OH-THC confirmed by the PhD on 2026-10-31); each has `full_name` and `synonyms`. THC-COOH, CBCA, THCVA, CBDVA, CBE, CBT sit in `candidates_pending_phd`: recorded, never scored.
 
@@ -372,11 +372,11 @@ Items marked `not_applicable` (status, or supplier on clinical studies) are left
 
 - **U1:** universal = strain/product name, supplier, form, major cannabinoids; all must be reported for gold.
 - **TOP4:** location is never a pass condition anywhere in the universal tier; it is still recorded.
-- **V2 (provisional):** in vitro tier as above.
+- **V2 (approved):** in vitro tier as above.
 - **TOP2 (partial):** requirements depend on study type and route, per the flowchart; open items listed in `completeness_rules.json`.
-- **V3 (provisional):** clinical tier for RCTs only, as above.
+- **V3 (approved):** clinical tier for RCTs only, as above.
 - **Non-randomized interventional trials** (single-arm, open-label non-randomized) are out of scope: no gold rule, no comparison-group check.
-- **Q1:** age or sex, either counts (provisional). **Q2:** resolved by the out-of-scope rule.
+- **Q1:** age or sex, either counts (approved). **Q2:** resolved by the out-of-scope rule.
 - **G1 (replaces V4):** good practice is exactly storage temperature, milled/ground, protected from light. Never affects tier.
 - **C1 (dose wording):** a dose given only as a range counts as `reported`. "Per protocol" counts as `reported` only if the paper or its cited protocol gives an actual number; otherwise dose is `not_reported`. Examples:
   - "mice received 5–20 mg/kg THC i.p." → reported (range).
@@ -394,10 +394,13 @@ Items marked `not_applicable` (status, or supplier on clinical studies) are left
 - **P2:** supplier given only as an unnamed government program → supplier `not_reported` (`government_program_unnamed`); the wording goes in `supplier_program_verbatim` (not scored). Example: "provided by the NIDA Drug Supply Program".
 - **U2:** supplier is its own field, separate from strain/product name; for clinical studies it is `not_applicable`.
 
-### Open PhD questions (not decided)
+### Approved defaults (Biomedical lead, 2026-10-31)
 
-1. Which cannabinoids are "major"? Pending Shawn. Default until then: any cannabinoid content the paper measured counts as reported.
-2. **P1 tier effect:** do signed-off reference values affect the tier (A no effect / B counts as reported / C separate flag)? Default A for non-numeric values; numeric signed-off values currently fill `reference_fields` (see P1 section).
+The nine lenient defaults below were marked provisional/open in #117 and are now approved rulings; values unchanged: route required in universal; route not reported -> no extra route-dependent misses; V1 in vivo tier; V2 in vitro tier; V3 clinical tier; Q1 age or sex either counts; randomized scope gate (unknown -> unverified); C2 duration_category; major cannabinoids = any cannabinoid content the paper measured counts as reported.
+
+### Formerly open PhD questions
+
+1. **P1 tier effect (resolved, see P1 below):** do signed-off reference values affect the tier (A no effect / B counts as reported / C separate flag)? Default A for non-numeric values; numeric signed-off values currently fill `reference_fields` (see P1 section).
 
 ### not_reported_reason (optional, never affects tier)
 
@@ -436,9 +439,9 @@ Evaluation excludes reference values from extraction accuracy.
 
 `compute()` also returns `tier_uses_reference_values` (true when any reference value was used), `reference_fields` (items satisfied only by a numeric signed-off value, `value_source: signed_off`; empty if none), `missing_reference_available` (items with a non-numeric signed-off value: option A, no tier effect), `signoff_set_hash` (sha256 of the active `paper_reference_link` rows, so frozen runs are reproducible), `rule_version` and `secondary_cutoff` used. **Any future tier cache must be invalidated when `rule_version`, the cutoff, or the sign-off set changes (add, replace or revoke).**
 
-### Conditions, outcome domains, group sizes, comparator validation (A11, A12, A13, A15; none affects any tier)
+### Conditions, outcome domains, group sizes, comparator validation (A11, A12, A13, A15; none affects any tier; A14 skipped/unused, it does not exist)
 
-- **`reporting.conditions`** (A11): list of `{condition_key, mesh_descriptor_id (D-number), label}`. Keys come from `schemas/condition_list.json` (`list_version`, pinned `mesh_release_year`; each entry: key, D-number, preferred term, entry-term synonyms). The list ships **empty**, status `candidate_pending_biomedical_approval`; the candidate list will come from Pipeline's per-PMID MeSH counts (joined to splits by Evaluation). `reporting.experimental_model_verbatim` keeps the model as written (provenance, not scored). Computed output records `condition_list_version`.
+- **`reporting.conditions`** (A11): list of `{condition_key, mesh_descriptor_id (D-number), label}`. Keys come from `schemas/condition_list.json` (`list_version`, pinned `mesh_release_year`; each entry: key, D-number, preferred term, entry-term synonyms). List v0.1.0 is **approved** (Biomedical lead, 2026-10-31; MeSH 2026): broad parent C and F03 headings plus kept study-design headings, reduced mechanically from Pipeline's candidate v0.1 (a descriptor is dropped only if every one of its tree numbers sits under a descriptor that stays on the list); `schemas/condition_rollup.json` maps each dropped descriptor + tree number to its approved parent; the filter expands each entry to its narrower terms by tree number. The approved CSV sha256 is recorded in the list file. `reporting.experimental_model_verbatim` keeps the model as written (provenance, not scored). Computed output records `condition_list_version`.
 - **`mesh_from_pubmed`** (top level, optional): MeSH D-numbers from the PubMed record. **Cross-check only; never copied into `conditions`.** **Contract rule:** reviewers must not see `mesh_from_pubmed` or any PubMed MeSH headings while labelling conditions; the labelling interface and annotation exports exclude it.
 - **`reporting.outcome_domains`** (A12): list of `{domain, is_primary}` from the existing 8-value filter (`dashboard_ui_config.OUTCOME_DOMAINS`: pain, anxiety, cognition, inflammation, addiction, oncology, neuroprotection, sleep), with exactly one `is_primary: true`.
 - **`reporting.group_sample_sizes`** (A15): optional `{group_label (verbatim), n (integer), unit: animals | replicates}`, only when the paper gives a number. Not required for gold; total animal count stays required for in vivo; in vitro replicates stays in the secondary share.
@@ -453,7 +456,7 @@ Per-field `value_source`: `paper` (default), `signed_off` (P1 numeric reference 
 
 ### Relevance topic gate output
 
-`methods_completeness.topic_gate(topic_match)` returns computed `topic_gate_pass` (false means relevance score 0 and filtered out of results), never stored.
+`methods_completeness.topic_gate(topic_match)` returns computed, tri-state `topic_gate_pass`, never stored: `null` when `topic_match` is not yet assessed (the paper is **not** filtered out), `false` when assessed as not about cannabis (`topic_match` 0: relevance score 0, filtered out), `true` otherwise. Only an explicit `false` is filtered. `labelling_export` strips legacy (`legacy_llm_fullpdf`) values recursively, including list items such as `conditions`. `legacy_backfill_attribution` logs a warning when `expert_locked_fields` is not valid JSON and the comma-split fallback is used.
 
 ### Storage / database
 

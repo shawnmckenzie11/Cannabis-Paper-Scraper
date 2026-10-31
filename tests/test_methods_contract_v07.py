@@ -1,5 +1,5 @@
 """Contract tests for methods schema v0.7 (wp1.7.0-draft): per-field reporting block and computed completeness tiers."""
-import copy, json, pathlib
+import copy, json, pathlib, re
 import pytest
 jsonschema = pytest.importorskip("jsonschema")
 ROOT = pathlib.Path(__file__).resolve().parents[1]
@@ -264,7 +264,7 @@ def test_route_not_reported_is_missing_and_adds_no_route_requirements():
     assert res["universal"]["grade"] == "near_gold" and "route" in res["universal"]["missing"]
     assert res["route_requirements"]["route_reported"] is False and res["route_requirements"]["expected_fields"] == []
     assert res["universal"]["missing"] == ["route"]
-    assert TIERS["route_requirements"]["status"] == "provisional"
+    assert TIERS["route_requirements"]["status"] == "approved_with_open_items"
 
 
 def test_route_requirements_follow_flowchart_and_fields_exist():
@@ -631,10 +631,24 @@ def test_p1_resolved_numeric_counts_flag():
     assert "option B" in TIERS["answered"]["P1"]
 
 
-def test_a11_conditions_list_empty_candidate_and_mesh_cross_check():
+def test_a11_conditions_list_approved_and_mesh_cross_check():
     cl = json.loads((ROOT / "schemas/condition_list.json").read_text())
-    assert cl["entries"] == [] and cl["status"] == "candidate_pending_biomedical_approval"
-    assert cl["list_version"] and cl["mesh_release_year"]
+    assert cl["status"] == "approved" and cl["list_version"] == "0.1.0" and cl["mesh_release_year"] == 2026
+    assert cl["approval"]["approved_on"] == "2026-10-31" and len(cl["approval"]["approved_csv_sha256"]) == 64
+    ents = cl["entries"]
+    assert ents and len({e["key"] for e in ents}) == len(ents)
+    assert all(re.fullmatch(r"D\d{6,9}", e["mesh_descriptor_id"]) and e["tree_numbers"] for e in ents)
+    ids = {e["mesh_descriptor_id"] for e in ents}
+    assert {"D004195", "D011297", "D001523"} <= ids
+    owner = {t: e["mesh_descriptor_id"] for e in ents for t in e["tree_numbers"]}
+
+    def covered(u, t):
+        p = t.split(".")
+        return any(owner.get(".".join(p[:i]), u) != u for i in range(1, len(p)))
+
+    for e in ents:  # every kept non-exempt descriptor has at least one uncovered tree number
+        if e["mesh_descriptor_id"] not in {"D004195", "D011297"}:
+            assert not all(covered(e["mesh_descriptor_id"], t) for t in e["tree_numbers"]), e["key"]
     rec = copy.deepcopy(FULL_V07)
     rec["reporting"]["conditions"] = [{"condition_key": "x", "mesh_descriptor_id": "D000001", "label": "x"}]
     rec["reporting"]["experimental_model_verbatim"] = "CFA-induced inflammatory pain"
@@ -643,6 +657,23 @@ def test_a11_conditions_list_empty_candidate_and_mesh_cross_check():
     rec["reporting"]["conditions"][0]["mesh_descriptor_id"] = "pain"
     assert not whole(rec)
     assert mc.compute(FULL_V07, "in_vivo", TIERS)["condition_list_version"] == cl["list_version"]
+
+
+def test_a11_condition_rollup_maps_every_dropped_descriptor_to_approved_parent():
+    cl = json.loads((ROOT / "schemas/condition_list.json").read_text())
+    ro = json.loads((ROOT / "schemas/condition_rollup.json").read_text())
+    approved = {e["mesh_descriptor_id"]: e for e in cl["entries"]}
+    assert ro["list_version"] == cl["list_version"] and ro["mesh_release_year"] == 2026
+    assert ro["source_csv_sha256"] == cl["approval"]["rollup_csv_sha256"]
+    children = {}
+    for r in ro["rows"]:
+        assert r["child_mesh_descriptor_id"] not in approved
+        par = approved[r["parent_mesh_descriptor_id"]]
+        assert r["parent_tree_number"] in par["tree_numbers"]
+        assert r["child_tree_number"].startswith(r["parent_tree_number"] + ".")
+        children.setdefault(r["child_mesh_descriptor_id"], []).append(r)
+    assert children and len(children) == cl["approval"]["counts"]["dropped"]
+    assert all(len(v) >= 1 for v in children.values())
 
 
 def test_a12_outcome_domains_exactly_one_primary():
@@ -683,7 +714,8 @@ def test_b3_relevance_topic_gate_on():
 
 def test_b3_topic_gate_pass_computed():
     assert mc.topic_gate(0) == {"topic_gate_pass": False, "score_override": 0, "filtered_out": True}
-    assert mc.topic_gate(2)["topic_gate_pass"] is True and mc.topic_gate(None)["topic_gate_pass"] is False
+    assert mc.topic_gate(2) == {"topic_gate_pass": True, "score_override": None, "filtered_out": False}
+    assert mc.topic_gate(None) == {"topic_gate_pass": None, "score_override": None, "filtered_out": False}
     assert "topic_gate_pass" in SCHEMA["$defs"]["relevance_grade"]["x-computed"]
 
 
@@ -700,6 +732,29 @@ def test_legacy_llm_fullpdf_side_by_side_never_scored_and_not_exported():
     bad = copy.deepcopy(FULL_V07); bad["reporting"]["dose"] = dict(rep(), value_source="legacy_llm_fullpdf")
     assert not whole(bad)
     assert SCHEMA["$defs"]["value_source"]["enum"] == ["paper", "signed_off", "legacy_llm_fullpdf", "expert"]
+
+
+def test_labelling_export_strips_legacy_recursively_including_lists():
+    rec = copy.deepcopy(FULL_V07)
+    rec["reporting"]["conditions"] = [
+        {"condition_key": "pain", "mesh_descriptor_id": "D010146", "label": "Pain"},
+        {"condition_key": "x", "mesh_descriptor_id": "D000001", "label": "x", "value_source": "legacy_llm_fullpdf"},
+        {"condition_key": "y", "mesh_descriptor_id": "D000002", "label": "y",
+         "nested": [{"legacy_llm_fullpdf": {"value": 1}}, {"value_source": "legacy_llm_fullpdf"}]},
+    ]
+    out = mc.labelling_export(rec)
+    assert "legacy_llm_fullpdf" not in json.dumps(out)
+    assert [c["condition_key"] for c in out["reporting"]["conditions"]] == ["pain", "y"]
+    assert out["reporting"]["conditions"][1]["nested"] == [{}]
+    assert len(rec["reporting"]["conditions"]) == 3
+
+
+def test_expert_locked_fields_invalid_json_warns(caplog):
+    row = {"classifier_version": "llm-pdf-reclassify-2026-07", "species": "rat", "expert_locked_fields": "species, study_type"}
+    with caplog.at_level("WARNING"):
+        a = mc.legacy_backfill_attribution(row, TIERS)
+    assert a["species"]["value_source"] == "expert"
+    assert any("comma-split" in r.message for r in caplog.records)
 
 
 def test_legacy_backfill_attribution_rule():
