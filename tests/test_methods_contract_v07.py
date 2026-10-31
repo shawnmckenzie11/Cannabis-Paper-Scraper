@@ -167,3 +167,21 @@ def test_cannabinoids_list_gated_like_chemotype():
 
 def test_run_event_field_enum_matches_fields_keys_v07():
     assert set(SCHEMA["$defs"]["run_event"]["properties"]["field"]["enum"]) == set(SCHEMA["properties"]["fields"]["properties"])
+
+
+def test_observational_and_self_reported_are_not_scored_on_any_tier():
+    assert set(TIERS["not_scored_study_types"]) == {"observational", "self_reported"}
+    for st in ("observational", "self_reported"):
+        res = mc.compute(FULL_V07, st, TIERS)
+        for tier in ("universal", "study_type", "good_practice"):
+            assert res[tier]["not_scored"] is True
+            assert "pass" not in res[tier] and "fraction" not in res[tier]
+
+
+def test_as_previously_described_scored_not_reported_until_phd_answers():
+    assert "not_reported" in TIERS["cited_prior_paper_policy"]
+    rec = copy.deepcopy(FULL_V07)
+    rec["reporting"]["supplier"] = {"status": "not_reported", "location": None, "evidence_quote": "as previously described [12]"}
+    assert whole(rec)
+    assert mc.compute(rec, "in_vivo", TIERS)["universal"]["pass"] is False
+    assert "cited_reference" not in json.dumps(SCHEMA["$defs"]["field_reporting"])

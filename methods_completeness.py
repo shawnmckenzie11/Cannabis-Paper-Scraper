@@ -20,6 +20,10 @@ def _status(reporting, key):
 def compute(record, study_type, rule=None):
     """Return {rule_id, rule_version, universal, study_type, good_practice} for one record."""
     rule = rule or load_rule()
+    if study_type in rule.get("not_scored_study_types", []):
+        ns = {"not_scored": True, "reason": "study_type_" + study_type}
+        return {"rule_id": rule["rule_id"], "rule_version": rule["version"],
+                "universal": ns, "study_type": ns, "good_practice": ns}
     rep = record.get("reporting") or {}
     tiers = rule["tiers"]
 

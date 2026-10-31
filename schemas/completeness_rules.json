@@ -146,5 +146,11 @@
         }
       ]
     }
-  }
+  },
+  "not_scored_study_types": [
+    "observational",
+    "self_reported"
+  ],
+  "not_scored_note": "Observational / self-reported studies skip every current tier, including universal (universal items are product items). Only future exposure fields would be scored for them, after the PhD lead signs off.",
+  "cited_prior_paper_policy": "'As previously described [ref]' is recorded as status not_reported until the PhD lead answers open question TOP1. Keeping the cited reference as provenance is a pending option; no field for it yet."
 }

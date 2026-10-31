@@ -336,11 +336,13 @@ The idea: for this database, a paper's quality is how well it reports the detail
 | clinical | dose, frequency, duration |
 | good_practice | storage (reported separately, never affects pass/fail) |
 
+**Observational / self-reported studies** skip every current tier, including universal (the universal items are product items): the helper returns `not_scored` for all tiers. Only future exposure fields would be scored for them, after the PhD lead signs off.
+
 Completeness is **computed** from the statuses (`methods_completeness.compute`), never stored as truth. Output per tier: universal pass/fail, a study-type fraction (reported / (reported + not_reported); `could_not_check` and `not_yet_assessed` counted separately), and good practice on its own. **There is no combined score.**
 
 ### Open PhD questions (not decided)
 
-1. Does "as previously described [ref]" count as reported in the methods? (Today it is recorded as `location: cited_prior_paper`; whether that passes the universal tier is open.)
+1. **TOP1:** Does "as previously described [ref]" count as reported in the methods? Until the PhD answers, it is scored as `not_reported` (the wording can go in `evidence_quote`). Keeping the cited reference as provenance is a pending option; no field is added for it.
 2. Which cannabinoids are "major"?
 3. Does a vague report (e.g. a dose without units) count as reported?
 
