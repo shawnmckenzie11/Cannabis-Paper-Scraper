@@ -1,0 +1,101 @@
+{
+  "config_id": "crn_rule_extractor",
+  "version": "0.1.0",
+  "contract_version": "0.7",
+  "note": "Deterministic regex cues only. Vocabularies (route, cannabinoid, duration_category) are loaded from schemas/normalization_rules.json at runtime and are NOT copied here. Cues were written from the contract text and fake fixtures only; no gold, qrels, grades or legacy_llm_fullpdf values were used. Case-insensitive.",
+  "section_location": {"methods": "methods", "abstract": "abstract", "discussion": "discussion", "table": "table", "figure_caption": "figure", "results": "unknown", "introduction": "unknown", "body": "unknown"},
+  "section_priority": ["methods", "table", "results", "body", "abstract", "figure_caption", "discussion", "introduction"],
+  "main_text_sections": ["abstract", "introduction", "methods", "results", "discussion", "table", "figure_caption", "body"],
+  "supplement_ref": "\\b(supplementa(?:ry|l)\\b|table\\s+s\\d+|fig(?:ure|\\.)?\\s*s\\d+|online resource|additional file)",
+  "figure_ref": "\\b(fig(?:ure|\\.)?\\s*\\d+[a-z]?)\\b",
+  "cited_elsewhere": "\\b(as (?:previously )?described (?:previously|elsewhere|before|in|by)|as previously described|as described (?:previously|elsewhere)|previously reported (?:method|protocol)|see ref)",
+  "protocol_without_number": "\\b(per protocol|according to (?:the|our|a) (?:study |standard )?protocol|as per (?:the )?protocol|per (?:the )?(?:study )?protocol)\\b",
+  "excluded_study_designs": {
+    "note": "Q7 working ruling (annotation-guide-draft.md / field-dictionary.md): surveys, market studies and re-analyses are not original research and are excluded.",
+    "survey": "\\b(online survey|cross-sectional survey|questionnaire survey|we surveyed|survey of (?:\\d+ )?(?:respondents|users|consumers|adults))\\b",
+    "market_study": "\\b(market (?:analysis|study|survey)|dispensary (?:sales|menu) data|retail (?:sales|market) data|product listings? (?:analysis|audit))\\b",
+    "reanalysis": "\\b(re-?analys[ie]s|secondary analysis of (?:data from|a) )"
+  },
+  "research_type": {
+    "clinical": "\\b(participants|patients|volunteers|healthy (?:adults|subjects)|randomi[sz]ed (?:controlled|clinical|double|placebo)|clinical trial)\\b",
+    "in_vivo": "\\b(rats?|mice|mouse|animals|zebrafish|rabbits?|dogs|primates)\\b",
+    "in_vitro": "\\b(cell lines?|cultured cells|cells were (?:treated|seeded|cultured|incubated)|in vitro|organoids?|precision-cut)\\b"
+  },
+  "randomized": {"yes": "\\brandomi[sz]ed\\b|\\brandomly (?:assigned|allocated)\\b", "no": "\\b(non-?randomi[sz]ed|open-label single-arm|single[- ]arm)\\b"},
+  "route": [
+    ["intraperitoneal", "\\b(intraperitoneal(?:ly)?|i\\.p\\.)"],
+    ["oral_gavage", "\\b(oral gavage|by gavage|gavaged)\\b"],
+    ["oral_diet", "\\b(in (?:the )?(?:diet|chow|food)|dietary administration|mixed (?:in|into) (?:the )?(?:diet|chow|food))\\b"],
+    ["intravenous", "\\b(intravenous(?:ly)?|i\\.v\\.)"],
+    ["subcutaneous", "\\b(subcutaneous(?:ly)?|s\\.c\\.)"],
+    ["sublingual", "\\bsublingual(?:ly)?\\b"],
+    ["intranasal", "\\bintranasal(?:ly)?\\b"],
+    ["intratracheal", "\\bintratracheal(?:ly)?\\b"],
+    ["topical", "\\b(topical(?:ly)?|applied to the skin)\\b"],
+    ["inhaled", "\\b(inhal(?:ed|ation)|smoked|vapori[sz]ed|vaped)\\b"],
+    ["in_vitro_media", "\\b(added to (?:the )?(?:culture )?medi(?:um|a)|in (?:the )?culture medi(?:um|a))\\b"],
+    ["oral_other", "\\b(orally|oral (?:capsules?|solution|administration|dose|spray)|capsules?)\\b"]
+  ],
+  "form": [
+    ["dried_flower", "\\b(dried (?:cannabis )?flower|herbal cannabis|cannabis flower)\\b"],
+    ["oil", "\\b(cannabis oil|cbd oil|oil formulation|in (?:sesame|olive|MCT|coconut) oil)\\b"],
+    ["edible", "\\b(edibles?|brownies?|gummies)\\b"],
+    ["tincture", "\\btinctures?\\b"],
+    ["extract", "\\b(extracts?)\\b"],
+    ["pill_capsule", "\\b(capsules?|tablets?|pills?)\\b"],
+    ["topical", "\\b(cream|ointment|topical gel)\\b"]
+  ],
+  "product_named": "\\b(sativex|nabiximols|epidiolex|dronabinol|nabilone|marinol|cesamet|bedrocan|bediol|strain [A-Z][\\w-]+)\\b",
+  "supplier": {
+    "cue": "\\b(?:obtained|purchased|provided|supplied|donated|procured|sourced)\\s+(?:by|from)\\s+(?:the\\s+)?([^,.;()]+)",
+    "government_unnamed": "^(?:a |an )?(?:government|national|federal|state)(?:\\s+(?:supply|drug|research|cannabis))*\\s*(?:program(?:me)?|agency|supplier|government)?\\s*$"
+  },
+  "dose": {
+    "cue": "\\b(dose[sd]?|dosing|received|administered|given|treated with|mg/kg|mg)\\b",
+    "value": "(\\d+(?:\\.\\d+)?)(?:\\s*(?:-|–|to)\\s*(\\d+(?:\\.\\d+)?))?\\s*(mg/kg|mg/g|mg/ml|mg/mL|µM|μM|uM|mg)\\b",
+    "unitless": "\\b(?:dose[sd]?|doses? of|at)\\s+(\\d+(?:\\.\\d+)?)(?:\\s*(?:-|–|to)\\s*\\d+(?:\\.\\d+)?)?(?!\\s*(?:mg|µ|μ|u[MmLl]|%|g\\b|ml|mL|nM|mM|ng|kg|days?|weeks?|h\\b|hours?|min))\\b"
+  },
+  "frequency": "\\b(once daily|twice daily|three times daily|once a day|twice a day|daily|every \\d+ ?(?:h|hours|days)|b\\.i\\.d\\.|t\\.i\\.d\\.|q\\.d\\.|once weekly|weekly|single (?:dose|injection|administration)|acute(?:ly)? administered once)\\b",
+  "duration": {
+    "value": "\\b(?:for|over|during)\\s+(\\d+(?:\\.\\d+)?)(?:\\s*(?:-|–|to)\\s*\\d+(?:\\.\\d+)?)?\\s*(days?|weeks?|months?|hours?|h|min(?:utes)?|consecutive days)\\b",
+    "exposure": "\\b(?:for|incubated for|treated for|exposed for)\\s+(\\d+(?:\\.\\d+)?)\\s*(h|hours?|min(?:utes)?|days?)\\b"
+  },
+  "sample_size": {
+    "animals": "\\b(\\d+)\\s+(?:adult\\s+|male\\s+|female\\s+)*(?:[A-Z][\\w-]+\\s+)?(?:rats|mice|animals)\\b",
+    "participants": "\\b(\\d+)\\s+(?:adult\\s+|healthy\\s+)*(?:participants|patients|subjects|volunteers)\\b",
+    "total_n": "\\b[Nn]\\s*=\\s*(\\d+)\\s+(?:in total|total|overall)\\b"
+  },
+  "group_sample_size": "([A-Za-z][\\w -]{1,40}?)\\s+group\\s*\\(\\s*n\\s*=\\s*(\\d+)\\s*\\)",
+  "replicates": "\\b(in (?:duplicate|triplicate|quadruplicate)|\\d+ (?:independent|biological|technical) (?:experiments|replicates))\\b",
+  "species": "\\b(rats?|mice|mouse|zebrafish|rabbits?|dogs?|rhesus macaques?|human|murine|rat)\\b",
+  "animal_strain": "\\b(Sprague[- ]Dawley|Wistar|Long[- ]Evans|C57BL/6J?|BALB/c|CD-1|Swiss Webster|DBA/2)\\b",
+  "sex": "\\b(male|female|men|women|both sexes)\\b",
+  "age_or_weight": "\\b(\\d+(?:\\.\\d+)?\\s*(?:-|–|to)?\\s*\\d*\\s*(?:weeks?|months?|days?)[- ]old|aged\\s+\\d+|mean age\\s+(?:of\\s+)?\\d+|weighing\\s+\\d+|\\d+\\s*(?:-|–)\\s*\\d+\\s*g\\b|\\d+ years? (?:old|of age))",
+  "vehicle_solvent": "\\b(dissolved in [^,.;]+|vehicle (?:consisting of|of|was) [^,.;]+|(?:DMSO|dimethyl sulfoxide|ethanol|Tween[- ]?80|cremophor|kolliphor|sesame oil|saline) (?:vehicle|as (?:the )?vehicle))",
+  "cell_line": "\\b([A-Z][A-Za-z0-9-]{1,12}) (?:cells|cell line)\\b|\\b(primary [a-z]+ (?:cells|cultures))\\b",
+  "diagnosis": "\\b(?:patients|participants|adults|individuals) (?:with|diagnosed with) ([a-z][\\w' -]{2,60}?)(?=[,.;(]| were| who| and\\b)",
+  "comparison_group": {
+    "named": "\\b(placebo|vehicle[- ]control|active comparator|sham|standard care|usual care)\\b",
+    "weak": "\\b(control group|compared (?:with|to))\\b"
+  },
+  "storage_temperature": "\\bstored at\\s+(-?\\s?\\d+\\s*°?\\s*C)",
+  "milled_ground": "\\b(milled|ground|grinded)\\b",
+  "protected_from_light": "\\b(protected from light|in the dark|amber (?:vials|bottles))\\b",
+  "item_cues": {
+    "strain_or_product_name": "\\b(strain|cultivar|product|cannabis|extract|sativex|epidiolex)\\b",
+    "supplier": "\\b(obtained|purchased|provided|supplied|supplier)\\b",
+    "form": "\\b(form|formulation|flower|oil|extract)\\b",
+    "major_cannabinoids": "\\b(thc|cbd|cannabinoid|potency|content)\\b",
+    "route": "\\b(route|administered|injected|gavage)\\b",
+    "dose": "\\b(dos(?:e[sd]?|ing)|mg/kg)\\b",
+    "frequency": "\\b(daily|frequency|times)\\b",
+    "duration": "\\b(duration|days|weeks|chronic|acute)\\b",
+    "number_of_animals": "\\b(animals|rats|mice|n =)\\b",
+    "number_of_participants": "\\b(participants|patients|enrolled)\\b",
+    "vehicle_solvent": "\\b(vehicle|solvent|dissolved)\\b",
+    "cell_line_or_tissue_source": "\\b(cells|cell line)\\b",
+    "concentration": "\\b(concentration|µM|uM|μM)\\b",
+    "exposure_time": "\\b(incubat|exposure|exposed)\\w*",
+    "replicates": "\\b(replicate|triplicate|independent experiments)\\b"
+  }
+}

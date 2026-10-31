@@ -1,0 +1,19 @@
+{
+ "paper_id": 900000001,
+ "pmid": "900000001",
+ "source_tier": "pmc_oa_xml",
+ "status": "ok",
+ "sections": [
+  {
+   "type": "abstract",
+   "text": "Chronic THC exposure in rats."
+  },
+  {
+   "type": "methods",
+   "text": "Forty male Sprague-Dawley rats weighing 250-300 g were used. THC was provided by the Example Research Supply Company, stored at -20 \u00b0C and protected from light. THC was dissolved in ethanol, cremophor and saline. Rats received THC at 5-20 mg/kg intraperitoneally once daily for 14 days. The vehicle group (n = 8) and the high-dose group (n = 8) were compared."
+  }
+ ],
+ "mesh": [
+  "D000000001"
+ ]
+}
