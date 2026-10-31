@@ -1620,6 +1620,14 @@ class DatabaseManager:
         """Return lightweight rows for section-stats (optional hard cap)."""
         return self._papers_repo().search_papers_minimal_for_section_stats(filters, limit=limit)
 
+    def visible_paper_ids(self, paper_ids: List[Any]) -> List[int]:
+        """Ids that pass the topic gate, order preserved."""
+        return self._papers_repo().visible_paper_ids(paper_ids)
+
+    def get_papers_by_ids_full(self, paper_ids: List[Any]) -> List[Dict[str, Any]]:
+        """All columns for the given ids, topic-gated (CSV export by-ID branch)."""
+        return self._papers_repo().get_papers_by_ids_full(paper_ids)
+
     def search_papers_by_ids(self, paper_ids: List[Any]) -> List[Dict[str, Any]]:
         """Return list-column rows for the given paper ids, preserving id order."""
         return self._papers_repo().search_papers_by_ids(paper_ids)
