@@ -440,6 +440,53 @@
               "default": true
             }
           }
+        },
+        "system_type": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "value",
+            "missingness"
+          ],
+          "description": "v0.7 in vitro (A10, per flow map): experimental system type. Recorded only, never scored. pcls = precision-cut lung slices.",
+          "properties": {
+            "value": {
+              "enum": [
+                "primary",
+                "cell_line",
+                "co_culture",
+                "organoid",
+                "pcls",
+                "other",
+                null
+              ]
+            },
+            "missingness": {
+              "$ref": "#/$defs/missingness"
+            },
+            "confidence": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "minimum": 0,
+              "maximum": 1
+            },
+            "source_span": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "pending_biomedical": {
+              "type": "boolean",
+              "default": true
+            }
+          }
+        },
+        "supplier_program_verbatim": {
+          "$ref": "#/$defs/string_field",
+          "description": "v0.7 (P2, Shawn 2026-10-31): the government/agency supply program exactly as written when no supplier is named (e.g. 'obtained through the NIDA Drug Supply Program'). Recorded only, not scored; pairs with not_reported_reason government_program_unnamed on supplier."
         }
       }
     },
@@ -555,8 +602,53 @@
         },
         "protected_from_light": {
           "$ref": "#/$defs/field_reporting"
+        },
+        "conditions": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/condition_entry"
+          },
+          "description": "A11: conditions studied (multi-valued), keys from schemas/condition_list.json. Filter label only; never affects any tier. Never filled from mesh_from_pubmed."
+        },
+        "experimental_model_verbatim": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "A11: experimental model as written (provenance). Not scored."
+        },
+        "outcome_domains": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/outcome_domain_entry"
+          },
+          "description": "A12: outcome domains (multi-valued) with exactly one is_primary true. Never affects any tier.",
+          "contains": {
+            "properties": {
+              "is_primary": {
+                "const": true
+              }
+            }
+          },
+          "minContains": 1,
+          "maxContains": 1
+        },
+        "group_sample_sizes": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/group_sample_size"
+          },
+          "description": "A15: optional per-group sample sizes, only when the paper gives a number. Not required for gold, never affects any tier (total animal count stays required for in vivo)."
         }
       }
+    },
+    "mesh_from_pubmed": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "pattern": "^D[0-9]{6,9}$"
+      },
+      "description": "A11: optional MeSH D-numbers from the PubMed record. Cross-check input only; never written into reporting.conditions. Excluded from the labelling interface and annotation exports."
     }
   },
   "$defs": {
@@ -1714,7 +1806,15 @@
         {
           "$ref": "#/$defs/locked_store_test_only"
         }
-      ]
+      ],
+      "x-topic-gate": {
+        "enabled": true,
+        "ruling": "B3 (Shawn, 2026-10-31)",
+        "rule": "A paper not about cannabis/cannabinoids (topic_match = 0) gets relevance score 0 and is filtered out of results, regardless of the other axes."
+      },
+      "x-computed": {
+        "topic_gate_pass": "boolean, computed by methods_completeness.topic_gate(topic_match); false means relevance score 0 and filtered out of results. Never stored."
+      }
     },
     "correction": {
       "type": "object",
@@ -2409,6 +2509,8 @@
             "strain_reported",
             "study_type_legacy",
             "supplier",
+            "supplier_program_verbatim",
+            "system_type",
             "treatment_duration",
             "vehicle_solvent"
           ],
@@ -2754,9 +2856,11 @@
         "supplementary",
         "abstract",
         "discussion",
-        "unknown"
+        "unknown",
+        "table",
+        "figure"
       ],
-      "description": "Where a reported detail was found. Only set when status is reported. No cited_prior_paper value: 'as previously described [ref]' is not_reported (K1; TOP1 final)."
+      "description": "Where a reported detail was found. Only set when status is reported. No cited_prior_paper value: 'as previously described [ref]' is not_reported (K1; TOP1 final). T2 (Shawn 2026-10-31): table and figure are locations only and never affect any tier. A confident read from a table/figure = reported; not confident = could_not_check (low_confidence_read); figure not attempted = could_not_check (figure_not_read)."
     },
     "check_failure_reason": {
       "type": "string",
@@ -2900,6 +3004,48 @@
             }
           ],
           "description": "Optional, only with status not_reported; never affects any tier. cited_elsewhere = 'as previously described [ref]' (TOP1); vague_term_only (C2 duration); protocol_without_number (C1); government_program_unnamed (P2); product_named_content_missing (P1 gap-log cases); missing_units = number given without units (TOP3); absent = nothing found (default)."
+        },
+        "comparator_validated": {
+          "type": "boolean",
+          "default": false,
+          "description": "A13: set true only after CRN Evaluation's sign-off on the comparator (comparison_group). Never affects any tier. Sits next to extraction_confidence (the comparator confidence)."
+        },
+        "value_source": {
+          "$ref": "#/$defs/value_source",
+          "default": "paper"
+        },
+        "legacy_llm_fullpdf": {
+          "type": [
+            "object",
+            "null"
+          ],
+          "additionalProperties": false,
+          "required": [
+            "value"
+          ],
+          "description": "Side-by-side legacy value (value_source legacy_llm_fullpdf). Never used for tier, scoring or labels; stripped from labelling and scoring exports.",
+          "properties": {
+            "value": {},
+            "value_source": {
+              "const": "legacy_llm_fullpdf"
+            },
+            "status": {
+              "$ref": "#/$defs/reporting_status"
+            }
+          }
+        },
+        "source_attribution": {
+          "anyOf": [
+            {
+              "enum": [
+                "inferred_from_row_version"
+              ]
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "How value_source was decided. inferred_from_row_version = legacy backfill rule (the old pass did not record which fields it wrote)."
         }
       },
       "allOf": [
@@ -3000,6 +3146,19 @@
               }
             }
           }
+        },
+        {
+          "if": {
+            "properties": {
+              "value_source": {
+                "const": "legacy_llm_fullpdf"
+              }
+            },
+            "required": [
+              "value_source"
+            ]
+          },
+          "then": false
         }
       ]
     },
@@ -3117,6 +3276,89 @@
       ],
       "default": "not_yet_assessed",
       "description": "v0.7 computed tier grade; never blank. not_scored = reviews, case reports, observational / self-report. out_of_scope = non-randomized interventional trials. Computed, never stored as truth."
+    },
+    "condition_entry": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "condition_key",
+        "mesh_descriptor_id",
+        "label"
+      ],
+      "properties": {
+        "condition_key": {
+          "type": "string",
+          "description": "Key from schemas/condition_list.json (validated against the list by the helper/tests, not by enum, so the list can be versioned)."
+        },
+        "mesh_descriptor_id": {
+          "type": "string",
+          "pattern": "^D[0-9]{6,9}$"
+        },
+        "label": {
+          "type": "string"
+        }
+      }
+    },
+    "outcome_domain_entry": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "domain",
+        "is_primary"
+      ],
+      "properties": {
+        "domain": {
+          "enum": [
+            "pain",
+            "anxiety",
+            "cognition",
+            "inflammation",
+            "addiction",
+            "oncology",
+            "neuroprotection",
+            "sleep"
+          ],
+          "description": "Existing 8-value outcome-domain filter (dashboard_ui_config.OUTCOME_DOMAINS)."
+        },
+        "is_primary": {
+          "type": "boolean"
+        }
+      }
+    },
+    "group_sample_size": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "group_label",
+        "n",
+        "unit"
+      ],
+      "properties": {
+        "group_label": {
+          "type": "string",
+          "description": "Group name verbatim."
+        },
+        "n": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "unit": {
+          "enum": [
+            "animals",
+            "replicates"
+          ]
+        }
+      }
+    },
+    "value_source": {
+      "type": "string",
+      "enum": [
+        "paper",
+        "signed_off",
+        "legacy_llm_fullpdf",
+        "expert"
+      ],
+      "description": "Per-field value source. paper = extracted/reviewed from the paper; signed_off = numeric signed-off reference value (P1); legacy_llm_fullpdf = earlier LLM pass over full PDFs: silver baseline and comparison input only, never reviewer gold or test truth, never fills tier or scoring labels, excluded from annotation and scoring-label exports. expert = field listed in the row's expert_locked_fields (legacy backfill)."
     }
   },
   "x-contract-version": "0.7",

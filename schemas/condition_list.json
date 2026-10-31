@@ -1,0 +1,15 @@
+{
+  "$comment": "Fixed condition list for reporting.conditions (A11). Candidate only; no entries until the biomedical lead approves a list.",
+  "list_version": "0.0.0",
+  "mesh_release_year": 2026,
+  "status": "candidate_pending_biomedical_approval",
+  "entry_shape": {
+    "key": "snake_case condition key",
+    "mesh_descriptor_id": "MeSH D-number, e.g. D000000",
+    "preferred_term": "MeSH preferred term",
+    "entry_terms": [
+      "MeSH entry-term synonyms"
+    ]
+  },
+  "entries": []
+}

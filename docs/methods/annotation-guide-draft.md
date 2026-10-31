@@ -174,6 +174,7 @@ Record contract: `schemas/methods.schema.json` → `$defs.expert_review`; fixtur
 - Training uses dev/validation labels only.
 - An independent second reviewer labels a small dev subset for inter-reviewer agreement on completeness tracks (sample size set by CRN Evaluation).
 - Tracks and tiers are computed at read time; annotators record statuses, never grades.
+- Reviewers must not see `mesh_from_pubmed` (or any PubMed MeSH headings) or any `legacy_llm_fullpdf` values while they label; the labelling interface and annotation exports exclude both. Legacy values are a silver baseline for comparison only, never gold or test truth.
 - Scoring runs with Sentry off.
 - `label_status` is `review_note`; `gold`/`training` pending Q16 (MCK-90).
 

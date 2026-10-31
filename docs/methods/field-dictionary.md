@@ -237,6 +237,7 @@ Contract version **0.3** (`schema_version: wp1.3.0-draft`; `x-contract-version: 
 1. **gold_badge.decision** `gold|not_gold` and **awarded_by** (rater id). *Gold* = paper marked by the resident PhD as top-notch in structure/detail.
 2. **relevance_grade** (new, keyed on `(query_id, pmid)`): `query_id, pmid, grade, rater, query_set_version, query_set_sha256` (required); optional `rater_verified, timestamp, split, storage, rationale_format`. Names/types aligned with the eval locked-store `relevance_grade` proposal. **`grade` 0/1/2 is a PLACEHOLDER** pending the Biomedical lead's decision on a multi-axis linear relevance score.
    - **PROPOSED axes (NOT schema fields yet):** `topic_match` 0/1/2 (0 = hard exclude); `study_type` category `original|review_meta_analysis|survey|reanalysis|other`; `design_correctness` 1–5; `reporting_depth` 1–5; gold badge; `relevance = w1*topic + w2*original + w3*design + w4*reporting + w5*gold`, weights **w1–w5 UNSET placeholders**.
+   - **Topic gate ON (B3, Shawn 2026-10-31):** a paper not about cannabis/cannabinoids (`topic_match` = 0) gets relevance score 0 and is filtered out of results, whatever the other axes say. Recorded in `relevance_grade.x-topic-gate`. Closes the v4 topic-gate open question.
 3. **correction** (new): `record_id, supersedes_record_id, reason, corrected_by, at (ISO-8601 date-time), retracted (bool)`. State records are **append-only**; corrections supersede, never edit.
 4. **Mapping rule** (`$defs.paper_pmid_mapping`): `paper_id` resolves to `papers.pmid`. If pmid is null the record is flagged `pmid_missing: true` and `manifest_eligible: false` — **excluded from manifests** (encoded via if/then).
 5. **work_id** on `reference_value` and `gold_badge`, copied from the paper.
@@ -316,13 +317,15 @@ The idea: for this database, a paper's quality is how well it reports the detail
 |---|---|---|---|
 | `reporting` | top level (new) | One `field_reporting` entry per completeness item key (`research_type`, `strain_or_product_name`, `supplier`, `form`, `major_cannabinoids`, `route`, `dose`, `frequency`, `duration`, `vehicle_solvent`, `storage`). A missing key means `not_yet_assessed`. | technical |
 | `field_reporting.status` | `$defs` | `reported`, `not_reported` (section read, detail absent), `could_not_check` (section not fetched or parsed), `not_applicable` (set by the decision-tree branch / study type), `not_yet_assessed` (default). Records written before v0.7 are `not_yet_assessed`, **never** backfilled as `not_reported`. | technical |
-| `field_reporting.location` | `$defs` | `methods`, `supplementary`, `abstract`, `discussion`, `unknown` (no `cited_prior_paper`: "as previously described [ref]" is `not_reported`, K1). Required when status is `reported`; must be null or absent otherwise. | technical |
+| `field_reporting.location` | `$defs` | `methods`, `supplementary`, `abstract`, `discussion`, `unknown`, `table`, `figure` (T2; never affect tier) (no `cited_prior_paper`: "as previously described [ref]" is `not_reported`, K1). Required when status is `reported`; must be null or absent otherwise. | technical |
 | `field_reporting.evidence_quote` | `$defs` | Verbatim span supporting the status, optional. | technical |
 | `field_reporting.check_failure_reason` | `$defs` | `fetch_failed`, `parse_failed`, `source_not_available`, `budget_cap`, `source_not_fetched`. `source_not_fetched` is a **deliberate scope choice** (e.g. a main-text-only run that skips supplements), distinct from `fetch_failed`, which is an error. Required when status is `could_not_check`; null or absent otherwise. The contract only records the reason. **How each reason is scored is owned by CRN Evaluation's scorer** (Pipeline proposes `fetch_failed` / `parse_failed` count as misses). | technical |
 | `supplier` | `fields` (new) | Company or source the product was procured from. Its own field, separate from strain/product name (**U2, answered**). Not applicable for clinical studies. | pending_biomedical |
 | `vehicle_solvent` | `fields` (new) | Vehicle or solvent used to deliver the product (oil does not dissolve in cell media). | pending_biomedical |
 | `storage` | `fields` (new) | How the product was stored, free text. Good practice, not required. |
 | `storage_temperature`, `milled_ground`, `protected_from_light` | `fields` (new) | G1 good-practice storage details (temperature as reported; milled/ground and light protection = `yes`/`no`/`not_reported`). Recorded only, never affects any tier. |
+| `supplier_program_verbatim` | `fields` (new) | P2: unnamed government supply program as written. Recorded only. |
+| `system_type` | `fields` (new) | In vitro system (A10): `primary`, `cell_line`, `co_culture`, `organoid`, `pcls` (precision-cut lung slices), `other`. Recorded, not scored. |
 | `randomized` / `arms` / `blinding` | `fields` (new) | Clinical design. `randomized` (`yes`/`no`/`unknown`) is the scope gate; `arms` (`single_arm`/`controlled`/`unknown`) and `blinding` (`open_label`/`single_blind`/`double_blind`/`unknown`) are recorded only. |
 | `cell_line_or_tissue_source`, `comparison_group` | `fields` (new) | In vitro source (V2) and clinical comparison arm (V3). |
 | `field_reporting.confidence`, `.needs_review` | `$defs` | Optional extraction confidence and human-review flag on any reporting item. | pending_biomedical |
@@ -337,7 +340,7 @@ The idea: for this database, a paper's quality is how well it reports the detail
 | classification | research type (picks the study-type tier; recorded, not part of gold) |
 | universal (every study) | strain/product name, supplier (not applicable for clinical), form, major cannabinoids, route (provisional). All must be `reported` for gold. Location is recorded but never a pass condition. |
 | in_vivo (V1, provisional) | required always: route, dose, duration, number of animals. Secondary: species, animal strain, sex, age or weight, frequency, vehicle (key `vehicle_solvent`). Same algorithm and `secondary_cutoff` as in vitro. |
-| in_vitro (V2, provisional) | required always: cell line or tissue source, concentration, exposure time. Secondary: species of origin, vehicle/solvent, replicates. |
+| in_vitro (V2 + A10, provisional) | required always: cell type (line / tissue source), source species, concentration, exposure time. Secondary share: vehicle/solvent, replicates. `system_type` (primary, cell_line, co_culture, organoid, pcls, other) is recorded, not scored. |
 | clinical (V3, provisional; RCTs only) | all required, no share: number of participants, route, dose, frequency, duration, participant age or sex (either counts), diagnosis or condition, comparison group (may carry `confidence` + `needs_review`). Scope gate on `randomized`: `yes` → scored; `no` → `out_of_scope`; `unknown` → `unverified` (never guessed). `arms` and `blinding` are recorded only. |
 | good_practice (G1) | storage temperature, milled/ground, protected from light. Recorded only; never counts toward gold or any share. No contamination or batch-testing fields. (Replaces V4; `storage_duration` dropped: it existed only in this draft.) |
 
@@ -385,7 +388,10 @@ Items marked `not_applicable` (status, or supplier on clinical studies) are left
   - "chronic (21 days) THC" → duration `reported`, `duration_category: chronic`.
 - **TOP1 (final):** "as previously described [ref]" = `not_reported` (`not_reported_reason: cited_elsewhere`). Cited papers are never fetched. Example: "Rats were dosed as previously described (Smith 2015)." → dose `not_reported`, the sentence goes in `evidence_quote`.
 - **TOP3:** a number without units = `not_reported` (`not_reported_reason: missing_units`). Example: "animals received 10 of THC daily" → dose `not_reported`; "10 mg/kg" → reported.
-- **TOP4 (confirmed, closed):** a missing universal item always blocks gold, no exceptions (even with a signed-off reference value: only a numeric one fills `reference_fields`, see P1). TOP4 applies only to items required for the study type, so supplier stays `not_applicable` for clinical (resolved).
+- **TOP4 (confirmed, closed):** a missing universal item always blocks gold, no exceptions (a numeric signed-off reference value satisfies the item, see P1). TOP4 applies only to items required for the study type, so supplier stays `not_applicable` for clinical (resolved).
+- **A10:** in vitro source species moves to always-required (see tier table). Species fields apply to animal models only; studies in humans route to clinical. New in vitro `system_type` field, recorded only.
+- **T2:** new locations `table` and `figure` (never affect tier). Confident read from a table/figure = `reported`; not confident = `could_not_check` + `low_confidence_read`; figure not attempted = `could_not_check` + `figure_not_read`. Example: dose only in Table 1, read clearly → reported, location `table`.
+- **P2:** supplier given only as an unnamed government program → supplier `not_reported` (`government_program_unnamed`); the wording goes in `supplier_program_verbatim` (not scored). Example: "provided by the NIDA Drug Supply Program".
 - **U2:** supplier is its own field, separate from strain/product name; for clinical studies it is `not_applicable`.
 
 ### Open PhD questions (not decided)
@@ -424,14 +430,30 @@ The first prod run needs Shawn's go-ahead and a fresh snapshot.
 
 Evaluation excludes reference values from extraction accuracy.
 
-**Tier effect: OPEN QUESTION for Shawn.**
-- A) No effect: the paper stays `near_gold`, with the missing list annotated "reference value available". **Default until answered.**
-- B) Counts as reported for gold.
-- C) A separate tier flag, e.g. `gold_with_reference`.
+**Tier effect (resolved, Shawn 2026-10-31):** a **numeric** signed-off value counts toward the tier (option B) and satisfies TOP4; the item is listed in `reference_fields` and `tier_uses_reference_values` is true. A **non-numeric** signed-off value has no tier effect (option A): the item stays missing and is listed in `missing_reference_available`.
 
 ### Computed tier output (P1 additions)
 
-`compute()` also returns `reference_fields` (items satisfied only by a numeric signed-off value, `value_source: signed_off`; empty if none), `missing_reference_available` (items with a non-numeric signed-off value: option A, no tier effect), `signoff_set_hash` (sha256 of the active `paper_reference_link` rows, so frozen runs are reproducible), `rule_version` and `secondary_cutoff` used. **Any future tier cache must be invalidated when `rule_version`, the cutoff, or the sign-off set changes (add, replace or revoke).**
+`compute()` also returns `tier_uses_reference_values` (true when any reference value was used), `reference_fields` (items satisfied only by a numeric signed-off value, `value_source: signed_off`; empty if none), `missing_reference_available` (items with a non-numeric signed-off value: option A, no tier effect), `signoff_set_hash` (sha256 of the active `paper_reference_link` rows, so frozen runs are reproducible), `rule_version` and `secondary_cutoff` used. **Any future tier cache must be invalidated when `rule_version`, the cutoff, or the sign-off set changes (add, replace or revoke).**
+
+### Conditions, outcome domains, group sizes, comparator validation (A11, A12, A13, A15; none affects any tier)
+
+- **`reporting.conditions`** (A11): list of `{condition_key, mesh_descriptor_id (D-number), label}`. Keys come from `schemas/condition_list.json` (`list_version`, pinned `mesh_release_year`; each entry: key, D-number, preferred term, entry-term synonyms). The list ships **empty**, status `candidate_pending_biomedical_approval`; the candidate list will come from Pipeline's per-PMID MeSH counts (joined to splits by Evaluation). `reporting.experimental_model_verbatim` keeps the model as written (provenance, not scored). Computed output records `condition_list_version`.
+- **`mesh_from_pubmed`** (top level, optional): MeSH D-numbers from the PubMed record. **Cross-check only; never copied into `conditions`.** **Contract rule:** reviewers must not see `mesh_from_pubmed` or any PubMed MeSH headings while labelling conditions; the labelling interface and annotation exports exclude it.
+- **`reporting.outcome_domains`** (A12): list of `{domain, is_primary}` from the existing 8-value filter (`dashboard_ui_config.OUTCOME_DOMAINS`: pain, anxiety, cognition, inflammation, addiction, oncology, neuroprotection, sleep), with exactly one `is_primary: true`.
+- **`reporting.group_sample_sizes`** (A15): optional `{group_label (verbatim), n (integer), unit: animals | replicates}`, only when the paper gives a number. Not required for gold; total animal count stays required for in vivo; in vitro replicates stays in the secondary share.
+- **`comparator_validated`** (A13, on the comparison_group reporting item next to `extraction_confidence`): boolean, default false, set only after CRN Evaluation's sign-off.
+- These sit in the per-field reporting block, so they move into each track's reporting block when the track shape lands.
+
+### value_source and legacy_llm_fullpdf
+
+Per-field `value_source`: `paper` (default), `signed_off` (P1 numeric reference value), `legacy_llm_fullpdf` (an earlier LLM pass over full PDFs). A field can carry a reviewer/paper value and a legacy value side by side (`legacy_llm_fullpdf: {value, status}` on the reporting item). The legacy value is a **silver baseline and comparison input only**: it never counts as reviewer gold or test truth, never fills a tier or scoring label, and is stripped from annotation and scoring-label exports (`methods_completeness.labelling_export`). A reporting item whose own `value_source` is `legacy_llm_fullpdf` is rejected by the schema.
+
+**Legacy backfill rule (contract rule; applying it to any database is a separate gated step).** The old pass did not record which fields it wrote. So on a `papers` row whose `classifier_version` matches `llm-pdf-reclassify-%`, every non-null classification column (study_type, exposure_method, cannabis_type, publication_type, outcome_domain, species, and the numeric dose/content columns: thc_pct, cbd_pct, dose_mg, thc_mg_ml, thc_mg_g, thc_mg_kg, cbd_mg_ml, cbd_mg_g, cbd_mg_kg, thc_um, cbd_um; prod column names are lowercase) gets `value_source: legacy_llm_fullpdf`, unless the column is in `expert_locked_fields` (then `value_source: expert`). Attribution is marked `source_attribution: inferred_from_row_version`; `classifier_version` and `classification_timestamp` are kept in provenance. Column list: `completeness_rules.json` → `legacy_backfill`; helper `methods_completeness.legacy_backfill_attribution(row)`.
+
+### Relevance topic gate output
+
+`methods_completeness.topic_gate(topic_match)` returns computed `topic_gate_pass` (false means relevance score 0 and filtered out of results), never stored.
 
 ### Storage / database
 

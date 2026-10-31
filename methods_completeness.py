@@ -10,6 +10,11 @@ import numbers
 import pathlib
 
 RULES_PATH = pathlib.Path(__file__).resolve().parent / "schemas" / "completeness_rules.json"
+CONDITION_LIST_PATH = RULES_PATH.parent / "condition_list.json"
+
+
+def condition_list_version(path=CONDITION_LIST_PATH):
+    return json.loads(pathlib.Path(path).read_text())["list_version"]
 
 
 def load_rule(path=RULES_PATH):
@@ -58,7 +63,8 @@ def compute(record, study_type, rule=None, secondary_cutoff=None, reference_link
     """
     rule = rule or load_rule()
     cut_used = secondary_cutoff if secondary_cutoff is not None else rule["secondary_cutoff"]["default"]
-    meta = {"secondary_cutoff": cut_used, "signoff_set_hash": signoff_set_hash(reference_links)}
+    meta = {"secondary_cutoff": cut_used, "signoff_set_hash": signoff_set_hash(reference_links),
+            "condition_list_version": condition_list_version()}
 
     def flat(grade, reason):
         g = {"grade": grade, "reason": reason}
@@ -66,7 +72,8 @@ def compute(record, study_type, rule=None, secondary_cutoff=None, reference_link
             g["not_scored"] = True
         return dict({"rule_id": rule["rule_id"], "rule_version": rule["version"],
                      "universal": g, "study_type": g, "route_requirements": None, "good_practice": g,
-                     "reference_fields": [], "missing_reference_available": []}, **meta)
+                     "reference_fields": [], "tier_uses_reference_values": False,
+                     "missing_reference_available": []}, **meta)
 
     if study_type in rule.get("not_scored_study_types", []):
         return flat("not_scored", "study_type_" + study_type)
@@ -121,6 +128,7 @@ def compute(record, study_type, rule=None, secondary_cutoff=None, reference_link
     out["good_practice"] = {"recorded_only": True, "counts": gc,
                             "reported": [i["key"] for i in tiers["good_practice"]["items"] if _status(rep, i["key"]) == "reported"]}
     out["reference_fields"] = ref_fields
+    out["tier_uses_reference_values"] = bool(ref_fields)
     out["missing_reference_available"] = ref_noted
     out.update(meta)
     return out
@@ -193,3 +201,56 @@ def grade_required_secondary(rep, tier, cutoff):
     return {"grade": grade, "grade_reason": reason, "missing": missing, "secondary_not_reported": sec_missing,
             "not_checked": not_checked, "secondary_share_worst": worst, "secondary_share_best": best,
             "secondary_cutoff": cutoff}
+
+
+def topic_gate(topic_match):
+    """B3: topic gate ON. topic_match 0 -> topic_gate_pass False, relevance score 0, filtered out."""
+    passed = topic_match is not None and topic_match > 0
+    return {"topic_gate_pass": passed, "score_override": None if passed else 0, "filtered_out": not passed}
+
+
+BLINDED_TOP_LEVEL = ("mesh_from_pubmed",)
+BLINDED_FIELD_KEYS = ("legacy_llm_fullpdf",)
+
+
+def labelling_export(record):
+    """Copy of a record for annotation / scoring-label exports.
+
+    Drops mesh_from_pubmed and every legacy_llm_fullpdf value: reviewers never see them while labelling,
+    and they never become labels or test truth.
+    """
+    out = json.loads(json.dumps(record))
+    for k in BLINDED_TOP_LEVEL:
+        out.pop(k, None)
+    for item in (out.get("reporting") or {}).values():
+        if isinstance(item, dict):
+            for k in BLINDED_FIELD_KEYS:
+                item.pop(k, None)
+    return out
+
+
+def legacy_backfill_attribution(row, rule=None):
+    """Per-column value_source for one papers row under the legacy backfill rule (pure function, no DB).
+
+    Returns {column: {value_source, source_attribution, classifier_version, classification_timestamp}}
+    for non-null classification columns; {} when the row is not from the legacy full-PDF pass.
+    """
+    rule = (rule or load_rule())["legacy_backfill"]
+    version = row.get("classifier_version") or ""
+    if not version.startswith(rule["classifier_version_like"].rstrip("%")):
+        return {}
+    locked = row.get("expert_locked_fields") or []
+    if isinstance(locked, str):
+        try:
+            locked = json.loads(locked)
+        except ValueError:
+            locked = [x.strip() for x in locked.split(",") if x.strip()]
+    out = {}
+    for col in rule["columns"]:
+        if row.get(col) is None:
+            continue
+        out[col] = {"value_source": "expert" if col in locked else "legacy_llm_fullpdf",
+                    "source_attribution": rule["source_attribution"],
+                    "classifier_version": version,
+                    "classification_timestamp": row.get("classification_timestamp")}
+    return out

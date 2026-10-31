@@ -204,12 +204,18 @@
     "in_vitro": {
       "applies_to": "in_vitro",
       "status": "provisional",
-      "answered": "V2 (Shawn 2026-10-31, provisional)",
+      "answered": "V2 + A10 (Shawn 2026-10-31): required cell type (line/tissue source), source species, concentration, exposure time; secondary vehicle, replicates. system_type recorded, not scored.",
       "required_always": [
         {
           "key": "cell_line_or_tissue_source",
           "fields": [
             "cell_line_or_tissue_source"
+          ]
+        },
+        {
+          "key": "species_of_origin",
+          "fields": [
+            "species_or_biological_system"
           ]
         },
         {
@@ -229,12 +235,6 @@
         }
       ],
       "secondary": [
-        {
-          "key": "species_of_origin",
-          "fields": [
-            "species_or_biological_system"
-          ]
-        },
         {
           "key": "vehicle_solvent",
           "fields": [
@@ -257,6 +257,12 @@
           ]
         },
         {
+          "key": "species_of_origin",
+          "fields": [
+            "species_or_biological_system"
+          ]
+        },
+        {
           "key": "concentration",
           "fields": [
             "conc_thc_uM",
@@ -269,12 +275,6 @@
           "key": "exposure_time",
           "fields": [
             "treatment_duration"
-          ]
-        },
-        {
-          "key": "species_of_origin",
-          "fields": [
-            "species_or_biological_system"
           ]
         },
         {
@@ -482,14 +482,22 @@
   "previously_described_policy": "TOP1 (Shawn, 2026-10-31, final): 'As previously described [ref]' = not_reported (not_reported_reason cited_elsewhere). Cited papers are never fetched. There is no cited_prior_paper location value.",
   "answered": {
     "U1": "Shawn, 2026-10-31: universal = strain/product name, supplier, form, major cannabinoids, all status reported for gold.",
-    "TOP4": "Shawn, 2026-10-31: location is never a pass condition; it is still recorded. Confirmed (Shawn, 2026-10-31): a missing (not_reported) universal item always blocks gold, no exceptions. Resolved: TOP4 applies only to items required for the study type; supplier stays not_applicable for clinical.",
+    "TOP4": "Shawn, 2026-10-31: location is never a pass condition; it is still recorded. Confirmed (Shawn, 2026-10-31): a missing (not_reported) universal item always blocks gold, no exceptions. Resolved: TOP4 applies only to items required for the study type; supplier stays not_applicable for clinical. A numeric signed-off reference value satisfies the item (P1).",
     "U2": "Shawn, 2026-10-31: supplier is its own field, separate from strain/product name; for clinical studies supplier is not_applicable (not required, never counted missing).",
     "V1": "In vivo tier: required_always route, dose, duration, number_of_animals; secondary species, animal_strain, sex, age_or_weight, frequency, vehicle (key vehicle_solvent); secondary_cutoff default 0.80, overridable.",
     "C1": "Shawn, 2026-10-31: a dose given only as a range (e.g. 5-20 mg/kg) counts as reported. 'Per protocol' counts as reported only if the paper or its cited protocol gives an actual number; otherwise dose = not_reported.",
     "C2": "Shawn, 2026-10-31: vague duration terms ('chronic', 'long-term', 'acute', ...) with no actual time do not count as duration reported (duration stays not_reported). The term is kept as reporting.duration.duration_category (+ _verbatim), a filter label that never affects any tier.",
     "G1": "G1 (Shawn 2026-10-31): exactly storage_temperature, milled_ground, protected_from_light. Replaces V4 set; storage_duration dropped. No contamination or batch-testing fields. Recorded only, never affects any tier.",
     "TOP1": "TOP1 (Shawn, 2026-10-31, final): 'As previously described [ref]' = not_reported (not_reported_reason cited_elsewhere). Cited papers are never fetched. There is no cited_prior_paper location value.",
-    "TOP3": "Shawn, 2026-10-31: a numeric value without units (e.g. a dose number, no unit) = not_reported (not_reported_reason missing_units)."
+    "TOP3": "Shawn, 2026-10-31: a numeric value without units (e.g. a dose number, no unit) = not_reported (not_reported_reason missing_units).",
+    "A10": "Shawn, 2026-10-31: in vitro source species (species_of_origin) is always required. Species fields apply to animal models only; human studies route to clinical. In vitro system_type (primary, cell_line, co_culture, organoid, pcls, other) is recorded, not scored.",
+    "T2": "Shawn, 2026-10-31: locations table and figure added; never affect tier. Confident read = reported; not confident = could_not_check low_confidence_read; figure not attempted = could_not_check figure_not_read.",
+    "P2": "Shawn, 2026-10-31: unnamed government supply program -> supplier not_reported (not_reported_reason government_program_unnamed); program wording kept in fields.supplier_program_verbatim, not scored.",
+    "P1": "Shawn, 2026-10-31 (resolved, option B for numeric): a numeric signed-off reference value counts toward the tier (and satisfies TOP4); non-numeric signed-off values follow option A (no tier effect, noted). Output flags tier_uses_reference_values.",
+    "A11": "Conditions: multi-valued reporting.conditions keyed by schemas/condition_list.json (candidate, empty until approved) + experimental_model_verbatim; mesh_from_pubmed is a cross-check input only. Never affects tier.",
+    "A12": "Outcome domains: multi-valued from the existing 8-value filter with exactly one is_primary. Never affects tier.",
+    "A13": "comparator_validated boolean (default false), set only after Evaluation sign-off; never affects tier.",
+    "A15": "group_sample_sizes optional (only when numeric); never affects tier; total animal count stays required for in vivo."
   },
   "route_requirements": {
     "status": "provisional",
@@ -611,5 +619,29 @@
   "resolved": {
     "Q1": "Age or sex: either counts (provisional, Shawn 2026-10-31).",
     "Q2": "Non-randomized interventional trials (incl. single-arm) are out of scope: no gold rule, no comparison-group check (Shawn 2026-10-31)."
+  },
+  "legacy_backfill": {
+    "classifier_version_like": "llm-pdf-reclassify-%",
+    "columns": [
+      "study_type",
+      "exposure_method",
+      "cannabis_type",
+      "publication_type",
+      "outcome_domain",
+      "species",
+      "thc_pct",
+      "cbd_pct",
+      "dose_mg",
+      "thc_mg_ml",
+      "thc_mg_g",
+      "thc_mg_kg",
+      "cbd_mg_ml",
+      "cbd_mg_g",
+      "cbd_mg_kg",
+      "thc_um",
+      "cbd_um"
+    ],
+    "rule": "Non-null column on a row whose classifier_version matches -> value_source legacy_llm_fullpdf, unless the column is in expert_locked_fields (-> expert). source_attribution inferred_from_row_version; classifier_version and classification_timestamp kept in provenance. Doc-level rule; applying it to any database is a separate, gated step.",
+    "source_attribution": "inferred_from_row_version"
   }
 }
