@@ -21,10 +21,20 @@ def _status(reporting, key):
 def compute(record, study_type, rule=None, secondary_cutoff=None):
     """Return {rule_id, rule_version, universal, study_type, good_practice} for one record."""
     rule = rule or load_rule()
-    if study_type in rule.get("not_scored_study_types", []):
-        ns = {"not_scored": True, "reason": "study_type_" + study_type}
+    def flat(grade, reason):
+        g = {"grade": grade, "reason": reason}
+        if grade == "not_scored":
+            g["not_scored"] = True
         return {"rule_id": rule["rule_id"], "rule_version": rule["version"],
-                "universal": ns, "study_type": ns, "good_practice": ns}
+                "universal": g, "study_type": g, "route_requirements": None, "good_practice": g}
+
+    if study_type in rule.get("not_scored_study_types", []):
+        return flat("not_scored", "study_type_" + study_type)
+    if study_type == "clinical":
+        r = (((record.get("fields") or {}).get("randomized") or {}).get("value"))
+        gate = rule["tiers"]["clinical"]["scope_gate"].get(r or "absent", "not_yet_assessed")
+        if gate != "scored":
+            return flat(gate, "randomized_" + (r or "absent"))
     rep = record.get("reporting") or {}
     tiers = rule["tiers"]
 
@@ -49,7 +59,9 @@ def compute(record, study_type, rule=None, secondary_cutoff=None):
             lists["not_checked"].append({"key": i["key"], "check_failure_reason": r.get("check_failure_reason")})
         elif st in ("not_yet_assessed", "not_applicable"):
             lists[st].append(i["key"])
-    if lists["missing"]:
+    if uc["not_yet_assessed"] == len(uitems):
+        grade = "not_yet_assessed"
+    elif lists["missing"]:
         grade = "near_gold"
     elif lists["not_checked"] or lists["not_yet_assessed"]:
         grade = "unverified"
@@ -66,8 +78,9 @@ def compute(record, study_type, rule=None, secondary_cutoff=None):
             cut = secondary_cutoff if secondary_cutoff is not None else rule["secondary_cutoff"]["default"]
             out["study_type"].update(grade_required_secondary(rep, tier, cut))
     out["route_requirements"] = route_requirements(record, study_type, rule)
-    gc, gfrac = counts(tiers["good_practice"]["items"])
-    out["good_practice"] = {"fraction": gfrac, "counts": gc}
+    gc, _ = counts(tiers["good_practice"]["items"])
+    out["good_practice"] = {"recorded_only": True, "counts": gc,
+                            "reported": [i["key"] for i in tiers["good_practice"]["items"] if _status(rep, i["key"]) == "reported"]}
     return out
 
 

@@ -47,6 +47,10 @@ FULL_V07 = {
         "route": {"value": ["oral_gavage"], "missingness": "reported"},
         "vehicle_solvent": {"value": None, "missingness": "not_applicable"},
         "storage": {"value": "-20C, protected from light", "missingness": "reported"},
+        "storage_temperature": {"value": "-20C", "missingness": "reported"},
+        "randomized": {"value": "yes", "missingness": "reported"},
+        "arms": {"value": "controlled", "missingness": "reported"},
+        "blinding": {"value": "double_blind", "missingness": "reported"},
     },
     "reporting": {
         "research_type": rep(), "strain_or_product_name": rep(), "supplier": rep(), "form": rep(),
@@ -54,7 +58,7 @@ FULL_V07 = {
         "dose": {"status": "not_reported", "location": None, "evidence_quote": None},
         "frequency": {"status": "could_not_check", "check_failure_reason": "parse_failed"},
         "vehicle_solvent": {"status": "not_applicable"},
-        "storage": rep(),
+        "storage_temperature": rep(),
     },
 }
 
@@ -87,13 +91,13 @@ def test_default_is_not_yet_assessed_and_existing_records_stay_valid():
     assert SCHEMA["$defs"]["reporting_status"]["default"] == "not_yet_assessed"
     assert ok("field_reporting", {"status": "not_yet_assessed"})
     old = copy.deepcopy(FULL_V07); del old["reporting"]; old["schema_version"] = "wp1.6.0-draft"
-    for k in ("supplier", "form", "cannabinoids", "vehicle_solvent", "storage", "research_type"):
+    for k in ("supplier", "form", "cannabinoids", "vehicle_solvent", "storage", "storage_temperature", "randomized", "arms", "blinding", "research_type"):
         del old["fields"][k]
     old["fields"]["route"]["value"] = ["inhaled"]
     assert whole(old)
     res = mc.compute(old, "in_vivo", TIERS)
     assert res["universal"]["counts"]["not_yet_assessed"] == 5 and res["universal"]["counts"]["not_reported"] == 0
-    assert res["universal"]["grade"] == "unverified" and res["universal"]["missing"] == [] and res["study_type"]["fraction"] is None
+    assert res["universal"]["grade"] == "not_yet_assessed" and res["universal"]["missing"] == [] and res["study_type"]["fraction"] is None
 
 
 def test_location_only_when_reported():
@@ -137,8 +141,9 @@ def test_tier_rule_is_valid_and_every_field_exists():
     assert [i["key"] for i in iv["required_always"]] == ["cell_line_or_tissue_source", "concentration", "exposure_time"]
     assert [i["key"] for i in iv["secondary"]] == ["species_of_origin", "vehicle_solvent", "replicates"]
     assert TIERS["secondary_cutoff"]["default"] == 0.80 and TIERS["secondary_cutoff"]["overridable"] is True
-    assert {i["key"] for i in TIERS["tiers"]["clinical"]["items"]} == {"dose", "frequency", "duration"}
-    assert {i["key"] for i in TIERS["tiers"]["good_practice"]["items"]} == {"storage"}
+    assert [i["key"] for i in TIERS["tiers"]["clinical"]["required_always"]] == ["number_of_participants", "route", "dose", "frequency", "duration", "participant_age_or_sex", "diagnosis_or_condition", "comparison_group"]
+    assert TIERS["tiers"]["clinical"]["secondary"] == [] and TIERS["tiers"]["clinical"]["applies_to"] == "clinical_rct"
+    assert {i["key"] for i in TIERS["tiers"]["good_practice"]["items"]} == {"storage_temperature", "storage_light", "storage_duration"}
 
 
 def test_completeness_is_computed_per_tier_without_combined_score():
@@ -146,7 +151,7 @@ def test_completeness_is_computed_per_tier_without_combined_score():
     assert set(res) == {"rule_id", "rule_version", "universal", "study_type", "route_requirements", "good_practice"}
     assert res["universal"]["grade"] == "gold"  # location (supplementary) is never a pass condition
     assert res["study_type"]["fraction"] == 0.5 and res["study_type"]["counts"]["could_not_check"] == 1
-    assert res["good_practice"]["fraction"] == 1.0
+    assert res["good_practice"]["recorded_only"] is True and res["good_practice"]["reported"] == ["storage_temperature"]
     assert "completeness" not in SCHEMA["properties"]
 
 
@@ -175,7 +180,7 @@ def test_run_event_field_enum_matches_fields_keys_v07():
 
 
 def test_observational_and_self_reported_are_not_scored_on_any_tier():
-    assert set(TIERS["not_scored_study_types"]) == {"observational", "self_reported"}
+    assert set(TIERS["not_scored_study_types"]) == {"observational", "self_reported", "review", "case_report"}
     for st in ("observational", "self_reported"):
         res = mc.compute(FULL_V07, st, TIERS)
         for tier in ("universal", "study_type", "good_practice"):
@@ -318,3 +323,101 @@ def test_in_vitro_cutoff_boundary_and_override():
     assert _iv({"replicates": NR}, cutoff=0.67)["grade"] == "near_gold"
     s = _iv({"replicates": {"status": "not_applicable"}, "species_of_origin": NR}, cutoff=0.5)
     assert s["secondary_share_worst"] == 0.5 and s["grade"] == "gold"  # not_applicable leaves the denominator
+
+
+CLR = {k: rep() for k in ("number_of_participants", "route", "dose", "frequency", "duration", "participant_age_or_sex", "diagnosis_or_condition", "comparison_group")}
+
+
+def _cl(changes):
+    rec = copy.deepcopy(FULL_V07); rec["reporting"].update(CLR); rec["reporting"].update(changes)
+    assert whole(rec)
+    return mc.compute(rec, "clinical", TIERS)["study_type"]
+
+
+def test_clinical_gold_all_required_no_share():
+    s = _cl({})
+    assert s["grade"] == "gold" and s["secondary_share_worst"] == 1.0
+
+
+def test_clinical_any_required_not_reported_is_near_gold():
+    s = _cl({"comparison_group": NR})
+    assert s["grade"] == "near_gold" and s["missing"] == ["comparison_group"]
+
+
+def test_clinical_required_unchecked_is_unverified():
+    s = _cl({"dose": {"status": "could_not_check", "check_failure_reason": "parse_failed"}})
+    assert s["grade"] == "unverified" and s["not_checked"] == [{"key": "dose", "check_failure_reason": "parse_failed"}]
+
+
+def test_clinical_age_or_sex_single_item_and_open_questions():
+    item = [i for i in TIERS["tiers"]["clinical"]["items"] if i["key"] == "participant_age_or_sex"][0]
+    assert item["satisfied_by"] == "either" and set(item["fields"]) == {"sgba_population_age", "sgba_sex_reported"}
+    assert set(TIERS["resolved"]) >= {"Q1", "Q2"} and "either" in TIERS["resolved"]["Q1"] and "out of scope" in TIERS["resolved"]["Q2"]
+
+
+def test_comparison_group_confidence_and_needs_review():
+    r = dict(rep(), confidence=0.4, needs_review=True)
+    assert ok("field_reporting", r)
+    assert not ok("field_reporting", dict(r, confidence=2))
+    assert _cl({"comparison_group": r})["grade"] == "gold"
+    assert "comparison_group" in SCHEMA["properties"]["fields"]["properties"]
+
+
+def test_clinical_supplier_na_and_observational_still_not_scored():
+    assert _u({"supplier": NR}, study="clinical")["missing"] == []
+    assert mc.compute(FULL_V07, "observational", TIERS)["study_type"]["not_scored"] is True
+
+
+GRADES = ["gold", "near_gold", "unverified", "not_scored", "out_of_scope", "not_yet_assessed"]
+
+
+def test_grade_enum_explicit_never_blank():
+    assert SCHEMA["$defs"]["tier_grade"]["enum"] == GRADES == TIERS["grade_enum"]
+    assert SCHEMA["$defs"]["tier_grade"]["default"] == "not_yet_assessed"
+    for st in ("observational", "self_reported", "review", "case_report"):
+        assert mc.compute(FULL_V07, st, TIERS)["universal"]["grade"] == "not_scored"
+    old = {"reporting": {}, "fields": {}}
+    assert mc.compute(old, "in_vivo", TIERS)["universal"]["grade"] == "not_yet_assessed"
+    for st in ("in_vivo", "in_vitro", "clinical"):
+        res = mc.compute(FULL_V07, st, TIERS)
+        assert res["universal"]["grade"] in GRADES
+
+
+def _rand(v):
+    rec = copy.deepcopy(FULL_V07); rec["reporting"].update(CLR)
+    if v is None:
+        del rec["fields"]["randomized"]
+    else:
+        rec["fields"]["randomized"] = {"value": v, "missingness": "reported" if v != "unknown" else "uncertain"}
+    assert whole(rec)
+    return mc.compute(rec, "clinical", TIERS)
+
+
+def test_randomized_scope_gate():
+    assert _rand("yes")["study_type"]["grade"] == "gold"
+    no = _rand("no")
+    assert all(no[t]["grade"] == "out_of_scope" for t in ("universal", "study_type", "good_practice"))
+    assert "comparison_group" not in json.dumps(no)
+    assert _rand("unknown")["study_type"]["grade"] == "unverified"
+    assert _rand("unknown")["study_type"]["reason"] == "randomized_unknown"
+    assert _rand(None)["study_type"]["grade"] == "not_yet_assessed"
+
+
+def test_arms_and_blinding_recorded_only():
+    f = SCHEMA["properties"]["fields"]["properties"]
+    assert "trial_design" not in f
+    rec = copy.deepcopy(FULL_V07); rec["reporting"].update(CLR)
+    rec["fields"]["arms"] = {"value": "single_arm", "missingness": "reported"}
+    rec["fields"]["blinding"] = {"value": "open_label", "missingness": "reported"}
+    assert whole(rec) and mc.compute(rec, "clinical", TIERS)["study_type"]["grade"] == "gold"
+    rec["fields"]["blinding"]["value"] = "triple_blind"
+    assert not whole(rec)
+
+
+def test_storage_good_practice_never_affects_grade():
+    rec = copy.deepcopy(FULL_V07)
+    for k in ("storage_temperature", "storage_light", "storage_duration"):
+        rec["reporting"][k] = NR
+    a, b = mc.compute(rec, "in_vivo", TIERS), mc.compute(FULL_V07, "in_vivo", TIERS)
+    assert a["universal"] == b["universal"] and a["study_type"] == b["study_type"]
+    assert a["good_practice"]["recorded_only"] is True and "grade" not in a["good_practice"]

@@ -321,12 +321,16 @@ The idea: for this database, a paper's quality is how well it reports the detail
 | `field_reporting.check_failure_reason` | `$defs` | `fetch_failed`, `parse_failed`, `source_not_available`, `budget_cap`, `source_not_fetched`. `source_not_fetched` is a **deliberate scope choice** (e.g. a main-text-only run that skips supplements), distinct from `fetch_failed`, which is an error. Required when status is `could_not_check`; null or absent otherwise. The contract only records the reason. **How each reason is scored is owned by CRN Evaluation's scorer** (Pipeline proposes `fetch_failed` / `parse_failed` count as misses). | technical |
 | `supplier` | `fields` (new) | Company or source the product was procured from. Its own field, separate from strain/product name (**U2, answered**). Not applicable for clinical studies. | pending_biomedical |
 | `vehicle_solvent` | `fields` (new) | Vehicle or solvent used to deliver the product (oil does not dissolve in cell media). | pending_biomedical |
-| `storage` | `fields` (new) | How the product was stored (frozen, milled, protected from light). Good practice, not required. | pending_biomedical |
+| `storage` | `fields` (new) | How the product was stored, free text. Good practice, not required. |
+| `storage_temperature`, `storage_light`, `storage_duration` | `fields` (new) | V4 good-practice storage details, recorded only. |
+| `randomized` / `arms` / `blinding` | `fields` (new) | Clinical design. `randomized` (`yes`/`no`/`unknown`) is the scope gate; `arms` (`single_arm`/`controlled`/`unknown`) and `blinding` (`open_label`/`single_blind`/`double_blind`/`unknown`) are recorded only. |
+| `cell_line_or_tissue_source`, `comparison_group` | `fields` (new) | In vitro source (V2) and clinical comparison arm (V3). |
+| `field_reporting.confidence`, `.needs_review` | `$defs` | Optional extraction confidence and human-review flag on any reporting item. | pending_biomedical |
 | `form` | `fields` (new) | Physical form; vocabulary `product_form` (includes `topical`). | phd_to_confirm |
 | `cannabinoids` | `fields` (new) | List of cannabinoids as reported (not THC/CBD only), each with optional amount/unit/span. Names from vocabulary `cannabinoid` (each value has `full_name` and `synonyms`; THC/CBD `core`, others `candidate`; drug names like dronabinol stay in `product_substance` per MCK-425). A non-empty list needs `missingness: reported` and a `source_span`, same gating as `chemotype_reported`. The existing THC/CBD numeric fields stay. | phd_to_confirm |
 | `route` | `fields` | Unchanged shape. New vocabulary `route` splits oral into `oral_diet` and `oral_gavage` (dose is uncertain when mixed in food). Route stays separate from product (MCK-425). | phd_to_confirm |
 
-### Completeness tiers (`schemas/completeness_rules.json`, rule `crn_reporting_completeness` v0.4.0, pending_biomedical)
+### Completeness tiers (`schemas/completeness_rules.json`, rule `crn_reporting_completeness` v0.7.0, pending_biomedical)
 
 | Tier | Items |
 |---|---|
@@ -334,10 +338,12 @@ The idea: for this database, a paper's quality is how well it reports the detail
 | universal (every study) | strain/product name, supplier (not applicable for clinical), form, major cannabinoids, route (provisional). All must be `reported` for gold. Location is recorded but never a pass condition. |
 | in_vivo | route, dose, frequency |
 | in_vitro (V2, provisional) | required always: cell line or tissue source, concentration, exposure time. Secondary: species of origin, vehicle/solvent, replicates. |
-| clinical | dose, frequency, duration |
-| good_practice | storage (reported separately, never affects pass/fail) |
+| clinical (V3, provisional; RCTs only) | all required, no share: number of participants, route, dose, frequency, duration, participant age or sex (either counts), diagnosis or condition, comparison group (may carry `confidence` + `needs_review`). Scope gate on `randomized`: `yes` → scored; `no` → `out_of_scope`; `unknown` → `unverified` (never guessed). `arms` and `blinding` are recorded only. |
+| good_practice (V4, provisional) | storage temperature, storage light, storage duration. Recorded only; never counts toward gold or any share. |
 
-**Observational / self-reported studies** skip every current tier, including universal (the universal items are product items): the helper returns `not_scored` for all tiers. Only future exposure fields would be scored for them, after the PhD lead signs off.
+**Grades are explicit, never blank:** `gold`, `near_gold`, `unverified`, `not_scored` (reviews, case reports, observational / self-report), `out_of_scope` (non-randomized interventional trials), `not_yet_assessed` (default).
+
+**Observational / self-reported studies, reviews and case reports** skip every current tier, including universal: the helper returns `not_scored` for all tiers. Only future exposure fields would be scored for them, after the PhD lead signs off.
 
 Completeness is **computed** from the statuses (`methods_completeness.compute`), never stored as truth. Output per tier: a universal grade, a study-type fraction (reported / (reported + not_reported); `could_not_check` and `not_yet_assessed` counted separately), and good practice on its own. **There is no combined score.**
 
@@ -365,6 +371,10 @@ Items marked `not_applicable` (status, or supplier on clinical studies) are left
 - **TOP4:** location is never a pass condition anywhere in the universal tier; it is still recorded.
 - **V2 (provisional):** in vitro tier as above.
 - **TOP2 (partial):** requirements depend on study type and route, per the flowchart; open items listed in `completeness_rules.json`.
+- **V3 (provisional):** clinical tier for RCTs only, as above.
+- **Non-randomized interventional trials** (single-arm, open-label non-randomized) are out of scope: no gold rule, no comparison-group check.
+- **Q1:** age or sex, either counts (provisional). **Q2:** resolved by the out-of-scope rule.
+- **V4 (provisional):** storage temperature / light / duration are good practice only.
 - **U2:** supplier is its own field, separate from strain/product name; for clinical studies it is `not_applicable`.
 
 ### Open PhD questions (not decided)

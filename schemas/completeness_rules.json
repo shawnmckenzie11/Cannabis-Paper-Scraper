@@ -1,6 +1,6 @@
 {
   "rule_id": "crn_reporting_completeness",
-  "version": "0.4.0",
+  "version": "0.7.0",
   "status": "pending_biomedical",
   "contract_version": "0.7",
   "note": "Completeness is computed from reporting statuses, never stored. Output per tier: universal gold/near_gold, study-type fraction, good_practice separate. No combined score. Tier membership pending the PhD lead.",
@@ -175,8 +175,23 @@
       ]
     },
     "clinical": {
-      "applies_to": "clinical",
-      "items": [
+      "applies_to": "clinical_rct",
+      "status": "provisional",
+      "answered": "V3 (Shawn 2026-10-31, provisional)",
+      "note": "Gold rule for RCTs only (Shawn 2026-10-31). Non-randomized interventional trials are out_of_scope: no gold rule, no comparison-group check. Observational / self-report / reviews / case reports are not_scored. Supplier stays not_applicable for clinical.",
+      "required_always": [
+        {
+          "key": "number_of_participants",
+          "fields": [
+            "sample_size"
+          ]
+        },
+        {
+          "key": "route",
+          "fields": [
+            "route"
+          ]
+        },
         {
           "key": "dose",
           "fields": [
@@ -203,16 +218,125 @@
             "treatment_duration",
             "duration_days"
           ]
+        },
+        {
+          "key": "participant_age_or_sex",
+          "fields": [
+            "sgba_population_age",
+            "sgba_sex_reported"
+          ],
+          "satisfied_by": "either",
+          "note": "Either age or sex counts (Q1 default confirmed, provisional)."
+        },
+        {
+          "key": "diagnosis_or_condition",
+          "fields": [
+            "disease_or_experimental_model"
+          ]
+        },
+        {
+          "key": "comparison_group",
+          "fields": [
+            "comparison_group"
+          ],
+          "review": "confidence + needs_review on the reporting item"
         }
-      ]
+      ],
+      "secondary": [],
+      "items": [
+        {
+          "key": "number_of_participants",
+          "fields": [
+            "sample_size"
+          ]
+        },
+        {
+          "key": "route",
+          "fields": [
+            "route"
+          ]
+        },
+        {
+          "key": "dose",
+          "fields": [
+            "dose_mg",
+            "dose_thc_mg_kg",
+            "dose_cbd_mg_kg",
+            "dose_thc_mg_g",
+            "dose_cbd_mg_g",
+            "conc_thc_mg_ml",
+            "conc_cbd_mg_ml",
+            "conc_thc_uM",
+            "conc_cbd_uM"
+          ]
+        },
+        {
+          "key": "frequency",
+          "fields": [
+            "administration_frequency"
+          ]
+        },
+        {
+          "key": "duration",
+          "fields": [
+            "treatment_duration",
+            "duration_days"
+          ]
+        },
+        {
+          "key": "participant_age_or_sex",
+          "fields": [
+            "sgba_population_age",
+            "sgba_sex_reported"
+          ],
+          "satisfied_by": "either",
+          "open": "Are both age and sex needed?"
+        },
+        {
+          "key": "diagnosis_or_condition",
+          "fields": [
+            "disease_or_experimental_model"
+          ]
+        },
+        {
+          "key": "comparison_group",
+          "fields": [
+            "comparison_group"
+          ],
+          "review": "confidence + needs_review on the reporting item",
+          "open": "Single-arm trials with no comparison group: not_applicable or not_reported? Default not_reported (provisional)."
+        }
+      ],
+      "scope_gate": {
+        "field": "randomized",
+        "yes": "scored",
+        "no": "out_of_scope",
+        "unknown": "unverified",
+        "absent": "not_yet_assessed",
+        "note": "arms and blinding are recorded only."
+      }
     },
     "good_practice": {
       "applies_to": "all",
+      "answered": "V4 (Shawn 2026-10-31, provisional)",
+      "note": "Recorded only; never counts toward gold or any share.",
       "items": [
         {
-          "key": "storage",
+          "key": "storage_temperature",
           "fields": [
-            "storage"
+            "storage_temperature"
+          ]
+        },
+        {
+          "key": "storage_light",
+          "fields": [
+            "storage_light"
+          ]
+        },
+        {
+          "key": "storage_duration",
+          "fields": [
+            "storage_duration"
           ]
         }
       ]
@@ -232,9 +356,11 @@
   },
   "not_scored_study_types": [
     "observational",
-    "self_reported"
+    "self_reported",
+    "review",
+    "case_report"
   ],
-  "not_scored_note": "Observational / self-reported studies skip every current tier, including universal (universal items are product items). Only future exposure fields would be scored for them, after the PhD lead signs off.",
+  "not_scored_note": "Reviews, case reports, observational and self-reported studies skip every current tier (grade not_scored). Only future exposure fields would be scored for observational/self-report, after the PhD lead signs off.",
   "previously_described_policy": "'As previously described [ref]' is recorded as status not_reported until the PhD lead answers open question TOP1. Keeping the cited reference as provenance is a pending option; no field for it yet. There is no cited_prior_paper location value.",
   "answered": {
     "U1": "Shawn, 2026-10-31: universal = strain/product name, supplier, form, major cannabinoids, all status reported for gold.",
@@ -348,5 +474,18 @@
     "default": 0.8,
     "overridable": true,
     "note": "Shared by every tier with secondary items. Override with compute(..., secondary_cutoff=x)."
+  },
+  "open_questions": [],
+  "grade_enum": [
+    "gold",
+    "near_gold",
+    "unverified",
+    "not_scored",
+    "out_of_scope",
+    "not_yet_assessed"
+  ],
+  "resolved": {
+    "Q1": "Age or sex: either counts (provisional, Shawn 2026-10-31).",
+    "Q2": "Non-randomized interventional trials (incl. single-arm) are out of scope: no gold rule, no comparison-group check (Shawn 2026-10-31)."
   }
 }

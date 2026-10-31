@@ -231,6 +231,143 @@
         "cell_line_or_tissue_source": {
           "$ref": "#/$defs/string_field",
           "description": "v0.7 (V2, provisional): cell line, primary cells or tissue source used in vitro, as reported."
+        },
+        "comparison_group": {
+          "$ref": "#/$defs/string_field",
+          "description": "v0.7 (V3, provisional): control / comparison arm in an interventional clinical trial (placebo, active comparator, usual care), as reported."
+        },
+        "randomized": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "value",
+            "missingness"
+          ],
+          "description": "v0.7 clinical (Shawn 2026-10-31, provisional): scope rule. yes = in scope for clinical gold; no = out_of_scope; unknown = tier unverified (counted separately, never guessed).",
+          "properties": {
+            "value": {
+              "enum": [
+                "yes",
+                "no",
+                "unknown",
+                null
+              ]
+            },
+            "missingness": {
+              "$ref": "#/$defs/missingness"
+            },
+            "confidence": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "minimum": 0,
+              "maximum": 1
+            },
+            "source_span": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "pending_biomedical": {
+              "type": "boolean",
+              "default": true
+            }
+          }
+        },
+        "arms": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "value",
+            "missingness"
+          ],
+          "description": "v0.7 clinical: recorded only, not scored.",
+          "properties": {
+            "value": {
+              "enum": [
+                "single_arm",
+                "controlled",
+                "unknown",
+                null
+              ]
+            },
+            "missingness": {
+              "$ref": "#/$defs/missingness"
+            },
+            "confidence": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "minimum": 0,
+              "maximum": 1
+            },
+            "source_span": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "pending_biomedical": {
+              "type": "boolean",
+              "default": true
+            }
+          }
+        },
+        "blinding": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "value",
+            "missingness"
+          ],
+          "description": "v0.7 clinical: recorded only, not scored.",
+          "properties": {
+            "value": {
+              "enum": [
+                "open_label",
+                "single_blind",
+                "double_blind",
+                "unknown",
+                null
+              ]
+            },
+            "missingness": {
+              "$ref": "#/$defs/missingness"
+            },
+            "confidence": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "minimum": 0,
+              "maximum": 1
+            },
+            "source_span": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "pending_biomedical": {
+              "type": "boolean",
+              "default": true
+            }
+          }
+        },
+        "storage_temperature": {
+          "$ref": "#/$defs/string_field",
+          "description": "v0.7 good practice (V4): storage temperature as reported (e.g. -20C). Never counts toward gold or share."
+        },
+        "storage_light": {
+          "$ref": "#/$defs/string_field",
+          "description": "v0.7 good practice (V4): light protection as reported. Never counts toward gold or share."
+        },
+        "storage_duration": {
+          "$ref": "#/$defs/string_field",
+          "description": "v0.7 good practice (V4): how long the product was stored, as reported. Never counts toward gold or share."
         }
       }
     },
@@ -296,9 +433,6 @@
         "vehicle_solvent": {
           "$ref": "#/$defs/field_reporting"
         },
-        "storage": {
-          "$ref": "#/$defs/field_reporting"
-        },
         "cell_line_or_tissue_source": {
           "$ref": "#/$defs/field_reporting"
         },
@@ -312,6 +446,27 @@
           "$ref": "#/$defs/field_reporting"
         },
         "replicates": {
+          "$ref": "#/$defs/field_reporting"
+        },
+        "number_of_participants": {
+          "$ref": "#/$defs/field_reporting"
+        },
+        "participant_age_or_sex": {
+          "$ref": "#/$defs/field_reporting"
+        },
+        "diagnosis_or_condition": {
+          "$ref": "#/$defs/field_reporting"
+        },
+        "comparison_group": {
+          "$ref": "#/$defs/field_reporting"
+        },
+        "storage_temperature": {
+          "$ref": "#/$defs/field_reporting"
+        },
+        "storage_light": {
+          "$ref": "#/$defs/field_reporting"
+        },
+        "storage_duration": {
           "$ref": "#/$defs/field_reporting"
         }
       }
@@ -2117,10 +2272,13 @@
         "field": {
           "enum": [
             "administration_frequency",
+            "arms",
+            "blinding",
             "cannabinoids",
             "cell_line_or_tissue_source",
             "chemotype_reported",
             "clinical_subtype",
+            "comparison_group",
             "conc_cbd_mg_ml",
             "conc_cbd_uM",
             "conc_thc_mg_ml",
@@ -2144,6 +2302,7 @@
             "product",
             "publication_type",
             "puff_count",
+            "randomized",
             "repeat_exposure_count",
             "replicates_notes",
             "research_type",
@@ -2156,6 +2315,9 @@
             "sgba_sex_reported",
             "species_or_biological_system",
             "storage",
+            "storage_duration",
+            "storage_light",
+            "storage_temperature",
             "strain_normalized",
             "strain_reported",
             "study_type_legacy",
@@ -2557,6 +2719,20 @@
               "type": "null"
             }
           ]
+        },
+        "confidence": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0,
+          "maximum": 1,
+          "description": "Optional extraction confidence for this status."
+        },
+        "needs_review": {
+          "type": "boolean",
+          "default": false,
+          "description": "Optional flag: a human should check this status (e.g. comparison_group)."
         }
       },
       "allOf": [
@@ -2721,6 +2897,19 @@
           }
         }
       ]
+    },
+    "tier_grade": {
+      "type": "string",
+      "enum": [
+        "gold",
+        "near_gold",
+        "unverified",
+        "not_scored",
+        "out_of_scope",
+        "not_yet_assessed"
+      ],
+      "default": "not_yet_assessed",
+      "description": "v0.7 computed tier grade; never blank. not_scored = reviews, case reports, observational / self-report. out_of_scope = non-randomized interventional trials. Computed, never stored as truth."
     }
   },
   "x-contract-version": "0.7",
