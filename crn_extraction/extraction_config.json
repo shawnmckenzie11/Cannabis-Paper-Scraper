@@ -1,7 +1,7 @@
 {
   "config_id": "crn_rule_extractor",
   "version": "0.2.0",
-  "contract_version": "0.7",
+  "contract_version": "0.8",
   "note": "Deterministic regex cues only. Vocabularies (route, cannabinoid, duration_category) are loaded from schemas/normalization_rules.json at runtime and are NOT copied here. Cues were written from the contract text and fake fixtures only; no gold, qrels, grades or legacy_llm_fullpdf values were used. Case-insensitive.",
   "section_location": {"methods": "methods", "abstract": "abstract", "discussion": "discussion", "table": "table", "figure_caption": "figure", "results": "unknown", "introduction": "unknown", "body": "unknown"},
   "section_priority": ["methods", "table", "results", "body", "abstract", "figure_caption", "discussion", "introduction"],

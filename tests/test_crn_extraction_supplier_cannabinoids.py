@@ -81,3 +81,35 @@ def test_honesty_label_is_rule_based_and_in_schema_enum():
     enum = json.loads((ROOT / "schemas/methods.schema.json").read_text())["properties"]["honesty_label"]["enum"]
     rec = run("Rats received THC i.p.")
     assert rec["honesty_label"] == "rule_based" and "rule_based" in enum
+
+
+def test_coordinated_compounds_all_get_supplier():
+    rec = run("CBD and THC were purchased from Fakechem and CBG from Beta. Rats received CBD i.p.")
+    assert rec["fields"]["supplier"]["value"] == "CBD: Fakechem; THC: Fakechem; CBG: Beta"
+
+
+def test_cannabinoid_supplier_preferred_over_earlier_generic_one():
+    rec = run("All chemicals were purchased from Fake Sigma Co. CBD was obtained from Fakechem. Rats received CBD i.p.")
+    assert rec["fields"]["supplier"]["value"] == "Fakechem"
+
+
+@pytest.mark.parametrize("text,amount", [
+    ("Rats received Morphine 10 mg/kg THC i.p.", None),  # morphine claims the dose
+    ("Rats received 10 mg/kg THC i.p.", 10.0),
+    ("Rats received THC 10 mg/kg i.p.", 10.0),
+])
+def test_amount_belongs_to_name_written_before_it(text, amount):
+    e = run(text)["fields"]["cannabinoids"]["value"][0]
+    assert e["name"] == "thc"
+    assert e.get("amount") == amount
+    if amount is not None:
+        assert e["unit"] == "mg/kg"
+
+
+@pytest.mark.parametrize("unit", ["and x ", "CBD, "])
+def test_long_sentence_is_linear_time(unit):
+    import time
+    text = "Rats received " + unit * (100000 // len(unit)) + "THC was purchased from Fakechem."
+    t0 = time.perf_counter()
+    run(text)
+    assert time.perf_counter() - t0 < 2.0

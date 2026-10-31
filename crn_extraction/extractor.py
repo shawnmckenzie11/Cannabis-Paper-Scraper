@@ -18,7 +18,7 @@ RULES_PATH = ROOT / "schemas/completeness_rules.json"
 
 EXTRACTOR_ID = "crn_rule_extractor"
 SCHEMA_VERSION = "wp1.8.0-draft"
-CONTRACT_VERSION = "0.7"
+CONTRACT_VERSION = "0.8"
 # Paper-level failures -> every assessed item is could_not_check with this contract reason.
 PAPER_FAILURES = ("fetch_failed", "parse_failed", "source_not_available", "budget_cap")
 _F = re.I
@@ -261,57 +261,93 @@ def _cannabinoid_patterns(vocab):
     return out
 
 
-def _adjacent_amount(s, m, cfg):
+_UNIT = r"(mg/kg|mg/g|mg/ml|mg/mL|µM|μM|uM|nM|mg|%)"
+_AMT_WINDOW = 40  # chars looked at on each side of a mention (keeps matching linear in sentence length)
+_MAX_SENT = 5000  # longer 'sentences' (tables / broken PDF text) are only read up to this length
+_AFTER_RX = re.compile(r"\s*[(,]?\s*(?:at\s+)?(\d+(?:\.\d+)?)\s*" + _UNIT + r"(?![\w/])(?!\s*(?:-|–|to)\s*\d)")
+_BEFORE_RX = re.compile(r"(?<![\d.\-–])(\d+(?:\.\d+)?)\s*" + _UNIT + r"\s*(?:of\s+)?$")
+# A name written directly before an amount owns it ('Morphine 10 mg/kg THC' -> morphine's dose).
+_DRUGLIKE = re.compile(r"(?:[A-Z][\w\-]*|[a-z][\w\-]*(?:ine|ol|am|ide|one|ate|azole|pine|done|fen|nil|cin))", 0)
+_PREV_WORD = re.compile(r"([^\s(),;:]+)[\s(,]*$")
+
+
+def _adjacent_amount(s, m, cfg, cann_rx=()):
     """(amount, unit) written directly after ('CBD (10 mg/kg)', 'THC, 5 mg') or before
-    ('5.9% THC', '10 mg/kg CBD') a cannabinoid mention; ranges are not collapsed to one number."""
-    unit = r"(mg/kg|mg/g|mg/ml|mg/mL|µM|μM|uM|nM|mg|%)"
-    after = re.match(r"\s*[(,]?\s*(?:at\s+)?(\d+(?:\.\d+)?)\s*" + unit + r"(?![\w/])(?!\s*(?:-|–|to)\s*\d)", s[m.end():])
+    ('5.9% THC', '10 mg/kg CBD') a cannabinoid mention; ranges are not collapsed to one number.
+    An amount before the mention is used only when no drug/compound name directly precedes it
+    (that name claims it). Only a small window around the mention is searched."""
+    after = _AFTER_RX.match(s, m.end(), min(len(s), m.end() + _AMT_WINDOW))
     if after:
         return float(after.group(1)), after.group(2)
-    before = re.search(r"(?<![\d.\-–])(\d+(?:\.\d+)?)\s*" + unit + r"\s*(?:of\s+)?$", s[:m.start()])
+    lo = max(0, m.start() - _AMT_WINDOW)
+    win = s[lo:m.start()]
+    before = _BEFORE_RX.search(win)
     if before:
+        prev = _PREV_WORD.search(s[max(0, lo + before.start() - _AMT_WINDOW):lo + before.start()])
+        if prev:
+            w = prev.group(1)
+            first_word = s[:lo + before.start()].strip() == w
+            if any(rx.fullmatch(w) for _, rx in cann_rx) or (_DRUGLIKE.fullmatch(w) and not
+                    (first_word and not re.search(r"(?:ine|ol|am|ide|one|ate|azole|pine|done|fen|nil|cin)$", w, re.I))):
+                return None
         return float(before.group(1)), before.group(2)
     return None
 
 
+_VERB = r"(?:obtained|purchased|provided|supplied|donated|procured|sourced)"
+_FROM_RX = re.compile(r"\b(?:" + _VERB + r"\s+(?:by|from)|from)\s+(?:the\s+)?([^,.;()]{1,120}?)(?=\s+(?:and|while|whereas)\s|[,.;()]|$)", re.I)
+_VERB_RX = re.compile(r"\b" + _VERB + r"\s+(?:by|from)\s", re.I)
+_CONJ_RX = re.compile(r"^\s*(?:and|while|whereas)\s", re.I)
+_SEG_MAX = 200
+
+
 def _supplier(p, cfg, cann_rx):
-    """Supplier of the test material: first sentence whose obtained/purchased-from clause is about
-    a cannabinoid (normalization vocabulary) or a drug/test compound. Each compound is linked to the
-    supplier in its own clause ('CBD was purchased from A and THC from B'). Clauses about animals,
-    colonies or animal vendors never count. Returns (section, sentence, [(compounds, supplier)])."""
+    """Supplier of the test material. Each 'from X' / 'obtained by X' clause is linked to the
+    compounds written in the stretch of text just before it (back to the previous clause, at most
+    _SEG_MAX chars), so 'CBD and THC were purchased from A and CBG from B' links CBD and THC to A
+    and CBG to B. A bare 'from' counts only as a continuation ('and CBG from B'). Clauses about
+    animals, colonies or animal vendors never count. A sentence with a cannabinoid-specific clause
+    is preferred over an earlier generic one ('All chemicals ... from Sigma').
+    Returns (section, sentence, [(compounds, supplier)])."""
     sc = cfg["supplier"]
-    clause = re.compile(sc["clause"], _F)
     animal = re.compile(sc["animal_source"], _F)
     compound = re.compile(sc["test_compound"], _F)
+    generic = None
     for sec, s in p.sents:
-        links, pos = [], 0
-        for m in clause.finditer(s):
-            if m.group(1) is not None:
-                seg, name = s[pos:m.start()], m.group(1)
-            else:
-                seg, name = m.group(2), m.group(3)
+        s_ = s[:_MAX_SENT]
+        links, pos, specific = [], 0, False
+        for m in _FROM_RX.finditer(s_):
+            seg = s_[max(pos, m.start() - _SEG_MAX):m.end()]
+            pre = s_[max(pos, m.start() - _SEG_MAX):m.start()]
             pos = m.end()
-            name = name.strip()
-            if not name or animal.search(seg) or animal.search(name):
+            if not _VERB_RX.search(seg) and not (links and _CONJ_RX.search(pre)):
                 continue
-            found = [mm.group(1) for _, rx in cann_rx for mm in [rx.search(seg)] if mm]
-            if not found:
-                g = compound.search(seg)
+            name = m.group(1).strip()
+            if not name or animal.search(pre) or animal.search(name):
+                continue
+            found = [mm.group(1) for _, rx in cann_rx for mm in [rx.search(pre)] if mm]
+            found.sort(key=lambda c: pre.find(c))
+            if found:
+                specific = True
+            else:
+                g = compound.search(pre)
                 if not g:
                     continue
                 found = [g.group(1)]
             links.append((found, name))
         if links:
-            return sec, s, links
-    return None
+            if specific:
+                return sec, s, links
+            generic = generic or (sec, s, links)
+    return generic
 
 
 def _supplier_value(links):
-    """One supplier -> its name. Several -> 'CBD: A; THC: B' (fields.supplier is a string_field)."""
+    """One supplier -> its name. Several -> 'CBD: A; THC: A; CBG: B' (one pair per compound) (fields.supplier is a string_field)."""
     names = list(dict.fromkeys(n for _, n in links))
     if len(names) == 1:
         return names[0]
-    return "; ".join(", ".join(c) + ": " + n for c, n in links)
+    return "; ".join(c + ": " + n for cs, n in links for c in cs)
 
 
 def extract(paper, cfg=None):
@@ -393,12 +429,12 @@ def extract(paper, cfg=None):
     cann = []
     first_hit = None
     for value, rx in cann_rx:
-        hits = [(sec, s, m) for sec, s in p.sents for m in rx.finditer(s)]
+        hits = [(sec, s, m) for sec, s in p.sents for m in rx.finditer(s, 0, _MAX_SENT)]
         if hits:
             first_hit = first_hit or hits[0]
             entry = {"name": value, "source_span": hits[0][1][:300]}
             for sec, s, m in hits:  # amount + unit only when written right next to the name
-                amt = _adjacent_amount(s, m, cfg)
+                amt = _adjacent_amount(s, m, cfg, cann_rx)
                 if amt:
                     entry.update(amount=amt[0], unit=amt[1], source_span=s[:300])
                     break
