@@ -242,6 +242,78 @@ def _simple(p, cfg, key, pattern, field=None, fields=None, group=0, sections=Non
     return _reported(p, hit)
 
 
+_HYPHENS = "\\-\u2010\u2011\u2012\u2013\u2212"
+
+
+def _cannabinoid_patterns(vocab):
+    """One regex per locked vocabulary value (synonyms + full_name from normalization_rules.json).
+    PDF/XML text often uses Unicode hyphens (U+2010/2011/2013/2212) and a space after the delta
+    sign, so a hyphen in a synonym matches any of those and 'Δ9' also matches 'Δ 9'."""
+    out = []
+    for value, syns in vocab["cannabinoid"]:
+        alts = []
+        for syn in sorted(set(syns), key=len, reverse=True):
+            e = re.escape(syn).replace("\\-", "[" + _HYPHENS + "]")
+            e = re.sub(r"(Δ|delta|D)(\d)", r"\1\\s?\2", e)
+            alts.append(e)
+        rx = re.compile(r"(?<![\w" + _HYPHENS + r"])(" + "|".join(alts) + r")(?![\w" + _HYPHENS + r"])", _F)
+        out.append((value, rx))
+    return out
+
+
+def _adjacent_amount(s, m, cfg):
+    """(amount, unit) written directly after ('CBD (10 mg/kg)', 'THC, 5 mg') or before
+    ('5.9% THC', '10 mg/kg CBD') a cannabinoid mention; ranges are not collapsed to one number."""
+    unit = r"(mg/kg|mg/g|mg/ml|mg/mL|µM|μM|uM|nM|mg|%)"
+    after = re.match(r"\s*[(,]?\s*(?:at\s+)?(\d+(?:\.\d+)?)\s*" + unit + r"(?![\w/])(?!\s*(?:-|–|to)\s*\d)", s[m.end():])
+    if after:
+        return float(after.group(1)), after.group(2)
+    before = re.search(r"(?<![\d.\-–])(\d+(?:\.\d+)?)\s*" + unit + r"\s*(?:of\s+)?$", s[:m.start()])
+    if before:
+        return float(before.group(1)), before.group(2)
+    return None
+
+
+def _supplier(p, cfg, cann_rx):
+    """Supplier of the test material: first sentence whose obtained/purchased-from clause is about
+    a cannabinoid (normalization vocabulary) or a drug/test compound. Each compound is linked to the
+    supplier in its own clause ('CBD was purchased from A and THC from B'). Clauses about animals,
+    colonies or animal vendors never count. Returns (section, sentence, [(compounds, supplier)])."""
+    sc = cfg["supplier"]
+    clause = re.compile(sc["clause"], _F)
+    animal = re.compile(sc["animal_source"], _F)
+    compound = re.compile(sc["test_compound"], _F)
+    for sec, s in p.sents:
+        links, pos = [], 0
+        for m in clause.finditer(s):
+            if m.group(1) is not None:
+                seg, name = s[pos:m.start()], m.group(1)
+            else:
+                seg, name = m.group(2), m.group(3)
+            pos = m.end()
+            name = name.strip()
+            if not name or animal.search(seg) or animal.search(name):
+                continue
+            found = [mm.group(1) for _, rx in cann_rx for mm in [rx.search(seg)] if mm]
+            if not found:
+                g = compound.search(seg)
+                if not g:
+                    continue
+                found = [g.group(1)]
+            links.append((found, name))
+        if links:
+            return sec, s, links
+    return None
+
+
+def _supplier_value(links):
+    """One supplier -> its name. Several -> 'CBD: A; THC: B' (fields.supplier is a string_field)."""
+    names = list(dict.fromkeys(n for _, n in links))
+    if len(names) == 1:
+        return names[0]
+    return "; ".join(", ".join(c) + ": " + n for c, n in links)
+
+
 def extract(paper, cfg=None):
     """paper: {paper_id:int, pmid:str, source_tier, sections:[{type,text}], mesh:[D-ids],
     status: ok|fetch_failed|parse_failed|source_not_available|budget_cap}.
@@ -257,7 +329,7 @@ def extract(paper, cfg=None):
             "human_override": False, "reviewed_at": None}
     rec = {"schema_version": SCHEMA_VERSION, "paper_id": int(paper["paper_id"]),
            "record_id": paper.get("record_id") or f"rec-{EXTRACTOR_ID}-{paper['pmid']}",
-           "provenance": prov, "honesty_label": "ai_assisted", "fields": {}, "reporting": {}}
+           "provenance": prov, "honesty_label": "rule_based", "fields": {}, "reporting": {}}
     mesh = [d for d in paper.get("mesh") or [] if re.fullmatch(r"D[0-9]{6,9}", d)]
     if mesh:
         rec["mesh_from_pubmed"] = mesh  # cross-check only; never copied into reporting.conditions (A11)
@@ -273,6 +345,7 @@ def extract(paper, cfg=None):
     if excl:  # Q7: not original research -> no record
         return {"record": None, "excluded": excl, "study_type": None}
     F, R = rec["fields"], rec["reporting"]
+    cann_rx = _cannabinoid_patterns(vocab)
     if rt:
         F["research_type"] = _sf(rt, ev[1])
         R["research_type"] = _reported(p, ev)
@@ -295,15 +368,17 @@ def extract(paper, cfg=None):
     if rt == "clinical":
         R["supplier"] = {"status": "not_applicable"}
     else:
-        hit = p.first(cfg["supplier"]["cue"])
+        hit = _supplier(p, cfg, cann_rx)
         if hit:
-            name = hit[2].group(1).strip()
-            if re.match(cfg["supplier"]["government_unnamed"], name, _F):  # P2
-                F["supplier_program_verbatim"] = _sf(name, hit[1])
-                R["supplier"] = _missing(p, "supplier", "government_program_unnamed", hit[1])
+            sec, s, links = hit
+            gov = re.compile(cfg["supplier"]["government_unnamed"], _F)
+            named = [(c, n) for c, n in links if not gov.match(n)]
+            if not named:  # P2
+                F["supplier_program_verbatim"] = _sf(links[0][1], s)
+                R["supplier"] = _missing(p, "supplier", "government_program_unnamed", s)
             else:
-                F["supplier"] = _sf(name, hit[1])
-                R["supplier"] = _reported(p, hit)
+                F["supplier"] = _sf(_supplier_value(named), s)
+                R["supplier"] = _reported(p, (sec, s))
         else:
             R["supplier"] = _missing(p, "supplier")
 
@@ -317,12 +392,17 @@ def extract(paper, cfg=None):
 
     cann = []
     first_hit = None
-    for value, syns in vocab["cannabinoid"]:
-        pat = r"(?<![\w-])(" + "|".join(re.escape(s) for s in sorted(syns, key=len, reverse=True)) + r")(?![\w-])"
-        hit = p.first(pat)
-        if hit:
-            first_hit = first_hit or hit
-            cann.append({"name": hit[2].group(1), "source_span": hit[1][:300]})
+    for value, rx in cann_rx:
+        hits = [(sec, s, m) for sec, s in p.sents for m in rx.finditer(s)]
+        if hits:
+            first_hit = first_hit or hits[0]
+            entry = {"name": value, "source_span": hits[0][1][:300]}
+            for sec, s, m in hits:  # amount + unit only when written right next to the name
+                amt = _adjacent_amount(s, m, cfg)
+                if amt:
+                    entry.update(amount=amt[0], unit=amt[1], source_span=s[:300])
+                    break
+            cann.append(entry)
     if cann:
         F["cannabinoids"] = {"value": cann, "missingness": "reported", "source_span": first_hit[1][:500], "pending_biomedical": True}
         R["major_cannabinoids"] = _reported(p, first_hit)
