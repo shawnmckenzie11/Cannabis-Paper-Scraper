@@ -152,21 +152,33 @@ def test_pmids_allowlist_only(tmp_path, monkeypatch):
         benchmark.read_pmids(leg)
 
 
-def test_pmids_allowlist_uses_realpath(tmp_path, monkeypatch):
+def test_pmids_allowlist_symlinks_refused_dotdot_ok(tmp_path, monkeypatch):
     real = tmp_path / "eval" / "dev_pmids.txt"
     real.parent.mkdir()
     real.write_text("900000001\n")
     monkeypatch.setattr(benchmark, "ALLOWED_PMID_FILES", (real,))
     assert benchmark.read_pmids(tmp_path / "eval" / ".." / "eval" / "dev_pmids.txt") == ["900000001"]
-    alias = tmp_path / "alias.txt"
+    alias = tmp_path / "alias.txt"  # symlink to an allowlisted file: not on the allowlist itself
     alias.symlink_to(real)
-    assert benchmark.read_pmids(alias) == ["900000001"]  # same file once resolved
-    other = tmp_path / "other.txt"
-    other.write_text("900000009\n")
-    sneaky = tmp_path / "eval" / "sneaky_dev_pmids.txt"
-    sneaky.symlink_to(other)
     with pytest.raises(benchmark.Refused):
-        benchmark.read_pmids(sneaky)
+        benchmark.read_pmids(alias)
+
+
+def test_allowlisted_entry_that_is_a_symlink_is_refused(tmp_path, monkeypatch):
+    elsewhere = tmp_path / "elsewhere.txt"
+    elsewhere.write_text("900000009\n")
+    dev = tmp_path / "dev_pmids.txt"
+    dev.symlink_to(elsewhere)
+    monkeypatch.setattr(benchmark, "ALLOWED_PMID_FILES", (dev,))
+    with pytest.raises(benchmark.Refused):
+        benchmark.read_pmids(dev)
+    with pytest.raises(benchmark.Refused):  # O_NOFOLLOW backstop even if the check is bypassed
+        benchmark._read_nofollow(dev)
+    d = tmp_path / "dir_pmids.txt"
+    d.mkdir()
+    monkeypatch.setattr(benchmark, "ALLOWED_PMID_FILES", (d,))
+    with pytest.raises(benchmark.Refused):
+        benchmark.read_pmids(d)
 
 
 def test_pending_when_dev_file_missing(tmp_path, monkeypatch, capsys):

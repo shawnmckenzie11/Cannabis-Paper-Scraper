@@ -15,6 +15,7 @@ import json
 import os
 import pathlib
 import re
+import stat
 import subprocess
 import sys
 
@@ -36,9 +37,14 @@ def _resolved(path):
 
 
 def guard_pmids_path(path):
-    p = pathlib.Path(os.path.realpath(_resolved(path)))  # resolves symlinks and '..'
-    if p not in {pathlib.Path(os.path.realpath(_resolved(a))) for a in ALLOWED_PMID_FILES}:
+    """Lexically resolve '..' (no symlink following), then require an exact allowlist match.
+    Allowlist entries are never realpath'd; any symlink as the final component is refused."""
+    p = pathlib.Path(os.path.abspath(os.path.expanduser(str(path))))
+    allowed = {pathlib.Path(os.path.abspath(str(a))) for a in ALLOWED_PMID_FILES}
+    if p not in allowed:
         raise Refused(f"refused PMID input (allowlist: {', '.join(map(str, ALLOWED_PMID_FILES))}): {path}")
+    if os.path.islink(p):
+        raise Refused(f"refused PMID input: {path} is a symlink")
     return p
 
 
@@ -50,12 +56,29 @@ def guard_out_path(path):
     return p
 
 
+def _read_nofollow(path):
+    """Open once without following a final symlink, then fstat/read that fd (limits TOCTOU)."""
+    flags = os.O_RDONLY | getattr(os, "O_NOFOLLOW", 0) | getattr(os, "O_CLOEXEC", 0)
+    try:
+        fd = os.open(path, flags)
+    except FileNotFoundError:
+        return None
+    except OSError as e:  # ELOOP: final component is a symlink (raced in after the check)
+        raise Refused(f"refused PMID input: cannot open without following links ({type(e).__name__})") from None
+    if not stat.S_ISREG(os.fstat(fd).st_mode):
+        os.close(fd)
+        raise Refused(f"refused PMID input: {path} is not a regular file")
+    with os.fdopen(fd, "rb") as fh:
+        return fh.read().decode("utf-8")
+
+
 def read_pmids(path=DEV_PMIDS):
     path = guard_pmids_path(path)
-    if not path.exists():
+    text = _read_nofollow(path)
+    if text is None:
         return None
     out = []
-    for line in path.read_text().splitlines():
+    for line in text.splitlines():
         t = line.strip()
         if t and not t.startswith("#"):
             if not t.isdigit():
