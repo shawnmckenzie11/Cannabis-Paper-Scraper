@@ -844,6 +844,11 @@ def test_default3_any_one_flowchart_field_counts():
     # unchecked (Pipeline reason code) -> not a miss, unverified
     unk = _route_rec(reporting={f: dict(status="could_not_check", location=None, check_failure_reason="figure_not_read") for f in exp}, cannabinoids=NOCANN)
     assert mc.route_fields_status(unk, "in_vivo", TIERS)["status"] == "could_not_check"
+    ou = mc.compute(unk, "in_vivo", TIERS)
+    assert ou["universal"]["grade"] == "unverified"
+    # Pipeline's check_failure_reason propagates through route_fields (not dropped)
+    assert mc.route_fields_status(unk, "in_vivo", TIERS)["check_failure_reason"] == "figure_not_read"
+    assert {"key": "route_fields", "check_failure_reason": "figure_not_read"} in ou["universal"]["not_checked"]
 
 
 def test_default6_any_measured_cannabinoid_every_route():
@@ -874,3 +879,15 @@ def test_default8_any_measured_cannabinoid_is_major():
     cited = dict(NR, not_reported_reason="cited_elsewhere")
     out = mc.compute(_route_rec(reporting={"major_cannabinoids": cited}, cannabinoids=meas), "in_vivo", TIERS)
     assert "major_cannabinoids" in out["universal"]["missing"]
+
+
+@pytest.mark.parametrize("why", ["missing_units", "cited_elsewhere"])
+def test_default6_does_not_override_explicit_reason(why):
+    meas = {"value": [{"name": "CBG", "amount": 2.0, "unit": "mg/kg", "source_span": "2 mg/kg CBG"}], "missingness": "reported", "source_span": "2 mg/kg CBG"}
+    exp = mc.route_requirements(_route_rec(), "in_vivo", TIERS)["expected_fields"]
+    rec = _route_rec(reporting={f: dict(NR, not_reported_reason=why) for f in exp}, cannabinoids=meas)
+    assert mc.route_fields_status(rec, "in_vivo", TIERS)["status"] == "not_reported"
+    out = mc.compute(rec, "in_vivo", TIERS)
+    assert out["universal"]["grade"] != "gold"
+    assert "route_fields" in out["universal"]["missing"]
+    assert not any(d.get("default") == 6 for d in out["defaults_applied"])

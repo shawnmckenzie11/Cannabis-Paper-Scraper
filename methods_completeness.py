@@ -111,6 +111,13 @@ def _apply_tier_defaults(rep, record, rule):
     return rep, applied, measured
 
 
+def _reason(rep, fields, f):
+    """Pipeline's not_reported_reason for one flowchart field (reporting item first, then fields)."""
+    if f in rep:
+        return (rep.get(f) or {}).get("not_reported_reason")
+    return ((fields or {}).get(f) or {}).get("not_reported_reason")
+
+
 def route_fields_status(record, study_type, rule, rep=None, measured=None):
     """Defaults 3 + 6: a route group is reported if ANY one of its flowchart fields is reported,
     or (for groups with cannabinoid fields) any measured cannabinoid, for every route.
@@ -125,10 +132,16 @@ def route_fields_status(record, study_type, rule, rep=None, measured=None):
     hit = [f for f, st in sts.items() if st == "reported"]
     if hit:
         return {"status": "reported", "satisfied_by": hit[0], "default": 3}
-    if measured and any(m in f for f in sts for m in CANNABINOID_FIELD_MARKERS):
+    # Same guard as default 8: never applied over an explicit not_reported_reason other than absent
+    # (e.g. missing_units, cited_elsewhere) on any field in the group.
+    explicit = any(_reason(rep, fields, f) not in (None, "absent") for f in sts)
+    if measured and not explicit and any(m in f for f in sts for m in CANNABINOID_FIELD_MARKERS):
         return {"status": "reported", "satisfied_by": "fields.cannabinoids", "default": 6}
     if any(st == "could_not_check" for st in sts.values()):
-        return {"status": "could_not_check", "satisfied_by": None}
+        why = next((r for f, st in sts.items() if st == "could_not_check"
+                    for r in [((rep.get(f) or {}).get("check_failure_reason")
+                               or ((fields.get(f) or {}).get("check_failure_reason")))] if r), None)
+        return {"status": "could_not_check", "satisfied_by": None, "check_failure_reason": why}
     if all(st == "not_yet_assessed" for st in sts.values()):
         return {"status": "not_yet_assessed", "satisfied_by": None}
     return {"status": "not_reported", "satisfied_by": None}
@@ -191,7 +204,7 @@ def compute(record, study_type, rule=None, secondary_cutoff=None, reference_link
     if rfs and rfs["status"] == "not_reported":
         lists["missing"].append("route_fields")
     elif rfs and rfs["status"] == "could_not_check":
-        lists["not_checked"].append({"key": "route_fields", "check_failure_reason": None})
+        lists["not_checked"].append({"key": "route_fields", "check_failure_reason": rfs.get("check_failure_reason")})
     if uc["not_yet_assessed"] == len(uitems):
         grade = "not_yet_assessed"
     elif lists["missing"]:
