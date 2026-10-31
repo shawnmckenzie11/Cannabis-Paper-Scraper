@@ -112,15 +112,33 @@ def _species_match_clause(dialect: DialectSQL, species_key: str) -> Tuple[str, L
     return "(" + " OR ".join(parts) + ")", params
 
 
+TOPIC_GATE_SQL = "(papers.topic_match IS NULL OR papers.topic_match > 0)"
+
+
+def topic_gate_clause(topic_match_column_exists: bool) -> str:
+    """SQL mirror of methods_completeness.topic_gate: hide only topic_gate_pass == False.
+
+    topic_match NULL -> topic_gate_pass None (kept); > 0 -> True (kept); 0 -> False (hidden).
+    Without a topic_match column every paper is unassessed (None), so nothing is hidden.
+    Always on: search, count and CSV export all go through build_filter_clauses.
+    """
+    return TOPIC_GATE_SQL if topic_match_column_exists else ""
+
+
 def build_filter_clauses(
     filters: Dict[str, Any],
     *,
     dialect: DialectSQL,
     tab_columns_exist: bool,
+    topic_match_column_exists: bool = False,
 ) -> Tuple[List[str], List[Any]]:
     """Return (WHERE fragments, positional binds) for catalog search/count."""
     where_clauses: List[str] = []
     params: List[Any] = []
+
+    topic_clause = topic_gate_clause(topic_match_column_exists)
+    if topic_clause:
+        where_clauses.append(topic_clause)
 
     query_val = filters.get("query")
     if query_val:

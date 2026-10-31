@@ -4525,6 +4525,11 @@
                             </div>
                         </div>
 
+                        <div class="drawer-info-card" id="card-methods" style="display: none;">
+                            <div class="drawer-card-title" id="label-methods">Methods record</div>
+                            <div id="drawer-methods-container" aria-labelledby="label-methods"></div>
+                        </div>
+
                         <div class="drawer-info-card" id="card-classification">
                             <div class="drawer-card-title">Classification</div>
                             <div class="properties-row-grid compact-meta-grid">
@@ -6381,6 +6386,11 @@
                     openDrawer(p);
                 });
                 titleTd.appendChild(titleBtn);
+                if (p.tier_badge) {
+                    const tierWrap = document.createElement("span");
+                    tierWrap.innerHTML = " " + renderTierBadgeHtml(p.tier_badge);
+                    titleTd.appendChild(tierWrap);
+                }
                 const recentRange = document.getElementById("filter-recent-range").value;
                 if (recentRange && p.newly_harvested) {
                     const newBadge = document.createElement("span");
@@ -6918,6 +6928,7 @@
                 outcomesContainer.appendChild(tag);
             });
             if (outcomes.length === 0) outcomesContainer.innerHTML = `<span style="color: var(--text-secondary)">None</span>`;
+            renderMethodsCard(paper);
 
 
 
@@ -7538,8 +7549,53 @@
             return collectPdfReviewSelections().selections;
         }
 
+        // Methods contract (#117) rendering. Read-only: tiers come from the server's computed values,
+        // never from the browser. Unknown tier / value_source strings render as plain escaped text.
+        const METHODS_TIER_LABELS = {
+            gold: "Gold", near_gold: "Near gold", unverified: "Unverified", not_scored: "Not scored",
+            out_of_scope: "Out of scope", not_yet_assessed: "Not yet assessed"
+        };
+        const METHODS_VALUE_SOURCE_LABELS = {
+            paper: "From the paper", signed_off: "Signed-off reference value",
+            legacy_llm_fullpdf: "Earlier AI classification, not reviewed", expert: "Expert-entered"
+        };
+        function renderTierBadgeHtml(badge) {
+            if (!badge) return "";
+            const label = badge.label ?? METHODS_TIER_LABELS[badge.tier] ?? badge.tier ?? "";
+            const title = `Rule ${badge.rule_version ?? ""}, cutoff ${badge.cutoff ?? ""}`;
+            return `<span class="badge tier-badge" data-tier="${escapeHtml(badge.tier ?? "")}" title="${escapeHtml(title)}">${escapeHtml(label)}</span>` +
+                ` <span class="meta-label">${escapeHtml(title)}</span>`;
+        }
+        function renderMethodsDetailHtml(d) {
+            if (!d) return "";
+            const parts = [];
+            if (d.badge) parts.push(`<div class="meta-item"><span class="meta-label">Reporting tier</span><span class="meta-value">${renderTierBadgeHtml(d.badge)}</span></div>`);
+            if (d.duration_category) parts.push(`<div class="meta-item"><span class="meta-label">Duration category</span><span class="meta-value">${escapeHtml(d.duration_category ?? "")}</span></div>`);
+            const conds = (d.conditions || []).map(c => escapeHtml(c.label ?? c.condition_key ?? "")).join(", ");
+            if (conds) parts.push(`<div class="meta-item"><span class="meta-label">Conditions</span><span class="meta-value">${conds}</span></div>`);
+            const doms = (d.outcome_domains || []).map(o => escapeHtml(o.domain ?? "") + (o.is_primary ? " (primary)" : "")).join(", ");
+            if (doms) parts.push(`<div class="meta-item"><span class="meta-label">Outcome domains</span><span class="meta-value">${doms}</span></div>`);
+            if (d.experimental_model_verbatim) parts.push(`<div class="meta-item"><span class="meta-label">Experimental model (as written)</span><span class="meta-value">${escapeHtml(d.experimental_model_verbatim ?? "")}</span></div>`);
+            if (d.comparator) {
+                const c = d.comparator;
+                parts.push(`<div class="meta-item"><span class="meta-label">Comparator</span><span class="meta-value">${escapeHtml(c.value ?? "")} <em>${escapeHtml(c.label ?? "Extracted, not yet validated")}</em>${c.extraction_confidence ? " (confidence: " + escapeHtml(c.extraction_confidence ?? "") + ")" : ""}</span></div>`);
+            }
+            const rows = (d.fields || []).map(f =>
+                `<li><span>${escapeHtml(f.key ?? "")}</span>: <span>${escapeHtml(f.value_source_label ?? METHODS_VALUE_SOURCE_LABELS[f.value_source] ?? f.value_source ?? "")}</span></li>`).join("");
+            if (rows) parts.push(`<div class="meta-item"><span class="meta-label" id="label-value-sources">Value sources</span><ul aria-labelledby="label-value-sources">${rows}</ul></div>`);
+            return parts.join("");
+        }
+        function renderMethodsCard(paper) {
+            const card = document.getElementById("card-methods");
+            const box = document.getElementById("drawer-methods-container");
+            if (!card || !box) return;
+            const html = renderMethodsDetailHtml(paper && paper.methods_detail);
+            box.innerHTML = html;
+            card.style.display = html ? "flex" : "none";
+        }
+
         function escapeHtml(text) {
-            return String(text || "")
+            return String(text ?? "")
                 .replace(/&/g, "&amp;")
                 .replace(/</g, "&lt;")
                 .replace(/>/g, "&gt;")

@@ -140,7 +140,20 @@ class PapersRepository:
             filters,
             dialect=self.dialect,
             tab_columns_exist=self.tab_columns_exist(),
+            topic_match_column_exists=self.topic_match_column_exists(),
         )
+
+    def topic_match_column_exists(self) -> bool:
+        """True when papers carries a topic_match column (methods contract topic gate input)."""
+        cached = getattr(self, "_topic_match_cache", None)
+        if cached is not None:
+            return cached
+        try:
+            columns = {col["name"] for col in inspect(self.engine).get_columns("papers")}
+        except Exception:
+            return False
+        self._topic_match_cache = "topic_match" in columns
+        return self._topic_match_cache
 
     def get_paper(self, paper_id: int) -> Optional[Dict[str, Any]]:
         """Return one paper by primary key, or None."""

@@ -1585,6 +1585,11 @@ def api_get_paper(paper_id):
     paper = db.get_paper(paper_id)
     if not paper:
         return jsonify({"error": "Paper not found."}), 404
+    import methods_view
+    record = methods_view.load_methods_record(paper)
+    if record is not None:
+        # Badge omitted: compute() needs a study type the API does not expose yet (contract gap).
+        paper["methods_detail"] = methods_view.detail_view(record)
     return jsonify({"paper": paper})
 
 @app.route("/api/papers/delete", methods=["POST"])
@@ -3100,6 +3105,15 @@ def api_export_analysis_csv(analysis_id):
         try:
             placeholders = ",".join(["?"] * len(paper_ids))
             sql = f"SELECT * FROM papers WHERE id IN ({placeholders})"
+            # Same topic gate as search/count (only topic_gate_pass == False is hidden).
+            from repository.filters import topic_gate_clause
+            try:
+                cols = {r[1] for r in conn.execute("PRAGMA table_info(papers)").fetchall()}
+            except Exception:
+                cols = set()
+            gate_sql = topic_gate_clause("topic_match" in cols)
+            if gate_sql:
+                sql += " AND " + gate_sql
             cursor.execute(sql, paper_ids)
             rows = cursor.fetchall()
             for row in rows:
@@ -3152,10 +3166,13 @@ def api_export_analysis_csv(analysis_id):
         "date_harvested", "publication_date", "summary", "expert_locked_fields",
         "classification_confidence", "classification_timestamp", "classifier_version", "cannabis_type"
     ]
+    import methods_view
+    fields = fields + list(methods_view.CSV_COLUMNS)
 
     writer = csv.DictWriter(output, fieldnames=fields)
     writer.writeheader()
     for p in papers:
+        p = dict(p, **methods_view.csv_cells(methods_view.load_methods_record(p)))
         p_copy = {}
         for f in fields:
             val = p.get(f)
