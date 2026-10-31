@@ -28,7 +28,7 @@ def test_every_record_is_contract_valid(f):
     r = ex(f)
     if r["record"] is not None:
         assert extractor.validate(r["record"]) == []
-        assert r["record"]["schema_version"] == "wp1.7.0-draft"
+        assert r["record"]["schema_version"] == "wp1.8.0-draft"
 
 
 def test_every_contract_reason_code_is_emitted():

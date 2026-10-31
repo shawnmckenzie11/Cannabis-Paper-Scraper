@@ -17,7 +17,7 @@ NORM_PATH = ROOT / "schemas/normalization_rules.json"
 RULES_PATH = ROOT / "schemas/completeness_rules.json"
 
 EXTRACTOR_ID = "crn_rule_extractor"
-SCHEMA_VERSION = "wp1.7.0-draft"
+SCHEMA_VERSION = "wp1.8.0-draft"
 CONTRACT_VERSION = "0.7"
 # Paper-level failures -> every assessed item is could_not_check with this contract reason.
 PAPER_FAILURES = ("fetch_failed", "parse_failed", "source_not_available", "budget_cap")
