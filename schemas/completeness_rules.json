@@ -1,6 +1,6 @@
 {
   "rule_id": "crn_reporting_completeness",
-  "version": "0.7.0",
+  "version": "0.7.1",
   "status": "pending_biomedical",
   "contract_version": "0.7",
   "note": "Completeness is computed from reporting statuses, never stored. Output per tier: universal gold/near_gold, study-type fraction, good_practice separate. No combined score. Tier membership pending the PhD lead.",
@@ -42,7 +42,8 @@
             "cannabinoids"
           ],
           "satisfied_by": "any_measured_cannabinoid",
-          "approved": "Any measured cannabinoid counts as 'major' (Biomedical lead, 2026-10-31, approved default 8)."
+          "approved": "Any measured cannabinoid counts as 'major' (Biomedical lead, 2026-10-31, approved default 8).",
+          "grading": "v0.7.1 read time (default 8): reported when fields.cannabinoids has any measured entry (numeric amount + unit), unless Pipeline set an explicit not_reported_reason other than absent, or status could_not_check."
         },
         {
           "key": "route",
@@ -298,7 +299,7 @@
       "applies_to": "clinical_rct",
       "status": "provisional",
       "answered": "V3 (Shawn 2026-10-31, provisional)",
-      "note": "Gold rule for RCTs only (Shawn 2026-10-31). Non-randomized interventional trials are out_of_scope: no gold rule, no comparison-group check. Observational / self-report / reviews / case reports are not_scored. Supplier stays not_applicable for clinical.",
+      "note": "Gold rule for RCTs only (Shawn 2026-10-31). Non-randomized clinical studies are not_scored (v0.7.1): no gold rule, no comparison-group check. Observational / self-report / reviews / case reports are not_scored. Supplier stays not_applicable for clinical.",
       "required_always": [
         {
           "key": "number_of_participants",
@@ -430,10 +431,10 @@
       "scope_gate": {
         "field": "randomized",
         "yes": "scored",
-        "no": "out_of_scope",
+        "no": "not_scored",
         "unknown": "unverified",
         "absent": "not_yet_assessed",
-        "note": "arms and blinding are recorded only."
+        "note": "arms and blinding are recorded only. v0.7.1: non-RCT clinical studies (prospective, retrospective, non-randomized) are not_scored (approved default 4); gold stays RCT-only."
       }
     },
     "good_practice": {
@@ -504,7 +505,7 @@
   },
   "route_requirements": {
     "status": "approved",
-    "answered": "TOP2 partially (Shawn 2026-10-31): requirements depend on study type and route, per the extraction flowchart.",
+    "answered": "TOP2 fully answered (Biomedical lead, 2026-10-31): requirements depend on study type and route, per the extraction flowchart; the remaining route questions are closed with 'no requirement' (approved defaults 1-7).",
     "source": "Cannabis_Classification_Decision_Tree (transcription of 'EXPERT FEEDBACK TREE & CUES + Decision Tree.pdf', 2026-06-18): Node 2A, Node 7, Node 6. Only fields the flowchart lists are encoded; flowchart says EXTRACT, which this rule reads as 'expected'.",
     "route_not_reported": "route counts as missing in universal (near_gold); route-dependent fields get no requirement and are not counted as extra misses. Provisional pending Shawn.",
     "route_groups": {
@@ -607,6 +608,10 @@
       "clinical": [
         "sublingual",
         "topical"
+      ],
+      "in_vitro": [
+        "smoke",
+        "vapor"
       ]
     },
     "cannabinoids": "any_measured_counts_every_route",
@@ -657,16 +662,7 @@
         "approved": "Biomedical lead, 2026-10-31"
       }
     ],
-    "no_requirement_pending_vocabulary": [
-      {
-        "study_type": "in_vitro",
-        "route": "smoke or vapour (conditioned media 6a / direct cell exposure 6b)",
-        "approved_rule": "no requirement",
-        "route_value": null,
-        "vocabulary_status": "pending_vocabulary (needs Biomedical-lead naming); no enum value",
-        "approved": "Biomedical lead, 2026-10-31"
-      }
-    ]
+    "grading": "v0.7.1: applied at read time in methods_completeness.compute. Default 3: a route group with expected fields is reported if any one of its fields is reported (reporting item status, else Pipeline's per-field missingness). Default 6: for groups with cannabinoid fields, any measured cannabinoid (fields.cannabinoids entry with numeric amount and unit) counts, for every route. Missing -> universal missing 'route_fields'. Raw fields are never changed."
   },
   "secondary_cutoff": {
     "default": 0.8,
@@ -684,7 +680,7 @@
   ],
   "resolved": {
     "Q1": "Age or sex: either counts (provisional, Shawn 2026-10-31).",
-    "Q2": "Non-randomized interventional trials (incl. single-arm) are out of scope: no gold rule, no comparison-group check (Shawn 2026-10-31)."
+    "Q2": "Non-randomized interventional trials (incl. single-arm) get no gold rule and no comparison-group check (Shawn 2026-10-31); graded not_scored since v0.7.1."
   },
   "legacy_backfill": {
     "classifier_version_like": "llm-pdf-reclassify-%",
