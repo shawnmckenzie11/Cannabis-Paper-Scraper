@@ -240,7 +240,7 @@
     "route": {
       "version": "0.1.0",
       "status": "phd_to_confirm",
-      "note": "Oral split into diet vs gavage: dose is uncertain when mixed in food.",
+      "note": "Oral split into diet vs gavage: dose is uncertain when mixed in food. sublingual, intranasal, intratracheal added (values only, Biomedical lead 2026-10-31); they carry the approved 'no requirement' route rule.",
       "values": [
         {
           "value": "inhaled",
@@ -276,6 +276,18 @@
         },
         {
           "value": "in_vitro_media",
+          "external_id": null
+        },
+        {
+          "value": "sublingual",
+          "external_id": null
+        },
+        {
+          "value": "intranasal",
+          "external_id": null
+        },
+        {
+          "value": "intratracheal",
           "external_id": null
         }
       ]

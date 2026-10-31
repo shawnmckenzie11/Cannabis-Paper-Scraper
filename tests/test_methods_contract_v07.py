@@ -286,6 +286,12 @@ def test_nine_approved_defaults_behaviour():
     assert all(d["approved"] == "Biomedical lead, 2026-10-31" for d in rr["approved_defaults"])
     assert rr["satisfied_by"] == "any_one_field" and rr["cannabinoids"] == "any_measured_counts_every_route"
     assert TIERS["tracks"]["per_paper"] == 1 and mc.tracks_per_paper(TIERS) == 1
+    voc = json.loads((ROOT / "schemas/normalization_rules.json").read_text())["vocabularies"]["route"]
+    vals = {x["value"] for x in voc["values"]}
+    assert {"sublingual", "intranasal", "intratracheal"} <= vals
+    assert not any("smoke" in x or "vapo" in x for x in vals | set(sum(rr["no_requirement_routes"].values(), [])))
+    pend = rr["no_requirement_pending_vocabulary"]
+    assert [(x["study_type"], x["route_value"], x["approved_rule"]) for x in pend] == [("in_vitro", None, "no requirement")]
     for st, route in (("in_vivo", "sublingual"), ("in_vivo", "intranasal"), ("in_vivo", "intratracheal"),
                       ("clinical", "sublingual"), ("clinical", "topical")):
         rec = copy.deepcopy(FULL_V07)

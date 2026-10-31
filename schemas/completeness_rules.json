@@ -604,10 +604,6 @@
         "intranasal",
         "intratracheal"
       ],
-      "in_vitro": [
-        "smoke_vapor_conditioned_media",
-        "direct_smoke_vapor_exposure"
-      ],
       "clinical": [
         "sublingual",
         "topical"
@@ -658,6 +654,16 @@
       {
         "id": 9,
         "rule": "One track per paper until Evaluation's dev counts are in.",
+        "approved": "Biomedical lead, 2026-10-31"
+      }
+    ],
+    "no_requirement_pending_vocabulary": [
+      {
+        "study_type": "in_vitro",
+        "route": "smoke or vapour (conditioned media 6a / direct cell exposure 6b)",
+        "approved_rule": "no requirement",
+        "route_value": null,
+        "vocabulary_status": "pending_vocabulary (needs Biomedical-lead naming); no enum value",
         "approved": "Biomedical lead, 2026-10-31"
       }
     ]
