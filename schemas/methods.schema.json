@@ -21,9 +21,10 @@
         "wp1.3.0-draft",
         "wp1.4.0-draft",
         "wp1.5.0-draft",
-        "wp1.6.0-draft"
+        "wp1.6.0-draft",
+        "wp1.7.0-draft"
       ],
-      "description": "Methods contract version. wp1.0.0-draft records remain valid while wp1.1.0 is in draft. wp1.3.0-draft = Methods contract v0.3 (eval gaps, fields only). wp1.4.0-draft = Methods contract v0.4 (pubmed_metadata_record). wp1.5.0-draft = Methods contract v0.5 (pmc_oa_xml tier, source_license, validation split, extraction run manifest; record_id required). wp1.6.0-draft = Methods contract v0.6 (MCK-425 product/strain vocabulary: product as origin + preparation + substance normalized fields, strain_normalized name cleaning only, chemotype_reported, widened normalization_status; record_id required; vocabulary phd_to_confirm)."
+      "description": "Methods contract version. wp1.0.0-draft records remain valid while wp1.1.0 is in draft. wp1.3.0-draft = Methods contract v0.3 (eval gaps, fields only). wp1.4.0-draft = Methods contract v0.4 (pubmed_metadata_record). wp1.5.0-draft = Methods contract v0.5 (pmc_oa_xml tier, source_license, validation split, extraction run manifest; record_id required). wp1.6.0-draft = Methods contract v0.6 (MCK-425 product/strain vocabulary: product as origin + preparation + substance normalized fields, strain_normalized name cleaning only, chemotype_reported, widened normalization_status; record_id required; vocabulary phd_to_confirm). wp1.7.0-draft = Methods contract v0.7 (per-field reporting block, completeness tiers computed from statuses, supplier / vehicle_solvent / storage / form / cannabinoids fields, oral_diet vs oral_gavage route values; all pending_biomedical)."
     },
     "paper_id": {
       "type": "integer",
@@ -70,14 +71,14 @@
               "$ref": "#/$defs/string_array_field"
             },
             {
-              "$ref": "#/$defs/product_field"
+              "$ref": "#/$defs/product_field_legacy"
             }
           ],
-          "description": "Product / substance. Pre-v0.6: free string list. v0.6 (wp1.6.0-draft, MCK-425 1B, phd_to_confirm): product_field with origin + preparation (+ optional substance) normalized fields."
+          "description": "Product / substance. Pre-v0.6: free string list. v0.6 (wp1.6.0-draft, MCK-425 1B, phd_to_confirm): product_field with origin + preparation (+ optional substance) normalized fields. Strict normalized_field rules are enforced only for wp1.6.0-draft and later (top-level allOf)."
         },
         "route": {
           "$ref": "#/$defs/string_array_field",
-          "description": "Route / administration / exposure modality. Enum pending_biomedical (Q5)."
+          "description": "Route / administration / exposure modality. Enum pending_biomedical (Q5). v0.7: values from vocabulary route in normalization_rules.json; oral is split into oral_diet and oral_gavage. Route stays separate from product (MCK-425)."
         },
         "disease_or_experimental_model": {
           "$ref": "#/$defs/string_field",
@@ -168,7 +169,7 @@
               "$ref": "#/$defs/string_field"
             },
             {
-              "$ref": "#/$defs/strain_normalized_field"
+              "$ref": "#/$defs/strain_normalized_field_legacy"
             }
           ],
           "description": "Pre-v0.6: free string. v0.6 (MCK-425 2D, phd_to_confirm): strain_normalized_field, name cleaning only, no chemistry."
@@ -207,6 +208,285 @@
         },
         "chemotype_reported": {
           "$ref": "#/$defs/chemotype_reported_field"
+        },
+        "supplier": {
+          "$ref": "#/$defs/string_field",
+          "description": "v0.7: company / source the product was procured from, as reported (e.g. NIDA, a named LP). pending_biomedical."
+        },
+        "vehicle_solvent": {
+          "$ref": "#/$defs/string_field",
+          "description": "v0.7: vehicle or solvent used to deliver the product (e.g. DMSO, ethanol, sesame oil), as reported. pending_biomedical."
+        },
+        "storage": {
+          "$ref": "#/$defs/string_field",
+          "description": "v0.7 (good practice, not required): how the product was stored (frozen, milled, protected from light), as reported."
+        },
+        "form": {
+          "$ref": "#/$defs/string_array_field",
+          "description": "v0.7: physical form of the product (vocabulary product_form in normalization_rules.json, includes topical). pending_biomedical."
+        },
+        "cannabinoids": {
+          "$ref": "#/$defs/cannabinoids_field"
+        },
+        "cell_line_or_tissue_source": {
+          "$ref": "#/$defs/string_field",
+          "description": "v0.7 (V2, provisional): cell line, primary cells or tissue source used in vitro, as reported."
+        },
+        "comparison_group": {
+          "$ref": "#/$defs/string_field",
+          "description": "v0.7 (V3, provisional): control / comparison arm in an interventional clinical trial (placebo, active comparator, usual care), as reported."
+        },
+        "randomized": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "value",
+            "missingness"
+          ],
+          "description": "v0.7 clinical (Shawn 2026-10-31, provisional): scope rule. yes = in scope for clinical gold; no = out_of_scope; unknown = tier unverified (counted separately, never guessed).",
+          "properties": {
+            "value": {
+              "enum": [
+                "yes",
+                "no",
+                "unknown",
+                null
+              ]
+            },
+            "missingness": {
+              "$ref": "#/$defs/missingness"
+            },
+            "confidence": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "minimum": 0,
+              "maximum": 1
+            },
+            "source_span": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "pending_biomedical": {
+              "type": "boolean",
+              "default": true
+            }
+          }
+        },
+        "arms": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "value",
+            "missingness"
+          ],
+          "description": "v0.7 clinical: recorded only, not scored.",
+          "properties": {
+            "value": {
+              "enum": [
+                "single_arm",
+                "controlled",
+                "unknown",
+                null
+              ]
+            },
+            "missingness": {
+              "$ref": "#/$defs/missingness"
+            },
+            "confidence": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "minimum": 0,
+              "maximum": 1
+            },
+            "source_span": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "pending_biomedical": {
+              "type": "boolean",
+              "default": true
+            }
+          }
+        },
+        "blinding": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "value",
+            "missingness"
+          ],
+          "description": "v0.7 clinical: recorded only, not scored.",
+          "properties": {
+            "value": {
+              "enum": [
+                "open_label",
+                "single_blind",
+                "double_blind",
+                "unknown",
+                null
+              ]
+            },
+            "missingness": {
+              "$ref": "#/$defs/missingness"
+            },
+            "confidence": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "minimum": 0,
+              "maximum": 1
+            },
+            "source_span": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "pending_biomedical": {
+              "type": "boolean",
+              "default": true
+            }
+          }
+        },
+        "storage_temperature": {
+          "$ref": "#/$defs/string_field",
+          "description": "v0.7 good practice (G1): storage temperature as reported (e.g. -20C). Never affects any tier."
+        },
+        "milled_ground": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "value",
+            "missingness"
+          ],
+          "description": "v0.7 good practice (G1, Shawn 2026-10-31): was the product milled/ground before use. Never affects any tier.",
+          "properties": {
+            "value": {
+              "enum": [
+                "yes",
+                "no",
+                "not_reported",
+                null
+              ]
+            },
+            "missingness": {
+              "$ref": "#/$defs/missingness"
+            },
+            "confidence": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "minimum": 0,
+              "maximum": 1
+            },
+            "source_span": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "pending_biomedical": {
+              "type": "boolean",
+              "default": true
+            }
+          }
+        },
+        "protected_from_light": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "value",
+            "missingness"
+          ],
+          "description": "v0.7 good practice (G1): was the product stored protected from light. Never affects any tier.",
+          "properties": {
+            "value": {
+              "enum": [
+                "yes",
+                "no",
+                "not_reported",
+                null
+              ]
+            },
+            "missingness": {
+              "$ref": "#/$defs/missingness"
+            },
+            "confidence": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "minimum": 0,
+              "maximum": 1
+            },
+            "source_span": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "pending_biomedical": {
+              "type": "boolean",
+              "default": true
+            }
+          }
+        },
+        "system_type": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "value",
+            "missingness"
+          ],
+          "description": "v0.7 in vitro (A10, per flow map): experimental system type. Recorded only, never scored. pcls = precision-cut lung slices.",
+          "properties": {
+            "value": {
+              "enum": [
+                "primary",
+                "cell_line",
+                "co_culture",
+                "organoid",
+                "pcls",
+                "other",
+                null
+              ]
+            },
+            "missingness": {
+              "$ref": "#/$defs/missingness"
+            },
+            "confidence": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "minimum": 0,
+              "maximum": 1
+            },
+            "source_span": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "pending_biomedical": {
+              "type": "boolean",
+              "default": true
+            }
+          }
+        },
+        "supplier_program_verbatim": {
+          "$ref": "#/$defs/string_field",
+          "description": "v0.7 (P2, Shawn 2026-10-31): the government/agency supply program exactly as written when no supplier is named (e.g. 'obtained through the NIDA Drug Supply Program'). Recorded only, not scored; pairs with not_reported_reason government_program_unnamed on supplier."
         }
       }
     },
@@ -236,6 +516,139 @@
     },
     "record_id": {
       "$ref": "#/$defs/record_id"
+    },
+    "reporting": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "v0.7 per-field reporting block, keyed by completeness-rule item key (schemas/completeness_rules.json). A missing key means not_yet_assessed.",
+      "properties": {
+        "research_type": {
+          "$ref": "#/$defs/field_reporting"
+        },
+        "strain_or_product_name": {
+          "$ref": "#/$defs/field_reporting"
+        },
+        "supplier": {
+          "$ref": "#/$defs/field_reporting"
+        },
+        "form": {
+          "$ref": "#/$defs/field_reporting"
+        },
+        "major_cannabinoids": {
+          "$ref": "#/$defs/field_reporting"
+        },
+        "route": {
+          "$ref": "#/$defs/field_reporting"
+        },
+        "dose": {
+          "$ref": "#/$defs/field_reporting"
+        },
+        "frequency": {
+          "$ref": "#/$defs/field_reporting"
+        },
+        "duration": {
+          "$ref": "#/$defs/field_reporting"
+        },
+        "vehicle_solvent": {
+          "$ref": "#/$defs/field_reporting"
+        },
+        "cell_line_or_tissue_source": {
+          "$ref": "#/$defs/field_reporting"
+        },
+        "concentration": {
+          "$ref": "#/$defs/field_reporting"
+        },
+        "exposure_time": {
+          "$ref": "#/$defs/field_reporting"
+        },
+        "species_of_origin": {
+          "$ref": "#/$defs/field_reporting"
+        },
+        "replicates": {
+          "$ref": "#/$defs/field_reporting"
+        },
+        "number_of_participants": {
+          "$ref": "#/$defs/field_reporting"
+        },
+        "participant_age_or_sex": {
+          "$ref": "#/$defs/field_reporting"
+        },
+        "diagnosis_or_condition": {
+          "$ref": "#/$defs/field_reporting"
+        },
+        "comparison_group": {
+          "$ref": "#/$defs/field_reporting"
+        },
+        "storage_temperature": {
+          "$ref": "#/$defs/field_reporting"
+        },
+        "milled_ground": {
+          "$ref": "#/$defs/field_reporting"
+        },
+        "number_of_animals": {
+          "$ref": "#/$defs/field_reporting"
+        },
+        "species": {
+          "$ref": "#/$defs/field_reporting"
+        },
+        "animal_strain": {
+          "$ref": "#/$defs/field_reporting"
+        },
+        "sex": {
+          "$ref": "#/$defs/field_reporting"
+        },
+        "age_or_weight": {
+          "$ref": "#/$defs/field_reporting"
+        },
+        "protected_from_light": {
+          "$ref": "#/$defs/field_reporting"
+        },
+        "conditions": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/condition_entry"
+          },
+          "description": "A11: conditions studied (multi-valued), keys from schemas/condition_list.json. Filter label only; never affects any tier. Never filled from mesh_from_pubmed."
+        },
+        "experimental_model_verbatim": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "A11: experimental model as written (provenance). Not scored."
+        },
+        "outcome_domains": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/outcome_domain_entry"
+          },
+          "description": "A12: outcome domains (multi-valued) with exactly one is_primary true. Never affects any tier.",
+          "contains": {
+            "properties": {
+              "is_primary": {
+                "const": true
+              }
+            }
+          },
+          "minContains": 1,
+          "maxContains": 1
+        },
+        "group_sample_sizes": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/group_sample_size"
+          },
+          "description": "A15: optional per-group sample sizes, only when the paper gives a number. Not required for gold, never affects any tier (total animal count stays required for in vivo)."
+        }
+      }
+    },
+    "mesh_from_pubmed": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "pattern": "^D[0-9]{6,9}$"
+      },
+      "description": "A11: optional MeSH D-numbers from the PubMed record. Cross-check input only; never written into reporting.conditions. Excluded from the labelling interface and annotation exports."
     }
   },
   "$defs": {
@@ -1393,7 +1806,15 @@
         {
           "$ref": "#/$defs/locked_store_test_only"
         }
-      ]
+      ],
+      "x-topic-gate": {
+        "enabled": true,
+        "ruling": "B3 (Shawn, 2026-10-31)",
+        "rule": "A paper not about cannabis/cannabinoids (topic_match = 0) gets relevance score 0 and is filtered out of results, regardless of the other axes. Tri-state: an unassessed paper (topic_match null) has topic_gate_pass null and is NOT filtered out; only an explicit false is filtered."
+      },
+      "x-computed": {
+        "topic_gate_pass": "true | false | null, computed by methods_completeness.topic_gate(topic_match): null = not yet assessed (not filtered), false = assessed not about cannabis (relevance score 0, filtered out), true otherwise. Only false is filtered. Never stored."
+      }
     },
     "correction": {
       "type": "object",
@@ -1910,7 +2331,8 @@
         "contract_version": {
           "enum": [
             "0.5",
-            "0.6"
+            "0.6",
+            "0.7"
           ],
           "description": "Pinned to the contract version the run was validated against."
         },
@@ -2037,8 +2459,13 @@
         "field": {
           "enum": [
             "administration_frequency",
+            "arms",
+            "blinding",
+            "cannabinoids",
+            "cell_line_or_tissue_source",
             "chemotype_reported",
             "clinical_subtype",
+            "comparison_group",
             "conc_cbd_mg_ml",
             "conc_cbd_uM",
             "conc_thc_mg_ml",
@@ -2051,16 +2478,20 @@
             "dose_thc_mg_kg",
             "duration_days",
             "exposure_regimen_bin",
+            "form",
             "ideas_representation_notes",
             "inhaled_exposure_duration",
+            "milled_ground",
             "multiple_doses",
             "multiple_time_intervals",
             "outcome_domains",
             "pct_cbd",
             "pct_thc",
             "product",
+            "protected_from_light",
             "publication_type",
             "puff_count",
+            "randomized",
             "repeat_exposure_count",
             "replicates_notes",
             "research_type",
@@ -2072,10 +2503,16 @@
             "sgba_reporting_present",
             "sgba_sex_reported",
             "species_or_biological_system",
+            "storage",
+            "storage_temperature",
             "strain_normalized",
             "strain_reported",
             "study_type_legacy",
-            "treatment_duration"
+            "supplier",
+            "supplier_program_verbatim",
+            "system_type",
+            "treatment_duration",
+            "vehicle_solvent"
           ],
           "description": "A methods field name from properties.fields; never free text."
         },
@@ -2399,9 +2836,773 @@
           }
         }
       ]
+    },
+    "reporting_status": {
+      "type": "string",
+      "enum": [
+        "reported",
+        "not_reported",
+        "could_not_check",
+        "not_applicable",
+        "not_yet_assessed"
+      ],
+      "default": "not_yet_assessed",
+      "description": "v0.7 per-field reporting status. reported = the paper states it; not_reported = the section was read and it is absent; could_not_check = the section was not fetched or parsed (see check_failure_reason); not_applicable = set by the decision-tree branch / study type; not_yet_assessed = default for records written before v0.7 (never backfilled as not_reported)."
+    },
+    "reporting_location": {
+      "type": "string",
+      "enum": [
+        "methods",
+        "supplementary",
+        "abstract",
+        "discussion",
+        "unknown",
+        "table",
+        "figure"
+      ],
+      "description": "Where a reported detail was found. Only set when status is reported. No cited_prior_paper value: 'as previously described [ref]' is not_reported (K1; TOP1 final). T2 (Shawn 2026-10-31): table and figure are locations only and never affect any tier. A confident read from a table/figure = reported; not confident = could_not_check (low_confidence_read); figure not attempted = could_not_check (figure_not_read)."
+    },
+    "check_failure_reason": {
+      "type": "string",
+      "enum": [
+        "fetch_failed",
+        "parse_failed",
+        "source_not_available",
+        "budget_cap",
+        "source_not_fetched",
+        "figure_not_read",
+        "low_confidence_read"
+      ],
+      "description": "Why a field could not be checked. Required when status is could_not_check, null/absent otherwise. The contract only records the reason; how each reason is scored is owned by CRN Evaluation's scorer. source_not_fetched = deliberate scope choice (e.g. a main-text-only run that skips supplements); distinct from fetch_failed, which is an error. figure_not_read = a figure holds the detail but reading it was not attempted (no figure-reading budget yet); low_confidence_read = read but too uncertain to score. Both are could_not_check: never a miss, excluded from precision/recall, counted separately like source_not_fetched."
+    },
+    "field_reporting": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "status"
+      ],
+      "description": "v0.7 (pending_biomedical): how well the paper reports one required detail. Completeness is computed from these statuses; it is never stored as truth.",
+      "properties": {
+        "status": {
+          "$ref": "#/$defs/reporting_status"
+        },
+        "location": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/reporting_location"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "evidence_quote": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Verbatim span supporting the status, when there is one."
+        },
+        "check_failure_reason": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/check_failure_reason"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "confidence": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0,
+          "maximum": 1,
+          "description": "Optional extraction confidence for this status."
+        },
+        "needs_review": {
+          "type": "boolean",
+          "default": false,
+          "description": "Optional flag: a human should check this status (e.g. comparison_group)."
+        },
+        "extraction_confidence": {
+          "anyOf": [
+            {
+              "type": "string",
+              "enum": [
+                "high",
+                "medium",
+                "low"
+              ]
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "Optional categorical extraction confidence (used for comparison_group, V3)."
+        },
+        "review_reason": {
+          "anyOf": [
+            {
+              "type": "string",
+              "enum": [
+                "no_named_control_arm",
+                "arm_only_in_table_or_figure",
+                "other"
+              ]
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "Why needs_review is set. Only allowed when needs_review is true."
+        },
+        "duration_category": {
+          "anyOf": [
+            {
+              "type": "string",
+              "enum": [
+                "acute",
+                "subacute",
+                "subchronic",
+                "chronic",
+                "long_term",
+                "other"
+              ]
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "C2 (Shawn 2026-10-31, provisional): author's duration term normalised to a closed enum (synonyms in normalization_rules.json vocabularies.duration_category). Search/filter label only; never affects any tier. No time thresholds: authors' wording only. A vague term with no actual time leaves duration not_reported. Used on the duration item."
+        },
+        "duration_category_verbatim": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "The author's duration term exactly as written (e.g. 'long-term')."
+        },
+        "not_reported_reason": {
+          "anyOf": [
+            {
+              "type": "string",
+              "enum": [
+                "cited_elsewhere",
+                "vague_term_only",
+                "protocol_without_number",
+                "government_program_unnamed",
+                "product_named_content_missing",
+                "missing_units",
+                "absent"
+              ]
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "Optional, only with status not_reported; never affects any tier. cited_elsewhere = 'as previously described [ref]' (TOP1); vague_term_only (C2 duration); protocol_without_number (C1); government_program_unnamed (P2); product_named_content_missing (P1 gap-log cases); missing_units = number given without units (TOP3); absent = nothing found (default)."
+        },
+        "comparator_validated": {
+          "type": "boolean",
+          "default": false,
+          "description": "A13: set true only after CRN Evaluation's sign-off on the comparator (comparison_group). Never affects any tier. Sits next to extraction_confidence (the comparator confidence)."
+        },
+        "value_source": {
+          "$ref": "#/$defs/value_source",
+          "default": "paper"
+        },
+        "legacy_llm_fullpdf": {
+          "type": [
+            "object",
+            "null"
+          ],
+          "additionalProperties": false,
+          "required": [
+            "value"
+          ],
+          "description": "Side-by-side legacy value (value_source legacy_llm_fullpdf). Never used for tier, scoring or labels; stripped from labelling and scoring exports.",
+          "properties": {
+            "value": {},
+            "value_source": {
+              "const": "legacy_llm_fullpdf"
+            },
+            "status": {
+              "$ref": "#/$defs/reporting_status"
+            }
+          }
+        },
+        "source_attribution": {
+          "anyOf": [
+            {
+              "enum": [
+                "inferred_from_row_version"
+              ]
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "How value_source was decided. inferred_from_row_version = legacy backfill rule (the old pass did not record which fields it wrote)."
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "status": {
+                "const": "reported"
+              }
+            },
+            "required": [
+              "status"
+            ]
+          },
+          "then": {
+            "required": [
+              "location"
+            ],
+            "properties": {
+              "location": {
+                "$ref": "#/$defs/reporting_location"
+              }
+            }
+          },
+          "else": {
+            "properties": {
+              "location": {
+                "type": "null"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "status": {
+                "const": "could_not_check"
+              }
+            },
+            "required": [
+              "status"
+            ]
+          },
+          "then": {
+            "required": [
+              "check_failure_reason"
+            ],
+            "properties": {
+              "check_failure_reason": {
+                "$ref": "#/$defs/check_failure_reason"
+              }
+            }
+          },
+          "else": {
+            "properties": {
+              "check_failure_reason": {
+                "type": "null"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "needs_review": {
+                "const": true
+              }
+            },
+            "required": [
+              "needs_review"
+            ]
+          },
+          "then": {},
+          "else": {
+            "properties": {
+              "review_reason": {
+                "type": "null"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "status": {
+                "const": "not_reported"
+              }
+            },
+            "required": [
+              "status"
+            ]
+          },
+          "then": {},
+          "else": {
+            "properties": {
+              "not_reported_reason": {
+                "type": "null"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "value_source": {
+                "const": "legacy_llm_fullpdf"
+              }
+            },
+            "required": [
+              "value_source"
+            ]
+          },
+          "then": false
+        }
+      ]
+    },
+    "cannabinoid_entry": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "name"
+      ],
+      "properties": {
+        "name": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Cannabinoid as reported (THC, CBD, CBG, CBN, THCV, ...); not limited to THC/CBD."
+        },
+        "amount": {
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "unit": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "source_span": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      }
+    },
+    "cannabinoids_field": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "value",
+        "missingness"
+      ],
+      "description": "v0.7 (pending_biomedical): list of cannabinoids the paper reports. Same gating as chemotype_reported: a non-empty list needs missingness reported and a source_span; never inferred from strain name.",
+      "properties": {
+        "value": {
+          "type": [
+            "array",
+            "null"
+          ],
+          "items": {
+            "$ref": "#/$defs/cannabinoid_entry"
+          }
+        },
+        "missingness": {
+          "$ref": "#/$defs/missingness"
+        },
+        "source_span": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "confidence": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0,
+          "maximum": 1
+        },
+        "pending_biomedical": {
+          "type": "boolean",
+          "default": true
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "value": {
+                "type": "array",
+                "minItems": 1
+              }
+            },
+            "required": [
+              "value"
+            ]
+          },
+          "then": {
+            "required": [
+              "source_span"
+            ],
+            "properties": {
+              "missingness": {
+                "const": "reported"
+              },
+              "source_span": {
+                "type": "string",
+                "minLength": 1
+              }
+            }
+          }
+        }
+      ]
+    },
+    "tier_grade": {
+      "type": "string",
+      "enum": [
+        "gold",
+        "near_gold",
+        "unverified",
+        "not_scored",
+        "out_of_scope",
+        "not_yet_assessed"
+      ],
+      "default": "not_yet_assessed",
+      "description": "v0.7 computed tier grade; never blank. not_scored = reviews, case reports, observational / self-report. out_of_scope = non-randomized interventional trials. Computed, never stored as truth."
+    },
+    "condition_entry": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "condition_key",
+        "mesh_descriptor_id",
+        "label"
+      ],
+      "properties": {
+        "condition_key": {
+          "type": "string",
+          "description": "Key from schemas/condition_list.json (validated against the list by the helper/tests, not by enum, so the list can be versioned)."
+        },
+        "mesh_descriptor_id": {
+          "type": "string",
+          "pattern": "^D[0-9]{6,9}$"
+        },
+        "label": {
+          "type": "string"
+        }
+      }
+    },
+    "outcome_domain_entry": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "domain",
+        "is_primary"
+      ],
+      "properties": {
+        "domain": {
+          "enum": [
+            "pain",
+            "anxiety",
+            "cognition",
+            "inflammation",
+            "addiction",
+            "oncology",
+            "neuroprotection",
+            "sleep"
+          ],
+          "description": "Existing 8-value outcome-domain filter (dashboard_ui_config.OUTCOME_DOMAINS)."
+        },
+        "is_primary": {
+          "type": "boolean"
+        }
+      }
+    },
+    "group_sample_size": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "group_label",
+        "n",
+        "unit"
+      ],
+      "properties": {
+        "group_label": {
+          "type": "string",
+          "description": "Group name verbatim."
+        },
+        "n": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "unit": {
+          "enum": [
+            "animals",
+            "replicates"
+          ]
+        }
+      }
+    },
+    "value_source": {
+      "type": "string",
+      "enum": [
+        "paper",
+        "signed_off",
+        "legacy_llm_fullpdf",
+        "expert"
+      ],
+      "description": "Per-field value source. paper = extracted/reviewed from the paper; signed_off = numeric signed-off reference value (P1); legacy_llm_fullpdf = earlier LLM pass over full PDFs: silver baseline and comparison input only, never reviewer gold or test truth, never fills tier or scoring labels, excluded from annotation and scoring-label exports. expert = field listed in the row's expert_locked_fields (legacy backfill)."
+    },
+    "normalized_field_legacy": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "Lenient normalized_field for records before wp1.6.0-draft (shape as in v0.5). The strict v0.6 rules (normalized_value string-or-null; rule_id + vocabulary_version required when the value is not null; raw_text non-empty) apply only to wp1.6.0-draft and later via the version gates in the top-level allOf.",
+      "required": [
+        "raw_text",
+        "normalized_value",
+        "normalization_status"
+      ],
+      "properties": {
+        "raw_text": {
+          "type": "string",
+          "description": "Verbatim source wording."
+        },
+        "source_span": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "normalized_value": {},
+        "normalization_status": {
+          "enum": [
+            "pending_biomedical",
+            "approved",
+            "unmapped",
+            "needs_review"
+          ],
+          "description": "4C (phd_to_confirm): approved = produced by a rule the Biomedical lead approved once; needs_review = raw string seen fewer than review_policy.rare_raw_string_threshold_n times (N=3 placeholder) or otherwise flagged; unmapped = no rule applies, raw kept, normalized_value null; pending_biomedical = rule not yet approved."
+        },
+        "rule_id": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Id from schemas/normalization_rules.json"
+        },
+        "vocabulary_version": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Version of the vocabulary in schemas/normalization_rules.json that produced normalized_value."
+        },
+        "external_id": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "3C: optional slot for a later external identifier (e.g. ChEBI, RxNorm). Empty (null) in v0.6."
+        }
+      }
+    },
+    "product_field_legacy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "value",
+        "missingness"
+      ],
+      "description": "v0.6 product (MCK-425 1B, phd_to_confirm): list of product_entry. Legacy variant (pre-wp1.6.0-draft): uses normalized_field_legacy.",
+      "properties": {
+        "value": {
+          "type": [
+            "array",
+            "null"
+          ],
+          "items": {
+            "$ref": "#/$defs/product_entry"
+          }
+        },
+        "missingness": {
+          "$ref": "#/$defs/missingness"
+        },
+        "confidence": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0,
+          "maximum": 1
+        },
+        "pending_biomedical": {
+          "type": "boolean",
+          "default": true
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "missingness": {
+                "const": "reported"
+              }
+            },
+            "required": [
+              "missingness"
+            ]
+          },
+          "then": {
+            "properties": {
+              "value": {
+                "type": "array",
+                "minItems": 1
+              }
+            }
+          },
+          "else": {
+            "properties": {
+              "value": {
+                "type": "null"
+              }
+            }
+          }
+        }
+      ]
+    },
+    "product_substance_field_legacy": {
+      "description": "MCK-425: named substance (named drug such as Epidiolex, nabilone, dronabinol, or a receptor agonist/antagonist) as its OWN value, not collapsed into a class. Allowed values live in vocabulary product_substance in schemas/normalization_rules.json. Vocabulary phd_to_confirm. Legacy variant (pre-wp1.6.0-draft): uses normalized_field_legacy.",
+      "allOf": [
+        {
+          "$ref": "#/$defs/normalized_field_legacy"
+        },
+        {
+          "properties": {
+            "normalized_value": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    "strain_normalized_field_legacy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "value",
+        "missingness"
+      ],
+      "description": "v0.6 strain_normalized (MCK-425 2D, phd_to_confirm): name cleaning only (case, spelling, alias). Carries no chemistry; a strain name never implies chemotype. Legacy variant (pre-wp1.6.0-draft): uses normalized_field_legacy.",
+      "properties": {
+        "value": {
+          "oneOf": [
+            {
+              "type": "null"
+            },
+            {
+              "$ref": "#/$defs/normalized_field_legacy"
+            }
+          ]
+        },
+        "missingness": {
+          "$ref": "#/$defs/missingness"
+        },
+        "confidence": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0,
+          "maximum": 1
+        },
+        "pending_biomedical": {
+          "type": "boolean",
+          "default": true
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "missingness": {
+                "const": "reported"
+              }
+            },
+            "required": [
+              "missingness"
+            ]
+          },
+          "then": {
+            "properties": {
+              "value": {
+                "type": "object"
+              }
+            }
+          },
+          "else": {
+            "properties": {
+              "value": {
+                "type": "null"
+              }
+            }
+          }
+        }
+      ]
+    },
+    "product_preparation_field_legacy": {
+      "description": "MCK-425 1B product preparation axis (vocabulary product_preparation). Vocabulary phd_to_confirm. Legacy variant (pre-wp1.6.0-draft): uses normalized_field_legacy.",
+      "allOf": [
+        {
+          "$ref": "#/$defs/normalized_field_legacy"
+        },
+        {
+          "properties": {
+            "normalized_value": {
+              "enum": [
+                "whole_flower",
+                "full_spectrum_extract",
+                "broad_spectrum_extract",
+                "isolate",
+                "formulated_drug",
+                null
+              ]
+            }
+          }
+        }
+      ]
+    },
+    "product_origin_field_legacy": {
+      "description": "MCK-425 1B product origin axis (vocabulary product_origin). Vocabulary phd_to_confirm. Legacy variant (pre-wp1.6.0-draft): uses normalized_field_legacy.",
+      "allOf": [
+        {
+          "$ref": "#/$defs/normalized_field_legacy"
+        },
+        {
+          "properties": {
+            "normalized_value": {
+              "enum": [
+                "plant_derived",
+                "synthetic",
+                "biosynthetic",
+                null
+              ]
+            }
+          }
+        }
+      ]
     }
   },
-  "x-contract-version": "0.6",
+  "x-contract-version": "0.7",
   "allOf": [
     {
       "if": {
@@ -2425,6 +3626,35 @@
         "properties": {
           "schema_version": {
             "const": "wp1.6.0-draft"
+          }
+        },
+        "required": [
+          "schema_version"
+        ]
+      },
+      "then": {
+        "required": [
+          "record_id"
+        ],
+        "properties": {
+          "fields": {
+            "properties": {
+              "product": {
+                "$ref": "#/$defs/product_field"
+              },
+              "strain_normalized": {
+                "$ref": "#/$defs/strain_normalized_field"
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "schema_version": {
+            "const": "wp1.7.0-draft"
           }
         },
         "required": [

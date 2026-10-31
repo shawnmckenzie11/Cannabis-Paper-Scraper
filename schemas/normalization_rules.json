@@ -60,6 +60,30 @@
       "status": "pending_biomedical",
       "confirm": "phd_to_confirm",
       "note": "MCK-425; not approved until the Biomedical lead signs off."
+    },
+    {
+      "id": "v07_product_form",
+      "kind": "vocabulary_map",
+      "vocabulary": "product_form",
+      "status": "pending_biomedical",
+      "confirm": "phd_to_confirm",
+      "note": "v0.7; not approved until the Biomedical lead signs off."
+    },
+    {
+      "id": "v07_route",
+      "kind": "vocabulary_map",
+      "vocabulary": "route",
+      "status": "pending_biomedical",
+      "confirm": "phd_to_confirm",
+      "note": "v0.7; not approved until the Biomedical lead signs off."
+    },
+    {
+      "id": "v07_cannabinoid",
+      "kind": "vocabulary_map",
+      "vocabulary": "cannabinoid",
+      "status": "pending_biomedical",
+      "confirm": "phd_to_confirm",
+      "note": "v0.7; not approved until the Biomedical lead signs off."
     }
   ],
   "vocabularies": {
@@ -170,6 +194,343 @@
         }
       ],
       "note": "Set only when the paper reports cannabinoid content; never inferred from strain name."
+    },
+    "product_form": {
+      "version": "0.1.0",
+      "status": "phd_to_confirm",
+      "values": [
+        {
+          "value": "dried_flower",
+          "external_id": null
+        },
+        {
+          "value": "oil",
+          "external_id": null
+        },
+        {
+          "value": "edible",
+          "external_id": null
+        },
+        {
+          "value": "tincture",
+          "external_id": null
+        },
+        {
+          "value": "smoke",
+          "external_id": null
+        },
+        {
+          "value": "vapor",
+          "external_id": null
+        },
+        {
+          "value": "extract",
+          "external_id": null
+        },
+        {
+          "value": "pill_capsule",
+          "external_id": null
+        },
+        {
+          "value": "topical",
+          "external_id": null
+        }
+      ]
+    },
+    "route": {
+      "version": "0.1.0",
+      "status": "phd_to_confirm",
+      "note": "Oral split into diet vs gavage: dose is uncertain when mixed in food. sublingual, intranasal, intratracheal added (values only, Biomedical lead 2026-10-31); they carry the approved 'no requirement' route rule.",
+      "values": [
+        {
+          "value": "inhaled",
+          "external_id": null
+        },
+        {
+          "value": "oral_diet",
+          "external_id": null
+        },
+        {
+          "value": "oral_gavage",
+          "external_id": null
+        },
+        {
+          "value": "oral_other",
+          "external_id": null
+        },
+        {
+          "value": "intraperitoneal",
+          "external_id": null
+        },
+        {
+          "value": "intravenous",
+          "external_id": null
+        },
+        {
+          "value": "subcutaneous",
+          "external_id": null
+        },
+        {
+          "value": "topical",
+          "external_id": null
+        },
+        {
+          "value": "in_vitro_media",
+          "external_id": null
+        },
+        {
+          "value": "sublingual",
+          "external_id": null
+        },
+        {
+          "value": "intranasal",
+          "external_id": null
+        },
+        {
+          "value": "intratracheal",
+          "external_id": null
+        }
+      ]
+    },
+    "cannabinoid": {
+      "version": "0.1.0",
+      "status": "phd_to_confirm",
+      "note": "Cannabinoid names for fields.cannabinoids[].name. values = locked (PhD confirmed delta-8-THC, CBGA, CBL, 11-OH-THC on 2026-10-31). candidates_pending_phd are recorded but never scored. Named drugs (dronabinol, nabilone, Epidiolex) are NOT synonyms; they stay in product_substance per MCK-425.",
+      "values": [
+        {
+          "value": "thc",
+          "full_name": "Δ9-tetrahydrocannabinol",
+          "synonyms": [
+            "Δ9-THC",
+            "delta-9-THC",
+            "delta9-THC",
+            "D9-THC",
+            "THC",
+            "Δ9-tetrahydrocannabinol"
+          ],
+          "external_id": null
+        },
+        {
+          "value": "cbd",
+          "full_name": "cannabidiol",
+          "synonyms": [
+            "CBD"
+          ],
+          "external_id": null
+        },
+        {
+          "value": "thca",
+          "full_name": "Δ9-tetrahydrocannabinolic acid",
+          "synonyms": [
+            "THCA",
+            "Δ9-THCA",
+            "THCA-A",
+            "THC-A",
+            "tetrahydrocannabinolic acid"
+          ],
+          "external_id": null
+        },
+        {
+          "value": "cbda",
+          "full_name": "cannabidiolic acid",
+          "synonyms": [
+            "CBDA",
+            "CBD-A"
+          ],
+          "external_id": null
+        },
+        {
+          "value": "cbg",
+          "full_name": "cannabigerol",
+          "synonyms": [
+            "CBG"
+          ],
+          "external_id": null
+        },
+        {
+          "value": "cbga",
+          "full_name": "cannabigerolic acid",
+          "synonyms": [
+            "CBGA",
+            "CBG-A"
+          ],
+          "external_id": null
+        },
+        {
+          "value": "cbn",
+          "full_name": "cannabinol",
+          "synonyms": [
+            "CBN"
+          ],
+          "external_id": null
+        },
+        {
+          "value": "cbc",
+          "full_name": "cannabichromene",
+          "synonyms": [
+            "CBC"
+          ],
+          "external_id": null
+        },
+        {
+          "value": "thcv",
+          "full_name": "Δ9-tetrahydrocannabivarin",
+          "synonyms": [
+            "THCV",
+            "THC-V",
+            "Δ9-THCV",
+            "tetrahydrocannabivarin"
+          ],
+          "external_id": null
+        },
+        {
+          "value": "cbdv",
+          "full_name": "cannabidivarin",
+          "synonyms": [
+            "CBDV",
+            "CBD-V"
+          ],
+          "external_id": null
+        },
+        {
+          "value": "delta8_thc",
+          "full_name": "Δ8-tetrahydrocannabinol",
+          "synonyms": [
+            "Δ8-THC",
+            "delta-8-THC",
+            "delta8-THC",
+            "D8-THC"
+          ],
+          "external_id": null
+        },
+        {
+          "value": "cbl",
+          "full_name": "cannabicyclol",
+          "synonyms": [
+            "CBL"
+          ],
+          "external_id": null
+        },
+        {
+          "value": "11_oh_thc",
+          "full_name": "11-hydroxy-Δ9-tetrahydrocannabinol",
+          "synonyms": [
+            "11-OH-THC",
+            "11-hydroxy-THC",
+            "11-OH-Δ9-THC"
+          ],
+          "external_id": null
+        }
+      ],
+      "candidates_pending_phd": [
+        {
+          "value": "thc_cooh",
+          "full_name": "11-nor-9-carboxy-Δ9-tetrahydrocannabinol",
+          "synonyms": [
+            "THC-COOH",
+            "THCCOOH",
+            "11-nor-9-carboxy-THC",
+            "carboxy-THC"
+          ],
+          "external_id": null
+        },
+        {
+          "value": "cbca",
+          "full_name": "cannabichromenic acid",
+          "synonyms": [
+            "CBCA",
+            "CBC-A"
+          ],
+          "external_id": null
+        },
+        {
+          "value": "thcva",
+          "full_name": "Δ9-tetrahydrocannabivarinic acid",
+          "synonyms": [
+            "THCVA",
+            "THCV-A",
+            "tetrahydrocannabivarinic acid"
+          ],
+          "external_id": null
+        },
+        {
+          "value": "cbdva",
+          "full_name": "cannabidivarinic acid",
+          "synonyms": [
+            "CBDVA",
+            "CBDV-A"
+          ],
+          "external_id": null
+        },
+        {
+          "value": "cbe",
+          "full_name": "cannabielsoin",
+          "synonyms": [
+            "CBE"
+          ],
+          "external_id": null
+        },
+        {
+          "value": "cbt",
+          "full_name": "cannabicitran",
+          "synonyms": [
+            "CBT"
+          ],
+          "external_id": null
+        }
+      ],
+      "values_status": "locked",
+      "candidates_status": "pending_phd_not_scored"
+    },
+    "duration_category": {
+      "version": "0.7.0",
+      "status": "phd_to_confirm",
+      "closed": true,
+      "note": "C2: filter label only, never scored; no time thresholds.",
+      "values": [
+        {
+          "value": "acute",
+          "synonyms": [
+            "acute",
+            "single dose",
+            "single administration"
+          ]
+        },
+        {
+          "value": "subacute",
+          "synonyms": [
+            "subacute",
+            "sub-acute"
+          ]
+        },
+        {
+          "value": "subchronic",
+          "synonyms": [
+            "subchronic",
+            "sub-chronic"
+          ]
+        },
+        {
+          "value": "chronic",
+          "synonyms": [
+            "chronic",
+            "repeated"
+          ]
+        },
+        {
+          "value": "long_term",
+          "synonyms": [
+            "long-term",
+            "long term",
+            "prolonged",
+            "extended"
+          ]
+        },
+        {
+          "value": "other",
+          "synonyms": []
+        }
+      ]
     }
   },
   "review_policy": {
